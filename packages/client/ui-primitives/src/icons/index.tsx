@@ -923,3 +923,16 @@ export const IconArchiveOutline20 = ({ size = 20, className }: IconProps) => (
     <path d="M12.7962 12.5661V11.0832H7.20548V12.5661L12.7962 12.5661Z" fill="currentColor" />
   </svg>
 )
+
+/** command_outline_16: ⌘ command knot for the Settings commands section. */
+export const IconCommandOutline16 = ({ size = 16, className }: IconProps) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path
+      d="M10 4v8a2 2 0 1 0 2-2H4a2 2 0 1 0 2 2V4a2 2 0 1 0-2 2h8a2 2 0 1 0-2-2Z"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+)

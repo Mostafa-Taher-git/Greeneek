@@ -1,12 +1,12 @@
 /* The framework-free boot page cannot depend on theme delivery succeeding. */
 
 .boot {
-  --gnk-boot-bg: #fff;
-  --gnk-boot-label-primary: #0f1115;
-  --gnk-boot-label-secondary: #61666b;
-  --gnk-boot-label-tertiary: #81858c;
-  --gnk-boot-border: rgb(0 0 0 / 10%);
-  --gnk-boot-brand: #067a52;
+  --gnk-boot-bg: #fdfefa;
+  --gnk-boot-label-primary: #293c30;
+  --gnk-boot-label-secondary: #627063;
+  --gnk-boot-label-tertiary: #879083;
+  --gnk-boot-border: rgb(41 60 48 / 10%);
+  --gnk-boot-brand: #328352;
 
   height: 100%;
   display: grid;
@@ -15,12 +15,12 @@
 }
 
 :global(body[data-ds-dark-theme]) .boot {
-  --gnk-boot-bg: #151517;
-  --gnk-boot-label-primary: #f9fafb;
-  --gnk-boot-label-secondary: #cfd3d6;
-  --gnk-boot-label-tertiary: #adb2b8;
+  --gnk-boot-bg: #111813;
+  --gnk-boot-label-primary: #e4ece1;
+  --gnk-boot-label-secondary: #a1b09f;
+  --gnk-boot-label-tertiary: #81917e;
   --gnk-boot-border: rgb(255 255 255 / 12%);
-  --gnk-boot-brand: #34d399;
+  --gnk-boot-brand: #8bc799;
 }
 
 .card {

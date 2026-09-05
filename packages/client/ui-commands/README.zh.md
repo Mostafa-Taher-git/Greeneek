@@ -35,6 +35,10 @@ kind: "package-reference"
 
 composer 携带图片附件提交时，只有声明了 `input.images` 的宿主命令继续；其余每条命令路径都会抛出本地化的 `imagesUnsupported` 拒绝，以瞬态 toast 呈现，草稿与图片保持原位——命令绝不消费文本却抛下图片。
 
+### 设置命令名录
+
+本插件同时在设置中注册 `commands` 分区：当前会话宿主命令目录的只读名录——与 `/` 菜单同一目录。行不可执行；无当前会话、拉取失败或目录为空时，分区各自呈现明确状态，而非空白列表。
+
 -----
 
 <a id="understand-the-implementation"></a>

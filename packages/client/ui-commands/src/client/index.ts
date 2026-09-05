@@ -15,9 +15,14 @@ import type {} from '@greeneek/gnk-client-ui-conversation/client'
 import type {} from '@greeneek/gnk-client-locale/client'
 import type {} from '@greeneek/gnk-client-ui-renderer/client'
 import type {} from '@greeneek/gnk-client-ui-session/client'
+// Type-only: pulls the settings.section SlotMap merge (the Commands section's
+// seat) into the program — no runtime edge to ui-settings.
+import type {} from '@greeneek/gnk-client-ui-settings/client'
 import { CommandUiRuntime } from './service.ts'
 import type { PopupSelectInjected } from './PopupSelectView.tsx'
 import { PopupSelectView } from './PopupSelectView.tsx'
+import type { CommandsSectionInjected } from './CommandsSection.tsx'
+import { CommandsSection } from './CommandsSection.tsx'
 import { en, zh, type CommandKey } from './locales.ts'
 
 export { CommandUiRuntime } from './service.ts'
@@ -26,6 +31,7 @@ export type { CommandDescriptor, DirectoryStatus } from './directory.ts'
 export { filterOptions, PopupSelectController } from './popup.ts'
 export type { PopupSelectDeps, PopupSpec, PopupState, TokenSegment } from './popup.ts'
 export type { PopupSelectInjected, PopupSelectViewProps } from './PopupSelectView.tsx'
+export type { CommandsSectionInjected, CommandsSectionProps } from './CommandsSection.tsx'
 export type {
   CommandContribution, CommandDecoration, CommandUiContract, CommandUiSpec, SelectConfirmation, SelectOption,
 } from './contract.ts'
@@ -47,8 +53,8 @@ declare module '@greeneek/gnk-client-ui-slots' {
 /** Dictionary namespace owned by this plugin. */
 const NS = 'command'
 
-/** Required services: the '/' source registry, session scopes, commands Remote, and locale registry. */
-export const inject = ['inputTriggers', 'sessions', 'remote', 'remote.commands', 'locale']
+/** Required services: the '/' source registry, session scopes, commands Remote, locale registry, and the slot ledger. */
+export const inject = ['inputTriggers', 'sessions', 'remote', 'remote.commands', 'locale', 'slots']
 
 /**
  * Client plugin body: mount the service, then register the popupSelect shell
@@ -58,6 +64,22 @@ export const inject = ['inputTriggers', 'sessions', 'remote', 'remote.commands',
 export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-commands: dictionaries')
   ctx.plugin(CommandUiRuntime)
+  const t = ctx.locale.bind(NS)
+  const listCommands: CommandsSectionInjected['listCommands'] = async (sessionId) => {
+    const result = await ctx.remote.commands.list(sessionId)
+    if (!result.ok) {
+      throw new Error(`command.list failed: ${result.error.code}: ${result.error.message}`)
+    }
+    return result.value
+  }
+  ctx.slots.inject('settings.section', () => ctx.slots.register({
+    name: 'settings.section',
+    id: 'commands',
+    order: 20,
+    label: () => t('section.nav'),
+    locale: NS,
+    inject: (): CommandsSectionInjected => ({ listCommands }),
+  }, CommandsSection))
   ctx.inject(['slots', 'commandUi', 'sessions'], (scope: ClientContext) => {
     const command = scope.commandUi
     const sessions = scope.get('sessions') as ISessions

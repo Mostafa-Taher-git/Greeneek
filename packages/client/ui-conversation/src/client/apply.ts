@@ -289,7 +289,6 @@ export function apply(ctx: Context): void {
           draftImages: undefined,
           resolveSubmitMode: (running, gesture, steeringAvailable) =>
             submissionPolicy.resolve(running, gesture, steeringAvailable),
-          toggleCommandMenu: undefined,
           stop: undefined,
           command: undefined,
           hooks: {
@@ -323,19 +322,6 @@ export function apply(ctx: Context): void {
         draftImages: ids => conversation.draftImages(ids),
         resolveSubmitMode: (running, gesture, steeringAvailable) =>
           submissionPolicy.resolve(running, gesture, steeringAvailable),
-        toggleCommandMenu: inputTriggers === undefined
-          ? undefined
-          : (selection) => {
-            shell.dismissPopup()
-            const snapshot = shell.snapshot
-            inputTriggers.toggleSource('command', {
-              trigger: '/',
-              query: '',
-              quoted: false,
-              position: snapshot.draft.slice(0, selection.start).trim() === '' ? 'leading' : 'inline',
-              span: { ...selection, draftRev: snapshot.draftRev },
-            })
-          },
         stop: () => {
           scopedConversation(sessions, sessionId).cancel().catch(() => {
             // Stop failure is published through Session promptError.

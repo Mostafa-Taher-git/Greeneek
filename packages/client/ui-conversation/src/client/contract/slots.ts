@@ -15,7 +15,7 @@ import type { SessionId } from '@greeneek/gnk-session/types'
 import type { WorkspaceId } from '@greeneek/gnk-workspace/types'
 import type { ComposerBlock } from './composer-blocks.ts'
 import type {
-  ComposerKeyboard, DraftAttachmentId, EditSelection, InputActions, InputNotice, InputState,
+  ComposerKeyboard, DraftAttachmentId, InputActions, InputNotice, InputState,
 } from './input.ts'
 import type { createConversationStore } from '../stores.ts'
 import type { ComposerSubmitGesture, InputSubmitMode } from './composer-submission.ts'
@@ -268,7 +268,6 @@ export interface ComposerBarInjected {
     gesture: ComposerSubmitGesture,
     steeringAvailable: boolean,
   ) => InputSubmitMode
-  toggleCommandMenu: ((selection: EditSelection) => void) | undefined
   stop: (() => void) | undefined
   command: ((line: string) => Promise<boolean>) | undefined
   hooks: {

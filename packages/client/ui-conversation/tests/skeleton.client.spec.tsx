@@ -253,7 +253,6 @@ function mount(
           removeImage={() => {}}
           draftImages={() => []}
           resolveSubmitMode={() => 'queue'}
-          toggleCommandMenu={vi.fn()}
           useNotices={bindSnapshotSelector(wiring.notices)}
           useLexicon={bindSnapshotSelector(wiring.lexicon)}
           useMenuLauncher={bindSnapshotSelector(createSnapshotStore<string | null>(null))}

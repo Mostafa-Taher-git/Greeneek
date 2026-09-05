@@ -31,7 +31,8 @@
         "@greeneek/gnk-api-remotes",
         "@greeneek/gnk-client-locale",
         "@greeneek/gnk-client-ui-input-trigger",
-        "@greeneek/gnk-client-ui-conversation"
+        "@greeneek/gnk-client-ui-conversation",
+        "@greeneek/gnk-client-ui-settings"
       ],
       "platform": "web"
     }
@@ -64,7 +65,8 @@
     "@greeneek/gnk-client-store": "workspace:^",
     "@greeneek/gnk-session": "workspace:^",
     "@greeneek/gnk-client-ui-renderer": "workspace:^",
-    "@greeneek/gnk-client-ui-session": "workspace:^"
+    "@greeneek/gnk-client-ui-session": "workspace:^",
+    "@greeneek/gnk-client-ui-settings": "workspace:^"
   },
   "files": [
     "lib/index.js",

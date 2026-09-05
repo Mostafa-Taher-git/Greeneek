@@ -55,7 +55,7 @@ async function bench() {
 
 describe('apply', () => {
   it('declares the services it binds', () => {
-    expect(inject).toEqual(['inputTriggers', 'sessions', 'remote', 'remote.commands', 'locale'])
+    expect(inject).toEqual(['inputTriggers', 'sessions', 'remote', 'remote.commands', 'locale', 'slots'])
   })
 
   it('mounts ctx.commandUi, registers the source and the overlay entry, and folds up on disposal', async () => {

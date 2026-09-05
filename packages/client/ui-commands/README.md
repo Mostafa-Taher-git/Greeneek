@@ -35,6 +35,10 @@ A contribution is a client-owned command — a host-name collision fails loud. A
 
 When the composer submits with image attachments, only a host command declaring `input.images` proceeds; every other command route throws the localized `imagesUnsupported` refusal, which renders as a transient toast while the draft and images stay in place — a command can never consume the text and strand the images.
 
+### Settings commands roster
+
+The plugin also registers a `commands` section in Settings: a read-only roster of the current session's host command catalog — the same directory the `/` menu serves. Rows never execute; with no active session, a failed pull, or an empty catalog the section renders its own explicit status instead of an empty list.
+
 -----
 
 <a id="understand-the-implementation"></a>

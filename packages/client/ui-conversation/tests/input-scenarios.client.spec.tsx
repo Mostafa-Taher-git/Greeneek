@@ -161,16 +161,6 @@ async function scopedBench(register?: (inputTriggers: InputTriggerService) => vo
       previewUrl: `blob:${id}`,
     })),
     resolveSubmitMode: () => 'queue',
-    toggleCommandMenu: (selection) => {
-      const snapshot = shell.snapshot
-      controller.toggleSource('command', {
-        trigger: '/',
-        query: '',
-        quoted: false,
-        position: snapshot.draft.slice(0, selection.start).trim() === '' ? 'leading' : 'inline',
-        span: { ...selection, draftRev: snapshot.draftRev },
-      })
-    },
     useNotices: bindSnapshotSelector(shell.notices),
     useLexicon: bindSnapshotSelector(shell.lexicon),
     useMenuLauncher: bindSnapshotSelector(controller.launcher),

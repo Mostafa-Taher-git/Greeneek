@@ -268,6 +268,10 @@ export class PiAiAdapter extends LlmAdapter {
     return this.current().profiles.get(provider)?.retryPolicy
   }
 
+  override hiddenModels(provider: string): readonly string[] {
+    return this.current().profiles.get(provider)?.hiddenModels ?? []
+  }
+
   override listModels(provider: string): Promise<readonly LlmModelInfo[]> {
     return Promise.resolve().then(() => {
       const snapshot = this.current()

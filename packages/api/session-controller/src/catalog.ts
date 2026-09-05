@@ -66,6 +66,13 @@ export async function buildModelCatalog(
     default: selection === undefined ? null : { ...selection },
     routableProviders: providers.map(provider => provider.id),
     groups: catalog.flatMap(item => item.kind === 'group' ? [item.group] : [])
+      // Visibility is a selector concern, not a routing one: hidden models
+      // stay resolvable, they simply stop being offered. A hidden id naming
+      // no listed model changes nothing, so stale entries never error.
+      .map((group) => {
+        const hidden = new Set(ctx.llm.hiddenModels(group.id))
+        return { ...group, models: group.models.filter(model => !hidden.has(model.id)) }
+      })
       .filter(group => group.models.length > 0),
     failures: catalog.flatMap(item => item.kind === 'failure' ? [item.failure] : []),
   }

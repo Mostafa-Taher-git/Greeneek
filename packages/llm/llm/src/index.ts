@@ -210,6 +210,17 @@ export abstract class LlmAdapter {
   }
 
   /**
+   * Model ids one provider route hides from every selector. A visibility
+   * preference, not a catalog edit: hidden models stay routable and
+   * resolvable, they simply stop being offered. The default hides nothing.
+   * @param _provider - one provider route owned by this adapter.
+   * @returns hidden model ids in no particular order.
+   */
+  hiddenModels(_provider: string): readonly string[] {
+    return []
+  }
+
+  /**
    * Resolve provider-side request-image pricing for one exact model route.
    * The default declares none, so consumers fall back to their own neutral
    * estimate. Implementations must answer synchronously without I/O; the
@@ -645,6 +656,15 @@ export class LlmRuntime extends TypertRemoteService {
    */
   providerRetryPolicy(provider: string): ResolvedRetryPolicy {
     return this.registration(provider).retryPolicy
+  }
+
+  /**
+   * Model ids one registered provider route hides from every selector.
+   * @param provider - registered provider route to inspect.
+   * @returns the owning adapter's hidden model ids, or nothing hidden.
+   */
+  hiddenModels(provider: string): readonly string[] {
+    return this.registration(provider).adapter.hiddenModels(provider)
   }
 
   /**

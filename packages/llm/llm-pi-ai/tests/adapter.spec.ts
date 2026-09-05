@@ -837,6 +837,18 @@ describe('provider profile lifecycle', () => {
       .toBe(1024)
   })
 
+  it('defaults hiddenModels to empty and detaches the resolved list', () => {
+    expect(resolveProfiles({ openai: {} }).get('openai')?.hiddenModels).toEqual([])
+    const source: { hiddenModels: string[] } = { hiddenModels: ['gpt-a'] }
+    const resolved = resolveProfiles({ openai: source }).get('openai')
+    expect(resolved?.hiddenModels).toEqual(['gpt-a'])
+    source.hiddenModels.push('gpt-b')
+    expect(resolved?.hiddenModels).toEqual(['gpt-a'])
+    const adapter = adapterOf({ deepseek: { apiKeyEnv: 'PI_TEST_KEY', baseURL: 'https://x.example/v1', hiddenModels: ['d1'] } })
+    expect(adapter.hiddenModels('deepseek')).toEqual(['d1'])
+    expect(adapter.hiddenModels('openai')).toEqual([])
+  })
+
   it.each([
     ['bad header name', 'value'],
     ['x-company', 'line\nbreak'],

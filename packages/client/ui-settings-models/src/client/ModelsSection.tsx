@@ -24,6 +24,7 @@ import type { ModelsSettingsStore, ProviderRow } from './store.ts'
 import type { ModelsOperations } from './operations.ts'
 import type { SettingsSchemaOperations } from './schema-operations.ts'
 import { ProviderEditor, type ProviderEditorProps } from './ProviderEditor.tsx'
+import { ModelVisibilityPanel } from './ModelVisibilityPanel.tsx'
 import type { en } from './locales.ts'
 import styles from './ModelsSection.module.css'
 
@@ -205,6 +206,7 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderS
   const { controller, operations, schema, t } = injected
   const state = injected.useSnapshot(snapshot => snapshot)
   const [editing, setEditing] = useState<EditorTarget | undefined>(undefined)
+  const [visibility, setVisibility] = useState<EditorTarget | undefined>(undefined)
   const [adding, setAdding] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<EditorTarget | undefined>(undefined)
   const [deleting, setDeleting] = useState(false)
@@ -345,6 +347,7 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderS
             )
           }
           const open = !adding && editing?.provider === row.entry.provider
+          const modelsOpen = !adding && visibility?.provider === row.entry.provider
           const credentialConfigured = row.credential?.configured === true
           const credentialMissing = !credentialConfigured
             && row.apiKeyEnv !== undefined
@@ -392,10 +395,25 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderS
                       // one discards the other's draft.
                       setDeclaring(false)
                       setAdding(false)
+                      setVisibility(undefined)
                       setEditing(open ? undefined : target)
                     }}
                   >
                     {t('edit')}
+                  </button>
+                  <button
+                    type="button"
+                    className={styles['secondaryButton']}
+                    aria-label={providerCopy(t('editModelsProvider'), target)}
+                    onClick={() => {
+                      setSavedTarget(undefined)
+                      setDeclaring(false)
+                      setAdding(false)
+                      setEditing(undefined)
+                      setVisibility(modelsOpen ? undefined : target)
+                    }}
+                  >
+                    {t('editModels')}
                   </button>
                   {row.removable
                     ? (
@@ -431,6 +449,22 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderS
                   readOnly: !state.writable,
                   onClose: (changed) => { closeEditor(changed, target) },
                 })
+                : null}
+              {modelsOpen
+                ? (
+                  <ModelVisibilityPanel
+                    target={target}
+                    namespace={namespace}
+                    schema={schema}
+                    operations={operations}
+                    t={t}
+                    readOnly={!state.writable}
+                    onClose={(changed) => {
+                      setVisibility(undefined)
+                      if (changed) announceSaved(target)
+                    }}
+                  />
+                )
                 : null}
             </li>
           )

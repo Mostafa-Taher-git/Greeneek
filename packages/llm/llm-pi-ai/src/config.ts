@@ -114,6 +114,14 @@ export interface PiAiProviderProfile {
    */
   modelOverrides?: Record<string, PiAiModelOverride>
   /**
+   * Model ids this route hides from every selector. A visibility preference,
+   * not a catalog edit: the models stay configured and routable (a stored
+   * selection naming one keeps serving), they simply stop being offered. An
+   * omitted list hides nothing, so a route never has to restate the catalog
+   * to hide one entry — unlike {@link models}, which replaces it wholesale.
+   */
+  hiddenModels?: string[]
+  /**
    * pi-ai wire-compatibility switches defaulting every model on this route
    * whose protocol declares them; each model's own `compat` overrides per
    * field. What neither sets keeps the installed catalog entry's value, then
@@ -318,6 +326,7 @@ const profile = z.object({
   baseURL: z.string(),
   models: z.array(modelProfile),
   modelOverrides: z.dict(modelOverride),
+  hiddenModels: z.array(z.string()).default([]),
   compat: compatProfile,
   defaultContextWindow: z.number().step(1).min(1).default(DEFAULT_CONTEXT_WINDOW),
   defaultMaxTokens: z.number().step(1).min(1).default(DEFAULT_MAX_TOKENS),
@@ -459,11 +468,14 @@ export function resolveProfiles(
       defaultContextWindow: source.defaultContextWindow ?? DEFAULT_CONTEXT_WINDOW,
       defaultMaxTokens: source.defaultMaxTokens ?? DEFAULT_MAX_TOKENS,
     })
-    const { apiKeyEnv, retryPolicy, models: _models, displayName: _displayName, ...rest } = source
+    const { apiKeyEnv, retryPolicy, models: _models, displayName: _displayName, hiddenModels: _hidden, ...rest } = source
     resolved.set(provider, {
       ...rest,
       provider,
       displayName,
+      // Detached like defaultInput above: the resolved profile outlives the
+      // parsed configuration object, so it must not alias its array.
+      hiddenModels: [...source.hiddenModels ?? []],
       ...apiKeyEnv === undefined ? {} : { apiKeyEnv: credentialRef(apiKeyEnv) },
       streamIdleTimeoutMs,
       maxRequestImageBytes,

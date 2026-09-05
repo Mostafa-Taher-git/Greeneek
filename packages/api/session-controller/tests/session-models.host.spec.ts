@@ -432,6 +432,30 @@ describe('Web session model selection', () => {
     await ctx.fiber.dispose()
   })
 
+  it('withholds hidden models from the offered groups while leaving them resolvable', async () => {
+    const { ctx } = await harness()
+    ctx.llm.registerAdapter(['quiet'], new class extends CatalogAdapter {
+      override hiddenModels(): readonly string[] {
+        return ['quiet-b']
+      }
+    }('Quiet', [
+      { provider: 'quiet', id: 'quiet-a', name: 'Quiet A' },
+      { provider: 'quiet', id: 'quiet-b', name: 'Quiet B' },
+    ]))
+    createSessionTestRemote(ctx, {
+      defaultModelSelection: () => ({ provider: 'greeneek-official', model: 'greeneek-chat' }),
+      cwd: '/tmp',
+    })
+
+    const catalog = await buildModelCatalog(ctx)
+    expect(catalog.groups).toContainEqual({
+      id: 'quiet', name: 'Quiet', models: [{ id: 'quiet-a', name: 'Quiet A' }],
+    })
+    const resolved = await ctx.llm.resolveModelInfo('quiet', 'quiet-b')
+    expect(resolved).toMatchObject({ provider: 'quiet', id: 'quiet-b' })
+    await ctx.fiber.dispose()
+  })
+
   it('accepts an advisory-unlisted model, rejects an unavailable provider, and switches only after the next assembly', async () => {
     const { ctx, agent, sessionId } = await harness()
     const remote = createSessionTestRemote(ctx, { defaultModelSelection: () => ({ provider: 'greeneek-official', model: 'greeneek-chat' }), cwd: '/tmp' })

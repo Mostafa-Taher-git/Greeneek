@@ -31,7 +31,9 @@ describe('repository link policy', () => {
   })
 
   it('preserves frozen archived Agent Notes', () => {
-    const unavailableRepository = ['greeneek', 'greeneek-harness-sdk'].join('/')
+    const unavailableOwner = ['greeneek', 'ai'].join('-')
+    const unavailableName = ['greeneek', 'harness', 'sdk'].join('-')
+    const unavailableRepository = `${unavailableOwner}/${unavailableName}`
 
     expect(findUnavailableRepositoryReferences(
       '.agents/notes/archived/process/historical-record.md',

@@ -334,7 +334,9 @@ describe.skipIf(!hasPwsh)('terminal-bash pwsh real shell', () => {
         text: '$env:KEEP = "ok"; Set-Location /',
         submit: true,
       })
-      expect((await first.done).waitReason).toBe('stdin_read')
+      // Same load-dependent readiness race as the bash settles above: on a
+      // slow host pwsh may still be starting, so `inferred_idle` can win.
+      expectReadyForNextSend((await first.done).waitReason)
       const second = ctx.terminals.startSend(agent, created.sessionId, {
         text: 'Write-Output "keep=$env:KEEP secret=$env:GNK_TEST_SECRET"',
         submit: true,

@@ -25,16 +25,13 @@ interface DemoPolicy {
 
 /** Public product launcher plus the private build-only WebWorker packer. */
 const MANIFEST_BIN_ALLOWLIST = new Map<string, ManifestBin>([
-  // rebrand:keep Deprecated `dsh` bin: one-release compat launcher (docs/migration-from-deepseek.md); remove in v1.0.
-  ['apps/cli/package.json', { gnk: 'lib/bin.js', dsh: 'lib/bin-legacy.js' }], // rebrand:keep
+  ['apps/cli/package.json', { gnk: 'lib/bin.js' }],
   ['packages/experimental/webworker-packer/package.json', { 'gnk-pack-vfs-image': './bin.js' }],
 ])
 
 /** Every executable in a Node application workspace has one explicit role. */
 const EXECUTABLE_SOURCE_ALLOWLIST = new Map<string, string>([
   ['apps/cli/src/bin.ts', 'supported gnk application launcher'],
-  // rebrand:keep Warn-and-delegate shim for the pre-rebrand `dsh` binary; removed in v1.0 (docs/migration-from-deepseek.md).
-  ['apps/cli/src/bin-legacy.ts', 'deprecated dsh compatibility launcher shim'], // rebrand:keep
   ['packages/context/time-context/tests/fixtures/driver.ts', 'test-only subprocess driver'],
   ['packages/experimental/webworker-packer/bin.js', 'private build-only wrapper'],
   ['packages/experimental/webworker-packer/src/bin.ts', 'private build-only implementation'],

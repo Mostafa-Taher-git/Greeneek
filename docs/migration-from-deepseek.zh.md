@@ -24,7 +24,7 @@
 
 | 表面 | 旧 | 新 |
 | --- | --- | --- |
-| 可执行文件 | `dsh` | `gnk`（弃用的 `dsh` 别名启动器发出警告并转交；v1.0 移除） |
+| 可执行文件 | `dsh` | `gnk`（弃用的 `dsh` 别名启动器已在 v1.0 移除） |
 | npm 作用域 | `@deepseek-ai/dsh-*` | `@greeneek/gnk-*` |
 | CLI 包 | `@deepseek-ai/dsh` | `@greeneek/gnk` |
 | Home 目录 | `~/.dsh` | `~/.gnk` |

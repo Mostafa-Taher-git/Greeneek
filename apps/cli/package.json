@@ -12,8 +12,7 @@
   },
   "type": "module",
   "bin": {
-    "gnk": "lib/bin.js",
-    "dsh": "lib/bin-legacy.js"
+    "gnk": "lib/bin.js"
   },
   "files": [
     "lib/*.js"

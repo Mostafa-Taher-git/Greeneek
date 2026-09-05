@@ -24,7 +24,7 @@ All fallbacks are removed in **v1.0**.
 
 | Surface | Old | New |
 | --- | --- | --- |
-| Binary | `dsh` | `gnk` (deprecated `dsh` alias launcher warns and delegates; removed in v1.0) |
+| Binary | `dsh` | `gnk` (the deprecated `dsh` alias launcher was removed in v1.0) |
 | npm scope | `@deepseek-ai/dsh-*` | `@greeneek/gnk-*` |
 | CLI package | `@deepseek-ai/dsh` | `@greeneek/gnk` |
 | Home directory | `~/.dsh` | `~/.gnk` |

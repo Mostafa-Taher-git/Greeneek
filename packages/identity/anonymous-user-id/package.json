@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-anonymous-user-id",
   "description": "Shared anonymous user identity for Greeneek Harness telemetry and feedback correlation",
-  "version": "0.1.2-alpha.5",
+  "version": "1.1.0-alpha.0",
   "publishConfig": {
     "access": "public"
   },

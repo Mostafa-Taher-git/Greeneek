@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-sandbox-windows-acl",
   "description": "Windows ACL write-restriction sandbox backend (restricted-token spawn with capability-SID write allowlist) for the Greeneek Harness sandbox seam",
-  "version": "0.1.2-alpha.5",
+  "version": "1.1.0-alpha.0",
   "publishConfig": {
     "access": "public"
   },

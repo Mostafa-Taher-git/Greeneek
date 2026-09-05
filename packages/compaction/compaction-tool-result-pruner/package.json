@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-compaction-tool-result-pruner",
   "description": "Replay-safe model-free head/middle/tail pruning for tool-result surface nodes",
-  "version": "0.1.2-alpha.5",
+  "version": "1.1.0-alpha.0",
   "publishConfig": {
     "access": "public"
   },

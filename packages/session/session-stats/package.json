@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-session-stats",
   "description": "Whole-log conversation counts and wall times projection (sessionStats) for the Greeneek Harness",
-  "version": "0.1.2-alpha.5",
+  "version": "1.1.0-alpha.0",
   "publishConfig": {
     "access": "public"
   },

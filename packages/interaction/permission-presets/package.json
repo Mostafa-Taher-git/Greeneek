@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-permission-presets",
   "description": "User-facing permission presets (ctx.permissionPresets) for the Greeneek Harness: one product-level Permissions select bundling the sandbox-mode and approval-policy knobs, written through to their own session events",
-  "version": "0.1.2-alpha.5",
+  "version": "1.1.0-alpha.0",
   "publishConfig": {
     "access": "public"
   },

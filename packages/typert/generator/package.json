@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-typert-generator",
   "description": "TypeScript project analyzer and model-driven Typert artifact generator",
-  "version": "0.1.2-alpha.5",
+  "version": "1.1.0-alpha.0",
   "publishConfig": {
     "access": "public"
   },

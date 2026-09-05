@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-spill-local",
   "description": "Local-filesystem implementation of the Greeneek Harness spill storage seam (private session-scoped files)",
-  "version": "0.1.2-alpha.5",
+  "version": "1.1.0-alpha.0",
   "publishConfig": {
     "access": "public"
   },

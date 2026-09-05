@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-jobs",
   "description": "Background job registry (ctx.jobs) for the Greeneek Harness — shared ids, owner isolation, polling, cancellation, and completion listeners for long-running tool work",
-  "version": "0.1.2-alpha.5",
+  "version": "1.1.0-alpha.0",
   "publishConfig": {
     "access": "public"
   },

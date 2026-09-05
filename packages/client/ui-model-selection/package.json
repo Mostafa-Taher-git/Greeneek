@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-client-ui-model-selection",
   "description": "Model selection over the shared model catalog, Session projection, and session.selectModel",
-  "version": "0.1.2-alpha.5",
+  "version": "1.1.0-alpha.0",
   "publishConfig": {
     "access": "public"
   },

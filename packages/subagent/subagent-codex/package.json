@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-subagent-codex",
   "description": "One-shot Codex subagent provider over the official app-server protocol",
-  "version": "0.1.2-alpha.5",
+  "version": "1.1.0-alpha.0",
   "publishConfig": {
     "access": "public"
   },

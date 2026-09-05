@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-client-ui-schedule",
   "description": "Read-only active Schedule catalog in the Web Session header",
-  "version": "0.1.2-alpha.5",
+  "version": "1.1.0-alpha.0",
   "type": "module",
   "main": "lib/index.js",
   "types": "lib/types/index.d.ts",

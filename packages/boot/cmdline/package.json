@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-cmdline",
   "description": "Immutable command-line handoff from a gnk launcher to any app plugin that injects cmdlineArgs",
-  "version": "0.1.2-alpha.5",
+  "version": "1.1.0-alpha.0",
   "publishConfig": {
     "access": "public"
   },

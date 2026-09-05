@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-client-ui-deliverables",
   "description": "Produced-files turn tail and clickable final-response file references for Web",
-  "version": "0.1.2-alpha.5",
+  "version": "1.1.0-alpha.0",
   "publishConfig": {
     "access": "public"
   },

@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-experimental-agent-team-profile",
   "description": "Private profile bundle enabling Agent Teams over gnk-base",
-  "version": "0.1.2-alpha.5",
+  "version": "1.1.0-alpha.0",
   "private": true,
   "repository": {
     "type": "git",

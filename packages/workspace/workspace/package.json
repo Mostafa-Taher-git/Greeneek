@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-workspace",
   "description": "Workspace entity registry (ctx.workspaceRegistry): durable workspace records with validated session attachment over the domain data form for the Greeneek Harness",
-  "version": "0.1.2-alpha.5",
+  "version": "1.1.0-alpha.0",
   "publishConfig": {
     "access": "public"
   },

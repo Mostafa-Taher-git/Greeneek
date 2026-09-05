@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-client-test-runtime",
   "description": "jsdom slot test runtime: real Cordis Context + SlotRegistry + UI renderer with test-owned session/workspace doubles for feature specs",
-  "version": "0.1.2-alpha.5",
+  "version": "1.1.0-alpha.0",
   "publishConfig": {
     "access": "public"
   },

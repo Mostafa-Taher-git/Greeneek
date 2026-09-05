@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-plugin-package-inventory-greeneek",
   "description": "Active Loader-backed plugin package inventory for official Greeneek LLM API requests",
-  "version": "0.1.2-alpha.5",
+  "version": "1.1.0-alpha.0",
   "publishConfig": {
     "access": "public"
   },

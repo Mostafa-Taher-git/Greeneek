@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-client-ui-cordis",
   "description": "Cordis dynamic-plugin definition card: the keyed cordis_define tool row with its run/stop switch",
-  "version": "0.1.2-alpha.5",
+  "version": "1.1.0-alpha.0",
   "publishConfig": {
     "access": "public"
   },

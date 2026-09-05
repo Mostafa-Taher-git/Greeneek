@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-hooks-codex",
   "description": "Bridge plugin: run a Codex hooks.json hook config on the Greeneek Harness interception seams",
-  "version": "0.1.2-alpha.5",
+  "version": "1.1.0-alpha.0",
   "publishConfig": {
     "access": "public"
   },

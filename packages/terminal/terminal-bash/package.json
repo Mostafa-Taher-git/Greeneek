@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-terminal-bash",
   "description": "Persistent shell PTY backend over the Greeneek Harness subprocess terminal primitive",
-  "version": "0.1.2-alpha.5",
+  "version": "1.1.0-alpha.0",
   "publishConfig": {
     "access": "public"
   },

@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-client-modules",
   "description": "Client module system, dual-face: node half composes the __GNK_BOOT__ entry graph (incremental gnk.client scan, bundle route, index tap, webPlugins service); browser half is the lazy-CJS module table the vendored cordis Loader consumes as its internal seam",
-  "version": "0.1.2-alpha.5",
+  "version": "1.1.0-alpha.0",
   "publishConfig": {
     "access": "public"
   },

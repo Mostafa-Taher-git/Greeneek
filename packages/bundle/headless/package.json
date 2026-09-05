@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-headless",
   "description": "The gnk one-shot bundle: a direct core Agent/Session runner over gnk-base with no Host, HTTP, or browser layer",
-  "version": "0.1.2-alpha.5",
+  "version": "1.1.0-alpha.0",
   "publishConfig": {
     "access": "public"
   },

@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-session-title-first-prompt-llm",
   "description": "First-message LLM provider plugin for Greeneek Harness session titles",
-  "version": "0.1.2-alpha.5",
+  "version": "1.1.0-alpha.0",
   "publishConfig": {
     "access": "public"
   },

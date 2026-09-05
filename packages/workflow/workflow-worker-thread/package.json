@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-workflow-worker-thread",
   "description": "worker-thread workflow engine: executes model-written orchestration scripts off the host event loop, bridging agent() calls back to ctx.subagents",
-  "version": "0.1.2-alpha.5",
+  "version": "1.1.0-alpha.0",
   "publishConfig": {
     "access": "public"
   },

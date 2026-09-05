@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-goal",
   "description": "Event-sourced same-session goal state and lifecycle service for the Greeneek Harness",
-  "version": "0.1.2-alpha.5",
+  "version": "1.1.0-alpha.0",
   "publishConfig": {
     "access": "public"
   },

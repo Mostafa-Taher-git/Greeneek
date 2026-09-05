@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-agent-tool-presentation",
   "description": "Agent-plane presentation selector: composes one agent's tools as PTC mode, native, or both",
-  "version": "0.1.2-alpha.5",
+  "version": "1.1.0-alpha.0",
   "publishConfig": {
     "access": "public"
   },

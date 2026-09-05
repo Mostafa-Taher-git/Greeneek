@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-experimental-code-runtime-python",
   "description": "CPython subprocess implementation of the Greeneek Harness code-execution seam",
-  "version": "0.1.2-alpha.5",
+  "version": "1.1.0-alpha.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/greeneek/greeneek-harness.git",

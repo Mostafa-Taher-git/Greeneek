@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-spill-policy",
   "description": "Tool-result spill policy for the Greeneek Harness — replaces oversized plain-text tool results with a retained preview plus a spill-file path (no service API)",
-  "version": "0.1.2-alpha.5",
+  "version": "1.1.0-alpha.0",
   "publishConfig": {
     "access": "public"
   },

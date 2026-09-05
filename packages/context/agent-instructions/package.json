@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-agent-instructions",
   "description": "Workspace context loader for AGENTS.md/CLAUDE.md instruction files",
-  "version": "0.1.2-alpha.5",
+  "version": "1.1.0-alpha.0",
   "publishConfig": {
     "access": "public"
   },

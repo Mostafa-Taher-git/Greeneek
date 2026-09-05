@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-tool-web",
   "description": "Model-facing web tools (web_search, web_fetch) over the Greeneek Harness web capability seam (ctx.web)",
-  "version": "0.1.2-alpha.5",
+  "version": "1.1.0-alpha.0",
   "publishConfig": {
     "access": "public"
   },

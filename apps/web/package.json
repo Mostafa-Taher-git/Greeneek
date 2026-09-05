@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-web-frontend",
   "description": "Web application entry: vite build over the @greeneek/gnk-client-web shell library; dist/ served by apps/cli's gnk web",
-  "version": "0.1.2-alpha.5",
+  "version": "1.1.0-alpha.0",
   "publishConfig": {
     "access": "public"
   },

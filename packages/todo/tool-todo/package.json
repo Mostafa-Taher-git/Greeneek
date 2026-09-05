@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-tool-todo",
   "description": "Model-facing todo_write tool over the Greeneek Harness event-sourced session log",
-  "version": "0.1.2-alpha.5",
+  "version": "1.1.0-alpha.0",
   "publishConfig": {
     "access": "public"
   },

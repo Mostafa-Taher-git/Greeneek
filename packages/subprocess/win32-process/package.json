@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-win32-process",
   "description": "Low-level Win32 process, stdio, and Job Object primitives for the Greeneek Harness Windows sandbox",
-  "version": "0.1.2-alpha.5",
+  "version": "1.1.0-alpha.0",
   "publishConfig": {
     "access": "public"
   },

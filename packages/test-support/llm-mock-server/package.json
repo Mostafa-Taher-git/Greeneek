@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-llm-mock-server",
   "description": "Scriptable OpenAI-compatible HTTP/SSE fault server for LLM recovery tests",
-  "version": "0.1.2-alpha.5",
+  "version": "1.1.0-alpha.0",
   "publishConfig": {
     "access": "public"
   },

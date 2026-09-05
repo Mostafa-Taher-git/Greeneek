@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-client-ui-user-questions",
   "description": "Web ask_user_question composer takeover and plan-review presentation UI",
-  "version": "0.1.2-alpha.5",
+  "version": "1.1.0-alpha.0",
   "publishConfig": {
     "access": "public"
   },

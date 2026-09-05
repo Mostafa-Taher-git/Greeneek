@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-native-command",
   "description": "Host-native command and path-opening utilities with shell-free execution, cancellation, desktop detection, and WSL handoff",
-  "version": "0.1.2-alpha.5",
+  "version": "1.1.0-alpha.0",
   "publishConfig": {
     "access": "public"
   },

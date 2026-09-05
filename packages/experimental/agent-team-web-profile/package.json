@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-experimental-agent-team-web-profile",
   "description": "Private Web profile layer for Agent Teams Remote and UI plugins",
-  "version": "0.1.2-alpha.5",
+  "version": "1.1.0-alpha.0",
   "private": true,
   "repository": {
     "type": "git",

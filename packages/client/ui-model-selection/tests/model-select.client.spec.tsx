@@ -73,11 +73,17 @@ describe('ModelSelect reasoning effort', () => {
     })
     fireEvent.click(trigger)
     fireEvent.click(screen.getByRole('menuitem', { name: /推理等级/ }))
-    expect(screen.getAllByRole('menuitemradio').map(item => item.textContent))
-      .toEqual(['Off', 'High', 'Max'])
+    const slider = screen.getByRole('slider', { name: '推理等级' })
+    expect(slider.getAttribute('min')).toBe('0')
+    expect(slider.getAttribute('max')).toBe('2')
+    expect(slider.getAttribute('aria-valuetext')).toBe('High')
+    // Every stop is labeled; descriptions stay out of the pane.
+    expect(screen.getByText('Power Slider')).toBeTruthy()
+    expect(screen.getByText('Off')).toBeTruthy()
+    expect(screen.getByText('Max')).toBeTruthy()
     expect(screen.queryByText('Largest budget')).toBeNull()
 
-    fireEvent.click(screen.getByRole('menuitemradio', { name: /Max/ }))
+    fireEvent.change(slider, { target: { value: '2' } })
     await waitFor(() => {
       expect(select).toHaveBeenCalledWith({
         provider: 'greeneek-official',
@@ -86,6 +92,8 @@ describe('ModelSelect reasoning effort', () => {
       })
       expect(trigger.getAttribute('aria-label')).toBe('选择模型，当前 Greeneek-V4-Flash，推理等级 Max')
     })
+    // The slider applies live and stays open for further adjustment.
+    expect(screen.getByRole('slider', { name: '推理等级' })).toBeTruthy()
   })
 
   it('offers provider default only when the adapter does not configure a model default', () => {
@@ -114,8 +122,14 @@ describe('ModelSelect reasoning effort', () => {
       name: '选择模型，当前 Model，推理等级 Default',
     }))
     fireEvent.click(screen.getByRole('menuitem', { name: /推理等级/ }))
-    expect(screen.getAllByRole('menuitemradio').map(item => item.textContent))
-      .toEqual(['Default', 'Standard'])
+    // Provider default is the first stop when the adapter configures no default.
+    const slider = screen.getByRole('slider', { name: '推理等级' })
+    expect(slider.getAttribute('min')).toBe('0')
+    expect(slider.getAttribute('max')).toBe('1')
+    expect(slider.getAttribute('aria-valuetext')).toBe('Default')
+    // Default names the trigger caption, the slider readout, and its tick.
+    expect(screen.getAllByText('Default')).toHaveLength(3)
+    expect(screen.getByText('Standard')).toBeTruthy()
   })
 
   it('shows the durable model id when the catalog has no matching display name', () => {

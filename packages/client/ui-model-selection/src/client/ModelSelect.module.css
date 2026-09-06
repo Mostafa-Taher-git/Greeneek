@@ -260,3 +260,63 @@
   flex: 0 0 auto;
   color: var(--dsw-alias-label-tertiary);
 }
+
+/* Effort slider pane: one stop per level with the value read out above the
+ * track and every stop labeled below. Native range keeps arrow/Home/End
+ * support; accent-color tints the thumb/track to the brand fill. */
+.sliderWrap {
+  box-sizing: border-box;
+  min-width: 100%;
+  padding: 8px 10px 10px;
+}
+
+.sliderValue {
+  margin-bottom: 2px;
+  color: var(--dsw-alias-label-primary);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+}
+
+.sliderTitle {
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.slider {
+  width: 100%;
+  margin: 6px 0 4px;
+  accent-color: var(--dsw-alias-button-primary-fill);
+}
+
+.slider:focus-visible {
+  outline: 2px solid var(--dsw-alias-state-business-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.slider:disabled {
+  opacity: 0.4;
+}
+
+.ticks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+}
+
+.tick {
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+  line-height: 18px;
+  white-space: nowrap;
+}
+
+.tickActive {
+  color: var(--dsw-alias-label-primary);
+  font-weight: 600;
+}

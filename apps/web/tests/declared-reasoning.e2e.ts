@@ -70,15 +70,23 @@ describe.skipIf(MODE === 'record')('web e2e: declared reasoning efforts reach th
     // Declared levels, nothing else: the provider-default entry (the route
     // configures no `reasoning`), then Off/High/Max — minimal, low, medium,
     // and xhigh were not declared and must not be offered.
-    const levels = page.getByRole('menuitemradio')
-    await expect.poll(async () => levels.allTextContents(), { timeout: 10_000 })
-      .toEqual(['Default', 'Off', 'High', 'Max'])
+    const slider = page.getByRole('slider', { name: /推理等级/ })
+    await expect.poll(async () => slider.getAttribute('min'), { timeout: 10_000 }).toBe('0')
+    await expect.poll(async () => slider.getAttribute('max')).toBe('3')
+    await expect.poll(async () => slider.getAttribute('aria-valuetext')).toBe('Default')
+    // Ticks are aria-hidden (valuetext already names each stop), so the
+    // exact level vocabulary is asserted as menu text instead.
+    const menu = page.getByRole('menu')
+    for (const stop of ['Power Slider', 'Default', 'Off', 'High', 'Max']) {
+      await expect.poll(async () => menu.getByText(stop, { exact: true }).count()).toBeGreaterThan(0)
+    }
     const snapshot = await captureStableAria(page, '[role="menu"]', scaffold.workspaceCwd)
     await compareOrRefreshGolden(UI_EXPECTED, snapshot, MODE)
 
     // Picking a level is the same gesture that saves the default selection, so
     // the effort lands in the Agent default Settings section beside provider/model.
-    await page.getByRole('menuitemradio', { name: 'High' }).click()
+    // High is stop 2 (Default 0, Off 1, High 2, Max 3).
+    await slider.fill('2')
     await expect.poll(
       async () => readFile(join(scaffold.harnessHome, 'settings.yaml'), 'utf8'),
       { timeout: 10_000 },

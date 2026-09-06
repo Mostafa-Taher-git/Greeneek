@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ModelSelection } from '@greeneek/gnk-api-remotes/client'
 import { createSnapshotStore } from '@greeneek/gnk-client-store'
@@ -21,10 +21,15 @@ const t: ComponentProps<typeof ModelSelect>['t'] = (key, params) => {
 }
 
 const reasoning = {
+  // Deliberately unordered: the slider sorts the power scale itself, and
+  // `off` disables reasoning so it is never a stop.
   efforts: [
-    { id: 'off', name: 'Off' },
-    { id: 'high', name: 'High' },
     { id: 'max', name: 'Max', description: 'Largest budget' },
+    { id: 'off', name: 'Off' },
+    { id: 'low', name: 'Low' },
+    { id: 'xhigh', name: 'Extra High' },
+    { id: 'medium', name: 'Medium' },
+    { id: 'high', name: 'High' },
   ],
   defaultEffort: 'high',
 }
@@ -75,15 +80,19 @@ describe('ModelSelect reasoning effort', () => {
     fireEvent.click(screen.getByRole('menuitem', { name: /推理等级/ }))
     const slider = screen.getByRole('slider', { name: '推理等级' })
     expect(slider.getAttribute('min')).toBe('0')
-    expect(slider.getAttribute('max')).toBe('2')
+    expect(slider.getAttribute('max')).toBe('4')
     expect(slider.getAttribute('aria-valuetext')).toBe('High')
-    // Every stop is labeled; descriptions stay out of the pane.
-    expect(screen.getByText('Power Slider')).toBeTruthy()
-    expect(screen.getByText('Off')).toBeTruthy()
-    expect(screen.getByText('Max')).toBeTruthy()
+    // One ascending power scale: Low→Max in canonical order however the
+    // model declares them; `off` is not offered and descriptions stay out.
+    const stops = ['Low', 'Medium', 'High', 'Extra High', 'Max']
+    const ticks = within(screen.getByRole('menu')).getAllByText(
+      (content, element) => element?.tagName === 'SPAN' && stops.includes(content),
+    )
+    expect(ticks.map(tick => tick.textContent)).toEqual(stops)
+    expect(screen.queryByText('Off')).toBeNull()
     expect(screen.queryByText('Largest budget')).toBeNull()
 
-    fireEvent.change(slider, { target: { value: '2' } })
+    fireEvent.change(slider, { target: { value: '4' } })
     await waitFor(() => {
       expect(select).toHaveBeenCalledWith({
         provider: 'greeneek-official',

@@ -28,6 +28,15 @@ import css from './ModelSelect.module.css'
 /** Which pane the dropdown shows: the two-row root or one drilled-in list. */
 type Pane = 'root' | 'model' | 'effort'
 
+/**
+ * Canonical power-scale order, so the slider reads ascending however a
+ * profile declares its levels. Unlisted ids keep declaration order after
+ * the known stops.
+ */
+const EFFORT_RANK: Record<string, number> = {
+  low: 0, medium: 1, high: 2, xhigh: 3, 'extra-high': 3, max: 4,
+}
+
 /** One dynamic effort row; undefined means preserve the provider default. */
 interface EffortChoice {
   key: string
@@ -36,29 +45,33 @@ interface EffortChoice {
 }
 
 /**
- * Effort slider: one stop per level, ascending, with the provider default
- * (when the adapter configures no model default) as the first stop. A
- * native range input keeps arrow/Home/End keyboard support and names the
+ * Effort slider: one stop per level on a single ascending power scale, with
+ * the provider default (when the adapter configures no model default) as the
+ * first stop. `off` is not a stop — disabling reasoning is not power — and
+ * stops sort in canonical escalation order regardless of declaration order.
+ * A native range input keeps arrow/Home/End keyboard support and names the
  * active stop through aria-valuetext; every stop commits immediately while
- * the pane stays open so the thumb can keep moving.
+ * the pane stays open so the thumb can keep moving. A stale current effort
+ * (e.g. a profile default the model no longer declares) keeps its own name
+ * in the readout instead of borrowing a stop's.
  */
 function EffortSlider(
-  { choices, activeEffort, busy, label, title, onPick }:
+  { choices, activeEffort, fallbackLabel, busy, label, onPick }:
   {
     choices: readonly EffortChoice[]
     activeEffort: string | undefined
+    fallbackLabel: string | undefined
     busy: boolean
     label: string
-    title: string
     onPick: (effort: string | undefined) => void
   },
 ) {
   const found = choices.findIndex(choice => choice.effort === activeEffort)
   const active = found === -1 ? 0 : found
+  const activeLabel = (found === -1 ? fallbackLabel : undefined) ?? choices[active]?.label
   return (
     <div className={css.sliderWrap}>
-      <div className={css.sliderTitle}>{title}</div>
-      <div className={css.sliderValue} aria-hidden="true">{choices[active]?.label}</div>
+      <div className={css.sliderValue} aria-hidden="true">{activeLabel}</div>
       <input
         type="range"
         className={css.slider}
@@ -69,7 +82,7 @@ function EffortSlider(
         autoFocus
         disabled={busy}
         aria-label={label}
-        aria-valuetext={choices[active]?.label}
+        aria-valuetext={activeLabel}
         onChange={(event) => {
           const next = choices[Number(event.target.value)]
           if (next !== undefined && next.effort !== activeEffort) onPick(next.effort)
@@ -143,11 +156,14 @@ export function ModelSelect(
       ...reasoning.defaultEffort === undefined
         ? [{ key: 'provider-default', effort: undefined, label: t('effort.providerDefault') }]
         : [],
-      ...reasoning.efforts.map((effort: ModelReasoningEffort) => ({
-        key: `effort:${effort.id}`,
-        effort: effort.id,
-        label: effort.name,
-      })),
+      ...reasoning.efforts
+        .filter((effort: ModelReasoningEffort) => effort.id.toLowerCase() !== 'off')
+        .sort((a, b) => (EFFORT_RANK[a.id.toLowerCase()] ?? 5) - (EFFORT_RANK[b.id.toLowerCase()] ?? 5))
+        .map((effort: ModelReasoningEffort) => ({
+          key: `effort:${effort.id}`,
+          effort: effort.id,
+          label: effort.name,
+        })),
     ], [reasoning, t])
   const busy = state.status === 'selecting'
 
@@ -387,9 +403,9 @@ export function ModelSelect(
                 : <EffortSlider
                   choices={effortChoices}
                   activeEffort={effectiveEffort}
+                  fallbackLabel={effortLabel}
                   busy={busy}
                   label={t('menu.effort')}
-                  title={t('effort.powerSlider')}
                   onPick={(effort) => { chooseEffort(effort, false) }}
                 />}
             </>

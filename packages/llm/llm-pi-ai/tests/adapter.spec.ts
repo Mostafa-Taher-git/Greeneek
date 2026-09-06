@@ -517,6 +517,11 @@ describe('provider profile lifecycle', () => {
       ReasoningEffortId('xhigh'),
       ReasoningEffortId('max'),
     ])
+    // `xhigh` is the one id whose capitalization reads wrong, so it carries
+    // its real display name while the other levels keep the capitalized id.
+    expect(extended.reasoning?.efforts).toContainEqual(
+      { id: ReasoningEffortId('xhigh'), name: 'Extra High' },
+    )
     // A catalog model without reasoning is the same case as a hand-declared
     // one: pi-ai reports the single level `off`, which translates to omitting
     // the reasoning option — exactly what naming no effort already does. The

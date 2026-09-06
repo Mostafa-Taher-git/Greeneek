@@ -42,7 +42,7 @@ describe.skipIf(MODE === 'record')('web e2e: declared reasoning efforts reach th
           models: [{
             id: 'acme-think',
             name: 'Acme Think',
-            reasoningEfforts: { off: null, high: 'high', max: 'ultra' },
+            reasoningEfforts: { off: null, low: 'low', medium: 'medium', high: 'high', xhigh: 'xhigh', max: 'ultra' },
           }],
         },
       },
@@ -67,26 +67,30 @@ describe.skipIf(MODE === 'record')('web e2e: declared reasoning efforts reach th
     await trigger.click()
     await page.getByRole('menuitem', { name: /推理等级/ }).click()
 
-    // Declared levels, nothing else: the provider-default entry (the route
-    // configures no `reasoning`), then Off/High/Max — minimal, low, medium,
-    // and xhigh were not declared and must not be offered.
+    // One ascending power scale: the provider-default entry (the route
+    // configures no `reasoning`), then Low/Medium/High/Extra High/Max.
+    // `off` is declared but never a stop — disabling reasoning is not power —
+    // and `minimal` was not declared and must not be offered either.
     const slider = page.getByRole('slider', { name: /推理等级/ })
     await expect.poll(async () => slider.getAttribute('min'), { timeout: 10_000 }).toBe('0')
-    await expect.poll(async () => slider.getAttribute('max')).toBe('3')
+    await expect.poll(async () => slider.getAttribute('max')).toBe('5')
     await expect.poll(async () => slider.getAttribute('aria-valuetext')).toBe('Default')
     // Ticks are aria-hidden (valuetext already names each stop), so the
     // exact level vocabulary is asserted as menu text instead.
     const menu = page.getByRole('menu')
-    for (const stop of ['Power Slider', 'Default', 'Off', 'High', 'Max']) {
+    for (const stop of ['Default', 'Low', 'Medium', 'High', 'Extra High', 'Max']) {
       await expect.poll(async () => menu.getByText(stop, { exact: true }).count()).toBeGreaterThan(0)
+    }
+    for (const missing of ['Off', 'Minimal']) {
+      await expect.poll(async () => menu.getByText(missing, { exact: true }).count()).toBe(0)
     }
     const snapshot = await captureStableAria(page, '[role="menu"]', scaffold.workspaceCwd)
     await compareOrRefreshGolden(UI_EXPECTED, snapshot, MODE)
 
     // Picking a level is the same gesture that saves the default selection, so
     // the effort lands in the Agent default Settings section beside provider/model.
-    // High is stop 2 (Default 0, Off 1, High 2, Max 3).
-    await slider.fill('2')
+    // High is stop 3 (Default 0, Low 1, Medium 2, High 3, Extra High 4, Max 5).
+    await slider.fill('3')
     await expect.poll(
       async () => readFile(join(scaffold.harnessHome, 'settings.yaml'), 'utf8'),
       { timeout: 10_000 },

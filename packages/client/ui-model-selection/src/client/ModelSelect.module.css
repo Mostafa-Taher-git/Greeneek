@@ -278,15 +278,6 @@
   font-weight: 500;
 }
 
-.sliderTitle {
-  color: var(--dsw-alias-label-tertiary);
-  font-size: 12px;
-  line-height: 18px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
 .slider {
   width: 100%;
   margin: 6px 0 4px;

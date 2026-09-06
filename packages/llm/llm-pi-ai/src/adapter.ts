@@ -194,12 +194,19 @@ function reasoningInfo(
     reasoning: {
       efforts: levels.map(level => ({
         id: ReasoningEffortId(level),
-        name: `${level.charAt(0).toUpperCase()}${level.slice(1)}`,
+        name: THINKING_LEVEL_NAMES[level] ?? `${level.charAt(0).toUpperCase()}${level.slice(1)}`,
       })),
       ...defaultLevel === undefined ? {} : { defaultEffort: ReasoningEffortId(defaultLevel) },
     },
   }
 }
+
+/**
+ * Display names for thinking levels whose capitalized id reads wrong on the
+ * surface. `xhigh` is currently the only one ("Xhigh"); every other level
+ * keeps the capitalized id the picker already shows.
+ */
+const THINKING_LEVEL_NAMES: Record<string, string> = { xhigh: 'Extra High' }
 
 /** Merge deployment headers while removing case-insensitive attribution collisions. */
 function requestHeaders(headers: Readonly<Record<string, string>> | undefined): Record<string, string> {

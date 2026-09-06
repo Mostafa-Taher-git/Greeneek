@@ -24,6 +24,11 @@ describe('reasoning schema boundary', () => {
     expect(configWith({ reasoningEfforts: { high: 42 } })).toThrow()
   })
 
+  it('rejects minimal: the scale starts at Low', () => {
+    expect(configWith({ reasoningEfforts: { minimal: 'm' } })).toThrow(/minimal/)
+    expect(routeWith({ reasoning: 'minimal' })).toThrow(/minimal/)
+  })
+
   it('keeps false distinguishable from an absent declaration', () => {
     type Materialized = { providers: Record<string, { models?: { reasoningEfforts?: unknown }[] }> }
     const withFalse = configWith({ reasoningEfforts: false })() as Materialized

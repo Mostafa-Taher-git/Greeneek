@@ -181,6 +181,17 @@ describe('PiAiAdapter provider routing', () => {
       kind: 'error',
       failure: { code: 'UNSUPPORTED_REASONING_EFFORT' },
     })
+    // `minimal` is refused the same way even though pi-ai's own catalog marks
+    // it supported for this model: it is not a product level.
+    const minimal = await assemble(ctx, {
+      model: 'deepseek-v4-flash',
+      reasoningEffort: ReasoningEffortId('minimal'),
+      messages: [],
+    })
+    expect(minimal.finish).toMatchObject({
+      kind: 'error',
+      failure: { code: 'UNSUPPORTED_REASONING_EFFORT' },
+    })
     expect(server.requests).toHaveLength(2)
   })
 

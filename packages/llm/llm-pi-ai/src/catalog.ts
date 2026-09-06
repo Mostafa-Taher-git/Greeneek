@@ -66,14 +66,15 @@ function declaredInput(configured: readonly PiAiModality[] | undefined): Model<A
 }
 
 /**
- * Every pi-ai thinking level, in pi-ai's canonical escalation order. The
- * `Record` key type is a drift gate: a pi-ai upgrade that adds or removes a
- * level fails compilation here naming the drifted key, instead of silently
- * narrowing what a profile may declare.
+ * Every thinking level a profile may declare, in pi-ai's canonical escalation
+ * order — every pi-ai level except `minimal`, which the product does not
+ * offer: the scale's floor is Low. The `Record` key type stays a drift gate:
+ * a pi-ai upgrade that adds a level fails compilation here naming the new key
+ * instead of silently widening what a profile may declare, while `minimal`
+ * stays excluded through the `Exclude` rather than by forgetting a line.
  */
-const THINKING_LEVEL_GATE: Record<ModelThinkingLevel, true> = {
+const THINKING_LEVEL_GATE: Record<Exclude<ModelThinkingLevel, 'minimal'>, true> = {
   off: true,
-  minimal: true,
   low: true,
   medium: true,
   high: true,
@@ -81,8 +82,18 @@ const THINKING_LEVEL_GATE: Record<ModelThinkingLevel, true> = {
   max: true,
 }
 
-/** Every pi-ai thinking level a profile may declare, in escalation order. */
-export const THINKING_LEVELS = Object.keys(THINKING_LEVEL_GATE) as readonly ModelThinkingLevel[]
+/** Every thinking level a profile may declare, in escalation order. */
+export const THINKING_LEVELS = Object.keys(THINKING_LEVEL_GATE) as readonly Exclude<ModelThinkingLevel, 'minimal'>[]
+
+/**
+ * Whether a level pi-ai reports belongs to the product scale. Profiles cannot
+ * declare anything outside {@link THINKING_LEVELS} (notably `minimal`), so
+ * every seam where pi-ai data enters — picker, describe, request — filters
+ * through this one predicate instead of restating the rule.
+ */
+export function isOfferedThinkingLevel(level: string): boolean {
+  return (THINKING_LEVELS as readonly string[]).includes(level)
+}
 
 /** One reasoning-dispatch wire format a profile may name. */
 export type PiAiThinkingFormat = NonNullable<OpenAICompletionsCompat['thinkingFormat']>
@@ -197,7 +208,7 @@ export function catalogModels(provider: string): Map<string, Model<Api>> {
  * absence; every other declared level must name a wire value. A level absent
  * from the dict is not offered.
  */
-export type PiAiReasoningEfforts = Partial<Record<ModelThinkingLevel, string | null>>
+export type PiAiReasoningEfforts = Partial<Record<Exclude<ModelThinkingLevel, 'minimal'>, string | null>>
 
 /**
  * Whether one pi-ai compat field is configurable on a profile.
@@ -712,6 +723,10 @@ function resolveModelReasoning(
       map[level] = wire
     }
   }
+  // pi-ai reads an absent base-level key as supported, so `minimal` is pinned
+  // null — unsupported — rather than left out: the schema already rejects
+  // declaring it, and the product never offers it.
+  map.minimal = null
   return { reasoning: true, thinkingLevelMap: map }
 }
 

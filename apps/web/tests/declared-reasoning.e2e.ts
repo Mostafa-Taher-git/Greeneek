@@ -69,8 +69,9 @@ describe.skipIf(MODE === 'record')('web e2e: declared reasoning efforts reach th
 
     // One ascending power scale: the provider-default entry (the route
     // configures no `reasoning`), then Low/Medium/High/Extra High/Max.
-    // `off` is declared but never a stop — disabling reasoning is not power —
-    // and `minimal` was not declared and must not be offered either.
+    // `off` is declared but never a stop — disabling reasoning is not power.
+    // (`minimal` is not declared: the schema rejects it, proven by the host
+    // config spec, so there is nothing for the surface to hide here.)
     // Stops render as track dots with no text of their own, so the six-stop
     // vocabulary is proven by dot count, not menu text.
     const slider = page.getByRole('slider', { name: /推理等级/ })
@@ -81,7 +82,7 @@ describe.skipIf(MODE === 'record')('web e2e: declared reasoning efforts reach th
     const dots = menu.locator('[data-dot]')
     await expect.poll(async () => dots.count()).toBe(6)
     await expect.poll(async () => menu.locator('[data-dot][data-filled="true"]').count()).toBe(1)
-    for (const missing of ['Off', 'Minimal', 'Low', 'Medium', 'High', 'Extra High', 'Max']) {
+    for (const missing of ['Off', 'Low', 'Medium', 'High', 'Extra High', 'Max']) {
       await expect.poll(async () => menu.getByText(missing, { exact: true }).count()).toBe(0)
     }
     const snapshot = await captureStableAria(page, '[role="menu"]', scaffold.workspaceCwd)

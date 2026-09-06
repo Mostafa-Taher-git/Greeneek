@@ -58,6 +58,7 @@ import type {
 } from '@greeneek/gnk-llm'
 import type { AttachmentStore, ImageAttachmentRef } from '@greeneek/gnk-attachment'
 import { idleWatchdog, timeoutOf } from '@greeneek/gnk-timeout'
+import { isOfferedThinkingLevel } from './catalog.ts'
 import type { ResolvedPiAiProviderProfile } from './config.ts'
 import { toPiContext } from './context.ts'
 import { toStreamChunks } from './stream.ts'
@@ -149,7 +150,11 @@ function describableReasoningLevel(
   effort: ReasoningEffortIdType | ModelThinkingLevel | undefined,
 ): ModelThinkingLevel | undefined {
   if (effort === undefined) return undefined
-  return getSupportedThinkingLevels(model).some(level => level === effort)
+  // THINKING_LEVELS is the product vocabulary: pi-ai data may report levels
+  // profiles cannot declare (notably `minimal`), and those never describe.
+  return getSupportedThinkingLevels(model)
+    .filter(isOfferedThinkingLevel)
+    .some(level => level === effort)
     ? effort as ModelThinkingLevel
     : undefined
 }
@@ -160,7 +165,9 @@ function resolveReasoningLevel(
   effort: ReasoningEffortIdType | ModelThinkingLevel | undefined,
 ): ModelThinkingLevel | undefined {
   if (effort === undefined) return undefined
-  const supported = getSupportedThinkingLevels(model)
+  // Same vocabulary at the request boundary: a non-product level is refused
+  // before network I/O exactly like an effort the model lacks.
+  const supported = getSupportedThinkingLevels(model).filter(isOfferedThinkingLevel)
   if (supported.some(level => level === effort)) return effort as ModelThinkingLevel
   throw new LlmError(
     `pi-ai provider "${model.provider}" model "${model.id}" does not support reasoning effort "${effort}"`,
@@ -189,7 +196,11 @@ function reasoningInfo(
   defaultLevel: ModelThinkingLevel | undefined,
 ): Pick<LlmResolvedModelInfo, 'reasoning'> | Record<string, never> {
   if (!model.reasoning) return {}
-  const levels = getSupportedThinkingLevels(model)
+  // The offered scale starts at Low: even when a model's live metadata
+  // reports pi-ai's `minimal` level, it never reaches the picker.
+  // THINKING_LEVELS is the single vocabulary so the surface cannot drift
+  // from what profiles may declare.
+  const levels = getSupportedThinkingLevels(model).filter(isOfferedThinkingLevel)
   return {
     reasoning: {
       efforts: levels.map(level => ({

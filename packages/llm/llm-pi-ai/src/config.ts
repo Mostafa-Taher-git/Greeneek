@@ -154,8 +154,8 @@ export interface PiAiProviderProfile {
   defaultInput?: PiAiModality[]
   /** Provider request headers, validated against Fetch when the profile resolves; Harness attribution wins reserved names. */
   headers?: Record<string, string>
-  /** Provider-neutral pi-ai reasoning level. */
-  reasoning?: ModelThinkingLevel
+  /** Provider-neutral pi-ai reasoning level. `minimal` is not offered. */
+  reasoning?: Exclude<ModelThinkingLevel, 'minimal'>
   /** Token budgets used by reasoning providers that support them. */
   thinkingBudgets?: ThinkingBudgets
   /** Prompt-cache retention preference. */
@@ -231,7 +231,6 @@ export interface Config {
 }
 
 const thinkingBudgets = z.object({
-  minimal: z.number(),
   low: z.number(),
   medium: z.number(),
   high: z.number(),

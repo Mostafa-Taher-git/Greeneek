@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ModelSelection } from '@greeneek/gnk-api-remotes/client'
 import { createSnapshotStore } from '@greeneek/gnk-client-store'
@@ -83,17 +83,14 @@ describe('ModelSelect reasoning effort', () => {
     expect(slider.getAttribute('min')).toBe('0')
     expect(slider.getAttribute('max')).toBe('4')
     expect(slider.getAttribute('aria-valuetext')).toBe('High')
-    // One ascending power scale: Low→Max in canonical order however the
-    // model declares them; `off`/`minimal` are not offered and descriptions
-    // stay out.
-    const stops = ['Low', 'Medium', 'High', 'Extra High', 'Max']
-    const ticks = within(screen.getByRole('menu')).getAllByText(
-      (content, element) => element?.tagName === 'SPAN' && stops.includes(content),
-    )
-    expect(ticks.map(tick => tick.textContent)).toEqual(stops)
-    expect(screen.queryByText('Off')).toBeNull()
-    expect(screen.queryByText('Minimal')).toBeNull()
-    expect(screen.queryByText('Largest budget')).toBeNull()
+    // Five stops in canonical order however the model declares them: High
+    // sits at index 2 and Max at index 4, so Low/Medium/High/Extra High/Max
+    // is the only order that fits. Stops render as track dots with no text
+    // of their own — the readout names the active stop — and `off`/`minimal`
+    // are not offered.
+    for (const absent of ['Low', 'Medium', 'Extra High', 'Max', 'Off', 'Minimal', 'Largest budget']) {
+      expect(screen.queryByText(absent)).toBeNull()
+    }
     // The fill tracks the thumb: High is stop 2 of 4.
     expect(slider.style.getPropertyValue('--fill')).toBe('50%')
     // One dot per stop rides the track at i/(N-1) across the thumb travel;
@@ -153,9 +150,10 @@ describe('ModelSelect reasoning effort', () => {
     expect(slider.getAttribute('min')).toBe('0')
     expect(slider.getAttribute('max')).toBe('1')
     expect(slider.getAttribute('aria-valuetext')).toBe('Default')
-    // Default names the trigger caption, the slider readout, and its tick.
-    expect(screen.getAllByText('Default')).toHaveLength(3)
-    expect(screen.getByText('Standard')).toBeTruthy()
+    // Default names the trigger caption and the slider readout; the Standard
+    // stop itself is a track dot with no text.
+    expect(screen.getAllByText('Default')).toHaveLength(2)
+    expect(screen.queryByText('Standard')).toBeNull()
   })
 
   it('shows the durable model id when the catalog has no matching display name', () => {

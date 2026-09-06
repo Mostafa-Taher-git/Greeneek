@@ -121,13 +121,6 @@ function EffortSlider(
           ))}
         </div>
       </div>
-      <div className={css.ticks} aria-hidden="true">
-        {choices.map((choice, index) => (
-          <span key={choice.key} className={clsx(css.tick, index === active && css.tickActive)}>
-            {choice.label}
-          </span>
-        ))}
-      </div>
     </div>
   )
 }

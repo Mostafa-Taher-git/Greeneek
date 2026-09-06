@@ -262,9 +262,9 @@
 }
 
 /* Effort slider pane: a thick Codex-style power track with one dot stop per
- * level riding the track, the value read out above and every stop labeled
- * below. The track fill rides the --fill percent the component sets; at Max
- * the fill, thumb, and glow switch to charging amber. */
+ * level riding the track and the value read out above. The track fill rides
+ * the --fill percent the component sets; at Max the fill, thumb, and glow
+ * switch to charging amber. */
 .sliderWrap {
   box-sizing: border-box;
   min-width: 100%;
@@ -360,36 +360,6 @@
 .sliderMaxed::-moz-range-thumb {
   background: var(--dsw-static-amber-500);
   box-shadow: 0 0 8px rgb(245, 158, 11, 0.8);
-}
-
-.ticks {
-  display: flex;
-  gap: 0 4px;
-}
-
-.tick {
-  flex: 1 1 0;
-  min-width: 0;
-  overflow: hidden;
-  color: var(--dsw-alias-label-tertiary);
-  font-size: 12px;
-  line-height: 18px;
-  text-align: center;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.tick:first-child {
-  text-align: left;
-}
-
-.tick:last-child {
-  text-align: right;
-}
-
-.tickActive {
-  color: var(--dsw-alias-label-primary);
-  font-weight: 600;
 }
 
 /* Dots ride the track: `left` pins each dot to its stop's thumb center,

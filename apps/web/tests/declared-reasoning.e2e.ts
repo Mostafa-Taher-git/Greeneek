@@ -71,17 +71,17 @@ describe.skipIf(MODE === 'record')('web e2e: declared reasoning efforts reach th
     // configures no `reasoning`), then Low/Medium/High/Extra High/Max.
     // `off` is declared but never a stop — disabling reasoning is not power —
     // and `minimal` was not declared and must not be offered either.
+    // Stops render as track dots with no text of their own, so the six-stop
+    // vocabulary is proven by dot count, not menu text.
     const slider = page.getByRole('slider', { name: /推理等级/ })
     await expect.poll(async () => slider.getAttribute('min'), { timeout: 10_000 }).toBe('0')
     await expect.poll(async () => slider.getAttribute('max')).toBe('5')
     await expect.poll(async () => slider.getAttribute('aria-valuetext')).toBe('Default')
-    // Ticks are aria-hidden (valuetext already names each stop), so the
-    // exact level vocabulary is asserted as menu text instead.
     const menu = page.getByRole('menu')
-    for (const stop of ['Default', 'Low', 'Medium', 'High', 'Extra High', 'Max']) {
-      await expect.poll(async () => menu.getByText(stop, { exact: true }).count()).toBeGreaterThan(0)
-    }
-    for (const missing of ['Off', 'Minimal']) {
+    const dots = menu.locator('[data-dot]')
+    await expect.poll(async () => dots.count()).toBe(6)
+    await expect.poll(async () => menu.locator('[data-dot][data-filled="true"]').count()).toBe(1)
+    for (const missing of ['Off', 'Minimal', 'Low', 'Medium', 'High', 'Extra High', 'Max']) {
       await expect.poll(async () => menu.getByText(missing, { exact: true }).count()).toBe(0)
     }
     const snapshot = await captureStableAria(page, '[role="menu"]', scaffold.workspaceCwd)
@@ -91,6 +91,7 @@ describe.skipIf(MODE === 'record')('web e2e: declared reasoning efforts reach th
     // the effort lands in the Agent default Settings section beside provider/model.
     // High is stop 3 (Default 0, Low 1, Medium 2, High 3, Extra High 4, Max 5).
     await slider.fill('3')
+    await expect.poll(async () => menu.locator('[data-dot][data-filled="true"]').count()).toBe(4)
     await expect.poll(
       async () => readFile(join(scaffold.harnessHome, 'settings.yaml'), 'utf8'),
       { timeout: 10_000 },

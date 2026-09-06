@@ -22,11 +22,12 @@ const t: ComponentProps<typeof ModelSelect>['t'] = (key, params) => {
 
 const reasoning = {
   // Deliberately unordered: the slider sorts the power scale itself, and
-  // `off` disables reasoning so it is never a stop.
+  // `off`/`minimal` sit outside the scale so they are never stops.
   efforts: [
     { id: 'max', name: 'Max', description: 'Largest budget' },
     { id: 'off', name: 'Off' },
     { id: 'low', name: 'Low' },
+    { id: 'minimal', name: 'Minimal' },
     { id: 'xhigh', name: 'Extra High' },
     { id: 'medium', name: 'Medium' },
     { id: 'high', name: 'High' },
@@ -83,16 +84,24 @@ describe('ModelSelect reasoning effort', () => {
     expect(slider.getAttribute('max')).toBe('4')
     expect(slider.getAttribute('aria-valuetext')).toBe('High')
     // One ascending power scale: Low→Max in canonical order however the
-    // model declares them; `off` is not offered and descriptions stay out.
+    // model declares them; `off`/`minimal` are not offered and descriptions
+    // stay out.
     const stops = ['Low', 'Medium', 'High', 'Extra High', 'Max']
     const ticks = within(screen.getByRole('menu')).getAllByText(
       (content, element) => element?.tagName === 'SPAN' && stops.includes(content),
     )
     expect(ticks.map(tick => tick.textContent)).toEqual(stops)
     expect(screen.queryByText('Off')).toBeNull()
+    expect(screen.queryByText('Minimal')).toBeNull()
     expect(screen.queryByText('Largest budget')).toBeNull()
+    // The fill tracks the thumb: High is stop 2 of 4.
+    expect(slider.style.getPropertyValue('--fill')).toBe('50%')
 
     fireEvent.change(slider, { target: { value: '4' } })
+    // Hold-and-drag continuity: an in-flight selection never disables the thumb.
+    expect(slider.hasAttribute('disabled')).toBe(false)
+    // At Max the track is fully charged.
+    expect(screen.getByRole('slider', { name: '推理等级' }).style.getPropertyValue('--fill')).toBe('100%')
     await waitFor(() => {
       expect(select).toHaveBeenCalledWith({
         provider: 'greeneek-official',

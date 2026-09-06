@@ -13,7 +13,7 @@
  */
 import {
   useEffect, useId, useMemo, useRef, useState, useSyncExternalStore,
-  type KeyboardEvent, type FocusEvent,
+  type CSSProperties, type KeyboardEvent, type FocusEvent,
 } from 'react'
 import clsx from 'clsx'
 import type { ModelReasoningEffort, ModelSelection } from '@greeneek/gnk-api-remotes/client'
@@ -37,6 +37,12 @@ const EFFORT_RANK: Record<string, number> = {
   low: 0, medium: 1, high: 2, xhigh: 3, 'extra-high': 3, max: 4,
 }
 
+/**
+ * Levels outside the power scale, never slider stops: `off` disables
+ * reasoning, and the scale's floor is Low so `minimal` is not offered.
+ */
+const NON_POWER_LEVELS = new Set(['off', 'minimal'])
+
 /** One dynamic effort row; undefined means preserve the provider default. */
 interface EffortChoice {
   key: string
@@ -53,15 +59,16 @@ interface EffortChoice {
  * active stop through aria-valuetext; every stop commits immediately while
  * the pane stays open so the thumb can keep moving. A stale current effort
  * (e.g. a profile default the model no longer declares) keeps its own name
- * in the readout instead of borrowing a stop's.
+ * in the readout instead of borrowing a stop's. The thumb is never disabled
+ * mid-flight: freezing it on every stop commit would break hold-and-drag,
+ * so an in-flight selection never blocks the next move.
  */
 function EffortSlider(
-  { choices, activeEffort, fallbackLabel, busy, label, onPick }:
+  { choices, activeEffort, fallbackLabel, label, onPick }:
   {
     choices: readonly EffortChoice[]
     activeEffort: string | undefined
     fallbackLabel: string | undefined
-    busy: boolean
     label: string
     onPick: (effort: string | undefined) => void
   },
@@ -69,18 +76,21 @@ function EffortSlider(
   const found = choices.findIndex(choice => choice.effort === activeEffort)
   const active = found === -1 ? 0 : found
   const activeLabel = (found === -1 ? fallbackLabel : undefined) ?? choices[active]?.label
+  const last = choices.length - 1
+  const maxed = choices.length > 1 && active === last
+  const fill = last > 0 ? `${(active / last) * 100}%` : '0%'
   return (
     <div className={css.sliderWrap}>
       <div className={css.sliderValue} aria-hidden="true">{activeLabel}</div>
       <input
         type="range"
-        className={css.slider}
+        className={clsx(css.slider, maxed && css.sliderMaxed)}
+        style={{ '--fill': fill } as CSSProperties}
         min={0}
-        max={choices.length - 1}
+        max={last}
         step={1}
         value={active}
         autoFocus
-        disabled={busy}
         aria-label={label}
         aria-valuetext={activeLabel}
         onChange={(event) => {
@@ -88,7 +98,7 @@ function EffortSlider(
           if (next !== undefined && next.effort !== activeEffort) onPick(next.effort)
         }}
       />
-      <div className={css.ticks} aria-hidden="true">
+      <div className={clsx(css.ticks, maxed && css.ticksMaxed)} aria-hidden="true">
         {choices.map((choice, index) => (
           <span key={choice.key} className={clsx(css.tick, index === active && css.tickActive)}>
             {choice.label}
@@ -157,7 +167,7 @@ export function ModelSelect(
         ? [{ key: 'provider-default', effort: undefined, label: t('effort.providerDefault') }]
         : [],
       ...reasoning.efforts
-        .filter((effort: ModelReasoningEffort) => effort.id.toLowerCase() !== 'off')
+        .filter((effort: ModelReasoningEffort) => !NON_POWER_LEVELS.has(effort.id.toLowerCase()))
         .sort((a, b) => (EFFORT_RANK[a.id.toLowerCase()] ?? 5) - (EFFORT_RANK[b.id.toLowerCase()] ?? 5))
         .map((effort: ModelReasoningEffort) => ({
           key: `effort:${effort.id}`,
@@ -404,7 +414,6 @@ export function ModelSelect(
                   choices={effortChoices}
                   activeEffort={effectiveEffort}
                   fallbackLabel={effortLabel}
-                  busy={busy}
                   label={t('menu.effort')}
                   onPick={(effort) => { chooseEffort(effort, false) }}
                 />}

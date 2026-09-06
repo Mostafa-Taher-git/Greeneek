@@ -261,9 +261,10 @@
   color: var(--dsw-alias-label-tertiary);
 }
 
-/* Effort slider pane: one stop per level with the value read out above the
- * track and every stop labeled below. Native range keeps arrow/Home/End
- * support; accent-color tints the thumb/track to the brand fill. */
+/* Effort slider pane: a thick Codex-style power track with one dot stop per
+ * level, the value read out above and every stop labeled below. The track
+ * fill rides the --fill percent the component sets; at Max the fill, thumb,
+ * and glow switch to charging amber. */
 .sliderWrap {
   box-sizing: border-box;
   min-width: 100%;
@@ -279,35 +280,122 @@
 }
 
 .slider {
+  -webkit-appearance: none;
+  appearance: none;
   width: 100%;
-  margin: 6px 0 4px;
-  accent-color: var(--dsw-alias-button-primary-fill);
+  height: 8px;
+  margin: 8px 0 10px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--dsw-alias-button-primary-fill) 0 var(--fill, 0%),
+    var(--dsw-alias-scrollbar-bg-l2) var(--fill, 0%) 100%
+  );
+  outline-offset: 4px;
+  cursor: pointer;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border: none;
+  border-radius: 50%;
+  background: var(--dsw-alias-button-primary-fill);
+  cursor: grab;
+}
+
+.slider::-moz-range-track {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--dsw-alias-scrollbar-bg-l2);
+}
+
+.slider::-moz-range-progress {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--dsw-alias-button-primary-fill);
+}
+
+.slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border: none;
+  border-radius: 50%;
+  background: var(--dsw-alias-button-primary-fill);
+  cursor: grab;
 }
 
 .slider:focus-visible {
   outline: 2px solid var(--dsw-alias-state-business-primary);
   outline-offset: 2px;
-  border-radius: 4px;
 }
 
-.slider:disabled {
-  opacity: 0.4;
+/* Max stop: charging amber fill, thumb, and glow. */
+.sliderMaxed {
+  background: linear-gradient(
+    to right,
+    var(--dsw-static-amber-500) 0 var(--fill, 0%),
+    var(--dsw-alias-scrollbar-bg-l2) var(--fill, 0%) 100%
+  );
+  box-shadow: 0 0 10px rgb(245, 158, 11, 0.55);
+}
+
+.sliderMaxed::-webkit-slider-thumb {
+  background: var(--dsw-static-amber-500);
+  box-shadow: 0 0 8px rgb(245, 158, 11, 0.8);
+}
+
+.sliderMaxed::-moz-range-progress {
+  background: var(--dsw-static-amber-500);
+}
+
+.sliderMaxed::-moz-range-thumb {
+  background: var(--dsw-static-amber-500);
+  box-shadow: 0 0 8px rgb(245, 158, 11, 0.8);
 }
 
 .ticks {
   display: flex;
-  flex-wrap: wrap;
-  gap: 2px 8px;
+  gap: 2px 4px;
+  padding: 0 8px;
 }
 
 .tick {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
   color: var(--dsw-alias-label-tertiary);
   font-size: 12px;
   line-height: 18px;
   white-space: nowrap;
 }
 
+/* One dot stop per level, aligned with the thumb's travel (half a thumb of
+ * inset on each side). */
+.tick::before {
+  content: '';
+  display: block;
+  width: 5px;
+  height: 5px;
+  margin-bottom: 3px;
+  border-radius: 50%;
+  background: var(--dsw-alias-label-dimmed);
+}
+
 .tickActive {
   color: var(--dsw-alias-label-primary);
   font-weight: 600;
+}
+
+.tickActive::before {
+  background: var(--dsw-alias-button-primary-fill);
+}
+
+.ticksMaxed .tickActive::before {
+  background: var(--dsw-static-amber-500);
+  box-shadow: 0 0 6px rgb(245, 158, 11, 0.8);
 }

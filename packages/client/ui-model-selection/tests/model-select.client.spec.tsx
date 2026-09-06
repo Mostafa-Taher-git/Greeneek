@@ -96,6 +96,14 @@ describe('ModelSelect reasoning effort', () => {
     expect(screen.queryByText('Largest budget')).toBeNull()
     // The fill tracks the thumb: High is stop 2 of 4.
     expect(slider.style.getPropertyValue('--fill')).toBe('50%')
+    // One dot per stop rides the track at i/(N-1) across the thumb travel;
+    // dots at or behind the thumb read filled, dots ahead read empty.
+    const menuEl = screen.getByRole('menu')
+    const dots = menuEl.querySelectorAll('[data-dot]')
+    expect(dots.length).toBe(5)
+    expect(dots[0]?.getAttribute('style')).toContain('0 * (100% - 16px)')
+    expect(dots[4]?.getAttribute('style')).toContain('1 * (100% - 16px)')
+    expect(menuEl.querySelectorAll('[data-dot][data-filled="true"]').length).toBe(3)
 
     fireEvent.change(slider, { target: { value: '4' } })
     // Hold-and-drag continuity: an in-flight selection never disables the thumb.

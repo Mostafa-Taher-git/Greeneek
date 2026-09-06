@@ -262,9 +262,9 @@
 }
 
 /* Effort slider pane: a thick Codex-style power track with one dot stop per
- * level, the value read out above and every stop labeled below. The track
- * fill rides the --fill percent the component sets; at Max the fill, thumb,
- * and glow switch to charging amber. */
+ * level riding the track, the value read out above and every stop labeled
+ * below. The track fill rides the --fill percent the component sets; at Max
+ * the fill, thumb, and glow switch to charging amber. */
 .sliderWrap {
   box-sizing: border-box;
   min-width: 100%;
@@ -279,12 +279,18 @@
   font-weight: 500;
 }
 
+.trackWrap {
+  position: relative;
+  margin: 8px 0 10px;
+}
+
 .slider {
   -webkit-appearance: none;
   appearance: none;
+  display: block;
   width: 100%;
   height: 8px;
-  margin: 8px 0 10px;
+  margin: 0;
   border-radius: 999px;
   background: linear-gradient(
     to right,
@@ -358,32 +364,27 @@
 
 .ticks {
   display: flex;
-  gap: 2px 4px;
-  padding: 0 8px;
+  gap: 0 4px;
 }
 
 .tick {
-  display: flex;
   flex: 1 1 0;
-  flex-direction: column;
-  align-items: center;
   min-width: 0;
+  overflow: hidden;
   color: var(--dsw-alias-label-tertiary);
   font-size: 12px;
   line-height: 18px;
+  text-align: center;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* One dot stop per level, aligned with the thumb's travel (half a thumb of
- * inset on each side). */
-.tick::before {
-  content: '';
-  display: block;
-  width: 5px;
-  height: 5px;
-  margin-bottom: 3px;
-  border-radius: 50%;
-  background: var(--dsw-alias-label-dimmed);
+.tick:first-child {
+  text-align: left;
+}
+
+.tick:last-child {
+  text-align: right;
 }
 
 .tickActive {
@@ -391,11 +392,27 @@
   font-weight: 600;
 }
 
-.tickActive::before {
-  background: var(--dsw-alias-button-primary-fill);
+/* Dots ride the track: `left` pins each dot to its stop's thumb center,
+ * translate centers the dot on that point. pointer-events stays with the
+ * input so hold-and-drag never catches on a dot. */
+.dots {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
 }
 
-.ticksMaxed .tickActive::before {
-  background: var(--dsw-static-amber-500);
-  box-shadow: 0 0 6px rgb(245, 158, 11, 0.8);
+.dot {
+  position: absolute;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.18);
+  transform: translate(-50%, -50%);
+}
+
+.dotFilled {
+  background: rgba(0, 0, 0, 0.45);
+  box-shadow: none;
 }

@@ -61,7 +61,10 @@ interface EffortChoice {
  * (e.g. a profile default the model no longer declares) keeps its own name
  * in the readout instead of borrowing a stop's. The thumb is never disabled
  * mid-flight: freezing it on every stop commit would break hold-and-drag,
- * so an in-flight selection never blocks the next move.
+ * so an in-flight selection never blocks the next move. Dots ride the track
+ * itself at i/(N-1) across the thumb's travel (half a thumb of inset each
+ * side); dots at or behind the thumb read dark on the fill, dots ahead read
+ * light on the empty track.
  */
 function EffortSlider(
   { choices, activeEffort, fallbackLabel, label, onPick }:
@@ -79,26 +82,46 @@ function EffortSlider(
   const last = choices.length - 1
   const maxed = choices.length > 1 && active === last
   const fill = last > 0 ? `${(active / last) * 100}%` : '0%'
+  // Thumb centers travel 8px..(width-8px) for the 16px thumb; each dot sits
+  // exactly on its stop's thumb center. A lone stop centers on the track.
+  const stopLeft = (index: number): string => {
+    if (last <= 0) return '50%'
+    const frac = Math.round((index / last) * 10000) / 10000
+    return `calc(${frac} * (100% - 16px) + 8px)`
+  }
   return (
     <div className={css.sliderWrap}>
       <div className={css.sliderValue} aria-hidden="true">{activeLabel}</div>
-      <input
-        type="range"
-        className={clsx(css.slider, maxed && css.sliderMaxed)}
-        style={{ '--fill': fill } as CSSProperties}
-        min={0}
-        max={last}
-        step={1}
-        value={active}
-        autoFocus
-        aria-label={label}
-        aria-valuetext={activeLabel}
-        onChange={(event) => {
-          const next = choices[Number(event.target.value)]
-          if (next !== undefined && next.effort !== activeEffort) onPick(next.effort)
-        }}
-      />
-      <div className={clsx(css.ticks, maxed && css.ticksMaxed)} aria-hidden="true">
+      <div className={css.trackWrap}>
+        <input
+          type="range"
+          className={clsx(css.slider, maxed && css.sliderMaxed)}
+          style={{ '--fill': fill } as CSSProperties}
+          min={0}
+          max={last}
+          step={1}
+          value={active}
+          autoFocus
+          aria-label={label}
+          aria-valuetext={activeLabel}
+          onChange={(event) => {
+            const next = choices[Number(event.target.value)]
+            if (next !== undefined && next.effort !== activeEffort) onPick(next.effort)
+          }}
+        />
+        <div className={css.dots} aria-hidden="true">
+          {choices.map((choice, index) => (
+            <span
+              key={choice.key}
+              data-dot={choice.key}
+              data-filled={index <= active}
+              className={clsx(css.dot, index <= active && css.dotFilled)}
+              style={{ left: stopLeft(index) }}
+            />
+          ))}
+        </div>
+      </div>
+      <div className={css.ticks} aria-hidden="true">
         {choices.map((choice, index) => (
           <span key={choice.key} className={clsx(css.tick, index === active && css.tickActive)}>
             {choice.label}

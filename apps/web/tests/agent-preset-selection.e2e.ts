@@ -238,16 +238,20 @@ describe('web e2e: agent-preset selection', () => {
     await scaffold?.close()
   })
 
-  it('offers the chip on the new-session screen, beside the workspace picker', async () => {
+  it('offers the mode switcher on the new-session screen, alone under the input card', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-agent-preset-hero'))
     await connectFreshWorkspace(page, scaffold.workspaceCwd)
 
-    const snapshot = await captureStableAria(page, '[class*="heroWorkspaceRow"]', scaffold.workspaceCwd)
+    // Two regions: the workspace row above the card, the mode row below it.
+    const workspaceRow = await captureStableAria(page, '[class*="heroWorkspaceRow"]', scaffold.workspaceCwd)
+    const modeRow = await captureStableAria(page, '[data-testid="hero-mode-row"]', scaffold.workspaceCwd)
+    const snapshot = `${workspaceRow}\n${modeRow}`
 
     await compareOrRefreshGolden(HERO_EXPECTED, snapshot, MODE)
-    // The chip opens on the deployment default, by the name that preset
+    // The switcher opens on the deployment default, by the name that preset
     // publishes rather than its directory name.
     expect(snapshot).toContain('Standard mode')
+    expect(workspaceRow).not.toContain('Standard mode')
     await expect.poll(() => page.getByRole('radio', { name: 'Standard mode' }).getAttribute('aria-checked'))
       .toBe('true')
   })

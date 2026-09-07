@@ -313,7 +313,6 @@ export function ConversationRoot({
         },
         onClose: () => { setPickerOpen(false) },
       })}
-      {renderSlot('conversation.hero.agentPreset', {})}
     </div>
   )
 
@@ -350,6 +349,13 @@ export function ConversationRoot({
       {hero && heroWorkspaceRow}
       {zone !== undefined && renderSlot('conversation.input.dock', zone)}
       {inputBar}
+      {/* The mode switcher sits alone under the input card, centered, so the
+          workspace row above stays a single-purpose row. */}
+      {hero && (
+        <div className={css.heroModeRow} data-testid="hero-mode-row">
+          {renderSlot('conversation.hero.agentPreset', {})}
+        </div>
+      )}
     </div>
   )
 

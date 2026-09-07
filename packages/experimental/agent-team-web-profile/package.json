@@ -40,6 +40,6 @@
   "devDependencies": {
     "@greeneek/cordis-plugin-include": "workspace:^",
     "@greeneek/cordis": "workspace:^",
-    "js-yaml": "^4.2.0"
+    "js-yaml": "^5.2.3"
   }
 }

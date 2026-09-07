@@ -30,7 +30,7 @@
     "@agentclientprotocol/sdk": "1.4.0",
     "@greeneek/cordis-plugin-include": "workspace:*",
     "@greeneek/gnk-loader-smoke": "workspace:*",
-    "js-yaml": "^4.2.0",
+    "js-yaml": "^5.2.3",
     "vitest": "^4.1.8"
   },
   "peerDependencies": {

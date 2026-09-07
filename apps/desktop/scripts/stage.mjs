@@ -4,14 +4,18 @@ import {
   constants,
   copyFileSync,
   existsSync,
+  lstatSync,
   mkdirSync,
   readdirSync,
   readFileSync,
+  readlinkSync,
   realpathSync,
   rmSync,
+  statSync,
+  symlinkSync,
   writeFileSync,
 } from 'node:fs'
-import { basename, dirname, join, resolve } from 'node:path'
+import { basename, dirname, join, relative, resolve } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 
@@ -71,23 +75,20 @@ function main() {
   // avoids `pnpm deploy`/`pnpm install` TTY prompts entirely.
   console.log(`stage: copy node_modules → ${staging}`)
   mkdirSync(staging, { recursive: true })
+  copyFileSync(join(packageDir, 'package.json'), join(staging, 'package.json'))
   copyFileSync(join(repoRoot, 'pnpm-lock.yaml'), join(staging, 'pnpm-lock.yaml'))
   writeFileSync(join(staging, 'pnpm-workspace.yaml'), 'packages:\n', 'utf8')
-  const installEnv = { ...process.env, CI: 'true', NPM_CONFIG_IGNORE_SCRIPTS: 'true' }
 
   const desktopPackage = JSON.parse(readFileSync(join(packageDir, 'package.json'), 'utf8'))
-  const desktopDeps = new Set([
-    ...Object.keys(desktopPackage.dependencies || {}),
-    ...Object.keys(desktopPackage.peerDependencies || {}),
-  ])
   const rootPackage = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8'))
   const rootDev = new Set([
     ...Object.keys(rootPackage.devDependencies || {}),
     'electron',
     'electron-builder',
   ])
+  for (const pkg of ['koffi', 'node', 'node-pty']) rootDev.delete(pkg)
 
-  copyPrunedModules(join(repoRoot, 'node_modules'), join(staging, 'node_modules'), desktopDeps, rootDev)
+  copyPrunedModules(join(packageDir, 'node_modules'), join(staging, 'node_modules'), rootDev, new Set(), false, staging)
 
   console.log(`stage: copy desktop runtime files`)
   for (const asset of [
@@ -123,6 +124,7 @@ function main() {
   console.log(`stage: pnpm entry ${pnpmCandidates[0]}`)
   assertPresent(join(staging, 'node_modules', 'electron-updater', 'out', 'AppUpdater.js'), 'staging dropped electron-updater')
   assertPresent(join(staging, 'node_modules', 'koffi'), 'staging dropped koffi (it must be a direct dependency)')
+  stageKoffiBinary(staging, repoRoot, platform, process.arch)
   try {
     run(process.execPath, ['-e', `import('koffi').then(() => console.log('stage: koffi loads'))`], staging)
   } catch {
@@ -223,33 +225,170 @@ function landlockBinaries(dir) {
   walk(dir)
   return found
 }
+const srcToDest = new Map()
 
-function copyPrunedModules(src, dest, desktopDeps, rootDev) {
+function copyPrunedModules(src, dest, rootDev, visited, isWorkspacePkg, hoistDest) {
+  let srcReal
+  try {
+    srcReal = realpathSync(src)
+  } catch {
+    return
+  }
+  const srcIsStagingSymlink = lstatSync(src).isSymbolicLink()
+  const alreadyVisited = visited.has(srcReal)
+  if (alreadyVisited && !srcIsStagingSymlink) return
+  visited.add(srcReal)
+  mkdirSync(dest, { recursive: true })
+  try {
+    for (const entry of readdirSync(src, { withFileTypes: true })) {
+      const from = join(src, entry.name)
+      const to = join(dest, entry.name)
+      try {
+        if (!shouldCopyModule(entry, rootDev)) continue
+        if (entry.isSymbolicLink()) {
+          let targetIsDir = false
+          try {
+            targetIsDir = statSync(from).isDirectory()
+          } catch {
+            continue
+          }
+          if (!targetIsDir) {
+            copySymlink(from, to)
+            continue
+          }
+          const targetReal = realpathSync(from)
+          srcToDest.set(srcReal, to)
+          if (alreadyVisited) {
+            const stagingTarget = srcToDest.get(targetReal)
+            if (stagingTarget) {
+              const rel = relative(dirname(to), stagingTarget)
+              try { symlinkSync(rel, to) } catch {}
+            }
+            continue
+          }
+          mkdirSync(to, { recursive: true })
+          const nestedIsWorkspace = targetReal.includes('/packages/') || targetReal.includes('/vendor/') || targetReal.includes('/node_modules/.pnpm/')
+          copyPrunedModules(from, to, rootDev, visited, nestedIsWorkspace, hoistDest)
+          if (nestedIsWorkspace && entry.name.startsWith('@') === false) {
+            const wsPkgTarget = join(hoistDest, 'node_modules', '@greeneek', entry.name)
+            mkdirSync(wsPkgTarget, { recursive: true })
+            copyDirRecursive(from, wsPkgTarget)
+          }
+          const rel = readlinkSync(from)
+          const norm = rel.startsWith('/') ? rel : join(dirname(to), rel)
+          try { symlinkSync(norm, to) } catch {}
+          continue
+        }
+        if (entry.isDirectory()) {
+          if (isWorkspacePkg && entry.name === 'node_modules') {
+            for (const inner of readdirSync(from, { withFileTypes: true })) {
+              const innerFrom = join(from, inner.name)
+              const innerTo = join(to, inner.name)
+              try {
+                if (inner.name === '@greeneek') continue
+                if (!shouldCopyModule(inner, rootDev)) continue
+                if (inner.isSymbolicLink()) {
+                  let targetIsDir = false
+                  try {
+                    targetIsDir = statSync(innerFrom).isDirectory()
+                  } catch {
+                    continue
+                  }
+                  if (!targetIsDir) {
+                    copySymlink(innerFrom, innerTo)
+                    continue
+                  }
+                  const innerTargetReal = realpathSync(innerFrom)
+                  srcToDest.set(innerTargetReal, innerTo)
+                  if (alreadyVisited) {
+                    const stagingTarget = srcToDest.get(innerTargetReal)
+                    if (stagingTarget) {
+                      const rel = relative(dirname(innerTo), stagingTarget)
+                      try { symlinkSync(rel, innerTo) } catch {}
+                    }
+                    continue
+                  }
+                  const isExternalPkg = innerTargetReal.includes('/node_modules/.pnpm/')
+                  if (isExternalPkg) {
+                    const hoistedTo = join(hoistDest, inner.name)
+                    mkdirSync(hoistedTo, { recursive: true })
+                    srcToDest.set(innerTargetReal, hoistedTo)
+                    copyPrunedModules(innerFrom, hoistedTo, rootDev, visited, true, hoistDest)
+                    const wsRoot = resolve(innerTo, '..', '..', '..', '..')
+                    const wsTarget = join(wsRoot, inner.name)
+                    mkdirSync(wsTarget, { recursive: true })
+                    copyDirRecursive(innerFrom, wsTarget)
+                  } else {
+                    mkdirSync(innerTo, { recursive: true })
+                    const nestedIsWorkspace = innerTargetReal.includes('/packages/') || innerTargetReal.includes('/vendor/')
+                    copyPrunedModules(innerFrom, innerTo, rootDev, visited, nestedIsWorkspace, hoistDest)
+                    const rel = readlinkSync(innerFrom)
+                    const norm = rel.startsWith('/') ? rel : join(dirname(innerTo), rel)
+                    try { symlinkSync(norm, innerTo) } catch {}
+                    const wsPkgTarget = join(hoistDest, 'node_modules', '@greeneek', inner.name)
+                    mkdirSync(wsPkgTarget, { recursive: true })
+                    copyDirRecursive(innerFrom, wsPkgTarget)
+                  }
+                  continue
+                }
+                if (inner.isDirectory()) {
+                  mkdirSync(innerTo, { recursive: true })
+                  copyPrunedModules(innerFrom, innerTo, rootDev, visited, true, hoistDest)
+                } else {
+                  copyFileSync(innerFrom, innerTo)
+                }
+              } catch (e) {
+                if (e.code !== 'ENOENT') throw e
+              }
+            }
+            continue
+          }
+          copyPrunedModules(from, to, rootDev, visited, isWorkspacePkg, hoistDest)
+        } else {
+          copyFileSync(from, to)
+        }
+      } catch (e) {
+        if (e.code !== 'ENOENT') throw e
+      }
+    }
+  } finally {
+    visited.delete(srcReal)
+  }
+}
+
+function shouldCopyModule(entry, rootDev) {
+  if (rootDev.has(entry.name)) return false
+  if (entry.name === '.bin' || entry.name === '.pnpm') return false
+  if (entry.name.startsWith('@')) return true
+  if (entry.name === 'node_modules') return true
+  if (entry.isDirectory()) return true
+  return true
+}
+
+function copyDirRecursive(src, dest) {
   mkdirSync(dest, { recursive: true })
   for (const entry of readdirSync(src, { withFileTypes: true })) {
     const from = join(src, entry.name)
     const to = join(dest, entry.name)
-    if (entry.name === 'node_modules' || entry.name === '.pnpm') continue
-    if (!shouldCopyModule(entry, desktopDeps, rootDev)) continue
     if (entry.isSymbolicLink()) {
-      mkdirSync(to, { recursive: true })
-      copyPrunedModules(from, to, desktopDeps, rootDev)
-      continue
-    }
-    if (entry.isDirectory()) {
-      copyPrunedModules(from, to, desktopDeps, rootDev)
+      const target = readlinkSync(from)
+      const absTarget = join(dirname(from), target)
+      try {
+        const isDir = statSync(absTarget).isDirectory()
+        if (isDir) {
+          copyDirRecursive(absTarget, to)
+        } else {
+          copyFileSync(absTarget, to)
+        }
+      } catch {
+        // broken symlink, skip
+      }
+    } else if (entry.isDirectory()) {
+      copyDirRecursive(from, to)
     } else {
       copyFileSync(from, to)
     }
   }
-}
-
-function shouldCopyModule(entry, desktopDeps, rootDev) {
-  if (entry.name.startsWith('@')) return true
-  if (entry.name === 'node_modules') return true
-  if (entry.name === '.package-lock.json') return false
-  if (entry.isDirectory()) return true
-  return true
 }
 
 function copyLicense(packageDir, staging) {
@@ -269,6 +408,55 @@ function renderBuilderConfig(staging) {
   const manifest = JSON.parse(readFileSync(join(staging, 'package.json'), 'utf8'))
   const rendered = template.replaceAll('__DESKTOP_VERSION__', manifest.version)
   writeFileSync(join(staging, 'electron-builder.yml'), rendered, 'utf8')
+}
+
+function stageKoffiBinary(staging, repoRoot, platform, arch) {
+  const archMap = { x64: 'x64', arm64: 'arm64', arm: 'arm', ia32: 'ia32' }
+  const koffiArch = archMap[arch] ?? arch
+  const pkgName = `@koromix/koffi-${platform}-${koffiArch}`
+  const pkgPrefix = `${pkgName.replace('/', '+')}@`
+  const pnpmDir = join(repoRoot, 'node_modules', '.pnpm')
+  let matched
+  try {
+    matched = readdirSync(pnpmDir).find((name) => name.startsWith(pkgPrefix))
+  } catch {
+    return
+  }
+  if (matched === undefined) return
+  const sourceDir = join(pnpmDir, matched, 'node_modules', pkgName)
+  if (!existsSync(sourceDir)) return
+  const entries = readdirSync(sourceDir)
+  const triplet = entries.find((name) => statSync(join(sourceDir, name)).isDirectory())
+  if (triplet === undefined) return
+  const tripletDir = join(sourceDir, triplet)
+  const binary = readdirSync(tripletDir).find((name) => statSync(join(tripletDir, name)).isFile() && name.endsWith('.node'))
+  if (binary === undefined) return
+  const destDir = join(staging, 'node_modules', 'koffi', 'build', 'koffi', triplet)
+  mkdirSync(destDir, { recursive: true })
+  copyFileSync(join(tripletDir, binary), join(destDir, binary))
+  console.log(`stage: koffi native binary ${triplet}/${binary}`)
+}
+
+function copySymlink(from, to) {
+  let target
+  try {
+    target = readlinkSync(from)
+  } catch {
+    return
+  }
+  if (!target.startsWith('/')) {
+    target = join(dirname(from), target)
+  }
+  try {
+    accessSync(target)
+  } catch {
+    return
+  }
+  try {
+    symlinkSync(target, to)
+  } catch {
+    copyFileSync(from, to)
+  }
 }
 
 const isMainModule = process.argv[1] !== undefined

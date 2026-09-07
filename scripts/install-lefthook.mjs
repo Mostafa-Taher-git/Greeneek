@@ -15,15 +15,16 @@ import {
 import { spawnSync } from 'node:child_process'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
 
-function tryImportLefthookPackage() {
+async function tryImportLefthookPackage() {
   try {
-    return require('lefthook/package.json')
+    const mod = await import('lefthook/package.json')
+    return mod.default ?? mod
   } catch {
     return null
   }
 }
 
-const lefthookPackage = tryImportLefthookPackage()
+const lefthookPackage = await tryImportLefthookPackage()
 if (lefthookPackage === null) {
   console.warn('[install-lefthook] lefthook is not installed; skipping worktree hook setup.')
   process.exit(0)

@@ -1,0 +1,47 @@
+name: Desktop release — Windows
+
+on:
+  push:
+    tags:
+      - 'desktop-*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    name: Windows x64
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build:lib:client
+      - run: pnpm build:web
+      - run: node apps/desktop/scripts/stamp-version.mjs
+        env:
+          GITHUB_REF: ${{ github.ref }}
+      - run: pnpm --filter @greeneek/desktop run dist:win
+      - run: node apps/desktop/scripts/prepare-release-assets.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-desktop-artifacts
+          path: |
+            apps/desktop/.staging/app/dist/*.exe
+            apps/desktop/.staging/app/dist/*.zip
+          retention-days: 14
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            apps/desktop/.staging/app/dist/*.exe
+            apps/desktop/.staging/app/dist/*.zip
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

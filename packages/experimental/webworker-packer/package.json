@@ -35,12 +35,12 @@
     "@greeneek/gnk-experimental-webworker-runtime": "workspace:^",
     "@greeneek/gnk-home-paths": "workspace:^",
     "js-yaml": "^4.2.0",
-    "picomatch": "^4.0.4"
+    "picomatch": "^4.0.5"
   },
   "devDependencies": {
     "@greeneek/cordis": "workspace:^",
     "@types/js-yaml": "^4.0.9",
-    "@types/picomatch": "^3.0.2"
+    "@types/picomatch": "^4.0.3"
   },
   "peerDependencies": {
     "@greeneek/cordis": "workspace:^"

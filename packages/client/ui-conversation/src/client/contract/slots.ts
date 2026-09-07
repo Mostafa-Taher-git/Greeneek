@@ -179,8 +179,12 @@ export interface HeroAgentPresetOwnerProps {
 
 /** Header actions derive their state from standard Session props. */
 export interface ConversationHeaderActionOwnerProps {
-  /** Marker field: entries receive no owner-specific values. */
+  /** Marker field: entries receive no other owner-specific values. */
   children?: never
+  /** Switch the Session's active conversation view. */
+  selectView?: (view: string) => void
+  /** Active conversation view id, so entries can label view navigation. */
+  activeView?: string | null
 }
 
 /** Plain breadcrumb data handed to the optional lineage renderer. */

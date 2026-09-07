@@ -1,36 +1,26 @@
-.sessionLogButton {
+.menuButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 111px;
-  height: 32px;
-  padding: 6px 12px;
-  gap: 4px;
-  border: 0.5px solid var(--dsw-alias-border-l4);
-  border-radius: 18px;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
   color: var(--dsw-alias-label-primary);
   background: transparent;
-  font-family: var(--dsw-font-family);
-  font-size: 13px;
-  font-weight: 400;
-  line-height: 20px;
   cursor: pointer;
 }
 
-.sessionLogButton:hover:not(:disabled) {
+.menuButton:hover {
   background: var(--dsw-alias-interactive-bg-hover);
 }
 
-.sessionLogButton:disabled {
-  color: var(--dsw-alias-label-dimmed);
-  cursor: wait;
-}
-
-.sessionLogButton span,
-.sessionLogButton svg {
+.menuButton svg {
   flex: none;
 }
 
-.sessionLogButton span {
-  white-space: nowrap;
+/* The ellipsis glyph draws three horizontal dots; the header menu reads it
+   as a vertical kebab. */
+.kebab {
+  transform: rotate(90deg);
 }

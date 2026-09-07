@@ -1,6 +1,7 @@
 import type { ViewTab } from './contract/views.ts'
 
-const DEFAULT_VIEW_ID = 'chat'
+/** Identity of the Chat view: the resident default. */
+export const CHAT_VIEW_ID = 'chat'
 
 /**
  * Resolve a preferred registered View, then Chat, without choosing another View.
@@ -13,5 +14,5 @@ export function resolveActiveView(
   selectedId: string | null,
 ): ViewTab | undefined {
   const selected = selectedId === null ? undefined : tabs.find(view => view.id === selectedId)
-  return selected ?? tabs.find(view => view.id === DEFAULT_VIEW_ID)
+  return selected ?? tabs.find(view => view.id === CHAT_VIEW_ID)
 }

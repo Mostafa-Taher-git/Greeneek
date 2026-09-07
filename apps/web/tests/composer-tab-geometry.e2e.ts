@@ -123,12 +123,17 @@ function measureTab(page: Page): Promise<TabMetrics> {
 }
 
 /**
- * Show one tab and wait for the view that owns it to be laid out.
+ * Show one view and wait for the view that owns it to be laid out.
  * @param page - the page under test.
- * @param tab - the tab to show.
+ * @param tab - the view to show.
  */
 async function showTab(page: Page, tab: 'Chat' | 'Trajectory'): Promise<void> {
-  await page.getByRole('tab', { name: tab, exact: true }).click()
+  // The menu names its destination: tap the item only when the view is not
+  // already showing, otherwise just close the menu again.
+  await page.getByRole('button', { name: 'Session options', exact: true }).click()
+  const item = page.getByRole('menuitem', { name: tab, exact: true })
+  if (await item.count() > 0) await item.click()
+  else await page.keyboard.press('Escape')
   if (tab === 'Trajectory') await page.getByLabel('Trajectory timeline').waitFor({ timeout: 30_000 })
   else await page.locator('[data-conversation-scroll] [data-chat-anchor-key]:visible').first().waitFor({ timeout: 30_000 })
   // Both measurements are taken after a paint, so a rectangle read mid-transition
@@ -251,7 +256,7 @@ describe('web e2e: input card position across view tabs', () => {
     await page.goto(scaffold.authenticatedUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
     await openSeededSession(page)
-    await page.getByRole('tab', { name: 'Chat', exact: true }).waitFor({ timeout: 30_000 })
+    await page.getByRole('button', { name: 'Session options', exact: true }).waitFor({ timeout: 30_000 })
     await page.getByText(FIXTURE.markers.assistant(FIXTURE.turns), { exact: false }).last()
       .waitFor({ timeout: 30_000 })
   }, 180_000)

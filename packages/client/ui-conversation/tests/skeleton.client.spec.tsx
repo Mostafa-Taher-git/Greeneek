@@ -562,8 +562,11 @@ describe('ConversationRoot resident composer', () => {
 
     expect(b.view.getByTestId('view-chat')).toBeTruthy()
     expect(b.view.queryByTestId('view-new-view')).toBeNull()
-    expect(b.view.getByRole('tab', { name: 'Chat' }).getAttribute('aria-selected')).toBe('true')
-    expect(b.view.getByRole('tab', { name: 'New view' }).getAttribute('aria-selected')).toBe('false')
+    // Sibling views live in the header utilities menu, not a tab strip: no
+    // tabs render even with several views registered, while view selection
+    // through the ledger still resolves.
+    expect(b.view.queryByRole('tablist')).toBeNull()
+    expect(b.view.queryByRole('tab')).toBeNull()
   })
 
   it('rolls the pending workspace label back when switching fails', async () => {

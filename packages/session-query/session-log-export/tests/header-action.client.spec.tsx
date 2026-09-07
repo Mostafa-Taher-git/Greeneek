@@ -19,54 +19,75 @@ function bindSessionExport(controller: SessionLogDownloadController) {
   }
 }
 
-function bench() {
+function bench(activeView: string | null = 'chat') {
   const controller = new SessionLogDownloadController(async () => new Response('zip'), vi.fn())
   const request = vi.fn((sessionId: SessionId) => controller.download(sessionId))
   const dismiss = vi.fn((sessionId: SessionId) => { controller.dismiss(sessionId) })
+  const selectView = vi.fn((_view: string) => undefined)
   const useSessionLogDownload = bindSessionExport(controller)
   const props = {
     sessionId: SID,
     useSessionLogDownload,
     request,
     dismiss,
+    selectView,
+    activeView,
     t: (key: keyof typeof en): string => en[key],
   } as unknown as SessionLogDownloadDialogProps
   const view = render(<SessionLogDownloadHeaderAction {...props} />)
-  return { controller, request, view }
+  return { controller, request, selectView, view }
+}
+
+function openMenu(view: ReturnType<typeof render>): void {
+  fireEvent.click(view.getByRole('button', { name: 'Session options' }))
 }
 
 afterEach(cleanup)
 
-describe('Session export Header action', () => {
-  it('renders the 111×32 text capsule and downloads through the shared controller', async () => {
+describe('Session Header kebab menu', () => {
+  it('renders the icon-only button with the menu closed', () => {
     const b = bench()
-    const button = b.view.getByRole('button', { name: 'Session log' })
+    const button = b.view.getByRole('button', { name: 'Session options' })
+    expect(button.textContent).toBe('')
     expect(button.querySelector('svg')).not.toBeNull()
-    fireEvent.click(button)
+    expect(b.view.queryByRole('menu')).toBeNull()
+  })
+
+  it('switches to the trajectory view and closes the menu', () => {
+    const b = bench()
+    openMenu(b.view)
+    fireEvent.click(b.view.getByRole('menuitem', { name: 'Trajectory' }))
+    expect(b.selectView).toHaveBeenCalledWith('trajectory')
+    expect(b.view.queryByRole('menu')).toBeNull()
+  })
+
+  it('names the view item Chat while the trajectory view is active', () => {
+    const b = bench('trajectory')
+    openMenu(b.view)
+    fireEvent.click(b.view.getByRole('menuitem', { name: 'Chat' }))
+    expect(b.selectView).toHaveBeenCalledWith('chat')
+    expect(b.view.queryByRole('menu')).toBeNull()
+  })
+
+  it('exports through the shared controller and closes the menu', async () => {
+    const b = bench()
+    openMenu(b.view)
+    fireEvent.click(b.view.getByRole('menuitem', { name: 'Session log' }))
     await waitFor(() => { expect(b.request).toHaveBeenCalledWith(SID) })
+    expect(b.view.queryByRole('menu')).toBeNull()
     expect(await b.view.findByRole('dialog', { name: 'Session download started' })).toBeTruthy()
   })
 
-  it('disables the capsule while either entry path downloads this Session', async () => {
+  it('closes on Escape and on outside pointer-down', () => {
     const b = bench()
-    let release!: (response: Response) => void
-    const pending = new Promise<Response>((resolve) => { release = resolve })
-    const controller = new SessionLogDownloadController(() => pending, vi.fn())
-    const useSessionLogDownload = bindSessionExport(controller)
-    b.view.rerender(<SessionLogDownloadHeaderAction {...({
-      sessionId: SID,
-      useSessionLogDownload,
-      request: (sessionId: SessionId) => controller.download(sessionId),
-      dismiss: (sessionId: SessionId) => { controller.dismiss(sessionId) },
-      t: (key: keyof typeof en): string => en[key],
-    } as unknown as SessionLogDownloadDialogProps)} />)
+    openMenu(b.view)
+    expect(b.view.getByRole('menu')).toBeTruthy()
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(b.view.queryByRole('menu')).toBeNull()
 
-    const download = controller.download(SID)
-    const button = b.view.getByRole('button', { name: 'Session log' })
-    await waitFor(() => { expect(button.getAttribute('aria-busy')).toBe('true') })
-    expect((button as HTMLButtonElement).disabled).toBe(true)
-    release(new Response('zip'))
-    await download
-    await waitFor(() => { expect(button.getAttribute('aria-busy')).toBe('false') })
+    openMenu(b.view)
+    expect(b.view.getByRole('menu')).toBeTruthy()
+    fireEvent(document, new window.Event('pointerdown', { bubbles: true }))
+    expect(b.view.queryByRole('menu')).toBeNull()
   })
 })

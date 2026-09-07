@@ -921,7 +921,7 @@ async function openLongHistory(page: Page): Promise<number> {
   const results = page.getByRole('tree', { name: 'Search results' }).getByRole('treeitem')
   await expect.poll(() => results.count(), { timeout: 60_000 }).toBe(1)
   await results.first().click()
-  await page.getByRole('tab', { name: 'Chat', exact: true }).waitFor({ timeout: 30_000 })
+  await page.getByRole('button', { name: 'Session options', exact: true }).waitFor({ timeout: 30_000 })
   return conversationTurns(page)
 }
 
@@ -1221,14 +1221,16 @@ describe('manual web performance: complex workspace and history', () => {
       })
       const opened = await measure(cdp, async () => {
         await contentSearch.value.click()
-        await page.getByRole('tab', { name: 'Trajectory', exact: true }).waitFor({ timeout: 30_000 })
+        await page.getByRole('button', { name: 'Session options', exact: true }).click()
+        await page.getByRole('menuitem', { name: 'Trajectory', exact: true }).waitFor({ timeout: 30_000 })
         return conversationTurns(page)
       })
       expect(opened.value).toBe(DEFAULT_HISTORY_TURNS)
 
       const trajectoryRows = page.getByRole('row')
       const coldTrajectory = await measure(cdp, async () => {
-        await page.getByRole('tab', { name: 'Trajectory', exact: true }).click()
+        await page.getByRole('button', { name: 'Session options', exact: true }).click()
+        await page.getByRole('menuitem', { name: 'Trajectory', exact: true }).click()
         return stableCount(trajectoryRows, count => count === EXPECTED_TRAJECTORY_ROWS)
       })
       expect(coldTrajectory.value).toBe(EXPECTED_TRAJECTORY_ROWS)
@@ -1244,7 +1246,8 @@ describe('manual web performance: complex workspace and history', () => {
       })
       expect(trajectorySearch.value).toBeLessThan(20)
 
-      await page.getByRole('tab', { name: 'Chat', exact: true }).click()
+      await page.getByRole('button', { name: 'Session options', exact: true }).click()
+      await page.getByRole('menuitem', { name: 'Chat', exact: true }).click()
       const historyPages: { turns: number; measurement: Measurement }[] = []
       let turns = await conversationTurns(page)
       while (turns < LONG_HISTORY_TURNS) {
@@ -1260,12 +1263,14 @@ describe('manual web performance: complex workspace and history', () => {
       }
 
       const warmTrajectory = await measure(cdp, async () => {
-        await page.getByRole('tab', { name: 'Trajectory', exact: true }).click()
+        await page.getByRole('button', { name: 'Session options', exact: true }).click()
+        await page.getByRole('menuitem', { name: 'Trajectory', exact: true }).click()
         return stableCount(trajectoryRows, count => count === EXPECTED_TRAJECTORY_ROWS)
       })
       expect(warmTrajectory.value).toBe(EXPECTED_TRAJECTORY_ROWS)
       const warmConversation = await measure(cdp, async () => {
-        await page.getByRole('tab', { name: 'Chat', exact: true }).click()
+        await page.getByRole('button', { name: 'Session options', exact: true }).click()
+        await page.getByRole('menuitem', { name: 'Chat', exact: true }).click()
         return conversationTurns(page)
       })
       expect(warmConversation.value).toBe(LONG_HISTORY_TURNS)

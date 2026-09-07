@@ -1,10 +1,9 @@
 // @vitest-environment jsdom
 /**
  * View registration acceptance on the real framework stack: the plugin fiber
- * registers Trajectory into a real SlotRegistry view ring, tabs
- * switch inside ConversationRoot (renderSlot share driven by the same tab
- * projection apply uses) without collapsing chat, trajectory renders the
- * event ledger with its timing overview, and fiber disposal removes the tab.
+ * registers Trajectory into a real SlotRegistry view ring, views switch
+ * inside ConversationRoot without collapsing chat, trajectory renders the
+ * event ledger with its timing overview, and fiber disposal removes the view.
  * Timeline projection and inclusive focus edge cases ride along.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -383,7 +382,7 @@ function mount(fixture: Awaited<ReturnType<typeof bench>>) {
       />
     )
   }
-  return render(
+  const view = render(
     <>
       <ConversationSessionHeader
         {...standardProps}
@@ -406,6 +405,7 @@ function mount(fixture: Awaited<ReturnType<typeof bench>>) {
       />
     </>,
   )
+  return { ...view, selectView: conversation.actions.setView }
 }
 
 describe('plugin registration', () => {
@@ -417,7 +417,7 @@ describe('plugin registration', () => {
     ])
   })
 
-  it('fiber disposal removes the tab and leaves chat standing', async () => {
+  it('fiber disposal removes the view and leaves chat standing', async () => {
     const b = await bench()
     expect(b.events.entries().length).toBeGreaterThan(0)
     expect(b.views.entries()).toHaveLength(1)
@@ -488,14 +488,16 @@ describe('plugin registration', () => {
   })
 })
 
-describe('tab switching in ConversationRoot', () => {
-  it('renders two tabs, defaults to chat, and switches to the trajectory ledger', async () => {
+describe('view switching in ConversationRoot', () => {
+  it('defaults to chat with no tab strip, and switches to the trajectory ledger', async () => {
     const b = await bench()
     const view = mount(b)
     expect(screen.getByTestId('chat-body')).toBeTruthy()
-    expect(screen.getAllByRole('tab').map(t => t.textContent)).toEqual(['Chat', 'Trajectory'])
+    expect(screen.queryByRole('tablist')).toBeNull()
+    expect(screen.queryByRole('tab')).toBeNull()
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Trajectory' }))
+    // Sibling views are selected through the header menu's selectView, not a tab strip.
+    act(() => { view.selectView('trajectory') })
     expect(screen.queryByText(/turns ·/)).toBeNull()
     expect(view.container.querySelectorAll('tr[data-turn-start="true"]')).toHaveLength(2)
     expect(screen.queryByRole('columnheader')).toBeNull()
@@ -508,11 +510,11 @@ describe('tab switching in ConversationRoot', () => {
     expect(screen.getByRole('row', { name: /用户/ })).toBeTruthy()
     expect(screen.queryByTestId('chat-body')).toBeNull()
     expect(b.loadOlder).not.toHaveBeenCalled()
-    fireEvent.click(screen.getByRole('tab', { name: 'Chat' }))
+    act(() => { view.selectView('chat') })
     expect(b.loadOlder).not.toHaveBeenCalled()
   })
 
-  it('labels the trajectory tab in the active locale', async () => {
+  it('labels the trajectory view in the active locale', async () => {
     const b = await bench()
     const labelOf = () => tabsOf(b.slots).find(tab => tab.id === 'trajectory')?.label
     expect(labelOf()).toBe('Trajectory')
@@ -525,8 +527,8 @@ describe('tab switching in ConversationRoot', () => {
 
   it('opens a local record inspector and switches payload tabs without opening chat details', async () => {
     const b = await bench()
-    mount(b)
-    fireEvent.click(screen.getByRole('tab', { name: 'Trajectory' }))
+    const view = mount(b)
+    act(() => { view.selectView('trajectory') })
 
     fireEvent.keyDown(screen.getByRole('row', { name: /工具/ }), { key: 'Enter' })
     expect(screen.getByRole('complementary', { name: '事件详情' })).toBeTruthy()
@@ -563,7 +565,7 @@ describe('tab switching in ConversationRoot', () => {
     }
     const b = await bench(historySnapshot(nodes, { requests: [compaction] }))
     const view = mount(b)
-    fireEvent.click(screen.getByRole('tab', { name: 'Trajectory' }))
+    act(() => { view.selectView('trajectory') })
 
     expect(screen.getByText('轮次之间')).toBeTruthy()
     expect(view.container.textContent).not.toContain('Turn null')
@@ -614,8 +616,8 @@ describe('tab switching in ConversationRoot', () => {
       },
     ]
     const b = await bench(historySnapshot(nodes, { requests: compactions }))
-    mount(b)
-    fireEvent.click(screen.getByRole('tab', { name: 'Trajectory' }))
+    const view = mount(b)
+    act(() => { view.selectView('trajectory') })
 
     const firstRequest = screen.getByRole('button', { name: '请求 #2 · 压缩' })
     const secondRequest = screen.getByRole('button', { name: '请求 #4 · 压缩' })
@@ -639,8 +641,8 @@ describe('tab switching in ConversationRoot', () => {
 
   it('dragging the overview focuses overlapping records without filtering the ledger', async () => {
     const b = await bench()
-    mount(b)
-    fireEvent.click(screen.getByRole('tab', { name: 'Trajectory' }))
+    const view = mount(b)
+    act(() => { view.selectView('trajectory') })
     const plot = screen.getByLabelText('时间线概览；水平拖动可聚焦事件')
     vi.spyOn(plot, 'getBoundingClientRect').mockReturnValue({
       x: 0, y: 0, left: 0, top: 0, right: 100, bottom: 72, width: 100, height: 72,
@@ -672,7 +674,7 @@ describe('tab switching in ConversationRoot', () => {
   it('clicking a timeline block clears the range, selects the record, and opens its inspector', async () => {
     const b = await bench()
     const view = mount(b)
-    fireEvent.click(screen.getByRole('tab', { name: 'Trajectory' }))
+    act(() => { view.selectView('trajectory') })
     const plot = screen.getByLabelText('时间线概览；水平拖动可聚焦事件')
     vi.spyOn(plot, 'getBoundingClientRect').mockReturnValue({
       x: 0, y: 0, left: 0, top: 0, right: 100, bottom: 72, width: 100, height: 72,
@@ -709,8 +711,8 @@ describe('tab switching in ConversationRoot', () => {
 
   it('empty window keeps the toolbar and reports no timing data', async () => {
     const b = await bench(historySnapshot([]))
-    mount(b)
-    fireEvent.click(screen.getByRole('tab', { name: 'Trajectory' }))
+    const view = mount(b)
+    act(() => { view.selectView('trajectory') })
     expect(screen.getByRole('toolbar', { name: '轨迹工具栏' })).toBeTruthy()
     expect(screen.getByText('无计时数据')).toBeTruthy()
     expect(screen.getByRole<HTMLButtonElement>('button', {

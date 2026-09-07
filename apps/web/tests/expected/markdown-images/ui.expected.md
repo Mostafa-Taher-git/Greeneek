@@ -1,12 +1,8 @@
 - banner:
   - navigation "Session hierarchy":
     - button "Markdown image policy" [disabled]
-  - button "Session log":
-    - text: Session log
+  - button "Session options":
     - img
-  - tablist:
-    - tab "Chat" [selected]
-    - tab "Trajectory"
 - text: Show the Markdown image policy. {{clock}}
 - button "Copy":
   - img
@@ -28,8 +24,6 @@
   - text: Ran for {{duration}}
 - text: {{clock}}
 - textbox "Message or run a task... / commands, @ files or sessions"
-- button "Commands":
-  - img
 - 'button "Access mode, current: Workspace Write"': Workspace Write
 - button "Select model, current Greeneek-V4-Flash":
   - text: Greeneek-V4-Flash

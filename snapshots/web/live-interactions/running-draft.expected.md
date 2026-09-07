@@ -3,12 +3,8 @@
     - button "Reply with a one-sentence description" [disabled]
   - img
   - text: Standard mode
-  - button "Session log":
-    - text: Session log
+  - button "Session options":
     - img
-  - tablist:
-    - tab "Chat" [selected]
-    - tab "Trajectory"
 - button "System prompt":
   - img
   - img
@@ -24,8 +20,6 @@
 - status: Deep diving...
 - textbox "Message or run a task... / commands, @ files or sessions":
   - paragraph: Queue this follow-up while the current turn is running.
-- button "Commands":
-  - img
 - 'button "Access mode, current: Workspace Write"': Workspace Write
 - button "Select model, current Greeneek-V4-Flash":
   - text: Greeneek-V4-Flash

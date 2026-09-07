@@ -19,6 +19,11 @@ linkWorkspacePackages: true
 overrides:
   '@greeneek/cosmokit': 'link:vendor/cosmokit'
   '@greeneek/schemastery': 'link:vendor/schemastery'
+  # electron-builder reaches @electron/rebuild, which pins node-gyp to a git
+  # commit the exotic-subdep policy rejects. The desktop never runs rebuild
+  # (its child is real Node, nothing native compiles), so the registry
+  # release satisfies the install without changing any executed code path.
+  '@electron/node-gyp': '10.2.0-electron.2'
 
 peerDependencyRules:
   allowedVersions:
@@ -42,6 +47,12 @@ allowBuilds:
   node-addon-require-builtin: false
   # JSONL durability calls MoveFileExW with write-through publication on Windows.
   koffi: true
+  # The desktop shell runs the harness on the npm `node` runtime: its install
+  # script downloads the platform binary, which staging then probes.
+  node: true
+  # Squirrel.Windows maker inside electron-builder; the desktop ships NSIS and
+  # portable ZIP only, so its scripts are dead weight we deny like the rest.
+  electron-winstaller: false
   # The Python runtime deploy includes the reviewed workspace postinstall that
   # restores the executable bit on node-pty's macOS spawn helper.
   '@greeneek/gnk-subprocess-local@file:packages/subprocess/subprocess-local': true

@@ -40,6 +40,10 @@ const publicLandlockPackages = new Set([
 /** Deliberate source payloads whose exact bytes are part of the package's audit surface. */
 const publicationSourceAllowlist: Readonly<Record<string, readonly string[]>> = {
   '@greeneek/node-addon-landlock-run': ['src/main.c'],
+  // The desktop shell ships its own runtime JS: the Electron main process,
+  // the gnk entry wrapper, and the Windows console helpers are the product,
+  // and pnpm deploy materializes exactly these paths into staging.
+  '@greeneek/desktop': ['src/**', 'config/**'],
 }
 const repositoryUrl = 'git+https://github.com/greeneek/greeneek-harness.git'
 /**
@@ -61,6 +65,9 @@ const appPackageFiles: Readonly<Record<string, readonly string[]>> = {
   // (dist/preview.html and dist/preview/) backs private experimental
   // packages and is not published.
   '@greeneek/gnk-web-frontend': ['dist', '!dist/**/*.map', '!dist/preview.html', '!dist/preview'],
+  // The desktop shell's runtime is its own source plus the tray/splash/shim
+  // assets; Electron, builder config, and icons stay out of the payload.
+  '@greeneek/desktop': ['src/**', 'config/**', 'assets/tray.png', 'assets/tray-32.png', 'assets/logo-splash.png', 'assets/bin/**', 'package.json', 'LICENSE', 'third-party-licenses/**'],
 }
 
 /** The subset of package.json fields this constraint check cares about. */

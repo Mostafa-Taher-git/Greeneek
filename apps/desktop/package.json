@@ -1,0 +1,49 @@
+{
+  "name": "@greeneek/desktop",
+  "version": "0.1.0",
+  "description": "Greeneek Desktop: installable Electron shell that boots gnk web locally.",
+  "type": "module",
+  "main": "src/main.js",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/greeneek/greeneek-harness.git",
+    "directory": "apps/desktop"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/*.test.js",
+    "stage": "node scripts/stage.mjs",
+    "dist:linux": "node scripts/verify-target.mjs linux x64 && node scripts/stage.mjs && electron-builder --project .staging/app --linux AppImage deb --x64 --publish never",
+    "dist:win": "node scripts/verify-target.mjs win32 x64 && node scripts/stage.mjs && electron-builder --project .staging/app --win nsis zip --x64 --publish never",
+    "smoke:packaged": "node scripts/smoke-packaged.mjs",
+    "prepare:release-assets": "node scripts/prepare-release-assets.mjs"
+  },
+  "dependencies": {
+    "@greeneek/gnk": "workspace:^",
+    "@greeneek/gnk-web-frontend": "workspace:^",
+    "electron-log": "^5.4.0",
+    "electron-updater": "^6.6.2",
+    "koffi": "^3.1.0",
+    "node": "24.9.0",
+    "pnpm": "11.7.0"
+  },
+  "devDependencies": {
+    "electron": "43.4.0",
+    "electron-builder": "26.0.12"
+  },
+  "files": [
+    "src/**",
+    "config/**",
+    "assets/tray.png",
+    "assets/tray-32.png",
+    "assets/logo-splash.png",
+    "assets/bin/**",
+    "package.json",
+    "LICENSE",
+    "third-party-licenses/**"
+  ]
+}

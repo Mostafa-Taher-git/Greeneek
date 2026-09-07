@@ -1,0 +1,116 @@
+/* Horizontal hover-to-reveal mode switcher on the new-session screen.
+   All pills stay in the DOM; only size and opacity change between the compact
+   idle state and the expanded hover/focus state. */
+
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 18px;
+  background: var(--dsw-alias-bg-layer-2);
+  width: max-content;
+  max-width: 100%;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  min-width: 0;
+  max-width: 100%;
+  height: 28px;
+  padding: 0 7px;
+  border: none;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--dsw-alias-label-primary);
+  font-family: var(--dsw-font-family);
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  opacity: 0.45;
+  transition: padding 0.15s ease, opacity 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.pill:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.pill:focus-visible {
+  outline: 2px solid var(--dsw-alias-state-business-primary);
+  outline-offset: 1px;
+}
+
+.pillActive {
+  background: var(--dsw-alias-button-primary-fill);
+  color: var(--dsw-alias-label-primary-foreground);
+  opacity: 1;
+}
+
+.pillActive:hover {
+  background: var(--dsw-alias-button-primary-hover);
+}
+
+.pill:disabled {
+  cursor: not-allowed;
+}
+
+.pillIcon {
+  display: inline-flex;
+  flex: none;
+}
+
+.pillLabel {
+  display: inline-block;
+  max-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  white-space: nowrap;
+  transition: max-width 0.15s ease, opacity 0.15s ease, margin 0.15s ease;
+}
+
+/* The active pill always reads expanded; the rest expand while the pointer
+   is over the row or keyboard focus is inside it. */
+.pillActive .pillLabel,
+.row:hover .pillLabel,
+.row:focus-within .pillLabel {
+  max-width: 160px;
+  margin-left: 6px;
+  opacity: 1;
+}
+
+.row:hover .pill,
+.row:focus-within .pill {
+  opacity: 1;
+  padding: 0 12px;
+}
+
+.pillActive {
+  padding: 0 12px;
+}
+
+.description {
+  margin: 0;
+  padding: 0 8px;
+  min-height: 16px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--dsw-alias-label-caption);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pill,
+  .pillLabel {
+    transition: none;
+  }
+}

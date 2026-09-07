@@ -1,6 +1,7 @@
 /**
- * The agent-preset chip on the new-session screen, beside the workspace
- * picker.
+ * The agent-mode switcher on the new-session screen, beside the workspace
+ * picker: a horizontal hover-to-reveal pill row over the same staging flow
+ * the dropdown chip used to own.
  *
  * It lives here rather than in the composer because the choice is only
  * available before a conversation starts: once a turn has run, the session's
@@ -8,7 +9,6 @@
  * them. A control that spends most of its life disabled belongs on the screen
  * where it still works.
  *
- * The menu opens on the staged choice, which starts as the deployment default.
  * Picking stages; the choice reaches a session when one becomes current.
  */
 
@@ -16,60 +16,48 @@ import { useEffect, useRef, useState } from 'react'
 import type { SnapshotStore } from '@greeneek/gnk-client-store'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@greeneek/gnk-client-ui-slots'
 import {
-  IconAgentPresetOutline16, IconChevronDownOutline14, IconWarningOutline16, Menu, Toast,
+  IconAgentPresetOutline16,
+  IconCodeOutline16,
+  IconPersonalizationOutline16,
+  IconQueueOutline14,
+  IconSparkle16,
+  IconWarningOutline16,
+  Toast,
 } from '@greeneek/gnk-client-ui-primitives'
 // Type-only: pulls the ui-conversation SlotMap merge (the hero seat).
 import type {} from '@greeneek/gnk-client-ui-conversation/client'
 import type { AgentPresetSeatState } from './seat-store.ts'
+import { ModeSwitcher, type ModeSwitcherEntry } from './ModeSwitcher.tsx'
 import { presetDisplayText } from './locales.ts'
-import css from './AgentPresetSeat.module.css'
 
-/** Registration-side business face for the hero chip. */
+/** Registration-side business face for the hero seat. */
 export interface AgentPresetSeatInjected {
   hooks: {
     /** Seat snapshot bound by the renderer as useAgentPresetSeat. */
     agentPresetSeat: SnapshotStore<AgentPresetSeatState>
   }
-  /** Read the roster when the chip first renders. */
+  /** Read the roster when the seat first renders. */
   load: () => Promise<void>
   /** Stage one preset for the next session; resolves to a refusal, or undefined. */
   select: (id: string) => Promise<string | undefined>
-  /** Clear the one-shot introduce cue once the chip has played it. */
+  /** Clear the one-shot introduce cue once the seat has played it. */
   introduced: () => void
 }
-
-/* Introduce timeline: the icon eases in first (the CSS animation shares this
-   duration); the name's characters start fading up the moment it lands, each
-   taking the fade duration to settle. The cue clears after the last one. The
-   stagger is capped twice: per tick for short CJK names, and by one shared
-   reveal window so a long Latin name finishes in the same time as its CJK
-   counterpart instead of dragging the run out per character. */
-const INTRO_TEXT_DELAY_MS = 150
-const INTRO_CHAR_STAGGER_MS = 40
-const INTRO_TEXT_REVEAL_MS = 200
-const INTRO_CHAR_FADE_MS = 400
 
 /**
  * How long a refused switch holds before fading.
  *
  * Longer than the primitive's default because this banner is the only place
- * the refusal appears. The chip's label has already snapped back to the
- * preset the session still runs, and a preset the host refuses to MOUNT is
- * one discovery reported healthy — its row on the settings page carries no
+ * the refusal appears. The row has already snapped back to the preset the
+ * session still runs, and a preset the host refuses to MOUNT is one
+ * discovery reported healthy — its row on the settings page carries no
  * reason to go back and read, because there was nothing to see until the
  * rows actually ran.
  */
 const REFUSAL_HOLD_MS = 8000
 
-/**
- * Per-character start offset for the introduce reveal.
- * @param count - character count of the shown preset name.
- * @returns milliseconds between successive character starts.
- */
-function introStaggerMs(count: number): number {
-  if (count <= 1) return 0
-  return Math.min(INTRO_CHAR_STAGGER_MS, INTRO_TEXT_REVEAL_MS / (count - 1))
-}
+/** Shipped modes in row order; everything else appends after them. */
+const MODE_ORDER = ['standard', 'ptc', 'cordis'] as const
 
 /** Full component props. */
 export type AgentPresetSeatProps =
@@ -78,13 +66,12 @@ export type AgentPresetSeatProps =
   & InjectFace<AgentPresetSeatInjected>
 
 /**
- * Render the new-session agent-preset chip.
+ * Render the new-session mode switcher.
  * @param props - composed slot props.
- * @returns the chip, or null when the deployment composes no presets.
+ * @returns the pill row, or null when the deployment composes no presets.
  */
 export function AgentPresetSeat({ load, select, introduced, useAgentPresetSeat, t }: AgentPresetSeatProps) {
   const state = useAgentPresetSeat(snapshot => snapshot)
-  const [open, setOpen] = useState(false)
   // The seq keys the banner, so picking the same broken preset twice replays
   // it rather than leaving the first one silently in place.
   const toastSeq = useRef(0)
@@ -94,108 +81,91 @@ export function AgentPresetSeat({ load, select, introduced, useAgentPresetSeat, 
     void load()
   }, [load])
 
-  const chosen = state.options.find(option => option.id === state.current)
-  const chosenText = chosen === undefined ? undefined : presetDisplayText(chosen, t)
-  const label = chosenText?.name ?? state.current
   const ready = state.options.length > 0 && state.current !== ''
 
-  // The introduce cue: the pick was staged from another screen (the settings
-  // creator entry), so the chip announces it — the icon eases in and each
-  // character of the name fades up on a stagger (CSS owns the motion; this
-  // effect only arms it and acknowledges the cue once the run is over).
-  const [introducing, setIntroducing] = useState(false)
+  // The introduce cue used to animate the chip label; the pill row shows the
+  // staged mode active, so the cue only needs acknowledging.
   useEffect(() => {
-    if (!state.introduce || !ready) return
-    const characters = Array.from(label)
-    if (characters.length === 0 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      introduced()
-      return
-    }
-    setIntroducing(true)
-    const done = window.setTimeout(() => {
-      setIntroducing(false)
-      introduced()
-    }, INTRO_TEXT_DELAY_MS + (characters.length - 1) * introStaggerMs(characters.length) + INTRO_CHAR_FADE_MS)
-    return () => { window.clearTimeout(done) }
-  }, [state.introduce, ready, label, introduced])
+    if (state.introduce && ready) introduced()
+  }, [state.introduce, ready, introduced])
 
   // Nothing to choose between: the deployment composes no presets and every
   // session shares the host composition.
   if (!ready) return null
 
-  // One wrapper span: the chip is a flex row with a gap, so loose character
-  // spans would each pick up the gap between them.
-  const characters = Array.from(label)
-  const stagger = introStaggerMs(characters.length)
-  const shownLabel = introducing
-    ? (
-      <span className={css.introText}>
-        {characters.map((character, index) => (
-          <span
-            key={index}
-            className={css.introChar}
-            style={{ animationDelay: `${INTRO_TEXT_DELAY_MS + index * stagger}ms` }}
-          >
-            {character}
-          </span>
-        ))}
-      </span>
-    )
-    : label
+  const entries: ModeSwitcherEntry[] = [
+    ...MODE_ORDER.flatMap((id) => {
+      const option = state.options.find(candidate => candidate.id === id)
+      if (option === undefined) return []
+      const text = presetDisplayText(option, t)
+      return [{
+        id: option.id,
+        name: text.name,
+        description: text.description ?? t('noDescription'),
+        icon: id === 'standard'
+          ? <IconAgentPresetOutline16 size={16} />
+          : id === 'ptc'
+            ? <IconCodeOutline16 size={16} />
+            : <IconSparkle16 size={16} />,
+      }]
+    }),
+    // Placeholder modes for v1.1.1: visible and previewable, never selectable
+    // until their presets land.
+    {
+      id: 'army',
+      name: t('presetArmyName'),
+      description: t('presetArmyDescription'),
+      icon: <IconQueueOutline14 size={16} />,
+      disabled: true,
+      disabledReason: t('switcherComingSoon'),
+    },
+    {
+      id: 'maestro',
+      name: t('presetMaestroName'),
+      description: t('presetMaestroDescription'),
+      icon: <IconPersonalizationOutline16 size={16} />,
+      disabled: true,
+      disabledReason: t('switcherComingSoon'),
+    },
+    // Authored presets keep a live pill after the shipped set: hiding them
+    // would strand sessions their owners can still start elsewhere.
+    ...state.options
+      .filter(option => !(MODE_ORDER as readonly string[]).includes(option.id))
+      .map((option) => {
+        const text = presetDisplayText(option, t)
+        return {
+          id: option.id,
+          name: text.name,
+          description: text.description ?? t('noDescription'),
+          icon: <IconAgentPresetOutline16 size={16} />,
+        }
+      }),
+  ]
+
+  const choose = (id: string): void => {
+    const picked = entries.find(entry => entry.id === id)
+    // The fallback is for the row shape `find` cannot promise; the row's
+    // items ARE `entries`, so an emitted id is always one of them.
+    /* v8 ignore next */
+    const name = picked === undefined ? id : picked.name
+    void select(id).then((refusal) => {
+      // Announced only for a pick a person just made: `apply()` also runs
+      // when a session becomes current, and a banner over that would
+      // report a refusal nobody asked for.
+      if (refusal === undefined) return
+      toastSeq.current += 1
+      setToast({ seq: toastSeq.current, text: t('switchRefused', { name, reason: refusal }) })
+    })
+  }
 
   return (
     <>
-      <Menu
-        open={open}
-        onClose={() => { setOpen(false) }}
-        items={state.options.map((option) => {
-          const text = presetDisplayText(option, t)
-          return {
-            id: option.id,
-            // Name and description together: the id alone never says what a
-            // preset does, which is why the roster carries display copy.
-            label: (
-              <span className={css.item}>
-                <span className={css.itemName}>{text.name}</span>
-                <span className={css.itemDesc}>{text.description ?? t('noDescription')}</span>
-              </span>
-            ),
-          }
-        })}
-        selectedId={state.current}
-        onSelect={(id) => {
-          setOpen(false)
-          const picked = state.options.find(option => option.id === id)
-          // The fallback is for the row shape `find` cannot promise; the menu's
-          // items ARE `state.options`, so an emitted id is always one of them.
-          /* v8 ignore next */
-          const name = picked === undefined ? id : presetDisplayText(picked, t).name
-          void select(id).then((refusal) => {
-            // Announced only for a pick a person just made: `apply()` also runs
-            // when a session becomes current, and a banner over that would
-            // report a refusal nobody asked for.
-            if (refusal === undefined) return
-            toastSeq.current += 1
-            setToast({ seq: toastSeq.current, text: t('switchRefused', { name, reason: refusal }) })
-          })
-        }}
-        align="start"
-        portal
-        anchor={(
-          <button
-            type="button"
-            className={css.seat}
-            aria-haspopup="menu"
-            aria-expanded={open}
-            title={state.error ?? t('seatHint')}
-            disabled={state.busy}
-            onClick={() => { setOpen(value => !value) }}
-          >
-            <IconAgentPresetOutline16 className={introducing ? `${css.seatIcon} ${css.introIcon}` : css.seatIcon} />
-            {shownLabel}
-            <IconChevronDownOutline14 className={css.chevron} />
-          </button>
-        )}
+      <ModeSwitcher
+        label={t('switcherLabel')}
+        entries={entries}
+        current={state.current}
+        busy={state.busy}
+        onSelect={choose}
       />
       {toast !== null && (
         <Toast
@@ -203,7 +173,7 @@ export function AgentPresetSeat({ load, select, introduced, useAgentPresetSeat, 
           text={toast.text}
           icon={<IconWarningOutline16 />}
           holdMs={REFUSAL_HOLD_MS}
-          // The composer card, which is the content column this chip sits
+          // The composer card, which is the content column this seat sits
           // above rather than inside — hence a page query, not `closest`.
           // Absent, the banner centers on the window, which is off-center
           // whenever the sidebar is open.

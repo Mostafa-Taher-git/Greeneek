@@ -2,7 +2,12 @@
   - img
   - text: workspace
   - img
-- button "Standard mode":
-  - img
-  - text: Standard mode
-  - img
+- radiogroup "Agent mode":
+  - radio "Standard mode" [checked]
+  - radio "PTC mode"
+  - radio "Creator mode"
+  - radio "Army mode" [disabled]
+  - radio "Maestro mode" [disabled]
+  - radio "Refusing mode"
+  - radio "Narrow mode"
+- paragraph: Full coding agent with file editing, shell, file and web search, skills, planning, goals, subagents, and workflows.

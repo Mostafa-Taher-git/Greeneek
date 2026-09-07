@@ -29,7 +29,6 @@ import {
 
 const SNAPSHOT_DIR = fileURLToPath(new URL('./expected/agent-preset-selection', import.meta.url))
 const HERO_EXPECTED = join(SNAPSHOT_DIR, 'hero.expected.md')
-const MENU_EXPECTED = join(SNAPSHOT_DIR, 'menu.expected.md')
 const HEADER_EXPECTED = join(SNAPSHOT_DIR, 'header.expected.md')
 const MODE = webSnapshotMode()
 const SEED_ID = 'agent-preset-selection-web-e2e'
@@ -249,28 +248,37 @@ describe('web e2e: agent-preset selection', () => {
     // The chip opens on the deployment default, by the name that preset
     // publishes rather than its directory name.
     expect(snapshot).toContain('Standard mode')
+    await expect.poll(() => page.getByRole('radio', { name: 'Standard mode' }).getAttribute('aria-checked'))
+      .toBe('true')
   })
 
-  it('names every preset and what it is for', async () => {
-    onTestFailed(() => saveFailureShot(page, 'web-e2e-agent-preset-menu'))
-    await page.getByRole('button', { name: 'Standard mode' }).click()
-    const menu = page.getByRole('menu')
-    await menu.waitFor({ timeout: 10_000 })
-
-    const snapshot = await captureStableAria(page, '[role="menu"]', scaffold.workspaceCwd)
-
-    await compareOrRefreshGolden(MENU_EXPECTED, snapshot, MODE)
-    // Every shipped preset, each with the sentence saying what it composes —
-    // the id alone never said what a preset does.
-    expect(snapshot).toContain('Narrow mode')
-    expect(snapshot).toContain('Creator mode')
-    await page.keyboard.press('Escape')
+  it('lists every mode with its sentence, placeholders parked', async () => {
+    onTestFailed(() => saveFailureShot(page, 'web-e2e-agent-preset-modes'))
+    const group = page.getByRole('radiogroup', { name: 'Agent mode' })
+    // Fixed order: shipped modes, coming-soon placeholders, authored presets
+    // in roster order.
+    const order = await group.getByRole('radio').evaluateAll(
+      radios => radios.map(radio => radio.textContent),
+    )
+    expect(order.slice(0, 5)).toEqual([
+      'Standard mode', 'PTC mode', 'Creator mode', 'Army mode', 'Maestro mode',
+    ])
+    expect(order.slice(5).sort()).toEqual(['Narrow mode', 'Refusing mode'])
+    expect(await group.getByRole('radio', { name: 'Army mode', exact: true }).isDisabled()).toBe(true)
+    expect(await group.getByRole('radio', { name: 'Maestro mode', exact: true }).isDisabled()).toBe(true)
+    // Idle shows the staged label alone; hovering the row reveals every label.
+    const ptcLabel = group.getByRole('radio', { name: 'PTC mode', exact: true }).getByText('PTC mode', { exact: true })
+    await expect.poll(() => ptcLabel.isHidden()).toBe(true)
+    await group.hover()
+    await expect.poll(() => ptcLabel.isVisible()).toBe(true)
+    const creatorLabel = group.getByRole('radio', { name: 'Creator mode', exact: true })
+      .getByText('Creator mode', { exact: true })
+    await expect.poll(() => creatorLabel.isVisible()).toBe(true)
   })
 
   it('applies the staged pick to the blank session, and the host honors it', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-agent-preset-stage'))
-    await page.getByRole('button', { name: 'Standard mode' }).click()
-    await page.getByRole('menuitem', { name: /Narrow mode/ }).click()
+    await page.getByRole('radio', { name: /Narrow mode/ }).click()
 
     // The chip stages; the blank session the workspace connect produced is
     // what the stage lands on. The host's own answer is what comes back.
@@ -279,8 +287,8 @@ describe('web e2e: agent-preset selection', () => {
 
   it('says why a switch was refused instead of letting the chip revert in silence', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-agent-preset-refused'))
-    await page.getByRole('button', { name: 'Narrow mode' }).click()
-    await page.getByRole('menuitem', { name: /Refusing mode/ }).click()
+    await page.getByRole('radio', { name: 'Narrow mode' }).click()
+    await page.getByRole('radio', { name: /Refusing mode/ }).click()
 
     // Health cleared every row, so nothing on the settings page says this
     // preset is unusable — the banner is where the host's reason lands, and
@@ -289,7 +297,8 @@ describe('web e2e: agent-preset selection', () => {
     await banner.waitFor({ timeout: 15_000 })
     expect(await banner.textContent()).toContain('this row refuses to start')
     await expect.poll(() => livePreset(scaffold), { timeout: 15_000 }).toBe('narrow')
-    await page.getByRole('button', { name: 'Narrow mode' }).waitFor({ timeout: 10_000 })
+    await expect.poll(() => page.getByRole('radio', { name: 'Narrow mode' }).getAttribute('aria-checked'))
+      .toBe('true')
   }, 60_000)
 
   it('re-reads the slash catalog through the composition the switch installed', async () => {
@@ -317,8 +326,8 @@ describe('web e2e: agent-preset selection', () => {
     // against its list row, so a row that never reprojected the first switch
     // answers "already standard" and sends nothing — and restores the catalog
     // instead of leaving the session reading the narrower composition.
-    await page.getByRole('button', { name: 'Narrow mode' }).click()
-    await page.getByRole('menuitem', { name: /^Standard mode/ }).first().click()
+    await page.getByRole('radio', { name: 'Narrow mode' }).click()
+    await page.getByRole('radio', { name: /^Standard mode/ }).first().click()
     await expect.poll(() => livePreset(scaffold), { timeout: 15_000 }).toBe('standard')
 
     await writeComposerDraft(page, composer, '/')

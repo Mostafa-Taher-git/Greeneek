@@ -936,3 +936,43 @@ export const IconCommandOutline16 = ({ size = 16, className }: IconProps) => (
     />
   </svg>
 )
+
+/** lucide square-dashed-bottom-code (ISC), scaled to the 16 grid: Standard mode. */
+export const IconSquareDashedBottomCode16 = ({ size = 16, className }: IconProps) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path
+      d="M6.67 6.33 5.33 8l1.34 1.67M9.33 14h0.67m-0.67-7.67 1.34 1.67-1.34 1.67M3.33 14a1.33 1.33 0 0 1-1.33-1.33V3.33a1.33 1.33 0 0 1 1.33-1.33h9.34a1.33 1.33 0 0 1 1.33 1.33v9.34a1.33 1.33 0 0 1-1.33 1.33M6 14h0.67"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+)
+
+/** lucide circle-dashed-check (ISC), scaled to the 16 grid: PTC mode. */
+export const IconCircleDashedCheck16 = ({ size = 16, className }: IconProps) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path
+      d="M6.73 1.45a6.67 6.67 0 0 1 2.54 0M9.27 14.55a6.67 6.67 0 0 1-2.54 0m3.94-8.55-3.67 3.67L5.33 8m6.41-5.52a6.67 6.67 0 0 1 1.79 1.8M1.45 9.27a6.67 6.67 0 0 1 0-2.54m12.07 4.47a6.67 6.67 0 0 1-1.8 1.79m2.83-6.26a6.67 6.67 0 0 1 0 2.54M2.48 4.26a6.67 6.67 0 0 1 1.8-1.79m-0.02 11.05a6.67 6.67 0 0 1-1.79-1.8"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+)
+
+/** lucide circle-pile (ISC), scaled to the 16 grid: Army mode placeholder. */
+export const IconCirclePile16 = ({ size = 16, className }: IconProps) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <g stroke="currentColor" strokeWidth={1.5}>
+      <circle cx="8" cy="12.67" r="1.33" />
+      <circle cx="8" cy="3.33" r="1.33" />
+      <circle cx="10.67" cy="8" r="1.33" />
+      <circle cx="13.33" cy="12.67" r="1.33" />
+      <circle cx="2.67" cy="12.67" r="1.33" />
+      <circle cx="5.33" cy="8" r="1.33" />
+    </g>
+  </svg>
+)

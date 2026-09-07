@@ -6,7 +6,7 @@
  * tools, so the choice is only ever offered before one starts.
  */
 
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { bindSnapshotSelector } from '@greeneek/gnk-client-test-runtime'
 import { createSnapshotStore } from '@greeneek/gnk-client-store'
@@ -139,6 +139,14 @@ describe('the new-session mode switcher', () => {
 
     for (const radio of screen.getAllByRole('radio')) {
       expect(radio).toHaveProperty('disabled', true)
+    }
+  })
+
+  it('gives every pill its own glyph', () => {
+    renderSeat()
+    const group = within(screen.getByRole('radiogroup', { name: 'Agent mode' }))
+    for (const name of [en.presetStandardName, en.presetArmyName, en.presetMaestroName, 'mine']) {
+      expect(group.getByRole('radio', { name }).querySelector('svg')).toBeTruthy()
     }
   })
 

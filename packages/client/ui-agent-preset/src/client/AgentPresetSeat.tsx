@@ -17,10 +17,11 @@ import type { SnapshotStore } from '@greeneek/gnk-client-store'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@greeneek/gnk-client-ui-slots'
 import {
   IconAgentPresetOutline16,
-  IconCodeOutline16,
+  IconCircleDashedCheck16,
+  IconCirclePile16,
   IconPersonalizationOutline16,
-  IconQueueOutline14,
   IconSparkle16,
+  IconSquareDashedBottomCode16,
   IconWarningOutline16,
   Toast,
 } from '@greeneek/gnk-client-ui-primitives'
@@ -103,9 +104,9 @@ export function AgentPresetSeat({ load, select, introduced, useAgentPresetSeat, 
         name: text.name,
         description: text.description ?? t('noDescription'),
         icon: id === 'standard'
-          ? <IconAgentPresetOutline16 size={16} />
+          ? <IconSquareDashedBottomCode16 size={16} />
           : id === 'ptc'
-            ? <IconCodeOutline16 size={16} />
+            ? <IconCircleDashedCheck16 size={16} />
             : <IconSparkle16 size={16} />,
       }]
     }),
@@ -115,7 +116,7 @@ export function AgentPresetSeat({ load, select, introduced, useAgentPresetSeat, 
       id: 'army',
       name: t('presetArmyName'),
       description: t('presetArmyDescription'),
-      icon: <IconQueueOutline14 size={16} />,
+      icon: <IconCirclePile16 size={16} />,
       disabled: true,
       disabledReason: t('switcherComingSoon'),
     },

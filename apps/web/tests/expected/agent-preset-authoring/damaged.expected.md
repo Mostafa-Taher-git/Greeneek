@@ -13,6 +13,9 @@
     - button "Agent 预设":
       - img
       - text: Agent 预设
+    - button "命令":
+      - img
+      - text: 命令
   - button "打开配置文件"
   - button "关闭":
     - img
@@ -39,16 +42,6 @@
         - img
         - text: 查看
       - 'button "复制: PTC 模式"':
-        - img
-        - text: 复制
-    - listitem:
-      - 'button "设为默认: 极简模式"':
-        - text: 极简模式 内置 仅提供持久 bash 与 str_replace_editor 的双工具编码 Agent。
-        - code: minimal
-      - 'button "查看: 极简模式"':
-        - img
-        - text: 查看
-      - 'button "复制: 极简模式"':
         - img
         - text: 复制
     - listitem:

@@ -288,6 +288,13 @@ describe('web e2e: navigation & panes over a rich seeded session', () => {
       .split(SEED_ID).join('{{seededId}}')
     await compareOrRefreshGolden(TRAJECTORY_EXPECTED, snapshot, MODE)
     await details.getByRole('button', { name: 'Close details' }).click()
+
+    // The session title doubles as the way back: from the trajectory view it
+    // carries a back affordance and returns to Chat in place.
+    const backToChat = page.getByRole('button', { name: /^Back to Chat:/ })
+    await backToChat.click()
+    await page.getByText('FIRST_DONE', { exact: true }).waitFor({ timeout: 15_000 })
+    await expect.poll(() => page.getByRole('button', { name: /^Back to Chat:/ }).count()).toBe(0)
   }, 60_000)
 
   it.skipIf(MODE === 'record')('downloads through the Session Header and /export with one dialog', async () => {

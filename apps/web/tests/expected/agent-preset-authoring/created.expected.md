@@ -13,6 +13,9 @@
     - button "Agent 预设":
       - img
       - text: Agent 预设
+    - button "命令":
+      - img
+      - text: 命令
   - button "打开配置文件"
   - button "关闭":
     - img
@@ -42,16 +45,6 @@
         - img
         - text: 复制
     - listitem:
-      - 'button "设为默认: 极简模式"':
-        - text: 极简模式 内置 仅提供持久 bash 与 str_replace_editor 的双工具编码 Agent。
-        - code: minimal
-      - 'button "查看: 极简模式"':
-        - img
-        - text: 查看
-      - 'button "复制: 极简模式"':
-        - img
-        - text: 复制
-    - listitem:
       - 'button "设为默认: 创造模式"':
         - text: 创造模式 内置 用于创建自定义 Agent preset：具备标准模式的全部能力，并提供运行时检查、插件实验和 preset 创作指导。
         - code: cordis
@@ -65,7 +58,7 @@
   - list:
     - listitem:
       - 'button "设为默认: 我的模式"':
-        - text: 我的模式 自定义 仅提供持久 bash 与 str_replace_editor 的双工具编码 Agent。
+        - text: 我的模式 自定义 功能完整的编码 Agent，支持文件编辑、Shell、文件与网页检索、Skills、计划、目标、子代理和工作流。
         - code: my-agent
       - 'button "查看路径: 我的模式"':
         - img

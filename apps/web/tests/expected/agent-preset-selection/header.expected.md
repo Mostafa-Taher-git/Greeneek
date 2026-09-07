@@ -5,6 +5,6 @@
     - text: 1 subagent
     - img
 - img
-- text: Minimal mode
+- text: Narrow mode
 - button "Session options":
   - img

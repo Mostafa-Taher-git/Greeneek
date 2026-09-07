@@ -2,13 +2,14 @@
 
 import { useEffect } from 'react'
 import clsx from 'clsx'
+import { IconChevronLeftOutline14 } from '@greeneek/gnk-client-ui-primitives'
 import type { SessionListState, SessionSummary } from '@greeneek/gnk-api-session-controller/client'
 import type { SessionId } from '@greeneek/gnk-session/types'
 import type {
   ConversationSessionHeaderSlotProps, ConversationSessionSlotProps,
 } from '../contract/slots.ts'
 import { conversationPhase } from '../contract/snapshot.ts'
-import { resolveActiveView } from '../view-selection.ts'
+import { CHAT_VIEW_ID, resolveActiveView } from '../view-selection.ts'
 import css from './ConversationRoot.module.css'
 
 /** Full props composed from the strict session body contract. */
@@ -80,6 +81,12 @@ export function ConversationSessionHeader({
               <nav className={css.crumbs} aria-label={t('session.hierarchy')}>
                 {ancestry.map((summary, index) => {
                   const last = index === ancestry.length - 1
+                  // The current title doubles as the way back: sibling views
+                  // open from the header menu, and the title returns to Chat
+                  // without leaving the session. The chevron marks the return
+                  // leg; on Chat there is nothing to go back to. The label
+                  // keeps the visible title inside the accessible name.
+                  const backToChat = last && active?.id !== CHAT_VIEW_ID
                   const title = (
                     <button
                       type="button"
@@ -88,9 +95,17 @@ export function ConversationSessionHeader({
                         summary.subagent && css.crumbSubagent,
                         last && css.crumbCurrent,
                       )}
-                      disabled={last}
-                      onClick={() => { open(summary.id) }}
+                      aria-label={backToChat ? t('session.backToChat', { title: summary.displayTitle }) : undefined}
+                      onClick={() => {
+                        if (last) selectView(CHAT_VIEW_ID)
+                        else open(summary.id)
+                      }}
                     >
+                      {backToChat && (
+                        <span className={css.crumbBack} aria-hidden="true">
+                          <IconChevronLeftOutline14 size={12} />
+                        </span>
+                      )}
                       {summary.displayTitle}
                     </button>
                   )

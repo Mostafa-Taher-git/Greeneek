@@ -390,14 +390,14 @@ describe('ConversationRoot resident composer', () => {
     expect(b.store.store.getSnapshot().draft).toBe('ordinary revised')
     fireEvent.keyDown(box, { key: 'Enter' })
     expect(b.sink).toHaveBeenCalledWith('ordinary revised', [], 'queue', expect.any(AbortSignal))
-    expect((b.view.getByRole('button', { name: 'Child' }) as HTMLButtonElement).disabled).toBe(true)
+    expect((b.view.getByRole('button', { name: 'Child' }) as HTMLButtonElement).disabled).toBe(false)
     expect(b.view.queryByText('Root')).toBeNull()
   })
 
   it('shows hierarchy only for subagents and opens their ordinary owner', () => {
     const b = mount(sessionSnapshotOf(), undefined, undefined, { summaryOrigin: 'subagent' })
     const root = b.view.getByRole('button', { name: 'Root' })
-    expect((b.view.getByRole('button', { name: 'Child' }) as HTMLButtonElement).disabled).toBe(true)
+    expect((b.view.getByRole('button', { name: 'Child' }) as HTMLButtonElement).disabled).toBe(false)
     fireEvent.click(root)
     expect(b.open).toHaveBeenCalledWith(sid('root'))
   })
@@ -416,6 +416,23 @@ describe('ConversationRoot resident composer', () => {
     ])
     expect(b.lineageOwners.at(-2)?.openTitle).toEqual(expect.any(Function))
     expect(b.lineageOwners.at(-1)?.openTitle).toBeUndefined()
+  })
+
+  it('returns to Chat through the session title outside the Chat view', () => {
+    const viewTabs: ViewTab[] = [
+      { id: 'chat', label: 'Chat' },
+      { id: 'trajectory', label: 'Trajectory' },
+    ]
+    const b = mount(sessionSnapshotOf(), undefined, undefined, { viewTabs })
+    // On Chat the title carries no return affordance.
+    expect(b.view.queryByRole('button', { name: /返回对话/ })).toBeNull()
+
+    act(() => { b.store.actions.setView('trajectory') })
+    const back = b.view.getByRole('button', { name: /返回对话/ })
+    expect(back.querySelector('svg')).not.toBeNull()
+    fireEvent.click(back)
+    expect(b.store.store.getSnapshot().view).toBe('chat')
+    expect(b.view.queryByRole('button', { name: /返回对话/ })).toBeNull()
   })
 
   it('active phase: fixed header outside the scrollport; sticky composer seat inside it', () => {

@@ -124,7 +124,12 @@
 .crumbCurrent {
   font-weight: 500;
   color: var(--dsw-alias-label-primary);
-  cursor: default;
+}
+
+.crumbBack {
+  display: inline-flex;
+  margin-right: 2px;
+  vertical-align: -1px;
 }
 
 .headerActions {

@@ -27,10 +27,13 @@ const BASE_PATCH = join(REPO_ROOT, 'packages/bundle/base/cordis.patch.yml')
 const WEB_PATCH = join(REPO_ROOT, 'packages/bundle/web-app/cordis.patch.yml')
 const CODEX_PACKAGE_DIR = join(REPO_ROOT, 'packages/subagent/subagent-codex')
 const CLAUDE_CODE_PACKAGE_DIR = join(REPO_ROOT, 'packages/subagent/subagent-claude-code')
+/** Lane-owned narrow composition root: the mechanics below need a two-tool
+ * preset, and no shipped preset is narrow anymore. */
+const NARROW_ROOT = join(REPO_ROOT, 'packages/preset/agent-presets/tests/fixtures/narrow')
 /** The installation anchor whose dependency surface the preset module fallback mirrors. */
 const INSTALL_ANCHOR = join(REPO_ROOT, 'apps/cli/package.json')
-const MINIMAL_PROMPT = 'You are a helpful software engineer assistant.'
-const MINIMAL_BASH_DESCRIPTION = `Run commands in a bash shell
+const NARROW_PROMPT = 'You are a helpful software engineer assistant.'
+const NARROW_BASH_DESCRIPTION = `Run commands in a bash shell
 * When invoking this tool, the contents of the "command" parameter does NOT need to be XML-escaped.
 * You don't have access to the internet via this tool.
 * You do have access to a mirror of common linux and python packages via apt and pip.
@@ -172,7 +175,11 @@ let ctx: Context
 beforeAll(async () => {
   const settingsFile = join(await mkdtemp(join(tmpdir(), 'gnk-web-presets-')), 'settings.yaml')
   await writeFile(settingsFile, '{}\n')
-  ctx = await bootWeb(settingsFile)
+  ctx = await bootWeb(settingsFile, [
+    // Lane narrow root beside the shipped set: several lanes need a two-tool
+    // preset, and no shipped preset is narrow anymore.
+    { id: 'agent-presets', config: { default: 'standard', roots: [{ path: NARROW_ROOT, trust: 'user' }], includeUserRoot: false } },
+  ])
 }, 120_000)
 
 describe('the shipped Web composition', () => {
@@ -192,15 +199,15 @@ describe('the shipped Web composition', () => {
     //
     // The projection registry is process-wide rather than scope-layered, so a
     // preset-side meter would also make the browser's context meter appear for
-    // a `minimal` session the moment some OTHER session mounted a preset that
+    // a `narrow` session the moment some OTHER session mounted a preset that
     // carries one, and vanish entirely in a process that only ever ran
-    // `minimal`. Host ownership is what makes the meter a per-session fact.
+    // `narrow`. Host ownership is what makes the meter a per-session fact.
     expect(ctx.get('tokenMeter')).toBeDefined()
     const projections = ctx.get('sessionProjections')
     if (projections === undefined) throw new Error('the Web composition must compose a projection registry')
     const handle = await ctx.agents.create({
-      sessionId: SessionId('preset-minimal-meter'),
-      setup: agentCtx => ctx.agentPresets.mount(agentCtx, 'minimal').then(() => undefined),
+      sessionId: SessionId('preset-narrow-meter'),
+      setup: agentCtx => ctx.agentPresets.mount(agentCtx, 'narrow').then(() => undefined),
     })
     try {
       // A subset assertion: `tasks`, `goal`, and the rest register into the
@@ -212,11 +219,12 @@ describe('the shipped Web composition', () => {
     }
   })
 
-  it('supplies both shipped presets, and only those, from the system root', async () => {
+  it('supplies the shipped presets, and only those, from the system root', async () => {
     const listed = await ctx.agentPresets.list()
 
-    expect(listed.map(preset => preset.id).sort()).toEqual(['cordis', 'minimal', 'ptc', 'standard'])
-    expect(listed.every(preset => preset.trust === 'system')).toBe(true)
+    expect(listed.filter(preset => preset.trust === 'system').map(preset => preset.id).sort())
+      .toEqual(['cordis', 'ptc', 'standard'])
+    expect(listed.find(preset => preset.id === 'narrow')?.trust).toBe('user')
     expect(ctx.agentPresets.defaultId).toBe('standard')
   })
 
@@ -277,18 +285,18 @@ describe('the shipped Web composition', () => {
     }
   })
 
-  it('composes the exact RL prompt and two tools from `minimal`', async () => {
+  it('composes the exact RL prompt and two tools from `narrow`', async () => {
     const handle = await ctx.agents.create({
-      sessionId: SessionId('preset-minimal'),
-      setup: agentCtx => ctx.agentPresets.mount(agentCtx, 'minimal').then(() => undefined),
+      sessionId: SessionId('preset-narrow'),
+      setup: agentCtx => ctx.agentPresets.mount(agentCtx, 'narrow').then(() => undefined),
     })
     try {
       const assembly = await ctx.systemPrompt.assemble({ scope: handle.agent })
       expect(assembly.sections).toEqual([
-        { name: 'deployment:persona', text: MINIMAL_PROMPT },
+        { name: 'deployment:persona', text: NARROW_PROMPT },
       ])
       expect(assembly.tools.map(tool => tool.name)).toEqual(['bash', 'str_replace_editor'])
-      expect(assembly.tools.find(tool => tool.name === 'bash')?.description).toBe(MINIMAL_BASH_DESCRIPTION)
+      expect(assembly.tools.find(tool => tool.name === 'bash')?.description).toBe(NARROW_BASH_DESCRIPTION)
       expect(JSON.stringify(assembly.tools.find(tool => tool.name === 'str_replace_editor')?.parameters))
         .toContain('Absolute path')
       expect(ctx.commands.find(handle.agent, 'goal')).toBeUndefined()
@@ -304,17 +312,17 @@ describe('the shipped Web composition', () => {
       sessionId: SessionId('preset-both-full'),
       setup: agentCtx => ctx.agentPresets.mount(agentCtx, 'standard').then(() => undefined),
     })
-    const minimal = await ctx.agents.create({
-      sessionId: SessionId('preset-both-minimal'),
-      setup: agentCtx => ctx.agentPresets.mount(agentCtx, 'minimal').then(() => undefined),
+    const narrow = await ctx.agents.create({
+      sessionId: SessionId('preset-both-narrow'),
+      setup: agentCtx => ctx.agentPresets.mount(agentCtx, 'narrow').then(() => undefined),
     })
     try {
-      expect(toolNames(ctx, minimal.agent)).toEqual(['bash', 'str_replace_editor'])
+      expect(toolNames(ctx, narrow.agent)).toEqual(['bash', 'str_replace_editor'])
       expect(toolNames(ctx, full.agent).length).toBeGreaterThan(10)
 
-      await minimal.dispose()
+      await narrow.dispose()
 
-      // Tearing the minimal session down leaves the full one whole.
+      // Tearing the narrow session down leaves the full one whole.
       expect(toolNames(ctx, full.agent).length).toBeGreaterThan(10)
       expect(toolNames(ctx)).toEqual([])
     } finally {
@@ -450,14 +458,14 @@ describe('the shipped Web composition', () => {
     }
   })
 
-  it('shows a minimal agent the global layer but no loader tool', async () => {
+  it('shows a narrow agent the global layer but no loader tool', async () => {
     const handle = await ctx.agents.create({
-      sessionId: SessionId(`preset-skills-minimal-${randomUUID()}`),
-      setup: agentCtx => ctx.agentPresets.mount(agentCtx, 'minimal').then(() => undefined),
+      sessionId: SessionId(`preset-skills-narrow-${randomUUID()}`),
+      setup: agentCtx => ctx.agentPresets.mount(agentCtx, 'narrow').then(() => undefined),
     })
     try {
       // Layer visibility is the registry's; whether an agent can USE skills
-      // stays the preset's choice — minimal mounts no `tool-skill`, so its
+      // stays the preset's choice — narrow mounts no `tool-skill`, so its
       // tool table has no loader even though the global layer is readable.
       expect((await ctx.skills.list({ scope: handle.agent })).map(skill => skill.name)).toContain('gnk-badge')
       expect(toolNames(ctx, handle.agent)).toEqual(['bash', 'str_replace_editor'])
@@ -631,13 +639,13 @@ describe('a switch survives the session', () => {
     try {
       // The api-proxy's select does exactly this pair while the session is blank.
       expect(ctx.commands.find(handle.agent, 'goal')).toBeDefined()
-      await ctx.agentPresets.recompose(handle.agent.ctx, 'minimal')
-      handle.agent.session.append('agent-preset/selected', { agentPreset: 'minimal' })
+      await ctx.agentPresets.recompose(handle.agent.ctx, 'narrow')
+      handle.agent.session.append('agent-preset/selected', { agentPreset: 'narrow' })
       expect(ctx.commands.find(handle.agent, 'goal')).toBeUndefined()
 
       // The header keeps the creation fact; the log carries what it runs.
       expect(handle.agent.session.header.agentPreset).toBe('standard')
-      expect(ctx.sessionProjections.stateOf(handle.agent.session, 'agentPreset')).toBe('minimal')
+      expect(ctx.sessionProjections.stateOf(handle.agent.session, 'agentPreset')).toBe('narrow')
     } finally {
       await handle.dispose()
     }
@@ -649,8 +657,8 @@ describe('a forked session', () => {
   it('inherits the composition its seeded history was produced under', async () => {
     const parent = await ctx.agents.create({
       sessionId: SessionId('preset-fork-parent'),
-      meta: { agentPreset: 'minimal' },
-      setup: agentCtx => ctx.agentPresets.mount(agentCtx, 'minimal').then(() => undefined),
+      meta: { agentPreset: 'narrow' },
+      setup: agentCtx => ctx.agentPresets.mount(agentCtx, 'narrow').then(() => undefined),
     })
     const inherited = ctx.sessionProjections.stateOf(parent.agent.session, 'agentPreset') ?? undefined
     const child = await ctx.agents.create({
@@ -710,7 +718,7 @@ describe('a delegated child', () => {
       meta: { agentPreset: 'standard' },
       setup: agentCtx => ctx.agentPresets.mount(agentCtx, 'standard').then(() => undefined),
     })
-    await ctx.agentPresets.recompose(parent.agent.ctx, 'minimal')
+    await ctx.agentPresets.recompose(parent.agent.ctx, 'narrow')
     const child = await parent.agent.ctx.agents.create({
       sessionId: SessionId('preset-child-switch'),
       meta: childSessionMeta(parent.agent, 1, false),
@@ -722,7 +730,7 @@ describe('a delegated child', () => {
       // The live scope chain is the authority, not the parent's creation
       // header — which still names `standard`.
       expect(toolNames(ctx, child.agent)).toEqual(toolNames(ctx, parent.agent))
-      expect(child.agent.session.header.agentPreset).toBe('minimal')
+      expect(child.agent.session.header.agentPreset).toBe('narrow')
     } finally {
       await child.dispose()
       await parent.dispose()
@@ -800,35 +808,36 @@ describe('authoring a preset on the shipped composition', () => {
         default: 'standard',
         // The root does not exist yet: a deployment whose user has authored
         // nothing is the normal first-run state. The shipped root is the
-        // plugin's own, prepended before this.
-        roots: [{ path: userRoot, trust: 'user' }],
+        // plugin's own, prepended before this. The lane narrow root rides
+        // along so the copy lanes below keep a two-tool source.
+        roots: [{ path: userRoot, trust: 'user' }, { path: NARROW_ROOT, trust: 'user' }],
         includeUserRoot: false,
       },
     }])
   })
 
   it('refuses to copy over or delete a shipped preset', async () => {
-    await expect(authorCtx.agentPresets.copy('minimal', 'standard')).rejects.toThrow(/already exists/)
+    await expect(authorCtx.agentPresets.copy('narrow', 'standard')).rejects.toThrow(/already exists/)
     await expect(authorCtx.agentPresets.remove('standard')).rejects.toThrow(/ships with the deployment/)
   })
 
   it.each(['../escape', 'a/b', '/abs', 'Upper'])('refuses the uncontainable id %j', async (id) => {
     // The id becomes a directory name under the user root, so containment is
     // checked on the id rather than on the joined path afterwards.
-    await expect(authorCtx.agentPresets.copy('minimal', id)).rejects.toThrow()
+    await expect(authorCtx.agentPresets.copy('narrow', id)).rejects.toThrow()
   })
 
   it('copies a shipped preset a session then really composes from', async () => {
-    await authorCtx.agentPresets.copy('minimal', 'my-agent', '我的模式')
+    await authorCtx.agentPresets.copy('narrow', 'my-agent', '我的模式')
 
     // Round-trips through the roster as a `user` row carrying the given name
     // and the source's description, over the source's own composition text.
     const preset = await authorCtx.agentPresets.resolve('my-agent')
-    const source = await authorCtx.agentPresets.resolve('minimal')
+    const source = await authorCtx.agentPresets.resolve('narrow')
     expect(preset.trust).toBe('user')
     expect(preset.name).toBe('我的模式')
     expect(preset.description).toBe(source.description)
-    expect(await authorCtx.agentPresets.read('my-agent')).toBe(await authorCtx.agentPresets.read('minimal'))
+    expect(await authorCtx.agentPresets.read('my-agent')).toBe(await authorCtx.agentPresets.read('narrow'))
     // Owner-only, in an owner-only directory: a composition is executable
     // configuration on a machine that may have other users.
     expect((await stat(preset.path)).mode & 0o777).toBe(0o600)
@@ -837,7 +846,7 @@ describe('authoring a preset on the shipped composition', () => {
       setup: agentCtx => authorCtx.agentPresets.mount(agentCtx, 'my-agent').then(() => undefined),
     })
     try {
-      // The same tools the shipped `minimal` composes, from a directory copied
+      // The same tools the lane `narrow` preset composes, from a directory copied
       // through the service into a root outside the installed harness.
       expect(toolNames(authorCtx, handle.agent)).toEqual(['bash', 'str_replace_editor'])
     } finally {
@@ -846,7 +855,7 @@ describe('authoring a preset on the shipped composition', () => {
   })
 
   it('deletes what it copied', async () => {
-    await authorCtx.agentPresets.copy('minimal', 'doomed')
+    await authorCtx.agentPresets.copy('narrow', 'doomed')
 
     await authorCtx.agentPresets.remove('doomed')
 
@@ -865,9 +874,9 @@ describe('the default preset as a user setting', () => {
   it('composes an unnamed session from the stored default, not the composed one', async () => {
     expect(ctx.agentPresets.defaultId).toBe('standard')
 
-    await ctx.settings.update(SETTINGS_NAMESPACE, { default: 'minimal' })
+    await ctx.settings.update(SETTINGS_NAMESPACE, { default: 'narrow' })
     try {
-      expect(ctx.agentPresets.defaultId).toBe('minimal')
+      expect(ctx.agentPresets.defaultId).toBe('narrow')
 
       const handle = await ctx.agents.create({
         sessionId: SessionId('preset-user-default'),
@@ -895,14 +904,14 @@ describe('a session keeps the preset it was created with', () => {
   it('refuses to adopt a live session under a different preset', async () => {
     const handle = await ctx.agents.create({
       sessionId: SessionId('preset-locked'),
-      meta: { agentPreset: 'minimal' },
-      setup: agentCtx => ctx.agentPresets.mount(agentCtx, 'minimal').then(() => undefined),
+      meta: { agentPreset: 'narrow' },
+      setup: agentCtx => ctx.agentPresets.mount(agentCtx, 'narrow').then(() => undefined),
     })
     try {
       // The api-proxy guard reads exactly this: the header records what the
       // session runs, so naming anything else is a caller error rather than a
-      // switch. Its history was produced under `minimal`'s two tools.
-      expect(handle.agent.session.header.agentPreset).toBe('minimal')
+      // switch. Its history was produced under `narrow`'s two tools.
+      expect(handle.agent.session.header.agentPreset).toBe('narrow')
     } finally {
       await handle.dispose()
     }
@@ -920,10 +929,10 @@ describe('a composition that configures its own preset roots', () => {
     // A workspace-shared root beside the deployment: one preset of its own,
     // plus a directory that claims a shipped id.
     teamRoot = join(home, 'team-presets')
-    const minimalComposition = await readFile(join(SHIPPED_PRESET_ROOT, 'minimal', 'agent.cordis.yml'), 'utf8')
-    for (const id of ['team-spec', 'minimal']) {
+    const ptcComposition = await readFile(join(SHIPPED_PRESET_ROOT, 'ptc', 'agent.cordis.yml'), 'utf8')
+    for (const id of ['team-spec', 'ptc']) {
       await mkdir(join(teamRoot, id), { recursive: true })
-      await writeFile(join(teamRoot, id, 'agent.cordis.yml'), minimalComposition)
+      await writeFile(join(teamRoot, id, 'agent.cordis.yml'), ptcComposition)
     }
     // The user layer of the reported regression: a profile's cordis.patch.yml
     // configuring a shared preset root. The plugin must EXTEND it with its
@@ -949,11 +958,11 @@ describe('a composition that configures its own preset roots', () => {
     ])
 
     const listed = await rootsCtx.agentPresets.list()
-    expect(listed.map(preset => preset.id).sort()).toEqual(['cordis', 'minimal', 'ptc', 'standard', 'team-spec'])
+    expect(listed.map(preset => preset.id).sort()).toEqual(['cordis', 'ptc', 'standard', 'team-spec'])
     expect(listed.every(preset => preset.broken === undefined)).toBe(true)
     // The shipped root comes first: a configured directory claiming a shipped
     // id is shadowed, never the other way around.
-    expect(listed.find(preset => preset.id === 'minimal')?.trust).toBe('system')
+    expect(listed.find(preset => preset.id === 'ptc')?.trust).toBe('system')
     expect(listed.find(preset => preset.id === 'team-spec')?.trust).toBe('user')
   })
 

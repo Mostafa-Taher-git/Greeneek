@@ -7,6 +7,7 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  realpathSync,
   rmSync,
   writeFileSync,
 } from 'node:fs'
@@ -15,10 +16,10 @@ import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 
 /**
- * Stage a self-contained app dir for electron-builder: `pnpm deploy --prod`
- * the desktop package (workspace symlinks become real files honoring every
- * `files` list), assert the runtime closure, apply platform fixups, and
- * render the builder config. Idempotent; runnable locally and in CI.
+ * Stage a self-contained app dir for electron-builder from the already-
+ * installed workspace `node_modules`, avoiding `pnpm deploy`/`pnpm install`
+ * TTY/interactive blockers. Asserts runtime closure, applies platform
+ * fixups, and renders the builder config.
  */
 
 const packageDir = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -72,6 +73,7 @@ function main() {
   mkdirSync(staging, { recursive: true })
   copyFileSync(join(repoRoot, 'pnpm-lock.yaml'), join(staging, 'pnpm-lock.yaml'))
   writeFileSync(join(staging, 'pnpm-workspace.yaml'), 'packages:\n', 'utf8')
+  const installEnv = { ...process.env, CI: 'true', NPM_CONFIG_IGNORE_SCRIPTS: 'true' }
 
   const desktopPackage = JSON.parse(readFileSync(join(packageDir, 'package.json'), 'utf8'))
   const desktopDeps = new Set([
@@ -101,54 +103,35 @@ function main() {
     'assets/bin/pnpm.cmd',
     'LICENSE',
   ]) {
-    copyFileSync(join(packageRoot, asset), join(staging, asset))
+    copyFileEnsureDir(join(packageDir, asset), join(staging, asset))
   }
   mkdirSync(join(staging, 'third-party-licenses'), { recursive: true })
 
   const gnkEntry = assertPresent(
     join(staging, 'node_modules', '@greeneek', 'gnk', 'lib', 'bin.js'),
-    'deploy dropped the CLI entry; check @greeneek/gnk `files`',
+    'staging dropped the CLI entry; check @greeneek/gnk `files`',
   )
   assertPresent(
     join(staging, 'node_modules', '@greeneek', 'gnk-web-frontend', 'dist', 'index.html'),
-    'deploy dropped the frontend; check @greeneek/gnk-web-frontend `files`',
+    'staging dropped the frontend; check @greeneek/gnk-web-frontend `files`',
   )
   const pnpmCandidates = ['pnpm.cjs', 'pnpm.mjs']
     .map((file) => join(staging, 'node_modules', 'pnpm', 'bin', file))
     .filter((file) => existsSync(file))
-  if (pnpmCandidates.length === 0) fail('deploy dropped the pnpm CLI')
+  if (pnpmCandidates.length === 0) fail('staging dropped the pnpm CLI')
   console.log(`stage: gnk entry ${gnkEntry}`)
   console.log(`stage: pnpm entry ${pnpmCandidates[0]}`)
-  assertPresent(join(staging, 'node_modules', 'electron-updater', 'out', 'AppUpdater.js'), 'deploy dropped electron-updater')
-  assertPresent(join(staging, 'node_modules', 'koffi'), 'deploy dropped koffi (it must be a direct dependency)')
+  assertPresent(join(staging, 'node_modules', 'electron-updater', 'out', 'AppUpdater.js'), 'staging dropped electron-updater')
+  assertPresent(join(staging, 'node_modules', 'koffi'), 'staging dropped koffi (it must be a direct dependency)')
   try {
     run(process.execPath, ['-e', `import('koffi').then(() => console.log('stage: koffi loads'))`], staging)
   } catch {
     fail('koffi does not load from staging')
   }
 
-  // 3. Runtime assets the `files` list carries.
-  for (const asset of [
-    'src/main.js',
-    'src/gnk-service.js',
-    'src/gnk-node-entry.mjs',
-    'src/gnk-windows-hidden-console.mjs',
-    'src/gnk-windows-child-process-hide.mjs',
-    'src/startup.html',
-    'assets/tray.png',
-    'assets/logo-splash.png',
-    'assets/bin/pnpm',
-    'assets/bin/pnpm.cmd',
-    'package.json',
-    'LICENSE',
-  ]) {
-    assertPresent(join(staging, asset), 'deploy dropped a desktop runtime file; check @greeneek/desktop `files`')
-  }
-  mkdirSync(join(staging, 'third-party-licenses'), { recursive: true })
-
-  // 4. Bundled-node probe: executable, matching platform/arch.
+  // 3. Bundled-node probe: executable, matching platform/arch.
   const nodeBinary = join(staging, 'node_modules', 'node', 'bin', platform === 'win32' ? 'node.exe' : 'node')
-  assertPresent(nodeBinary, 'the `node` package did not deploy its binary (install with lifecycle scripts enabled)')
+  assertPresent(nodeBinary, 'the `node` package did not stage its binary')
   try {
     accessCheck(nodeBinary)
   } catch {
@@ -162,7 +145,7 @@ function main() {
   }
   console.log(`stage: staged node ${runtime.platform}/${runtime.arch} probes clean`)
 
-  // 5. The entry wrapper loads under the staged node (no-arg run must exit
+  // 4. The entry wrapper loads under the staged node (no-arg run must exit
   // with the usage error, proving the wrapper plus its koffi chain resolve).
   const wrapper = spawnSync(nodeBinary, [join(staging, 'src', 'gnk-node-entry.mjs')], { encoding: 'utf8' })
   const wrapperOut = `${wrapper.stdout || ''}${wrapper.stderr || ''}`
@@ -171,7 +154,7 @@ function main() {
   }
   console.log('stage: entry wrapper loads under staged node')
 
-  // 6. Linux fixups: packaged pty works without rebuild; landlock keeps +x.
+  // 5. Linux fixups: packaged pty works without rebuild; landlock keeps +x.
   if (platform === 'linux') {
     const pty = spawnSync(nodeBinary, ['-e', `import('node-pty').then((pty) => { const p = pty.spawn('echo', ['OK'], {}); p.onData((d) => { process.stdout.write(d); p.kill() }) })`], {
       cwd: join(staging, 'node_modules', '@greeneek', 'gnk'),
@@ -196,17 +179,17 @@ function main() {
     }
   }
 
-  // 7. Third-party licenses for the bundled runtimes.
+  // 6. Third-party licenses for the bundled runtimes.
   copyLicense(join(staging, 'node_modules', 'node'), staging)
   copyLicense(join(staging, 'node_modules', 'koffi'), staging)
   copyLicense(join(staging, 'node_modules', 'pnpm'), staging)
 
-  // 8. Build icons into staging buildResources.
+  // 7. Build icons into staging buildResources.
   mkdirSync(join(staging, 'assets'), { recursive: true })
-  copyFileSync(join(packageDir, 'assets', 'icon.png'), join(staging, 'assets', 'icon.png'))
-  copyFileSync(join(packageDir, 'assets', 'icon.ico'), join(staging, 'assets', 'icon.ico'))
+  copyFileEnsureDir(join(packageDir, 'assets', 'icon.png'), join(staging, 'assets', 'icon.png'))
+  copyFileEnsureDir(join(packageDir, 'assets', 'icon.ico'), join(staging, 'assets', 'icon.ico'))
 
-  // 9. Shim line-endings and exec bit.
+  // 8. Shim line-endings and exec bit.
   const shim = join(staging, 'assets', 'bin', 'pnpm')
   try {
     chmodSync(shim, 0o755)
@@ -214,13 +197,18 @@ function main() {
     fail(`cannot chmod the pnpm shim: ${shim}`)
   }
 
-  // 10. Render the builder config.
+  // 9. Render the builder config.
   renderBuilderConfig(staging)
   console.log(`stage: complete → ${staging}`)
 }
 
 function accessCheck(path) {
   accessSync(path, constants.X_OK)
+}
+
+function copyFileEnsureDir(from, to) {
+  mkdirSync(dirname(to), { recursive: true })
+  copyFileSync(from, to)
 }
 
 function landlockBinaries(dir) {
@@ -234,6 +222,34 @@ function landlockBinaries(dir) {
   }
   walk(dir)
   return found
+}
+
+function copyPrunedModules(src, dest, desktopDeps, rootDev) {
+  mkdirSync(dest, { recursive: true })
+  for (const entry of readdirSync(src, { withFileTypes: true })) {
+    const from = join(src, entry.name)
+    const to = join(dest, entry.name)
+    if (entry.name === 'node_modules' || entry.name === '.pnpm') continue
+    if (!shouldCopyModule(entry, desktopDeps, rootDev)) continue
+    if (entry.isSymbolicLink()) {
+      mkdirSync(to, { recursive: true })
+      copyPrunedModules(from, to, desktopDeps, rootDev)
+      continue
+    }
+    if (entry.isDirectory()) {
+      copyPrunedModules(from, to, desktopDeps, rootDev)
+    } else {
+      copyFileSync(from, to)
+    }
+  }
+}
+
+function shouldCopyModule(entry, desktopDeps, rootDev) {
+  if (entry.name.startsWith('@')) return true
+  if (entry.name === 'node_modules') return true
+  if (entry.name === '.package-lock.json') return false
+  if (entry.isDirectory()) return true
+  return true
 }
 
 function copyLicense(packageDir, staging) {

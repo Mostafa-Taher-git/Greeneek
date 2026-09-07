@@ -14,7 +14,20 @@ import {
 } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
-import lefthookPackage from 'lefthook/package.json' with { type: 'json' }
+
+function tryImportLefthookPackage() {
+  try {
+    return require('lefthook/package.json')
+  } catch {
+    return null
+  }
+}
+
+const lefthookPackage = tryImportLefthookPackage()
+if (lefthookPackage === null) {
+  console.warn('[install-lefthook] lefthook is not installed; skipping worktree hook setup.')
+  process.exit(0)
+}
 
 const MINIMUM_GIT = [2, 26, 0]
 const HOOKS_DIRECTORY = 'gnk-hooks'

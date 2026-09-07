@@ -52,6 +52,8 @@ linux:
     - target: deb
       arch:
         - x64
+  deb:
+    compression: gz
 publish:
   provider: github
   owner: Mostafa-Taher-git

@@ -976,3 +976,22 @@ export const IconCirclePile16 = ({ size = 16, className }: IconProps) => (
     </g>
   </svg>
 )
+
+/** lucide brain-circuit (ISC), scaled to the 16 grid: Maestro mode placeholder. */
+export const IconBrainCircuit16 = ({ size = 16, className }: IconProps) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path
+      d="M8 3.33a2 2 0 1 0-4 .08 2.67 2.67 0 0 0-1.68 3.85 2.67 2.67 0 0 0 .37 4.39A2.67 2.67 0 1 0 8 12Zm-2-3.33a3 3 0 0 0 2-2.67M4 3.42A2 2 0 0 0 4.27 4.33M2.32 7.26a2.67 2.67 0 0 1 .39-.26M4 12a2.67 2.67 0 0 1-1.31-.34M8 8.67h2.67M8 12h4a1.33 1.33 0 0 1 1.33 1.33v.67M8 5.33h5.33m-2.66 0V3.33a1.33 1.33 0 0 1 1.33-1.33"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <g fill="currentColor">
+      <circle cx="10.67" cy="8.67" r=".33" />
+      <circle cx="12" cy="2" r=".33" />
+      <circle cx="13.33" cy="14" r=".33" />
+      <circle cx="13.33" cy="5.33" r=".33" />
+    </g>
+  </svg>
+)

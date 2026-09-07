@@ -1,0 +1,2 @@
+#!/bin/sh
+exec "$GNK_DESKTOP_NODE_EXECUTABLE" "$GNK_DESKTOP_PNPM_CLI" "$@"

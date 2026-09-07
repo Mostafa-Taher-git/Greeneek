@@ -7,6 +7,7 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  rmSync,
   writeFileSync,
 } from 'node:fs'
 import { basename, dirname, join, resolve } from 'node:path'
@@ -29,8 +30,8 @@ function fail(message) {
   process.exit(1)
 }
 
-function run(command, args, cwd) {
-  const result = spawnSync(command, args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
+function run(command, args, cwd, env) {
+  const result = spawnSync(command, args, { cwd, env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
   if (result.status !== 0) {
     fail(`${command} ${args.join(' ')} failed:\n${result.stderr || result.stdout}`)
   }
@@ -64,9 +65,45 @@ function main() {
     }
   }
 
-  // 2. Deploy the production closure.
-  console.log(`stage: pnpm deploy → ${staging}`)
-  run('pnpm', ['--filter', '@greeneek/desktop', 'deploy', staging, '--prod'], repoRoot)
+  // 2. Stage a production closure by copying the already-installed
+  // workspace `node_modules` and pruning devDependency leaves. This
+  // avoids `pnpm deploy`/`pnpm install` TTY prompts entirely.
+  console.log(`stage: copy node_modules → ${staging}`)
+  mkdirSync(staging, { recursive: true })
+  copyFileSync(join(repoRoot, 'pnpm-lock.yaml'), join(staging, 'pnpm-lock.yaml'))
+  writeFileSync(join(staging, 'pnpm-workspace.yaml'), 'packages:\n', 'utf8')
+
+  const desktopPackage = JSON.parse(readFileSync(join(packageDir, 'package.json'), 'utf8'))
+  const desktopDeps = new Set([
+    ...Object.keys(desktopPackage.dependencies || {}),
+    ...Object.keys(desktopPackage.peerDependencies || {}),
+  ])
+  const rootPackage = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8'))
+  const rootDev = new Set([
+    ...Object.keys(rootPackage.devDependencies || {}),
+    'electron',
+    'electron-builder',
+  ])
+
+  copyPrunedModules(join(repoRoot, 'node_modules'), join(staging, 'node_modules'), desktopDeps, rootDev)
+
+  console.log(`stage: copy desktop runtime files`)
+  for (const asset of [
+    'src/main.js',
+    'src/gnk-service.js',
+    'src/gnk-node-entry.mjs',
+    'src/gnk-windows-hidden-console.mjs',
+    'src/gnk-windows-child-process-hide.mjs',
+    'src/startup.html',
+    'assets/tray.png',
+    'assets/logo-splash.png',
+    'assets/bin/pnpm',
+    'assets/bin/pnpm.cmd',
+    'LICENSE',
+  ]) {
+    copyFileSync(join(packageRoot, asset), join(staging, asset))
+  }
+  mkdirSync(join(staging, 'third-party-licenses'), { recursive: true })
 
   const gnkEntry = assertPresent(
     join(staging, 'node_modules', '@greeneek', 'gnk', 'lib', 'bin.js'),

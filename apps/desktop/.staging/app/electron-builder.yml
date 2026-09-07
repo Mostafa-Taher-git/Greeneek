@@ -1,0 +1,60 @@
+# Rendered by scripts/stage.mjs into staging (version stamped from the tag).
+appId: com.greeneek.desktop
+productName: Greeneek
+artifactName: Greeneek-Desktop-0.1.0-linux-${arch}.${ext}
+asar: false
+compression: maximum
+npmRebuild: false
+detectUpdateChannel: false
+electronLanguages:
+  - en
+  - zh_CN
+files:
+  - src/**/*
+  - config/**/*
+  - assets/**/*
+  - package.json
+  - LICENSE
+  - third-party-licenses/**/*
+  - node_modules/**/*
+  - '!**/*.map'
+  - '!**/test/**'
+  - '!**/*.md'
+directories:
+  buildResources: assets
+win:
+  icon: assets/icon.ico
+  artifactName: Greeneek-Desktop-0.1.0-windows-${arch}.${ext}
+  verifyUpdateCodeSignature: false
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: zip
+      arch:
+        - x64
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  runAfterFinish: false
+linux:
+  icon: assets/icon.png
+  category: Development
+  executableName: greeneek
+  maintainer: Mostafa-Taher-git
+  artifactName: Greeneek-Desktop-0.1.0-linux-${arch}.${ext}
+  target:
+    - target: AppImage
+      arch:
+        - x64
+    - target: deb
+      arch:
+        - x64
+publish:
+  provider: github
+  owner: Mostafa-Taher-git
+  repo: Greeneek
+  releaseType: release
+  publishAutoUpdate: true

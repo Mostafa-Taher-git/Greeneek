@@ -13,12 +13,17 @@ import {
   writeFileSync,
 } from 'node:fs'
 import { spawnSync } from 'node:child_process'
+import { createRequire } from 'node:module'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
 
-async function tryImportLefthookPackage() {
+const require = createRequire(import.meta.url)
+
+function tryImportLefthookPackage() {
   try {
-    const mod = await import('lefthook/package.json')
-    return mod.default ?? mod
+    // require(), not import(): bare JSON-module import throws
+    // ERR_IMPORT_ATTRIBUTE_MISSING on current Node, which would
+    // misreport an installed lefthook as missing and skip silently.
+    return require('lefthook/package.json')
   } catch {
     return null
   }

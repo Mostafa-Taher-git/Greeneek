@@ -92,13 +92,12 @@ function main() {
   copyPrunedModules(join(packageDir, 'node_modules'), join(staging, 'node_modules'), rootDev, new Set(), false, staging)
 
   console.log(`stage: copy desktop runtime files`)
+  // Whole directories, never a file list: a cherry-picked list silently
+  // drops new modules (main.js imports eight files the old list missed,
+  // which crashed the packaged app on launch).
+  copyDirRecursive(join(packageDir, 'src'), join(staging, 'src'))
+  copyDirRecursive(join(packageDir, 'config'), join(staging, 'config'))
   for (const asset of [
-    'src/main.js',
-    'src/gnk-service.js',
-    'src/gnk-node-entry.mjs',
-    'src/gnk-windows-hidden-console.mjs',
-    'src/gnk-windows-child-process-hide.mjs',
-    'src/startup.html',
     'assets/tray.png',
     'assets/logo-splash.png',
     'assets/bin/pnpm',
@@ -107,6 +106,8 @@ function main() {
   ]) {
     copyFileEnsureDir(join(packageDir, asset), join(staging, asset))
   }
+  assertStagedDirMatches(join(packageDir, 'src'), join(staging, 'src'))
+  assertStagedShellImports(join(staging, 'src'))
   mkdirSync(join(staging, 'third-party-licenses'), { recursive: true })
 
   // 2b. Workspace closure: the pruned copy skips nested `@greeneek`
@@ -228,6 +229,43 @@ function accessCheck(path) {
 function copyFileEnsureDir(from, to) {
   mkdirSync(dirname(to), { recursive: true })
   copyFileSync(from, to)
+}
+
+/** Every relative import inside the staged shell must resolve: main.js loads under Electron with no unit coverage, so a typo'd path crashes the packaged app on launch. */
+function assertStagedShellImports(shellDir) {
+  const sources = []
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name)
+      if (entry.isDirectory() && !entry.isSymbolicLink()) walk(full)
+      else if (entry.name.endsWith('.js') || entry.name.endsWith('.mjs')) sources.push(full)
+    }
+  }
+  walk(shellDir)
+  for (const file of sources) {
+    const content = readFileSync(file, 'utf8')
+    const specifiers = [
+      ...content.matchAll(/\bfrom\s+['"](\.[^'"]+)['"]/g),
+      ...content.matchAll(/\bimport\s*\(\s*['"](\.[^'"]+)['"]/g),
+    ].map((match) => match[1])
+    for (const spec of new Set(specifiers)) {
+      const base = resolve(dirname(file), spec)
+      const target = existsSync(base) ? base
+        : existsSync(`${base}.js`) ? `${base}.js`
+        : existsSync(`${base}.mjs`) ? `${base}.mjs`
+        : undefined
+      if (target === undefined) fail(`staged shell import does not resolve: ${spec} (imported from ${file})`)
+    }
+  }
+}
+
+/** Every file under the source dir must exist in staging: fails the build if runtime files ever regress to a cherry-picked list. */
+function assertStagedDirMatches(fromDir, toDir) {
+  for (const entry of readdirSync(fromDir, { withFileTypes: true })) {
+    const to = join(toDir, entry.name)
+    if (entry.isDirectory() && !entry.isSymbolicLink()) assertStagedDirMatches(join(fromDir, entry.name), to)
+    else if (!existsSync(to)) fail(`staging dropped desktop runtime file: ${to}`)
+  }
 }
 
 function landlockBinaries(dir) {

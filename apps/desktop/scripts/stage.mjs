@@ -18,6 +18,7 @@ import {
 import { basename, dirname, join, relative, resolve } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
+import { builtinModules, createRequire } from 'node:module'
 
 /**
  * Stage a self-contained app dir for electron-builder from the already-
@@ -107,6 +108,22 @@ function main() {
     copyFileEnsureDir(join(packageDir, asset), join(staging, asset))
   }
   mkdirSync(join(staging, 'third-party-licenses'), { recursive: true })
+
+  // 2b. Workspace closure: the pruned copy skips nested `@greeneek`
+  // scopes, so transitive workspace deps resolved in-source through a
+  // package's own directory would be missing at runtime (smoke caught
+  // `@greeneek/gnk-atomic-write` this way). Walk staged manifests to a
+  // fixpoint, materializing every missing `@greeneek` dependency from
+  // the workspace source.
+  const workspaceIndex = workspaceSourceIndex(repoRoot)
+  materializeWorkspaceClosure(staging, workspaceIndex, rootDev)
+
+  // 2c. External closure: nested external copies may miss their own
+  // transitive deps (smoke caught `safe-buffer` under `compression`),
+  // which pnpm resolves through the store layout. Walk every staged
+  // manifest to a fixpoint, materializing missing externals from the
+  // workspace source; version conflicts nest under the importer.
+  materializeExternalClosure(staging, repoRoot, workspaceIndex)
 
   const gnkEntry = assertPresent(
     join(staging, 'node_modules', '@greeneek', 'gnk', 'lib', 'bin.js'),
@@ -285,6 +302,12 @@ function copyPrunedModules(src, dest, rootDev, visited, isWorkspacePkg, hoistDes
               const innerFrom = join(from, inner.name)
               const innerTo = join(to, inner.name)
               try {
+                // Nested `@greeneek` scopes stay empty by design: every
+                // workspace dependency is hoisted to the staging top level
+                // (plus the closure pass below), so nested copies would only
+                // duplicate bytes and stall NTFS checkouts. Resolution walks
+                // up to the top level; the single lockstep version makes
+                // flat hoisting sound.
                 if (inner.name === '@greeneek') continue
                 if (!shouldCopyModule(inner, rootDev)) continue
                 if (inner.isSymbolicLink()) {
@@ -389,6 +412,384 @@ function copyDirRecursive(src, dest) {
       copyFileSync(from, to)
     }
   }
+}
+
+function workspaceSourceIndex(repoRoot) {
+  const index = new Map()
+  const candidateDirs = []
+  for (const group of ['packages', 'apps', 'vendor', 'native']) {
+    let entries
+    try {
+      entries = readdirSync(join(repoRoot, group), { withFileTypes: true })
+    } catch {
+      continue
+    }
+    for (const entry of entries) {
+      if (!entry.isDirectory() || entry.name.startsWith('.') || entry.name === 'node_modules') continue
+      candidateDirs.push(join(repoRoot, group, entry.name))
+    }
+  }
+  const packageDirs = []
+  for (const dir of candidateDirs) {
+    if (dir.includes('/packages/')) {
+      let pkgs
+      try {
+        pkgs = readdirSync(dir, { withFileTypes: true })
+      } catch {
+        continue
+      }
+      for (const pkg of pkgs) {
+        if (pkg.isDirectory() && !pkg.name.startsWith('.') && pkg.name !== 'node_modules') {
+          packageDirs.push(join(dir, pkg.name))
+        }
+      }
+    } else {
+      packageDirs.push(dir)
+      // Workspace roots that host their own packages dir (native builders).
+      let nested
+      try {
+        nested = readdirSync(join(dir, 'packages'), { withFileTypes: true })
+      } catch {
+        continue
+      }
+      for (const pkg of nested) {
+        if (pkg.isDirectory() && !pkg.name.startsWith('.') && pkg.name !== 'node_modules') {
+          packageDirs.push(join(dir, 'packages', pkg.name))
+        }
+      }
+    }
+  }
+  for (const dir of packageDirs) {
+    let manifest
+    try {
+      manifest = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8'))
+    } catch {
+      continue
+    }
+    if (typeof manifest.name === 'string' && !index.has(manifest.name)) index.set(manifest.name, dir)
+  }
+  return index
+}
+
+function readStagedManifest(dir) {
+  try {
+    return JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8'))
+  } catch {
+    return undefined
+  }
+}
+
+function collectStagedWorkspacePackages(top) {
+  const found = new Map()
+  let scopes
+  try {
+    scopes = readdirSync(top, { withFileTypes: true })
+  } catch {
+    return found
+  }
+  const nested = []
+  for (const entry of scopes) {
+    const dir = join(top, entry.name)
+    const manifest = readStagedManifest(dir)
+    if (manifest?.name) {
+      found.set(manifest.name, { dir, manifest })
+      nested.push(join(dir, 'node_modules', '@greeneek'))
+    }
+  }
+  for (const scope of nested) {
+    let entries
+    try {
+      entries = readdirSync(scope, { withFileTypes: true })
+    } catch {
+      continue
+    }
+    for (const entry of entries) {
+      const dir = join(scope, entry.name)
+      const manifest = readStagedManifest(dir)
+      if (manifest?.name && !found.has(manifest.name)) found.set(manifest.name, { dir, manifest })
+    }
+  }
+  return found
+}
+
+/** Remove a staging entry left as an absolute symlink by the pruned copy: it would dangle on user machines, so the closure replaces it with a real copy. */
+function replaceStagingSymlink(dest) {
+  try {
+    if (lstatSync(dest).isSymbolicLink()) rmSync(dest, { recursive: true, force: true })
+  } catch {
+    // Absent or unreadable: the caller re-checks existence.
+  }
+}
+
+/** Node builtins need no staging: bare imports resolve to core, which shadows any same-named shim exactly as in the source workspace. */
+const BUILTIN_DEP_NAMES = new Set(builtinModules.map((name) => name.replace(/^node:/, '')))
+
+/** External (non-`@greeneek`, non-builtin) dependency names a staged manifest may import, mapped to whether any non-optional field declares them. Uninstalled optionals are another platform's build (koffi/landlock impls) and only warn. */
+function externalDeps(manifest) {
+  const required = new Set()
+  const optionalOnly = new Set()
+  for (const field of ['dependencies', 'peerDependencies', 'optionalDependencies']) {
+    for (const dep of Object.keys(manifest[field] ?? {})) {
+      if (dep.startsWith('@greeneek/') || dep.startsWith('node:') || BUILTIN_DEP_NAMES.has(dep)) continue
+      if (field === 'optionalDependencies' && !required.has(dep)) optionalOnly.add(dep)
+      else {
+        required.add(dep)
+        optionalOnly.delete(dep)
+      }
+    }
+  }
+  return { required, optionalOnly }
+}
+
+/** Whether Node's walk-up from `importerDir` finds `depName` inside staging. */
+function resolvesInStaging(staging, importerDir, depName) {
+  const parts = depName.split('/')
+  let dir = importerDir
+  for (;;) {
+    if (existsSync(join(dir, 'node_modules', ...parts, 'package.json'))) return true
+    if (dir === staging) return false
+    const parent = dirname(dir)
+    if (parent === dir || relative(staging, parent).startsWith('..')) return false
+    dir = parent
+  }
+}
+
+/** First source directory resolving `depName` from any anchor (workspace layout, store included). */
+function findExternalSourceDir(anchors, depName) {
+  for (const anchor of anchors) {
+    let searchPaths
+    try {
+      searchPaths = createRequire(anchor).resolve.paths(depName)
+    } catch {
+      continue
+    }
+    for (const searchPath of searchPaths ?? []) {
+      const candidate = join(searchPath, ...depName.split('/'))
+      if (existsSync(join(candidate, 'package.json'))) return candidate
+    }
+  }
+  return undefined
+}
+
+/** Every staged manifest (workspace and external), top level plus one nesting level. Symlinked importers resolve through their source tree, so callers skip nesting under them. */
+function collectAllStagedManifests(staging) {
+  const found = []
+  const topModules = join(staging, 'node_modules')
+  const nestedScopes = []
+  const visitScope = (scopeDir) => {
+    let entries
+    try {
+      entries = readdirSync(scopeDir, { withFileTypes: true })
+    } catch {
+      return
+    }
+    for (const entry of entries) {
+      const dir = join(scopeDir, entry.name)
+      if (entry.name.startsWith('@')) {
+        visitScope(dir)
+        continue
+      }
+      const manifest = readStagedManifest(dir)
+      if (manifest?.name !== undefined) {
+        let symlinked = false
+        try {
+          symlinked = lstatSync(dir).isSymbolicLink()
+        } catch {
+          continue
+        }
+        found.push({ dir, manifest, symlinked })
+        nestedScopes.push(join(dir, 'node_modules'))
+      }
+    }
+  }
+  visitScope(topModules)
+  for (const scope of nestedScopes) visitScope(scope)
+  return found
+}
+
+/** Exact store copy of an installed external: `<store>/<escaped-name>@<version>/node_modules/<name>`. Falls back to a sorted prefix hit when peers suffix the directory. */
+function storeDirFor(stores, depName, version) {
+  const escaped = depName.replace('/', '+')
+  const exact = `${escaped}@${version}`
+  for (const store of stores) {
+    if (existsSync(join(store, exact, 'node_modules', ...depName.split('/'), 'package.json'))) {
+      return join(store, exact, 'node_modules', ...depName.split('/'))
+    }
+  }
+  for (const store of stores) {
+    let entries
+    try {
+      entries = readdirSync(store)
+    } catch {
+      continue
+    }
+    const hit = entries.filter((name) => name === exact || name.startsWith(`${exact}_`)).sort()[0]
+    if (hit !== undefined && existsSync(join(store, hit, 'node_modules', ...depName.split('/'), 'package.json'))) {
+      console.log(`stage: store fallback ${depName}@${version} → ${hit}`)
+      return join(store, hit, 'node_modules', ...depName.split('/'))
+    }
+  }
+  return undefined
+}
+
+/** Whether any workspace store carries `depName` at any version: absent everywhere means an unmet peer the source tree itself cannot resolve. */
+function installedInStores(stores, depName) {
+  const escaped = depName.replace('/', '+')
+  for (const store of stores) {
+    let entries
+    try {
+      entries = readdirSync(store)
+    } catch {
+      continue
+    }
+    if (entries.some((name) => name.startsWith(`${escaped}@`))) return true
+  }
+  return false
+}
+
+function materializeExternalClosure(staging, repoRoot, workspaceIndex) {
+  const skippedOptionals = new Set()
+  const skippedUnmetPeers = new Set()
+  // Loop-invariant inputs stay in the closure so the per-importer helper keeps three parameters.
+  const sourceAnchorsFor = (stagedDir, manifestName, manifestVersion) => {
+    const anchors = []
+    if (manifestName?.startsWith('@greeneek/') === true) {
+      const wsSource = workspaceIndex.get(manifestName)
+      if (wsSource !== undefined) anchors.push(join(wsSource, 'package.json'))
+    }
+    const rel = relative(join(staging, 'node_modules'), stagedDir)
+    if (rel !== '' && !rel.startsWith('..')) {
+      for (const base of [join(repoRoot, 'apps', 'desktop', 'node_modules'), join(repoRoot, 'node_modules')]) {
+        const mapped = join(base, rel)
+        if (existsSync(join(mapped, 'package.json'))) {
+          anchors.push(join(mapped, 'package.json'))
+          try {
+            anchors.push(join(realpathSync(mapped), 'package.json'))
+          } catch {
+            // Non-resolvable link target: the literal anchor already covers it.
+          }
+          break
+        }
+      }
+    }
+    if (manifestName !== undefined && manifestVersion !== undefined && !manifestName.startsWith('@greeneek/')) {
+      const stores = [join(repoRoot, 'apps', 'desktop', 'node_modules', '.pnpm'), join(repoRoot, 'node_modules', '.pnpm')]
+      const stored = storeDirFor(stores, manifestName, manifestVersion)
+      if (stored !== undefined) anchors.push(join(stored, 'package.json'))
+    }
+    anchors.push(join(repoRoot, 'package.json'), join(repoRoot, 'apps', 'desktop', 'package.json'))
+    return anchors
+  }
+  const stores = [join(repoRoot, 'apps', 'desktop', 'node_modules', '.pnpm'), join(repoRoot, 'node_modules', '.pnpm')]
+  for (let round = 0; round < 50; round++) {
+    const importers = collectAllStagedManifests(staging)
+    let progressed = false
+    for (const { dir, manifest, symlinked } of importers) {
+      if (symlinked) continue
+      const anchors = sourceAnchorsFor(dir, manifest.name, manifest.version)
+      const { required, optionalOnly } = externalDeps(manifest)
+      for (const dep of new Set([...required, ...optionalOnly])) {
+        if (resolvesInStaging(staging, dir, dep)) continue
+        const source = findExternalSourceDir(anchors, dep)
+        if (source === undefined) {
+          if (!required.has(dep)) {
+            if (!skippedOptionals.has(dep)) {
+              skippedOptionals.add(dep)
+              console.log(`stage: skipping uninstallable optional ${dep} (required by ${manifest.name ?? dir})`)
+            }
+            continue
+          }
+          // Unmet peers resolve to nothing in the source tree either; warn once and mirror that behavior.
+          if (!installedInStores(stores, dep)) {
+            if (!skippedUnmetPeers.has(dep)) {
+              skippedUnmetPeers.add(dep)
+              console.log(`stage: skipping unmet peer ${dep} (required by ${manifest.name ?? dir})`)
+            }
+            continue
+          }
+          fail(`staging dropped external ${dep} (required by ${manifest.name ?? dir}) and it is not resolvable from the workspace`)
+        }
+        const sourceManifest = readStagedManifest(source)
+        const topDest = join(staging, 'node_modules', ...dep.split('/'))
+        replaceStagingSymlink(topDest)
+        const topManifest = readStagedManifest(topDest)
+        const dest = topManifest !== undefined && topManifest.version !== sourceManifest?.version
+          ? join(dir, 'node_modules', ...dep.split('/'))
+          : topDest
+        if (existsSync(join(dest, 'package.json'))) continue
+        copyDirRecursive(source, dest)
+        console.log(`stage: closure materialized external ${dep}@${sourceManifest?.version ?? '?'} (required by ${manifest.name ?? dir})`)
+        progressed = true
+      }
+    }
+    if (!progressed) {
+      console.log('stage: external closure complete')
+      return
+    }
+  }
+  fail('external closure did not converge after 50 rounds')
+}
+
+function materializeWorkspaceClosure(staging, workspaceIndex, rootDev) {
+  const top = join(staging, 'node_modules', '@greeneek')
+  const destFor = (dep) => join(staging, 'node_modules', ...dep.split('/'))
+  const skippedOptionals = new Set()
+  for (let round = 0; round < 50; round++) {
+    const staged = collectStagedWorkspacePackages(top)
+    const missing = new Map()
+    for (const [name, { manifest }] of staged) {
+      const required = new Set()
+      const optionalOnly = new Set()
+      for (const field of ['dependencies', 'peerDependencies', 'optionalDependencies']) {
+        for (const dep of Object.keys(manifest[field] ?? {})) {
+          if (!dep.startsWith('@greeneek/') || dep === name || staged.has(dep)) continue
+          if (existsSync(join(destFor(dep), 'package.json'))) continue
+          if (field === 'optionalDependencies' && !required.has(dep)) optionalOnly.add(dep)
+          else {
+            required.add(dep)
+            optionalOnly.delete(dep)
+          }
+        }
+      }
+      for (const dep of required) if (!missing.has(dep)) missing.set(dep, { importer: name, required: true })
+      for (const dep of optionalOnly) {
+        if (missing.has(dep) || existsSync(join(destFor(dep), 'package.json'))) continue
+        // Uninstallable optionals (another platform's native build) never join the map, so the fixpoint still converges.
+        if (!workspaceIndex.has(dep)) {
+          if (!skippedOptionals.has(dep)) {
+            skippedOptionals.add(dep)
+            console.log(`stage: skipping uninstallable optional ${dep} (required by ${name})`)
+          }
+          continue
+        }
+        missing.set(dep, { importer: name, required: false })
+      }
+    }
+    if (missing.size === 0) {
+      console.log(`stage: workspace closure complete (${staged.size} packages)`)
+      return
+    }
+    for (const [dep, { importer }] of missing) {
+      const source = workspaceIndex.get(dep)
+      // Uninstallable optionals never reach this map (filtered above); anything left without a source is a real gap.
+      if (!source) fail(`staging dropped ${dep} (required by ${importer}) and it is not a workspace package`)
+      const dest = destFor(dep)
+      replaceStagingSymlink(dest)
+      if (!existsSync(join(dest, 'package.json'))) {
+        // Same pruned machinery as the main copy: nested `@greeneek`
+        // scopes are skipped (they resolve by walk-up to this top level)
+        // while external deps ride along, so the copy stays bounded.
+        copyPrunedModules(source, dest, rootDev, new Set(), true, staging)
+        const copied = readStagedManifest(dest)
+        if (!copied) fail(`staging dropped ${dep} (required by ${importer}): copy produced no manifest`)
+        if (copied.main && !existsSync(join(dest, copied.main))) {
+          fail(`staged ${dep} is missing its built entry ${copied.main} (run \`pnpm run build\` before staging)`)
+        }
+        console.log(`stage: closure materialized ${dep} (required by ${importer})`)
+      }
+    }
+  }
+  fail('workspace closure did not converge after 50 rounds')
 }
 
 function copyLicense(packageDir, staging) {

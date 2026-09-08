@@ -25,23 +25,34 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build:lib:client
       - run: pnpm build:web
-      - run: node apps/desktop/scripts/stamp-version.mjs
-        env:
-          GITHUB_REF: ${{ github.ref }}
+      - if: startsWith(github.ref, 'refs/tags/desktop-')
+        run: node apps/desktop/scripts/stamp-version.mjs "${{ github.ref_name }}"
       - run: pnpm --filter @greeneek/desktop run dist:win
-      - run: node apps/desktop/scripts/prepare-release-assets.mjs
+      - run: node apps/desktop/scripts/prepare-release-assets.mjs --dist apps/desktop/.staging/app/dist
+      - name: Assert updater channel files
+        run: |
+          ls apps/desktop/.staging/app/dist/latest*.yml
+          ls apps/desktop/.staging/app/dist/*.blockmap
+        shell: bash
       - uses: actions/upload-artifact@v4
         with:
           name: windows-desktop-artifacts
           path: |
             apps/desktop/.staging/app/dist/*.exe
             apps/desktop/.staging/app/dist/*.zip
+            apps/desktop/.staging/app/dist/*.yml
+            apps/desktop/.staging/app/dist/*.blockmap
+            apps/desktop/.staging/app/dist/Greeneek-Desktop-latest-*
           retention-days: 14
-      - uses: softprops/action-gh-release@v2
+      - if: startsWith(github.ref, 'refs/tags/desktop-')
+        uses: softprops/action-gh-release@v2
         with:
           files: |
             apps/desktop/.staging/app/dist/*.exe
             apps/desktop/.staging/app/dist/*.zip
+            apps/desktop/.staging/app/dist/*.yml
+            apps/desktop/.staging/app/dist/*.blockmap
+            apps/desktop/.staging/app/dist/Greeneek-Desktop-latest-*
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

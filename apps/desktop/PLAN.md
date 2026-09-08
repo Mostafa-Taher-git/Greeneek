@@ -53,7 +53,7 @@ Use `assets/` as-is (`icon.png`/`icon.ico` build inputs, `tray.png`, `logo-splas
 
 ### Phase 5 — Staging and platform fixups
 
-`stage.mjs`: require built `apps/cli/lib/bin.js` and `apps/web/dist/index.html`; `pnpm deploy --prod` into `.staging/app`; assert the deployed entry, frontend, pnpm entry, updater, koffi, and node binary; probe the staged node for platform/arch; load the entry wrapper under it; node-pty spawn check; landlock exec-bit assert on Linux; render `electron-builder.yml` with targets, hardening flags, and the `publish` block.
+`stage.mjs`: require built `apps/cli/lib/bin.js` and `apps/web/dist/index.html`; copy the already-installed workspace `node_modules` with dev leaves pruned (never `pnpm deploy`/`pnpm install`, which prompt); nested `@greeneek` scopes stay empty while a manifest fixpoint hoists every missing workspace and external dependency to the staging top level (platform-foreign optionals and unmet peers warn and skip); assert the deployed entry, frontend, pnpm entry, updater, koffi, and node binary; probe the staged node for platform/arch; load the entry wrapper under it; node-pty spawn check; landlock exec-bit assert on Linux; render `electron-builder.yml` with targets, hardening flags, and the `publish` block.
 
 ### Phase 6 — Package and install verification
 
@@ -61,7 +61,7 @@ Use `assets/` as-is (`icon.png`/`icon.ico` build inputs, `tray.png`, `logo-splas
 
 ### Phase 7 — CI and release plumbing
 
-`desktop.yml`: tag `desktop-v*` (plus manual dispatch) builds per OS (install, stamp, build, package tests, stage, dist, smoke), then a release job asserting channel files (`latest.yml`, `latest-linux.yml`, blockmaps, zsync) before uploading artifacts plus `-latest-` aliases as a stable release. A dispatch build publishes nothing.
+`desktop.yml`: tag `desktop-v*` (plus manual dispatch) builds per OS (install, stamp, build, package tests, stage, dist, smoke), then a release job asserting channel files (`latest.yml`, `latest-linux.yml`, blockmaps, zsync) before uploading artifacts plus `-latest-` aliases as a stable release. A dispatch build stamps and publishes nothing.
 
 ### Phase 8 — QA matrix
 

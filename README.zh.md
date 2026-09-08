@@ -31,9 +31,7 @@ Greeneek 是开源 agent harness（智能体框架）（`gnk`）。
 - 应用品牌保持为 **Greeneek**。
 - Logo 保持为 **Greeneek**。
 - 绿色主题保持为 **Greeneek green**。
-- 模型**属于你，而非我们**：本项目不运营任何推理服务，也不自带模型提供方。
-  每一条模型路由都由你自己的 API 密钥激活。在**设置 → 模型**中添加密钥
-  （或设置对应的环境变量，例如 `OPENAI_API_KEY`），该提供方即可在各处选用。
+- 模型**属于你，而非我们**：本项目不运营任何推理服务，也不自带模型提供方。 每一条模型路由都由你自己的 API 密钥激活。在**设置 → 模型**中添加密钥 （或设置对应的环境变量，例如 `OPENAI_API_KEY`），该提供方即可在各处选用。
 
 ## 开发者预览
 
@@ -54,6 +52,12 @@ npx @greeneek/gnk web
 ```
 
 该命令默认会在 `http://127.0.0.1:3080` 启动 Web UI，本机启动时还会用默认浏览器打开页面。通过 SSH 启动时只打印宿主机 URL，因为本地转发地址由 SSH 客户端或编辑器持有。传入 `--no-open` 可仅运行服务器而不打开浏览器。详见 [Web UI 指南](docs/user/guide/index.zh.md)。
+
+<a id="desktop-app"></a>
+
+### 桌面端应用
+
+如需安装包（Linux `.deb`/`AppImage`、Windows 安装器/便携版），请从 [GitHub Releases](https://github.com/Mostafa-Taher-git/Greeneek/releases) 下载最新的 `desktop-v*` 版本，并按[桌面端指南](apps/desktop/README.zh.md)操作。桌面端启动的是同一个本地 Web UI，并可从后续版本自更新。
 
 <a id="run-from-source"></a>
 

@@ -26,7 +26,12 @@ It is built on an **everything-is-a-plugin** architecture and powered by [Cordis
 
 Documentation: see the in-repository [user guide](docs/user/guide/index.md) and [development guide](docs/development.md).
 
+## Brand and models
 
+- The app brand stays **Greeneek**.
+- The logo stays **Greeneek**.
+- The green theme stays **Greeneek green**.
+- Models are **yours, not ours**: this project operates no inference service and bundles no model provider. Every model route is activated by your own API key. Add the key under **Settings → Models** (or set the matching environment variable, e.g. `OPENAI_API_KEY`) to use that provider anywhere.
 
 ## Developer preview
 
@@ -45,6 +50,10 @@ npx @greeneek/gnk web
 ```
 
 The command starts the Web UI at `http://127.0.0.1:3080` by default and opens it in the default browser for a local launch. An SSH launch only prints the host URL because the SSH client or editor owns the local forwarded address. Pass `--no-open` to run the server without opening a browser. See [Web UI guide](docs/user/guide/index.md).
+
+### Desktop app
+
+For an installable app (Linux `.deb`/`AppImage`, Windows installer/portable), download the latest `desktop-v*` release from [GitHub Releases](https://github.com/Mostafa-Taher-git/Greeneek/releases) and follow the [desktop guide](apps/desktop/README.md). The app boots the same local Web UI and self-updates from future releases.
 
 ### Run from source
 

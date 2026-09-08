@@ -106,17 +106,27 @@ async function main() {
   })
   console.log('smoke-packaged: readiness line captured')
 
-  // 4. Token URL loads the UI marker; bare origin answers 401.
+  // 4. Token URL mints the auth cookie and redirects; the cookie loads the UI marker; bare origin answers 401.
+  // Plain fetch keeps no cookie jar, so follow the redirect by hand: the
+  // first hop must mint `gnk-auth-*`, the second (with the cookie) serves the UI.
   const token = extractLaunchToken(readyUrl)
   if (token === undefined) {
     cleanup()
     fail('readiness URL carries no token')
   }
-  const page = await fetch(readyUrl, { redirect: 'follow' })
+  const tokenRes = await fetch(readyUrl, { redirect: 'manual' })
+  const setCookie = tokenRes.headers.get('set-cookie') ?? ''
+  if (![301, 302, 303, 307, 308].includes(tokenRes.status) || !/gnk-auth-/.test(setCookie)) {
+    cleanup()
+    fail(`token URL answers ${tokenRes.status} without minting the auth cookie`)
+  }
+  console.log('smoke-packaged: token URL mints the auth cookie')
+  const cookie = setCookie.split(';')[0]
+  const page = await fetch(new URL(readyUrl).origin, { headers: { cookie } })
   const body = await page.text()
   if (page.status !== 200 || !body.includes('__GNK_BOOT__')) {
     cleanup()
-    fail(`token URL answers ${page.status} without the boot marker`)
+    fail(`authed origin answers ${page.status} without the boot marker`)
   }
   console.log('smoke-packaged: token URL serves the UI')
   const bare = await fetch(new URL(readyUrl).origin, { redirect: 'manual' })

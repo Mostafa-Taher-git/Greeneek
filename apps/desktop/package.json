@@ -7,7 +7,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Mostafa-Taher-git/Greeneek.git",
+    "url": "git+https://github.com/greeneek/greeneek-harness.git",
     "directory": "apps/desktop"
   },
   "publishConfig": {

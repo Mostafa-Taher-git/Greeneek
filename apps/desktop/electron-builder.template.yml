@@ -6,6 +6,7 @@ asar: false
 compression: maximum
 npmRebuild: false
 detectUpdateChannel: false
+afterPack: ./config/after-pack.cjs
 electronLanguages:
   - en
   - zh_CN
@@ -16,10 +17,12 @@ files:
   - package.json
   - LICENSE
   - third-party-licenses/**/*
-  - node_modules/**/*
   - '!**/*.map'
   - '!**/test/**'
   - '!**/*.md'
+  # No node_modules entry on purpose: the builder's own module scan cannot
+  # read this pre-pruned closure, so config/after-pack.cjs grafts it verbatim
+  # after the file copy (staging already boots green under smoke).
 directories:
   buildResources: assets
 win:

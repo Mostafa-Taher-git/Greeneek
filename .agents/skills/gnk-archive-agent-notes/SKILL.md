@@ -51,18 +51,16 @@ For rejected notes:
 - delete streaming workflow progress through tool calls — 972 words: its ACP/UI premise is obsolete;
 - delete dropping ACP terminal metadata — 362 words: the later automation-only ACP decision resolved the question.
 
-## Archive one implemented triplet
+## Archive one implemented note
 
-1. Move the complete `foo.md`, `foo.zh.md`, and `foo.i18n.yaml` triplet from `implemented/<kind>/` to `archived/<kind>/`; `implemented` is deliberately absent from the archive path.
-2. Make no body edits. Insert only `Archived: YYYY-MM-DD` immediately below `Status: implemented` in both language files, using the archival date and the same value on both sides.
-3. Re-record the sidecar hashes mechanically for the two metadata-only edits. Do not translate, reformat, update facts, or repair links inside the note.
-4. Search for inbound links from active prose. Redirect them to current authority, retarget them to the archived path only when the historical snapshot is intentionally cited, or delete them. Never verify or repair links out of the archived note.
-5. Run `pnpm run verify-archived-agent-notes --write`. Its append-only mode first proves every existing seal still matches, then adds only the new triplet hashes. Run the normal verifier afterward.
+1. Move `foo.md` from `implemented/<kind>/` to `archived/<kind>/`; `implemented` is deliberately absent from the archive path.
+2. Make no body edits. Insert only `Archived: YYYY-MM-DD` immediately below `Status: implemented`, using the archival date.
+3. Search for inbound links from active prose. Redirect them to current authority, retarget them to the archived path only when the historical snapshot is intentionally cited, or delete them. Never verify or repair links out of the archived note.
 
-After the triplet is sealed, never edit, move, translate, reformat, or delete it. Archived notes remain valid inbound-link targets but are historical snapshots, not authority for current behavior.
+After archiving, never edit, move, translate, reformat, or delete it. Archived notes remain valid inbound-link targets but are historical snapshots, not authority for current behavior.
 
 ## Validate and report
 
-Run the archive verifier's focused test, `pnpm run verify-archived-agent-notes`, `pnpm run doc-sync`, `pnpm run lint`, and `git diff --check`; select any additional evidence through [gnk-pre-push-checks](../gnk-pre-push-checks/SKILL.md).
+Run `pnpm run doc-sync`, `pnpm run lint`, and `git diff --check`; select any additional evidence through [gnk-pre-push-checks](../gnk-pre-push-checks/SKILL.md).
 
-Report active implemented notes kept, implemented notes archived, rejected notes kept/deleted, proposed notes rejected if any, and every genuinely borderline case with its word count and chosen outcome. Do not claim archived outbound links are valid: the archive verifier intentionally never checks them.
+Report active implemented notes kept, implemented notes archived, rejected notes kept/deleted, proposed notes rejected if any, and every genuinely borderline case with its word count and chosen outcome. Do not claim archived outbound links are valid.

@@ -12,4 +12,15 @@ node_modules/
 
 # Logs
 *.log
+
+# Build outputs / staging artifacts
+.staging/
+.artifacts/
+.gnk-build/
+apps/*/dist/
+packages/*/dist/
+vendor/*/dist/
+**/dist/
+**/lib/
+**/*.tsbuildinfo
 ```

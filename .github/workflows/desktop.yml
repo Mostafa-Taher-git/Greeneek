@@ -23,6 +23,7 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm build:lib:host
       - run: pnpm build:lib:client
       - run: pnpm build:web
       - if: startsWith(github.ref, 'refs/tags/desktop-')

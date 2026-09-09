@@ -49,9 +49,6 @@ linux:
   maintainer: Mostafa-Taher-git
   artifactName: Greeneek-Desktop-__DESKTOP_VERSION__-linux-${arch}.${ext}
   target:
-    - target: AppImage
-      arch:
-        - x64
     - target: deb
       arch:
         - x64

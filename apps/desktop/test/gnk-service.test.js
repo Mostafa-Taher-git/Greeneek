@@ -82,6 +82,19 @@ describe('gnk-service', () => {
     assert.ok(env.PATH.startsWith('/app/assets/bin:'))
   })
 
+  it('plants GNK_SAFE_MODE only for safe-mode boots', () => {
+    const base = {
+      env: { PATH: '/usr/bin' },
+      gnkHome: '/h',
+      nodeExecutable: '/app/node',
+      pnpmEntry: '/app/pnpm.cjs',
+      toolDirectory: '/app/assets/bin',
+      platform: 'linux',
+    }
+    assert.equal(buildSpawnEnvironment(base).GNK_SAFE_MODE, undefined)
+    assert.equal(buildSpawnEnvironment({ ...base, safeMode: true }).GNK_SAFE_MODE, '1')
+  })
+
   it('looks up PATH case-insensitively on Windows', () => {
     assert.equal(resolveEnvironmentPathKey({ Path: 'C:\\x' }, 'win32'), 'Path')
     assert.equal(resolveEnvironmentPathKey({ path: 'C:\\x' }, 'win32'), 'path')

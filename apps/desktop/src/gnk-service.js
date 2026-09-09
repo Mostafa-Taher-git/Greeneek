@@ -145,7 +145,7 @@ export function resolveEnvironmentPathKey(env, platform = process.platform) {
 /**
  * Child environment: scrubbed of Electron/Node loader inheritance, carrying
  * the desktop markers, the bundled pnpm, and the shim dir up front on PATH.
- * @param options - base env, dirs, entries, and platform.
+ * @param options - base env, dirs, entries, platform, and safe mode.
  * @returns the child environment mapping.
  */
 export function buildSpawnEnvironment({
@@ -155,6 +155,7 @@ export function buildSpawnEnvironment({
   pnpmEntry,
   toolDirectory,
   platform = process.platform,
+  safeMode = false,
 }) {
   const pathKey = resolveEnvironmentPathKey(env, platform)
   const separator = platform === 'win32' ? ';' : ':'
@@ -169,6 +170,7 @@ export function buildSpawnEnvironment({
     GNK_DESKTOP: '1',
     GNK_DESKTOP_NODE_EXECUTABLE: nodeExecutable,
     GNK_DESKTOP_PNPM_CLI: pnpmEntry,
+    ...(safeMode ? { GNK_SAFE_MODE: '1' } : {}),
     NO_COLOR: '1',
     npm_config_side_effects_cache: 'false',
     PNPM_CONFIG_SIDE_EFFECTS_CACHE: 'false',
@@ -250,6 +252,7 @@ export function startGnkService({
   platform = process.platform,
   timeoutMs = platform === 'win32' ? 120_000 : 60_000,
   patch,
+  safeMode = false,
   onLog,
   onProgress,
   spawnImpl = spawn,
@@ -282,6 +285,7 @@ export function startGnkService({
       pnpmEntry,
       toolDirectory,
       platform,
+      safeMode,
     }),
     stdio: ['ignore', 'pipe', 'pipe'],
     windowsHide: true,

@@ -4,6 +4,7 @@ export const GNK_HOME_ENV = 'GNK_HOME'
 export const HARNESS_DIR_NAME = 'harness'
 export const LAUNCH_ROOT_DIR_NAME = 'launch-root'
 export const UPDATE_SKIP_FILE_NAME = 'update-skip.json'
+export const BOOT_HEALTH_FILE_NAME = 'boot-health.json'
 export const GNK_LOG_FILE_NAME = 'gnk.log'
 
 /**
@@ -47,6 +48,15 @@ export function gnkLogPath(logsDir) {
  */
 export function updateSkipPath(userData) {
   return join(userData, UPDATE_SKIP_FILE_NAME)
+}
+
+/**
+ * Consecutive boot-failure counter backing safe mode.
+ * @param userData - the app's userData directory.
+ * @returns the counter-file path.
+ */
+export function bootHealthPath(userData) {
+  return join(userData, BOOT_HEALTH_FILE_NAME)
 }
 
 /**

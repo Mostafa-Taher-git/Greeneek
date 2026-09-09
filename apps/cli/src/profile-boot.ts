@@ -103,6 +103,19 @@ export function resolveTelemetryPatch(disabledEnv: string | undefined, hasRow: b
 }
 
 /**
+ * Resolve the safe-mode switch into its layer policy. ANY non-empty value
+ * boots core bundles only: the profile's own layer, the home layer, and
+ * `--patch` overlays are skipped while the telemetry privacy switch stays
+ * honored downstream. A recovery switch prefers on-by-mistake over
+ * off-by-mistake, like the telemetry one.
+ * @param safeModeEnv - the raw `GNK_SAFE_MODE` value (`undefined` when unset).
+ * @returns true when user layers must be skipped.
+ */
+export function resolveSafeMode(safeModeEnv: string | undefined): boolean {
+  return (safeModeEnv ?? '') !== ''
+}
+
+/**
  * Load a resolved profile for `name` and (re)write the empty root config. The
  * root is always rewritten: the whole composition is patch layers, and the
  * vendored Loader's tree write-back (a plugin self-disposing persists the
@@ -124,6 +137,8 @@ export function prepareProfile(name: string, userLayer = true): Profile {
 /** One profile's patch layers, in application order. */
 interface ComposedProfile {
   profile: Profile
+  /** Whether user layers were skipped (safe mode boots core bundles only). */
+  safe: boolean
   /** Bundle layers concatenated — the part below the user layers on a live reload. */
   bundlePatches: PatchOptions[]
   /** The home-level user layer (`$GNK_HOME/cordis.patch.yml`), applied after the profile's own. */
@@ -136,7 +151,7 @@ interface ComposedProfile {
 function allPatches(composed: ComposedProfile): PatchOptions[] {
   return [
     ...composed.bundlePatches,
-    ...composed.profile.patches,
+    ...(composed.safe ? [] : composed.profile.patches),
     ...composed.homePatches,
     ...composed.overlays,
   ]
@@ -159,8 +174,9 @@ async function composeProfile(
 ): Promise<ComposedProfile> {
   const profile = prepareProfile(name)
   await healProfilesModuleFallback({ installAnchor: INSTALL_ANCHOR, profile })
-  const homePatches = loadOptionalPatches(NAME, homePatchPath()) ?? []
-  const overlays = patchFiles.flatMap(file => loadOverlayPatches(NAME, resolve(file)))
+  const safe = resolveSafeMode(process.env.GNK_SAFE_MODE)
+  const homePatches = safe ? [] : loadOptionalPatches(NAME, homePatchPath()) ?? []
+  const overlays = safe ? [] : patchFiles.flatMap(file => loadOverlayPatches(NAME, resolve(file)))
   const bundlePatches = profile.layers.flatMap(layer => layer.patches)
   const rows = new Map<string, EntryOptions>()
   for (const row of composeEntries([bundlePatches, profile.patches, homePatches, overlays])) {
@@ -169,7 +185,7 @@ async function composeProfile(
   const composedOverlays = [...overlays]
   const telemetryPatch = resolveTelemetryPatch(process.env.GNK_TELEMETRY_DISABLED, rows.has(TELEMETRY_ROW_ID))
   if (telemetryPatch !== undefined) composedOverlays.push(telemetryPatch)
-  return { profile, bundlePatches, homePatches, overlays: composedOverlays }
+  return { profile, safe, bundlePatches, homePatches, overlays: composedOverlays }
 }
 
 /** Options for {@link runProfile}. */
@@ -240,12 +256,17 @@ export async function runProfile(options: RunProfileOptions): Promise<{ ctx: Con
   // objects in place. Reusing one parsed patch object across applications
   // would bake a user override into the bundle's in-memory insert row, so
   // removing the override could never revert the row to the bundle default.
-  const composeLive = (): PatchOptions[] => structuredClone([
-    ...composed.bundlePatches,
-    ...loadOptionalPatches(NAME, composed.profile.patchPath) ?? [],
-    ...loadOptionalPatches(NAME, homePatchPath()) ?? [],
-    ...composed.overlays,
-  ])
+  const composeLive = (): PatchOptions[] => {
+    // Safe mode never recomposes user layers: a live generation must not
+    // reintroduce the layer the recovery skipped.
+    if (composed.safe) return structuredClone([...composed.bundlePatches, ...composed.overlays])
+    return structuredClone([
+      ...composed.bundlePatches,
+      ...loadOptionalPatches(NAME, composed.profile.patchPath) ?? [],
+      ...loadOptionalPatches(NAME, homePatchPath()) ?? [],
+      ...composed.overlays,
+    ])
+  }
   // Cloned for the same insert-aliasing reason as composeLive: the boot
   // application must not mutate the objects later reloads recompose from.
   const ctx = await boot(NAME, rootConfig, structuredClone(allPatches(composed)), (hostCtx) => {

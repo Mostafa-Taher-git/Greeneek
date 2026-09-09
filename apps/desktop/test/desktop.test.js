@@ -5,6 +5,7 @@ import {
   gnkLogPath,
   launchRootDir,
   resolveDesktopGnkHome,
+  bootHealthPath,
   updateSkipPath,
   webProfileDir,
 } from '../src/paths.js'
@@ -49,6 +50,7 @@ describe('paths', () => {
     assert.equal(launchRootDir('/u'), '/u/launch-root')
     assert.equal(gnkLogPath('/logs'), '/logs/gnk.log')
     assert.equal(updateSkipPath('/u'), '/u/update-skip.json')
+    assert.equal(bootHealthPath('/u'), '/u/boot-health.json')
     assert.equal(webProfileDir('/h'), '/h/profiles/web')
   })
 })

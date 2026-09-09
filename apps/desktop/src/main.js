@@ -12,6 +12,11 @@ import {
   Tray,
 } from 'electron'
 import { clearStaleGnkAuthCookies } from './cookies.js'
+import {
+  clearBootFailures,
+  recordBootFailure,
+  SAFE_MODE_FAILURE_THRESHOLD,
+} from './boot-health.js'
 import { registerDesktopBridge } from './desktop-bridge.js'
 import { startGnkService } from './gnk-service.js'
 import {
@@ -144,21 +149,25 @@ async function launch() {
     console.warn(`System tray is unavailable: ${error instanceof Error ? error.message : String(error)}`)
   }
 
-  service = startGnkService({
-    appDir: fileURLToPath(new URL('..', import.meta.url)),
-    gnkHome,
-    launchDir: launchRoot,
-    logPath,
-    onProgress: () => console.log('gnk service is starting…'),
-  })
+  const bootService = (safeMode) => {
+    service = startGnkService({
+      appDir: fileURLToPath(new URL('..', import.meta.url)),
+      gnkHome,
+      launchDir: launchRoot,
+      logPath,
+      safeMode,
+      onProgress: () => console.log('gnk service is starting…'),
+    })
+    return service.ready
+  }
 
-  try {
-    serviceUrl = await service.ready
+  const finishBoot = async () => {
     await startupReady
     await clearStaleGnkAuthCookies(mainWindow.webContents.session.cookies, serviceUrl)
     await mainWindow?.loadURL(serviceUrl)
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
+  }
+
+  const failBoot = async (message) => {
     await dialog.showMessageBox({
       type: 'error',
       title: `${APP_NAME} failed to start`,
@@ -166,8 +175,36 @@ async function launch() {
       detail: `${message}\n\nFull output is in the log file.`,
     })
     app.quit()
-    return
   }
+
+  try {
+    serviceUrl = await bootService(false)
+    await finishBoot()
+  } catch (error) {
+    const failures = await recordBootFailure(userData)
+    if (failures < SAFE_MODE_FAILURE_THRESHOLD) {
+      const message = error instanceof Error ? error.message : String(error)
+      await failBoot(message)
+      return
+    }
+    service?.stop()
+    await dialog.showMessageBox({
+      type: 'info',
+      title: `${APP_NAME} safe mode`,
+      message: 'Greeneek failed to start repeatedly, so it is starting in safe mode.',
+      detail: 'Only core plugins load. Disable the broken plugin in Settings, then restart to leave safe mode.',
+      buttons: ['OK'],
+    })
+    try {
+      serviceUrl = await bootService(true)
+      await finishBoot()
+    } catch (safeError) {
+      const message = safeError instanceof Error ? safeError.message : String(safeError)
+      await failBoot(message)
+      return
+    }
+  }
+  await clearBootFailures(userData)
 
   // Second attempt now that the profile exists.
   await ensurePinnedStore(webProfileDir(gnkHome))

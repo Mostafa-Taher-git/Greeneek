@@ -33,6 +33,8 @@ import { assertEgressAllowed } from '@greeneek/gnk-egress'
 
 // Inside a provider/options resolver: validate the base URL and each
 // materialized per-model URL before constructing anything network-facing.
+declare const options: { baseURL: string }
+const baseURL = options.baseURL
 assertEgressAllowed(baseURL)
 ```
 

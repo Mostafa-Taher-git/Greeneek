@@ -35,7 +35,7 @@ export const t = {
       orRun: 'or run instantly with',
       runsLocal: 'Runs 100% locally · your keys never leave your machine',
       providers: 'Works with every major model provider',
-      providersList: ['OpenAI', 'Anthropic', 'Google', 'DeepSeek', 'Groq', 'Mistral', 'xAI', 'OpenRouter', 'Azure'],
+      providersList: ['OpenAI', 'Anthropic', 'Google', 'Groq', 'Mistral', 'xAI', 'OpenRouter', 'Azure'],
     },
     screenshot: {
       caption: 'Greeneek workspace — sessions, agent chat and diff review in one window',

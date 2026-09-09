@@ -134,7 +134,7 @@ describe('web e2e: Models settings page configures a dormant provider', () => {
   it('stores the key under the derived reference and keeps the route live', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-models-add'))
     const dialog = page.getByRole('dialog', { name: '设置' })
-    await dialog.getByRole('button', { name: '编辑 minimax-cn' }).click()
+    await dialog.getByRole('button', { name: '编辑 minimax-cn', exact: true }).click()
     await dialog.getByRole('textbox', { name: 'API 密钥', exact: true }).fill('sk-e2e-minimax')
     await dialog.getByRole('button', { name: '保存', exact: true }).click()
     // The profile lands in settings.yaml with only the derived reference, the
@@ -161,7 +161,7 @@ describe('web e2e: Models settings page configures a dormant provider', () => {
   it('applies a customized-settings field as a merge patch', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-models-customized'))
     const dialog = page.getByRole('dialog', { name: '设置' })
-    await dialog.getByRole('button', { name: '编辑 minimax-cn' }).click()
+    await dialog.getByRole('button', { name: '编辑 minimax-cn', exact: true }).click()
     await dialog.getByText('自定义设置').click()
     const url = dialog.getByLabel('API 地址')
     await url.waitFor({ timeout: 10_000 })
@@ -182,7 +182,7 @@ describe('web e2e: Models settings page configures a dormant provider', () => {
   it('filters the discovered model catalog and preserves hidden selections', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-models-picker'))
     const settingsDialog = page.getByRole('dialog', { name: '设置' })
-    await settingsDialog.getByRole('button', { name: '编辑 minimax-cn' }).click()
+    await settingsDialog.getByRole('button', { name: '编辑 minimax-cn', exact: true }).click()
     await settingsDialog.getByText('自定义设置').click()
     await settingsDialog.getByRole('button', { name: '获取可用模型' }).click()
 
@@ -260,7 +260,7 @@ describe('web e2e: Models settings page configures a dormant provider', () => {
   it('reopens the name and protocol a declared route was created with', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-models-declared-identity'))
     const dialog = page.getByRole('dialog', { name: '设置' })
-    await dialog.getByRole('button', { name: '编辑 Acme Gateway (acme-gateway)' }).click()
+    await dialog.getByRole('button', { name: '编辑 Acme Gateway (acme-gateway)', exact: true }).click()
     await dialog.getByText('自定义设置').click()
     // The create card asked this route for a name and a protocol because
     // nothing can default them; the editor reaches the same two fields rather

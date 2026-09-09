@@ -16,6 +16,9 @@
     - button "命令":
       - img
       - text: 命令
+    - button "关于":
+      - img
+      - text: 关于
   - button "打开配置文件"
   - button "关闭":
     - img

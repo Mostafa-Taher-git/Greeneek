@@ -13,6 +13,12 @@
     - button "Agent 预设":
       - img
       - text: Agent 预设
+    - button "命令":
+      - img
+      - text: 命令
+    - button "关于":
+      - img
+      - text: 关于
   - button "打开配置文件"
   - button "关闭":
     - img
@@ -30,7 +36,7 @@
     - option "cerebras"
     - option "cloudflare-ai-gateway"
     - option "cloudflare-workers-ai"
-    - option "greeneek"
+    - option "deepseek"
     - option "fireworks"
     - option "github-copilot"
     - option "google"

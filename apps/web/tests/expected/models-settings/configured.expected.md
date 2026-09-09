@@ -13,6 +13,12 @@
     - button "Agent 预设":
       - img
       - text: Agent 预设
+    - button "命令":
+      - img
+      - text: 命令
+    - button "关于":
+      - img
+      - text: 关于
   - button "打开配置文件"
   - button "关闭":
     - img
@@ -25,6 +31,7 @@
       - text: minimax-cn
       - img "API 密钥已配置"
       - button "编辑 minimax-cn": 编辑
+      - button "编辑 minimax-cn 的模型": 编辑模型
       - button "删除 minimax-cn": 删除
   - button "添加提供方":
     - img

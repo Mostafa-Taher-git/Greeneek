@@ -13,6 +13,12 @@
     - button "Agent presets":
       - img
       - text: Agent presets
+    - button "Commands":
+      - img
+      - text: Commands
+    - button "About":
+      - img
+      - text: About
   - button "Open configuration file"
   - button "Close":
     - img

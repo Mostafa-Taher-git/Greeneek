@@ -1,26 +1,46 @@
 ```
-# Dependencies
-node_modules/
+# Configuration and build artifacts
+*.cordis.yml
+*.yml.bak
+*.yaml.bak
 
-# Environment
+# Dependencies and build directories
+node_modules/
+dist/
+build/
+target/
+*.tgz
+
+# Python specific
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+*.cache
+
+# Environment files
 .env
 .env.local
-.env.*
+*.env.*
 
-# Editors
+# IDE and editor files
 .vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
 
-# Logs
-*.log
-
-# Build outputs / staging artifacts
-.staging/
-.artifacts/
-.gnk-build/
-apps/*/dist/
-packages/*/dist/
-vendor/*/dist/
-**/dist/
-**/lib/
-**/*.tsbuildinfo
+# Coverage and testing
+.coverage
+coverage/
+htmlcov/
+.pytest_cache/
+.mypy_cache/
 ```

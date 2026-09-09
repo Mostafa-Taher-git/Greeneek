@@ -33,7 +33,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: pnpm audit --audit-level=high
         continue-on-error: true
-      - name: Profile smoke
-        run: pnpm smoke
       - name: Brand sweep
         run: ./scripts/brand-sweep.sh

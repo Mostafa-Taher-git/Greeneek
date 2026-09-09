@@ -1,6 +1,0 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
-#   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-07-27-typescript-sdk-and-sdk-subagent-backend.md
-2026-07-27-typescript-sdk-and-sdk-subagent-backend.md: 3d8b703b29829f875da6958668a534f0e118b1ee
-2026-07-27-typescript-sdk-and-sdk-subagent-backend.zh.md: 243b7ab63042c9e03a9e665bf4dd749ca64546e1

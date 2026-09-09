@@ -1,6 +1,0 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
-#   pnpm run verify-translation-pairing --write .agents/notes/proposed/architecture/2026-06-16-typed-event-schemas.md
-2026-06-16-typed-event-schemas.md: 523ed439f3a0269340934288c97bef30215fc8a8
-2026-06-16-typed-event-schemas.zh.md: 94d7ba56832c900f6530ffe764f30a5bbbf453aa

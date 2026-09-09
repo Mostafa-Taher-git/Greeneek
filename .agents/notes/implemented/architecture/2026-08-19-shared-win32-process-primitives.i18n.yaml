@@ -1,6 +1,0 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
-#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-19-shared-win32-process-primitives.md
-2026-08-19-shared-win32-process-primitives.md: 32811116eb2bb2910035edbc2bebe8cf166ffd74
-2026-08-19-shared-win32-process-primitives.zh.md: fa09fff208349e6733a082c8e7578c28b4dbe24d

@@ -1,6 +1,0 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
-#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-07-20-routed-model-context-and-compaction-policy.md
-2026-07-20-routed-model-context-and-compaction-policy.md: 34d401ed1ad9e26380594a33221828e854f686c0
-2026-07-20-routed-model-context-and-compaction-policy.zh.md: 66109b08de01f2cf87f114e67ebfa7f4f3fdec5e

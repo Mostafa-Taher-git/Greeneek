@@ -1,6 +1,0 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
-#   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-28-read-image-extensionless-paths.md
-2026-08-28-read-image-extensionless-paths.md: 4d47680c30ea393f7baf13737702a1143c24ff4b
-2026-08-28-read-image-extensionless-paths.zh.md: 6c192b95d2f6436022d89c95426ed59830e0a1ac

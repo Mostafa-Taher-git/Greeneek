@@ -1,6 +1,0 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
-#   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-07-30-source-checkout-workdir-distinction.md
-2026-07-30-source-checkout-workdir-distinction.md: 88e4850dd117d98435c9731c334c5d92ab729ccd
-2026-07-30-source-checkout-workdir-distinction.zh.md: 78de661f61064606e3b3f1cddbfe3d6f5807c55f

@@ -1,6 +1,0 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
-#   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-24-route-priced-image-request-pressure.md
-2026-08-24-route-priced-image-request-pressure.md: 18170aed0dc231314337655fa733544f4b475421
-2026-08-24-route-priced-image-request-pressure.zh.md: e5440c0fb6b108e62d03de247ab700fbe7b38a5a

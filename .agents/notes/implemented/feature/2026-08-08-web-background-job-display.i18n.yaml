@@ -1,6 +1,0 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
-#   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-08-web-background-job-display.md
-2026-08-08-web-background-job-display.md: 69f9c1118085433e4540d1e2e1bc57d02c6db6f7
-2026-08-08-web-background-job-display.zh.md: da70305bee98f4d153be3b6ca8bf576a4c450ac6

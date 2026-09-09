@@ -1,6 +1,0 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
-#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-06-11-structured-error-taxonomy.md
-2026-06-11-structured-error-taxonomy.md: 1eb535612a70753f4e16645fb715f4d89ad0ee56
-2026-06-11-structured-error-taxonomy.zh.md: 4a7727fd222974801c9aae81ad78f6adab475fe5

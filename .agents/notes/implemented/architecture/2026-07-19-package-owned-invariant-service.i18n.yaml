@@ -1,6 +1,0 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
-#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-07-19-package-owned-invariant-service.md
-2026-07-19-package-owned-invariant-service.md: 861a8d78146b7499ef76c3eb330bbca086c31ab0
-2026-07-19-package-owned-invariant-service.zh.md: e7356bbd37ec01cd1d7c2bf64c00462d325e459a

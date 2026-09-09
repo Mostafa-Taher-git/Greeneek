@@ -1,6 +1,0 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
-#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-06-30-bash-stdin-env-trusted-plugin-api.md
-2026-06-30-bash-stdin-env-trusted-plugin-api.md: b1d5d1c62600f98ca254200958260a3c00671298
-2026-06-30-bash-stdin-env-trusted-plugin-api.zh.md: 5631a487b445f89db87d28b459a7f00039b27e44

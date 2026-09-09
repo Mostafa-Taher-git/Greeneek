@@ -1,6 +1,0 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
-#   pnpm run verify-translation-pairing --write .agents/notes/implemented/simplification/2026-07-20-remove-stdio-and-echo-agents.md
-2026-07-20-remove-stdio-and-echo-agents.md: 57a7efc40d6347920848303ed94ad4e99dc642ef
-2026-07-20-remove-stdio-and-echo-agents.zh.md: eefc4d902279daa8ed201b0cdab8c461cd73b45e

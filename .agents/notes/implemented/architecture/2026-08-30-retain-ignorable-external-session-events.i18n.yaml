@@ -1,6 +1,0 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
-#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-30-retain-ignorable-external-session-events.md
-2026-08-30-retain-ignorable-external-session-events.md: a21e8cac50d177ffc3b8027c6b4d661e0166db02
-2026-08-30-retain-ignorable-external-session-events.zh.md: 251b501894626f4c0df5f8b3a983a5a34dc4228a

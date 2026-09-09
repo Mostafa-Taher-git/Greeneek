@@ -1,6 +1,0 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
-#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-07-07-tool-call-timeout-policy.md
-2026-07-07-tool-call-timeout-policy.md: 937ed7488a9931204de6b6e19d78d0e0576eb27c
-2026-07-07-tool-call-timeout-policy.zh.md: 85489adb14c753c7b344b8c7b1b4e4188dc18cc4

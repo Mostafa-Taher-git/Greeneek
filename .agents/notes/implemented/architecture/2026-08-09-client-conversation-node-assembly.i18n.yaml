@@ -1,6 +1,0 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
-#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-09-client-conversation-node-assembly.md
-2026-08-09-client-conversation-node-assembly.md: ce6704727b143730c67975f747044b3035abbd48
-2026-08-09-client-conversation-node-assembly.zh.md: be8d0ffa0f1ae5c2a7c2339a98610c8fd6895c80

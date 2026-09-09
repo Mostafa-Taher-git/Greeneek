@@ -1,6 +1,0 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
-#   pnpm run verify-translation-pairing --write packages/llm/plugin-package-inventory-greeneek/README.md
-README.md: f9d49c9f90a50f69aec01333c3b3dceaf1788af2
-README.zh.md: 9d7891b919788035a00569191c420b8683b3a7b3

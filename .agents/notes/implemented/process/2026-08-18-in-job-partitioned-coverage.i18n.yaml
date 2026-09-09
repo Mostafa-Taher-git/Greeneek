@@ -1,6 +1,0 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
-#   pnpm run verify-translation-pairing --write .agents/notes/implemented/process/2026-08-18-in-job-partitioned-coverage.md
-2026-08-18-in-job-partitioned-coverage.md: a353fab7e6012b25d4ed031ba32a97ccf4b30ed8
-2026-08-18-in-job-partitioned-coverage.zh.md: f69dd4d6993a86318c255b5f4ab2434392b79809

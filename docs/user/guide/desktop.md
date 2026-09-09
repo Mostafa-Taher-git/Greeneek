@@ -7,8 +7,8 @@ Greeneek Desktop is an installable wrapper for the Greeneek Web UI. Use it when 
 
 Current Linux packages are available below.
 
-- `deb`: [Greeneek Desktop `.deb`](https://www.greeneek.duckdns.org/downloads/greeneek-desktop-latest-amd64.deb)
-- `AppImage`: [Greeneek Desktop `AppImage`](https://www.greeneek.duckdns.org/downloads/greeneek-desktop-latest-amd64.AppImage)
+- `deb`: [Greeneek Desktop `.deb`](https://greeneek.vercel.app/#download)
+- `AppImage`: [Greeneek Desktop `AppImage`](https://greeneek.vercel.app/#download)
 
 Windows installers and portable builds are not published yet.
 

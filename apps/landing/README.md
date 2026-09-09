@@ -1,8 +1,9 @@
 # Greeneek landing site
 
-Public marketing site for Greeneek: product overview, quick start, desktop
-downloads, and FAQ. English-only single-page Vite + React + Tailwind app that
-builds to one self-contained `dist/index.html`.
+Public marketing site for Greeneek, live at <https://greeneek.vercel.app/>:
+product overview, quick start, desktop downloads, and FAQ. English-only
+single-page Vite + React + Tailwind app that builds to one self-contained
+`dist/index.html`.
 
 ## Develop
 

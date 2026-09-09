@@ -5,7 +5,7 @@ Installable Electron shell for Greeneek. Boots the local `gnk web` service on a 
 
 ## Download
 
-- Linux `.deb` and `AppImage`: [www.greeneek.duckdns.org/downloads](https://www.greeneek.duckdns.org/downloads/)
+- Linux `.deb` and `AppImage`: [greeneek.vercel.app](https://greeneek.vercel.app/#download)
 - Install guide: [docs/user/guide/desktop.md](../../docs/user/guide/desktop.md)
 
 ## Install

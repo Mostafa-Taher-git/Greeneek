@@ -20,7 +20,7 @@ export type AboutSectionProps =
   & PropsLocale<'settings'>
 
 /** Download page for installable desktop builds. */
-const DESKTOP_DOWNLOADS = 'https://www.greeneek.duckdns.org/downloads/'
+const DESKTOP_DOWNLOADS = 'https://greeneek.vercel.app/#download'
 
 /** Poll cadence while a check or download is in flight. */
 const UPDATE_POLL_MS = 2_000

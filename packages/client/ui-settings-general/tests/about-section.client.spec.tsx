@@ -62,7 +62,7 @@ describe('AboutSection', () => {
     expect(await screen.findByText('Greeneek version')).toBeTruthy()
     expect(screen.getByText('1.1.0-alpha.0')).toBeTruthy()
     const link = screen.getByText('Get Greeneek Desktop')
-    expect(link.getAttribute('href')).toBe('https://www.greeneek.duckdns.org/downloads/')
+    expect(link.getAttribute('href')).toBe('https://greeneek.vercel.app/#download')
   })
 
   it('renders Unknown when no version fact exists', async () => {

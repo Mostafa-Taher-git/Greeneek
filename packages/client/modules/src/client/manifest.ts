@@ -301,6 +301,8 @@ export interface ClientModuleLoaderTarget {
 export interface GnkWindow {
   /** Host-composed entry graph, injected before the shell bundle runs; wire-boundary raw until {@link parseBootManifest}. */
   __GNK_BOOT__?: unknown
+  /** Installed Greeneek version, injected by the web-app bundle for the About section; absent when unreadable. */
+  __GNK_VERSION__?: unknown
   /** HTML-installed facade: a pending registration queue, then the live module-system target. */
   __ModuleLoader__?: ClientModuleLoaderTarget
 }

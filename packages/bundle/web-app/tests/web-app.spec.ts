@@ -15,7 +15,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@greeneek/cordis'
 import { createLaunchEnvironmentSnapshot, GNK_LAUNCH_ENVIRONMENT_KEY } from '@greeneek/gnk-launch-environment'
 import SystemPrompt from '@greeneek/gnk-system-prompt'
-import type { WebServer } from '@greeneek/gnk-host-webserver'
+import type { IndexInjection, WebServer } from '@greeneek/gnk-host-webserver'
 import { apply, Config, internals } from '../src/index.ts'
 
 vi.mock('node:child_process', async importOriginal => ({
@@ -43,12 +43,14 @@ afterEach(() => {
   vi.mocked(spawn).mockReset()
   vi.unstubAllEnvs()
   internals.resolveDistIndex = originalResolve
+  internals.resolveGnkVersion = originalVersion
   internals.openBrowser = originalOpenBrowser
   if (dist !== undefined) rmSync(dist, { recursive: true, force: true })
   dist = undefined
 })
 
 const originalResolve = internals.resolveDistIndex
+const originalVersion = internals.resolveGnkVersion
 const originalOpenBrowser = internals.openBrowser
 
 type BrowserLauncher = ChildProcess & { stderr: PassThrough }
@@ -414,5 +416,36 @@ describe('web-app runtime glue', () => {
     errored.emit('error', new Error('spawn failed'))
     await errorAssertion
     expect(errored.listenerCount('close')).toBe(0)
+  })
+
+  it('resolves the lockstep release version from its own manifest', () => {
+    expect(internals.resolveGnkVersion()).toMatch(/^\d+\.\d+\.\d+/)
+  })
+
+  it('injects the installed version as a window global for the About section', async () => {
+    stageDist()
+    const ctx = new Context()
+    ctx.provide('webServer', fakeHttpServer().server)
+    provideConnection(ctx)
+    apply(ctx, new Config({ openBrowser: false, printUrl: false, surfaceContext: false, trustedHosts: [] }))
+    await new Promise(resolve => setTimeout(resolve, 0))
+    const table: IndexInjection[] = []
+    ctx.emit('webserver/index-inject', table)
+    expect(table).toContainEqual({ kind: 'global', name: '__GNK_VERSION__', value: internals.resolveGnkVersion() })
+    await ctx.fiber.dispose()
+  })
+
+  it('omits the version row when the manifest cannot be read', async () => {
+    stageDist()
+    const ctx = new Context()
+    ctx.provide('webServer', fakeHttpServer().server)
+    provideConnection(ctx)
+    internals.resolveGnkVersion = () => undefined
+    apply(ctx, new Config({ openBrowser: false, printUrl: false, surfaceContext: false, trustedHosts: [] }))
+    await new Promise(resolve => setTimeout(resolve, 0))
+    const table: IndexInjection[] = []
+    ctx.emit('webserver/index-inject', table)
+    expect(table).toEqual([])
+    await ctx.fiber.dispose()
   })
 })

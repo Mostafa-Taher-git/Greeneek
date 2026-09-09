@@ -12,6 +12,7 @@
  */
 
 import { spawn, type ChildProcess } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import { networkInterfaces } from 'node:os'
@@ -178,6 +179,23 @@ function resolveDistIndex(): string {
   }
 }
 
+/**
+ * Display version for the About section: this bundle's own manifest version.
+ * Every manifest shares the lockstep release version, so it names the
+ * installation. Display-only — an unreadable manifest yields `undefined` and
+ * the version row is omitted, never a boot failure.
+ * @returns the version string, or `undefined` when the manifest cannot be read.
+ */
+function resolveGnkVersion(): string | undefined {
+  try {
+    const manifestPath = fileURLToPath(new URL('../package.json', import.meta.url))
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as { version?: unknown }
+    return typeof manifest.version === 'string' && manifest.version !== '' ? manifest.version : undefined
+  } catch {
+    return undefined
+  }
+}
+
 /** Start the maintained platform opener without forwarding Harness credentials. */
 function spawnBrowserLauncher(url: string): ChildProcess {
   return spawn(process.execPath, [
@@ -222,8 +240,9 @@ async function openBrowser(url: string): Promise<void> {
 /** Test hooks for the built dist and native browser handoff; production never mutates them. */
 export const internals: {
   resolveDistIndex: () => string
+  resolveGnkVersion: () => string | undefined
   openBrowser: (url: string) => Promise<void>
-} = { resolveDistIndex, openBrowser }
+} = { resolveDistIndex, resolveGnkVersion, openBrowser }
 
 /**
  * Mount the Web runtime: dist serving, surface prompt, the bash runtime
@@ -238,6 +257,10 @@ export function apply(ctx: Context, config: Config): void {
   const handoffBrowser = config.openBrowser && !launchedThroughSsh(ctx)
   // Release dependent rows only after bind-dependent trust has been sampled once.
   ctx.provide(WEB_RUNTIME_SERVICE, runtime)
+  ctx.on('webserver/index-inject', (table) => {
+    const version = internals.resolveGnkVersion()
+    if (version !== undefined) table.push({ kind: 'global', name: '__GNK_VERSION__', value: version })
+  })
   ctx.plugin(FrontendStatic, { distIndex: internals.resolveDistIndex() })
   if (config.surfaceContext) {
     ctx.inject(['systemPrompt'], (promptCtx) => {

@@ -6,9 +6,10 @@ import { WINDOWS_TITLEBAR_HEIGHT } from './windows-titlebar.js'
  * paints it); Linux keeps its native titlebar.
  * @param platform - `process.platform` (injectable for tests).
  * @param useDarkColors - whether the OS reports a dark theme.
+ * @param preload - preload script path for the About/update bridge, if any.
  * @returns the Electron BrowserWindow options.
  */
-export function createWindowOptions(platform = process.platform, useDarkColors = false) {
+export function createWindowOptions(platform = process.platform, useDarkColors = false, preload = undefined) {
   const isWindows = platform === 'win32'
   return {
     width: 1440,
@@ -31,6 +32,7 @@ export function createWindowOptions(platform = process.platform, useDarkColors =
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      ...(preload === undefined ? {} : { preload }),
     },
   }
 }

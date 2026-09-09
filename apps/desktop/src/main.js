@@ -4,6 +4,7 @@ import {
   app,
   BrowserWindow,
   dialog,
+  ipcMain,
   Menu,
   nativeImage,
   nativeTheme,
@@ -11,6 +12,7 @@ import {
   Tray,
 } from 'electron'
 import { clearStaleGnkAuthCookies } from './cookies.js'
+import { registerDesktopBridge } from './desktop-bridge.js'
 import { startGnkService } from './gnk-service.js'
 import {
   gnkLogPath,
@@ -34,6 +36,7 @@ import { applyWindowsTitleBarStyle } from './windows-titlebar.js'
 
 const APP_NAME = 'Greeneek'
 const STARTUP_PAGE = fileURLToPath(new URL('./startup.html', import.meta.url))
+const PRELOAD_SCRIPT = fileURLToPath(new URL('./preload.js', import.meta.url))
 const TRAY_ICON = fileURLToPath(new URL('../assets/tray.png', import.meta.url))
 
 app.setName(APP_NAME)
@@ -89,7 +92,7 @@ function refreshTrayMenu() {
 function createWindow() {
   if (process.platform === 'win32') Menu.setApplicationMenu(null)
 
-  mainWindow = new BrowserWindow(createWindowOptions(process.platform, nativeTheme.shouldUseDarkColors))
+  mainWindow = new BrowserWindow(createWindowOptions(process.platform, nativeTheme.shouldUseDarkColors, PRELOAD_SCRIPT))
 
   if (process.platform === 'win32') {
     mainWindow.setMenu(null)
@@ -178,6 +181,12 @@ async function launch() {
   })
   updateManager.setPrepareToInstall(async () => {
     service?.stop()
+  })
+  registerDesktopBridge({
+    ipcMain,
+    app,
+    appDir: fileURLToPath(new URL('..', import.meta.url)),
+    updateManager,
   })
   updateManager.onStateChange(() => refreshTrayMenu())
   updateManager.start()

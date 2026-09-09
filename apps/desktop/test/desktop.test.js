@@ -175,6 +175,16 @@ describe('window chrome', () => {
     assert.equal(createWindowOptions('linux', false).backgroundColor, '#fdfefa')
   })
 
+  it('keeps the renderer sandboxed with no preload unless the bridge is attached', () => {
+    const bare = createWindowOptions('linux', false)
+    assert.equal(bare.webPreferences.sandbox, true)
+    assert.equal(bare.webPreferences.nodeIntegration, false)
+    assert.equal('preload' in bare.webPreferences, false)
+    const bridged = createWindowOptions('linux', false, '/app/src/preload.js')
+    assert.equal(bridged.webPreferences.preload, '/app/src/preload.js')
+    assert.equal(bridged.webPreferences.sandbox, true)
+  })
+
   it('paints the drag strip against the UI token with a system fallback', () => {
     assert.equal(WINDOWS_TITLEBAR_HEIGHT, 40)
     assert.ok(WINDOWS_TITLEBAR_CSS.includes('var(--dsw-alias-bg-base, Canvas)'))

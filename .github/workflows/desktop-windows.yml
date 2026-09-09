@@ -48,7 +48,7 @@ jobs:
       # v0.2.0 reliability pass: .deb only — Windows publication is parked
       # until the full matrix is declared reliable. The build above still
       # verifies every tag. Re-enable by restoring the gh-release step below.
-      - if: false
+      - if: true
         uses: softprops/action-gh-release@v2
         with:
           name: v0.2.0

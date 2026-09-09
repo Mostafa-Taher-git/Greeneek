@@ -34,7 +34,7 @@ jobs:
           cat apps/desktop/package.json | grep version
       - run: pnpm --filter @greeneek/desktop run dist:linux
       - if: startsWith(github.ref, 'refs/tags/desktop-')
-        run: node apps/desktop/scripts/prepare-release-assets.mjs --dist ../.staging/app/dist --tag "${{ github.ref_name }}"
+        run: node apps/desktop/scripts/prepare-release-assets.mjs --dist apps/desktop/.staging/app/dist --tag "${{ github.ref_name }}"
       - run: node apps/desktop/scripts/prepare-release-assets.mjs --dist apps/desktop/.staging/app/dist
       - uses: actions/upload-artifact@v4
         with:

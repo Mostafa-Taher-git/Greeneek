@@ -17,7 +17,7 @@ Two changes:
 
 1. [scripts/gen-third-party-notices.ts](../../../../scripts/gen-third-party-notices.ts) loads the workspace manifests once in `render()` and threads the map through `collectNpmDeps` → `installedMetadata` → `installedManifest` → `workspaceLinkedManifest` instead of reloading it per external dependency name. The cold `render()` wall time on the same checkout fell from ~893 ms to ~86 ms with byte-identical output (verified by diffing the rendered documents before and after the change).
 
-2. [ci-master.yml](../../../../.github/workflows/ci-master.yml) `serial-windows` step "Run complete unsharded Windows gate inventory serially" gains `GNK_COVERAGE_TEST_TIMEOUT_MS: '90000'`, matching the pull-request `windows-coverage` lane budget. This extends the per-test, expect.poll, and hook budget mechanism defined by [the Windows lane hook and Lefthook budget note](../testing/2026-08-29-windows-lane-hook-and-lefthook-budget.md) to a second lane; that note records which lanes set the env. `scripts/ci-workflow.spec.ts` pins this env with a `toMatchObject` assertion; removing the env turns the spec red (negative control exercised).
+2. `ci-master.yml` `serial-windows` step "Run complete unsharded Windows gate inventory serially" gains `GNK_COVERAGE_TEST_TIMEOUT_MS: '90000'`, matching the pull-request `windows-coverage` lane budget. This extends the per-test, expect.poll, and hook budget mechanism defined by [the Windows lane hook and Lefthook budget note](../testing/2026-08-29-windows-lane-hook-and-lefthook-budget.md) to a second lane; that note records which lanes set the env. `scripts/ci-workflow.spec.ts` pins this env with a `toMatchObject` assertion; removing the env turns the spec red (negative control exercised).
 
 ## Alternatives considered
 

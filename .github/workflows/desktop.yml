@@ -47,13 +47,12 @@ jobs:
       - if: startsWith(github.ref, 'refs/tags/desktop-')
         uses: softprops/action-gh-release@v2
         with:
+          # v0.2.0 reliability pass: .deb only. AppImage, zsync, channel
+          # files, and latest-aliases rejoin the upload list once the full
+          # matrix is declared reliable.
+          name: v0.2.0
           files: |
-            apps/desktop/.staging/app/dist/*.AppImage
             apps/desktop/.staging/app/dist/*.deb
-            apps/desktop/.staging/app/dist/*.zsync
-            apps/desktop/.staging/app/dist/*.yml
-            apps/desktop/.staging/app/dist/*.blockmap
-            apps/desktop/.staging/app/dist/Greeneek-Desktop-latest-*
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

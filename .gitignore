@@ -1,49 +1,70 @@
-CLAUDE.local.md
-.env
-node_modules/
-lib/
-!apps/landing/src/lib/
-*.tsbuildinfo
-pnpm-debug.log
-.pnpm-store/
-.cache/
-examples/*/*.jsonl
-.storages/
-.sessions/
-examples/*/.sessions/
-coverage/
-.coverage-times.json
-.doc-typecheck-*/
-.node-next-types-*/
-.oxlint-contract-*/
-.oxlintrc.contract-*.json
-oxlint-contract-*.ts
-.humanize/
-tmp/
-.claude/commands/
-.claude/launch.json
-.claude/settings.json
-.vscode/
-.DS_Store
-.idea
-mise.toml
-dist-exe/
-python/sdk-runtime/src/greeneek_harness_runtime/runtime/greeneek-harness-sdk-runtime-*
-python/sdk-runtime/src/greeneek_harness_runtime/runtime/node/
-python/**/__pycache__/
-python/**/.pytest_cache/
-packages/**/__pycache__/
-apps/web/dist/
-apps/landing/dist/
-.artifacts/
-.gnk-build/
-.playwright-mcp/
-.orig
-.worktrees/
-worktrees/
-.agents/worktrees/
-.typert-*/
+# Logs and temp files
+*.log
 
-# Rebrand codemod work artifacts (parity baselines, dry-run diffs)
-.rebrand/
-.staging/
+# Environment
+.env
+.env.local
+*.env.*
+
+# Editors
+.vscode/
+
+# Dependencies
+node_modules/
+
+# Compiled and build artifacts
+*.pyc
+__pycache__/
+*.o
+*.obj
+dist/
+build/
+target/
+
+# Python specific
+.venv/
+venv/
+*.pyc
+__pycache__/
+.mypy_cache/
+.pytest_cache/
+.coverage
+coverage/
+htmlcov/
+
+# Java/Gradle
+.gradle/
+build/
+
+# Compressed files
+*.zip
+*.gz
+*.tar
+*.tgz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.zst
+*.lz4
+*.lzh
+*.cab
+*.arj
+*.rpm
+*.deb
+*.Z
+*.lz
+*.lzo
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tar.zst
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.swp
+*.swo

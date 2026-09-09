@@ -1,0 +1,10 @@
+{
+  "name": "@fixture/client",
+  "private": true,
+  "type": "module",
+  "exports": "./lib/index.js",
+  "files": [
+    "lib/typert.client.js",
+    "lib/typert.client.d.ts"
+  ]
+}

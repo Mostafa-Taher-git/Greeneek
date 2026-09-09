@@ -9,6 +9,7 @@ import { apply as settingsApply, inject as settingsInject } from '@greeneek/gnk-
 import { apply, inject } from '@greeneek/gnk-client-ui-settings-general/client'
 import { CloseLabel, HeaderContent, TriggerContent } from '../src/client/chrome.tsx'
 import { GeneralSection } from '../src/client/GeneralSection.tsx'
+import { AboutSection } from '../src/client/AboutSection.tsx'
 import { SettingsDocumentAction } from '../src/client/SettingsDocumentAction.tsx'
 import type { SettingsDocumentActionInjected } from '../src/client/SettingsDocumentAction.tsx'
 
@@ -16,13 +17,13 @@ import type { SettingsDocumentActionInjected } from '../src/client/SettingsDocum
 // so browser-language detection never runs and a fresh LocaleRuntime opens on
 // FALLBACK_LOCALE (en); bench stages zh explicitly on the locale instead.
 
-/** The seats this plugin fills for a loopback browser (slot name → expected component). */
+/** The seats this plugin fills for a loopback browser (slot name → expected component → entry count). */
 const SEATS = [
-  ['settings.trigger', TriggerContent],
-  ['settings.header', HeaderContent],
-  ['settings.action', SettingsDocumentAction],
-  ['settings.close', CloseLabel],
-  ['settings.section', GeneralSection],
+  ['settings.trigger', TriggerContent, 1],
+  ['settings.header', HeaderContent, 1],
+  ['settings.action', SettingsDocumentAction, 1],
+  ['settings.close', CloseLabel, 1],
+  ['settings.section', GeneralSection, 2],
 ] as const
 
 async function bench(isLoopback = true) {
@@ -77,6 +78,10 @@ function generalEntry(slots: SlotRegistry) {
   return slots.entries('settings.section').find(e => e.component === GeneralSection)
 }
 
+function aboutEntry(slots: SlotRegistry) {
+  return slots.entries('settings.section').find(e => e.component === AboutSection)
+}
+
 describe('ui-settings-general apply', () => {
   it('declares the services it uses', () => {
     expect(inject).toEqual(['slots', 'locale', 'connection', 'remote', 'remote.settings', 'settingsScope'])
@@ -93,6 +98,9 @@ describe('ui-settings-general apply', () => {
     expect(entry.options).toMatchObject({ id: 'general', order: 0 })
     // The nav label is a locale-following thunk; owners resolve at read time.
     expect(resolveSlotLabel(entry.options.label)).toBe('通用设置')
+    const about = aboutEntry(before.slots)!
+    expect(about.options).toMatchObject({ id: 'about', order: 30 })
+    expect(resolveSlotLabel(about.options.label)).toBe('关于')
     expect(before.slots.spec('settings.general.item')).toEqual({ kind: 'list', scope: 'root' })
     expect(before.slots.entries('settings.general.item')).toEqual([])
     // The onboarding hole stays declared for feature-owned steps; this plugin
@@ -111,10 +119,10 @@ describe('ui-settings-general apply', () => {
     for (const [name] of SEATS) expect(after.slots.entries(name)).toHaveLength(0)
     declare(after.slots)
     await Promise.resolve()
-    for (const [name, component] of SEATS) {
+    for (const [name, component, count] of SEATS) {
       expect(after.slots.entries(name)[0]!.component).toBe(component)
       // The self-inflicted ledger notifications hit the duplicate guard.
-      expect(after.slots.entries(name)).toHaveLength(1)
+      expect(after.slots.entries(name)).toHaveLength(count)
     }
     await vi.waitFor(() => {
       expect(after.slots.spec('settings.general.item')).toEqual({ kind: 'list', scope: 'root' })
@@ -148,13 +156,15 @@ describe('ui-settings-general apply', () => {
     b.locale.setLocale('en')
     // No ledger churn: freshness rides the thunk (and the renderer's locale
     // subscription), not re-registration.
-    SEATS.forEach(([name], i) => {
+    SEATS.forEach(([name, , count], i) => {
       expect(b.slots.getVersion(name)).toBe(zhVersions[i]!)
-      expect(b.slots.entries(name)).toHaveLength(1)
+      expect(b.slots.entries(name)).toHaveLength(count)
     })
     expect(resolveSlotLabel(generalEntry(b.slots)!.options.label)).toBe('General')
+    expect(resolveSlotLabel(aboutEntry(b.slots)!.options.label)).toBe('About')
     b.locale.setLocale('zh')
     expect(resolveSlotLabel(generalEntry(b.slots)!.options.label)).toBe('通用设置')
+    expect(resolveSlotLabel(aboutEntry(b.slots)!.options.label)).toBe('关于')
   })
 
   it('reads availability from the shared mirror and follows its reconnect refresh', async () => {

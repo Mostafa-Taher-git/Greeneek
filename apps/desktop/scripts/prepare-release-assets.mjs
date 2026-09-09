@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url'
 /**
  * Stable `-latest-` download aliases for human links. The updater never uses
  * these; it reads the versioned filenames referenced inside `latest*.yml`.
+ * Each release runner builds one platform only, so present assets are aliased
+ * and absent ones are skipped — only a fully empty dist dir is an error.
  */
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -20,19 +22,19 @@ export function releaseAssetMappings(version) {
 
 export function prepareReleaseAssets({ distDir, version }) {
   const mappings = releaseAssetMappings(version)
-  const missingAssets = mappings
-    .map(([sourceName]) => sourceName)
-    .filter((sourceName) => !existsSync(path.join(distDir, sourceName)))
+  const present = mappings
+    .filter(([sourceName]) => existsSync(path.join(distDir, sourceName)))
 
-  if (missingAssets.length > 0) {
+  if (present.length === 0) {
+    const missingAssets = mappings.map(([sourceName]) => sourceName)
     throw new Error(`Missing release assets:\n${missingAssets.join('\n')}`)
   }
 
-  for (const [sourceName, aliasName] of mappings) {
+  for (const [sourceName, aliasName] of present) {
     copyFileSync(path.join(distDir, sourceName), path.join(distDir, aliasName))
   }
 
-  return mappings.map(([, aliasName]) => aliasName)
+  return present.map(([, aliasName]) => aliasName)
 }
 
 function argumentValue(name) {

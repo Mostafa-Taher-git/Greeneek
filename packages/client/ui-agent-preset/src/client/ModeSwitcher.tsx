@@ -61,6 +61,7 @@ export function ModeSwitcher({ label, entries, current, busy, onSelect }: {
               type="button"
               role="radio"
               aria-checked={active}
+              aria-label={entry.name}
               disabled={off}
               title={entry.disabled === true ? entry.disabledReason : undefined}
               className={active ? `${css.pill} ${css.pillActive}` : css.pill}

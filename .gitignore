@@ -2,6 +2,7 @@ CLAUDE.local.md
 .env
 node_modules/
 lib/
+!apps/landing/src/lib/
 *.tsbuildinfo
 pnpm-debug.log
 .pnpm-store/

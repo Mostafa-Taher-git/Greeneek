@@ -77,7 +77,7 @@ describe('Python release workflows', () => {
 })
 
 describe('Git hooks', () => {
-  it('leaves frozen Agent Note sidecars to the archive verifier', () => {
+  it('carries no translation-pairing hook after the bilingual retirement', () => {
     const lefthook = loadWorkflow('lefthook.yml')
 
     for (const hookName of ['pre-commit', 'pre-merge-commit']) {
@@ -89,7 +89,7 @@ describe('Git hooks', () => {
         (job: unknown) => isRecord(job) && job.name === 'translation pairing (staged records)',
       )
 
-      expect(pairing).toMatchObject({ exclude: ['.agents/notes/archived/**'] })
+      expect(pairing).toBeUndefined()
     }
   })
 })

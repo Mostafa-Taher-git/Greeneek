@@ -29,6 +29,8 @@ jobs:
       - if: startsWith(github.ref, 'refs/tags/desktop-')
         run: node apps/desktop/scripts/stamp-version.mjs "${{ github.ref_name }}"
       - run: pnpm --filter @greeneek/desktop run dist:linux
+      - if: startsWith(github.ref, 'refs/tags/desktop-')
+        run: node apps/desktop/scripts/prepare-release-assets.mjs --dist apps/desktop/.staging/app/dist --tag "${{ github.ref_name }}"
       - run: node apps/desktop/scripts/prepare-release-assets.mjs --dist apps/desktop/.staging/app/dist
       - uses: actions/upload-artifact@v4
         with:

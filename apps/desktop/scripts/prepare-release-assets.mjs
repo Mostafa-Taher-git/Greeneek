@@ -17,6 +17,11 @@ export function releaseAssetMappings(version) {
   ]
 }
 
+function parseDesktopVersion(input) {
+  const match = /^desktop-v(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)$/.exec(input.trim())
+  return match ? match[1] : input
+}
+
 export function prepareReleaseAssets({ distDir, version }) {
   const mappings = releaseAssetMappings(version)
   const present = mappings
@@ -43,8 +48,9 @@ function argumentValue(name) {
 }
 
 function main() {
+  const tag = argumentValue('--tag') ?? process.env.GITHUB_REF_NAME ?? ''
   const manifest = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'))
-  const version = argumentValue('--version') ?? manifest.version
+  const version = tag ? parseDesktopVersion(tag) : (argumentValue('--version') ?? manifest.version)
   const distDir = path.resolve(root, argumentValue('--dist') ?? 'dist')
   const aliases = prepareReleaseAssets({ distDir, version })
   process.stdout.write(`Prepared stable release aliases:\n${aliases.join('\n')}\n`)

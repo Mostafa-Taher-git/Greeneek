@@ -20,12 +20,11 @@ Use this order for authored human-facing pages when the format owner permits it.
 
 1. YAML metadata.
 2. H1 title.
-3. Language switcher for a bilingual page.
-4. `## Summary`: three to five explanatory sentences stating what the subject is, why a reader would care, the main operating model, and the most important boundary.
-5. `## Table of Contents`: links to the page's H2 sections; keep it navigational rather than descriptive.
-6. Stable content, ordered from user-facing use to developer-facing design and operational detail.
-7. Optional `## Further Exploration` for newcomer-oriented links to adjacent subjects.
-8. Final `## Dev Note` for non-authoritative active working context.
+3. `## Summary`: three to five explanatory sentences stating what the subject is, why a reader would care, the main operating model, and the most important boundary.
+4. `## Table of Contents`: links to the page's H2 sections; keep it navigational rather than descriptive.
+5. Stable content, ordered from user-facing use to developer-facing design and operational detail.
+6. Optional `## Further Exploration` for newcomer-oriented links to adjacent subjects.
+7. Final `## Dev Note` for non-authoritative active working context.
 
 Do not force a Summary/Table of Contents wrapper around tiny machine-owned files, generated fragments, or formats whose executed parser defines another header. State the exception in the format owner rather than creating invalid output. The package README gate requires `Model Experience` and `Known Limitations and Deferred Work` as the final two H2 sections: place `Further Exploration` before them and end with a final `### Dev Note` inside the limitations H2.
 

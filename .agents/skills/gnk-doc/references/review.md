@@ -54,7 +54,6 @@ Run the smallest focused checks while iterating, then the standing documentation
 
 ```sh
 pnpm run test:docs
-pnpm run verify-translation-pairing --write <pair>
 pnpm run doc-sync
 pnpm run lint
 git diff --check

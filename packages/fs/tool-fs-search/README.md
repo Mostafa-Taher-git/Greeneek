@@ -5,7 +5,6 @@ kind: "package-reference"
 
 # @greeneek/gnk-tool-fs-search
 
-English | [中文](README.zh.md)
 
 ## Summary
 

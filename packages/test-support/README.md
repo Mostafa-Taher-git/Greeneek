@@ -5,7 +5,6 @@ kind: "package-group"
 
 # packages/test-support
 
-English | [中文](README.zh.md)
 
 ## Summary
 

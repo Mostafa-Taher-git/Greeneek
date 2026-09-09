@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-07-30-source-checkout-workdir-distinction.zh.md)
 
 ## Problem
 

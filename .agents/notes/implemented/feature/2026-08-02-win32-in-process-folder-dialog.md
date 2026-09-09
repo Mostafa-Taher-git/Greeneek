@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-02-win32-in-process-folder-dialog.zh.md)
 
 ## Problem
 

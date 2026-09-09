@@ -1,6 +1,5 @@
 # Official Greeneek LLM API wire extensions
 
-English | [中文](greeneek-llm-api-wire-extensions.zh.md)
 
 This reference defines every Greeneek Harness-specific HTTP header and additive JSON field sent by [`@greeneek/gnk-llm-greeneek`](../packages/llm/llm-greeneek/README.md) on `greeneek-official` chat-completion requests. It does not redefine fields owned by the upstream Greeneek API. The provider-neutral LLM interface and `llm-pi-ai` do not implement these additions.
 

@@ -1,6 +1,5 @@
 # Python SDK example
 
-English | [中文](README.zh.md)
 
 Runnable Python SDK example over the sole application launcher, `gnk --profile sdk-minimal`. The Python client owns JSON-RPC stdio; the profile owns the agent composition, persistence, execution policy, and plugins.
 

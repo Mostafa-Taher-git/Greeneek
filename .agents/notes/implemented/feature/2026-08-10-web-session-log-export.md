@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-10-web-session-log-export.zh.md)
 
 ## Problem
 

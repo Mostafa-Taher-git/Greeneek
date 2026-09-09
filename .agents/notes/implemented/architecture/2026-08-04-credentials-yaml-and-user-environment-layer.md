@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-04-credentials-yaml-and-user-environment-layer.zh.md)
 
 ## Problem
 

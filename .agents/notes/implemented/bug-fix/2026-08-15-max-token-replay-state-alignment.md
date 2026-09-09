@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-15-max-token-replay-state-alignment.zh.md)
 
 ## Problem
 

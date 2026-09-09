@@ -5,7 +5,6 @@ kind: "package-reference"
 
 # @greeneek/gnk-greeneek-llm-api-extensions
 
-English | [中文](README.zh.md)
 
 ## Summary
 

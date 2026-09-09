@@ -1,6 +1,5 @@
 # Install Greeneek Desktop
 
-English | [中文](desktop.zh.md)
 
 Greeneek Desktop is an installable wrapper for the Greeneek Web UI. Use it when you want a persistent taskbar/launcher icon, offline-friendly launch, or a standalone local install separate from a browser tab.
 

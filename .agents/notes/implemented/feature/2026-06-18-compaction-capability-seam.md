@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-06-18-compaction-capability-seam.zh.md)
 
 ## Problem
 

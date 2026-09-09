@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-07-22-unified-send-and-coalesced-user-messages.zh.md)
 
 ## Problem
 

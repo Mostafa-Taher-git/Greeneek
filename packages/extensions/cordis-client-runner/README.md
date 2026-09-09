@@ -5,7 +5,6 @@ kind: "package-reference"
 
 # @greeneek/gnk-cordis-client-runner
 
-English | [中文](README.zh.md)
 
 ## Summary
 

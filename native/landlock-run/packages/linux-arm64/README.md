@@ -1,6 +1,5 @@
 # @greeneek/node-addon-landlock-run-linux-arm64
 
-English | [中文](README.zh.md)
 
 Prebuilt `bin/landlock-run` Landlock launcher for linux-arm64 — a static musl binary compiled natively (no cross toolchain) from the C source shipped in [`@greeneek/node-addon-landlock-run`](https://www.npmjs.com/package/@greeneek/node-addon-landlock-run). npm's `os`/`cpu` fields select this package at install time; the entry package resolves it to a file path — it ships no JavaScript and is never imported.
 

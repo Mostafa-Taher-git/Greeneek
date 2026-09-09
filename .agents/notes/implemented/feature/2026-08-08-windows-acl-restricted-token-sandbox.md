@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-08-windows-acl-restricted-token-sandbox.zh.md)
 
 ## Problem
 

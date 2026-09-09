@@ -5,7 +5,6 @@ kind: "package-library"
 
 # @greeneek/gnk-session-title-llm
 
-English | [中文](README.zh.md)
 
 ## Summary
 

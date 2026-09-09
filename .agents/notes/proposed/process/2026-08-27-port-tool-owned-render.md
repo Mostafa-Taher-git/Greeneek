@@ -2,7 +2,6 @@
 
 Status: proposed
 
-English | [中文](2026-08-27-port-tool-owned-render.zh.md)
 
 ## Problem
 

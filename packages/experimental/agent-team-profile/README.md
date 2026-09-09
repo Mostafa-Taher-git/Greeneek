@@ -5,7 +5,6 @@ kind: "package-bundle"
 
 # @greeneek/gnk-experimental-agent-team-profile
 
-English | [中文](README.zh.md)
 
 ## Summary
 

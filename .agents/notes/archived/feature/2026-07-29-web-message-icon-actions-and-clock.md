@@ -3,7 +3,6 @@
 Status: implemented
 Archived: 2026-08-07
 
-English | [中文](2026-07-29-web-message-icon-actions-and-clock.zh.md)
 
 ## Problem
 

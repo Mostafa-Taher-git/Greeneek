@@ -5,7 +5,6 @@ kind: "package-reference"
 
 # @greeneek/gnk-time-context
 
-English | [中文](README.zh.md)
 
 ## Summary
 

@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-31-session-sequence-and-log-offset-brands.zh.md)
 
 ## Problem
 

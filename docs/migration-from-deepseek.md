@@ -1,6 +1,5 @@
 # Migrating from DeepSeek Harness (`dsh`) to Greeneek Harness (`gnk`)
 
-English | [中文](migration-from-deepseek.zh.md)
 
 This document is the exhaustive old→new name map for the rebrand. Names not listed here changed by the mechanical rule: brand token `deepseek`→`greeneek` and short name `dsh`→`gnk`, at every capitalization (`DSH`→`GNK`, `Dsh`→`Gnk`, `DeepSeek`→`Greeneek`, `DEEPSEEK`→`GREENEEK`).
 

@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-21-greeneek-files-inline-fallback.zh.md)
 
 ## Problem
 

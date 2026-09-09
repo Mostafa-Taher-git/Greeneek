@@ -4,7 +4,6 @@ kind: "package-reference"
 ---
 # @greeneek/gnk-client-ui-chat
 
-English | [中文](README.zh.md)
 
 ## Summary
 

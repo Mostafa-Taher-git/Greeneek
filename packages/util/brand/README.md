@@ -5,7 +5,6 @@ kind: "package-library"
 
 # @greeneek/gnk-brand
 
-English | [中文](README.zh.md)
 
 ## Summary
 

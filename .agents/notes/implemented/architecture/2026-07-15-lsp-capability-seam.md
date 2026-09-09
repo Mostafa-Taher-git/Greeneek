@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-07-15-lsp-capability-seam.zh.md)
 
 ## Problem
 

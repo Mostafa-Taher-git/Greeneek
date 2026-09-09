@@ -5,7 +5,6 @@ kind: "package-reference"
 
 # @greeneek/gnk-subagent-gnk-sdk
 
-English | [中文](README.zh.md)
 
 ## Summary
 

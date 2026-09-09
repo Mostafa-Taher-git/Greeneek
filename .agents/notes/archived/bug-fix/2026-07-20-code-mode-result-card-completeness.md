@@ -3,7 +3,6 @@
 Status: implemented
 Archived: 2026-07-26
 
-English | [中文](2026-07-20-code-mode-result-card-completeness.zh.md)
 
 ## Problem
 

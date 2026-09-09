@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](agent-note.zh.md)
 
 ## Problem
 

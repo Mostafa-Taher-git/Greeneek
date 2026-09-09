@@ -3,7 +3,6 @@
 Status: implemented
 Archived: 2026-08-04
 
-English | [中文](2026-07-20-windows-tui-support.zh.md)
 
 ## Problem
 

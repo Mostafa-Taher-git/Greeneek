@@ -5,7 +5,6 @@ kind: "package-reference"
 
 # @greeneek/gnk-client-ui-input-trigger
 
-English | [中文](README.zh.md)
 
 ## Summary
 

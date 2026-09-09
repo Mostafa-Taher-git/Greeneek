@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-12-web-image-intake-and-limits-alignment.zh.md)
 
 ## Problem
 

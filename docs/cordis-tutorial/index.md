@@ -1,6 +1,5 @@
 # Cordis tutorial
 
-English | [中文](index.zh.md)
 
 Cordis is the plugin framework underneath Greeneek Harness: a small runtime where every capability — tools, LLM adapters, file access, the agent loop itself — is a plugin mounted into a shared context. This tutorial teaches Cordis hands-on: each chapter is a runnable example you build in a scratch directory inside this repository, ending with a plugin wired into real harness services.
 

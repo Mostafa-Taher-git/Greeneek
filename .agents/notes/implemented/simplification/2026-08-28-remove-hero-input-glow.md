@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-28-remove-hero-input-glow.zh.md)
 
 ## Problem
 

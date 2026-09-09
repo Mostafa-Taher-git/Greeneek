@@ -3,7 +3,6 @@
 Status: implemented
 Archived: 2026-08-20
 
-English | [中文](2026-08-20-composer-reference-decoration-keys.zh.md)
 
 ## Problem
 

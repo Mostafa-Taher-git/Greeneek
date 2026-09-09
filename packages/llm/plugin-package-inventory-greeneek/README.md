@@ -5,7 +5,6 @@ kind: "package-reference"
 
 # @greeneek/gnk-plugin-package-inventory-greeneek
 
-English | [中文](README.zh.md)
 
 ## Summary
 

@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-26-stable-turn-process-order.zh.md)
 
 ## Problem
 

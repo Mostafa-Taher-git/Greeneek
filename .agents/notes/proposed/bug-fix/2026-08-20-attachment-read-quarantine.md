@@ -2,7 +2,6 @@
 
 Status: proposed
 
-English | [中文](2026-08-20-attachment-read-quarantine.zh.md)
 
 ## Problem
 

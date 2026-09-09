@@ -5,7 +5,6 @@ kind: "package-group"
 
 # plan/ — plan collaboration state
 
-English | [中文](README.zh.md)
 
 ## Summary
 

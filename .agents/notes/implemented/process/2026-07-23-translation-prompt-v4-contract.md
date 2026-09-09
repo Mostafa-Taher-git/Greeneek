@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-07-23-translation-prompt-v4-contract.zh.md)
 
 ## Problem
 

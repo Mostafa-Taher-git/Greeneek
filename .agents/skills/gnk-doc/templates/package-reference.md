@@ -16,7 +16,6 @@ kind: "package-reference"
 ```markdown
 # @greeneek/gnk-<name>
 
-English | [中文](README.zh.md)
 
 ## Summary
 

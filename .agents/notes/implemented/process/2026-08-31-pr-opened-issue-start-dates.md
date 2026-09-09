@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-31-pr-opened-issue-start-dates.zh.md)
 
 ## Problem
 

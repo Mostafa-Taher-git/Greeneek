@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-09-01-ptc-omits-workflow-tool.zh.md)
 
 ## Problem
 

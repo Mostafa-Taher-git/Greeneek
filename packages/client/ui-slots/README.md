@@ -5,7 +5,6 @@ kind: "package-library"
 
 # @greeneek/gnk-client-ui-slots
 
-English | [中文](README.zh.md)
 
 ## Summary
 

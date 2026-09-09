@@ -5,7 +5,6 @@ kind: "package-reference"
 
 # @greeneek/gnk-web-search-perplexity
 
-English | [中文](README.zh.md)
 
 ## Summary
 

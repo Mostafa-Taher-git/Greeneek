@@ -5,7 +5,6 @@ kind: "package-reference"
 
 # @greeneek/gnk-jobs-local
 
-English | [中文](README.zh.md)
 
 ## Summary
 

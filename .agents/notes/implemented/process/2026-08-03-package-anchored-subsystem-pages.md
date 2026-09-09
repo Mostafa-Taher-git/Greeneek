@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-03-package-anchored-subsystem-pages.zh.md)
 
 ## Problem
 

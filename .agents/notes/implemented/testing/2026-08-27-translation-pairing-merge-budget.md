@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-27-translation-pairing-merge-budget.zh.md)
 
 ## Problem
 

@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-07-27-request-error-retry-action.zh.md)
 
 ## Problem
 

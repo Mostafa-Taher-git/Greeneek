@@ -5,7 +5,6 @@ kind: "package-library"
 
 # gnk-util-workspace-path
 
-English | [中文](README.zh.md)
 
 ## Summary
 

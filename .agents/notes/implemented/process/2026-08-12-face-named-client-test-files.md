@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-12-face-named-client-test-files.zh.md)
 
 ## Problem
 

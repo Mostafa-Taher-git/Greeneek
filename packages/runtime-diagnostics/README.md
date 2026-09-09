@@ -5,7 +5,6 @@ kind: "package-group"
 
 # packages/runtime-diagnostics
 
-English | [中文](README.zh.md)
 
 ## Summary
 

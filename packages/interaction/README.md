@@ -5,7 +5,6 @@ kind: "package-group"
 
 # interaction/ — the human-collaboration plane
 
-English | [中文](README.zh.md)
 
 ## Summary
 

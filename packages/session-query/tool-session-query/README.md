@@ -5,7 +5,6 @@ kind: "package-reference"
 
 # @greeneek/gnk-tool-session-query
 
-English | [中文](README.zh.md)
 
 ## Summary
 

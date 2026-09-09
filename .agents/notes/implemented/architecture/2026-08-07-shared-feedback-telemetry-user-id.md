@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-07-shared-feedback-telemetry-user-id.zh.md)
 
 ## Problem
 

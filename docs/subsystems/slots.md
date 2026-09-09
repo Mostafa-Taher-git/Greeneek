@@ -1,6 +1,5 @@
 # Web Client Slots
 
-English | [中文](slots.zh.md)
 
 Slots are the Web Client's typed React composition system. [`gnk-client-ui-slots`](../../packages/client/ui-slots/README.md) defines the React-free registry and type algebra; [`gnk-client-ui-renderer`](../../packages/client/ui-renderer/README.md) binds observable sources to hooks, renders the tree, and owns React contexts internally. A feature plugin contributes UI through `ctx.slots.register()` and never imports another feature plugin's component.
 

@@ -5,7 +5,6 @@ kind: "package-reference"
 
 # @greeneek/gnk-typert-loader
 
-English | [中文](README.zh.md)
 
 ## Summary
 

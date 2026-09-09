@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-07-31-permission-default-for-new-sessions.zh.md)
 
 ## Problem
 

@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-19-session-projection-state-and-client-views.zh.md)
 
 ## Problem
 

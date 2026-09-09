@@ -3,7 +3,6 @@
 Status: implemented
 Archived: 2026-07-27
 
-English | [中文](2026-07-06-generated-config-catalog.zh.md)
 
 ## Problem
 

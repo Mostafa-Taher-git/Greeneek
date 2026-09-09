@@ -1,6 +1,5 @@
 # greeneek-harness-runtime-bin
 
-English | [中文](README.zh.md)
 
 Platform runtime wheel for the Greeneek Harness Python SDK. It packages the normal `gnk` CLI and its closed Node dependency tree into a native executable, so SDK use requires no system Node.js. This package publishes wheels only.
 

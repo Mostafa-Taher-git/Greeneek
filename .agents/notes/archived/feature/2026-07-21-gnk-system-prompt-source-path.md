@@ -3,7 +3,6 @@
 Status: implemented
 Archived: 2026-07-26
 
-English | [中文](2026-07-21-gnk-system-prompt-source-path.zh.md)
 
 ## Problem
 

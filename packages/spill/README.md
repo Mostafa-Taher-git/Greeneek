@@ -5,7 +5,6 @@ kind: "package-group"
 
 # spill/ — tool-output spill capability family
 
-English | [中文](README.zh.md)
 
 ## Summary
 

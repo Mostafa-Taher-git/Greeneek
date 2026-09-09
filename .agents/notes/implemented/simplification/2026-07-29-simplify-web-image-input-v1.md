@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-07-29-simplify-web-image-input-v1.zh.md)
 
 ## Problem
 

@@ -5,7 +5,6 @@ kind: "package-reference"
 
 # @greeneek/gnk-experimental-tool-agent-team
 
-English | [中文](README.zh.md)
 
 ## Summary
 

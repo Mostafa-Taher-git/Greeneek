@@ -1,6 +1,5 @@
 # Greeneek Harness Architecture
 
-English | [中文](architecture.zh.md)
 
 Read this before changing anything under `packages/`. It assumes you know Cordis; if you do not, start with the [primer](cordis-primer.md) or the [tutorial](cordis-tutorial/index.md).
 

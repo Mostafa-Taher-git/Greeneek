@@ -5,7 +5,6 @@ kind: "package-reference"
 
 # @greeneek/gnk-session-title-all-prompts-llm
 
-English | [中文](README.zh.md)
 
 ## Summary
 

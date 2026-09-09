@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-13-session-content-search-opt-in.zh.md)
 
 ## Problem
 

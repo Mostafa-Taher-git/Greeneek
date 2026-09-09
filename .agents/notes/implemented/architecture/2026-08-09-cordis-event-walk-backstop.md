@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-09-cordis-event-walk-backstop.zh.md)
 
 ## Problem
 

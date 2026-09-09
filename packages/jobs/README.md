@@ -5,7 +5,6 @@ kind: "package-group"
 
 # jobs/ — background-job capability family
 
-English | [中文](README.zh.md)
 
 ## Summary
 

@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-12-unlink-fixture-junctions-before-delete.zh.md)
 
 ## Problem
 

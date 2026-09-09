@@ -3,7 +3,6 @@
 Status: implemented
 Archived: 2026-07-26
 
-English | [中文](2026-07-12-drop-unconsumed-skill-provider-events.zh.md)
 
 ## Problem
 

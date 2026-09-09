@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-09-headless-direct-core-entry-point.zh.md)
 
 ## Problem
 

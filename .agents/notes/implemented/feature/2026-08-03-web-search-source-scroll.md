@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-03-web-search-source-scroll.zh.md)
 
 ## Problem
 

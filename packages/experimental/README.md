@@ -5,7 +5,6 @@ kind: "package-group"
 
 # packages/experimental
 
-English | [中文](README.zh.md)
 
 ## Summary
 

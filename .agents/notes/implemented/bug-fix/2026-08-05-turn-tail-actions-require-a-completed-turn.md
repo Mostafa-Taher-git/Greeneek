@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-05-turn-tail-actions-require-a-completed-turn.zh.md)
 
 ## Problem
 

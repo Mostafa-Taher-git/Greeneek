@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-07-28-tool-call-file-open-in-os.zh.md)
 
 ## Problem
 

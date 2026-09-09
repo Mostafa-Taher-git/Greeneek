@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-26-pi-ai-grant-payload-json-image.zh.md)
 
 ## Problem
 

@@ -2,7 +2,6 @@
 
 Status: rejected — the separate persistence Service Definition package is the intended modular role split for the durable-persistence capability seam. Folding it into `gnk-session` would reduce package count at the cost of a cleaner backend boundary.
 
-English | [中文](2026-06-20-fold-session-persistence-interface.zh.md)
 
 ## Problem
 

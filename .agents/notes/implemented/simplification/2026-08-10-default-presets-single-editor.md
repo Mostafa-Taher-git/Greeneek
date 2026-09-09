@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-10-default-presets-single-editor.zh.md)
 
 ## Problem
 

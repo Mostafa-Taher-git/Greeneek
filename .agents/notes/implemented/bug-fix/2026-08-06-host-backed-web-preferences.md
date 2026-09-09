@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-06-host-backed-web-preferences.zh.md)
 
 ## Problem
 

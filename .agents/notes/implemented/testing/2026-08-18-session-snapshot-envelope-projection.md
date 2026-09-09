@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-18-session-snapshot-envelope-projection.zh.md)
 
 ## Problem
 

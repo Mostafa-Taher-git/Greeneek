@@ -5,7 +5,6 @@ kind: "package-reference"
 
 # @greeneek/gnk-message-feedback
 
-English | [中文](README.zh.md)
 
 ## Summary
 

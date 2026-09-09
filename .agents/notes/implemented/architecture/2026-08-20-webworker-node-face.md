@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-20-webworker-node-face.zh.md)
 
 ## Problem
 

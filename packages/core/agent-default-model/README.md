@@ -5,7 +5,6 @@ kind: "package-reference"
 
 # @greeneek/gnk-agent-default-model
 
-English | [中文](README.zh.md)
 
 ## Summary
 

@@ -3,7 +3,6 @@
 Status: implemented
 Archived: 2026-08-10
 
-English | [中文](2026-08-10-web-favicon-dark-mode.zh.md)
 
 ## Problem
 

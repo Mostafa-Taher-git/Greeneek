@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-09-01-streamed-tool-call-identity.zh.md)
 
 ## Problem
 

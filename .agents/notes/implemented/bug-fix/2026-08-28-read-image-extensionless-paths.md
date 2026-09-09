@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-28-read-image-extensionless-paths.zh.md)
 
 ## Problem
 

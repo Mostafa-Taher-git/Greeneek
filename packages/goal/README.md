@@ -5,7 +5,6 @@ kind: "package-group"
 
 # packages/goal
 
-English | [中文](README.zh.md)
 
 ## Summary
 

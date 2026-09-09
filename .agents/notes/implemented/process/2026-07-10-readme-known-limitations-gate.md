@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-07-10-readme-known-limitations-gate.zh.md)
 
 ## Problem
 

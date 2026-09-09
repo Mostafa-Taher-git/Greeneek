@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-06-user-bubbles-drop-the-branch-action.zh.md)
 
 ## Problem
 

@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-07-20-routed-model-context-and-compaction-policy.zh.md)
 
 ## Problem
 

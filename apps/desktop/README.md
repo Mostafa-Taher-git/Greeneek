@@ -1,6 +1,5 @@
 # Greeneek Desktop
 
-English | [中文](README.zh.md)
 
 Installable Electron shell for Greeneek. Boots the local `gnk web` service on a random loopback port, shows the branded splash, enforces single-instance + tray, persists user data outside the install dir, and self-updates from GitHub Releases.
 

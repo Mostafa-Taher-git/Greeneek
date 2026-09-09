@@ -3,7 +3,6 @@
 Status: implemented
 Archived: 2026-07-27
 
-English | [中文](2026-07-22-cordis-tutorial-docs.zh.md)
 
 ## Problem
 

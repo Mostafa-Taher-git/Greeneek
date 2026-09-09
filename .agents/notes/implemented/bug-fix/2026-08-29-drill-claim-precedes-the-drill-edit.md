@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-29-drill-claim-precedes-the-drill-edit.zh.md)
 
 ## Problem
 

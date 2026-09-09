@@ -4,7 +4,6 @@ kind: "package-library"
 ---
 # @greeneek/gnk-client-store
 
-English | [中文](README.zh.md)
 
 ## Summary
 

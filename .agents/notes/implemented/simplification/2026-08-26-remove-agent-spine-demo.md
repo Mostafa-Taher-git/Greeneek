@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-26-remove-agent-spine-demo.zh.md)
 
 ## Problem
 

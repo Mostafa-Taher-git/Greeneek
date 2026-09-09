@@ -1,6 +1,5 @@
 # Bash Executor
 
-English | [中文](shell.zh.md)
 
 The bash execution seam is split across a Service Definition ([gnk-shell](../../packages/shell/shell), `ctx.shell`), Service Providers ([gnk-bash-local](../../packages/shell/bash-local) and [gnk-bash-sandbox](../../packages/shell/bash-sandbox)), and Consumer ([gnk-tool-bash](../../packages/shell/tool-bash), the `bash` schema). Generic background-job ids, ownership, and controls live in [jobs.md](jobs.md); this seam returns a task-free process handle. Raw process-group mechanics live behind the [subprocess seam](subprocess.md).
 

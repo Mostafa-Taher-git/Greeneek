@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-06-14-session-persistence.zh.md)
 
 ## Problem
 

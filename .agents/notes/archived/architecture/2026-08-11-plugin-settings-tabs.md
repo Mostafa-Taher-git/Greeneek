@@ -3,7 +3,6 @@
 Status: implemented
 Archived: 2026-08-22
 
-English | [中文](2026-08-11-plugin-settings-tabs.zh.md)
 
 ## Problem
 

@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-11-greeneek-request-user-id-header.zh.md)
 
 ## Problem
 

@@ -1,6 +1,5 @@
 # Process Sandbox
 
-English | [中文](sandbox.zh.md)
 
 The process-sandbox seam of [gnk-sandbox](../../packages/sandbox/sandbox) wraps a same-world subprocess argv in a file-effect policy without coupling consumers to a platform runner. [gnk-sandbox-local](../../packages/sandbox/sandbox-local) supplies Linux bwrap/Landlock, macOS Seatbelt, and the Windows ACL restricted-token backend; [gnk-bash-sandbox](../../packages/shell/bash-sandbox) and [gnk-pwsh-sandbox](../../packages/shell/pwsh-sandbox) consume it. Containers, microVMs, and remote execution are sibling implementations of whole capability seams, not providers of `ctx.sandbox`.
 

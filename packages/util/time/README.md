@@ -5,7 +5,6 @@ kind: "package-library"
 
 # gnk-util-time
 
-English | [中文](README.zh.md)
 
 ## Summary
 

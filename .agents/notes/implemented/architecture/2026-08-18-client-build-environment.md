@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-18-client-build-environment.zh.md)
 
 ## Problem
 

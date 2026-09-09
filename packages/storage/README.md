@@ -5,7 +5,6 @@ kind: "package-group"
 
 # packages/storage
 
-English | [中文](README.zh.md)
 
 ## Summary
 

@@ -3,7 +3,6 @@
 Status: implemented
 Archived: 2026-07-27
 
-English | [中文](2026-07-26-gui-pr-gif-evidence-and-assets-branch.zh.md)
 
 ## Problem
 

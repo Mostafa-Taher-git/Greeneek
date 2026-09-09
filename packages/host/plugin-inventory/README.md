@@ -5,7 +5,6 @@ kind: "package-reference"
 
 # @greeneek/gnk-host-plugin-inventory
 
-English | [中文](README.zh.md)
 
 ## Summary
 

@@ -2,7 +2,6 @@
 
 Status: proposed
 
-English | [中文](2026-07-25-client-settings-locale-theme.zh.md)
 
 ## Problem
 

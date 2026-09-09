@@ -5,7 +5,6 @@ kind: "package-reference"
 
 # @greeneek/gnk-web-fetch-http
 
-English | [中文](README.zh.md)
 
 ## Summary
 

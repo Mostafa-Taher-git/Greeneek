@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-29-code-runtime-python-load-and-dispatch-hardening.zh.md)
 
 ## Problem
 

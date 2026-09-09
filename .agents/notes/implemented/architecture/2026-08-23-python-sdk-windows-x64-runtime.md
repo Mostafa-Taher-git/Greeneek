@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-23-python-sdk-windows-x64-runtime.zh.md)
 
 ## Problem
 

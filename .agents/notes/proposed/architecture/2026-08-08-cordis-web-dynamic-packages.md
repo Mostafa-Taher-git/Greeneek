@@ -2,7 +2,6 @@
 
 Status: proposed
 
-English | [中文](2026-08-08-cordis-web-dynamic-packages.zh.md)
 
 ## Problem
 

@@ -5,7 +5,6 @@ kind: "package-reference"
 
 # @greeneek/gnk-subagent-spawn-in-process
 
-English | [中文](README.zh.md)
 
 ## Summary
 

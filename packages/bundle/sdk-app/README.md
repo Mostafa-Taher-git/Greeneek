@@ -5,7 +5,6 @@ kind: "package-bundle"
 
 # `@greeneek/gnk-sdk-app`
 
-English | [中文](README.zh.md)
 
 ## Summary
 

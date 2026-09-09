@@ -1,6 +1,5 @@
 # Acme Agent
 
-English | [中文](product.zh.md)
 
 Acme Agent is an open-source agent harness that automates repository chores.
 

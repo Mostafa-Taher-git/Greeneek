@@ -5,7 +5,6 @@ kind: "package-group"
 
 # webhook/ — verified external events to GNK Sessions
 
-English | [中文](README.zh.md)
 
 ## Summary
 

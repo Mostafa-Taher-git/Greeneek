@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-08-copy-only-preset-authoring.zh.md)
 
 ## Problem
 

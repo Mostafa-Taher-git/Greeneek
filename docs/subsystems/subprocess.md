@@ -1,6 +1,5 @@
 # Subprocess
 
-English | [中文](subprocess.zh.md)
 
 The subprocess seam is split across a Service Definition ([gnk-subprocess](../../packages/subprocess/subprocess), `ctx.subprocess`) and Service Provider ([gnk-subprocess-local](../../packages/subprocess/subprocess-local)); its Consumers are other capability seams and out-of-process backends: the [bash executor family](shell.md) uses collected batch output, LSP uses raw protocol pipes, the PTY backend uses the terminal primitive, and the ACP subagent backend uses piped ndjson plus inherited stderr. This seam owns the managed `GNK_*` environment namespace, the shared credential scrub (`scrubbedParentEnv`), and the `CollectedOutput` shape; [gnk-shell](../../packages/shell/shell) re-exports the vocabulary so bash consumers keep one import root.
 

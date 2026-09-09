@@ -1,6 +1,5 @@
 # Greeneek Harness Python SDK
 
-English | [中文](README.zh.md)
 
 Python subprocess SDK for driving Greeneek Harness over newline-delimited JSON-RPC on stdio. Install `greeneek-harness-sdk`; it installs the exact same-version `greeneek-harness-runtime-bin` wheel for the current platform.
 

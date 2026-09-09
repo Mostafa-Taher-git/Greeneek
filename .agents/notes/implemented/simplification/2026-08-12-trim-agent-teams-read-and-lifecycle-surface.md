@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-12-trim-agent-teams-read-and-lifecycle-surface.zh.md)
 
 ## Problem
 

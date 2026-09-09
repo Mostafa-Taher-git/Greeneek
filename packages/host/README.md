@@ -5,7 +5,6 @@ kind: "package-group"
 
 # host/ — web-GUI host half
 
-English | [中文](README.zh.md)
 
 ## Summary
 

@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-21-session-log-read-intent.zh.md)
 
 ## Problem
 

@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-07-08-self-referential-cordis-toolset.zh.md)
 
 ## Problem
 

@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-21-documentation-site-tag-release.zh.md)
 
 ## Problem
 

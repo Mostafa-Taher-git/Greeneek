@@ -4,7 +4,6 @@ kind: "package-reference"
 ---
 # Session Controller
 
-English | [中文](README.zh.md)
 
 ## Summary
 

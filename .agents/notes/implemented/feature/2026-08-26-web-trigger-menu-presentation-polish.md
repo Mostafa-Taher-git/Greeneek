@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-26-web-trigger-menu-presentation-polish.zh.md)
 
 ## Problem
 

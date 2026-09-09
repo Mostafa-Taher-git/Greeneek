@@ -4,7 +4,6 @@
 
 # Greeneek
 
-English | [中文](README.zh.md)
 
 <p align="center"><strong>The surgeon's toolkit for AI agents. Everything is a plugin.</strong></p>
 

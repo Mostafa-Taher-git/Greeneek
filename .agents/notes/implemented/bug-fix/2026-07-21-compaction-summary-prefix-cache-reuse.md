@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-07-21-compaction-summary-prefix-cache-reuse.zh.md)
 
 ## Problem
 

@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-24-route-priced-image-request-pressure.zh.md)
 
 ## Problem
 

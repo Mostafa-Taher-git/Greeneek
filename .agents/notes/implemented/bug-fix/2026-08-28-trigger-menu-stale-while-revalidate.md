@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-28-trigger-menu-stale-while-revalidate.zh.md)
 
 ## Problem
 

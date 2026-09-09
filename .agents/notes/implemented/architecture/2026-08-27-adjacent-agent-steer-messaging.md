@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-27-adjacent-agent-steer-messaging.zh.md)
 
 ## Problem
 

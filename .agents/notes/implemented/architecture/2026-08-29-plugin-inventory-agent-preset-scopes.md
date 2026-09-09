@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-29-plugin-inventory-agent-preset-scopes.zh.md)
 
 ## Problem
 

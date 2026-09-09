@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-07-22-durable-subagent-catalog-and-list-agents.zh.md)
 
 ## Problem
 

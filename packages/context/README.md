@@ -5,7 +5,6 @@ kind: "package-group"
 
 # context/ — Request-context plugins
 
-English | [中文](README.zh.md)
 
 ## Summary
 

@@ -5,7 +5,6 @@ kind: "package-group"
 
 # sdk/ — drive a Harness runtime from another process
 
-English | [中文](README.zh.md)
 
 ## Summary
 

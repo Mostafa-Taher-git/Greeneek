@@ -1,6 +1,5 @@
 # Todo
 
-English | [中文](todo.zh.md)
 
 The durable todo vocabulary owned by [`@greeneek/gnk-tool-todo`](../../packages/todo/tool-todo/README.md). The model-facing tool replaces one agent session's whole list; the package also owns the event declaration, replay projection, and invariant companion. Tool behavior and configuration are on the [package README](../../packages/todo/tool-todo/README.md).
 

@@ -5,7 +5,6 @@ kind: "package-reference"
 
 # @greeneek/gnk-sdk-jsonrpc-server
 
-English | [中文](README.zh.md)
 
 ## Summary
 

@@ -3,7 +3,6 @@
 Status: implemented
 Archived: 2026-08-20
 
-English | [中文](2026-08-13-safari-textarea-soft-wrap-reflow.zh.md)
 
 ## Problem
 

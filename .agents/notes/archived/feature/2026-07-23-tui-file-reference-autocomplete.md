@@ -3,7 +3,6 @@
 Status: implemented
 Archived: 2026-08-04
 
-English | [中文](2026-07-23-tui-file-reference-autocomplete.zh.md)
 
 ## Problem
 

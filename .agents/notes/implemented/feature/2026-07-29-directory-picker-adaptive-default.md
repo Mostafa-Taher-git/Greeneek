@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-07-29-directory-picker-adaptive-default.zh.md)
 
 ## Problem
 

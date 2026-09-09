@@ -2,7 +2,6 @@
 
 Status: proposed
 
-English | [中文](2026-07-19-required-cancellation-through-tool-capability-seams.zh.md)
 
 ## Problem
 

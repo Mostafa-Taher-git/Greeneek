@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-31-viewport-activated-syntax-highlighting.zh.md)
 
 ## Problem
 

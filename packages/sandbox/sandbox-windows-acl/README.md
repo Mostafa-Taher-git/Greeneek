@@ -5,7 +5,6 @@ kind: "package-library"
 
 # @greeneek/gnk-sandbox-windows-acl
 
-English | [中文](README.zh.md)
 
 ## Summary
 

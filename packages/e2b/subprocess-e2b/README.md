@@ -5,7 +5,6 @@ kind: "package-reference"
 
 # @greeneek/gnk-subprocess-e2b
 
-English | [中文](README.zh.md)
 
 ## Summary
 

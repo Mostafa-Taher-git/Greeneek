@@ -2,7 +2,6 @@
 
 Status: implemented
 
-English | [中文](2026-08-04-pointer-revealed-sidebar-scrollbars.zh.md)
 
 ## Problem
 

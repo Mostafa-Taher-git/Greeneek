@@ -1,6 +1,5 @@
 # Greeneek Desktop
 
-English | [中文](desktop.zh.md)
 
 Greeneek Desktop is an installable Electron shell that hosts the existing Greeneek web UI without forking or patching it. It boots the local `gnk web` service, opens a branded window, and manages lifecycle concerns outside the browser: single-instance lock, tray, splash/startup page, security policy, stale auth-cookie cleanup, pinned store location, and consent-based self-updates from GitHub Releases.
 

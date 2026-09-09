@@ -90,6 +90,8 @@ export const THINKING_LEVELS = Object.keys(THINKING_LEVEL_GATE) as readonly Excl
  * declare anything outside {@link THINKING_LEVELS} (notably `minimal`), so
  * every seam where pi-ai data enters — picker, describe, request — filters
  * through this one predicate instead of restating the rule.
+ * @param level - candidate level reported by pi-ai data.
+ * @returns true when the level belongs to the product scale.
  */
 export function isOfferedThinkingLevel(level: string): boolean {
   return (THINKING_LEVELS as readonly string[]).includes(level)

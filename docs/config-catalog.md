@@ -1021,7 +1021,7 @@ export interface GreeneekCatalogModel {
 
 Depends on: [`ModelModality`](../packages/llm/llm/src/index.ts) · [`RetryPolicyConfig`](../packages/llm/llm/src/index.ts)
 
-Source: [`packages/llm/llm-greeneek/src/index.ts:125`](../packages/llm/llm-greeneek/src/index.ts)
+Source: [`packages/llm/llm-greeneek/src/index.ts:126`](../packages/llm/llm-greeneek/src/index.ts)
 
 <a id="greeneekgnk-llm-pi-ai"></a>
 
@@ -1070,6 +1070,14 @@ export interface PiAiProviderProfile {
    */
   modelOverrides?: Record<string, PiAiModelOverride>
   /**
+   * Model ids this route hides from every selector. A visibility preference,
+   * not a catalog edit: the models stay configured and routable (a stored
+   * selection naming one keeps serving), they simply stop being offered. An
+   * omitted list hides nothing, so a route never has to restate the catalog
+   * to hide one entry — unlike {@link models}, which replaces it wholesale.
+   */
+  hiddenModels?: string[]
+  /**
    * pi-ai wire-compatibility switches defaulting every model on this route
    * whose protocol declares them; each model's own `compat` overrides per
    * field. What neither sets keeps the installed catalog entry's value, then
@@ -1102,8 +1110,8 @@ export interface PiAiProviderProfile {
   defaultInput?: PiAiModality[]
   /** Provider request headers, validated against Fetch when the profile resolves; Harness attribution wins reserved names. */
   headers?: Record<string, string>
-  /** Provider-neutral pi-ai reasoning level. */
-  reasoning?: ModelThinkingLevel
+  /** Provider-neutral pi-ai reasoning level. `minimal` is not offered. */
+  reasoning?: Exclude<ModelThinkingLevel, 'minimal'>
   /** Token budgets used by reasoning providers that support them. */
   thinkingBudgets?: ThinkingBudgets
   /** Prompt-cache retention preference. */
@@ -1279,7 +1287,7 @@ export type PiAiModality = Model<Api>['input'][number]
  * absence; every other declared level must name a wire value. A level absent
  * from the dict is not offered.
  */
-export type PiAiReasoningEfforts = Partial<Record<ModelThinkingLevel, string | null>>
+export type PiAiReasoningEfforts = Partial<Record<Exclude<ModelThinkingLevel, 'minimal'>, string | null>>
 
 /** One reasoning-dispatch wire format a profile may name. */
 export type PiAiThinkingFormat = NonNullable<OpenAICompletionsCompat['thinkingFormat']>
@@ -1287,7 +1295,7 @@ export type PiAiThinkingFormat = NonNullable<OpenAICompletionsCompat['thinkingFo
 
 Depends on: `Api` (`@earendil-works/pi-ai`) · `CacheRetention` (`@earendil-works/pi-ai`) · `Model` (`@earendil-works/pi-ai`) · `ModelThinkingLevel` (`@earendil-works/pi-ai`) · `OpenAICompletionsCompat` (`@earendil-works/pi-ai`) · [`RetryPolicyConfig`](../packages/llm/llm/src/index.ts) · `ThinkingBudgets` (`@earendil-works/pi-ai`) · `Transport` (`@earendil-works/pi-ai`)
 
-Source: [`packages/llm/llm-pi-ai/src/config.ts:216`](../packages/llm/llm-pi-ai/src/config.ts)
+Source: [`packages/llm/llm-pi-ai/src/config.ts:224`](../packages/llm/llm-pi-ai/src/config.ts)
 
 <a id="greeneekgnk-llm-replay"></a>
 
@@ -1795,22 +1803,6 @@ Depends on: `Readable` (`node:stream`) · `Writable` (`node:stream`)
 
 Source: [`packages/sdk/server/src/index.ts:25`](../packages/sdk/server/src/index.ts)
 
-<a id="greeneekgnk-session-log-greeneek"></a>
-
-## `@greeneek/gnk-session-log-greeneek`
-
-Requires: `greeneekLlmApiExtensions` · `sessions`
-
-```ts config-catalog
-/** Session-log request contribution configuration. */
-export interface Config {
-  /** Contribute `gnk_session_log` to official Greeneek requests. Defaults to `false`. */
-  enabled?: boolean
-}
-```
-
-Source: [`packages/session/session-log-greeneek/src/index.ts:36`](../packages/session/session-log-greeneek/src/index.ts)
-
 <a id="greeneekgnk-session-log-export"></a>
 
 ## `@greeneek/gnk-session-log-export`
@@ -1829,6 +1821,22 @@ export type SessionLogCompressionLevel = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
 ```
 
 Source: [`packages/session-query/session-log-export/src/index.ts:45`](../packages/session-query/session-log-export/src/index.ts)
+
+<a id="greeneekgnk-session-log-greeneek"></a>
+
+## `@greeneek/gnk-session-log-greeneek`
+
+Requires: `greeneekLlmApiExtensions` · `sessions`
+
+```ts config-catalog
+/** Session-log request contribution configuration. */
+export interface Config {
+  /** Contribute `gnk_session_log` to official Greeneek requests. Defaults to `false`. */
+  enabled?: boolean
+}
+```
+
+Source: [`packages/session/session-log-greeneek/src/index.ts:36`](../packages/session/session-log-greeneek/src/index.ts)
 
 <a id="greeneekgnk-session-persistence-jsonl"></a>
 
@@ -2391,6 +2399,22 @@ export type CodexPermissionMode =
 
 Source: [`packages/subagent/subagent-codex/src/index.ts:36`](../packages/subagent/subagent-codex/src/index.ts)
 
+<a id="greeneekgnk-subagent-fork-in-process"></a>
+
+## `@greeneek/gnk-subagent-fork-in-process`
+
+Requires: `subagents`
+
+```ts config-catalog
+/** Config: the registry name to register the provider under. */
+export interface Config {
+  /** Provider name on `ctx.subagents` (default `fork`). */
+  providerName: string
+}
+```
+
+Source: [`packages/subagent/subagent-fork-in-process/src/index.ts:31`](../packages/subagent/subagent-fork-in-process/src/index.ts)
+
 <a id="greeneekgnk-subagent-gnk-sdk"></a>
 
 ## `@greeneek/gnk-subagent-gnk-sdk`
@@ -2447,22 +2471,6 @@ export interface Config {
 
 Source: [`packages/subagent/subagent-gnk-sdk/src/index.ts:34`](../packages/subagent/subagent-gnk-sdk/src/index.ts)
 
-<a id="greeneekgnk-subagent-fork-in-process"></a>
-
-## `@greeneek/gnk-subagent-fork-in-process`
-
-Requires: `subagents`
-
-```ts config-catalog
-/** Config: the registry name to register the provider under. */
-export interface Config {
-  /** Provider name on `ctx.subagents` (default `fork`). */
-  providerName: string
-}
-```
-
-Source: [`packages/subagent/subagent-fork-in-process/src/index.ts:31`](../packages/subagent/subagent-fork-in-process/src/index.ts)
-
 <a id="greeneekgnk-subagent-spawn-in-process"></a>
 
 ## `@greeneek/gnk-subagent-spawn-in-process`
@@ -2502,7 +2510,7 @@ Source: [`packages/e2b/subprocess-e2b/src/index.ts:25`](../packages/e2b/subproce
 ```ts config-catalog
 /** Plugin config: the deployment-authored fragment of the system prompt (see {@link Config.persona} for its contract). */
 export interface Config {
-  /** Include the fixed Greeneek Harness identity before the deployment persona (default true). */
+  /** Include the fixed Greeneek identity before the deployment persona (default true). */
   includeHarnessIdentity?: boolean
   /** Include dynamic runtime-context snapshots in model history (default true). */
   includeRuntimeContext?: boolean
@@ -3181,7 +3189,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/bundle/web-app/src/index.ts:44`](../packages/bundle/web-app/src/index.ts)
+Source: [`packages/bundle/web-app/src/index.ts:45`](../packages/bundle/web-app/src/index.ts)
 
 <a id="greeneekgnk-web-fetch-http"></a>
 
@@ -3206,6 +3214,30 @@ export interface Config {
 ```
 
 Source: [`packages/web/web-fetch-http/src/index.ts:32`](../packages/web/web-fetch-http/src/index.ts)
+
+<a id="greeneekgnk-web-search-exa"></a>
+
+## `@greeneek/gnk-web-search-exa`
+
+Requires: `web`
+
+```ts config-catalog
+/** Plugin config (all optional — `apply` fills env-var and constant defaults). */
+export interface Config {
+  /** Exa API key. Falls back to `$EXA_API_KEY`. Empty → provider unavailable. */
+  apiKey?: string
+  /** Endpoint base; `/search` is appended. Defaults to the public API. */
+  baseURL?: string
+  /** Retrieval mode sent as Exa's `type`. Defaults to `auto`. */
+  searchType?: 'auto' | 'keyword' | 'neural'
+  /** Default result count when a request carries no `maxResults`. Omitted = none. */
+  numResults?: number
+  /** Highlight sentences requested per result. Defaults to 1. */
+  highlightsPerResult?: number
+}
+```
+
+Source: [`packages/web/web-search-exa/src/index.ts:35`](../packages/web/web-search-exa/src/index.ts)
 
 <a id="greeneekgnk-web-search-greeneek"></a>
 
@@ -3233,31 +3265,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/web/web-search-greeneek/src/index.ts:46`](../packages/web/web-search-greeneek/src/index.ts)
-
-<a id="greeneekgnk-web-search-exa"></a>
-
-## `@greeneek/gnk-web-search-exa`
-
-Requires: `web`
-
-```ts config-catalog
-/** Plugin config (all optional — `apply` fills env-var and constant defaults). */
-export interface Config {
-  /** Exa API key. Falls back to `$EXA_API_KEY`. Empty → provider unavailable. */
-  apiKey?: string
-  /** Endpoint base; `/search` is appended. Defaults to the public API. */
-  baseURL?: string
-  /** Retrieval mode sent as Exa's `type`. Defaults to `auto`. */
-  searchType?: 'auto' | 'keyword' | 'neural'
-  /** Default result count when a request carries no `maxResults`. Omitted = none. */
-  numResults?: number
-  /** Highlight sentences requested per result. Defaults to 1. */
-  highlightsPerResult?: number
-}
-```
-
-Source: [`packages/web/web-search-exa/src/index.ts:35`](../packages/web/web-search-exa/src/index.ts)
+Source: [`packages/web/web-search-greeneek/src/index.ts:47`](../packages/web/web-search-greeneek/src/index.ts)
 
 <a id="greeneekgnk-web-search-perplexity"></a>
 
@@ -3388,11 +3396,11 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 - `@greeneek/gnk-command-goal` — requires `commands` · `goals` ([`packages/goal/command-goal/src/index.ts`](../packages/goal/command-goal/src/index.ts))
 - `@greeneek/gnk-commands` ([`packages/interaction/commands/src/index.ts`](../packages/interaction/commands/src/index.ts))
 - `@greeneek/gnk-cordis-client-runner` ([`packages/extensions/cordis-client-runner/src/index.ts`](../packages/extensions/cordis-client-runner/src/index.ts))
-- `@greeneek/gnk-greeneek-llm-api-extensions` ([`packages/llm/greeneek-llm-api-extensions/src/index.ts`](../packages/llm/greeneek-llm-api-extensions/src/index.ts))
 - `@greeneek/gnk-experimental-client-ui-agent-team` ([`packages/experimental/client-ui-agent-team/src/index.ts`](../packages/experimental/client-ui-agent-team/src/index.ts))
 - `@greeneek/gnk-fs-e2b` — requires `e2b` ([`packages/e2b/fs-e2b/src/index.ts`](../packages/e2b/fs-e2b/src/index.ts))
 - `@greeneek/gnk-fs-observation-policy` ([`packages/fs/fs-observation-policy/src/index.ts`](../packages/fs/fs-observation-policy/src/index.ts))
 - `@greeneek/gnk-goal-round-driver` — requires `agents` · `goals` · `sessions` ([`packages/goal/goal-round-driver/src/index.ts`](../packages/goal/goal-round-driver/src/index.ts))
+- `@greeneek/gnk-greeneek-llm-api-extensions` ([`packages/llm/greeneek-llm-api-extensions/src/index.ts`](../packages/llm/greeneek-llm-api-extensions/src/index.ts))
 - `@greeneek/gnk-host-directory-picker-auto` — requires `webServer` · `loader` ([`packages/host/directory-picker-auto/src/index.ts`](../packages/host/directory-picker-auto/src/index.ts))
 - `@greeneek/gnk-host-directory-picker-native` ([`packages/host/directory-picker-native/src/index.ts`](../packages/host/directory-picker-native/src/index.ts))
 - `@greeneek/gnk-host-plugin-inventory` — requires `loader` ([`packages/host/plugin-inventory/src/index.ts`](../packages/host/plugin-inventory/src/index.ts))
@@ -3455,6 +3463,7 @@ Imported as libraries by other packages; a `cordis.yml` cannot load them.
 - `@greeneek/gnk-client-web` ([`packages/client/web/src/index.ts`](../packages/client/web/src/index.ts))
 - `@greeneek/gnk-cmdline` ([`packages/boot/cmdline/src/index.ts`](../packages/boot/cmdline/src/index.ts))
 - `@greeneek/gnk-deque` ([`packages/util/deque/src/index.ts`](../packages/util/deque/src/index.ts))
+- `@greeneek/gnk-egress` ([`packages/util/egress/src/index.ts`](../packages/util/egress/src/index.ts))
 - `@greeneek/gnk-experimental-agent-team-profile` ([`packages/experimental/agent-team-profile/src/index.ts`](../packages/experimental/agent-team-profile/src/index.ts))
 - `@greeneek/gnk-experimental-agent-team-web-profile` ([`packages/experimental/agent-team-web-profile/src/index.ts`](../packages/experimental/agent-team-web-profile/src/index.ts))
 - `@greeneek/gnk-experimental-webworker-packer` ([`packages/experimental/webworker-packer/src/index.ts`](../packages/experimental/webworker-packer/src/index.ts))

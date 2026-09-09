@@ -1108,7 +1108,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
       },
     ],
     ownerProps: [
-      '/** Header actions derive their state from standard Session props. */\nexport interface ConversationHeaderActionOwnerProps {\n  /** Marker field: entries receive no owner-specific values. */\n  children?: never\n}',
+      '/** Header actions derive their state from standard Session props. */\nexport interface ConversationHeaderActionOwnerProps {\n  /** Marker field: entries receive no other owner-specific values. */\n  children?: never\n  /** Switch the Session\'s active conversation view. */\n  selectView?: (view: string) => void\n  /** Active conversation view id, so entries can label view navigation. */\n  activeView?: string | null\n}',
     ],
     ownerPropsReferences: [],
     standardProps: [
@@ -1204,7 +1204,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
       },
     ],
     ownerProps: [
-      '/** Header actions derive their state from standard Session props. */\nexport interface ConversationHeaderActionOwnerProps {\n  /** Marker field: entries receive no owner-specific values. */\n  children?: never\n}',
+      '/** Header actions derive their state from standard Session props. */\nexport interface ConversationHeaderActionOwnerProps {\n  /** Marker field: entries receive no other owner-specific values. */\n  children?: never\n  /** Switch the Session\'s active conversation view. */\n  selectView?: (view: string) => void\n  /** Active conversation view id, so entries can label view navigation. */\n  activeView?: string | null\n}',
     ],
     ownerPropsReferences: [],
     standardProps: [
@@ -1805,7 +1805,9 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     declaredBy: 'an entry in \'sidebar.settings\' (client-ui-settings-general), so it exists while that entry is mounted',
     occupants: [
       'client-ui-agent-preset AgentPresetSection id \'agent-presets\'',
+      'client-ui-commands CommandsSection id \'commands\'',
       'client-ui-settings-general GeneralSection id \'general\'',
+      'client-ui-settings-general AboutSection id \'about\'',
       'client-ui-settings-models ModelsSection id \'models\'',
       'client-ui-settings-plugins PluginsSettingsSection id \'plugins\'',
     ],

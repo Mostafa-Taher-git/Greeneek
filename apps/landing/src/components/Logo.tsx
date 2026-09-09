@@ -32,7 +32,7 @@ export function LogoMark({ size = 36 }: { size?: number }) {
       height={size}
       className="rounded-xl"
       style={{ width: size, height: size, objectFit: 'contain' }}
-      onError={() => setFailed(true)}
+      onError={() => { setFailed(true) }}
       loading="eager"
     />
   )

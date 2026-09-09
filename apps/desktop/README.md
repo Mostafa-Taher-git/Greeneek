@@ -4,6 +4,11 @@ English | [中文](README.zh.md)
 
 Installable Electron shell for Greeneek. Boots the local `gnk web` service on a random loopback port, shows the branded splash, enforces single-instance + tray, persists user data outside the install dir, and self-updates from GitHub Releases.
 
+## Download
+
+- Linux `.deb` and `AppImage`: [www.greeneek.duckdns.org/downloads](https://www.greeneek.duckdns.org/downloads/)
+- Install guide: [docs/user/guide/desktop.md](../../docs/user/guide/desktop.md)
+
 ## Install
 
 ### Linux

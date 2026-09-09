@@ -4,6 +4,11 @@
 
 Greeneek 的桌面安装壳。本地启动 `gnk web` 服务、展示品牌启动页、单实例 + 托盘、用户数据持久化在安装目录外，并从 GitHub Releases 自更新。
 
+## 下载
+
+- Linux `.deb` 与 `AppImage`：[www.greeneek.duckdns.org/downloads](https://www.greeneek.duckdns.org/downloads/)
+- 安装指南：[docs/user/guide/desktop.zh.md](../../docs/user/guide/desktop.zh.md)
+
 ## 安装
 
 ### Linux

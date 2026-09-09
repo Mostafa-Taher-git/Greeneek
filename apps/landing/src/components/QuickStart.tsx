@@ -70,7 +70,7 @@ export function QuickStart({ copy }: { copy: SiteCopy }) {
                     {COMMAND}
                   </code>
                   <button
-                    onClick={copyCommand}
+                    onClick={() => { void copyCommand() }}
                     className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
                       copied
                         ? 'bg-brand text-white'

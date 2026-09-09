@@ -82,7 +82,7 @@ export function Nav({ copy }: NavProps) {
               <a
                 key={l.href}
                 href={l.href}
-                onClick={() => setOpen(false)}
+                onClick={() => { setOpen(false) }}
                 className="rounded-xl px-3 py-3 text-base font-medium text-ink-soft hover:bg-paper-deep"
               >
                 {l.label}

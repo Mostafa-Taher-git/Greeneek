@@ -53,7 +53,7 @@ function FaqItem({
       }`}
     >
       <button
-        onClick={() => setOpen(v => !v)}
+        onClick={() => { setOpen(v => !v) }}
         className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left"
         aria-expanded={open}
       >

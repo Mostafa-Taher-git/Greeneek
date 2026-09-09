@@ -14,10 +14,10 @@ export function Nav({ copy }: NavProps) {
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 12)
+    const onScroll = () => { setScrolled(window.scrollY > 12) }
     onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
+    return () => { window.removeEventListener('scroll', onScroll) }
   }, [])
 
   const links = [
@@ -65,7 +65,7 @@ export function Nav({ copy }: NavProps) {
 
           <button
             className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-line bg-white text-ink md:hidden"
-            onClick={() => setOpen(v => !v)}
+            onClick={() => { setOpen(v => !v) }}
             aria-label="Toggle menu"
             aria-expanded={open}
           >

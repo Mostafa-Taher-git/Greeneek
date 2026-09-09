@@ -18,8 +18,6 @@ flowchart LR
   cfg --> plugin_gnk_base_greeneek_llm_api_extensions
   plugin_gnk_base_session["session<br/>@greeneek/gnk-session"]
   cfg --> plugin_gnk_base_session
-  plugin_gnk_base_session_log_greeneek["session-log-greeneek<br/>@greeneek/gnk-session-log-greeneek"]
-  cfg --> plugin_gnk_base_session_log_greeneek
   plugin_gnk_base_typert["typert<br/>@greeneek/gnk-typert-registry"]
   cfg --> plugin_gnk_base_typert
   plugin_gnk_base_typert_loader["typert-loader<br/>@greeneek/gnk-typert-loader"]
@@ -34,8 +32,6 @@ flowchart LR
   cfg --> plugin_gnk_base_user_questions
   plugin_gnk_base_agent["agent<br/>@greeneek/gnk-agent"]
   cfg --> plugin_gnk_base_agent
-  plugin_gnk_base_plugin_package_inventory_greeneek["plugin-package-inventory-greeneek<br/>@greeneek/gnk-plugin-package-inventory-greeneek"]
-  cfg --> plugin_gnk_base_plugin_package_inventory_greeneek
   plugin_gnk_base_agent_default_model["agent-default-model<br/>@greeneek/gnk-agent-default-model"]
   cfg --> plugin_gnk_base_agent_default_model
   plugin_gnk_base_jobs["jobs<br/>@greeneek/gnk-jobs-local"]
@@ -162,10 +158,12 @@ flowchart LR
   cfg --> plugin_gnk_base_repeat_tool_reminder
   plugin_gnk_base_web["web<br/>@greeneek/gnk-web"]
   cfg --> plugin_gnk_base_web
-  plugin_gnk_base_web_search_greeneek["web-search-greeneek<br/>@greeneek/gnk-web-search-greeneek"]
-  cfg --> plugin_gnk_base_web_search_greeneek
   plugin_gnk_base_web_fetch_http["web-fetch-http<br/>@greeneek/gnk-web-fetch-http"]
   cfg --> plugin_gnk_base_web_fetch_http
+  plugin_gnk_base_web_search_exa["web-search-exa<br/>@greeneek/gnk-web-search-exa"]
+  cfg --> plugin_gnk_base_web_search_exa
+  plugin_gnk_base_web_search_perplexity["web-search-perplexity<br/>@greeneek/gnk-web-search-perplexity"]
+  cfg --> plugin_gnk_base_web_search_perplexity
   plugin_gnk_base_tool_web["tool-web<br/>@greeneek/gnk-tool-web"]
   cfg --> plugin_gnk_base_tool_web
   plugin_gnk_base_tools["tools<br/>@greeneek/gnk-tools"]
@@ -176,8 +174,6 @@ flowchart LR
   cfg --> plugin_gnk_base_agent_loop
   plugin_gnk_base_fs_sandbox["fs-sandbox<br/>@greeneek/gnk-fs-sandbox"]
   cfg --> plugin_gnk_base_fs_sandbox
-  plugin_gnk_base_llm_greeneek["llm-greeneek<br/>@greeneek/gnk-llm-greeneek"]
-  cfg --> plugin_gnk_base_llm_greeneek
 ```
 
 | Plugin id | Package / module |
@@ -187,7 +183,6 @@ flowchart LR
 | `llm` | `@greeneek/gnk-llm` |
 | `greeneek-llm-api-extensions` | `@greeneek/gnk-greeneek-llm-api-extensions` |
 | `session` | `@greeneek/gnk-session` |
-| `session-log-greeneek` | `@greeneek/gnk-session-log-greeneek` |
 | `typert` | `@greeneek/gnk-typert-registry` |
 | `typert-loader` | `@greeneek/gnk-typert-loader` |
 | `typert-gateway` | `@greeneek/gnk-api-gateway` |
@@ -195,7 +190,6 @@ flowchart LR
 | `session-title-llm` | `@greeneek/gnk-session-title-first-prompt-llm` |
 | `user-questions` | `@greeneek/gnk-user-questions` |
 | `agent` | `@greeneek/gnk-agent` |
-| `plugin-package-inventory-greeneek` | `@greeneek/gnk-plugin-package-inventory-greeneek` |
 | `agent-default-model` | `@greeneek/gnk-agent-default-model` |
 | `jobs` | `@greeneek/gnk-jobs-local` |
 | `llm-retry` | `@greeneek/gnk-llm-retry` |
@@ -259,14 +253,14 @@ flowchart LR
 | `tool-str-replace-editor` | `@greeneek/gnk-tool-str-replace-editor` |
 | `repeat-tool-reminder` | `@greeneek/gnk-repeat-tool-reminder` |
 | `web` | `@greeneek/gnk-web` |
-| `web-search-greeneek` | `@greeneek/gnk-web-search-greeneek` |
 | `web-fetch-http` | `@greeneek/gnk-web-fetch-http` |
+| `web-search-exa` | `@greeneek/gnk-web-search-exa` |
+| `web-search-perplexity` | `@greeneek/gnk-web-search-perplexity` |
 | `tool-web` | `@greeneek/gnk-tool-web` |
 | `tools` | `@greeneek/gnk-tools` |
 | `system-prompt` | `@greeneek/gnk-system-prompt` |
 | `agent-loop` | `@greeneek/gnk-agent-loop` |
 | `fs-sandbox` | `@greeneek/gnk-fs-sandbox` |
-| `llm-greeneek` | `@greeneek/gnk-llm-greeneek` |
 
 Source config: [`packages/bundle/base/cordis.patch.yml`](../../packages/bundle/base/cordis.patch.yml).
 

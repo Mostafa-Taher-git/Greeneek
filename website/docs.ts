@@ -31,18 +31,7 @@ export interface DocsPage {
   sourceAliases?: string[]
 }
 
-interface PageEntry {
-  source: string
-  route: string
-  label: string
-  sidebar: DocsSidebar | null
-  section: string
-  order: number
-  outline?: DocsPage['outline']
-  sourceAliases?: string[]
-}
-
-const homeAndGuide: PageEntry[] = [
+const homeAndGuide: DocsPage[] = [
   {
     source: 'docs/user/index.md',
     route: 'index.md',
@@ -110,7 +99,7 @@ const homeAndGuide: PageEntry[] = [
   },
 ]
 
-const develop: PageEntry[] = [
+const develop: DocsPage[] = [
   {
     source: 'docs/user/develop/basic/index.md',
     route: 'develop/basic/index.md',
@@ -196,7 +185,7 @@ const develop: PageEntry[] = [
   },
 ]
 
-const cordisTutorial: PageEntry[] = ([
+const cordisTutorial: DocsPage[] = ([
   ['index.md', 'Overview'],
   ['01-first-plugin.md', '1. Your first plugin'],
   ['02-lifecycle-and-effects.md', '2. Lifecycle and effects'],
@@ -205,7 +194,7 @@ const cordisTutorial: PageEntry[] = ([
   ['05-config.md', '5. Configuration'],
   ['06-composition-and-hmr.md', '6. Composition and HMR'],
   ['07-into-the-harness.md', '7. Into the harness'],
-] as const).map(([file, label], order): PageEntry => ({
+] as const).map(([file, label], order): DocsPage => ({
   source: `docs/cordis-tutorial/${file}`,
   route: `develop/cordis-tutorial/${file}`,
   label,
@@ -215,7 +204,7 @@ const cordisTutorial: PageEntry[] = ([
   ...(file === 'index.md' ? { sourceAliases: ['docs/cordis-tutorial'] } : {}),
 }))
 
-const cordisPrimerReference: PageEntry[] = [
+const cordisPrimerReference: DocsPage[] = [
   {
     source: 'docs/cordis-primer.md',
     route: 'reference/cordis-primer.md',
@@ -295,8 +284,8 @@ const subsystemGroups = [
   ]],
 ] as const
 
-const subsystemsReference: PageEntry[] = subsystemGroups.flatMap(([section, files]) =>
-  files.map(([file, label], order): PageEntry => ({
+const subsystemsReference: DocsPage[] = subsystemGroups.flatMap(([section, files]) =>
+  files.map(([file, label], order): DocsPage => ({
     source: `docs/subsystems/${file}`,
     route: file === 'README.md' ? 'reference/subsystems/index.md' : `reference/subsystems/${file}`,
     label,
@@ -309,7 +298,7 @@ const subsystemsReference: PageEntry[] = subsystemGroups.flatMap(([section, file
   })),
 )
 
-const reference: PageEntry[] = [
+const reference: DocsPage[] = [
   // `docs/greeneek-llm-api-wire-extensions.md` is a repository-only provider protocol reference.
   // Projected links intentionally resolve to its GitHub source instead of a public site route.
   {

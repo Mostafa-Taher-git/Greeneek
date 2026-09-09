@@ -15,7 +15,7 @@ type Props = AboutSectionProps
 
 // The seat's key domain is settings; the stub answers from the package
 // dictionary and falls back to the key like the real chain.
-const t: Props['t'] = (key => (en as Record<string, string>)[key] ?? key) as Props['t']
+const t: Props['t'] = key => (en as Record<string, string>)[key] ?? key
 
 afterEach(() => {
   cleanup()

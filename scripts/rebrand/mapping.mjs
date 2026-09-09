@@ -191,6 +191,7 @@ export const RESIDUE_ALLOWLIST = [
   { file: /^(\.\/)?docs\/migration-from-deepseek\.i18n\.yaml$/, why: 'translation-pairing record named after its migration-guide pair target' },
   { file: /^(\.\/)?scripts\/brand-sweep\.sh$/, why: 'the gate quotes the tokens it forbids' },
   { file: /^(\.\/)?packages\/llm\/llm-pi-ai\//, why: 'B4: pi-ai upstream catalog provider ids and thinkingFormat wire values — typed contract of @earendil-works/pi-ai; DeepSeek endpoints stay refused by the egress guard in buildProvider (decisions.md D16)' },
+  { file: /^(\.\/)?apps\/web\/tests\/expected\/models-settings\/empty\.expected\.md$/, why: 'D16: aria snapshot of the pi-ai upstream provider catalog — deepseek is a catalog id like cerebras/fireworks, not a brand claim' },
 ];
 
 /**

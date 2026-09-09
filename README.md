@@ -74,10 +74,6 @@ pnpm gnk web
 - Submit feedback or bug reports through [GitHub Issues](https://github.com/Mostafa-Taher-git/Greeneek/issues).
 - Add the [`gnk-plugin`](https://github.com/topics/gnk-plugin) topic to your plugin repository for discoverability.
 
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md).
-
 ## Development
 
 Start with the [development guide](docs/development.md) and [architecture documentation](docs/architecture.md).

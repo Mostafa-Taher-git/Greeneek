@@ -80,10 +80,6 @@ pnpm gnk web
 - 通过 [GitHub Issues](https://github.com/Mostafa-Taher-git/Greeneek/issues) 提交反馈或 bug 报告。
 - 为你的插件仓库添加 [`gnk-plugin`](https://github.com/topics/gnk-plugin) 话题，便于被发现。
 
-## 参与贡献
-
-参见 [CONTRIBUTING.md](CONTRIBUTING.zh.md)。
-
 ## 开发
 
 请先阅读[开发指南](docs/development.zh.md)与[架构文档](docs/architecture.zh.md)。

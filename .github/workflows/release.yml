@@ -1,0 +1,170 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., v1.0.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Get version
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build libraries
+        run: |
+          pnpm build:lib:host
+          pnpm build:lib:client
+
+      - name: Build web app
+        run: pnpm build:web
+
+      - name: Create dist directory
+        run: mkdir -p release-assets
+
+      - name: Archive web build
+        run: |
+          if [ -d "apps/web/dist" ]; then
+            cd apps/web/dist
+            zip -r ../../../release-assets/greeneek-web-${{ steps.get_version.outputs.version }}.zip .
+            cd ../../..
+            echo "WEB_ASSET=greeneek-web-${{ steps.get_version.outputs.version }}.zip" >> $GITHUB_ENV
+          else
+            echo "Web dist not found, skipping..."
+          fi
+
+      - name: Build CLI
+        run: pnpm --filter @greeneek/gnk run build || echo "CLI build skipped"
+
+      - name: Archive CLI (if exists)
+        run: |
+          if [ -d "apps/cli/lib" ]; then
+            cd apps/cli
+            zip -r ../../release-assets/greeneek-cli-${{ steps.get_version.outputs.version }}.zip lib package.json
+            cd ../..
+            echo "CLI_ASSET=greeneek-cli-${{ steps.get_version.outputs.version }}.zip" >> $GITHUB_ENV
+          else
+            echo "CLI lib not found, skipping..."
+          fi
+
+      - name: Build Desktop App for Linux
+        run: |
+          echo "Building desktop app for Linux..."
+          pnpm --filter @greeneek/desktop run dist:linux || echo "Desktop Linux build failed"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Desktop App for Windows
+        run: |
+          echo "Building desktop app for Windows..."
+          pnpm --filter @greeneek/desktop run dist:win || echo "Desktop Windows build failed"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Collect Desktop Assets
+        run: |
+          echo "Collecting desktop assets..."
+          find apps/desktop -name "*.deb" -exec cp {} release-assets/ \;
+          find apps/desktop -name "*.exe" -exec cp {} release-assets/ \;
+          find apps/desktop -name "*.zip" -path "*dist*" -exec cp {} release-assets/ \;
+          ls -la release-assets/ || echo "No assets created yet"
+          
+          DEB_FILES=$(find release-assets -name "*.deb" -printf "%f\n" | head -1)
+          EXE_FILES=$(find release-assets -name "*.exe" -printf "%f\n" | head -1)
+          
+          if [ -n "$DEB_FILES" ]; then
+            echo "LINUX_DEB_ASSET=$DEB_FILES" >> $GITHUB_ENV
+          fi
+          if [ -n "$EXE_FILES" ]; then
+            echo "WINDOWS_EXE_ASSET=$EXE_FILES" >> $GITHUB_ENV
+          fi
+
+      - name: List all release assets
+        run: ls -la release-assets/ || echo "No assets created"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Release ${{ steps.get_version.outputs.version }}
+          tag_name: ${{ steps.get_version.outputs.version }}
+          body: |
+            ## Greeneek ${{ steps.get_version.outputs.version }}
+
+            ### 🖥️ Desktop Applications
+
+            ${{ env.LINUX_DEB_ASSET && format('- **Linux (.deb)**: [Download](./{0})', env.LINUX_DEB_ASSET) || '' }}
+            ${{ env.WINDOWS_EXE_ASSET && format('- **Windows (.exe)**: [Download](./{0})', env.WINDOWS_EXE_ASSET) || '' }}
+
+            #### Desktop Installation
+
+            **Linux (.deb):**
+            ```bash
+            sudo dpkg -i greeneek-desktop-*.deb
+            sudo apt-get install -f
+            ```
+
+            **Windows (.exe):**
+            1. Download the .exe installer
+            2. Run the installer
+            3. Follow the installation wizard
+            4. Launch Greeneek from Start Menu or Desktop
+
+            ### 🌐 Web Application
+
+            ${{ env.WEB_ASSET && format('- **Web App**: [Download](./{0})', env.WEB_ASSET) || '' }}
+
+            #### Web Installation
+            1. Download the web app zip file
+            2. Extract the contents
+            3. Open index.html in your browser or deploy to static hosting
+
+            ### 💻 CLI Tool
+
+            ${{ env.CLI_ASSET && format('- **CLI**: [Download](./{0})', env.CLI_ASSET) || '' }}
+
+            #### CLI Installation
+            1. Download the CLI zip file
+            2. Extract the contents
+            3. Ensure Node.js is installed
+            4. Run with: node lib/bin.js
+
+            ### What's Changed
+            ${{ github.event.head_commit.message }}
+          files: |
+            release-assets/*
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

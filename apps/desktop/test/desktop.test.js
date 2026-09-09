@@ -23,7 +23,7 @@ import {
 } from '../src/updater.js'
 import { createTrayMenuTemplate, shouldHideWindowOnClose } from '../src/window-lifecycle.js'
 import { createWindowOptions } from '../src/window-options.js'
-import { WINDOWS_TITLEBAR_CSS, WINDOWS_TITLEBAR_HEIGHT } from '../src/windows-titlebar.js'
+import { FRAMELESS_TITLEBAR_CSS, FRAMELESS_TITLEBAR_HEIGHT, framelessTitlebarScript } from '../src/frameless-titlebar.js'
 import { applyWindowsHide, enforceWindowsChildProcessHide } from '../src/gnk-windows-child-process-hide.mjs'
 
 function fakeCookieStore(cookies) {
@@ -170,9 +170,9 @@ describe('window chrome', () => {
     assert.ok(zh.some((row) => row.label === '重启并安装更新'))
   })
 
-  it('hides the frame on Windows and keeps it on Linux', () => {
-    assert.equal(createWindowOptions('win32', false).titleBarStyle, 'hidden')
-    assert.equal(createWindowOptions('linux', true).titleBarStyle, 'default')
+  it('runs frameless on Windows and Linux, framed elsewhere', () => {
+    assert.equal(createWindowOptions('win32', false).frame, false)
+    assert.equal(createWindowOptions('linux', false).frame, false)
     assert.equal(createWindowOptions('linux', true).backgroundColor, '#111813')
     assert.equal(createWindowOptions('linux', false).backgroundColor, '#fdfefa')
   })
@@ -187,9 +187,19 @@ describe('window chrome', () => {
     assert.equal(bridged.webPreferences.sandbox, true)
   })
 
-  it('paints the drag strip against the UI token with a system fallback', () => {
-    assert.equal(WINDOWS_TITLEBAR_HEIGHT, 40)
-    assert.ok(WINDOWS_TITLEBAR_CSS.includes('var(--dsw-alias-bg-base, Canvas)'))
+  it('paints the frameless strip with real-button controls, no native overlay', () => {
+    assert.equal(FRAMELESS_TITLEBAR_HEIGHT, 40)
+    assert.ok(FRAMELESS_TITLEBAR_CSS.includes('var(--dsw-alias-bg-base, Canvas)'))
+    assert.ok(FRAMELESS_TITLEBAR_CSS.includes('#gnk-titlebar-controls'))
+    assert.ok(FRAMELESS_TITLEBAR_CSS.includes('no-drag'))
+    assert.ok(!FRAMELESS_TITLEBAR_CSS.includes('titlebar-area-'))
+    const script = framelessTitlebarScript()
+    assert.ok(script.includes('gnk-titlebar-controls'))
+    assert.ok(script.includes('windowMinimize'))
+    assert.ok(script.includes('windowToggleMaximize'))
+    assert.ok(script.includes('windowClose'))
+    assert.ok(script.includes('windowIsMaximized'))
+    assert.ok(script.includes('__gnkTitlebarSync'))
   })
 })
 

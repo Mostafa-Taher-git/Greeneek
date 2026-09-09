@@ -1,16 +1,14 @@
-import { WINDOWS_TITLEBAR_HEIGHT } from './windows-titlebar.js'
-
 /**
  * Window geometry and chrome per platform.
- * Windows hides the native frame in favor of the overlay drag strip (Phase 3
- * paints it); Linux keeps its native titlebar.
+ * Windows and Linux run frameless with the injected custom titlebar (small
+ * controls top-right); anything else keeps its native frame.
  * @param platform - `process.platform` (injectable for tests).
  * @param useDarkColors - whether the OS reports a dark theme.
  * @param preload - preload script path for the About/update bridge, if any.
  * @returns the Electron BrowserWindow options.
  */
 export function createWindowOptions(platform = process.platform, useDarkColors = false, preload = undefined) {
-  const isWindows = platform === 'win32'
+  const frameless = platform === 'win32' || platform === 'linux'
   return {
     width: 1440,
     height: 960,
@@ -19,15 +17,9 @@ export function createWindowOptions(platform = process.platform, useDarkColors =
     show: false,
     title: 'Greeneek',
     backgroundColor: useDarkColors ? '#111813' : '#fdfefa',
-    titleBarStyle: isWindows ? 'hidden' : 'default',
-    titleBarOverlay: isWindows
-      ? {
-        color: '#00000000',
-        symbolColor: useDarkColors ? '#e4ece1' : '#22392c',
-        height: WINDOWS_TITLEBAR_HEIGHT,
-      }
-      : false,
-    autoHideMenuBar: isWindows,
+    frame: !frameless,
+    titleBarStyle: frameless ? 'hidden' : 'default',
+    autoHideMenuBar: frameless,
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,

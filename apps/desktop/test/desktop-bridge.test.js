@@ -49,6 +49,15 @@ describe('versions', () => {
 
 function fakeBridge() {
   const handlers = new Map()
+  const calls = []
+  const fakeWindow = {
+    maximized: false,
+    minimize() { calls.push('minimize') },
+    maximize() { calls.push('maximize'); this.maximized = true },
+    unmaximize() { calls.push('unmaximize'); this.maximized = false },
+    close() { calls.push('close') },
+    isMaximized() { return this.maximized },
+  }
   const updateManager = {
     state: 'idle',
     checked: 0,
@@ -66,8 +75,9 @@ function fakeBridge() {
     appDir: '/app',
     updateManager,
     readHarnessVersion: () => '1.1.0-alpha.0',
+    getWindow: () => fakeWindow,
   })
-  return { handlers, updateManager }
+  return { handlers, updateManager, calls, fakeWindow }
 }
 
 describe('desktop bridge', () => {
@@ -87,5 +97,20 @@ describe('desktop bridge', () => {
     assert.equal(updateManager.checked, 1)
     await handlers.get('greeneek-desktop:install-update')()
     assert.equal(updateManager.installed, 1)
+  })
+
+  it('drives the frameless window controls through the window accessor', async () => {
+    const { handlers, calls, fakeWindow } = fakeBridge()
+    await handlers.get('greeneek-desktop:window-minimize')()
+    assert.deepEqual(calls, ['minimize'])
+    await handlers.get('greeneek-desktop:window-toggle-maximize')()
+    assert.deepEqual(calls, ['minimize', 'maximize'])
+    assert.deepEqual(await handlers.get('greeneek-desktop:window-is-maximized')(), { maximized: true })
+    await handlers.get('greeneek-desktop:window-toggle-maximize')()
+    assert.deepEqual(calls, ['minimize', 'maximize', 'unmaximize'])
+    assert.deepEqual(await handlers.get('greeneek-desktop:window-is-maximized')(), { maximized: false })
+    await handlers.get('greeneek-desktop:window-close')()
+    assert.deepEqual(calls, ['minimize', 'maximize', 'unmaximize', 'close'])
+    assert.equal(fakeWindow.maximized, false)
   })
 })

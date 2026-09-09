@@ -10,6 +10,7 @@ Greeneek Desktop is an installable Electron shell that hosts the existing Greene
 - **Windows no-console shim**: `apps/desktop/src/gnk-node-entry.mjs`
 - **Bundled runtimes**: Node.js from the `node` npm package, pnpm from `pnpm`, koffi for native interop
 - **Self-update**: `apps/desktop/src/updater.js` with `electron-updater`
+- **Frameless chrome**: `apps/desktop/src/frameless-titlebar.js` paints the drag strip and the minimize/maximize/close controls on Windows and Linux; the Settings About page shows versions with check-for-updates and restart-and-install
 - **Safe mode**: `apps/desktop/src/boot-health.js` counts consecutive service failures; after three, the next launch boots with `GNK_SAFE_MODE=1`, and `apps/cli/src/profile-boot.ts` skips every user layer so only core bundles load
 - **Tests**: `apps/desktop/test/*.test.js` with Node's built-in test runner
 

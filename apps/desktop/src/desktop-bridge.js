@@ -12,11 +12,16 @@ export const BRIDGE_CHANNELS = [
   'greeneek-desktop:update-status',
   'greeneek-desktop:check-updates',
   'greeneek-desktop:install-update',
+  'greeneek-desktop:window-minimize',
+  'greeneek-desktop:window-toggle-maximize',
+  'greeneek-desktop:window-close',
+  'greeneek-desktop:window-is-maximized',
 ]
 
 /**
  * Register the renderer bridge on an ipcMain-like handler table.
- * @param options - ipcMain, app, staged app dir, and the update manager.
+ * @param options - ipcMain, app, staged app dir, the update manager, and a
+ * window accessor for the frameless controls (optional in tests).
  * @returns nothing.
  */
 export function registerDesktopBridge({
@@ -25,6 +30,7 @@ export function registerDesktopBridge({
   appDir,
   updateManager,
   readHarnessVersion = bundledHarnessVersion,
+  getWindow = () => undefined,
 }) {
   ipcMain.handle('greeneek-desktop:versions', () => ({
     desktop: app.getVersion(),
@@ -40,4 +46,19 @@ export function registerDesktopBridge({
   ipcMain.handle('greeneek-desktop:install-update', () => {
     updateManager.quitAndInstall()
   })
+  ipcMain.handle('greeneek-desktop:window-minimize', () => {
+    getWindow()?.minimize()
+  })
+  ipcMain.handle('greeneek-desktop:window-toggle-maximize', () => {
+    const window = getWindow()
+    if (window === undefined) return
+    if (window.isMaximized()) window.unmaximize()
+    else window.maximize()
+  })
+  ipcMain.handle('greeneek-desktop:window-close', () => {
+    getWindow()?.close()
+  })
+  ipcMain.handle('greeneek-desktop:window-is-maximized', () => ({
+    maximized: getWindow()?.isMaximized() === true,
+  }))
 }

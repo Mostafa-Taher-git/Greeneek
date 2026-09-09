@@ -30,7 +30,7 @@ import { ensurePinnedStore } from './store-pin.js'
 import { createUpdateManager } from './updater.js'
 import { createTrayMenuTemplate, shouldHideWindowOnClose } from './window-lifecycle.js'
 import { createWindowOptions } from './window-options.js'
-import { applyWindowsTitleBarStyle } from './windows-titlebar.js'
+import { applyFramelessTitleBar, syncFramelessMaximizeIcon } from './frameless-titlebar.js'
 
 /**
  * Greeneek Desktop main process: single-instance window, tray, and the gnk
@@ -95,11 +95,12 @@ function refreshTrayMenu() {
 }
 
 function createWindow() {
-  if (process.platform === 'win32') Menu.setApplicationMenu(null)
+  const frameless = process.platform === 'win32' || process.platform === 'linux'
+  if (frameless) Menu.setApplicationMenu(null)
 
   mainWindow = new BrowserWindow(createWindowOptions(process.platform, nativeTheme.shouldUseDarkColors, PRELOAD_SCRIPT))
 
-  if (process.platform === 'win32') {
+  if (frameless) {
     mainWindow.setMenu(null)
     mainWindow.setMenuBarVisibility(false)
   }
@@ -107,7 +108,13 @@ function createWindow() {
   secureWindow(mainWindow.webContents, shell)
 
   mainWindow.webContents.on('did-finish-load', () => {
-    if (process.platform === 'win32') void applyWindowsTitleBarStyle(mainWindow.webContents)
+    if (frameless) void applyFramelessTitleBar(mainWindow.webContents)
+  })
+  mainWindow.on('maximize', () => {
+    if (frameless) void syncFramelessMaximizeIcon(mainWindow.webContents, true)
+  })
+  mainWindow.on('unmaximize', () => {
+    if (frameless) void syncFramelessMaximizeIcon(mainWindow.webContents, false)
   })
 
   mainWindow.once('ready-to-show', () => mainWindow?.show())
@@ -224,6 +231,7 @@ async function launch() {
     app,
     appDir: fileURLToPath(new URL('..', import.meta.url)),
     updateManager,
+    getWindow: () => mainWindow,
   })
   updateManager.onStateChange(() => refreshTrayMenu())
   updateManager.start()

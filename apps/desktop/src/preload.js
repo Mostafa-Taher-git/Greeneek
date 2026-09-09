@@ -15,4 +15,12 @@ contextBridge.exposeInMainWorld('greeneekDesktop', {
   checkForUpdates: () => ipcRenderer.invoke('greeneek-desktop:check-updates'),
   /** Restart into the downloaded update; no-op until one is downloaded. */
   installUpdate: () => ipcRenderer.invoke('greeneek-desktop:install-update'),
+  /** Minimize the frameless window. */
+  windowMinimize: () => ipcRenderer.invoke('greeneek-desktop:window-minimize'),
+  /** Toggle maximize/restore on the frameless window. */
+  windowToggleMaximize: () => ipcRenderer.invoke('greeneek-desktop:window-toggle-maximize'),
+  /** Close the frameless window (tray rules still apply). */
+  windowClose: () => ipcRenderer.invoke('greeneek-desktop:window-close'),
+  /** Whether the frameless window is currently maximized. */
+  windowIsMaximized: () => ipcRenderer.invoke('greeneek-desktop:window-is-maximized'),
 })

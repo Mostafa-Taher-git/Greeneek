@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, it } from 'node:test'
-import { pathContainsSegment, rangedStoreSource, satisfiesWanted, soleStoreSource } from '../scripts/stage.mjs'
+import { externalDeps, pathContainsSegment, rangedStoreSource, satisfiesWanted, soleStoreSource } from '../scripts/stage.mjs'
 
 describe('pathContainsSegment', () => {
   it('matches posix workspace paths', () => {
@@ -112,5 +112,17 @@ describe('rangedStoreSource', () => {
     } finally {
       rmSync(store, { recursive: true, force: true })
     }
+  })
+})
+
+describe('externalDeps', () => {
+  it('marks peer-only deps separately from hard deps', () => {
+    const { required, peerOnly } = externalDeps({
+      dependencies: { 'left-pad': '1.3.0' },
+      peerDependencies: { '@types/react-dom': '^18.0.0 || ^19.0.0', 'left-pad': '^1.0.0' },
+    })
+    assert.equal(required.has('@types/react-dom'), true)
+    assert.equal(peerOnly.has('@types/react-dom'), true)
+    assert.equal(peerOnly.has('left-pad'), false)
   })
 })

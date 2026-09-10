@@ -576,6 +576,8 @@ const BUILTIN_DEP_NAMES = new Set(builtinModules.map((name) => name.replace(/^no
 function externalDeps(manifest) {
   const required = new Set()
   const optionalOnly = new Set()
+  const peerOnly = new Set()
+  const hard = new Set(Object.keys(manifest.dependencies ?? {}))
   for (const field of ['dependencies', 'peerDependencies', 'optionalDependencies']) {
     for (const dep of Object.keys(manifest[field] ?? {})) {
       if (dep.startsWith('@greeneek/') || dep.startsWith('node:') || BUILTIN_DEP_NAMES.has(dep)) continue
@@ -586,7 +588,11 @@ function externalDeps(manifest) {
       }
     }
   }
-  return { required, optionalOnly }
+  for (const dep of Object.keys(manifest.peerDependencies ?? {})) {
+    if (dep.startsWith('@greeneek/') || dep.startsWith('node:') || BUILTIN_DEP_NAMES.has(dep)) continue
+    if (!hard.has(dep)) peerOnly.add(dep)
+  }
+  return { required, optionalOnly, peerOnly }
 }
 
 /** Whether Node's walk-up from `importerDir` finds `depName` inside staging. */
@@ -799,7 +805,7 @@ function materializeExternalClosure(staging, repoRoot, workspaceIndex) {
     for (const { dir, manifest, symlinked } of importers) {
       if (symlinked) continue
       const anchors = sourceAnchorsFor(dir, manifest.name, manifest.version)
-      const { required, optionalOnly } = externalDeps(manifest)
+      const { required, optionalOnly, peerOnly } = externalDeps(manifest)
       for (const dep of new Set([...required, ...optionalOnly])) {
         if (resolvesInStaging(staging, dir, dep)) continue
         let source = findExternalSourceDir(anchors, dep)
@@ -821,7 +827,19 @@ function materializeExternalClosure(staging, repoRoot, workspaceIndex) {
           }
           source = rangedStoreSource(stores, dep, manifest.dependencies?.[dep] ?? manifest.peerDependencies?.[dep] ?? manifest.optionalDependencies?.[dep])
           if (source === undefined) {
-            fail(`staging dropped external ${dep} (required by ${manifest.name ?? dir}) and it is not resolvable from the workspace`)
+            // Peers are optional by contract: the source tree on this machine
+            // does not resolve them either, so mirror that instead of dying.
+            // The packaged smoke test still proves the service boots.
+            if (peerOnly.has(dep)) {
+              if (!skippedUnmetPeers.has(dep)) {
+                skippedUnmetPeers.add(dep)
+                console.log(`stage: skipping unresolvable peer ${dep} (required by ${manifest.name ?? dir})`)
+              }
+              continue
+            }
+            const wanted = manifest.dependencies?.[dep] ?? manifest.peerDependencies?.[dep] ?? manifest.optionalDependencies?.[dep] ?? 'unknown'
+            const inStore = [...storeVersionDirs(stores, dep).keys()].join(', ') || 'none'
+            fail(`staging dropped external ${dep} (required by ${manifest.name ?? dir}, wanted ${wanted}, store versions: ${inStore}) and it is not resolvable from the workspace`)
           }
           console.log(`stage: closure materialized external ${dep} from the store direct (unlinkable from every anchor)`)
         }
@@ -980,4 +998,4 @@ const isMainModule = process.argv[1] !== undefined
   && resolve(process.argv[1]) === fileURLToPath(import.meta.url)
 if (isMainModule) main()
 
-export { pathContainsSegment, rangedStoreSource, satisfiesWanted, soleStoreSource, staging }
+export { externalDeps, pathContainsSegment, rangedStoreSource, satisfiesWanted, soleStoreSource, staging }

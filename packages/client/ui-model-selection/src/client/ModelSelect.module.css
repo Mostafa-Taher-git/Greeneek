@@ -292,6 +292,7 @@
   height: 8px;
   margin: 0;
   border-radius: 999px;
+  corner-shape: round;
   background: linear-gradient(
     to right,
     var(--dsw-alias-button-primary-fill) 0 var(--fill, 0%),
@@ -308,6 +309,7 @@
   height: 16px;
   border: none;
   border-radius: 50%;
+  corner-shape: round;
   background: var(--dsw-alias-button-primary-fill);
   cursor: grab;
 }
@@ -315,12 +317,14 @@
 .slider::-moz-range-track {
   height: 8px;
   border-radius: 999px;
+  corner-shape: round;
   background: var(--dsw-alias-scrollbar-bg-l2);
 }
 
 .slider::-moz-range-progress {
   height: 8px;
   border-radius: 999px;
+  corner-shape: round;
   background: var(--dsw-alias-button-primary-fill);
 }
 
@@ -329,6 +333,7 @@
   height: 16px;
   border: none;
   border-radius: 50%;
+  corner-shape: round;
   background: var(--dsw-alias-button-primary-fill);
   cursor: grab;
 }
@@ -377,6 +382,7 @@
   width: 5px;
   height: 5px;
   border-radius: 50%;
+  corner-shape: round;
   background: rgba(255, 255, 255, 0.92);
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.18);
   transform: translate(-50%, -50%);

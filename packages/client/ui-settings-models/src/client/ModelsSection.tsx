@@ -297,8 +297,10 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderS
   const addNamespace = addTarget === undefined ? undefined : state.namespaces.get(addTarget.settingsNs)
   // The draft's directory row, for the card extension seat. A refresh can drop
   // the row mid-draft (the route was adopted or withdrawn elsewhere); the
-  // draft card stays while the seat simply has no row to dispatch.
-  const addRow = addTarget === undefined
+  // draft card stays while the seat simply has no row to dispatch. While a
+  // reload is in flight the directory is unconfirmed, so the stale rows must
+  // not dispatch either — the seat returns with the settled directory.
+  const addRow = addTarget === undefined || state.status === 'loading'
     ? undefined
     : state.rows.find(row => row.entry.provider === addTarget.provider)
   // Hand-declared routes live in the pi-ai namespace, which is also the only

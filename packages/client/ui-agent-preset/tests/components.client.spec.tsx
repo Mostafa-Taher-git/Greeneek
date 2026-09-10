@@ -199,7 +199,9 @@ describe('a refused switch', () => {
 
       // Transient by design: it holds long enough to read a cause that names
       // packages, then leaves rather than sitting over the screen.
-      act(() => { vi.advanceTimersByTime(9001) })
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(9001)
+      })
       expect(screen.queryByRole('alert')).toBeNull()
     } finally {
       vi.useRealTimers()

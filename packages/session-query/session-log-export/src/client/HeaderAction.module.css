@@ -6,6 +6,7 @@
   height: 30px;
   border: 0;
   border-radius: 50%;
+  corner-shape: round;
   color: var(--dsw-alias-label-primary);
   background: transparent;
   cursor: pointer;

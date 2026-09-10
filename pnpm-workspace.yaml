@@ -24,6 +24,12 @@ overrides:
   # (its child is real Node, nothing native compiles), so the registry
   # release satisfies the install without changing any executed code path.
   '@electron/node-gyp': '10.2.0-electron.2'
+  # Client packages still declare react/react-dom ^18 ranges (pre-rebrand),
+  # while the tree ships and runs 19: pnpm then installs both majors and
+  # peer slots split, so component tests die on duplicate-React errors.
+  # One pinned copy until the ranges are updated package by package.
+  react: '19.2.6'
+  react-dom: '19.2.6'
 
 peerDependencyRules:
   allowedVersions:

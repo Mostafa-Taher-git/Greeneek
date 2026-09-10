@@ -19,6 +19,9 @@
     "**/.doc-typecheck-*/**",
     "**/.node-next-types-*/**",
     "**/.oxlint-contract-*/**", // Scratch files created by the executable lint-contract tests.
+    "packages/typert/generator/tests/.typert-*/**", // Generator-test scratch workspaces (generated projects, cleaned after each test).
+    "packages/typert/generator/tests/.generated-*/**", // Same: schema/tools/model emission scratch.
+    "packages/typert/generator/tests/.rendered-*/**", // Same: renderer output scratch.
     "**/oxlint-contract-*", // Flat probes use real TypeScript project include paths.
     "packages/typert/generator/tests/fixtures/type-model/**", // tsgolint rejects this fixture's preserved project shapes before rules run.
     "website/.generated/**",

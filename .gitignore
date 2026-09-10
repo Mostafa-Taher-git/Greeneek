@@ -22,6 +22,11 @@ vendor/*/lib/
 .gnk-build/
 apps/desktop/.staging/
 
+# Generator-test scratch workspaces (created under packages/typert/generator/tests, cleaned after each test)
+packages/typert/generator/tests/.typert-*/
+packages/typert/generator/tests/.generated-*/
+packages/typert/generator/tests/.rendered-*/
+
 # Python specific
 __pycache__/
 *.pyc

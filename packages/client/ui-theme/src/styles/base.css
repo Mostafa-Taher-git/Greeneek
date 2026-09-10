@@ -13,3 +13,9 @@
   --ds-transition-duration-fast: 0.1s;
   --ds-transition-duration-slow: 0.3s;
 }
+
+/* Text selection rides the product green in both themes instead of the
+   browser-default blue. */
+::selection {
+  background-color: var(--dsw-alias-text-selection);
+}

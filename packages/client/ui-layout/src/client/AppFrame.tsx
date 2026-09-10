@@ -107,6 +107,13 @@ export function AppFrame({
   })
   const frameRef = useRef<HTMLDivElement | null>(null)
   const [viewport, setViewport] = useState(() => window.innerWidth)
+  // Frameless desktop shell (preload bridge present): the rail background
+  // spans the full window height while the content columns clear the drag
+  // strip below (AppFrame.module.css). Absent in browsers and tests, so
+  // snapshots never see the attribute.
+  const [desktopHost] = useState(
+    () => (globalThis as { greeneekDesktop?: unknown }).greeneekDesktop !== undefined,
+  )
 
   const lastSession = useRef(detailsSession)
   useLayoutEffect(() => {
@@ -180,6 +187,7 @@ export function AppFrame({
       data-sidebar-collapsed={sidebarCollapsed || undefined}
       data-details-collapsed={cols.details === 0 || undefined}
       data-dragging={dragging || undefined}
+      data-desktop-host={desktopHost || undefined}
     >
       <DocumentTitle
         productTitle={productTitle}

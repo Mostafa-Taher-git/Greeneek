@@ -29,6 +29,16 @@
   border-right: 0.5px solid var(--dsw-alias-border-l3);
 }
 
+/* Frameless desktop shell: the rail owns the window top edge (its own
+   content offsets below the drag strip in SidebarRoot), while the content
+   columns clear the 40px strip here. Mirrors FRAMELESS_TITLEBAR_HEIGHT in
+   apps/desktop/src/frameless-titlebar.js; same release ships both. */
+.frame[data-desktop-host] .centerCol,
+.frame[data-desktop-host] .detailsCol {
+  padding-top: 40px;
+  box-sizing: border-box;
+}
+
 .centerCol {
   min-width: 0;
   display: flex;

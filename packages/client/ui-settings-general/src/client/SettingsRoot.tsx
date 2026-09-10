@@ -15,7 +15,7 @@ import clsx from 'clsx'
 import {
   ConnectionIndicator,
   IconAgentPresetOutline16, IconCloseOutline16, IconCommandOutline16, IconDataOutline16,
-  IconPersonalizationOutline16, IconSettingsOutline16,
+  IconInfoOutline16, IconPersonalizationOutline16, IconSettingsOutline16,
 } from '@greeneek/gnk-client-ui-primitives'
 import type { ConnectionIndicatorState } from '@greeneek/gnk-client-ui-primitives'
 import type { SettingsRootComponentProps, SettingsSectionRow } from './shell-contract.ts'
@@ -29,6 +29,7 @@ function navIcon(id: string) {
   if (id === 'agent-presets') return <IconAgentPresetOutline16 className={css.navIcon} size={16} />
   if (id === 'plugins') return <IconPersonalizationOutline16 className={css.navIcon} size={16} />
   if (id === 'commands') return <IconCommandOutline16 className={css.navIcon} size={16} />
+  if (id === 'about') return <IconInfoOutline16 className={css.navIcon} size={16} />
   return <IconSettingsOutline16 className={css.navIcon} size={16} />
 }
 

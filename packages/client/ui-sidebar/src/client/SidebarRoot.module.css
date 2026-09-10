@@ -29,6 +29,17 @@
   padding: 18px 10px 6px;
 }
 
+/* Frameless desktop shell: the rail background owns the window top edge, so
+   the content starts below the 40px drag strip. Mirrors
+   FRAMELESS_TITLEBAR_HEIGHT in apps/desktop/src/frameless-titlebar.js; same
+   release ships both. */
+.root[data-desktop-host] {
+  padding-top: calc(40px + 6px);
+}
+.root.collapsed[data-desktop-host] {
+  padding-top: calc(40px + 18px);
+}
+
 /* Scrollbars in the column are a pointer affordance: the shell adds this
    class whenever the pointer is not inside (SidebarRoot.tsx owns the linger),
    and rebinding ui-theme's indirection pair to `transparent` takes the thumb

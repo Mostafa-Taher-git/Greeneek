@@ -123,6 +123,13 @@ export function SidebarRoot({
 
   const buildVersion = localBuildVersion()
 
+  // Frameless desktop shell: the rail background spans the full window
+  // height; the top offset below keeps every control clear of the drag
+  // strip (SidebarRoot.module.css). Absent in browsers and tests.
+  const [desktopHost] = useState(
+    () => (globalThis as { greeneekDesktop?: unknown }).greeneekDesktop !== undefined,
+  )
+
   return (
     <div
       ref={column}
@@ -130,6 +137,7 @@ export function SidebarRoot({
         css.root, !wide && css.collapsed, !wide && everWide.current && css.railIn,
         collapsed && wide && css.fading, !pointerInside && css.quietBars,
       )}
+      data-desktop-host={desktopHost || undefined}
       style={wide ? { width: collapsed ? lastWideWidth.current : width } : undefined}
       onPointerEnter={() => {
         cancelLinger()

@@ -995,3 +995,14 @@ export const IconBrainCircuit16 = ({ size = 16, className }: IconProps) => (
     </g>
   </svg>
 )
+
+/** lucide info (ISC), scaled to the 16 grid: settings About nav. */
+export const IconInfoOutline16 = ({ size = 16, className }: IconProps) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <g stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="8" cy="8" r="6.67" />
+      <path d="M8 10.67v-2.67" />
+      <path d="M8 5.33h.01" />
+    </g>
+  </svg>
+)

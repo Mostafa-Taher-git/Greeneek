@@ -33,6 +33,8 @@ jobs:
           sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" apps/desktop/package.json
           cat apps/desktop/package.json | grep version
       - run: pnpm --filter @greeneek/desktop run dist:linux
+      - name: Drop builder diagnostics from the release set
+        run: rm -f apps/desktop/.staging/app/dist/builder-debug.yml apps/desktop/.staging/app/dist/builder-effective-config.yaml
       - name: Build AppImage zsync metadata
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq zsync

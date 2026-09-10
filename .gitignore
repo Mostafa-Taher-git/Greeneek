@@ -11,6 +11,17 @@ build/
 target/
 *.tgz
 
+# Compiled package outputs (tsc/tsdown emit; sources live under src/)
+packages/*/*/lib/
+apps/*/lib/
+vendor/*/lib/
+*.tsbuildinfo
+
+# Local build/test residue (regenerable; never commit)
+.artifacts/
+.gnk-build/
+apps/desktop/.staging/
+
 # Python specific
 __pycache__/
 *.pyc

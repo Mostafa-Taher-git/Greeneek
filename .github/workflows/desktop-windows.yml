@@ -34,9 +34,9 @@ jobs:
           ls apps/desktop/.staging/app/dist/latest*.yml
           ls apps/desktop/.staging/app/dist/*.blockmap
         shell: bash
-      - run: node apps/desktop/scripts/prepare-release-assets.mjs --dist apps/desktop/.staging/app/dist
+      - run: node apps/desktop/scripts/prepare-release-assets.mjs --dist .staging/app/dist
       - if: startsWith(github.ref, 'refs/tags/desktop-')
-        run: node apps/desktop/scripts/prepare-release-assets.mjs --dist apps/desktop/.staging/app/dist --tag "${{ github.ref_name }}"
+        run: node apps/desktop/scripts/prepare-release-assets.mjs --dist .staging/app/dist --tag "${{ github.ref_name }}"
       - uses: actions/upload-artifact@v4
         with:
           name: windows-desktop-artifacts

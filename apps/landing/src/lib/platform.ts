@@ -19,11 +19,11 @@ export const DEV_DOCS_URL = `${REPO_URL}/blob/main/docs/development.md`;
 export const PLUGINS_URL = "https://github.com/topics/gnk-plugin";
 export const LICENSE_URL = `${REPO_URL}/blob/main/LICENSE`;
 
-/** All downloads route to the latest release. */
+/** All downloads route to stable per-file aliases on the latest release. */
 export const download = {
   latest: `${RELEASES_URL}/latest`,
-  windowsInstaller: RELEASES_URL,
-  windowsPortable: RELEASES_URL,
-  linuxDeb: RELEASES_URL,
-  linuxAppImage: RELEASES_URL,
+  windowsInstaller: `${RELEASES_URL}/latest/download/Greeneek-Desktop-latest-windows-x64.exe`,
+  windowsPortable: `${RELEASES_URL}/latest/download/Greeneek-Desktop-latest-windows-x64.zip`,
+  linuxDeb: `${RELEASES_URL}/latest/download/Greeneek-Desktop-latest-linux-amd64.deb`,
+  linuxAppImage: `${RELEASES_URL}/latest/download/Greeneek-Desktop-latest-linux-x86_64.AppImage`,
 };

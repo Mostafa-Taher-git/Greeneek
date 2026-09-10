@@ -182,8 +182,8 @@ describe('window chrome', () => {
     assert.equal(bare.webPreferences.sandbox, true)
     assert.equal(bare.webPreferences.nodeIntegration, false)
     assert.equal('preload' in bare.webPreferences, false)
-    const bridged = createWindowOptions('linux', false, '/app/src/preload.js')
-    assert.equal(bridged.webPreferences.preload, '/app/src/preload.js')
+    const bridged = createWindowOptions('linux', false, '/app/src/preload.cjs')
+    assert.equal(bridged.webPreferences.preload, '/app/src/preload.cjs')
     assert.equal(bridged.webPreferences.sandbox, true)
   })
 
@@ -200,6 +200,8 @@ describe('window chrome', () => {
     assert.ok(script.includes('windowClose'))
     assert.ok(script.includes('windowIsMaximized'))
     assert.ok(script.includes('__gnkTitlebarSync'))
+    assert.ok(script.includes('apiOrWarn'))
+    assert.ok(script.includes('preload bridge unavailable'))
   })
 })
 

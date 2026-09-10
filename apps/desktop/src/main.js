@@ -41,7 +41,7 @@ import { applyFramelessTitleBar, syncFramelessMaximizeIcon } from './frameless-t
 
 const APP_NAME = 'Greeneek'
 const STARTUP_PAGE = fileURLToPath(new URL('./startup.html', import.meta.url))
-const PRELOAD_SCRIPT = fileURLToPath(new URL('./preload.js', import.meta.url))
+const PRELOAD_SCRIPT = fileURLToPath(new URL('./preload.cjs', import.meta.url))
 const TRAY_ICON = fileURLToPath(new URL('../assets/tray.png', import.meta.url))
 
 app.setName(APP_NAME)

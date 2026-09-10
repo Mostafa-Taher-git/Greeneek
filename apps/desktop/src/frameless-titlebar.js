@@ -4,8 +4,12 @@
  * to the top-right (minimize, maximize/restore, close). The controls are
  * built by an injected script so every page the window shows — the splash
  * and the web UI alike — carries identical chrome without forking the UI.
- * Buttons call back through the `greeneekDesktop` preload bridge; the main
- * process pushes maximize-state changes back into `__gnkTitlebarSync`.
+ * The strip is a pure overlay: the hosted client keeps its sidebar
+ * background flush to the window top and offsets its own content below the
+ * strip (data-desktop-host), so no body padding is injected here.
+ * Buttons resolve the `greeneekDesktop` preload bridge at click time and warn
+ * once when it is absent; the main process pushes maximize-state changes
+ * back into `__gnkTitlebarSync`.
  */
 export const FRAMELESS_TITLEBAR_HEIGHT = 40
 
@@ -70,7 +74,6 @@ export const FRAMELESS_TITLEBAR_CSS = `
   body {
     box-sizing: border-box !important;
     height: 100vh !important;
-    padding-top: ${FRAMELESS_TITLEBAR_HEIGHT}px !important;
     background-color: var(--dsw-alias-bg-base, Canvas) !important;
     overflow: hidden !important;
   }
@@ -91,8 +94,21 @@ const ICONS = {
 export function framelessTitlebarScript() {
   return `
 (() => {
-  const bridge = window.greeneekDesktop;
-  const controlsApi = bridge && bridge.windowMinimize ? bridge : null;
+  // Resolved at click time, not inject time: a navigation that lands before
+  // the preload attaches must not pin dead buttons for the page lifetime.
+  const controlsApi = () => {
+    const bridge = window.greeneekDesktop;
+    return bridge && typeof bridge.windowMinimize === 'function' ? bridge : null;
+  };
+  let warnedMissingBridge = false;
+  const apiOrWarn = () => {
+    const api = controlsApi();
+    if (!api && !warnedMissingBridge) {
+      warnedMissingBridge = true;
+      console.warn('Greeneek window controls: preload bridge unavailable.');
+    }
+    return api;
+  };
   const ACTIONS = [
     { action: 'minimize', label: 'Minimize', icon: ${JSON.stringify(ICONS.minimize)} },
     { action: 'toggle-maximize', label: 'Maximize', restoreLabel: 'Restore', icon: ${JSON.stringify(ICONS.maximize)}, restoreIcon: ${JSON.stringify(ICONS.restore)} },
@@ -118,16 +134,18 @@ export function framelessTitlebarScript() {
       button.setAttribute('aria-label', entry.label);
       button.innerHTML = entry.icon;
       button.addEventListener('click', () => {
-        if (!controlsApi) return;
-        if (entry.action === 'minimize') controlsApi.windowMinimize();
-        else if (entry.action === 'toggle-maximize') controlsApi.windowToggleMaximize();
-        else controlsApi.windowClose();
+        const api = apiOrWarn();
+        if (!api) return;
+        if (entry.action === 'minimize') api.windowMinimize();
+        else if (entry.action === 'toggle-maximize') api.windowToggleMaximize();
+        else api.windowClose();
       });
       controls.appendChild(button);
     }
     document.documentElement.appendChild(controls);
     strip.addEventListener('dblclick', () => {
-      if (controlsApi) controlsApi.windowToggleMaximize();
+      const api = apiOrWarn();
+      if (api) api.windowToggleMaximize();
     });
   }
   const sync = (maximized) => {
@@ -140,8 +158,9 @@ export function framelessTitlebarScript() {
     button.innerHTML = maximized ? entry.restoreIcon : entry.icon;
   };
   window.__gnkTitlebarSync = sync;
-  if (controlsApi && controlsApi.windowIsMaximized) {
-    controlsApi.windowIsMaximized().then(
+  const api = controlsApi();
+  if (api && api.windowIsMaximized) {
+    api.windowIsMaximized().then(
       ({ maximized }) => sync(maximized === true),
       () => {},
     );

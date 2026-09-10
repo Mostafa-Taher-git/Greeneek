@@ -1,10 +1,14 @@
-import { contextBridge, ipcRenderer } from 'electron'
+const { contextBridge, ipcRenderer } = require('electron')
 
 /**
  * Preload bridge: the sandboxed renderer's only host surface for the About
- * section. No DOM access here — the web UI calls these and renders the
- * answers itself. Versions resolve from real manifests; update download and
- * install stay consent-gated in the update manager.
+ * section and the frameless window controls. Plain CommonJS on purpose:
+ * sandboxed preloads run without an ESM context, so an `import`-based
+ * preload fails silently and leaves `window.greeneekDesktop` undefined
+ * (dead window buttons, About stuck on its browser branch). No DOM access
+ * here — the web UI calls these and renders the answers itself. Versions
+ * resolve from real manifests; update download and install stay
+ * consent-gated in the update manager.
  */
 contextBridge.exposeInMainWorld('greeneekDesktop', {
   /** Installed versions: `{ desktop, harness }` (harness may be undefined). */

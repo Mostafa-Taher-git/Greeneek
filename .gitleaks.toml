@@ -1,0 +1,10 @@
+# Gitleaks allowlist: test-only fixture constants that trip generic-api-key.
+# No real credentials live in these files. Each value is fake by
+# construction (literal dots, 'sk-abc' validation vectors) and asserted by
+# the suites that own them. Production code stays fully scanned.
+[allowlist]
+paths = [
+  '''packages/session/session-telemetry/tests/redact.spec.ts''',
+  '''packages/session/session-telemetry-otel/tests/loader-composition.e2e.ts''',
+  '''packages/client/ui-settings-models/tests/components.client.spec.tsx''',
+]

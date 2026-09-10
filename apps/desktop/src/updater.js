@@ -119,7 +119,6 @@ export function createUpdateManager({
   let availableVersion
   let availableNotes
   let timer
-  let stopped = false
 
   const setState = (next) => {
     state = next
@@ -316,12 +315,10 @@ export function createUpdateManager({
     },
     start: () => schedule(),
     stop: () => {
-      stopped = true
       if (timer !== undefined) {
         clearTimeout(timer)
         clearInterval(timer)
       }
     },
-    isStopped: () => stopped,
   }
 }

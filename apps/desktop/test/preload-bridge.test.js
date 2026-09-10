@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { describe, it } from 'node:test'
 import { fileURLToPath } from 'node:url'
+import { BRIDGE_CHANNELS } from '../src/desktop-bridge.js'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const preload = join(here, '..', 'src', 'preload.cjs')
@@ -66,5 +67,13 @@ describe('preload bridge', () => {
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }
+  })
+
+  it('invokes exactly the registered bridge channels', () => {
+    const source = readFileSync(preload, 'utf8')
+    const invoked = [...source.matchAll(/ipcRenderer\.invoke\('([^']+)'\)/g)]
+      .map((match) => match[1])
+      .sort()
+    assert.deepEqual(invoked, [...BRIDGE_CHANNELS].sort())
   })
 })

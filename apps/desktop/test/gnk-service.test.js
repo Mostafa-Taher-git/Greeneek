@@ -75,7 +75,6 @@ describe('gnk-service', () => {
     assert.equal(env.NODE_PATH, undefined)
     assert.equal(env.ELECTRON_RUN_AS_NODE, undefined)
     assert.equal(env.GNK_HOME, '/home/u/.gnk-desktop/harness')
-    assert.equal(env.GNK_DESKTOP, '1')
     assert.equal(env.GNK_DESKTOP_NODE_EXECUTABLE, '/app/node')
     assert.equal(env.GNK_DESKTOP_PNPM_CLI, '/app/pnpm.cjs')
     assert.equal(env.NO_COLOR, '1')

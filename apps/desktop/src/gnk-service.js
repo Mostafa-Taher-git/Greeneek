@@ -167,7 +167,6 @@ export function buildSpawnEnvironment({
     ...scrubbed,
     [pathKey]: [toolDirectory, scrubbed[pathKey]].filter(Boolean).join(separator),
     GNK_HOME: gnkHome,
-    GNK_DESKTOP: '1',
     GNK_DESKTOP_NODE_EXECUTABLE: nodeExecutable,
     GNK_DESKTOP_PNPM_CLI: pnpmEntry,
     ...(safeMode ? { GNK_SAFE_MODE: '1' } : {}),

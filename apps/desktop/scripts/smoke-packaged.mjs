@@ -73,7 +73,6 @@ async function main() {
     env: {
       ...process.env,
       GNK_HOME: join(scratch, 'harness'),
-      GNK_DESKTOP: '1',
       GNK_DESKTOP_NODE_EXECUTABLE: nodeBinary,
       GNK_DESKTOP_PNPM_CLI: pnpmEntry,
       NO_COLOR: '1',

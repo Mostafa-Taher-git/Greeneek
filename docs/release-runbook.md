@@ -21,7 +21,7 @@ Publication is decided per package: a version the registry lacks is published, a
 Pushing a `desktop-v<semver>` tag runs `.github/workflows/desktop.yml` (Linux) and `.github/workflows/desktop-windows.yml` (Windows). Every artifact is built on the matching operating system; each runner builds one platform only.
 
 1. Both workflows build the host libraries and web app, stamp the desktop version from the tag, and run `electron-builder` with `--publish never`.
-2. Each workflow asserts the updater channel files are present (`latest*.yml`, `*.blockmap`) before anything is collected — a release without update metadata does not upload.
+2. Each workflow asserts its updater channel files are present before anything is collected — Linux: `latest*.yml` + `AppImage` + `*.zsync` (AppImage targets emit no blockmap; zsync is built in CI with zsyncmake so deltas keep working); Windows: `latest*.yml` + `*.blockmap` for the NSIS installer. A release without update metadata does not upload.
 3. `scripts/prepare-release-assets.mjs` copies versioned artifacts to stable `Greeneek-Desktop-latest-*` aliases for human links; the updater never reads the aliases, only the versioned filenames referenced inside `latest*.yml`.
 4. The `softprops/action-gh-release` steps publish the versioned artifacts, channel files, blockmaps, and aliases to the tag's GitHub Release.
 

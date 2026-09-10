@@ -33,13 +33,25 @@ jobs:
           sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" apps/desktop/package.json
           cat apps/desktop/package.json | grep version
       - run: pnpm --filter @greeneek/desktop run dist:linux
+      - name: Build AppImage zsync metadata
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq zsync
+          DIST=apps/desktop/.staging/app/dist
+          APPIMAGE=$(ls "$DIST"/Greeneek-Desktop-*-linux-x86_64.AppImage | head -1)
+          FILE=$(basename "$APPIMAGE")
+          if [[ "${{ github.ref_name }}" == desktop-* ]]; then REF="${{ github.ref_name }}"; else REF="latest"; fi
+          if [[ "$REF" == "latest" ]]; then URL="https://github.com/Mostafa-Taher-git/Greeneek/releases/latest/download/$FILE";
+          else URL="https://github.com/Mostafa-Taher-git/Greeneek/releases/download/$REF/$FILE"; fi
+          zsyncmake -u "$URL" -o "$DIST/$FILE.zsync" "$APPIMAGE"
+          ls "$DIST"/*.zsync
       - run: node apps/desktop/scripts/prepare-release-assets.mjs --dist .staging/app/dist
       - if: startsWith(github.ref, 'refs/tags/desktop-')
         run: node apps/desktop/scripts/prepare-release-assets.mjs --dist .staging/app/dist --tag "${{ github.ref_name }}"
       - name: Assert updater channel files
         run: |
           ls apps/desktop/.staging/app/dist/latest*.yml
-          ls apps/desktop/.staging/app/dist/*.blockmap
+          ls apps/desktop/.staging/app/dist/*.AppImage
+          ls apps/desktop/.staging/app/dist/*.zsync
         shell: bash
       - uses: actions/upload-artifact@v4
         with:

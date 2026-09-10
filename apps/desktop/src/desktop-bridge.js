@@ -20,6 +20,9 @@ export const BRIDGE_CHANNELS = [
 
 /**
  * Register the renderer bridge on an ipcMain-like handler table.
+ * The update manager is optional: without one the update channels degrade
+ * to `unsupported` (a state the UI already renders) while versions and
+ * window controls keep working.
  * @param options - ipcMain, app, staged app dir, the update manager, and a
  * window accessor for the frameless controls (optional in tests).
  * @returns nothing.
@@ -37,14 +40,15 @@ export function registerDesktopBridge({
     harness: readHarnessVersion(appDir),
   }))
   ipcMain.handle('greeneek-desktop:update-status', () => ({
-    state: updateManager.getState(),
+    state: updateManager?.getState() ?? 'unsupported',
   }))
   ipcMain.handle('greeneek-desktop:check-updates', async () => {
+    if (updateManager === undefined) return { state: 'unsupported' }
     await updateManager.checkForUpdates({ manual: true })
     return { state: updateManager.getState() }
   })
   ipcMain.handle('greeneek-desktop:install-update', () => {
-    updateManager.quitAndInstall()
+    updateManager?.quitAndInstall()
   })
   ipcMain.handle('greeneek-desktop:window-minimize', () => {
     getWindow()?.minimize()

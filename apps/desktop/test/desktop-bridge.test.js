@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, it } from 'node:test'
 import { BRIDGE_CHANNELS, registerDesktopBridge } from '../src/desktop-bridge.js'
+import { resolveAutoUpdater } from '../src/updater.js'
 import { bundledHarnessVersion, packageVersion } from '../src/versions.js'
 
 function stageManifest(dir, manifest) {
@@ -112,5 +113,46 @@ describe('desktop bridge', () => {
     await handlers.get('greeneek-desktop:window-close')()
     assert.deepEqual(calls, ['minimize', 'maximize', 'unmaximize', 'close'])
     assert.equal(fakeWindow.maximized, false)
+  })
+
+  it('degrades update channels to unsupported without an update manager', async () => {
+    const handlers = new Map()
+    const calls = []
+    registerDesktopBridge({
+      ipcMain: { handle: (channel, handler) => { handlers.set(channel, handler) } },
+      app: { getVersion: () => '0.1.0' },
+      appDir: '/app',
+      updateManager: undefined,
+      readHarnessVersion: () => '1.1.0-alpha.0',
+      getWindow: () => ({ minimize() { calls.push('minimize') } }),
+    })
+    assert.deepEqual(await handlers.get('greeneek-desktop:update-status')(), { state: 'unsupported' })
+    assert.deepEqual(await handlers.get('greeneek-desktop:check-updates')(), { state: 'unsupported' })
+    await handlers.get('greeneek-desktop:install-update')()
+    assert.deepEqual(await handlers.get('greeneek-desktop:versions')(), {
+      desktop: '0.1.0',
+      harness: '1.1.0-alpha.0',
+    })
+    await handlers.get('greeneek-desktop:window-minimize')()
+    assert.deepEqual(calls, ['minimize'])
+  })
+})
+
+describe('resolveAutoUpdater', () => {
+  const fake = { checkForUpdates() {} }
+
+  it('takes the direct named export first', () => {
+    assert.equal(resolveAutoUpdater({ autoUpdater: fake }), fake)
+  })
+
+  it('falls back to the default-exports object carrying the getter export', () => {
+    assert.equal(resolveAutoUpdater({ default: { autoUpdater: fake } }), fake)
+  })
+
+  it('resolves to undefined without a usable updater', () => {
+    assert.equal(resolveAutoUpdater({}), undefined)
+    assert.equal(resolveAutoUpdater({ default: {} }), undefined)
+    assert.equal(resolveAutoUpdater({ autoUpdater: {} }), undefined)
+    assert.equal(resolveAutoUpdater(undefined), undefined)
   })
 })

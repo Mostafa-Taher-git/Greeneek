@@ -95,6 +95,20 @@ export async function writeSkippedVersion(userData, version, { writeFileImpl = w
 }
 
 /**
+ * Unwrap the electron-updater singleton from a dynamic import. The package
+ * defines `autoUpdater` through a getter, which ESM named imports cannot
+ * see — only the default (whole-exports) object carries it. Returns
+ * undefined when the module has no usable updater instead of throwing, so
+ * the caller can degrade the update flow without killing the bridge.
+ * @param updaterModule - the imported electron-updater module namespace.
+ * @returns the updater, or undefined when unusable.
+ */
+export function resolveAutoUpdater(updaterModule) {
+  const autoUpdater = updaterModule?.autoUpdater ?? updaterModule?.default?.autoUpdater
+  return typeof autoUpdater?.checkForUpdates === 'function' ? autoUpdater : undefined
+}
+
+/**
  * Create the update manager. All Electron objects arrive as arguments so the
  * policy above stays unit-testable and this wiring stays thin.
  * @param deps - app, autoUpdater, dialog, shell, log, userData, platform, exePath, env.

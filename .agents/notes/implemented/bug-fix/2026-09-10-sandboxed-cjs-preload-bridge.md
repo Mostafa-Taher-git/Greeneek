@@ -57,3 +57,25 @@ Check-for-updates plus Restart-and-install once an update is downloaded.
 with only the sandboxed electron subset stubbed and asserts the exact
 channel surface plus the absence of ESM syntax, so a return to ESM
 imports fails the suite. The icon census moves 79 to 80.
+
+## Follow-up: getter export killed bridge registration (2026-09-10)
+
+The CJS preload restored the bridge object, but the buttons stayed dead
+in the packaged app. CDP interrogation of the live window plus the
+main-process log gave the real sequence: `TypeError: Cannot set
+properties of undefined (setting 'autoDownload')` inside
+`createUpdateManager`, so `launch()` rejected before
+`registerDesktopBridge` ran — no IPC handlers existed at all
+(`No handler registered` for every channel, versions included).
+
+`electron-updater` defines `autoUpdater` through
+`Object.defineProperty(exports, "autoUpdater", { get ... })`, which ESM
+named-import detection cannot see. `(await
+import('electron-updater')).autoUpdater` is therefore undefined in the
+packaged loader (plain-Node interop resolves the getter, which is why no
+local run or CI lane ever reproduced it). `main.js` now unwraps through
+`resolveAutoUpdater` (named export, else default-exports object — the
+default interop works under every loader), and updater creation is
+non-fatal: on failure the bridge still registers with its update
+channels degraded to `unsupported`, a state the About UI already
+renders. A loader-shape regression test covers the module forms.

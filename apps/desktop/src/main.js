@@ -27,7 +27,7 @@ import {
 } from './paths.js'
 import { secureWindow } from './security.js'
 import { ensurePinnedStore } from './store-pin.js'
-import { createUpdateManager } from './updater.js'
+import { createUpdateManager, resolveAutoUpdater } from './updater.js'
 import { createTrayMenuTemplate, shouldHideWindowOnClose } from './window-lifecycle.js'
 import { createWindowOptions } from './window-options.js'
 import { applyFramelessTitleBar, syncFramelessMaximizeIcon } from './frameless-titlebar.js'
@@ -216,16 +216,21 @@ async function launch() {
   // Second attempt now that the profile exists.
   await ensurePinnedStore(webProfileDir(gnkHome))
 
-  updateManager = createUpdateManager({
-    app,
-    autoUpdater: (await import('electron-updater')).autoUpdater,
-    dialog,
-    shell,
-    userData,
-  })
-  updateManager.setPrepareToInstall(async () => {
-    service?.stop()
-  })
+  updateManager = undefined
+  try {
+    const autoUpdater = resolveAutoUpdater(await import('electron-updater'))
+    if (autoUpdater === undefined) throw new Error('electron-updater module has no usable autoUpdater export')
+    updateManager = createUpdateManager({ app, autoUpdater, dialog, shell, userData })
+    updateManager.setPrepareToInstall(async () => {
+      service?.stop()
+    })
+    updateManager.onStateChange(() => refreshTrayMenu())
+    updateManager.start()
+  } catch (error) {
+    // Self-update stays unavailable but the window, versions, and controls
+    // keep working: the bridge degrades its update channels to unsupported.
+    console.error(`Self-update is unavailable: ${error instanceof Error ? error.message : String(error)}`)
+  }
   registerDesktopBridge({
     ipcMain,
     app,
@@ -233,8 +238,6 @@ async function launch() {
     updateManager,
     getWindow: () => mainWindow,
   })
-  updateManager.onStateChange(() => refreshTrayMenu())
-  updateManager.start()
 }
 
 const hasSingleInstanceLock = app.requestSingleInstanceLock()

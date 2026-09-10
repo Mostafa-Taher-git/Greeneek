@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, it } from 'node:test'
-import { pathContainsSegment, soleStoreSource } from '../scripts/stage.mjs'
+import { pathContainsSegment, rangedStoreSource, satisfiesWanted, soleStoreSource } from '../scripts/stage.mjs'
 
 describe('pathContainsSegment', () => {
   it('matches posix workspace paths', () => {
@@ -59,6 +59,56 @@ describe('soleStoreSource', () => {
     const store = fakeStore([])
     try {
       assert.equal(soleStoreSource([store], '@opentelemetry/api-logs'), undefined)
+    } finally {
+      rmSync(store, { recursive: true, force: true })
+    }
+  })
+})
+
+describe('satisfiesWanted', () => {
+  it('matches exact pins, carets, and tildes', () => {
+    assert.equal(satisfiesWanted('2.9.0', '2.9.0'), true)
+    assert.equal(satisfiesWanted('2.10.0', '2.9.0'), false)
+    assert.equal(satisfiesWanted('2.10.0', '^2.9.0'), true)
+    assert.equal(satisfiesWanted('3.0.0', '^2.9.0'), false)
+    assert.equal(satisfiesWanted('0.220.5', '^0.220.0'), true)
+    assert.equal(satisfiesWanted('0.221.0', '^0.220.0'), false)
+    assert.equal(satisfiesWanted('2.9.4', '~2.9.0'), true)
+    assert.equal(satisfiesWanted('2.10.0', '~2.9.0'), false)
+  })
+
+  it('rejects complex ranges and malformed versions', () => {
+    assert.equal(satisfiesWanted('2.9.0', '>=2.0.0 <3.0.0'), false)
+    assert.equal(satisfiesWanted('2.9', '2.9.0'), false)
+    assert.equal(satisfiesWanted('2.9.0', '*'), false)
+  })
+})
+
+describe('rangedStoreSource', () => {
+  function fakeStore(names) {
+    const dir = mkdtempSync(join(tmpdir(), 'greeneek-store-'))
+    for (const name of names) {
+      const pkgDir = join(dir, name, 'node_modules', '@opentelemetry', 'core')
+      mkdirSync(pkgDir, { recursive: true })
+      writeFileSync(join(pkgDir, 'package.json'), JSON.stringify({ name: '@opentelemetry/core' }))
+    }
+    return dir
+  }
+
+  it('picks the exact pin from several stored versions', () => {
+    const store = fakeStore(['@opentelemetry+core@2.9.0_@opentelemetry+api@1.9.1', '@opentelemetry+core@2.10.0_@opentelemetry+api@1.9.1'])
+    try {
+      const found = rangedStoreSource([store], '@opentelemetry/core', '2.9.0')
+      assert.equal(found, join(store, '@opentelemetry+core@2.9.0_@opentelemetry+api@1.9.1', 'node_modules', '@opentelemetry', 'core'))
+    } finally {
+      rmSync(store, { recursive: true, force: true })
+    }
+  })
+
+  it('stays unresolved when the range matches several versions', () => {
+    const store = fakeStore(['@opentelemetry+core@2.9.0_@opentelemetry+api@1.9.1', '@opentelemetry+core@2.10.0_@opentelemetry+api@1.9.1'])
+    try {
+      assert.equal(rangedStoreSource([store], '@opentelemetry/core', '^2.0.0'), undefined)
     } finally {
       rmSync(store, { recursive: true, force: true })
     }

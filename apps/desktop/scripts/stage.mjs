@@ -680,8 +680,8 @@ function storeDirFor(stores, depName, version) {
   return undefined
 }
 
-/** Direct store copy of `depName` when the store carries exactly one version of it. pnpm on Windows sometimes leaves a store entry unlinkable from every anchor (its tree shows link warnings at install); the store copy is then the same bytes other platforms resolve. Ambiguous (multi-version) stores stay unresolved so the caller still fails loud. */
-function soleStoreSource(stores, depName) {
+/** All store copies of `depName` grouped by version core (peer-suffixed variants grouped; unsuffixed preferred). */
+function storeVersionDirs(stores, depName) {
   const escaped = depName.replace('/', '+')
   const prefix = `${escaped}@`
   const versions = new Map()
@@ -700,7 +700,48 @@ function soleStoreSource(stores, depName) {
       if (!versions.has(version) || !name.includes('_')) versions.set(version, dir)
     }
   }
+  return versions
+}
+
+/** Whether a store `version` satisfies an importer's `wanted` range. Exact pins, carets, and tildes only; anything else resolves to nothing so the caller still fails loud. */
+function satisfiesWanted(version, wanted) {
+  const parts = version.split('.').map(Number)
+  if (parts.length !== 3 || parts.some((n) => !Number.isInteger(n))) return false
+  const range = wanted.trim()
+  const atLeast = (base) => parts[0] > base[0] || (parts[0] === base[0] && (parts[1] > base[1] || (parts[1] === base[1] && parts[2] >= base[2])))
+  const below = (cap) => parts[0] < cap[0] || (parts[0] === cap[0] && (parts[1] < cap[1] || (parts[1] === cap[1] && parts[2] < cap[2])))
+  const parse = (text) => {
+    const nums = text.split('.').map(Number)
+    return nums.length === 3 && nums.every((n) => Number.isInteger(n)) ? nums : undefined
+  }
+  if (range.startsWith('^')) {
+    const base = parse(range.slice(1))
+    if (base === undefined) return false
+    const cap = base[0] === 0 ? (base[1] === 0 ? [0, 0, base[2] + 1] : [0, base[1] + 1, 0]) : [base[0] + 1, 0, 0]
+    return atLeast(base) && below(cap)
+  }
+  if (range.startsWith('~')) {
+    const base = parse(range.slice(1))
+    if (base === undefined) return false
+    return atLeast(base) && below([base[0], base[1] + 1, 0])
+  }
+  const exact = parse(range)
+  return exact !== undefined && parts[0] === exact[0] && parts[1] === exact[1] && parts[2] === exact[2]
+}
+
+/** Direct store copy of `depName` when the store carries exactly one version of it. */
+function soleStoreSource(stores, depName) {
+  const versions = storeVersionDirs(stores, depName)
   return versions.size === 1 ? [...versions.values()][0] : undefined
+}
+
+/** Direct store copy of `depName` at the importer's `wanted` version. pnpm on Windows sometimes leaves a store entry unlinkable from every anchor (its tree shows link warnings at install); the store copy is then the same bytes other platforms resolve. Anything but a single unambiguous match stays unresolved so the caller still fails loud. */
+function rangedStoreSource(stores, depName, wanted) {
+  const versions = storeVersionDirs(stores, depName)
+  if (versions.size === 1) return [...versions.values()][0]
+  if (typeof wanted !== 'string') return undefined
+  const hits = [...versions].filter(([version]) => satisfiesWanted(version, wanted))
+  return hits.length === 1 ? hits[0][1] : undefined
 }
 
 /** Whether any workspace store carries `depName` at any version: absent everywhere means an unmet peer the source tree itself cannot resolve. */
@@ -778,7 +819,7 @@ function materializeExternalClosure(staging, repoRoot, workspaceIndex) {
             }
             continue
           }
-          source = soleStoreSource(stores, dep)
+          source = rangedStoreSource(stores, dep, manifest.dependencies?.[dep] ?? manifest.peerDependencies?.[dep] ?? manifest.optionalDependencies?.[dep])
           if (source === undefined) {
             fail(`staging dropped external ${dep} (required by ${manifest.name ?? dir}) and it is not resolvable from the workspace`)
           }
@@ -939,4 +980,4 @@ const isMainModule = process.argv[1] !== undefined
   && resolve(process.argv[1]) === fileURLToPath(import.meta.url)
 if (isMainModule) main()
 
-export { pathContainsSegment, soleStoreSource, staging }
+export { pathContainsSegment, rangedStoreSource, satisfiesWanted, soleStoreSource, staging }

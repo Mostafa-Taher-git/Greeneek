@@ -33,25 +33,34 @@ jobs:
           sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" apps/desktop/package.json
           cat apps/desktop/package.json | grep version
       - run: pnpm --filter @greeneek/desktop run dist:linux
+      - run: node apps/desktop/scripts/prepare-release-assets.mjs --dist apps/desktop/.staging/app/dist
       - if: startsWith(github.ref, 'refs/tags/desktop-')
         run: node apps/desktop/scripts/prepare-release-assets.mjs --dist apps/desktop/.staging/app/dist --tag "${{ github.ref_name }}"
-      - run: node apps/desktop/scripts/prepare-release-assets.mjs --dist apps/desktop/.staging/app/dist
+      - name: Assert updater channel files
+        run: |
+          ls apps/desktop/.staging/app/dist/latest*.yml
+          ls apps/desktop/.staging/app/dist/*.blockmap
+        shell: bash
       - uses: actions/upload-artifact@v4
         with:
           name: linux-desktop-artifacts
           path: |
             apps/desktop/.staging/app/dist/*.deb
-            apps/desktop/.staging/app/dist/Greeneek-Desktop-latest-*.deb
+            apps/desktop/.staging/app/dist/*.AppImage
+            apps/desktop/.staging/app/dist/latest*.yml
+            apps/desktop/.staging/app/dist/*.blockmap
+            apps/desktop/.staging/app/dist/Greeneek-Desktop-latest-*
           retention-days: 14
       - if: startsWith(github.ref, 'refs/tags/desktop-')
         uses: softprops/action-gh-release@v2
         with:
-          # v0.2.0 reliability pass: .deb only. AppImage, zsync, channel
-          # files, and latest-aliases rejoin the upload list once the full
-          # matrix is declared reliable.
-          name: v0.2.0
+          name: ${{ github.ref_name }}
           files: |
             apps/desktop/.staging/app/dist/*.deb
+            apps/desktop/.staging/app/dist/*.AppImage
+            apps/desktop/.staging/app/dist/latest*.yml
+            apps/desktop/.staging/app/dist/*.blockmap
+            apps/desktop/.staging/app/dist/Greeneek-Desktop-latest-*
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

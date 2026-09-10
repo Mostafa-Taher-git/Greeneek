@@ -29,12 +29,14 @@ jobs:
       - if: startsWith(github.ref, 'refs/tags/desktop-')
         run: node apps/desktop/scripts/stamp-version.mjs "${{ github.ref_name }}"
       - run: pnpm --filter @greeneek/desktop run dist:win
-      - run: node apps/desktop/scripts/prepare-release-assets.mjs --dist apps/desktop/.staging/app/dist
       - name: Assert updater channel files
         run: |
           ls apps/desktop/.staging/app/dist/latest*.yml
           ls apps/desktop/.staging/app/dist/*.blockmap
         shell: bash
+      - run: node apps/desktop/scripts/prepare-release-assets.mjs --dist apps/desktop/.staging/app/dist
+      - if: startsWith(github.ref, 'refs/tags/desktop-')
+        run: node apps/desktop/scripts/prepare-release-assets.mjs --dist apps/desktop/.staging/app/dist --tag "${{ github.ref_name }}"
       - uses: actions/upload-artifact@v4
         with:
           name: windows-desktop-artifacts
@@ -45,13 +47,10 @@ jobs:
             apps/desktop/.staging/app/dist/*.blockmap
             apps/desktop/.staging/app/dist/Greeneek-Desktop-latest-*
           retention-days: 14
-      # v0.2.0 reliability pass: .deb only — Windows publication is parked
-      # until the full matrix is declared reliable. The build above still
-      # verifies every tag. Re-enable by restoring the gh-release step below.
-      - if: true
+      - if: startsWith(github.ref, 'refs/tags/desktop-')
         uses: softprops/action-gh-release@v2
         with:
-          name: v0.2.0
+          name: ${{ github.ref_name }}
           files: |
             apps/desktop/.staging/app/dist/*.exe
             apps/desktop/.staging/app/dist/*.zip

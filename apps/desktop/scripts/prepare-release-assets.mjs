@@ -14,6 +14,9 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 export function releaseAssetMappings(version) {
   return [
     [`Greeneek-Desktop-${version}-linux-amd64.deb`, 'Greeneek-Desktop-latest-linux-amd64.deb'],
+    [`Greeneek-Desktop-${version}-linux-x86_64.AppImage`, 'Greeneek-Desktop-latest-linux-x86_64.AppImage'],
+    [`Greeneek-Desktop-${version}-windows-x64.exe`, 'Greeneek-Desktop-latest-windows-x64.exe'],
+    [`Greeneek-Desktop-${version}-windows-x64.zip`, 'Greeneek-Desktop-latest-windows-x64.zip'],
   ]
 }
 

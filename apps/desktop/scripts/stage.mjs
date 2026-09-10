@@ -680,6 +680,29 @@ function storeDirFor(stores, depName, version) {
   return undefined
 }
 
+/** Direct store copy of `depName` when the store carries exactly one version of it. pnpm on Windows sometimes leaves a store entry unlinkable from every anchor (its tree shows link warnings at install); the store copy is then the same bytes other platforms resolve. Ambiguous (multi-version) stores stay unresolved so the caller still fails loud. */
+function soleStoreSource(stores, depName) {
+  const escaped = depName.replace('/', '+')
+  const prefix = `${escaped}@`
+  const versions = new Map()
+  for (const store of stores) {
+    let entries
+    try {
+      entries = readdirSync(store)
+    } catch {
+      continue
+    }
+    for (const name of entries) {
+      if (!name.startsWith(prefix)) continue
+      const version = name.slice(prefix.length).split('_')[0]
+      const dir = join(store, name, 'node_modules', ...depName.split('/'))
+      if (!existsSync(join(dir, 'package.json'))) continue
+      if (!versions.has(version) || !name.includes('_')) versions.set(version, dir)
+    }
+  }
+  return versions.size === 1 ? [...versions.values()][0] : undefined
+}
+
 /** Whether any workspace store carries `depName` at any version: absent everywhere means an unmet peer the source tree itself cannot resolve. */
 function installedInStores(stores, depName) {
   const escaped = depName.replace('/', '+')
@@ -738,7 +761,7 @@ function materializeExternalClosure(staging, repoRoot, workspaceIndex) {
       const { required, optionalOnly } = externalDeps(manifest)
       for (const dep of new Set([...required, ...optionalOnly])) {
         if (resolvesInStaging(staging, dir, dep)) continue
-        const source = findExternalSourceDir(anchors, dep)
+        let source = findExternalSourceDir(anchors, dep)
         if (source === undefined) {
           if (!required.has(dep)) {
             if (!skippedOptionals.has(dep)) {
@@ -755,7 +778,11 @@ function materializeExternalClosure(staging, repoRoot, workspaceIndex) {
             }
             continue
           }
-          fail(`staging dropped external ${dep} (required by ${manifest.name ?? dir}) and it is not resolvable from the workspace`)
+          source = soleStoreSource(stores, dep)
+          if (source === undefined) {
+            fail(`staging dropped external ${dep} (required by ${manifest.name ?? dir}) and it is not resolvable from the workspace`)
+          }
+          console.log(`stage: closure materialized external ${dep} from the store direct (unlinkable from every anchor)`)
         }
         const sourceManifest = readStagedManifest(source)
         const topDest = join(staging, 'node_modules', ...dep.split('/'))
@@ -912,4 +939,4 @@ const isMainModule = process.argv[1] !== undefined
   && resolve(process.argv[1]) === fileURLToPath(import.meta.url)
 if (isMainModule) main()
 
-export { pathContainsSegment, staging }
+export { pathContainsSegment, soleStoreSource, staging }

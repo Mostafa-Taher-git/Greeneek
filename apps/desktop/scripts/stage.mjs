@@ -49,6 +49,16 @@ function assertPresent(path, why) {
   return path
 }
 
+/**
+ * Separator-agnostic path segment check. `realpathSync` returns backslashes
+ * on Windows, so a raw `.includes('/packages/')` never matches there: every
+ * workspace package is then fully duplicated with its nested `node_modules`
+ * until staging exhausts the disk (ENOSPC after hours of copying).
+ */
+function pathContainsSegment(candidate, segment) {
+  return candidate.replace(/\\/g, '/').includes(`/${segment}/`)
+}
+
 function main() {
   const platform = process.platform
   console.log(`stage: platform=${platform} arch=${process.arch}`)
@@ -322,7 +332,7 @@ function copyPrunedModules(src, dest, rootDev, visited, isWorkspacePkg, hoistDes
             continue
           }
           mkdirSync(to, { recursive: true })
-          const nestedIsWorkspace = targetReal.includes('/packages/') || targetReal.includes('/vendor/') || targetReal.includes('/node_modules/.pnpm/')
+          const nestedIsWorkspace = pathContainsSegment(targetReal, 'packages') || pathContainsSegment(targetReal, 'vendor') || pathContainsSegment(targetReal, 'node_modules/.pnpm')
           copyPrunedModules(from, to, rootDev, visited, nestedIsWorkspace, hoistDest)
           if (nestedIsWorkspace && entry.name.startsWith('@') === false) {
             const wsPkgTarget = join(hoistDest, 'node_modules', '@greeneek', entry.name)
@@ -369,7 +379,7 @@ function copyPrunedModules(src, dest, rootDev, visited, isWorkspacePkg, hoistDes
                     }
                     continue
                   }
-                  const isExternalPkg = innerTargetReal.includes('/node_modules/.pnpm/')
+                  const isExternalPkg = pathContainsSegment(innerTargetReal, 'node_modules/.pnpm')
                   if (isExternalPkg) {
                     const hoistedTo = join(hoistDest, inner.name)
                     mkdirSync(hoistedTo, { recursive: true })
@@ -381,7 +391,7 @@ function copyPrunedModules(src, dest, rootDev, visited, isWorkspacePkg, hoistDes
                     copyDirRecursive(innerFrom, wsTarget)
                   } else {
                     mkdirSync(innerTo, { recursive: true })
-                    const nestedIsWorkspace = innerTargetReal.includes('/packages/') || innerTargetReal.includes('/vendor/')
+                    const nestedIsWorkspace = pathContainsSegment(innerTargetReal, 'packages') || pathContainsSegment(innerTargetReal, 'vendor')
                     copyPrunedModules(innerFrom, innerTo, rootDev, visited, nestedIsWorkspace, hoistDest)
                     const rel = readlinkSync(innerFrom)
                     const norm = rel.startsWith('/') ? rel : join(dirname(innerTo), rel)
@@ -469,7 +479,7 @@ function workspaceSourceIndex(repoRoot) {
   }
   const packageDirs = []
   for (const dir of candidateDirs) {
-    if (dir.includes('/packages/')) {
+    if (pathContainsSegment(dir, 'packages')) {
       let pkgs
       try {
         pkgs = readdirSync(dir, { withFileTypes: true })
@@ -902,4 +912,4 @@ const isMainModule = process.argv[1] !== undefined
   && resolve(process.argv[1]) === fileURLToPath(import.meta.url)
 if (isMainModule) main()
 
-export { staging }
+export { pathContainsSegment, staging }

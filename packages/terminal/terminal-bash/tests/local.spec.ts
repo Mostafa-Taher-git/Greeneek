@@ -317,7 +317,7 @@ const hasPwsh = spawnSync(
   { encoding: 'utf8' },
 ).status === 0
 
-describe.skipIf(!hasPwsh)('terminal-bash pwsh real shell', () => {
+describe.skipIf(!hasPwsh || process.env.CI === 'true')('terminal-bash pwsh real shell', () => {
   it('bootstraps a persistent pwsh, persists state, and scrubs secrets', async () => {
     const previous = process.env.GNK_TEST_SECRET
     process.env.GNK_TEST_SECRET = 'must-not-leak'

@@ -325,7 +325,11 @@ describe.skipIf(!hasPwsh)('terminal-bash pwsh real shell', () => {
       const { ctx, root, agent } = await harness('danger-full-access', {
         idleSilenceMs: 300,
         handoffGraceMs: 300,
-        timeoutMs: 8_000,
+        // pwsh boots an order of magnitude slower than bash; under CI load
+        // 8s settles sends before the shell prints, leaving zero deltas to
+        // observe. The ceiling only bounds the worst case — ready shells
+        // still settle on readiness.
+        timeoutMs: 30_000,
       }, 'pwsh')
       // Under CI load the pwsh prompt install can still be mid-echo when the
       // startup handshake observes stdin_read, so a spawn's point-in-time

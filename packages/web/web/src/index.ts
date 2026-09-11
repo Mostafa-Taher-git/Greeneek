@@ -8,6 +8,7 @@
 
 import { Context, Service } from '@greeneek/cordis'
 import z from '@greeneek/schemastery'
+import type {} from '@greeneek/gnk-settings'
 import type {
   WebFetchProvider,
   WebFetchRequest,
@@ -60,6 +61,14 @@ export interface WebRuntimeConfig {
 }
 
 /**
+ * Settings namespace carrying the provider selection. Registered by the
+ * service itself so Settings → General (and the plugin-configuration
+ * surface) can pin `searchProvider`/`fetchProvider` without a restart: the
+ * selection resolves at execution time from the current source.
+ */
+export const WEB_SETTINGS_NAMESPACE = 'web'
+
+/**
  * The web access service. Registered as `ctx.web` (one instance per context).
  *
  * Selection semantics (resolved at execution time, never order-dependent):
@@ -84,13 +93,42 @@ export class WebRuntime extends Service {
 
   private searchProviders = new Map<string, WebSearchProvider>()
   private fetchProviders = new Map<string, WebFetchProvider>()
-  private readonly searchProviderId: string | undefined
-  private readonly fetchProviderId: string | undefined
+  /** Currently authoritative selection: the composition entry until the settings provider attaches a user section. */
+  private current: () => WebRuntimeConfig
 
   constructor(ctx: Context, config: WebRuntimeConfig = {}) {
     super(ctx, 'web')
-    this.searchProviderId = config.searchProvider ?? process.env.GNK_WEB_SEARCH_PROVIDER
-    this.fetchProviderId = config.fetchProvider ?? process.env.GNK_WEB_FETCH_PROVIDER
+    this.current = () => config
+    // The settings section overlays the composition entry; selection reads
+    // the current source at execution time, so a saved engine choice applies
+    // without a restart. Absent a settings provider the entry stands alone.
+    ctx.inject(['settings'], (settingsCtx) => {
+      settingsCtx.settings.installSection(ctx, WEB_SETTINGS_NAMESPACE, WebRuntime.Config, config, {
+        setSource: (source) => {
+          this.current = source
+        },
+        // Nothing to re-judge on change: selection reads the current source live at execution time.
+        onChange: () => {},
+      })
+    })
+  }
+
+  /**
+   * The configured search provider id: the current settings source first,
+   * then the operational environment override feeding the same field.
+   * @returns the id, or `undefined` for auto-select.
+   */
+  private searchProviderId(): string | undefined {
+    return this.current().searchProvider ?? process.env.GNK_WEB_SEARCH_PROVIDER
+  }
+
+  /**
+   * The configured fetch provider id: the current settings source first,
+   * then the operational environment override feeding the same field.
+   * @returns the id, or `undefined` for auto-select.
+   */
+  private fetchProviderId(): string | undefined {
+    return this.current().fetchProvider ?? process.env.GNK_WEB_FETCH_PROVIDER
   }
 
   /**
@@ -138,9 +176,10 @@ export class WebRuntime extends Service {
    * @returns the provider's results, capped to `request.maxResults`.
    */
   async search(request: WebSearchRequest, signal?: AbortSignal): Promise<WebSearchResult> {
+    const configuredId = this.searchProviderId()
     const provider = resolveProvider({
       providers: this.searchProviders,
-      ...this.searchProviderId !== undefined ? { configuredId: this.searchProviderId } : {},
+      ...configuredId !== undefined ? { configuredId } : {},
     })
     const result = await provider.search(request, signal)
     return capSources(result, request.maxResults)
@@ -155,9 +194,10 @@ export class WebRuntime extends Service {
    * @returns the retrieval outcome; non-2xx responses resolve descriptively.
    */
   async fetch(request: WebFetchRequest, signal?: AbortSignal): Promise<WebFetchResult> {
+    const configuredId = this.fetchProviderId()
     const provider = resolveProvider({
       providers: this.fetchProviders,
-      ...this.fetchProviderId !== undefined ? { configuredId: this.fetchProviderId } : {},
+      ...configuredId !== undefined ? { configuredId } : {},
     })
     return provider.fetch(request, signal)
   }

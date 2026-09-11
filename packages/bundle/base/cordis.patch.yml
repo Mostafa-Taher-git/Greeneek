@@ -471,15 +471,29 @@
       name: '@greeneek/gnk-web-fetch-http'
 
     # Both search providers mount unconditionally and report themselves
-    # unavailable until their key is present ($EXA_API_KEY, $PERPLEXITY_API_KEY),
-    # so an unkeyed deployment registers no usable provider and auto-selection
-    # stays unambiguous. Setting both keys is the one case that needs
-    # `searchProvider` above to name the winner.
+    # unavailable until their key is present ($EXA_API_KEY, $PERPLEXITY_API_KEY,
+    # $GOOGLE_SEARCH_API_KEY + $GOOGLE_SEARCH_ENGINE_ID), so an unkeyed
+    # deployment registers no usable keyed provider and auto-selection stays
+    # unambiguous. DuckDuckGo mounts alongside them and needs no key, so search
+    # works out of the box; setting a keyed provider's keys is the case that
+    # needs `searchProvider` above (or Settings → General) to name the winner.
     - id: web-search-exa
       name: '@greeneek/gnk-web-search-exa'
 
     - id: web-search-perplexity
       name: '@greeneek/gnk-web-search-perplexity'
+
+    - id: web-search-google
+      name: '@greeneek/gnk-web-search-google'
+
+    - id: web-search-duckduckgo
+      name: '@greeneek/gnk-web-search-duckduckgo'
+
+    # The Custom engine vehicle: an Anthropic-compatible Messages endpoint the
+    # user points at their own search backend. Unusable until its endpoint and
+    # key are configured, so it never disturbs auto-selection before then.
+    - id: web-search-greeneek
+      name: '@greeneek/gnk-web-search-greeneek'
 
     # Search is a full auxiliary model request with server-side retrieval for
     # some providers, so the tool keeps a 60s ceiling over the provider-neutral

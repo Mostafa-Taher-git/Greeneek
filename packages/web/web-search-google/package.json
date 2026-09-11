@@ -1,0 +1,42 @@
+{
+  "name": "@greeneek/gnk-web-search-google",
+  "description": "Google-backed search provider for the Greeneek Harness web capability seam (ctx.web)",
+  "version": "1.1.0-alpha.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/greeneek/greeneek-harness.git",
+    "directory": "packages/web/web-search-google"
+  },
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./src/*": "./src/*",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/types/**/*.d.ts"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "@greeneek/gnk-launch-environment": "workspace:^",
+    "@greeneek/gnk-web": "workspace:^",
+    "@greeneek/cordis": "workspace:^"
+  },
+  "dependencies": {
+    "@greeneek/schemastery": "workspace:^"
+  },
+  "devDependencies": {
+    "@greeneek/gnk-launch-environment": "workspace:^",
+    "@greeneek/gnk-web": "workspace:^",
+    "@greeneek/cordis": "workspace:^"
+  }
+}

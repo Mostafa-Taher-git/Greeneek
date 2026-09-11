@@ -31,10 +31,12 @@
     "@greeneek/cordis": "workspace:^"
   },
   "dependencies": {
+    "@greeneek/gnk-settings": "workspace:^",
     "@greeneek/schemastery": "workspace:^"
   },
   "devDependencies": {
     "@greeneek/gnk-llm": "workspace:^",
+    "@greeneek/gnk-settings-file": "workspace:^",
     "@greeneek/cordis": "workspace:^"
   }
 }

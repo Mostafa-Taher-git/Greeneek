@@ -213,6 +213,9 @@
     - id: ui-chat
       name: '@greeneek/gnk-client-ui-chat'
 
+    - id: ui-web-search
+      name: '@greeneek/gnk-client-ui-web-search'
+
     # Official occupants for the generic sidebar and conversation brand slots.
     - id: ui-brand-official
       name: '@greeneek/gnk-client-ui-brand-official'

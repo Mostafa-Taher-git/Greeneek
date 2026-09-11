@@ -3162,7 +3162,7 @@ export interface WebRuntimeConfig {
 }
 ```
 
-Source: [`packages/web/web/src/index.ts:55`](../packages/web/web/src/index.ts)
+Source: [`packages/web/web/src/index.ts:56`](../packages/web/web/src/index.ts)
 
 <a id="greeneekgnk-web-app"></a>
 
@@ -3215,6 +3215,22 @@ export interface Config {
 
 Source: [`packages/web/web-fetch-http/src/index.ts:32`](../packages/web/web-fetch-http/src/index.ts)
 
+<a id="greeneekgnk-web-search-duckduckgo"></a>
+
+## `@greeneek/gnk-web-search-duckduckgo`
+
+Requires: `web`
+
+```ts config-catalog
+/** Plugin config (all optional — `apply` fills constant defaults). */
+export interface Config {
+  /** Endpoint base; `/` is queried. Defaults to the public API. */
+  baseURL?: string
+}
+```
+
+Source: [`packages/web/web-search-duckduckgo/src/index.ts:31`](../packages/web/web-search-duckduckgo/src/index.ts)
+
 <a id="greeneekgnk-web-search-exa"></a>
 
 ## `@greeneek/gnk-web-search-exa`
@@ -3238,6 +3254,28 @@ export interface Config {
 ```
 
 Source: [`packages/web/web-search-exa/src/index.ts:35`](../packages/web/web-search-exa/src/index.ts)
+
+<a id="greeneekgnk-web-search-google"></a>
+
+## `@greeneek/gnk-web-search-google`
+
+Requires: `web`
+
+```ts config-catalog
+/** Plugin config (all optional — `apply` fills env-var and constant defaults). */
+export interface Config {
+  /** Google API key. Falls back to `$GOOGLE_SEARCH_API_KEY`. Empty → provider unavailable. */
+  apiKey?: string
+  /** Programmable Search engine id (cx). Falls back to `$GOOGLE_SEARCH_ENGINE_ID`. Empty → provider unavailable. */
+  searchEngineId?: string
+  /** Endpoint base; `/customsearch/v1` is appended. Defaults to the public API. */
+  baseURL?: string
+  /** Default result count when a request carries no `maxResults`. Omitted = none. */
+  numResults?: number
+}
+```
+
+Source: [`packages/web/web-search-google/src/index.ts:32`](../packages/web/web-search-google/src/index.ts)
 
 <a id="greeneekgnk-web-search-greeneek"></a>
 
@@ -3389,6 +3427,7 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 - `@greeneek/gnk-client-ui-tool` ([`packages/client/ui-tool/src/index.ts`](../packages/client/ui-tool/src/index.ts))
 - `@greeneek/gnk-client-ui-trajectory` ([`packages/client/ui-trajectory/src/index.ts`](../packages/client/ui-trajectory/src/index.ts))
 - `@greeneek/gnk-client-ui-user-questions` ([`packages/client/ui-user-questions/src/index.ts`](../packages/client/ui-user-questions/src/index.ts))
+- `@greeneek/gnk-client-ui-web-search` ([`packages/client/ui-web-search/src/index.ts`](../packages/client/ui-web-search/src/index.ts))
 - `@greeneek/gnk-client-ui-workflow-run` ([`packages/client/ui-workflow-run/src/index.ts`](../packages/client/ui-workflow-run/src/index.ts))
 - `@greeneek/gnk-client-ui-workspace` ([`packages/client/ui-workspace/src/index.ts`](../packages/client/ui-workspace/src/index.ts))
 - `@greeneek/gnk-command-compact` — requires `commands` · `compaction` ([`packages/compaction/command-compact/src/index.ts`](../packages/compaction/command-compact/src/index.ts))

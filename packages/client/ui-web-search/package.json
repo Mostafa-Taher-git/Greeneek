@@ -1,0 +1,67 @@
+{
+  "name": "@greeneek/gnk-client-ui-web-search",
+  "description": "Search-engine preference row for Settings General: engine choice plus custom endpoint",
+  "version": "1.1.0-alpha.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/greeneek/greeneek-harness.git",
+    "directory": "packages/client/ui-web-search"
+  },
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "types": "./lib/types/client/index.d.ts",
+      "default": "./lib/client.js"
+    },
+    "./src/*": "./src/*",
+    "./package.json": "./package.json"
+  },
+  "gnk": {
+    "client": {
+      "inject": [
+        "@greeneek/gnk-client-ui-renderer",
+        "@greeneek/gnk-client-ui-settings",
+        "@greeneek/gnk-client-locale"
+      ],
+      "platform": "web"
+    }
+  },
+  "license": "MIT",
+  "peerDependencies": {
+    "@greeneek/cordis": "workspace:^"
+  },
+  "devDependencies": {
+    "@greeneek/cordis": "workspace:^",
+    "@greeneek/gnk-client-store": "workspace:^",
+    "@greeneek/gnk-client-test-runtime": "workspace:^",
+    "@greeneek/gnk-client-ui-primitives": "workspace:^",
+    "@greeneek/gnk-client-locale": "workspace:^",
+    "@greeneek/gnk-client-ui-renderer": "workspace:^",
+    "@greeneek/gnk-client-ui-settings": "workspace:^",
+    "@greeneek/gnk-client-ui-slots": "workspace:^",
+    "@types/react": "~18.3.1",
+    "react": "^18.2.0",
+    "@greeneek/gnk-settings": "workspace:^"
+  },
+  "dependencies": {
+    "@greeneek/schemastery": "workspace:^"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/client.js",
+    "lib/types/**/*.d.ts"
+  ],
+  "scripts": {
+    "bundle": "tsdown",
+    "watch": "tsdown --watch"
+  }
+}

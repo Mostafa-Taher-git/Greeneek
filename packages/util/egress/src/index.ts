@@ -1,16 +1,17 @@
 /**
  * The single network egress policy for the Greeneek Harness.
  *
- * The rebrand severed the pre-rebrand provider for good: no harness request
- * may reach a `*.deepseek.*` host, regardless of how the endpoint was
- * configured (`$GREENEEK_BASE_URL`, a user settings file, or a plugin patch).
- * The guard runs where connection facts resolve — before any adapter holds a
- * URL — so a blocked endpoint fails at boot with a readable config error
- * rather than mid-stream. Hosts on the blocklist can never be allow-listed.
+ * The harness blocks no provider by default: the operator chooses every
+ * endpoint (`$GREENEEK_BASE_URL`, user settings files, plugin config), and
+ * every public host those endpoints name is dialable — including the
+ * pre-rebrand provider's hosts, which are just another user-configured
+ * endpoint now. The guard runs where connection facts resolve — before any
+ * adapter holds a URL — so a refused endpoint fails at boot with a readable
+ * config error rather than mid-stream.
  *
- * Strict mode (`$GNK_STRICT_EGRESS=1`) additionally refuses every host that
- * is not in the built-in allow-list or user-configured, for air-gapped or
- * compliance deployments.
+ * Strict mode (`$GNK_STRICT_EGRESS=1`) refuses every host that is not in the
+ * built-in allow-list or user-configured, for air-gapped or compliance
+ * deployments. It is opt-in and off by default.
  * @module @greeneek/gnk-egress
  */
 
@@ -31,17 +32,13 @@ export class EgressBlockedError extends Error {
 }
 
 /**
- * Hosts the harness will never talk to. Every pre-rebrand DeepSeek endpoint
- * lands here — inference, search, files, platform, and marketing — because
- * the rebrand's contract is zero communication with the retired upstream.
- * Matched against the full hostname, so subdomains are covered too.
+ * Hosts the harness will never talk to. Empty by policy: no provider is
+ * blocked by default, so every operator-configured endpoint is reachable.
+ * The export stays so connection seams keep one policy call site; entries
+ * here (matched against the full hostname, subdomains included) refuse
+ * before the strict-mode arm runs and can never be allow-listed.
  */
-export const BLOCKED_HOSTS: readonly RegExp[] = [
-  /(^|\.)deepseek\.com$/i,
-  /(^|\.)deepseek\.ai$/i,
-  /(^|\.)deepseek\.cn$/i,
-  /^deepseek\./i,
-]
+export const BLOCKED_HOSTS: readonly RegExp[] = []
 
 /**
  * Allow-list consulted only under `$GNK_STRICT_EGRESS=1`. The harness ships
@@ -73,7 +70,7 @@ export function assertEgressAllowed(
   hostname = hostname.toLowerCase()
   if (BLOCKED_HOSTS.some(re => re.test(hostname))) {
     throw new EgressBlockedError(hostname,
-      'the retired pre-rebrand provider is never contacted; point GREENEEK_BASE_URL at a trusted Greeneek-protocol endpoint')
+      'this host is on the deployment blocklist')
   }
   if (env.GNK_STRICT_EGRESS === '1' && !STRICT_ALLOWED_HOSTS.has(hostname)) {
     throw new EgressBlockedError(hostname, 'GNK_STRICT_EGRESS=1 allows only allow-listed hosts')

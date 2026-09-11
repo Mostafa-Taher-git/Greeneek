@@ -1354,9 +1354,18 @@ importers:
       '@greeneek/gnk-web-fetch-http':
         specifier: workspace:^
         version: link:../../web/web-fetch-http
+      '@greeneek/gnk-web-search-duckduckgo':
+        specifier: workspace:^
+        version: link:../../web/web-search-duckduckgo
       '@greeneek/gnk-web-search-exa':
         specifier: workspace:^
         version: link:../../web/web-search-exa
+      '@greeneek/gnk-web-search-google':
+        specifier: workspace:^
+        version: link:../../web/web-search-google
+      '@greeneek/gnk-web-search-greeneek':
+        specifier: workspace:^
+        version: link:../../web/web-search-greeneek
       '@greeneek/gnk-web-search-perplexity':
         specifier: workspace:^
         version: link:../../web/web-search-perplexity
@@ -1655,6 +1664,9 @@ importers:
       '@greeneek/gnk-client-ui-user-questions':
         specifier: workspace:^
         version: link:../../client/ui-user-questions
+      '@greeneek/gnk-client-ui-web-search':
+        specifier: workspace:^
+        version: link:../../client/ui-web-search
       '@greeneek/gnk-client-ui-workflow-run':
         specifier: workspace:^
         version: link:../../client/ui-workflow-run
@@ -3704,6 +3716,46 @@ importers:
       '@greeneek/gnk-user-questions':
         specifier: workspace:^
         version: link:../../interaction/user-questions
+      '@types/react':
+        specifier: ~18.3.1
+        version: 18.3.31
+      react:
+        specifier: 19.2.6
+        version: 19.2.6
+
+  packages/client/ui-web-search:
+    dependencies:
+      '@greeneek/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+    devDependencies:
+      '@greeneek/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@greeneek/gnk-client-locale':
+        specifier: workspace:^
+        version: link:../locale
+      '@greeneek/gnk-client-store':
+        specifier: workspace:^
+        version: link:../store
+      '@greeneek/gnk-client-test-runtime':
+        specifier: workspace:^
+        version: link:../../test-support/client-runtime
+      '@greeneek/gnk-client-ui-primitives':
+        specifier: workspace:^
+        version: link:../ui-primitives
+      '@greeneek/gnk-client-ui-renderer':
+        specifier: workspace:^
+        version: link:../ui-renderer
+      '@greeneek/gnk-client-ui-settings':
+        specifier: workspace:^
+        version: link:../ui-settings
+      '@greeneek/gnk-client-ui-slots':
+        specifier: workspace:^
+        version: link:../ui-slots
+      '@greeneek/gnk-settings':
+        specifier: workspace:^
+        version: link:../../settings/settings
       '@types/react':
         specifier: ~18.3.1
         version: 18.3.31
@@ -9378,6 +9430,9 @@ importers:
 
   packages/web/web:
     dependencies:
+      '@greeneek/gnk-settings':
+        specifier: workspace:^
+        version: link:../../settings/settings
       '@greeneek/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
@@ -9388,6 +9443,9 @@ importers:
       '@greeneek/gnk-llm':
         specifier: workspace:^
         version: link:../../llm/llm
+      '@greeneek/gnk-settings-file':
+        specifier: workspace:^
+        version: link:../../settings/settings-file
 
   packages/web/web-fetch-http:
     dependencies:
@@ -9411,7 +9469,39 @@ importers:
         specifier: workspace:^
         version: link:../web
 
+  packages/web/web-search-duckduckgo:
+    dependencies:
+      '@greeneek/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+    devDependencies:
+      '@greeneek/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@greeneek/gnk-launch-environment':
+        specifier: workspace:^
+        version: link:../../util/launch-environment
+      '@greeneek/gnk-web':
+        specifier: workspace:^
+        version: link:../web
+
   packages/web/web-search-exa:
+    dependencies:
+      '@greeneek/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+    devDependencies:
+      '@greeneek/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@greeneek/gnk-launch-environment':
+        specifier: workspace:^
+        version: link:../../util/launch-environment
+      '@greeneek/gnk-web':
+        specifier: workspace:^
+        version: link:../web
+
+  packages/web/web-search-google:
     dependencies:
       '@greeneek/schemastery':
         specifier: link:../../../vendor/schemastery

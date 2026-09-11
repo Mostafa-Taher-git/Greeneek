@@ -377,8 +377,8 @@ export function resolveAdapterOptions(config: Config, environment?: LaunchEnviro
   const baseURL = config.baseURL
     ?? environment?.get(BASE_URL_ENV)?.value
     ?? PUBLIC_BASE_URL
-  // The egress guard rejects a configured endpoint that points back at the
-  // retired pre-rebrand provider; the harness never dials a DeepSeek host. // rebrand:keep
+  // The egress guard validates the resolved endpoint (absolute URL, plus the
+  // strict-mode allow-list when enabled); no provider is blocked by default.
   assertEgressAllowed(baseURL)
   return {
     apiKeyEnv: credentialRef(config.apiKeyEnv ?? DEFAULT_API_KEY_ENV),

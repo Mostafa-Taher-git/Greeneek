@@ -116,6 +116,9 @@
     "@greeneek/gnk-web": "workspace:^",
     "@greeneek/gnk-web-fetch-http": "workspace:^",
     "@greeneek/gnk-web-search-exa": "workspace:^",
+    "@greeneek/gnk-web-search-duckduckgo": "workspace:^",
+    "@greeneek/gnk-web-search-google": "workspace:^",
+    "@greeneek/gnk-web-search-greeneek": "workspace:^",
     "@greeneek/gnk-web-search-perplexity": "workspace:^",
     "@greeneek/gnk-workflow-worker-thread": "workspace:^",
     "@greeneek/gnk-agent-instructions": "workspace:^"

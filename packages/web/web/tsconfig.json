@@ -18,7 +18,13 @@
       "path": "../../../vendor/schemastery"
     },
     {
+      "path": "../../settings/settings"
+    },
+    {
       "path": "../../llm/llm"
+    },
+    {
+      "path": "../../settings/settings-file"
     }
   ]
 }

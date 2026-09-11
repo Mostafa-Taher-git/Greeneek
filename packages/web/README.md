@@ -21,12 +21,14 @@ The `web/` group gives the harness web access — searching the web and fetching
 <a id="packages"></a>
 ## Packages
 
-Six packages play the web roles; the subsystem reference owns the exhaustive vocabulary and contracts.
+Eight packages play the web roles; the subsystem reference owns the exhaustive vocabulary and contracts.
 
 | Package | Role | ctx key |
 |---|---|---|
 | [`web/`](web/README.md) | Search/fetch service: search and fetch URLs through interchangeable backends, one selection and error policy | `ctx.web` |
+| [`web-search-duckduckgo/`](web-search-duckduckgo/README.md) | Searches the web through DuckDuckGo (keyless) | registers on `ctx.web` |
 | [`web-search-exa/`](web-search-exa/README.md) | Searches the web through Exa | registers on `ctx.web` |
+| [`web-search-google/`](web-search-google/README.md) | Searches the web through Google | registers on `ctx.web` |
 | [`web-search-perplexity/`](web-search-perplexity/README.md) | Searches the web through Perplexity | registers on `ctx.web` |
 | [`web-search-greeneek/`](web-search-greeneek/README.md) | Searches the web through Greeneek native search | registers on `ctx.web` |
 | [`web-fetch-http/`](web-fetch-http/README.md) | Fetches public HTTP(S) pages anonymously | registers on `ctx.web` |

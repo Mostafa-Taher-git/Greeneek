@@ -414,6 +414,8 @@
       "@greeneek/gnk-web-fetch-http": ["./packages/web/web-fetch-http/src"],
       "@greeneek/gnk-web-search-exa": ["./packages/web/web-search-exa/src"],
       "@greeneek/gnk-web-search-greeneek": ["./packages/web/web-search-greeneek/src"],
+      "@greeneek/gnk-web-search-google": ["./packages/web/web-search-google/src"],
+      "@greeneek/gnk-web-search-duckduckgo": ["./packages/web/web-search-duckduckgo/src"],
       "@greeneek/gnk-web-search-perplexity": ["./packages/web/web-search-perplexity/src"],
       "@greeneek/gnk-webhook": ["./packages/webhook/webhook/src"],
       "@greeneek/gnk-webhook/invariant": ["./packages/webhook/webhook/src/invariant.ts"],

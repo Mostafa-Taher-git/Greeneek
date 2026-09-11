@@ -1,5 +1,5 @@
 ---
-description: "The single network egress policy of the Greeneek Harness: a hard blocklist that keeps the retired pre-rebrand provider unreachable, plus an optional strict allow-list for air-gapped deployments."
+description: "The single network egress policy of the Greeneek Harness: no provider is blocked by default, plus an optional strict allow-list for air-gapped deployments."
 kind: "package-library"
 ---
 
@@ -8,7 +8,7 @@ kind: "package-library"
 
 ## Summary
 
-The rebrand severed the pre-rebrand provider: no harness request may reach a `*.deepseek.*` host, whatever the configuration says. `gnk-egress` owns that policy in one place. Connection-resolving seams call `assertEgressAllowed(url)` while they assemble a request's facts — before any adapter holds a URL — so a blocked endpoint fails at boot with a readable `EgressBlockedError` config error instead of mid-stream. Blocklist matching runs first and can never be overridden. Under `$GNK_STRICT_EGRESS=1` the allow-list arm additionally refuses every host not on the built-in list. It is a zero-dependency library that product packages import directly; a `cordis.yml` cannot load it.
+The harness blocks no provider by default: the operator chooses every endpoint, and every public host those endpoints name is reachable. `gnk-egress` owns that policy in one place. Connection-resolving seams call `assertEgressAllowed(url)` while they assemble a request's facts — before any adapter holds a URL — so a refused endpoint fails at boot with a readable `EgressBlockedError` config error instead of mid-stream. The blocklist is empty by policy and stays as the single override point for deployments that need one; matching runs first and can never be allow-listed. Under `$GNK_STRICT_EGRESS=1` the allow-list arm additionally refuses every host not on the built-in list. It is a zero-dependency library that product packages import directly; a `cordis.yml` cannot load it.
 
 ## Table of Contents
 
@@ -48,11 +48,11 @@ With the flag set, only hosts on `STRICT_ALLOWED_HOSTS` pass — the harness shi
 
 ## Understand the implementation
 
-One module holds the whole policy. A URL is parsed once; a non-absolute or unparseable input is refused immediately so a caller never sees a bare `TypeError` instead of a config error. The hostname is matched against the blocklist first — retired-brand hosts fail there even when strict mode would otherwise allow-list them, which is what makes the block non-overridable. Only then does strict mode consult the allow-list. `EgressBlockedError` carries the offending `hostname` so resolvers can render it into their own error surface.
+One module holds the whole policy. A URL is parsed once; a non-absolute or unparseable input is refused immediately so a caller never sees a bare `TypeError` instead of a config error. The hostname is matched against the blocklist first — empty by default, so nothing is refused there — and only then does strict mode consult the allow-list. `EgressBlockedError` carries the offending `hostname` so resolvers can render it into their own error surface.
 
 ## Further Exploration
 
-- [Egress specs](tests/egress.spec.ts) — blocklist precedence, strict mode, and the unparseable-input contract.
+- [Egress specs](tests/egress.spec.ts) — the open-by-default contract, strict mode, and the unparseable-input contract.
 - [Migration guide](../../../docs/migration-from-deepseek.md) — what operators must change after the rebrand.
 
 -----

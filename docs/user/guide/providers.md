@@ -114,6 +114,32 @@ Each switch belongs to the protocols that declare it, so a switch valid on one `
 
 Every switch, its accepted values, and the protocols that take it are listed under `PiAiCompatProfile` in the [generated `gnk-llm-pi-ai` configuration reference](../../config-catalog.md#greeneekgnk-llm-pi-ai) — which is derived from the source, so it cannot fall behind what the adapter accepts.
 
+### Kilo Gateway
+
+[Kilo Gateway](https://kilo.ai/gateway) is an OpenAI-compatible inference gateway: one key and one base URL reach many providers' models, addressed as `provider/model`. Add it as a custom provider with the `openai-completions` protocol. The form values are:
+
+- Provider ID: `kilo` (permanent — requests, sessions, and credential references use it)
+- Base URL: `https://api.kilo.ai/api/gateway`
+- API protocol: `openai-completions`
+- API key: the Kilo key (or set `KILO_API_KEY` in the launch environment and reference it)
+
+Under **Model catalog**, choose **Fetch available models**; where the gateway does not serve a model list, enter models by hand from Kilo's model list — the id is the `provider/model` string, capacities fall back to the route defaults unless stated:
+
+```yaml
+llm-pi-ai:
+  providers:
+    kilo:
+      displayName: Kilo Gateway
+      apiKeyEnv: KILO_API_KEY
+      api: openai-completions
+      baseURL: https://api.kilo.ai/api/gateway
+      models:
+        - id: anthropic/claude-sonnet-4-5
+          name: Claude Sonnet 4.5 via Kilo
+```
+
+If the gateway refuses requests although the key and URL are right, apply the request-compatibility corrections above (`compat.supportsDeveloperRole: false`, `compat.maxTokensField: max_tokens`) — most OpenAI-compatible gateways need at least one.
+
 ## Select a model
 
 Configured providers appear in the model picker. Selecting a model also makes it the default for new sessions. A session that has already sent a request retains the model recorded in its own log.

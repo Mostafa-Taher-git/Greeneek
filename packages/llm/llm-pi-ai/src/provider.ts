@@ -166,9 +166,10 @@ function reuseCatalogProvider(base: Provider, spec: ProviderSpec): Provider {
  * @throws Error when the route names a wire protocol this build cannot serve.
  */
 export function buildProvider(spec: ProviderSpec): Provider {
-  // The retired pre-rebrand provider must stay unreachable through this
-  // generic route as well: guard the route endpoint and every materialized
-  // model URL (model resolution applies endpoint overrides per model).
+  // Guard the route endpoint and every materialized model URL (model
+  // resolution applies endpoint overrides per model): the egress policy
+  // validates absolute URLs and enforces strict-mode allow-listing, while no
+  // provider is blocked by default.
   if (spec.baseURL !== undefined && spec.baseURL.length > 0) assertEgressAllowed(spec.baseURL)
   for (const model of spec.models) {
     if (model.baseUrl.length > 0) assertEgressAllowed(model.baseUrl)

@@ -54,6 +54,7 @@
     "@greeneek/gnk-client-ui-brand-official": "workspace:^",
     "@greeneek/gnk-client-ui-commands": "workspace:^",
     "@greeneek/gnk-client-ui-chat": "workspace:^",
+    "@greeneek/gnk-client-ui-web-search": "workspace:^",
     "@greeneek/gnk-client-ui-conversation": "workspace:^",
     "@greeneek/gnk-client-ui-cordis": "workspace:^",
     "@greeneek/gnk-client-ui-deliverables": "workspace:^",

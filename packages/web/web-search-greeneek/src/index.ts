@@ -98,8 +98,8 @@ function resolveOptions(ctx: Context, config: Config): GreeneekSearchProviderOpt
   const literalApiKey = config.apiKey !== undefined && config.apiKey.length > 0
     ? config.apiKey
     : undefined
-  // The egress guard rejects a configured endpoint that points back at the
-  // retired pre-rebrand provider; the harness never dials a DeepSeek host. // rebrand:keep
+  // The egress guard validates the resolved endpoint (absolute URL, plus the
+  // strict-mode allow-list when enabled); no provider is blocked by default.
   const baseURL = config.baseURL
     ?? launchEnvironmentOf(ctx).get(SEARCH_BASE_URL_ENV)?.value
     ?? GREENEEK_DEFAULT_BASE_URL

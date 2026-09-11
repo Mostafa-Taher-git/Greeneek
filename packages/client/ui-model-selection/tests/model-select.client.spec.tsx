@@ -21,8 +21,8 @@ const t: ComponentProps<typeof ModelSelect>['t'] = (key, params) => {
 }
 
 const reasoning = {
-  // Deliberately unordered: the slider sorts the power scale itself, and
-  // `off`/`minimal` sit outside the scale so they are never stops.
+  // Deliberately unordered: the list sorts the power scale itself, and
+  // `off`/`minimal` sit outside the scale so they are never rows.
   efforts: [
     { id: 'max', name: 'Max', description: 'Largest budget' },
     { id: 'off', name: 'Off' },
@@ -79,34 +79,17 @@ describe('ModelSelect reasoning effort', () => {
     })
     fireEvent.click(trigger)
     fireEvent.click(screen.getByRole('menuitem', { name: /推理等级/ }))
-    const slider = screen.getByRole('slider', { name: '推理等级' })
-    expect(slider.getAttribute('min')).toBe('0')
-    expect(slider.getAttribute('max')).toBe('4')
-    expect(slider.getAttribute('aria-valuetext')).toBe('High')
-    // Five stops in canonical order however the model declares them: High
-    // sits at index 2 and Max at index 4, so Low/Medium/High/Extra High/Max
-    // is the only order that fits. Stops render as track dots with no text
-    // of their own — the readout names the active stop — and `off`/`minimal`
-    // are not offered.
-    for (const absent of ['Low', 'Medium', 'Extra High', 'Max', 'Off', 'Minimal', 'Largest budget']) {
+    // One named row per level in canonical order however the model declares
+    // them; `off`/`minimal` are not offered and descriptions never render.
+    const rows = screen.getAllByRole('menuitemradio')
+    expect(rows.map(row => row.textContent)).toEqual(['Low', 'Medium', 'High', 'Extra High', 'Max'])
+    for (const absent of ['Off', 'Minimal', 'Largest budget', 'Default']) {
       expect(screen.queryByText(absent)).toBeNull()
     }
-    // The fill tracks the thumb: High is stop 2 of 4.
-    expect(slider.style.getPropertyValue('--fill')).toBe('50%')
-    // One dot per stop rides the track at i/(N-1) across the thumb travel;
-    // dots at or behind the thumb read filled, dots ahead read empty.
-    const menuEl = screen.getByRole('menu')
-    const dots = menuEl.querySelectorAll('[data-dot]')
-    expect(dots.length).toBe(5)
-    expect(dots[0]?.getAttribute('style')).toContain('0 * (100% - 16px)')
-    expect(dots[4]?.getAttribute('style')).toContain('1 * (100% - 16px)')
-    expect(menuEl.querySelectorAll('[data-dot][data-filled="true"]').length).toBe(3)
+    expect(screen.getByRole('menuitemradio', { name: 'High' }).getAttribute('aria-checked')).toBe('true')
+    expect(screen.getByRole('menuitemradio', { name: 'Max' }).getAttribute('aria-checked')).toBe('false')
 
-    fireEvent.change(slider, { target: { value: '4' } })
-    // Hold-and-drag continuity: an in-flight selection never disables the thumb.
-    expect(slider.hasAttribute('disabled')).toBe(false)
-    // At Max the track is fully charged.
-    expect(screen.getByRole('slider', { name: '推理等级' }).style.getPropertyValue('--fill')).toBe('100%')
+    fireEvent.click(screen.getByRole('menuitemradio', { name: 'Max' }))
     await waitFor(() => {
       expect(select).toHaveBeenCalledWith({
         provider: 'greeneek-official',
@@ -115,8 +98,8 @@ describe('ModelSelect reasoning effort', () => {
       })
       expect(trigger.getAttribute('aria-label')).toBe('选择模型，当前 Greeneek-V4-Flash，推理等级 Max')
     })
-    // The slider applies live and stays open for further adjustment.
-    expect(screen.getByRole('slider', { name: '推理等级' })).toBeTruthy()
+    // List rows are single-shot: picking one dismisses the menu.
+    expect(screen.queryByRole('menuitemradio', { name: 'Max' })).toBeNull()
   })
 
   it('offers provider default only when the adapter does not configure a model default', () => {
@@ -145,15 +128,13 @@ describe('ModelSelect reasoning effort', () => {
       name: '选择模型，当前 Model，推理等级 Default',
     }))
     fireEvent.click(screen.getByRole('menuitem', { name: /推理等级/ }))
-    // Provider default is the first stop when the adapter configures no default.
-    const slider = screen.getByRole('slider', { name: '推理等级' })
-    expect(slider.getAttribute('min')).toBe('0')
-    expect(slider.getAttribute('max')).toBe('1')
-    expect(slider.getAttribute('aria-valuetext')).toBe('Default')
-    // Default names the trigger caption and the slider readout; the Standard
-    // stop itself is a track dot with no text.
+    // Provider default is the first row when the adapter configures no default.
+    const rows = screen.getAllByRole('menuitemradio')
+    expect(rows.map(row => row.textContent)).toEqual(['Default', 'Standard'])
+    expect(screen.getByRole('menuitemradio', { name: 'Default' }).getAttribute('aria-checked')).toBe('true')
+    // Default names the trigger caption; every offered level names its row.
     expect(screen.getAllByText('Default')).toHaveLength(2)
-    expect(screen.queryByText('Standard')).toBeNull()
+    expect(screen.getByText('Standard')).toBeTruthy()
   })
 
   it('shows the durable model id when the catalog has no matching display name', () => {

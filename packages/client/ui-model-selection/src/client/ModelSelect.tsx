@@ -13,7 +13,7 @@
  */
 import {
   useEffect, useId, useMemo, useRef, useState, useSyncExternalStore,
-  type CSSProperties, type KeyboardEvent, type FocusEvent,
+  type KeyboardEvent, type FocusEvent,
 } from 'react'
 import clsx from 'clsx'
 import type { ModelReasoningEffort, ModelSelection } from '@greeneek/gnk-api-remotes/client'
@@ -29,16 +29,16 @@ import css from './ModelSelect.module.css'
 type Pane = 'root' | 'model' | 'effort'
 
 /**
- * Canonical power-scale order, so the slider reads ascending however a
+ * Canonical power-scale order, so the effort list reads ascending however a
  * profile declares its levels. Unlisted ids keep declaration order after
- * the known stops.
+ * the known levels.
  */
 const EFFORT_RANK: Record<string, number> = {
   low: 0, medium: 1, high: 2, xhigh: 3, 'extra-high': 3, max: 4,
 }
 
 /**
- * Levels outside the power scale, never slider stops: `off` disables
+ * Levels outside the power scale, never offered rows: `off` disables
  * reasoning, and the scale's floor is Low so `minimal` is not offered.
  */
 const NON_POWER_LEVELS = new Set(['off', 'minimal'])
@@ -48,81 +48,6 @@ interface EffortChoice {
   key: string
   effort: string | undefined
   label: string
-}
-
-/**
- * Effort slider: one stop per level on a single ascending power scale, with
- * the provider default (when the adapter configures no model default) as the
- * first stop. `off` is not a stop — disabling reasoning is not power — and
- * stops sort in canonical escalation order regardless of declaration order.
- * A native range input keeps arrow/Home/End keyboard support and names the
- * active stop through aria-valuetext; every stop commits immediately while
- * the pane stays open so the thumb can keep moving. A stale current effort
- * (e.g. a profile default the model no longer declares) keeps its own name
- * in the readout instead of borrowing a stop's. The thumb is never disabled
- * mid-flight: freezing it on every stop commit would break hold-and-drag,
- * so an in-flight selection never blocks the next move. Dots ride the track
- * itself at i/(N-1) across the thumb's travel (half a thumb of inset each
- * side); dots at or behind the thumb read dark on the fill, dots ahead read
- * light on the empty track.
- */
-function EffortSlider(
-  { choices, activeEffort, fallbackLabel, label, onPick }:
-  {
-    choices: readonly EffortChoice[]
-    activeEffort: string | undefined
-    fallbackLabel: string | undefined
-    label: string
-    onPick: (effort: string | undefined) => void
-  },
-) {
-  const found = choices.findIndex(choice => choice.effort === activeEffort)
-  const active = found === -1 ? 0 : found
-  const activeLabel = (found === -1 ? fallbackLabel : undefined) ?? choices[active]?.label
-  const last = choices.length - 1
-  const maxed = choices.length > 1 && active === last
-  const fill = last > 0 ? `${(active / last) * 100}%` : '0%'
-  // Thumb centers travel 8px..(width-8px) for the 16px thumb; each dot sits
-  // exactly on its stop's thumb center. A lone stop centers on the track.
-  const stopLeft = (index: number): string => {
-    if (last <= 0) return '50%'
-    const frac = Math.round((index / last) * 10000) / 10000
-    return `calc(${frac} * (100% - 16px) + 8px)`
-  }
-  return (
-    <div className={css.sliderWrap}>
-      <div className={css.sliderValue} aria-hidden="true">{activeLabel}</div>
-      <div className={css.trackWrap}>
-        <input
-          type="range"
-          className={clsx(css.slider, maxed && css.sliderMaxed)}
-          style={{ '--fill': fill } as CSSProperties}
-          min={0}
-          max={last}
-          step={1}
-          value={active}
-          autoFocus
-          aria-label={label}
-          aria-valuetext={activeLabel}
-          onChange={(event) => {
-            const next = choices[Number(event.target.value)]
-            if (next !== undefined && next.effort !== activeEffort) onPick(next.effort)
-          }}
-        />
-        <div className={css.dots} aria-hidden="true">
-          {choices.map((choice, index) => (
-            <span
-              key={choice.key}
-              data-dot={choice.key}
-              data-filled={index <= active}
-              className={clsx(css.dot, index <= active && css.dotFilled)}
-              style={{ left: stopLeft(index) }}
-            />
-          ))}
-        </div>
-      </div>
-    </div>
-  )
 }
 
 /**
@@ -238,9 +163,6 @@ export function ModelSelect(
       return
     }
     if (!open) return
-    // The effort slider is a native range input: Up/Down already move its
-    // thumb, so the menu must not steal those keys for row focus.
-    if (event.target instanceof HTMLInputElement && event.target.type === 'range') return
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault()
       moveFocus(event.key === 'ArrowDown' ? 1 : -1)
@@ -285,8 +207,8 @@ export function ModelSelect(
       ...effort === undefined ? {} : { reasoningEffort: effort },
     }
     lastActionRef.current = 'select'
-    // The slider applies live and stays open so the thumb can keep moving;
-    // list rows keep the single-shot dismiss.
+    // List rows are single-shot: picking one selects and dismisses, like the
+    // model list (a re-pick of the active level just closes).
     void select(selection).then((accepted) => { settleSelection(accepted, dismiss) })
   }
 
@@ -426,13 +348,25 @@ export function ModelSelect(
               )}
               {effortChoices.length === 0
                 ? <div className={css.empty}>{t('empty.efforts')}</div>
-                : <EffortSlider
-                  choices={effortChoices}
-                  activeEffort={effectiveEffort}
-                  fallbackLabel={effortLabel}
-                  label={t('menu.effort')}
-                  onPick={(effort) => { chooseEffort(effort, false) }}
-                />}
+                : effortChoices.map(choice => (
+                  <button
+                    ref={itemRef()}
+                    type="button"
+                    role="menuitemradio"
+                    aria-checked={effectiveEffort === choice.effort}
+                    className={clsx(css.option, effectiveEffort === choice.effort && css.selected)}
+                    key={choice.key}
+                    disabled={busy}
+                    onClick={() => { chooseEffort(choice.effort) }}
+                  >
+                    <span className={css.optionCopy}>
+                      <span className={css.modelName}>{choice.label}</span>
+                    </span>
+                    <span className={css.check}>
+                      {effectiveEffort === choice.effort ? <IconCheckOutline16 /> : null}
+                    </span>
+                  </button>
+                ))}
             </>
           )}
         </div>

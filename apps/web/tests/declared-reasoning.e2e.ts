@@ -67,38 +67,41 @@ describe.skipIf(MODE === 'record')('web e2e: declared reasoning efforts reach th
     await trigger.click()
     await page.getByRole('menuitem', { name: /推理等级/ }).click()
 
-    // One ascending power scale: the provider-default entry (the route
-    // configures no `reasoning`), then Low/Medium/High/Extra High/Max.
-    // `off` is declared but never a stop — disabling reasoning is not power.
-    // (`minimal` is not declared: the schema rejects it, proven by the host
-    // config spec, so there is nothing for the surface to hide here.)
-    // Stops render as track dots with no text of their own, so the six-stop
-    // vocabulary is proven by dot count, not menu text.
-    const slider = page.getByRole('slider', { name: /推理等级/ })
-    await expect.poll(async () => slider.getAttribute('min'), { timeout: 10_000 }).toBe('0')
-    await expect.poll(async () => slider.getAttribute('max')).toBe('5')
-    await expect.poll(async () => slider.getAttribute('aria-valuetext')).toBe('Default')
+    // One named row per level in canonical order: the provider-default entry
+    // (the route configures no `reasoning`), then Low/Medium/High/Extra
+    // High/Max. `off` is declared but never a row — disabling reasoning is
+    // not a level. (`minimal` is not declared: the schema rejects it, proven
+    // by the host config spec, so there is nothing for the surface to hide
+    // here.) Rows carry their own text, so the six-level vocabulary is
+    // proven by menu text, not by control chrome.
     const menu = page.getByRole('menu')
-    const dots = menu.locator('[data-dot]')
-    await expect.poll(async () => dots.count()).toBe(6)
-    await expect.poll(async () => menu.locator('[data-dot][data-filled="true"]').count()).toBe(1)
-    for (const missing of ['Off', 'Low', 'Medium', 'High', 'Extra High', 'Max']) {
-      await expect.poll(async () => menu.getByText(missing, { exact: true }).count()).toBe(0)
+    for (const [name, checked] of [
+      ['Default', 'true'],
+      ['Low', 'false'],
+      ['Medium', 'false'],
+      ['High', 'false'],
+      ['Extra High', 'false'],
+      ['Max', 'false'],
+    ] as const) {
+      const row = menu.getByRole('menuitemradio', { name, exact: true })
+      await expect.poll(async () => row.count()).toBe(1)
+      await expect.poll(async () => row.getAttribute('aria-checked')).toBe(checked)
     }
+    await expect.poll(async () => menu.getByText('Off', { exact: true }).count()).toBe(0)
     const snapshot = await captureStableAria(page, '[role="menu"]', scaffold.workspaceCwd)
     await compareOrRefreshGolden(UI_EXPECTED, snapshot, MODE)
 
     // Picking a level is the same gesture that saves the default selection, so
     // the effort lands in the Agent default Settings section beside provider/model.
-    // High is stop 3 (Default 0, Low 1, Medium 2, High 3, Extra High 4, Max 5).
-    await slider.fill('3')
-    await expect.poll(async () => menu.locator('[data-dot][data-filled="true"]').count()).toBe(4)
+    await menu.getByRole('menuitemradio', { name: 'High', exact: true }).click()
     await expect.poll(
       async () => readFile(join(scaffold.harnessHome, 'settings.yaml'), 'utf8'),
       { timeout: 10_000 },
     ).toContain('reasoningEffort: high')
     await expect.poll(() => trigger.getAttribute('aria-label'), { timeout: 10_000 })
       .toBe('选择模型，当前 Acme Think，推理等级 High')
+    // List rows are single-shot: picking one dismisses the menu.
+    await expect.poll(async () => menu.getByRole('menuitemradio', { name: 'High', exact: true }).count()).toBe(0)
     expect(tripwire.pageErrors).toEqual([])
   }, 60_000)
 

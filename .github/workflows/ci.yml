@@ -13,6 +13,10 @@ jobs:
         node: [22]
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Gitleaks scans the push range (base^..head); a shallow checkout
+          # lacks the base commit and fails the scan without checking anything.
+          fetch-depth: 0
       - uses: pnpm/action-setup@v4
         with:
           version: 11.7.0

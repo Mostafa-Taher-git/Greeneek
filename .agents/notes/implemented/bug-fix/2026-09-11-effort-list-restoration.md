@@ -5,10 +5,11 @@ Status: implemented
 ## Problem
 
 The composer effort control was a Power Slider (September 6), but the
-standing request is the DeepSeek Harness interaction: named levels to
-pick from. Neither dsh nor the upstream thinking vocabulary ever had an
-"Ultra" level — Max is the top — so the restoration keeps the exact
-level set and changes only the interaction back to the list.
+standing request is the pre-rebrand interaction: named levels to
+pick from. Neither the pre-rebrand app nor the upstream thinking
+vocabulary ever had an "Ultra" level — Max is the top — so the
+restoration keeps the exact level set and changes only the interaction
+back to the list.
 
 ## Decision
 

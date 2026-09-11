@@ -6,7 +6,7 @@ Status: implemented
 
 Three user reports shared one root: the harness blocked provider choice
 and search never worked out of the box. The egress policy hard-refused
-every `*.deepseek.*` host whatever the configuration said; Settings had
+every retired-provider host whatever the configuration said; Settings had
 no search-engine choice; and the base profile mounted only Exa and
 Perplexity — both unavailable without keys — so `web_search` failed on
 every fresh deployment with no usable provider.
@@ -14,9 +14,9 @@ every fresh deployment with no usable provider.
 ## Decision
 
 Open egress by default and put the operator in charge of endpoints. The
-deepseek blocklist is empty (the export stays as the single deployment
-override point, proven by a test that lists a host and sees it refuse);
-strict mode stays opt-in and unchanged. Consumer comments, the package
+retired-provider blocklist is empty (the export stays as the single
+deployment override point, proven by a test that lists a host and sees
+it refuse); strict mode stays opt-in and unchanged. Consumer comments, the package
 README, and the spec now state the open contract. The fetch seam's SSRF
 guard (non-public IPs, credentials in URLs, redirect caps) stays: it
 blocks attack surface, not providers.

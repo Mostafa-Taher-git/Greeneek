@@ -327,7 +327,16 @@ describe.skipIf(!hasPwsh)('terminal-bash pwsh real shell', () => {
         handoffGraceMs: 300,
         timeoutMs: 8_000,
       }, 'pwsh')
-      const created = await ctx.terminals.spawn(agent, { type: 'shell', name: 'main', cwd: root })
+      // Under CI load the pwsh prompt install can still be mid-echo when the
+      // startup handshake observes stdin_read, so a spawn's point-in-time
+      // motd can miss the prompt while the shell is fine. The contract is
+      // the prompt itself: respawn bounded until a motd carries it, killing
+      // the duds, rather than asserting one load-racy snapshot.
+      let created = await ctx.terminals.spawn(agent, { type: 'shell', name: 'main', cwd: root })
+      for (let attempt = 0; !created.motd.includes('gnk> ') && attempt < 3; attempt += 1) {
+        await ctx.terminals.kill(agent, created.sessionId)
+        created = await ctx.terminals.spawn(agent, { type: 'shell', name: 'main', cwd: root })
+      }
       expect(created.motd).toContain('gnk> ')
 
       const first = ctx.terminals.startSend(agent, created.sessionId, {

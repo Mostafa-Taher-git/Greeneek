@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, it } from 'node:test'
-import { externalDeps, pathContainsSegment, rangedStoreSource, satisfiesWanted, soleStoreSource } from '../scripts/stage.mjs'
+import { externalDeps, isWorkspaceTree, pathContainsSegment, rangedStoreSource, satisfiesWanted, soleStoreSource } from '../scripts/stage.mjs'
 
 describe('pathContainsSegment', () => {
   it('matches posix workspace paths', () => {
@@ -22,6 +22,30 @@ describe('pathContainsSegment', () => {
     assert.equal(pathContainsSegment('/repo/packages-backup/gnk', 'packages'), false)
     assert.equal(pathContainsSegment('D:\\repo\\packages-backup\\gnk', 'packages'), false)
     assert.equal(pathContainsSegment('/repo/apps/desktop', 'packages'), false)
+  })
+})
+
+describe('isWorkspaceTree', () => {
+  it('classifies first-party source trees on posix paths', () => {
+    assert.equal(isWorkspaceTree('/home/runner/work/Greeneek/Greeneek/packages/core/gnk-tools'), true)
+    assert.equal(isWorkspaceTree('/home/runner/work/Greeneek/Greeneek/apps/cli'), true)
+    assert.equal(isWorkspaceTree('/home/runner/work/Greeneek/Greeneek/apps/desktop'), true)
+    assert.equal(isWorkspaceTree('/home/runner/work/Greeneek/Greeneek/vendor/cordis'), true)
+  })
+
+  it('classifies first-party source trees on windows realpath output', () => {
+    assert.equal(isWorkspaceTree('D:\\a\\Greeneek\\Greeneek\\packages\\core\\gnk-tools'), true)
+    assert.equal(isWorkspaceTree('D:\\a\\Greeneek\\Greeneek\\apps\\cli'), true)
+    assert.equal(isWorkspaceTree('D:\\a\\Greeneek\\Greeneek\\vendor\\cordis'), true)
+  })
+
+  it('rejects store, install, and lookalike paths', () => {
+    // pnpm store and installed app trees are not sources: their copies must
+    // stay real directories, never collapse into the top level.
+    assert.equal(isWorkspaceTree('/home/runner/.pnpm-store/node_modules/.pnpm/gnk-tools@1.1.0/node_modules/@greeneek/gnk-tools'), false)
+    assert.equal(isWorkspaceTree('/opt/Greeneek/resources/app/node_modules/@greeneek/gnk-tools'), false)
+    assert.equal(isWorkspaceTree('/repo/packages-backup/gnk-tools'), false)
+    assert.equal(isWorkspaceTree('/repo/myapps/cli'), false)
   })
 })
 

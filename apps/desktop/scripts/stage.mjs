@@ -292,6 +292,25 @@ function landlockBinaries(dir) {
 }
 const srcToDest = new Map()
 
+/**
+ * True when a real path lives in a first-party source tree whose staged
+ * copies must share the single top-level module instances: `packages/`,
+ * `apps/`, or `vendor/`. pnpm addresses workspace sources through symlinks
+ * but staging dereferences them into real directories, so a second real
+ * copy under another package's `node_modules` would load duplicate module
+ * instances — distinct class identities, distinct symbols — and cross-copy
+ * reads (like the tool scheduler symbol) fail. Nested `@greeneek` scopes
+ * under workspace trees are therefore skipped during staging and resolve
+ * by walk-up to the one top-level copy.
+ * @param realPath - resolved filesystem path.
+ * @returns true for workspace source trees.
+ */
+export function isWorkspaceTree(realPath) {
+  return pathContainsSegment(realPath, 'packages')
+    || pathContainsSegment(realPath, 'apps')
+    || pathContainsSegment(realPath, 'vendor')
+}
+
 function copyPrunedModules(src, dest, rootDev, visited, isWorkspacePkg, hoistDest) {
   let srcReal
   try {
@@ -332,7 +351,7 @@ function copyPrunedModules(src, dest, rootDev, visited, isWorkspacePkg, hoistDes
             continue
           }
           mkdirSync(to, { recursive: true })
-          const nestedIsWorkspace = pathContainsSegment(targetReal, 'packages') || pathContainsSegment(targetReal, 'vendor') || pathContainsSegment(targetReal, 'node_modules/.pnpm')
+          const nestedIsWorkspace = isWorkspaceTree(targetReal) || pathContainsSegment(targetReal, 'node_modules/.pnpm')
           copyPrunedModules(from, to, rootDev, visited, nestedIsWorkspace, hoistDest)
           if (nestedIsWorkspace && entry.name.startsWith('@') === false) {
             const wsPkgTarget = join(hoistDest, 'node_modules', '@greeneek', entry.name)
@@ -391,7 +410,7 @@ function copyPrunedModules(src, dest, rootDev, visited, isWorkspacePkg, hoistDes
                     copyDirRecursive(innerFrom, wsTarget)
                   } else {
                     mkdirSync(innerTo, { recursive: true })
-                    const nestedIsWorkspace = pathContainsSegment(innerTargetReal, 'packages') || pathContainsSegment(innerTargetReal, 'vendor')
+                    const nestedIsWorkspace = isWorkspaceTree(innerTargetReal)
                     copyPrunedModules(innerFrom, innerTo, rootDev, visited, nestedIsWorkspace, hoistDest)
                     const rel = readlinkSync(innerFrom)
                     const norm = rel.startsWith('/') ? rel : join(dirname(innerTo), rel)

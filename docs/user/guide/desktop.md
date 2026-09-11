@@ -41,8 +41,9 @@ Portable copies do not self-update: run the installer for the newer version, or 
 
 Installed builds check GitHub Releases after startup and every six hours. An available update is offered before anything downloads; installation begins only when you choose restart-and-install, and one version can be skipped without suppressing later ones.
 
-- `deb` installs update through the package manager: re-run the install command with the newer package.
+- `deb` installs self-install: choose Download & Install, approve the administrator prompt, and the app restarts into the new version — no browser needed. Without a privilege helper (`pkexec`), the app opens the releases page instead.
 - `AppImage` and installed Windows builds self-update from GitHub Releases.
+- Updating a `deb` install from 0.2.8 or earlier needs one manual install first, because the updater performing an update is the old one; every later update self-installs.
 - Desktop data lives outside the install directory, so an update does not require manual migration.
 
 ## Troubleshooting

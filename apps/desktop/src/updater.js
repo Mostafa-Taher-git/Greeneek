@@ -1,4 +1,6 @@
 import { readFile, writeFile, rm } from 'node:fs/promises'
+import { execFile, execFileSync } from 'node:child_process'
+import { promisify } from 'node:util'
 import { join } from 'node:path'
 import { updateSkipPath } from './paths.js'
 
@@ -8,6 +10,12 @@ import { updateSkipPath } from './paths.js'
  * consent, install starts on explicit Restart-and-install. One version can be
  * skipped without suppressing later ones; a manual check re-offers a skipped
  * version. Update logs carry versions only — never service URLs or tokens.
+ *
+ * Install kinds: `nsis` (Windows installed) and `appimage` install through
+ * electron-updater's own quit-and-install; `deb` installs the downloaded
+ * package — already hash-verified against the release channel file — through
+ * the system package manager under privilege escalation, then relaunches.
+ * Anything else is notify-only with a Download-page fallback.
  */
 
 /** Update states the UI (tray label today) may observe. */
@@ -23,30 +31,66 @@ export const UPDATE_STATES = [
 ]
 
 /**
- * Whether this install can self-update, and why not when it cannot.
- * Windows self-updates only from an installed location (running the NSIS
- * installer from a portable copy would plant a second copy of the app);
- * Linux self-updates only as an AppImage (dpkg needs root, which the updater
- * must not attempt); anything else is notify-only.
- * @param options - platform, executable path, and environment.
- * @returns `{ capable, reason? }`.
+ * Whether this install can self-update, and how. Windows self-updates only
+ * from an installed location (running the NSIS installer from a portable
+ * copy would plant a second copy of the app); Linux self-updates as an
+ * AppImage through electron-updater, or as a dpkg-managed install through
+ * the system package manager under privilege escalation (the downloaded
+ * package is hash-verified before anything runs privileged). Anything else
+ * is notify-only.
+ * @param options - platform, executable path, environment, and injectable process probes.
+ * @returns `{ capable, kind, reason? }` where kind is `nsis`, `appimage`, `deb`, or `none`.
  */
-export function updateCapabilities({ platform, exePath, env = process.env }) {
+export function updateCapabilities({ platform, exePath, env = process.env, execFileSyncImpl = execFileSync }) {
   if (platform === 'win32') {
     const programFiles = [env.ProgramFiles, env['ProgramFiles(x86)']]
       .filter((dir) => typeof dir === 'string' && dir !== '')
       .map((dir) => dir.toLowerCase())
     const installed = programFiles.some((dir) => exePath.toLowerCase().startsWith(dir))
     return installed
-      ? { capable: true }
-      : { capable: false, reason: 'portable installs update from the releases page' }
+      ? { capable: true, kind: 'nsis' }
+      : { capable: false, kind: 'none', reason: 'portable installs update from the releases page' }
   }
   if (platform === 'linux') {
-    return env.APPIMAGE !== undefined && env.APPIMAGE !== ''
-      ? { capable: true }
-      : { capable: false, reason: 'deb installs update through the package manager' }
+    if (env.APPIMAGE !== undefined && env.APPIMAGE !== '') return { capable: true, kind: 'appimage' }
+    if (isDpkgManaged(exePath, execFileSyncImpl)) {
+      if (hasPrivilegeHelper(execFileSyncImpl)) return { capable: true, kind: 'deb' }
+      return { capable: false, kind: 'none', reason: 'deb installs need a privilege helper (pkexec) or the releases page' }
+    }
+    return { capable: false, kind: 'none', reason: 'only AppImage and deb installs self-update on Linux' }
   }
-  return { capable: false, reason: `self-update is not supported on ${platform}` }
+  return { capable: false, kind: 'none', reason: `self-update is not supported on ${platform}` }
+}
+
+/**
+ * True when the running executable belongs to a dpkg-managed package (a
+ * deb install). Probes, never assumes from the path: an unpacked tarball
+ * under /opt is not package-managed.
+ * @param exePath - the running executable path.
+ * @param execFileSyncImpl - injectable synchronous spawn (argv array, no shell).
+ * @returns true when dpkg claims the executable.
+ */
+function isDpkgManaged(exePath, execFileSyncImpl) {
+  try {
+    execFileSyncImpl('dpkg-query', ['-S', exePath])
+    return true
+  } catch {
+    return false
+  }
+}
+
+/**
+ * True when privilege escalation for a package install is available.
+ * @param execFileSyncImpl - injectable synchronous spawn (argv array, no shell).
+ * @returns true when pkexec runs.
+ */
+function hasPrivilegeHelper(execFileSyncImpl) {
+  try {
+    execFileSyncImpl('pkexec', ['--version'])
+    return true
+  } catch {
+    return false
+  }
 }
 
 /**
@@ -111,7 +155,7 @@ export function resolveAutoUpdater(updaterModule) {
 /**
  * Create the update manager. All Electron objects arrive as arguments so the
  * policy above stays unit-testable and this wiring stays thin.
- * @param deps - app, autoUpdater, dialog, shell, log, userData, platform, exePath, env.
+ * @param deps - app, autoUpdater, dialog, shell, log, userData, platform, exePath, env, releasePage, execFileImpl, execFileSyncImpl.
  * @returns `{ checkForUpdates, quitAndInstall, getState, onStateChange, stop }`.
  */
 export function createUpdateManager({
@@ -125,14 +169,20 @@ export function createUpdateManager({
   exePath = app.getPath('exe'),
   env = process.env,
   releasePage = 'https://github.com/Mostafa-Taher-git/Greeneek/releases/latest',
+  execFileImpl = promisify(execFile),
+  execFileSyncImpl = execFileSync,
 }) {
-  const capabilities = updateCapabilities({ platform, exePath, env })
+  const capabilities = updateCapabilities({ platform, exePath, env, execFileSyncImpl })
   let state = 'idle'
   const listeners = new Set()
   let checking = false
   let availableVersion
   let availableNotes
   let timer
+  // Verified .deb path from the last `update-downloaded` event, when the
+  // install kind is `deb`. Only a hash-verified download ever reaches the
+  // privileged install below.
+  let pendingDebPath
 
   const setState = (next) => {
     state = next
@@ -161,7 +211,7 @@ export function createUpdateManager({
       message: `Greeneek ${version} is available.`,
       detail: notes ?? 'See the release notes for details.',
       buttons: capabilities.capable
-        ? ['Download', 'Skip this version', 'Later']
+        ? ['Download & Install', 'Skip this version', 'Later']
         : ['Download page', 'Skip this version', 'Later'],
       defaultId: 0,
       cancelId: 2,
@@ -187,12 +237,17 @@ export function createUpdateManager({
 
   const offerInstall = async (version) => {
     setState('downloaded')
+    const isDeb = capabilities.kind === 'deb'
     const { response } = await dialog.showMessageBox({
       type: 'info',
       title: `Greeneek ${version} is ready`,
-      message: `Greeneek ${version} downloaded — restart to install?`,
-      detail: 'Your profiles, sessions, and settings are preserved.',
-      buttons: ['Restart now', 'Later'],
+      message: isDeb
+        ? `Greeneek ${version} downloaded — install it now?`
+        : `Greeneek ${version} downloaded — restart to install?`,
+      detail: isDeb
+        ? 'The system will ask for administrator permission to install the package. Your profiles, sessions, and settings are preserved.'
+        : 'Your profiles, sessions, and settings are preserved.',
+      buttons: isDeb ? ['Install now', 'Later'] : ['Restart now', 'Later'],
       defaultId: 0,
       cancelId: 1,
     })
@@ -224,6 +279,12 @@ export function createUpdateManager({
 
   autoUpdater.on('update-downloaded', (info) => {
     checkingManual = false
+    // electron-updater hash-verifies the download against the channel file
+    // before emitting: for `deb` this is the verified package the privileged
+    // install consumes. Anything else leaves no pending path.
+    pendingDebPath = capabilities.kind === 'deb' && typeof info?.downloadedFile === 'string'
+      ? info.downloadedFile
+      : undefined
     void offerInstall(info.version)
   })
 
@@ -294,11 +355,51 @@ export function createUpdateManager({
 
   let prepareToInstall = async () => undefined
 
+  /**
+   * Install the verified .deb through the system package manager, then
+   * relaunch into the new version. Privilege escalation is explicit (the
+   * system auth dialog), argv-based (no shell), and limited to installing
+   * the one verified file — the updater never runs downloaded code as root.
+   * A failure (denied prompt, missing helper, broken package) offers the
+   * releases page instead of stranding the user.
+   * @param debPath - the hash-verified downloaded package.
+   */
+  const installDebAndRelaunch = async (debPath) => {
+    try {
+      await execFileImpl('pkexec', ['apt-get', 'install', '--yes', debPath])
+    } catch (error) {
+      log?.error?.(`deb install failed: ${error instanceof Error ? error.message : String(error)}`)
+      setState('error')
+      const { response } = await dialog.showMessageBox({
+        type: 'warning',
+        title: 'Installation failed',
+        message: 'Greeneek could not install the downloaded package.',
+        detail: 'You can install it from the releases page instead.',
+        buttons: ['Open download page', 'Later'],
+        defaultId: 0,
+        cancelId: 1,
+      })
+      if (response === 0) {
+        await writeSkippedVersion(userData, undefined)
+        await shell.openExternal(releasePage)
+      }
+      setState('idle')
+      return
+    }
+    app.relaunch()
+    app.exit(0)
+  }
+
   const quitAndInstall = () => {
     void (async () => {
       try {
         await prepareToInstall()
       } finally {
+        if (capabilities.kind === 'deb' && pendingDebPath !== undefined) {
+          await installDebAndRelaunch(pendingDebPath)
+          pendingDebPath = undefined
+          return
+        }
         autoUpdater.quitAndInstall(false, true)
       }
     })()

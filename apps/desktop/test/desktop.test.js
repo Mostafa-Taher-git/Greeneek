@@ -17,6 +17,7 @@ import {
   storeDirSetting,
 } from '../src/store-pin.js'
 import {
+  createUpdateManager,
   shouldOfferUpdate,
   updateCapabilities,
   UPDATE_STATES,
@@ -126,10 +127,20 @@ describe('store-pin', () => {
 })
 
 describe('updater policy', () => {
+  // The manager drives offers through fire-and-forget async chains; poll for
+  // the observable effect instead of sleeping a fixed number of ticks.
+  const waitFor = async (cond, label) => {
+    const deadline = Date.now() + 5000
+    while (!cond()) {
+      if (Date.now() > deadline) throw new Error(`timed out waiting for ${label}`)
+      await new Promise((resolve) => setTimeout(resolve, 10))
+    }
+  }
+
   it('gates self-update by install location', () => {
     assert.deepEqual(
       updateCapabilities({ platform: 'win32', exePath: 'C:\\Program Files\\Greeneek\\Greeneek.exe', env: { ProgramFiles: 'C:\\Program Files' } }),
-      { capable: true },
+      { capable: true, kind: 'nsis' },
     )
     assert.equal(
       updateCapabilities({ platform: 'win32', exePath: 'D:\\portable\\Greeneek.exe', env: { ProgramFiles: 'C:\\Program Files' } }).capable,
@@ -137,19 +148,195 @@ describe('updater policy', () => {
     )
     assert.deepEqual(
       updateCapabilities({ platform: 'linux', exePath: '/tmp/app.AppImage', env: { APPIMAGE: '/tmp/app.AppImage' } }),
-      { capable: true },
+      { capable: true, kind: 'appimage' },
     )
     assert.equal(
-      updateCapabilities({ platform: 'linux', exePath: '/opt/greeneek/greeneek', env: {} }).capable,
+      updateCapabilities({
+        platform: 'linux',
+        exePath: '/opt/greeneek/greeneek',
+        env: {},
+        execFileSyncImpl: () => { throw new Error('no dpkg') },
+      }).capable,
       false,
     )
     assert.ok(UPDATE_STATES.includes('downloaded'))
+  })
+
+  it('detects deb installs by probing dpkg, and requires a privilege helper', () => {
+    const dpkgOwns = (file) => {
+      if (file === 'dpkg-query') return 'greeneek'
+      throw new Error(`unexpected probe: ${file}`)
+    }
+    assert.deepEqual(
+      updateCapabilities({
+        platform: 'linux',
+        exePath: '/opt/Greeneek/greeneek',
+        env: {},
+        execFileSyncImpl: (file) => {
+          if (file === 'dpkg-query') return 'greeneek: /opt/Greeneek/greeneek'
+          if (file === 'pkexec') return 'pkexec version 124'
+          throw new Error(`unexpected probe: ${file}`)
+        },
+      }),
+      { capable: true, kind: 'deb' },
+    )
+    // dpkg present but no pkexec: notify-only with a reason naming both options.
+    const noPkexec = updateCapabilities({
+      platform: 'linux',
+      exePath: '/opt/Greeneek/greeneek',
+      env: {},
+      execFileSyncImpl: dpkgOwns,
+    })
+    assert.equal(noPkexec.capable, false)
+    assert.equal(noPkexec.kind, 'none')
+    assert.match(noPkexec.reason, /pkexec/)
+    // An unpacked tarball under /opt is not package-managed: path alone never qualifies.
+    assert.equal(
+      updateCapabilities({
+        platform: 'linux',
+        exePath: '/opt/greeneek/greeneek',
+        env: {},
+        execFileSyncImpl: () => { throw new Error('not claimed') },
+      }).kind,
+      'none',
+    )
   })
 
   it('re-offers skipped versions only on manual checks', () => {
     assert.equal(shouldOfferUpdate('1.0.0', '1.0.0', false), false)
     assert.equal(shouldOfferUpdate('1.0.0', '1.0.0', true), true)
     assert.equal(shouldOfferUpdate('1.0.1', '1.0.0', false), true)
+  })
+
+  it('offers Download & Install on capable installs and Download page elsewhere', async () => {
+    const seen = []
+    const dialog = { showMessageBox: async (options) => { seen.push(options); return { response: 2 } } }
+    const events = new Map()
+    const autoUpdater = {
+      on: (name, listener) => events.set(name, listener),
+      downloadUpdate: async () => undefined,
+      quitAndInstall: () => undefined,
+    }
+    const app = { isPackaged: true, getPath: () => '/opt/Greeneek/greeneek', relaunch: () => undefined, exit: () => undefined }
+    const execFileSyncImpl = (file) => {
+      if (file === 'dpkg-query' || file === 'pkexec') return 'ok'
+      throw new Error(`unexpected probe: ${file}`)
+    }
+    const manager = createUpdateManager({
+      app,
+      autoUpdater,
+      dialog,
+      shell: { openExternal: async () => undefined },
+      log: undefined,
+      userData: '/tmp/gnk-test-userdata',
+      platform: 'linux',
+      exePath: '/opt/Greeneek/greeneek',
+      env: {},
+      execFileImpl: async () => undefined,
+      execFileSyncImpl,
+    })
+    // Simulate an available update, declining it: only the button labels matter here.
+    await events.get('update-available')({ version: '0.2.9', releaseNotes: undefined })
+    await waitFor(() => seen.length > 0, 'offer dialog')
+    assert.deepEqual(seen[0].buttons, ['Download & Install', 'Skip this version', 'Later'])
+    assert.equal(manager.getState(), 'idle')
+    manager.stop()
+  })
+
+  it('installs a verified deb through the package manager, then relaunches', async () => {
+    const spawned = []
+    const dialogs = []
+    const dialog = {
+      showMessageBox: async (options) => {
+        dialogs.push(options)
+        // Accept every offer: download first, install on downloaded.
+        return { response: 0 }
+      },
+    }
+    const events = new Map()
+    const relaunched = []
+    const app = {
+      isPackaged: true,
+      getPath: () => '/opt/Greeneek/greeneek',
+      relaunch: () => relaunched.push('relaunch'),
+      exit: (code) => relaunched.push(`exit:${code}`),
+    }
+    const autoUpdater = {
+      on: (name, listener) => events.set(name, listener),
+      downloadUpdate: async () => undefined,
+      quitAndInstall: () => { throw new Error('deb installs must not reach electron-updater install') },
+    }
+    const manager = createUpdateManager({
+      app,
+      autoUpdater,
+      dialog,
+      shell: { openExternal: async () => undefined },
+      log: undefined,
+      userData: '/tmp/gnk-test-userdata',
+      platform: 'linux',
+      exePath: '/opt/Greeneek/greeneek',
+      env: {},
+      execFileImpl: async (file, args) => {
+        spawned.push([file, ...args])
+        return ''
+      },
+      execFileSyncImpl: (file) => {
+        if (file === 'dpkg-query' || file === 'pkexec') return 'ok'
+        throw new Error(`unexpected probe: ${file}`)
+      },
+    })
+    await events.get('update-available')({ version: '0.2.9', releaseNotes: undefined })
+    await waitFor(() => dialogs.length > 0, 'download offer')
+    await events.get('update-downloaded')({ version: '0.2.9', downloadedFile: '/tmp/Greeneek-0.2.9.deb' })
+    await waitFor(() => dialogs.length > 1, 'install offer')
+    // Offer, download offer, install offer: the install dialog names the privilege step.
+    assert.equal(dialogs[1].buttons[0], 'Install now')
+    assert.match(dialogs[1].detail, /administrator permission/)
+    // The install offer already drove quitAndInstall: the flow installs, then relaunches.
+    await waitFor(() => relaunched.length === 2, 'relaunch')
+    // argv-based escalation of the verified file only — no shell, no downloaded code as root.
+    assert.deepEqual(spawned, [['pkexec', 'apt-get', 'install', '--yes', '/tmp/Greeneek-0.2.9.deb']])
+    assert.deepEqual(relaunched, ['relaunch', 'exit:0'])
+    manager.stop()
+  })
+
+  it('falls back to the download page when the privileged install fails', async () => {
+    const opened = []
+    const dialog = { showMessageBox: async () => ({ response: 0 }) }
+    const events = new Map()
+    const app = {
+      isPackaged: true,
+      getPath: () => '/opt/Greeneek/greeneek',
+      relaunch: () => { throw new Error('must not relaunch a failed install') },
+      exit: () => undefined,
+    }
+    const manager = createUpdateManager({
+      app,
+      autoUpdater: {
+        on: (name, listener) => events.set(name, listener),
+        downloadUpdate: async () => undefined,
+        quitAndInstall: () => undefined,
+      },
+      dialog,
+      shell: { openExternal: async (url) => opened.push(url) },
+      log: undefined,
+      userData: '/tmp/gnk-test-userdata',
+      platform: 'linux',
+      exePath: '/opt/Greeneek/greeneek',
+      env: {},
+      execFileImpl: async () => { throw new Error('pkexec denied') },
+      execFileSyncImpl: (file) => {
+        if (file === 'dpkg-query' || file === 'pkexec') return 'ok'
+        throw new Error(`unexpected probe: ${file}`)
+      },
+    })
+    await events.get('update-available')({ version: '0.2.9', releaseNotes: undefined })
+    await waitFor(() => opened.length > 0 || manager.getState() !== 'idle', 'download offer')
+    await events.get('update-downloaded')({ version: '0.2.9', downloadedFile: '/tmp/Greeneek-0.2.9.deb' })
+    await waitFor(() => opened.length > 0, 'download page fallback')
+    assert.deepEqual(opened, ['https://github.com/Mostafa-Taher-git/Greeneek/releases/latest'])
+    assert.equal(manager.getState(), 'idle')
+    manager.stop()
   })
 })
 

@@ -350,6 +350,10 @@ describe.skipIf(!hasPwsh)('terminal-bash pwsh real shell', () => {
         text: 'Write-Output "keep=$env:KEEP secret=$env:GNK_TEST_SECRET"',
         submit: true,
       })
+      // Like the motd above, the settled viewport can be empty when a loaded
+      // host settles the send before pwsh prints: observe the marker in live
+      // output first (same waitForOutput-before-done order as the bash tests).
+      await waitForOutput(second, 'keep=ok', 15_000)
       const result = await second.done
       expect(result.viewport).toContain('keep=ok')
       expect(result.viewport).toContain('secret=')

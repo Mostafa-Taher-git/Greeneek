@@ -33,6 +33,12 @@ export type { ModelDirectoryState } from './directory.ts'
 export { ModelDirectoryResolver } from './service.ts'
 export type { ModelSelectInjected } from './slots.ts'
 export type { ModelKey } from './locales.ts'
+export { ModelSelectorPanel } from './ModelSelectorPanel.tsx'
+export type {
+  ModelSelectorPanelProps, ModelSelectorSubmitPayload, PreviewT,
+} from './ModelSelectorPanel.tsx'
+export { directoryPreviewModels } from './preview.ts'
+export type { PreviewEffort, PreviewModel, PreviewModelMetrics } from './preview.ts'
 
 declare module '@greeneek/gnk-client-ui-slots' {
   interface LocaleNamespaceMap {

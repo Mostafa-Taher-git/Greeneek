@@ -208,6 +208,51 @@
   white-space: nowrap;
 }
 
+/* Catalog description under the model name: same tertiary tone as the
+   root cell value, one line, so long catalog copy never stretches rows. */
+.modelDescription {
+  overflow: hidden;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+  line-height: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Model-pane search: icon + borderless input over the list, separated
+   from the rows by the same hairline the Menu popup search uses. */
+.search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px 6px;
+  border-bottom: 1px solid var(--dsw-alias-border-l1);
+  margin-bottom: 4px;
+}
+
+.searchIcon {
+  flex: 0 0 auto;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.searchInput {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--dsw-alias-label-primary);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.searchInput::placeholder {
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.searchInput:disabled {
+  opacity: 0.6;
+}
+
 .check {
   display: grid;
   place-items: center;

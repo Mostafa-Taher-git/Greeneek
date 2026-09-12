@@ -157,8 +157,10 @@ describe('ModelSelect reasoning effort', () => {
     expect(screen.queryByRole('menuitem', { name: /推理等级/ })).toBeNull()
     fireEvent.click(screen.getByRole('menuitem', { name: /模型/ }))
     expect(screen.queryByRole('menuitemradio', { name: 'removed-model' })).toBeNull()
-    expect(screen.getByRole('menuitemradio', { name: 'Greeneek-V4-Flash' })).toBeTruthy()
-    expect(screen.queryByText('Fast catalog description')).toBeNull()
+    expect(screen.getByRole('menuitemradio', { name: /Greeneek-V4-Flash/ })).toBeTruthy()
+    // The seat shows the catalog description under the name so models are
+    // distinguishable without opening anything else.
+    expect(screen.getByText('Fast catalog description')).toBeDefined()
   })
 
   it('shows loading until the catalog and Session projection are both ready', async () => {

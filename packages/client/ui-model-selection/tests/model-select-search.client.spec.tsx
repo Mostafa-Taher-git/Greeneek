@@ -60,12 +60,21 @@ function openModelPane(directory = createSnapshotStore(state())): void {
 afterEach(cleanup)
 
 describe('ModelSelect model search', () => {
-  it('narrows rows by name and hides emptied groups', () => {
+  it('lists flat rows that name their provider, with no group headers', () => {
+    openModelPane()
+    expect(screen.getByRole('menuitemradio', { name: /Acme Flash/ })).toBeDefined()
+    // Each row carries its own service provider instead of a group section.
+    expect(screen.getAllByText('Acme')).toHaveLength(2)
+    expect(screen.getByText('Other')).toBeDefined()
+    expect(screen.queryByRole('group')).toBeNull()
+  })
+
+  it('narrows rows by name and drops non-matches', () => {
     openModelPane()
     fireEvent.change(screen.getByLabelText('搜索模型'), { target: { value: 'pro' } })
     expect(screen.getByRole('menuitemradio', { name: /Acme Pro/ })).toBeDefined()
     expect(screen.queryByRole('menuitemradio', { name: /Acme Flash/ })).toBeNull()
-    expect(screen.queryByText('Other')).toBeNull()
+    expect(screen.queryByRole('menuitemradio', { name: /Other Mini/ })).toBeNull()
   })
 
   it('matches descriptions and provider names', () => {

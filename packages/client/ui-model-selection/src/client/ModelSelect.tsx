@@ -124,22 +124,17 @@ export function ModelSelect(
   const busy = state.status === 'selecting'
 
   // The search narrows rows by model name, catalog description, or provider
-  // name; groups with no matching row hide entirely. An empty query keeps
+  // name. The pane is a flat list — each row names its own provider — so
+  // filtering only drops rows, never whole sections. An empty query keeps
   // the exact unfiltered render, so the list is untouched until typed in.
   const needle = query.trim().toLowerCase()
-  const filteredGroups = useMemo(() => state.groups
-    .map(group => ({
-      group,
-      models: needle === ''
-        ? group.models
-        : group.models.filter(model =>
-          model.name.toLowerCase().includes(needle)
-          || (model.description ?? '').toLowerCase().includes(needle)
-          || group.name.toLowerCase().includes(needle)),
-    }))
-    .filter(entry => needle === '' || entry.models.length > 0),
-  [needle, state.groups])
-  const visibleModels = filteredGroups.reduce((total, entry) => total + entry.models.length, 0)
+  const filteredChoices = useMemo(() => needle === ''
+    ? choices
+    : choices.filter(choice =>
+      choice.model.name.toLowerCase().includes(needle)
+      || (choice.model.description ?? '').toLowerCase().includes(needle)
+      || choice.group.name.toLowerCase().includes(needle)),
+  [needle, choices])
 
   const reload = (): void => {
     lastActionRef.current = 'load'
@@ -351,45 +346,39 @@ export function ModelSelect(
                 />
               </div>
               <div className={clsx(css.groups, 'scrollable')}>
-                {filteredGroups.map(({ group, models }) => {
-                  const headingId = `${id}-${group.id}`
+                {filteredChoices.map((choice) => {
+                  const selected = state.current?.provider === choice.group.id
+                    && state.current.model === choice.selection.model
                   return (
-                    <section role="group" aria-labelledby={headingId} className={css.group} key={group.id}>
-                      <div className={css.groupTitle} id={headingId}>{group.name}</div>
-                      {models.map((model) => {
-                        const selected = state.current?.provider === group.id && state.current.model === model.id
-                        return (
-                          <button
-                            ref={itemRef()}
-                            type="button"
-                            role="menuitemradio"
-                            aria-checked={selected}
-                            className={clsx(css.option, selected && css.selected)}
-                            key={model.id}
-                            title={model.name}
-                            disabled={busy}
-                            onClick={() => { choose({ provider: group.id, model: model.id }) }}
-                          >
-                            <span className={css.optionCopy}>
-                              <span className={css.modelName}>{model.name}</span>
-                              {model.description !== undefined && (
-                                <span className={css.modelDescription}>{model.description}</span>
-                              )}
-                            </span>
-                            <span className={css.check}>
-                              {selected ? <IconCheckOutline16 /> : null}
-                            </span>
-                          </button>
-                        )
-                      })}
-                    </section>
+                    <button
+                      ref={itemRef()}
+                      type="button"
+                      role="menuitemradio"
+                      aria-checked={selected}
+                      className={clsx(css.option, selected && css.selected)}
+                      key={`${choice.group.id}/${choice.model.id}`}
+                      title={choice.model.name}
+                      disabled={busy}
+                      onClick={() => { choose({ provider: choice.group.id, model: choice.model.id }) }}
+                    >
+                      <span className={css.optionCopy}>
+                        <span className={css.modelName}>{choice.model.name}</span>
+                        <span className={css.modelProvider}>{choice.group.name}</span>
+                        {choice.model.description !== undefined && (
+                          <span className={css.modelDescription}>{choice.model.description}</span>
+                        )}
+                      </span>
+                      <span className={css.check}>
+                        {selected ? <IconCheckOutline16 /> : null}
+                      </span>
+                    </button>
                   )
                 })}
               </div>
               {state.status === 'ready' && choices.length === 0 && (
                 <div className={css.empty}>{t('empty.models')}</div>
               )}
-              {needle !== '' && visibleModels === 0 && (
+              {needle !== '' && filteredChoices.length === 0 && (
                 <div className={css.empty}>{t('model.emptySearch')}</div>
               )}
             </>
@@ -405,25 +394,31 @@ export function ModelSelect(
               )}
               {effortChoices.length === 0
                 ? <div className={css.empty}>{t('empty.efforts')}</div>
-                : effortChoices.map(choice => (
-                  <button
-                    ref={itemRef()}
-                    type="button"
-                    role="menuitemradio"
-                    aria-checked={effectiveEffort === choice.effort}
-                    className={clsx(css.option, effectiveEffort === choice.effort && css.selected)}
-                    key={choice.key}
-                    disabled={busy}
-                    onClick={() => { chooseEffort(choice.effort) }}
+                : (
+                  <div
+                    aria-label={t('menu.effort')}
+                    className={css.effortSegments}
+                    role="radiogroup"
                   >
-                    <span className={css.optionCopy}>
-                      <span className={css.modelName}>{choice.label}</span>
-                    </span>
-                    <span className={css.check}>
-                      {effectiveEffort === choice.effort ? <IconCheckOutline16 /> : null}
-                    </span>
-                  </button>
-                ))}
+                    {effortChoices.map((choice) => {
+                      const checked = effectiveEffort === choice.effort
+                      return (
+                        <button
+                          ref={itemRef()}
+                          type="button"
+                          role="radio"
+                          aria-checked={checked}
+                          className={clsx(css.effortSegment, checked && css.effortSegmentChecked)}
+                          key={choice.key}
+                          disabled={busy}
+                          onClick={() => { chooseEffort(choice.effort) }}
+                        >
+                          {choice.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
             </>
           )}
         </div>

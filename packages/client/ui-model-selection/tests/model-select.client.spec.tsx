@@ -79,17 +79,18 @@ describe('ModelSelect reasoning effort', () => {
     })
     fireEvent.click(trigger)
     fireEvent.click(screen.getByRole('menuitem', { name: /推理等级/ }))
-    // One named row per level in canonical order however the model declares
-    // them; `off`/`minimal` are not offered and descriptions never render.
-    const rows = screen.getAllByRole('menuitemradio')
+    // One named segment per level in canonical order however the model
+    // declares them; `off`/`minimal` are not offered and descriptions never
+    // render.
+    const rows = screen.getAllByRole('radio')
     expect(rows.map(row => row.textContent)).toEqual(['Low', 'Medium', 'High', 'Extra High', 'Max'])
     for (const absent of ['Off', 'Minimal', 'Largest budget', 'Default']) {
       expect(screen.queryByText(absent)).toBeNull()
     }
-    expect(screen.getByRole('menuitemradio', { name: 'High' }).getAttribute('aria-checked')).toBe('true')
-    expect(screen.getByRole('menuitemradio', { name: 'Max' }).getAttribute('aria-checked')).toBe('false')
+    expect(screen.getByRole('radio', { name: 'High' }).getAttribute('aria-checked')).toBe('true')
+    expect(screen.getByRole('radio', { name: 'Max' }).getAttribute('aria-checked')).toBe('false')
 
-    fireEvent.click(screen.getByRole('menuitemradio', { name: 'Max' }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Max' }))
     await waitFor(() => {
       expect(select).toHaveBeenCalledWith({
         provider: 'greeneek-official',
@@ -99,7 +100,7 @@ describe('ModelSelect reasoning effort', () => {
       expect(trigger.getAttribute('aria-label')).toBe('选择模型，当前 Greeneek-V4-Flash，推理等级 Max')
     })
     // List rows are single-shot: picking one dismisses the menu.
-    expect(screen.queryByRole('menuitemradio', { name: 'Max' })).toBeNull()
+    expect(screen.queryByRole('radio', { name: 'Max' })).toBeNull()
   })
 
   it('offers provider default only when the adapter does not configure a model default', () => {
@@ -128,10 +129,10 @@ describe('ModelSelect reasoning effort', () => {
       name: '选择模型，当前 Model，推理等级 Default',
     }))
     fireEvent.click(screen.getByRole('menuitem', { name: /推理等级/ }))
-    // Provider default is the first row when the adapter configures no default.
-    const rows = screen.getAllByRole('menuitemradio')
+    // Provider default is the first segment when the adapter configures no default.
+    const rows = screen.getAllByRole('radio')
     expect(rows.map(row => row.textContent)).toEqual(['Default', 'Standard'])
-    expect(screen.getByRole('menuitemradio', { name: 'Default' }).getAttribute('aria-checked')).toBe('true')
+    expect(screen.getByRole('radio', { name: 'Default' }).getAttribute('aria-checked')).toBe('true')
     // Default names the trigger caption; every offered level names its row.
     expect(screen.getAllByText('Default')).toHaveLength(2)
     expect(screen.getByText('Standard')).toBeTruthy()

@@ -141,20 +141,15 @@
   overflow-y: auto;
 }
 
-.group + .group {
-  margin-top: 4px;
-}
-
-.groupTitle {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  padding: 5px 8px 3px;
-  background: var(--dsw-specific-menu);
+/* Provider line under the model name: the service the route belongs to,
+   same tertiary tone as the description. */
+.modelProvider {
+  overflow: hidden;
   color: var(--dsw-alias-label-tertiary);
   font-size: 12px;
-  line-height: 18px;
-  font-weight: 500;
+  line-height: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .option {
@@ -258,6 +253,48 @@
   place-items: center;
   flex: 0 0 18px;
   color: var(--dsw-alias-label-primary);
+}
+
+/* Effort picker: the levels sit in one wrapping segmented group instead of
+   menu rows — every level is visible at once and one tap selects. */
+.effortSegments {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 4px;
+  gap: 4px;
+}
+
+.effortSegment {
+  flex: 1 1 auto;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 8px;
+  outline: none;
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-secondary);
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.effortSegment:hover:not(:disabled) {
+  color: var(--dsw-alias-label-primary);
+}
+
+.effortSegment:focus-visible {
+  box-shadow: 0 0 0 2px var(--dsw-alias-border-l3);
+}
+
+.effortSegment:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.effortSegmentChecked {
+  background: var(--dsw-alias-label-primary);
+  color: var(--dsw-alias-bg-layer-1);
 }
 
 /* Two-level root cells (figma 496:26454 .Menu_cell): 40px row, 10px side

@@ -63,6 +63,12 @@ function main() {
   const platform = process.platform
   console.log(`stage: platform=${platform} arch=${process.arch}`)
 
+  // Optional release-tag version override: when provided, the staged app
+  // manifest is rewritten to this version while the source manifest stays
+  // untouched. This keeps CI builds aligned with the tag without dirtying
+  // the checked-in package.json.
+  const tagVersion = process.env.STAGE_DESKTOP_VERSION ?? undefined
+
   // 1. Preconditions: the harness must be built before it can be staged.
   assertPresent(
     join(repoRoot, 'apps', 'cli', 'lib', 'bin.js'),
@@ -87,6 +93,13 @@ function main() {
   console.log(`stage: copy node_modules → ${staging}`)
   mkdirSync(staging, { recursive: true })
   copyFileSync(join(packageDir, 'package.json'), join(staging, 'package.json'))
+  if (typeof tagVersion === 'string' && tagVersion !== '') {
+    const manifestPath = join(staging, 'package.json')
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+    manifest.version = tagVersion
+    writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8')
+    console.log(`stage: stamped staged package version to ${tagVersion}`)
+  }
   copyFileSync(join(repoRoot, 'pnpm-lock.yaml'), join(staging, 'pnpm-lock.yaml'))
   writeFileSync(join(staging, 'pnpm-workspace.yaml'), 'packages:\n', 'utf8')
 

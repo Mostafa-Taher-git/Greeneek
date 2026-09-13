@@ -26,12 +26,9 @@ jobs:
       - run: pnpm build:lib:host
       - run: pnpm build:lib:client
       - run: pnpm build:web
-      - if: startsWith(github.ref, 'refs/tags/desktop-')
-        run: |
-          TAG="${{ github.ref_name }}"
-          VERSION="${TAG#desktop-v}"
-          sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" apps/desktop/package.json
-          cat apps/desktop/package.json | grep version
+      - run: node apps/desktop/scripts/stage.mjs
+        env:
+          STAGE_DESKTOP_VERSION: ${{ startsWith(github.ref, 'refs/tags/desktop-') && github.ref_name || '' }}
       - run: pnpm --filter @greeneek/desktop run dist:linux
       - name: Drop builder diagnostics from the release set
         run: rm -f apps/desktop/.staging/app/dist/builder-debug.yml apps/desktop/.staging/app/dist/builder-effective-config.yaml

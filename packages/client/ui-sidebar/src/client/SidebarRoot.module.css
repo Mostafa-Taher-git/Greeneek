@@ -12,6 +12,7 @@
   height: 100%;
   padding: 6px var(--gnk-sidebar-inline-padding);
   box-sizing: border-box;
+  background: var(--dsw-alias-bg-base);
 
   color: var(--dsw-alias-label-primary);
   font-size: 14px;

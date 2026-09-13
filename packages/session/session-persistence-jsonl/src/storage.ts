@@ -396,6 +396,15 @@ export class JsonlBackendTracker {
   }
 
   /**
+   * Drop a pending entry for a session that will never materialize.
+   * @param id - the session to forget.
+   * @returns `true` when a pending entry existed.
+   */
+  dropPending(id: SessionId): boolean {
+    return this.pending.delete(id)
+  }
+
+  /**
    * Drop a pending entry once the session materialized durably.
    * @param id - the session that reached durable storage.
    */

@@ -104,8 +104,18 @@ export interface WorkspaceArchiveSessionRequest {
   readonly sessionId: SessionId
 }
 
+/** Session requested for permanent deletion with its stored log. */
+export interface WorkspaceDeleteSessionRequest {
+  readonly sessionId: SessionId
+}
+
 /** Complete archived Session set after a mutation. */
 export interface WorkspaceArchiveValue {
+  readonly archivedSessionIds: readonly SessionId[]
+}
+
+/** Complete archived Session set after a session deletion (the id is unarchived). */
+export interface WorkspaceDeleteSessionValue {
   readonly archivedSessionIds: readonly SessionId[]
 }
 

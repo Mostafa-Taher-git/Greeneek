@@ -232,6 +232,13 @@ Host service backing the generated `ctx.remote.workspace` namespace.
 @Remote('archiveSession') archiveSession(request: WorkspaceArchiveSessionRequest): Promise<WorkspaceArchiveValue>
 
 /**
+ * Delete one known Session permanently with its stored log.
+ * @param request - Session identity to delete.
+ * @returns the complete resulting archive set.
+ */
+@Remote('deleteSession') deleteSession(request: WorkspaceDeleteSessionRequest): Promise<WorkspaceDeleteSessionValue>
+
+/**
  * Stream a complete Workspace baseline followed by ordered increments.
  * @param signal - generation cancellation.
  * @returns baseline followed by ordered Workspace increments.
@@ -303,6 +310,16 @@ insertBefore(id: WorkspaceId, beforeId?: WorkspaceId): Promise<readonly Workspac
  * @returns resolution after durability.
  */
 archiveSession(sessionId: SessionId): Promise<void>
+
+/**
+ * Delete one session durably: its stored log (plus never-materialized
+ * pending state), its archive entry, its workspace accounting slots, and
+ * its cached headers/paths. A session with a live agent refuses — archive
+ * stays the way to hide those. Unknown ids reject like archive.
+ * @param sessionId - The session to delete.
+ * @returns resolution after durability.
+ */
+deleteSession(sessionId: SessionId): Promise<void>
 
 /**
  * Resolve by canonical directory path without creating or mutating a

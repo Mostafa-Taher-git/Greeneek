@@ -471,5 +471,7 @@ declare module '@greeneek/gnk-typert-protocol' {
   interface RemoteErrorDetailsMap {
     /** The named Session does not exist; produced by every layer that resolves a SessionId. */
     'session/not-found': { readonly sessionId: SessionId }
+    /** The named Session has a live agent; deletion refuses while it is loaded. */
+    'session/live': { readonly sessionId: SessionId }
   }
 }

@@ -4,11 +4,13 @@ import type { Context } from '@greeneek/cordis'
 import type { Workspace } from '@greeneek/gnk-workspace'
 import {
   WorkspaceId,
+  WorkspaceLiveSessionError,
   WorkspaceMoveInvalidError,
   WorkspaceOrderInvalidError,
   WorkspaceUnknownSessionError,
 } from '@greeneek/gnk-workspace'
 import { RemoteError, remoteErrorOf } from '@greeneek/gnk-typert-protocol'
+import type { SessionId } from '@greeneek/gnk-session'
 import { workspaceView } from './feed.ts'
 import type {
   WorkspaceArchiveSessionRequest,
@@ -16,6 +18,8 @@ import type {
   WorkspaceCreateRequest,
   WorkspaceCreateValue,
   WorkspaceDeleteRequest,
+  WorkspaceDeleteSessionRequest,
+  WorkspaceDeleteSessionValue,
   WorkspaceDeleteValue,
   WorkspaceInsertBeforeRequest,
   WorkspaceInsertSessionBeforeRequest,
@@ -23,6 +27,19 @@ import type {
   WorkspaceRenameRequest,
   WorkspaceValue,
 } from './types.ts'
+
+declare module '@greeneek/cordis' {
+  interface Events {
+    /**
+     * A Session was permanently deleted with its stored log. Emitted by
+     * workspace deleteSession; session-controller owns the canonical
+     * declaration (live detach) with the identical signature.
+     * @mode emit
+     * @param sessionId - deleted Session identity.
+     */
+    'api-session/removed'(sessionId: SessionId): void
+  }
+}
 
 /** Implements Workspace mutations against the authoritative registry. */
 export class WorkspaceCommands {
@@ -157,6 +174,25 @@ export class WorkspaceCommands {
       if (!(error instanceof WorkspaceUnknownSessionError)) throw error
       throw new RemoteError('session/not-found', error.message, { sessionId: request.sessionId }, { cause: error })
     }
+    return { archivedSessionIds: [...this.ctx.workspaceRegistry.archivedSessionIds] }
+  }
+
+  /**
+   * Delete one Session permanently with its stored log.
+   * @param request - Session identity to delete.
+   * @returns the complete resulting archive set.
+   */
+  async deleteSession(request: WorkspaceDeleteSessionRequest): Promise<WorkspaceDeleteSessionValue> {
+    try {
+      await this.ctx.workspaceRegistry.deleteSession(request.sessionId)
+    } catch (error) {
+      if (error instanceof WorkspaceLiveSessionError) {
+        throw new RemoteError('session/live', error.message, { sessionId: request.sessionId }, { cause: error })
+      }
+      if (!(error instanceof WorkspaceUnknownSessionError)) throw error
+      throw new RemoteError('session/not-found', error.message, { sessionId: request.sessionId }, { cause: error })
+    }
+    this.ctx.emit('api-session/removed', request.sessionId)
     return { archivedSessionIds: [...this.ctx.workspaceRegistry.archivedSessionIds] }
   }
 

@@ -39,6 +39,23 @@ export function WorkspaceId(id: string): WorkspaceId {
 }
 
 /**
+ * A deleteSession request named a session with a live agent in this
+ * process. Destroying its log underneath a running loop would orphan the
+ * turn in flight, so deletion refuses while the session is loaded — archive
+ * (hide) stays available for those, and finished agents detach, making
+ * their sessions deletable.
+ */
+export class WorkspaceLiveSessionError extends Error {
+  /**
+   * @param sessionId - The live session id.
+   */
+  constructor(readonly sessionId: SessionId) {
+    super(`cannot delete session '${sessionId}': a live agent holds it in this process`)
+    this.name = 'WorkspaceLiveSessionError'
+  }
+}
+
+/**
  * An archiveSession request named a session neither live nor in session
  * persistence — a definite miss only; storage faults propagate as themselves.
  */
@@ -251,6 +268,45 @@ export class WorkspaceRegistry extends Service {
       }
       const state = this.requireState()
       await this.setState({ ...state, archivedSessionIds: [...state.archivedSessionIds, sessionId] })
+    })
+  }
+
+  /**
+   * Delete one session durably: its stored log (plus never-materialized
+   * pending state), its archive entry, its workspace accounting slots, and
+   * its cached headers/paths. A session with a live agent refuses — archive
+   * stays the way to hide those. Unknown ids reject like archive.
+   * @param sessionId - The session to delete.
+   * @returns resolution after durability.
+   */
+  deleteSession(sessionId: SessionId): Promise<void> {
+    return this.enqueueOperation(async () => {
+      if (this.ctx.get('sessions')?.get(sessionId) !== undefined) {
+        throw new WorkspaceLiveSessionError(sessionId)
+      }
+      if (!(await this.sessionKnown(sessionId))) {
+        throw new WorkspaceUnknownSessionError(sessionId)
+      }
+      await this.ctx.sessionPersistence.delete(sessionId)
+      const state = this.requireState()
+      if (state.archivedSessionIds.includes(sessionId)) {
+        await this.setState({
+          ...state,
+          archivedSessionIds: state.archivedSessionIds.filter(id => id !== sessionId),
+        })
+      }
+      const table = this.requireTable()
+      for (const [id, record] of table.entries()) {
+        if (!record.sessionIds.includes(sessionId)) continue
+        await table.update(id, known => ({
+          ...known,
+          sessionIds: known.sessionIds.filter(candidate => candidate !== sessionId),
+          updatedAt: new Date().toISOString(),
+        }))
+      }
+      this.headers.delete(sessionId)
+      this.sessionPaths.delete(sessionId)
+      this.invalidSessionPaths.delete(sessionId)
     })
   }
 

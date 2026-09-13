@@ -9,7 +9,7 @@
 import { Context } from '@greeneek/cordis'
 import z from '@greeneek/schemastery'
 import { readdirSync } from 'node:fs'
-import { open, mkdir, readFile, readdir, realpath, link, rm, stat, truncate } from 'node:fs/promises'
+import { open, mkdir, readFile, readdir, realpath, link, rm, rmdir, stat, truncate } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { performance } from 'node:perf_hooks'
 import { scheduler } from 'node:timers/promises'
@@ -364,6 +364,35 @@ class JsonlSessionPersistence extends SessionPersistence {
     }
     signal?.throwIfAborted()
     return snapshots
+  }
+
+  /**
+   * Remove one stored session's log artifact and drop any pending
+   * (never-materialized) state with it. Open handles are untouched — the
+   * caller refuses live sessions first, so no write handle can be appending.
+   * @param id - the stored session to remove.
+   * @param options - optional cancellation.
+   * @returns `true` when a stored log or pending state was removed, `false`
+   * when the session was unknown to storage.
+   */
+  async delete(id: SessionId, options?: SessionPersistenceStatOptions): Promise<boolean> {
+    options?.signal?.throwIfAborted()
+    await this.ensureRootEncoding()
+    options?.signal?.throwIfAborted()
+    const hadPending = this.tracker.dropPending(id)
+    const path = await this.findLog(id, options?.signal)
+    options?.signal?.throwIfAborted()
+    this.coldLogMemo.delete(id)
+    if (path === undefined) return hadPending
+    try {
+      await rm(path)
+    } catch (error: unknown) {
+      options?.signal?.throwIfAborted()
+      if (!isENOENT(error)) throw error
+      return hadPending
+    }
+    await rmdir(dirname(path)).catch(() => {})
+    return true
   }
 
   // --- handle-facing storage internals (package-private via the handle class below) ---

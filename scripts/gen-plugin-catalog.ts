@@ -64,7 +64,7 @@ function readRole(group: string, dir: string): string {
   const text = readFileSync(readme, 'utf8')
   const frontmatter = text.match(/^---\n([\s\S]*?)\n---/)
   const description = (frontmatter?.[1] ?? '').match(/description:\s*"([^"]*)"/)
-  const role = description?.[1].trim().replace(/\s+/g, ' ') ?? ''
+  const role = (description?.[1] ?? '').trim().replace(/\s+/g, ' ')
   return role === '' ? `Role documented in the ${group} group README.` : role
 }
 

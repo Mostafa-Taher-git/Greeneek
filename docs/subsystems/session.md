@@ -1021,6 +1021,27 @@ Types: [SessionId](core.md)
 
 Source: [`packages/api/session-controller/src/types.ts`](../../packages/api/session-controller/src/types.ts)
 
+<a id="api-sessionremoved--emit"></a>
+
+#### `api-session/removed` — emit
+
+A Session was permanently deleted with its stored log. Emitted by workspace deleteSession; session-controller owns the canonical declaration (live detach) with the identical signature.
+
+```ts cordis-catalog
+/**
+ * A Session was permanently deleted with its stored log. Emitted by
+ * workspace deleteSession; session-controller owns the canonical
+ * declaration (live detach) with the identical signature.
+ * @mode emit
+ * @param sessionId - deleted Session identity.
+ */
+'api-session/removed'(sessionId: SessionId): void
+```
+
+Types: [SessionId](core.md)
+
+Source: [`packages/api/workspace-controller/src/commands.ts`](../../packages/api/workspace-controller/src/commands.ts)
+
 <a id="api-sessionstatus--emit"></a>
 
 #### `api-session/status` — emit

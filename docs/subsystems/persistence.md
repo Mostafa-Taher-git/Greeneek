@@ -386,6 +386,18 @@ abstract stat(id: SessionId, options?: SessionPersistenceStatOptions): Promise<S
  * @returns one snapshot per stored session.
  */
 abstract list(options?: SessionPersistenceListOptions): Promise<readonly SessionPersistenceSnapshot[]>
+
+/**
+ * Remove one stored session's log and every related artifact, dropping any
+ * pending (never-materialized) state with it. Open handles are not
+ * affected — deleting a session with a live handle is the caller's
+ * responsibility to refuse first.
+ * @param id - the stored session to remove.
+ * @param options - optional cancellation.
+ * @returns `true` when a stored log or pending state was removed, `false`
+ * when the session was unknown to storage.
+ */
+abstract delete(id: SessionId, options?: SessionPersistenceStatOptions): Promise<boolean>
 ```
 
 Types: [SessionId](core.md)

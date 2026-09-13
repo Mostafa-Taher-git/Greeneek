@@ -1508,6 +1508,12 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         parameters: [{ name: 'options', description: 'optional cancellation.' }],
         returns: 'one snapshot per stored session.',
       },
+      {
+        signature: 'abstract delete(id: SessionId, options?: SessionPersistenceStatOptions): Promise<boolean>',
+        description: 'Remove one stored session\'s log and every related artifact, dropping any pending (never-materialized) state with it. Open handles are not affected — deleting a session with a live handle is the caller\'s responsibility to refuse first.',
+        parameters: [{ name: 'id', description: 'the stored session to remove.' }, { name: 'options', description: 'optional cancellation.' }],
+        returns: '`true` when a stored log or pending state was removed, `false` when the session was unknown to storage.',
+      },
     ],
   },
   {
@@ -2784,6 +2790,12 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'the complete resulting archive set.',
       },
       {
+        signature: '@Remote(\'deleteSession\') deleteSession(request: WorkspaceDeleteSessionRequest): Promise<WorkspaceDeleteSessionValue>',
+        description: 'Delete one known Session permanently with its stored log.',
+        parameters: [{ name: 'request', description: 'Session identity to delete.' }],
+        returns: 'the complete resulting archive set.',
+      },
+      {
         signature: '@Remote({ mode: \'stream\' }) follow(signal: AbortSignal): AsyncIterable<WorkspaceFollowFrame>',
         description: 'Stream a complete Workspace baseline followed by ordered increments.',
         parameters: [{ name: 'signal', description: 'generation cancellation.' }],
@@ -2830,6 +2842,12 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         signature: 'archiveSession(sessionId: SessionId): Promise<void>',
         description: 'Archive one session durably. The session must exist (live or in session persistence); its workspace accounting — or lack of one — is irrelevant. An already archived id resolves without writing.',
         parameters: [{ name: 'sessionId', description: 'The session to archive.' }],
+        returns: 'resolution after durability.',
+      },
+      {
+        signature: 'deleteSession(sessionId: SessionId): Promise<void>',
+        description: 'Delete one session durably: its stored log (plus never-materialized pending state), its archive entry, its workspace accounting slots, and its cached headers/paths. A session with a live agent refuses — archive stays the way to hide those. Unknown ids reject like archive.',
+        parameters: [{ name: 'sessionId', description: 'The session to delete.' }],
         returns: 'resolution after durability.',
       },
       {
@@ -2987,6 +3005,14 @@ export const EVENT_API: readonly EventApiEntry[] = [
     summary: 'A Session left the live Host registry.',
     description: 'A Session left the live Host registry.',
     parameters: [{ name: 'sessionId', description: 'removed Session identity.' }],
+  },
+  {
+    name: 'api-session/removed',
+    mode: 'emit',
+    signature: '\'api-session/removed\'(sessionId: SessionId): void',
+    summary: 'A Session was permanently deleted with its stored log.',
+    description: 'A Session was permanently deleted with its stored log. Emitted by workspace deleteSession; session-controller owns the canonical declaration (live detach) with the identical signature.',
+    parameters: [{ name: 'sessionId', description: 'deleted Session identity.' }],
   },
   {
     name: 'api-session/status',
@@ -6123,6 +6149,14 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'WorkspaceDeleteRequest',
     declaration: 'export interface WorkspaceDeleteRequest {\n    readonly workspaceId: WorkspaceId;\n}',
+  },
+  {
+    name: 'WorkspaceDeleteSessionRequest',
+    declaration: 'export interface WorkspaceDeleteSessionRequest {\n    readonly sessionId: SessionId;\n}',
+  },
+  {
+    name: 'WorkspaceDeleteSessionValue',
+    declaration: 'export interface WorkspaceDeleteSessionValue {\n    readonly archivedSessionIds: readonly SessionId[];\n}',
   },
   {
     name: 'WorkspaceDeleteValue',

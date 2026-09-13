@@ -141,15 +141,21 @@
   overflow-y: auto;
 }
 
-/* Provider line under the model name: the service the route belongs to,
-   same tertiary tone as the description. */
-.modelProvider {
-  overflow: hidden;
+/* Provider group sections head each service block by its catalog name. */
+.group + .group {
+  margin-top: 4px;
+}
+
+.groupTitle {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 5px 8px 3px;
+  background: var(--dsw-specific-menu);
   color: var(--dsw-alias-label-tertiary);
   font-size: 12px;
-  line-height: 16px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 18px;
+  font-weight: 500;
 }
 
 .option {
@@ -295,6 +301,92 @@
 .effortSegmentChecked {
   background: var(--dsw-alias-label-primary);
   color: var(--dsw-alias-bg-layer-1);
+}
+
+/* The Model pane widens to fit the list beside the detail sidecar. */
+.menuWide {
+  min-width: min(560px, calc(100vw - 32px));
+  max-width: min(680px, calc(100vw - 32px));
+}
+
+.modelColumns {
+  display: flex;
+  flex-direction: row;
+  min-height: 0;
+}
+
+@media (max-width: 560px) {
+  .modelColumns {
+    flex-direction: column;
+  }
+}
+
+.modelList {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Detail sidecar: the previewed model's info and its real effort levels,
+   separated from the list by the same hairline as the search. */
+.detail {
+  display: flex;
+  flex: 0 0 220px;
+  flex-direction: column;
+  min-width: 0;
+  padding: 4px 4px 4px 12px;
+  border-left: 1px solid var(--dsw-alias-border-l1);
+  gap: 4px;
+}
+
+@media (max-width: 560px) {
+  .detail {
+    flex-basis: auto;
+    border-left: none;
+    border-top: 1px solid var(--dsw-alias-border-l1);
+    padding: 8px 4px 0;
+  }
+}
+
+.detailTitle {
+  margin: 0;
+  color: var(--dsw-alias-label-primary);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+}
+
+.detailProvider {
+  margin: 0;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.detailDescription {
+  margin: 0;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 12px;
+  line-height: 18px;
+  text-wrap: pretty;
+}
+
+.detailEffort {
+  display: flex;
+  flex-direction: column;
+  padding-top: 8px;
+  border-top: 1px solid var(--dsw-alias-border-l1);
+  gap: 6px;
+}
+
+.detailEffortTitle {
+  margin: 0;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
 }
 
 /* Two-level root cells (figma 496:26454 .Menu_cell): 40px row, 10px side

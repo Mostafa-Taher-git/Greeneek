@@ -2,27 +2,32 @@
  * ModelSelect: the composer's named model seat (`conversation.input.model`).
  * Two-level selection per figma 496:26454's MenuDropdown: the root menu is
  * the Model / Effort row pair (label + current value + a right chevron),
- * each drilling into its own list — the provider-grouped model list over
- * the shared directory, and the effort levels. The trigger (313:14108's
- * ToggleButton) shows both: model name + effort in the caption tone.
- * Data and submission ride the SAME per-session ModelDirectory as the
- * /model popup; exact-model reasoning metadata and the selected effort come
- * from the Host rather than a client-owned vocabulary. A rejected selection
- * announces through the shared transient Toast anchored to the composer
- * card; the in-menu strip with Retry remains the catalog-load surface.
+ * each drilling into its own list. The Model pane pairs the searchable,
+ * provider-grouped list with a detail sidecar: hovering or focusing a row
+ * previews that model's description and real effort levels on the right,
+ * and tapping a previewed effort selects (current model: effort only, like
+ * the Effort pane; another model: model plus effort together) and
+ * dismisses. Model rows stay single-shot: clicking one selects it and
+ * closes. Data and submission ride the SAME per-session ModelDirectory as
+ * the /model popup; exact-model reasoning metadata and the selected effort
+ * come from the Host rather than a client-owned vocabulary. A rejected
+ * selection announces through the shared transient Toast anchored to the
+ * composer card; the in-menu strip with Retry remains the catalog-load
+ * surface.
  */
 import {
   useEffect, useId, useMemo, useRef, useState, useSyncExternalStore,
   type KeyboardEvent, type FocusEvent,
 } from 'react'
 import clsx from 'clsx'
-import type { ModelReasoningEffort, ModelSelection } from '@greeneek/gnk-api-remotes/client'
+import type { ModelReasoning, ModelReasoningEffort, ModelSelection } from '@greeneek/gnk-api-remotes/client'
 import {
   IconCheckOutline16, IconChevronDownOutline14, IconChevronRightOutline14,
   IconSearchOutline16, IconWarningOutline16, Toast,
 } from '@greeneek/gnk-client-ui-primitives'
 import type { PropsLocale } from '@greeneek/gnk-client-ui-slots'
 import type { ModelSelectInjected } from './slots.ts'
+import type { ModelKey } from './locales.ts'
 import css from './ModelSelect.module.css'
 
 /** Which pane the dropdown shows: the two-row root or one drilled-in list. */
@@ -51,6 +56,32 @@ interface EffortChoice {
 }
 
 /**
+ * The model's real effort levels in canonical power-scale order, with a
+ * leading Default row only when the adapter configures no model default.
+ * Shared by the drilled Effort pane and the model detail sidecar so both
+ * offer exactly what the Host declares — never a client vocabulary.
+ */
+function reasoningChoices(
+  reasoning: ModelReasoning | undefined,
+  t: (key: ModelKey, params?: Record<string, string>) => string,
+): EffortChoice[] {
+  if (reasoning === undefined) return []
+  return [
+    ...reasoning.defaultEffort === undefined
+      ? [{ key: 'provider-default', effort: undefined, label: t('effort.providerDefault') }]
+      : [],
+    ...reasoning.efforts
+      .filter((effort: ModelReasoningEffort) => !NON_POWER_LEVELS.has(effort.id.toLowerCase()))
+      .sort((a, b) => (EFFORT_RANK[a.id.toLowerCase()] ?? 5) - (EFFORT_RANK[b.id.toLowerCase()] ?? 5))
+      .map((effort: ModelReasoningEffort) => ({
+        key: `effort:${effort.id}`,
+        effort: effort.id,
+        label: effort.name,
+      })),
+  ]
+}
+
+/**
  * Render the composer model seat.
  * @param props - owner share (locked) + injected face (shared directory
  * store/verbs) + the standard locale seat.
@@ -70,6 +101,9 @@ export function ModelSelect(
   // description, or provider; it resets whenever the menu opens or closes
   // so a stale filter never greets the next open.
   const [query, setQuery] = useState('')
+  // Detail sidecar: opaque `provider/model` key of the hovered or focused
+  // row, or null to follow the current selection.
+  const [previewKey, setPreviewKey] = useState<string | null>(null)
   // The in-menu error strip serves catalog loads (its Retry re-runs the
   // load); a rejected SELECTION announces through the transient toast
   // instead, so the strip renders only while the latest failure-capable
@@ -106,35 +140,61 @@ export function ModelSelect(
     : effectiveEffort === undefined
       ? t('effort.providerDefault')
       : reasoning.efforts.find(level => level.id === effectiveEffort)?.name ?? effectiveEffort
-  const effortChoices = useMemo<readonly EffortChoice[]>(() => reasoning === undefined
-    ? []
-    : [
-      ...reasoning.defaultEffort === undefined
-        ? [{ key: 'provider-default', effort: undefined, label: t('effort.providerDefault') }]
-        : [],
-      ...reasoning.efforts
-        .filter((effort: ModelReasoningEffort) => !NON_POWER_LEVELS.has(effort.id.toLowerCase()))
-        .sort((a, b) => (EFFORT_RANK[a.id.toLowerCase()] ?? 5) - (EFFORT_RANK[b.id.toLowerCase()] ?? 5))
-        .map((effort: ModelReasoningEffort) => ({
-          key: `effort:${effort.id}`,
-          effort: effort.id,
-          label: effort.name,
-        })),
-    ], [reasoning, t])
+  const effortChoices = useMemo<readonly EffortChoice[]>(
+    () => reasoningChoices(reasoning, t), [reasoning, t])
   const busy = state.status === 'selecting'
 
   // The search narrows rows by model name, catalog description, or provider
-  // name. The pane is a flat list — each row names its own provider — so
-  // filtering only drops rows, never whole sections. An empty query keeps
-  // the exact unfiltered render, so the list is untouched until typed in.
+  // name; providers with no matching row hide entirely. An empty query
+  // keeps the exact unfiltered render, so the list is untouched until
+  // typed in.
   const needle = query.trim().toLowerCase()
-  const filteredChoices = useMemo(() => needle === ''
-    ? choices
-    : choices.filter(choice =>
-      choice.model.name.toLowerCase().includes(needle)
-      || (choice.model.description ?? '').toLowerCase().includes(needle)
-      || choice.group.name.toLowerCase().includes(needle)),
-  [needle, choices])
+  const filteredSections = useMemo(() => state.groups
+    .map(group => ({
+      group,
+      models: needle === ''
+        ? group.models
+        : group.models.filter(model =>
+          model.name.toLowerCase().includes(needle)
+          || (model.description ?? '').toLowerCase().includes(needle)
+          || group.name.toLowerCase().includes(needle)),
+    }))
+    .filter(entry => needle === '' || entry.models.length > 0),
+  [needle, state.groups])
+  const filteredChoices = useMemo(() => filteredSections.flatMap(
+    entry => entry.models.map(model => ({ group: entry.group, model }))),
+  [filteredSections])
+
+  // The previewed row: the hovered/focused key while it names a visible
+  // row, else the current selection while visible, else the first visible
+  // row. The detail sidecar never goes blank while rows exist.
+  const previewChoice = useMemo(() => {
+    const pools = filteredChoices.length > 0 ? [filteredChoices, choices] : [choices]
+    for (const pool of pools) {
+      const hovered = previewKey === null
+        ? undefined
+        : pool.find(choice => `${choice.group.id}/${choice.model.id}` === previewKey)
+      if (hovered !== undefined) return hovered
+      const current = state.current === null
+        ? undefined
+        : pool.find(choice => choice.group.id === state.current?.provider
+          && choice.model.id === state.current.model)
+      if (current !== undefined) return current
+      if (pool.length > 0) return pool[0]
+    }
+    return undefined
+  }, [filteredChoices, choices, previewKey, state.current])
+  const previewIsCurrent = previewChoice !== undefined
+    && state.current !== null
+    && previewChoice.group.id === state.current.provider
+    && previewChoice.model.id === state.current.model
+  const previewEffortChoices = useMemo<readonly EffortChoice[]>(
+    () => reasoningChoices(previewChoice?.model.reasoning, t), [previewChoice, t])
+  // The marked effort in the detail: the live selection for the current
+  // model, the provider default for any other row.
+  const previewEffort = previewIsCurrent
+    ? effectiveEffort
+    : previewChoice?.model.reasoning?.defaultEffort
 
   const reload = (): void => {
     lastActionRef.current = 'load'
@@ -155,6 +215,7 @@ export function ModelSelect(
   const show = (): void => {
     setPane('root')
     setQuery('')
+    setPreviewKey(null)
     setOpen(true)
     reload()
   }
@@ -163,6 +224,7 @@ export function ModelSelect(
     setOpen(false)
     setPane('root')
     setQuery('')
+    setPreviewKey(null)
     if (restoreFocus) queueMicrotask(() => { triggerRef.current?.focus() })
   }
 
@@ -245,6 +307,24 @@ export function ModelSelect(
     void select(selection).then((accepted) => { settleSelection(accepted, dismiss) })
   }
 
+  // Tap an effort in the detail sidecar: for the current model this is the
+  // same effort-only selection as the Effort pane; for any other row it
+  // selects that model with the tapped effort in one call. Either way the
+  // menu dismisses on acceptance, like every other pick here.
+  const choosePreviewEffort = (effort: string | undefined): void => {
+    if (previewChoice === undefined) return
+    if (previewIsCurrent) {
+      chooseEffort(effort)
+      return
+    }
+    lastActionRef.current = 'select'
+    void select({
+      provider: previewChoice.group.id,
+      model: previewChoice.model.id,
+      ...effort === undefined ? {} : { reasoningEffort: effort },
+    }).then(settleSelection)
+  }
+
   const waiting = state.current === null && state.status === 'loading'
   const modelLabel = waiting
     ? t('trigger.loading')
@@ -293,7 +373,7 @@ export function ModelSelect(
       {open && (
         <div
           id={`${id}-menu`}
-          className={css.menu}
+          className={clsx(css.menu, pane === 'model' && css.menuWide)}
           role="menu"
           aria-label={t('menu.aria')}
           aria-busy={state.status === 'loading' || busy}
@@ -332,55 +412,106 @@ export function ModelSelect(
                   <button type="button" className={css.retry} onClick={reload}>{t('retry')}</button>
                 </div>
               ))}
-              <div className={css.search}>
-                <IconSearchOutline16 className={css.searchIcon} />
-                <input
-                  ref={searchRef}
-                  type="search"
-                  className={css.searchInput}
-                  aria-label={t('model.searchAria')}
-                  placeholder={t('model.searchPlaceholder')}
-                  value={query}
-                  disabled={busy}
-                  onChange={(event) => { setQuery(event.target.value) }}
-                />
-              </div>
-              <div className={clsx(css.groups, 'scrollable')}>
-                {filteredChoices.map((choice) => {
-                  const selected = state.current?.provider === choice.group.id
-                    && state.current.model === choice.selection.model
-                  return (
-                    <button
-                      ref={itemRef()}
-                      type="button"
-                      role="menuitemradio"
-                      aria-checked={selected}
-                      className={clsx(css.option, selected && css.selected)}
-                      key={`${choice.group.id}/${choice.model.id}`}
-                      title={choice.model.name}
+              <div className={css.modelColumns}>
+                <div className={css.modelList}>
+                  <div className={css.search}>
+                    <IconSearchOutline16 className={css.searchIcon} />
+                    <input
+                      ref={searchRef}
+                      type="search"
+                      className={css.searchInput}
+                      aria-label={t('model.searchAria')}
+                      placeholder={t('model.searchPlaceholder')}
+                      value={query}
                       disabled={busy}
-                      onClick={() => { choose({ provider: choice.group.id, model: choice.model.id }) }}
-                    >
-                      <span className={css.optionCopy}>
-                        <span className={css.modelName}>{choice.model.name}</span>
-                        <span className={css.modelProvider}>{choice.group.name}</span>
-                        {choice.model.description !== undefined && (
-                          <span className={css.modelDescription}>{choice.model.description}</span>
-                        )}
-                      </span>
-                      <span className={css.check}>
-                        {selected ? <IconCheckOutline16 /> : null}
-                      </span>
-                    </button>
-                  )
-                })}
+                      onChange={(event) => { setQuery(event.target.value) }}
+                    />
+                  </div>
+                  <div className={clsx(css.groups, 'scrollable')}>
+                    {filteredSections.map(({ group, models }) => {
+                      const headingId = `${id}-${group.id}`
+                      return (
+                        <section role="group" aria-labelledby={headingId} className={css.group} key={group.id}>
+                          <div className={css.groupTitle} id={headingId}>{group.name}</div>
+                          {models.map((model) => {
+                            const selected = state.current?.provider === group.id
+                              && state.current.model === model.id
+                            const key = `${group.id}/${model.id}`
+                            return (
+                              <button
+                                ref={itemRef()}
+                                type="button"
+                                role="menuitemradio"
+                                aria-checked={selected}
+                                className={clsx(css.option, selected && css.selected)}
+                                key={model.id}
+                                title={model.name}
+                                disabled={busy}
+                                onClick={() => { choose({ provider: group.id, model: model.id }) }}
+                                onMouseEnter={() => { setPreviewKey(key) }}
+                                onFocus={() => { setPreviewKey(key) }}
+                              >
+                                <span className={css.optionCopy}>
+                                  <span className={css.modelName}>{model.name}</span>
+                                  {model.description !== undefined && (
+                                    <span className={css.modelDescription}>{model.description}</span>
+                                  )}
+                                </span>
+                                <span className={css.check}>
+                                  {selected ? <IconCheckOutline16 /> : null}
+                                </span>
+                              </button>
+                            )
+                          })}
+                        </section>
+                      )
+                    })}
+                  </div>
+                  {state.status === 'ready' && choices.length === 0 && (
+                    <div className={css.empty}>{t('empty.models')}</div>
+                  )}
+                  {needle !== '' && filteredChoices.length === 0 && (
+                    <div className={css.empty}>{t('model.emptySearch')}</div>
+                  )}
+                </div>
+                {previewChoice !== undefined && (
+                  <div aria-label={t('panel.detailAria')} className={css.detail}>
+                    <p className={css.detailTitle}>{previewChoice.model.name}</p>
+                    <p className={css.detailProvider}>{previewChoice.group.name}</p>
+                    {previewChoice.model.description !== undefined && (
+                      <p className={css.detailDescription}>{previewChoice.model.description}</p>
+                    )}
+                    {previewEffortChoices.length > 0 && (
+                      <div className={css.detailEffort}>
+                        <p className={css.detailEffortTitle}>{t('menu.effort')}</p>
+                        <div
+                          aria-label={t('menu.effort')}
+                          className={css.effortSegments}
+                          role="radiogroup"
+                        >
+                          {previewEffortChoices.map((choice) => {
+                            const checked = previewEffort === choice.effort
+                            return (
+                              <button
+                                ref={itemRef()}
+                                type="button"
+                                role="radio"
+                                aria-checked={checked}
+                                className={clsx(css.effortSegment, checked && css.effortSegmentChecked)}
+                                key={choice.key}
+                                disabled={busy}
+                                onClick={() => { choosePreviewEffort(choice.effort) }}
+                              >
+                                {choice.label}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-              {state.status === 'ready' && choices.length === 0 && (
-                <div className={css.empty}>{t('empty.models')}</div>
-              )}
-              {needle !== '' && filteredChoices.length === 0 && (
-                <div className={css.empty}>{t('model.emptySearch')}</div>
-              )}
             </>
           )}
 

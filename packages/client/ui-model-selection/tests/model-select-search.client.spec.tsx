@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ModelSelection } from '@greeneek/gnk-api-remotes/client'
 import { createSnapshotStore } from '@greeneek/gnk-client-store'
@@ -27,8 +27,25 @@ function state(overrides: Partial<ModelDirectoryState> = {}): ModelDirectoryStat
         id: 'acme',
         name: 'Acme',
         models: [
-          { id: 'flash', name: 'Acme Flash', description: 'Fastest route' },
-          { id: 'pro', name: 'Acme Pro', description: 'Deepest reasoning' },
+          {
+            id: 'flash',
+            name: 'Acme Flash',
+            description: 'Fastest route',
+            reasoning: {
+              efforts: [
+                { id: 'low', name: 'Low' },
+                { id: 'medium', name: 'Medium' },
+                { id: 'high', name: 'High' },
+              ],
+              defaultEffort: 'medium',
+            },
+          },
+          {
+            id: 'pro',
+            name: 'Acme Pro',
+            description: 'Deepest reasoning',
+            reasoning: { efforts: [{ id: 'high', name: 'High' }] },
+          },
         ],
       },
       {
@@ -60,21 +77,20 @@ function openModelPane(directory = createSnapshotStore(state())): void {
 afterEach(cleanup)
 
 describe('ModelSelect model search', () => {
-  it('lists flat rows that name their provider, with no group headers', () => {
+  it('groups rows under provider headers', () => {
     openModelPane()
+    expect(screen.getByRole('group', { name: 'Acme' })).toBeDefined()
+    expect(screen.getByRole('group', { name: 'Other' })).toBeDefined()
     expect(screen.getByRole('menuitemradio', { name: /Acme Flash/ })).toBeDefined()
-    // Each row carries its own service provider instead of a group section.
-    expect(screen.getAllByText('Acme')).toHaveLength(2)
-    expect(screen.getByText('Other')).toBeDefined()
-    expect(screen.queryByRole('group')).toBeNull()
   })
 
-  it('narrows rows by name and drops non-matches', () => {
+  it('narrows rows by name and hides emptied providers', () => {
     openModelPane()
     fireEvent.change(screen.getByLabelText('搜索模型'), { target: { value: 'pro' } })
     expect(screen.getByRole('menuitemradio', { name: /Acme Pro/ })).toBeDefined()
     expect(screen.queryByRole('menuitemradio', { name: /Acme Flash/ })).toBeNull()
     expect(screen.queryByRole('menuitemradio', { name: /Other Mini/ })).toBeNull()
+    expect(screen.queryByRole('group', { name: 'Other' })).toBeNull()
   })
 
   it('matches descriptions and provider names', () => {
@@ -162,6 +178,74 @@ describe('ModelSelect model search', () => {
     expect(select).toHaveBeenCalledWith({ provider: 'other', model: 'mini' })
     await waitFor(() => {
       expect(screen.queryByRole('menuitemradio', { name: /Other Mini/ })).toBeNull()
+    })
+  })
+
+  it('previews the hovered row in the detail sidecar', () => {
+    openModelPane()
+    const detail = screen.getByLabelText('模型详情')
+    expect(within(detail).getByText('Acme Flash')).toBeDefined()
+    fireEvent.mouseEnter(screen.getByRole('menuitemradio', { name: /Other Mini/ }))
+    expect(within(screen.getByLabelText('模型详情')).getByText('Other Mini')).toBeDefined()
+    expect(within(screen.getByLabelText('模型详情')).getByText('Other')).toBeDefined()
+  })
+
+  it('taps a previewed effort on the current model like the Effort pane', async () => {
+    const directory = createSnapshotStore<ModelDirectoryState>(state())
+    const select = vi.fn(async (selection: ModelSelection) => {
+      directory.set(state({ current: selection }))
+      return true
+    })
+    render(<ModelSelect
+      locked={false}
+      available
+      directory={directory}
+      load={vi.fn()}
+      select={select}
+      t={t}
+    />)
+    fireEvent.click(screen.getByRole('button', { name: /Acme Flash/ }))
+    fireEvent.click(screen.getByRole('menuitem', { name: /模型/ }))
+    const detail = screen.getByLabelText('模型详情')
+    expect(within(detail).getByRole('radio', { name: 'Medium' }).getAttribute('aria-checked')).toBe('true')
+    fireEvent.click(within(detail).getByRole('radio', { name: 'High' }))
+    expect(select).toHaveBeenCalledWith({
+      provider: 'acme',
+      model: 'flash',
+      reasoningEffort: 'high',
+    })
+    await waitFor(() => {
+      expect(screen.queryByLabelText('模型详情')).toBeNull()
+    })
+  })
+
+  it('taps a previewed effort on another model to select both at once', async () => {
+    const directory = createSnapshotStore<ModelDirectoryState>(state())
+    const select = vi.fn(async (selection: ModelSelection) => {
+      directory.set(state({ current: selection }))
+      return true
+    })
+    render(<ModelSelect
+      locked={false}
+      available
+      directory={directory}
+      load={vi.fn()}
+      select={select}
+      t={t}
+    />)
+    fireEvent.click(screen.getByRole('button', { name: /Acme Flash/ }))
+    fireEvent.click(screen.getByRole('menuitem', { name: /模型/ }))
+    fireEvent.mouseEnter(screen.getByRole('menuitemradio', { name: /Acme Pro/ }))
+    const detail = screen.getByLabelText('模型详情')
+    expect(within(detail).getByText('Acme Pro')).toBeDefined()
+    fireEvent.click(within(detail).getByRole('radio', { name: 'High' }))
+    expect(select).toHaveBeenCalledWith({
+      provider: 'acme',
+      model: 'pro',
+      reasoningEffort: 'high',
+    })
+    await waitFor(() => {
+      expect(screen.queryByLabelText('模型详情')).toBeNull()
     })
   })
 })

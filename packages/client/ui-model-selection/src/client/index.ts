@@ -38,6 +38,7 @@ export type {
   ModelSelectorPanelProps, ModelSelectorSubmitPayload, PreviewT,
 } from './ModelSelectorPanel.tsx'
 export { directoryPreviewModels } from './preview.ts'
+export { compareEffortIds, effortRank, isOfferedEffort, NON_OFFERED_EFFORT_IDS } from './preview.ts'
 export type { PreviewEffort, PreviewModel, PreviewModelMetrics } from './preview.ts'
 
 declare module '@greeneek/gnk-client-ui-slots' {

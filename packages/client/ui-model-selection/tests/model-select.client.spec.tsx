@@ -138,6 +138,55 @@ describe('ModelSelect reasoning effort', () => {
     expect(screen.getByText('Standard')).toBeTruthy()
   })
 
+  it('offers only selectable levels with Max last, never Ultra', () => {
+    const directory = createSnapshotStore(state({
+      groups: [{
+        id: 'greeneek-official',
+        name: 'Greeneek',
+        models: [{
+          id: 'greeneek-v4-flash',
+          name: 'Greeneek-V4-Flash',
+          description: 'Fast catalog description',
+          reasoning: {
+            efforts: [
+              { id: 'max', name: 'Max' },
+              { id: 'ultra', name: 'Ultra' },
+              { id: 'off', name: 'Off' },
+              { id: 'low', name: 'Low' },
+              { id: 'minimal', name: 'Minimal' },
+              { id: 'standard', name: 'Standard' },
+              { id: 'medium', name: 'Medium' },
+              { id: 'high', name: 'High' },
+            ],
+            defaultEffort: 'medium',
+          },
+        }],
+      }],
+    }))
+    render(<ModelSelect
+      locked={false}
+      available
+      directory={directory}
+      load={vi.fn()}
+      select={vi.fn().mockResolvedValue(true)}
+      t={t}
+    />)
+
+    fireEvent.click(screen.getByRole('button', {
+      name: '选择模型，当前 Greeneek-V4-Flash，推理等级 Medium',
+    }))
+    fireEvent.click(screen.getByRole('menuitem', { name: /推理等级/ }))
+    // `off` disables reasoning, `minimal` sits below the scale floor, and
+    // `ultra` is Max's wire spelling — none is a selectable level. The
+    // provider-specific `standard` keeps its place below Max, which closes
+    // the scale as the highest offered effort.
+    const rows = screen.getAllByRole('radio')
+    expect(rows.map(row => row.textContent)).toEqual(['Low', 'Medium', 'High', 'Standard', 'Max'])
+    for (const absent of ['Off', 'Minimal', 'Ultra']) {
+      expect(screen.queryByText(absent)).toBeNull()
+    }
+  })
+
   it('shows the durable model id when the catalog has no matching display name', () => {
     const directory = createSnapshotStore(state({
       current: { provider: 'greeneek-official', model: 'removed-model' },

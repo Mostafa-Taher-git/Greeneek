@@ -28,26 +28,11 @@ import {
 import type { PropsLocale } from '@greeneek/gnk-client-ui-slots'
 import type { ModelSelectInjected } from './slots.ts'
 import type { ModelKey } from './locales.ts'
+import { compareEffortIds, isOfferedEffort } from './preview.ts'
 import css from './ModelSelect.module.css'
 
 /** Which pane the dropdown shows: the two-row root or one drilled-in list. */
 type Pane = 'root' | 'model' | 'effort'
-
-/**
- * Canonical power-scale order, so the effort list reads ascending however a
- * profile declares its levels. Unlisted ids keep declaration order after
- * the known levels.
- */
-const EFFORT_RANK: Record<string, number> = {
-  low: 0, medium: 1, high: 2, xhigh: 3, 'extra-high': 3, max: 4,
-}
-
-/**
- * Levels outside the power scale, never offered rows: `off` disables
- * reasoning, and the scale's floor is Low so `minimal` is not offered.
- */
-const NON_POWER_LEVELS = new Set(['off', 'minimal'])
-
 /** One dynamic effort row; undefined means preserve the provider default. */
 interface EffortChoice {
   key: string
@@ -71,8 +56,8 @@ function reasoningChoices(
       ? [{ key: 'provider-default', effort: undefined, label: t('effort.providerDefault') }]
       : [],
     ...reasoning.efforts
-      .filter((effort: ModelReasoningEffort) => !NON_POWER_LEVELS.has(effort.id.toLowerCase()))
-      .sort((a, b) => (EFFORT_RANK[a.id.toLowerCase()] ?? 5) - (EFFORT_RANK[b.id.toLowerCase()] ?? 5))
+      .filter((effort: ModelReasoningEffort) => isOfferedEffort(effort.id))
+      .sort((a, b) => compareEffortIds(a.id, b.id))
       .map((effort: ModelReasoningEffort) => ({
         key: `effort:${effort.id}`,
         effort: effort.id,

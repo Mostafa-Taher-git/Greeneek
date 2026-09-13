@@ -162,4 +162,30 @@ describe('directoryPreviewModels', () => {
     expect(rows[0]?.efforts).toEqual([])
     expect(rows[0]?.defaultEffort).toBeUndefined()
   })
+
+  it('drops non-selectable levels and keeps Max last', () => {
+    const rows = directoryPreviewModels([{
+      id: 'p',
+      name: 'P',
+      models: [{
+        id: 'm',
+        name: 'M',
+        reasoning: {
+          efforts: [
+            { id: 'max', name: 'Max' },
+            { id: 'ultra', name: 'Ultra' },
+            { id: 'off', name: 'Off' },
+            { id: 'standard', name: 'Standard' },
+            { id: 'low', name: 'Low' },
+          ],
+          defaultEffort: 'low',
+        },
+      }],
+    }])
+    expect(rows[0]?.efforts).toEqual([
+      { id: 'low', name: 'Low' },
+      { id: 'standard', name: 'Standard' },
+      { id: 'max', name: 'Max' },
+    ])
+  })
 })

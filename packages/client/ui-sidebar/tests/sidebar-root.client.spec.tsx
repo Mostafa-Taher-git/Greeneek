@@ -91,7 +91,7 @@ describe('SidebarRoot shell', () => {
     expect(screen.getByTestId('custom-brand-name')).toBeTruthy()
     // Expanded: the brand wordmark is a home button, and the capsule is
     // a separate New Session control.
-    const homeButton = screen.getByRole('button', { name: 'Go to home' })
+    const homeButton = screen.getByRole('button', { name: 'Go to home' })!
     const newSessionButtons = screen.getAllByRole('button', { name: 'New session' })
     expect(newSessionButtons).toHaveLength(1)
     fireEvent.click(homeButton)

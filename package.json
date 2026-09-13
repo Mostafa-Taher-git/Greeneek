@@ -130,6 +130,8 @@
     "verify-export-jsdoc": "tsx scripts/verify-export-jsdoc.ts",
     "gen-tool-catalog": "tsx scripts/gen-tool-catalog.ts",
     "verify-tool-catalog": "tsx scripts/gen-tool-catalog.ts --check",
+    "gen-plugin-catalog": "tsx scripts/gen-plugin-catalog.ts",
+    "verify-plugin-catalog": "tsx scripts/gen-plugin-catalog.ts --check",
     "gen-config-catalog": "tsx scripts/gen-config-catalog.ts",
     "verify-config-catalog": "tsx scripts/gen-config-catalog.ts --check",
     "gen-doc-graphs": "tsx scripts/gen-doc-graphs.ts",

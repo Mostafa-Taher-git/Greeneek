@@ -215,8 +215,6 @@ export function ModelSelect(
   const onRootKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
     if (event.key === 'Escape' && open) {
       event.preventDefault()
-      // A live filter clears first so one Escape never discards both the
-      // query and the pane it was narrowing.
       if (document.activeElement === searchRef.current && query !== '') {
         setQuery('')
         return
@@ -228,8 +226,6 @@ export function ModelSelect(
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault()
       const items = itemRefs.current.filter(item => item !== null)
-      // The search box is not a menu row: arrows from it jump straight to
-      // the first (down) or last (up) visible row.
       if (document.activeElement === searchRef.current && items.length > 0) {
         ;(event.key === 'ArrowDown' ? items[0] : items[items.length - 1])?.focus()
         return
@@ -241,6 +237,10 @@ export function ModelSelect(
   const onBlur = (event: FocusEvent<HTMLDivElement>): void => {
     if (event.relatedTarget instanceof Node && rootRef.current?.contains(event.relatedTarget)) return
     close()
+  }
+
+  const switchToModel = (choice: { group: { id: string }; model: { id: string } }): void => {
+    choose({ provider: choice.group.id, model: choice.model.id })
   }
 
   const settleSelection = (accepted: boolean, dismiss = true): void => {
@@ -428,8 +428,24 @@ export function ModelSelect(
             <div aria-label={t('panel.detailAria')} className={css.detail}>
               {previewChoice !== undefined ? (
                 <>
-                  <p className={css.detailTitle}>{previewChoice.model.name}</p>
-                  <p className={css.detailProvider}>{previewChoice.group.name}</p>
+                  <button
+                    type="button"
+                    className={css.detailModelButton}
+                    disabled={busy || previewChoice.group.id !== state.current?.provider}
+                    onClick={() => {
+                      if (previewChoice.group.id === state.current?.provider) {
+                        switchToModel(previewChoice)
+                      }
+                    }}
+                    title={
+                      previewChoice.group.id === state.current?.provider
+                        ? 'Switch within this provider'
+                        : 'Switch provider from the model list'
+                    }
+                  >
+                    <p className={css.detailTitle}>{previewChoice.model.name}</p>
+                    <p className={css.detailProvider}>{previewChoice.group.name}</p>
+                  </button>
                   {previewChoice.model.description !== undefined && (
                     <p className={css.detailDescription}>{previewChoice.model.description}</p>
                   )}

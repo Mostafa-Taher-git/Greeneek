@@ -7,32 +7,33 @@
    12px caption chevron; 28px chip height matches the sibling Plan /
    Read-only selects in the same tool row. */
 .trigger {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   min-width: 0;
-  /* Legacy fallback, then a row-relative cap that grants long names more
-     room without letting this trailing control consume the composer. */
-  max-width: 220px;
-  max-width: min(360px, 45cqw);
-  height: 28px;
-  padding: 0 4px 0 8px;
+  height: 32px;
+  padding: 0 10px;
   border: none;
-  /* Rounded chip chrome, matching the sibling permission trigger. */
-  border-radius: 24px;
+  border-radius: 999px;
   outline: none;
-  background: transparent;
-  color: var(--dsw-alias-label-secondary);
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
   font-size: 13px;
   line-height: 20px;
   font-weight: 500;
   cursor: pointer;
   max-width: min(420px, 60cqw);
   text-wrap: pretty;
+  transition: background-color 140ms ease, transform 140ms ease;
 }
 
 .trigger:hover:not(:disabled) {
   background: var(--dsw-alias-interactive-bg-hover);
+  filter: brightness(1.05);
+}
+
+.trigger:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 .trigger:focus-visible {
@@ -54,7 +55,7 @@
 /* Effort value beside the model name. */
 .triggerEffort {
   flex: 0 0 auto;
-  color: var(--dsw-alias-label-caption);
+  color: var(--dsw-alias-label-secondary);
   white-space: nowrap;
 }
 
@@ -346,6 +347,28 @@
   color: var(--dsw-alias-label-tertiary);
   font-size: 12px;
   line-height: 16px;
+}
+
+.detailModelButton {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.detailModelButton:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.detailModelButton:disabled {
+  cursor: default;
+  opacity: 0.7;
 }
 
 .detailDescription {

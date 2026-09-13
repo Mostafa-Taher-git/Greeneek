@@ -159,10 +159,9 @@ describe('ModelSelect reasoning effort', () => {
     fireEvent.click(screen.getByRole('menuitem', { name: /模型/ }))
     expect(screen.queryByRole('menuitemradio', { name: 'removed-model' })).toBeNull()
     expect(screen.getByRole('menuitemradio', { name: /Greeneek-V4-Flash/ })).toBeTruthy()
-    // The seat shows the catalog description under the name so models are
-    // distinguishable without opening anything else — once in the row and
-    // once in the detail sidecar previewing the current model.
-    expect(screen.getAllByText('Fast catalog description')).toHaveLength(2)
+    // Rows stay single-line: the description lives only in the detail
+    // sidecar previewing the current model (search still matches it).
+    expect(screen.getByText('Fast catalog description')).toBeDefined()
   })
 
   it('shows loading until the catalog and Session projection are both ready', async () => {

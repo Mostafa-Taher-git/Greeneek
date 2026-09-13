@@ -453,9 +453,6 @@ export function ModelSelect(
                               >
                                 <span className={css.optionCopy}>
                                   <span className={css.modelName}>{model.name}</span>
-                                  {model.description !== undefined && (
-                                    <span className={css.modelDescription}>{model.description}</span>
-                                  )}
                                 </span>
                                 <span className={css.check}>
                                   {selected ? <IconCheckOutline16 /> : null}

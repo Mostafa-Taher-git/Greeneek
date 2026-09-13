@@ -209,17 +209,6 @@
   white-space: nowrap;
 }
 
-/* Catalog description under the model name: same tertiary tone as the
-   root cell value, one line, so long catalog copy never stretches rows. */
-.modelDescription {
-  overflow: hidden;
-  color: var(--dsw-alias-label-tertiary);
-  font-size: 12px;
-  line-height: 16px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 /* Model-pane search: icon + borderless input over the list, separated
    from the rows by the same hairline the Menu popup search uses. */
 .search {
@@ -321,9 +310,11 @@
   }
 }
 
+/* The list column stays compact (single-line rows now); the detail
+   sidecar takes the freed space. */
 .modelList {
   display: flex;
-  flex: 1 1 auto;
+  flex: 0 0 230px;
   flex-direction: column;
   min-width: 0;
   min-height: 0;
@@ -333,7 +324,7 @@
    separated from the list by the same hairline as the search. */
 .detail {
   display: flex;
-  flex: 0 0 220px;
+  flex: 1 1 auto;
   flex-direction: column;
   min-width: 0;
   padding: 4px 4px 4px 12px;

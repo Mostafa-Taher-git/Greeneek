@@ -339,6 +339,25 @@
   gap: 10px;
 }
 
+.categoryCatalog {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.categoryGroup + .categoryGroup {
+  border-top: 0.5px solid var(--dsw-alias-border-l2);
+  padding-top: 12px;
+}
+
+.categoryTitle {
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
 
 .brokenNote {
   margin: 0;

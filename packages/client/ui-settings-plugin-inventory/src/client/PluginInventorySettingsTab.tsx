@@ -60,6 +60,42 @@ function moduleShortName(moduleName: string): string {
     .replace(/^gnk-(?:host-|client-)?/, '')
 }
 
+/** Derive a stable UI category from a plugin module name. */
+function moduleCategory(moduleName: string): string {
+  const normalized = moduleName.toLowerCase()
+  const categories: [string[], string][] = [
+    [['web-search', 'web-fetch', 'exa', 'duckduckgo', 'perplexity', 'google'], 'Search'],
+    [['tool-', 'bash', 'fs', 'subagent', 'cordis', 'mcp'], 'Tools'],
+    [['session', 'workspace', 'attachment', 'goal', 'schedule'], 'Workspace'],
+    [['ui-', 'brand', 'layout', 'chat', 'conversation', 'trajectory', 'message-feedback', 'user-questions', 'approval', 'plan', 'deliverables', 'reference', 'settings'], 'Interface'],
+    [['llm', 'token', 'agent-presets', 'system-prompt'], 'Model'],
+    [['sandbox', 'code-runtime', 'shell', 'lsp'], 'Runtime'],
+    [['hook', 'inspector', 'experimental', 'webworker'], 'Experimental'],
+  ]
+  for (const [needles, category] of categories) {
+    if (needles.some(needle => normalized.includes(needle))) return category
+  }
+  return 'Other'
+}
+
+/** Group rows by category while keeping failed entries first within each bucket. */
+type CategoryBucket = { failed: AgentPresetRow[] | PluginInventoryEntry[]; regular: AgentPresetRow[] | PluginInventoryEntry[] }
+
+function categoryBucket(rows: readonly AgentPresetRow[] | readonly PluginInventoryEntry[]): Map<string, CategoryBucket> {
+  const buckets = new Map<string, CategoryBucket>()
+  for (const row of rows) {
+    const category = moduleCategory(row.moduleName)
+    const bucket = buckets.get(category) ?? { failed: [], regular: [] }
+    if ((row as PluginInventoryEntry).fiberPhase === 'failed' || (row as AgentPresetRow).fiberPhase === 'failed') {
+      ;(bucket.failed as Array<AgentPresetRow | PluginInventoryEntry>).push(row)
+    } else {
+      ;(bucket.regular as Array<AgentPresetRow | PluginInventoryEntry>).push(row)
+    }
+    buckets.set(category, bucket)
+  }
+  return buckets
+}
+
 /** Whether one row's module name or entry id matches the catalog query. */
 function matches(moduleName: string, entryId: string | null, normalizedQuery: string): boolean {
   if (normalizedQuery.length === 0) return true
@@ -421,9 +457,37 @@ export function PluginInventorySettingsTab({ list, presetName, t }: PluginInvent
                     <p className={css.brokenNote} role="alert">{selected.broken}</p>
                   ) : null}
                   {selectedRows.length > 0 ? (
-                    <ul className={css.cards}>
-                      {selectedRows.map((row, index) => presetRowCard(selected, row, index))}
-                    </ul>
+                    <div className={css.categoryCatalog}>
+                      {(() => {
+                        const presetBuckets = Array.from(categoryBucket(selectedRows).entries())
+                        presetBuckets.sort((a, b) => a[0].localeCompare(b[0]))
+                        return presetBuckets.map(([category, bucket], categoryIndex) => (
+                          <section className={css.categoryGroup} key={`preset-category-${category}`}>
+                            <div className={css.categoryTitle}>{category}</div>
+                            <ul className={css.cards}>
+                              {(() => {
+                                const failedPrefix = categoryIndex * 1000
+                                const regularPrefix = failedPrefix + bucket.failed.length
+                                return (
+                                  <>
+                                    {bucket.failed.map((row, rowIndex) =>
+                                      presetRowCard(selected, row as AgentPresetRow, failedPrefix + rowIndex),
+                                    )}
+                                    {bucket.regular.map((row, rowIndex) =>
+                                      presetRowCard(
+                                        selected,
+                                        row as AgentPresetRow,
+                                        regularPrefix + rowIndex,
+                                      ),
+                                    )}
+                                  </>
+                                )
+                              })()}
+                            </ul>
+                          </section>
+                        ))
+                      })()}
+                    </div>
                   ) : null}
                   {otherMatchCount > 0 ? (
                     <p className={css.hint}>
@@ -467,13 +531,24 @@ export function PluginInventorySettingsTab({ list, presetName, t }: PluginInvent
                 ) : null}
               </p>
               {globalEffectiveOpen && globalCount > 0 ? (
-                <ul className={css.cards} id={`${sectionId}-global`}>
-                  {filteredFailed.map(entry => globalRowCard(entry))}
-                  {filteredRegular.map(entry => globalRowCard(
-                    entry,
-                    entry.enabled ? undefined : enabledIn.get(entry.moduleName),
-                  ))}
-                </ul>
+                <div id={`${sectionId}-global`} className={css.categoryCatalog}>
+                  {(() => {
+                    const globalBuckets = Array.from(categoryBucket([...filteredFailed, ...filteredRegular]).entries())
+                    globalBuckets.sort((a, b) => a[0].localeCompare(b[0]))
+                    return globalBuckets.map(([category, bucket]) => (
+                      <section className={css.categoryGroup} key={`global-category-${category}`}>
+                        <div className={css.categoryTitle}>{category}</div>
+                        <ul className={css.cards}>
+                          {bucket.failed.map((entry, _index) => globalRowCard(entry as PluginInventoryEntry))}
+                          {bucket.regular.map((entry, _index) => globalRowCard(
+                            entry as PluginInventoryEntry,
+                            entry.enabled === false ? enabledIn.get(entry.moduleName) : undefined,
+                          ))}
+                        </ul>
+                      </section>
+                    ))
+                  })()}
+                </div>
               ) : null}
             </section>
           ) : null}

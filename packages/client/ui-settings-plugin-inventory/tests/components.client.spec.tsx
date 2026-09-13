@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { PluginInventorySettingsTab } from '../src/client/PluginInventorySettingsTab.tsx'
 import type {
@@ -101,7 +101,8 @@ describe('PluginInventorySettingsTab', () => {
     expect(view.container.querySelector('[data-preset-plugin-count]')?.getAttribute('data-preset-plugin-count')).toBe('6')
 
     // Only the preset group lists rows while the global plane stays collapsed.
-    expect(screen.getAllByRole('listitem')).toHaveLength(6)
+    const presetSection = view.container.querySelector('[data-preset-plugin-count]')?.closest('section')
+    expect(presetSection?.querySelectorAll('li')).toHaveLength(6)
     expect(screen.getAllByText(en.enabledTag)).toHaveLength(3)
     expect(screen.getByText(en.conditionalTag)).toBeTruthy()
     expect(screen.getByText(en.disabledTag)).toBeTruthy()
@@ -116,8 +117,10 @@ describe('PluginInventorySettingsTab', () => {
 
     // A preset row expands into its provenance facts.
     fireEvent.click(screen.getByRole('button', { name: 'pwsh, Conditional' }))
-    expect(screen.getByText(en.fromPreset)).toBeTruthy()
-    expect(screen.getByText('标准模式')).toBeTruthy()
+    const pwshCard = view.container.querySelector('[data-plugin-entry="pwsh"][data-open="true"]') as HTMLElement | null
+    expect(pwshCard).toBeTruthy()
+    expect(within(pwshCard!).getByText(en.fromPreset)).toBeTruthy()
+    expect(within(pwshCard!).getByText('标准模式')).toBeTruthy()
     expect(screen.getByText(en.condition)).toBeTruthy()
     expect(screen.getByText('process.platform === \'win32\'')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'pwsh, Conditional' }))

@@ -6,30 +6,54 @@ exports[`sidebar shell snapshots > renders the collapsed rail after the crossfad
   style="display: contents;"
 >
   <div
-    class="root collapsed railIn quietBars"
-    style=""
+    class="root fading quietBars"
+    style="width: 300px;"
   >
     <div
       class="logoRow"
     >
-      <span
-        aria-hidden="true"
-        class="railMark"
+      <button
+        aria-label="Go to home"
+        class="brand wide"
+        type="button"
       >
-        <div
-          data-slot="sidebar.brand.mark"
-          style="display: contents;"
+        <span
+          aria-hidden="true"
+          class="brandIdentity"
         >
-          <img
-            alt=""
-            aria-hidden="true"
-            height="24"
-            src="/assets/logo-mark.png"
-            style="display: block; width: 24px; height: 24px; object-fit: contain;"
-            width="24"
-          />
-        </div>
-      </span>
+          <span
+            class="brandMark"
+          >
+            <div
+              data-slot="sidebar.brand.mark"
+              style="display: contents;"
+            >
+              <img
+                alt=""
+                aria-hidden="true"
+                height="24"
+                src="/assets/logo-mark.png"
+                style="display: block; width: 24px; height: 24px; object-fit: contain;"
+                width="24"
+              />
+            </div>
+          </span>
+          <span
+            class="brandName"
+          >
+            <div
+              data-slot="sidebar.brand.name"
+              style="display: contents;"
+            >
+              <span
+                class="fallbackBrandName"
+              >
+                Greeneek
+              </span>
+            </div>
+          </span>
+        </span>
+      </button>
     </div>
     <button
       aria-label="New session"
@@ -39,11 +63,16 @@ exports[`sidebar shell snapshots > renders the collapsed rail after the crossfad
       <svg
         data-content="c0ce4dcc"
         fill="none"
-        height="18"
+        height="14"
         viewBox="0 0 16 16"
-        width="18"
+        width="14"
         xmlns="http://www.w3.org/2000/svg"
       />
+      <span
+        class="newSessionLabel wide"
+      >
+        New Session
+      </span>
     </button>
     <div
       class="regionArea"
@@ -90,7 +119,7 @@ exports[`sidebar shell snapshots > renders the expanded column (wordmark, capsul
       class="logoRow"
     >
       <button
-        aria-label="New session"
+        aria-label="Go to home"
         class="brand wide"
         type="button"
       >
@@ -123,18 +152,9 @@ exports[`sidebar shell snapshots > renders the expanded column (wordmark, capsul
               style="display: contents;"
             >
               <span
-                class="localBuildBrand"
+                class="fallbackBrandName"
               >
-                <span
-                  class="localBuildTitle"
-                >
-                  Greeneek Local Build
-                </span>
-                <span
-                  class="buildVersion"
-                >
-                  1.2.3-rc.4-abc1234-dirty
-                </span>
+                Greeneek
               </span>
             </div>
           </span>
@@ -205,7 +225,7 @@ exports[`sidebar shell snapshots > renders the expanded column in the default lo
       class="logoRow"
     >
       <button
-        aria-label="新建会话"
+        aria-label="回到主页"
         class="brand wide"
         type="button"
       >
@@ -238,18 +258,9 @@ exports[`sidebar shell snapshots > renders the expanded column in the default lo
               style="display: contents;"
             >
               <span
-                class="localBuildBrand"
+                class="fallbackBrandName"
               >
-                <span
-                  class="localBuildTitle"
-                >
-                  Greeneek 本地构建
-                </span>
-                <span
-                  class="buildVersion"
-                >
-                  1.2.3-rc.4-abc1234-dirty
-                </span>
+                Greeneek
               </span>
             </div>
           </span>

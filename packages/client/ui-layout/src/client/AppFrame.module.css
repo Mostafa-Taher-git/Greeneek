@@ -25,8 +25,6 @@
 .sidebarCol {
   min-width: 0;
   overflow: hidden;
-  background: var(--dsw-specific-sidebar-fill);
-  border-right: 0.5px solid var(--dsw-alias-border-l3);
 }
 
 /* Frameless desktop shell: a 40px titlebar row spans all columns above

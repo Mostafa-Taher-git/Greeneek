@@ -43,7 +43,8 @@ jobs:
           else URL="https://github.com/Mostafa-Taher-git/Greeneek/releases/download/$REF/$FILE"; fi
           zsyncmake -u "$URL" -o "$DIST/$FILE.zsync" "$APPIMAGE"
           ls "$DIST"/*.zsync
-      - run: node apps/desktop/scripts/prepare-release-assets.mjs --dist .staging/app/dist
+      - if: "!startsWith(github.ref, 'refs/tags/desktop-')"
+        run: node apps/desktop/scripts/prepare-release-assets.mjs --dist .staging/app/dist
       - if: startsWith(github.ref, 'refs/tags/desktop-')
         run: node apps/desktop/scripts/prepare-release-assets.mjs --dist .staging/app/dist --tag "${{ github.ref_name }}"
       - name: Assert updater channel files

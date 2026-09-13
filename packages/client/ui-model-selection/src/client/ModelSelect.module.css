@@ -255,10 +255,10 @@
 
 /* Effort picker: wrapping segmented group that can grow to two lines. */
 .effortSegments {
-  display: flex;
-  flex-wrap: wrap;
-  padding: 4px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 4px;
+  padding: 4px;
   max-width: 100%;
 }
 
@@ -291,8 +291,8 @@
 }
 
 .effortSegmentChecked {
-  background: var(--dsw-alias-label-primary);
-  color: var(--dsw-alias-bg-layer-1);
+  background: rgba(163, 230, 163, 0.2);
+  color: var(--dsw-alias-label-primary);
 }
 
 /* Single combined panel: model list on the left, detail/info on the right. */

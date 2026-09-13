@@ -26,9 +26,12 @@ jobs:
       - run: pnpm build:lib:host
       - run: pnpm build:lib:client
       - run: pnpm build:web
-      - run: node apps/desktop/scripts/stage.mjs
-        env:
-          STAGE_DESKTOP_VERSION: ${{ startsWith(github.ref, 'refs/tags/desktop-') && github.ref_name || '' }}
+      - if: startsWith(github.ref, 'refs/tags/desktop-')
+        run: |
+          TAG="${{ github.ref_name }}"
+          VERSION="${TAG#desktop-v}"
+          sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" apps/desktop/package.json
+          cat apps/desktop/package.json | grep version
       - run: pnpm --filter @greeneek/desktop run dist:linux
       - name: Drop builder diagnostics from the release set
         run: rm -f apps/desktop/.staging/app/dist/builder-debug.yml apps/desktop/.staging/app/dist/builder-effective-config.yaml
@@ -43,8 +46,7 @@ jobs:
           else URL="https://github.com/Mostafa-Taher-git/Greeneek/releases/download/$REF/$FILE"; fi
           zsyncmake -u "$URL" -o "$DIST/$FILE.zsync" "$APPIMAGE"
           ls "$DIST"/*.zsync
-      - if: "!startsWith(github.ref, 'refs/tags/desktop-')"
-        run: node apps/desktop/scripts/prepare-release-assets.mjs --dist .staging/app/dist
+      - run: node apps/desktop/scripts/prepare-release-assets.mjs --dist .staging/app/dist
       - if: startsWith(github.ref, 'refs/tags/desktop-')
         run: node apps/desktop/scripts/prepare-release-assets.mjs --dist .staging/app/dist --tag "${{ github.ref_name }}"
       - name: Assert updater channel files

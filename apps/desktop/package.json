@@ -1,6 +1,6 @@
 {
   "name": "@greeneek/desktop",
-  "version": "0.3.2",
+  "version": "0.2.0",
   "description": "Greeneek Desktop: installable Electron shell that boots gnk web locally.",
   "type": "module",
   "main": "src/main.js",
@@ -21,8 +21,8 @@
     "start": "electron .",
     "test": "node --test test/*.test.js",
     "stage": "node scripts/stage.mjs",
-    "dist:linux": "node scripts/verify-target.mjs linux x64 && electron-builder --project .staging/app --linux deb appimage --x64 --publish never",
-    "dist:win": "node scripts/verify-target.mjs win32 x64 && electron-builder --project .staging/app --win nsis zip --x64 --publish never",
+    "dist:linux": "node scripts/verify-target.mjs linux x64 && node scripts/stage.mjs && electron-builder --project .staging/app --linux deb appimage --x64 --publish never",
+    "dist:win": "node scripts/verify-target.mjs win32 x64 && node scripts/stage.mjs && electron-builder --project .staging/app --win nsis zip --x64 --publish never",
     "smoke:packaged": "node scripts/smoke-packaged.mjs",
     "prepare:release-assets": "node scripts/prepare-release-assets.mjs"
   },

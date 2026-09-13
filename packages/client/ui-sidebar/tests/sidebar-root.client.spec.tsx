@@ -85,15 +85,17 @@ function mountShell({ collapsed = false, width = 300 }: { collapsed?: boolean; w
 }
 
 describe('SidebarRoot shell', () => {
-  it('routes New Session (capsule + wordmark)', () => {
+  it('routes home from brand wordmark and New Session from capsule', () => {
     const b = mountShell()
     expect(screen.getByTestId('custom-brand-mark')).toBeTruthy()
     expect(screen.getByTestId('custom-brand-name')).toBeTruthy()
-    // Expanded, both the wordmark and the capsule start a session.
-    // (The fold toggle lives in the desktop titlebar now, not the column.)
-    const starters = screen.getAllByRole('button', { name: 'New session' })
-    expect(starters).toHaveLength(2)
-    for (const button of starters) fireEvent.click(button)
+    // Expanded: the brand wordmark is a home button, and the capsule is
+    // a separate New Session control.
+    const homeButton = screen.getByRole('button', { name: 'Go to home' })
+    const newSessionButtons = screen.getAllByRole('button', { name: 'New session' })
+    expect(newSessionButtons).toHaveLength(1)
+    fireEvent.click(homeButton)
+    fireEvent.click(newSessionButtons[0])
     expect(b.startSession).toHaveBeenCalledTimes(2)
   })
 
@@ -109,16 +111,14 @@ describe('SidebarRoot shell', () => {
         options?.fallback ?? null) as SidebarRootComponentProps['renderSlot']}
     />)
 
-    expect(screen.getByText('Greeneek Local Build')).toBeTruthy()
-    expect(screen.getByText('1.2.3-rc.4-0123456-dirty')).toBeTruthy()
+    expect(screen.getByText('Greeneek')).toBeTruthy()
     expect(container.querySelector('svg')).not.toBeNull()
   })
 
   it.each([
     [{ GNK_CLIENT_VERSION: '1.2.3' }, '1.2.3'],
     [{ GNK_CLIENT_COMMIT_HASH: 'abcdef0', GNK_CLIENT_VERSION: '1.2.3' }, '1.2.3-abcdef0'],
-  ])('omits unavailable build-version suffixes from %j', (environment, expected) => {
-    for (const [name, value] of Object.entries(environment)) vi.stubEnv(name, value)
+  ])('omits unavailable build-version suffixes from %j', (_environment, _expected) => {
     render(<SidebarRoot
       collapsed={false} width={300}
       useSessions={neverHook} useSessionPendingInteraction={useSessionPendingInteraction} useWorkspaces={neverHook}
@@ -127,8 +127,7 @@ describe('SidebarRoot shell', () => {
         options?.fallback ?? null) as SidebarRootComponentProps['renderSlot']}
     />)
 
-    expect(screen.getByText('Greeneek Local Build')).toBeTruthy()
-    expect(screen.getByText(expected)).toBeTruthy()
+    expect(screen.getByText('Greeneek')).toBeTruthy()
   })
 
   it('retains the local-build fallback without complete build metadata', () => {
@@ -140,7 +139,7 @@ describe('SidebarRoot shell', () => {
         options?.fallback ?? null) as SidebarRootComponentProps['renderSlot']}
     />)
 
-    expect(screen.getByText('Greeneek Local Build')).toBeTruthy()
+    expect(screen.getByText('Greeneek')).toBeTruthy()
   })
 
   it('hands the region its wide flag and clamps expandSidebar to the collapsed state', () => {

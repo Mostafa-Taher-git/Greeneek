@@ -35,16 +35,6 @@ const COLLAPSE_SETTLE_MS = 150
  */
 const SCROLLBAR_LINGER_MS = 2000
 
-/** Format complete-build metadata for the local brand badge. */
-function localBuildVersion(): string | undefined {
-  const version = process.env.GNK_CLIENT_VERSION
-  if (version === undefined) return undefined
-  const commit = process.env.GNK_CLIENT_COMMIT_HASH
-  return version
-    + (commit === undefined ? '' : `-${commit}`)
-    + (process.env.GNK_CLIENT_GIT_DIRTY === 'true' ? '-dirty' : '')
-}
-
 /**
  * Render the sidebar column shell.
  * @param props - composed slot props (runtime share + injected callbacks, contract/slots.ts).
@@ -122,8 +112,6 @@ export function SidebarRoot({
     }
   }, [pointerInside])
 
-  const buildVersion = localBuildVersion()
-
   return (
     <div
       ref={column}
@@ -139,50 +127,43 @@ export function SidebarRoot({
       onPointerLeave={() => { armLinger() }}
     >
       <div className={css.logoRow}>
-        {wide ? (
-          <button
-            type="button"
-            className={clsx(css.brand, css.wide)}
-            aria-label={t('session.new.label')}
-            onClick={() => { startSession() }}
-          >
-            <span className={css.brandIdentity} aria-hidden="true">
-              <span className={css.brandMark}>
-                {renderSlot('sidebar.brand.mark', { size: 24 }, { fallback: <FishLogo size={24} /> })}
-              </span>
+        <button
+          type="button"
+          className={clsx(css.brand, wide && css.wide)}
+          aria-label={t('brand.home')}
+          onClick={() => { startSession() }}
+          onMouseEnter={() => { if (!wide) toggleSidebar() }}
+          onFocus={() => { if (!wide) toggleSidebar() }}
+        >
+          <span className={css.brandIdentity} aria-hidden="true">
+            <span className={css.brandMark}>
+              {renderSlot('sidebar.brand.mark', { size: 24 }, { fallback: <FishLogo size={24} /> })}
+            </span>
+            {wide && (
               <span className={css.brandName}>
                 {renderSlot('sidebar.brand.name', {}, {
-                  fallback: buildVersion === undefined
-                    ? <span className={css.fallbackBrandName}>{t('brand.localBuild')}</span>
-                    : (
-                      <span className={css.localBuildBrand}>
-                        <span className={css.localBuildTitle}>{t('brand.localBuild')}</span>
-                        <span className={css.buildVersion}>{buildVersion}</span>
-                      </span>
-                    ),
+                  fallback: <span className={css.fallbackBrandName}>Greeneek</span>,
                 })}
               </span>
-            </span>
-          </button>
-        ) : (
-          <span className={css.railMark} aria-hidden="true">
-            {renderSlot('sidebar.brand.mark', { size: 24 }, { fallback: <FishLogo size={24} /> })}
+            )}
           </span>
-        )}
+        </button>
       </div>
 
       {/* Expanded, the button carries its own label — tooltip only on the rail. */}
-      <Tooltip label={t('session.new.label')} delayMs={500} disabled={wide}>
-        <button
-          type="button"
-          className={css.newSession}
-          aria-label={t('session.new.label')}
-          onClick={() => { startSession() }}
-        >
-          <IconNewChatOutline16 size={wide ? 14 : 18} />
-          {wide && <span className={clsx(css.newSessionLabel, css.wide)}>{t('session.new')}</span>}
-        </button>
-      </Tooltip>
+      {wide && (
+        <Tooltip label={t('session.new.label')} delayMs={500} disabled={wide}>
+          <button
+            type="button"
+            className={css.newSession}
+            aria-label={t('session.new.label')}
+            onClick={() => { startSession() }}
+          >
+            <IconNewChatOutline16 size={14} />
+            <span className={clsx(css.newSessionLabel, css.wide)}>{t('session.new')}</span>
+          </button>
+        </Tooltip>
+      )}
 
       {/* The browsing region fills the column between the controls and the
           foot in both states; its rail icon column rides the same slot. */}

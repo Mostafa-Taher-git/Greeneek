@@ -27,6 +27,8 @@
   line-height: 20px;
   font-weight: 500;
   cursor: pointer;
+  max-width: min(420px, 60cqw);
+  text-wrap: pretty;
 }
 
 .trigger:hover:not(:disabled) {
@@ -49,10 +51,11 @@
   white-space: nowrap;
 }
 
-/* Effort value beside the model name (mock's 'High': same 13/20/500, caption tone). */
+/* Effort value beside the model name. */
 .triggerEffort {
   flex: 0 0 auto;
   color: var(--dsw-alias-label-caption);
+  white-space: nowrap;
 }
 
 .chevron {
@@ -76,8 +79,8 @@
      and narrow screens inside a bounded card where ellipsis remains. */
   width: max-content;
   min-width: min(240px, calc(100vw - 32px));
-  max-width: min(420px, calc(100vw - 32px));
-  max-height: min(360px, calc(100vh - 96px));
+  width: min(420px, calc(100vw - 32px));
+  max-height: min(420px, calc(100vh - 96px));
   overflow: hidden;
   padding: 4px;
   /* Surface tokens match the Menu primitive card (ui-primitives
@@ -250,13 +253,13 @@
   color: var(--dsw-alias-label-primary);
 }
 
-/* Effort picker: the levels sit in one wrapping segmented group instead of
-   menu rows — every level is visible at once and one tap selects. */
+/* Effort picker: wrapping segmented group that can grow to two lines. */
 .effortSegments {
   display: flex;
   flex-wrap: wrap;
   padding: 4px;
   gap: 4px;
+  max-width: 100%;
 }
 
 .effortSegment {
@@ -292,53 +295,39 @@
   color: var(--dsw-alias-bg-layer-1);
 }
 
-/* The Model pane widens to fit the list beside the detail sidecar. */
-.menuWide {
-  min-width: min(560px, calc(100vw - 32px));
-  max-width: min(680px, calc(100vw - 32px));
-}
-
-.modelColumns {
+/* Single combined panel so model and effort share one scrollable pane. */
+.panelColumns {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   min-height: 0;
+  gap: 8px;
 }
 
-@media (max-width: 560px) {
-  .modelColumns {
-    flex-direction: column;
-  }
-}
-
-/* The list column stays compact (single-line rows now); the detail
-   sidecar takes the freed space. */
-.modelList {
+.panelList {
   display: flex;
-  flex: 0 0 230px;
   flex-direction: column;
   min-width: 0;
   min-height: 0;
+  max-height: min(320px, 50vh);
+  overflow: auto;
 }
 
-/* Detail sidecar: the previewed model's info and its real effort levels,
-   separated from the list by the same hairline as the search. */
+/* Detail panel: model info + real effort levels in the same panel. */
 .detail {
   display: flex;
-  flex: 1 1 auto;
+  flex: none;
   flex-direction: column;
   min-width: 0;
-  padding: 4px 4px 4px 12px;
-  border-left: 0.5px solid var(--dsw-alias-border-l1);
+  width: 100%;
+  padding: 4px;
+  border-top: 0.5px solid var(--dsw-alias-border-l1);
   gap: 4px;
 }
 
-@media (max-width: 560px) {
-  .detail {
-    flex-basis: auto;
-    border-left: none;
-    border-top: 0.5px solid var(--dsw-alias-border-l1);
-    padding: 8px 4px 0;
-  }
+.detailEmpty {
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 13px;
+  line-height: 20px;
 }
 
 .detailTitle {
@@ -380,9 +369,7 @@
   font-weight: 500;
 }
 
-/* Two-level root cells (figma 496:26454 .Menu_cell): 40px row, 10px side
-   padding, 8px gap, 10px radius; 14/22 label in primary, value in the
-   #81858C tertiary tone, right chevron drilling into the sub-list. */
+/* Retained for compatibility; root cells are no longer rendered. */
 .cell {
   box-sizing: border-box;
   display: flex;

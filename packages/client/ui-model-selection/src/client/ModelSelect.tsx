@@ -22,7 +22,7 @@ import {
 import clsx from 'clsx'
 import type { ModelReasoning, ModelReasoningEffort, ModelSelection } from '@greeneek/gnk-api-remotes/client'
 import {
-  IconCheckOutline16, IconChevronDownOutline14, IconChevronRightOutline14,
+  IconCheckOutline16, IconChevronDownOutline14,
   IconSearchOutline16, IconWarningOutline16, Toast,
 } from '@greeneek/gnk-client-ui-primitives'
 import type { PropsLocale } from '@greeneek/gnk-client-ui-slots'
@@ -30,8 +30,6 @@ import type { ModelSelectInjected } from './slots.ts'
 import type { ModelKey } from './locales.ts'
 import css from './ModelSelect.module.css'
 
-/** Which pane the dropdown shows: the two-row root or one drilled-in list. */
-type Pane = 'root' | 'model' | 'effort'
 /** One dynamic effort row; undefined means preserve the provider default. */
 interface EffortChoice {
   key: string
@@ -79,8 +77,7 @@ export function ModelSelect(
     () => directory.getSnapshot(),
   )
   const [open, setOpen] = useState(false)
-  const [pane, setPane] = useState<Pane>('root')
-  // Model-pane search narrows the provider-grouped list by name,
+  // The menu is always a single combined panel; pane state is no longer needed.
   // description, or provider; it resets whenever the menu opens or closes
   // so a stale filter never greets the next open.
   const [query, setQuery] = useState('')
@@ -123,8 +120,6 @@ export function ModelSelect(
     : effectiveEffort === undefined
       ? t('effort.providerDefault')
       : reasoning.efforts.find(level => level.id === effectiveEffort)?.name ?? effectiveEffort
-  const effortChoices = useMemo<readonly EffortChoice[]>(
-    () => reasoningChoices(reasoning, t), [reasoning, t])
   const busy = state.status === 'selecting'
 
   // The search narrows rows by model name, catalog description, or provider
@@ -196,7 +191,6 @@ export function ModelSelect(
   if (!available) return null
 
   const show = (): void => {
-    setPane('root')
     setQuery('')
     setPreviewKey(null)
     setOpen(true)
@@ -205,7 +199,6 @@ export function ModelSelect(
 
   const close = (restoreFocus = false): void => {
     setOpen(false)
-    setPane('root')
     setQuery('')
     setPreviewKey(null)
     if (restoreFocus) queueMicrotask(() => { triggerRef.current?.focus() })
@@ -228,9 +221,7 @@ export function ModelSelect(
         setQuery('')
         return
       }
-      // Escape backs out of a drilled pane first, then closes.
-      if (pane !== 'root') setPane('root')
-      else close(true)
+      close(true)
       return
     }
     if (!open) return
@@ -356,182 +347,127 @@ export function ModelSelect(
       {open && (
         <div
           id={`${id}-menu`}
-          className={clsx(css.menu, pane === 'model' && css.menuWide)}
-          role="menu"
+          className={css.menu}
+          role="dialog"
           aria-label={t('menu.aria')}
           aria-busy={state.status === 'loading' || busy}
         >
-          {pane === 'root' && (
-            <>
-              <button ref={itemRef()} type="button" role="menuitem" className={css.cell} onClick={() => { setPane('model') }}>
-                <span className={css.cellLabel}>{t('menu.model')}</span>
-                <span className={css.cellValue}>{modelLabel}</span>
-                <IconChevronRightOutline14 className={css.cellChevron} />
-              </button>
-              {reasoning !== undefined && (
-                <button ref={itemRef()} type="button" role="menuitem" className={css.cell} onClick={() => { setPane('effort') }}>
-                  <span className={css.cellLabel}>{t('menu.effort')}</span>
-                  <span className={css.cellValue}>{effortLabel}</span>
-                  <IconChevronRightOutline14 className={css.cellChevron} />
-                </button>
-              )}
-            </>
+          {state.status === 'loading' && (
+            <div className={css.status}>{t('status.loading')}</div>
           )}
-
-          {pane === 'model' && (
-            <>
-              {state.status === 'loading' && (
-                <div className={css.status}>{t('status.loading')}</div>
-              )}
-              {state.error !== null && lastActionRef.current === 'load' && (
-                <div className={css.error}>
-                  <span>{t('error.action', { message: state.error })}</span>
-                  <button type="button" className={css.retry} onClick={reload}>{t('retry')}</button>
-                </div>
-              )}
-              {state.failures.map(failure => (
-                <div className={css.warning} key={failure.id}>
-                  <span>{t('warning.groupLoad', { name: failure.name, message: failure.message })}</span>
-                  <button type="button" className={css.retry} onClick={reload}>{t('retry')}</button>
-                </div>
-              ))}
-              <div className={css.modelColumns}>
-                <div className={css.modelList}>
-                  <div className={css.search}>
-                    <IconSearchOutline16 className={css.searchIcon} />
-                    <input
-                      ref={searchRef}
-                      type="search"
-                      className={css.searchInput}
-                      aria-label={t('model.searchAria')}
-                      placeholder={t('model.searchPlaceholder')}
-                      value={query}
-                      disabled={busy}
-                      onChange={(event) => { setQuery(event.target.value) }}
-                    />
-                  </div>
-                  <div className={clsx(css.groups, 'scrollable')}>
-                    {filteredSections.map(({ group, models }) => {
-                      const headingId = `${id}-${group.id}`
-                      return (
-                        <section role="group" aria-labelledby={headingId} className={css.group} key={group.id}>
-                          <div className={css.groupTitle} id={headingId}>{group.name}</div>
-                          {models.map((model) => {
-                            const selected = state.current?.provider === group.id
-                              && state.current.model === model.id
-                            const key = `${group.id}/${model.id}`
-                            return (
-                              <button
-                                ref={itemRef()}
-                                type="button"
-                                role="menuitemradio"
-                                aria-checked={selected}
-                                className={clsx(css.option, selected && css.selected)}
-                                key={model.id}
-                                title={model.name}
-                                disabled={busy}
-                                onClick={() => { choose({ provider: group.id, model: model.id }) }}
-                                onMouseEnter={() => { setPreviewKey(key) }}
-                                onFocus={() => { setPreviewKey(key) }}
-                              >
-                                <span className={css.optionCopy}>
-                                  <span className={css.modelName}>{model.name}</span>
-                                </span>
-                                <span className={css.check}>
-                                  {selected ? <IconCheckOutline16 /> : null}
-                                </span>
-                              </button>
-                            )
-                          })}
-                        </section>
-                      )
-                    })}
-                  </div>
-                  {state.status === 'ready' && choices.length === 0 && (
-                    <div className={css.empty}>{t('empty.models')}</div>
-                  )}
-                  {needle !== '' && filteredChoices.length === 0 && (
-                    <div className={css.empty}>{t('model.emptySearch')}</div>
-                  )}
-                </div>
-                {previewChoice !== undefined && (
-                  <div aria-label={t('panel.detailAria')} className={css.detail}>
-                    <p className={css.detailTitle}>{previewChoice.model.name}</p>
-                    <p className={css.detailProvider}>{previewChoice.group.name}</p>
-                    {previewChoice.model.description !== undefined && (
-                      <p className={css.detailDescription}>{previewChoice.model.description}</p>
-                    )}
-                    {previewEffortChoices.length > 0 && (
-                      <div className={css.detailEffort}>
-                        <p className={css.detailEffortTitle}>{t('menu.effort')}</p>
-                        <div
-                          aria-label={t('menu.effort')}
-                          className={css.effortSegments}
-                          role="radiogroup"
-                        >
-                          {previewEffortChoices.map((choice) => {
-                            const checked = previewEffort === choice.effort
-                            return (
-                              <button
-                                ref={itemRef()}
-                                type="button"
-                                role="radio"
-                                aria-checked={checked}
-                                className={clsx(css.effortSegment, checked && css.effortSegmentChecked)}
-                                key={choice.key}
-                                disabled={busy}
-                                onClick={() => { choosePreviewEffort(choice.effort) }}
-                              >
-                                {choice.label}
-                              </button>
-                            )
-                          })}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
+          {state.error !== null && lastActionRef.current === 'load' && (
+            <div className={css.error}>
+              <span>{t('error.action', { message: state.error })}</span>
+              <button type="button" className={css.retry} onClick={reload}>{t('retry')}</button>
+            </div>
+          )}
+          {state.failures.map(failure => (
+            <div className={css.warning} key={failure.id}>
+              <span>{t('warning.groupLoad', { name: failure.name, message: failure.message })}</span>
+              <button type="button" className={css.retry} onClick={reload}>{t('retry')}</button>
+            </div>
+          ))}
+          <div className={css.panelColumns}>
+            <div className={css.panelList}>
+              <div className={css.search}>
+                <IconSearchOutline16 className={css.searchIcon} />
+                <input
+                  ref={searchRef}
+                  type="search"
+                  className={css.searchInput}
+                  aria-label={t('model.searchAria')}
+                  placeholder={t('model.searchPlaceholder')}
+                  value={query}
+                  disabled={busy}
+                  onChange={(event) => { setQuery(event.target.value) }}
+                />
               </div>
-            </>
-          )}
-
-          {pane === 'effort' && (
-            <>
-              {state.error !== null && lastActionRef.current === 'load' && (
-                <div className={css.error}>
-                  <span>{t('error.action', { message: state.error })}</span>
-                  <button type="button" className={css.retry} onClick={reload}>{t('action.reload')}</button>
-                </div>
+              <div className={clsx(css.groups, 'scrollable')}>
+                {filteredSections.map(({ group, models }) => {
+                  const headingId = `${id}-${group.id}`
+                  return (
+                    <section role="group" aria-labelledby={headingId} className={css.group} key={group.id}>
+                      <div className={css.groupTitle} id={headingId}>{group.name}</div>
+                      {models.map((model) => {
+                        const selected = state.current?.provider === group.id
+                          && state.current.model === model.id
+                        const key = `${group.id}/${model.id}`
+                        return (
+                          <button
+                            ref={itemRef()}
+                            type="button"
+                            role="menuitemradio"
+                            aria-checked={selected}
+                            className={clsx(css.option, selected && css.selected)}
+                            key={model.id}
+                            title={model.name}
+                            disabled={busy}
+                            onClick={() => { choose({ provider: group.id, model: model.id }) }}
+                            onMouseEnter={() => { setPreviewKey(key) }}
+                            onFocus={() => { setPreviewKey(key) }}
+                          >
+                            <span className={css.optionCopy}>
+                              <span className={css.modelName}>{model.name}</span>
+                            </span>
+                            <span className={css.check}>
+                              {selected ? <IconCheckOutline16 /> : null}
+                            </span>
+                          </button>
+                        )
+                      })}
+                    </section>
+                  )
+                })}
+              </div>
+              {state.status === 'ready' && choices.length === 0 && (
+                <div className={css.empty}>{t('empty.models')}</div>
               )}
-              {effortChoices.length === 0
-                ? <div className={css.empty}>{t('empty.efforts')}</div>
-                : (
-                  <div
-                    aria-label={t('menu.effort')}
-                    className={css.effortSegments}
-                    role="radiogroup"
-                  >
-                    {effortChoices.map((choice) => {
-                      const checked = effectiveEffort === choice.effort
-                      return (
-                        <button
-                          ref={itemRef()}
-                          type="button"
-                          role="radio"
-                          aria-checked={checked}
-                          className={clsx(css.effortSegment, checked && css.effortSegmentChecked)}
-                          key={choice.key}
-                          disabled={busy}
-                          onClick={() => { chooseEffort(choice.effort) }}
-                        >
-                          {choice.label}
-                        </button>
-                      )
-                    })}
-                  </div>
-                )}
-            </>
-          )}
+              {needle !== '' && filteredChoices.length === 0 && (
+                <div className={css.empty}>{t('model.emptySearch')}</div>
+              )}
+            </div>
+            <div aria-label={t('panel.detailAria')} className={css.detail}>
+              {previewChoice !== undefined ? (
+                <>
+                  <p className={css.detailTitle}>{previewChoice.model.name}</p>
+                  <p className={css.detailProvider}>{previewChoice.group.name}</p>
+                  {previewChoice.model.description !== undefined && (
+                    <p className={css.detailDescription}>{previewChoice.model.description}</p>
+                  )}
+                  {previewEffortChoices.length > 0 && (
+                    <div className={css.detailEffort}>
+                      <p className={css.detailEffortTitle}>{t('menu.effort')}</p>
+                      <div
+                        aria-label={t('menu.effort')}
+                        className={css.effortSegments}
+                        role="radiogroup"
+                      >
+                        {previewEffortChoices.map((choice) => {
+                          const checked = previewEffort === choice.effort
+                          return (
+                            <button
+                              ref={itemRef()}
+                              type="button"
+                              role="radio"
+                              aria-checked={checked}
+                              className={clsx(css.effortSegment, checked && css.effortSegmentChecked)}
+                              key={choice.key}
+                              disabled={busy}
+                              onClick={() => { choosePreviewEffort(choice.effort) }}
+                            >
+                              {choice.label}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className={css.detailEmpty}>{t('status.loading')}</div>
+              )}
+            </div>
+          </div>
         </div>
       )}
       {toast !== null && (

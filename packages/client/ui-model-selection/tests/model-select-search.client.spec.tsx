@@ -71,7 +71,6 @@ function openModelPane(directory = createSnapshotStore(state())): void {
     t={t}
   />)
   fireEvent.click(screen.getByRole('button', { name: /Acme Flash/ }))
-  fireEvent.click(screen.getByRole('menuitem', { name: /模型/ }))
 }
 
 afterEach(cleanup)
@@ -109,7 +108,7 @@ describe('ModelSelect model search', () => {
     expect(screen.queryByRole('menuitemradio')).toBeNull()
   })
 
-  it('clears the filter on the first Escape and backs out on the second', () => {
+  it('clears the filter on the first Escape and closes on the second', () => {
     openModelPane()
     const search = screen.getByLabelText('搜索模型')
     fireEvent.change(search, { target: { value: 'pro' } })
@@ -119,7 +118,7 @@ describe('ModelSelect model search', () => {
     expect(screen.getByRole('menuitemradio', { name: /Acme Flash/ })).toBeDefined()
     fireEvent.keyDown(screen.getByLabelText('搜索模型'), { key: 'Escape' })
     expect(screen.queryByLabelText('搜索模型')).toBeNull()
-    expect(screen.getByRole('menuitem', { name: /模型/ })).toBeDefined()
+    expect(screen.queryByRole('menuitemradio', { name: /Acme Flash/ })).toBeNull()
   })
 
   it('jumps from the search box to the first row on ArrowDown', () => {
@@ -144,15 +143,12 @@ describe('ModelSelect model search', () => {
     />)
     const trigger = screen.getByRole('button', { name: /Acme Flash/ })
     fireEvent.click(trigger)
-    fireEvent.click(screen.getByRole('menuitem', { name: /模型/ }))
     const search = screen.getByLabelText('搜索模型')
     fireEvent.change(search, { target: { value: 'pro' } })
     search.focus()
     fireEvent.keyDown(search, { key: 'Escape' })
     fireEvent.keyDown(screen.getByRole('menuitemradio', { name: /Acme Pro/ }), { key: 'Escape' })
     fireEvent.click(trigger)
-    fireEvent.click(trigger)
-    fireEvent.click(screen.getByRole('menuitem', { name: /模型/ }))
     expect(screen.getByDisplayValue('')).toBeDefined()
     expect(screen.getByRole('menuitemradio', { name: /Acme Flash/ })).toBeDefined()
   })
@@ -172,7 +168,6 @@ describe('ModelSelect model search', () => {
       t={t}
     />)
     fireEvent.click(screen.getByRole('button', { name: /Acme Flash/ }))
-    fireEvent.click(screen.getByRole('menuitem', { name: /模型/ }))
     fireEvent.change(screen.getByLabelText('搜索模型'), { target: { value: 'mini' } })
     fireEvent.click(screen.getByRole('menuitemradio', { name: /Other Mini/ }))
     expect(select).toHaveBeenCalledWith({ provider: 'other', model: 'mini' })
@@ -181,13 +176,13 @@ describe('ModelSelect model search', () => {
     })
   })
 
-  it('previews the hovered row in the detail sidecar', () => {
+  it('previews the hovered row in the detail panel', () => {
     openModelPane()
     const detail = screen.getByLabelText('模型详情')
-    expect(within(detail).getByText('Acme Flash')).toBeDefined()
+    expect(detail.textContent).toContain('Acme Flash')
     fireEvent.mouseEnter(screen.getByRole('menuitemradio', { name: /Other Mini/ }))
-    expect(within(screen.getByLabelText('模型详情')).getByText('Other Mini')).toBeDefined()
-    expect(within(screen.getByLabelText('模型详情')).getByText('Other')).toBeDefined()
+    expect(detail.textContent).toContain('Other Mini')
+    expect(detail.textContent).toContain('Other')
   })
 
   it('taps a previewed effort on the current model like the Effort pane', async () => {
@@ -205,7 +200,6 @@ describe('ModelSelect model search', () => {
       t={t}
     />)
     fireEvent.click(screen.getByRole('button', { name: /Acme Flash/ }))
-    fireEvent.click(screen.getByRole('menuitem', { name: /模型/ }))
     const detail = screen.getByLabelText('模型详情')
     expect(within(detail).getByRole('radio', { name: 'Medium' }).getAttribute('aria-checked')).toBe('true')
     fireEvent.click(within(detail).getByRole('radio', { name: 'High' }))
@@ -234,7 +228,6 @@ describe('ModelSelect model search', () => {
       t={t}
     />)
     fireEvent.click(screen.getByRole('button', { name: /Acme Flash/ }))
-    fireEvent.click(screen.getByRole('menuitem', { name: /模型/ }))
     fireEvent.mouseEnter(screen.getByRole('menuitemradio', { name: /Acme Pro/ }))
     const detail = screen.getByLabelText('模型详情')
     expect(within(detail).getByText('Acme Pro')).toBeDefined()

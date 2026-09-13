@@ -78,7 +78,6 @@ describe('ModelSelect reasoning effort', () => {
       name: '选择模型，当前 Greeneek-V4-Flash，推理等级 High',
     })
     fireEvent.click(trigger)
-    fireEvent.click(screen.getByRole('menuitem', { name: /推理等级/ }))
     // Every declared level is offered under its own name, in declaration
     // order — nothing hidden, nothing re-ranked. Descriptions never render.
     const rows = screen.getAllByRole('radio')
@@ -127,8 +126,7 @@ describe('ModelSelect reasoning effort', () => {
     fireEvent.click(screen.getByRole('button', {
       name: '选择模型，当前 Model，推理等级 Default',
     }))
-    fireEvent.click(screen.getByRole('menuitem', { name: /推理等级/ }))
-    // Provider default is the first segment when the adapter configures no default.
+    // Combined panel: effort chips render directly.
     const rows = screen.getAllByRole('radio')
     expect(rows.map(row => row.textContent)).toEqual(['Default', 'Standard'])
     expect(screen.getByRole('radio', { name: 'Default' }).getAttribute('aria-checked')).toBe('true')
@@ -174,10 +172,7 @@ describe('ModelSelect reasoning effort', () => {
     fireEvent.click(screen.getByRole('button', {
       name: '选择模型，当前 Greeneek-V4-Flash，推理等级 Medium',
     }))
-    fireEvent.click(screen.getByRole('menuitem', { name: /推理等级/ }))
-    // Whatever the provider declares for the model — max, ultra, low,
-    // provider-specific ids — is offered under its real name, in the
-    // provider's own order. The client hides nothing and re-ranks nothing.
+    // Combined panel: model rows and effort chips render together.
     const rows = screen.getAllByRole('radio')
     expect(rows.map(row => row.textContent)).toEqual(['Max', 'Ultra', 'Off', 'Low', 'Minimal', 'Standard', 'Medium', 'High'])
   })
@@ -200,7 +195,6 @@ describe('ModelSelect reasoning effort', () => {
     expect(trigger.textContent).toContain('greeneek-official/removed-model')
     fireEvent.click(trigger)
     expect(screen.queryByRole('menuitem', { name: /推理等级/ })).toBeNull()
-    fireEvent.click(screen.getByRole('menuitem', { name: /模型/ }))
     expect(screen.queryByRole('menuitemradio', { name: 'removed-model' })).toBeNull()
     expect(screen.getByRole('menuitemradio', { name: /Greeneek-V4-Flash/ })).toBeTruthy()
     // Rows stay single-line: the description lives only in the detail
@@ -258,7 +252,6 @@ describe('ModelSelect reasoning effort', () => {
     />)
 
     fireEvent.click(screen.getByRole('button', { name: /选择模型|当前/ }))
-    fireEvent.click(screen.getByRole('menuitem', { name: /模型/ }))
     fireEvent.click(screen.getByRole('menuitemradio', { name: /Greeneek-V4-Pro/ }))
     const toast = await screen.findByRole('alert')
     expect(toast.textContent).toContain('模型操作失败：session/model-unavailable: session already contains images')

@@ -67,33 +67,32 @@ describe.skipIf(MODE === 'record')('web e2e: declared reasoning efforts reach th
     await trigger.click()
     await page.getByRole('menuitem', { name: /推理等级/ }).click()
 
-    // One named row per level in canonical order: the provider-default entry
-    // (the route configures no `reasoning`), then Low/Medium/High/Extra
-    // High/Max. `off` is declared but never a row — disabling reasoning is
-    // not a level. (`minimal` is not declared: the schema rejects it, proven
-    // by the host config spec, so there is nothing for the surface to hide
-    // here.) Rows carry their own text, so the six-level vocabulary is
-    // proven by menu text, not by control chrome.
+    // One named segment per declared level, in declaration order: the
+    // provider-default entry (the route configures no `reasoning`), then
+    // every declared id under its real name — including `off`, which the
+    // profile declares as a supported level that sends nothing. Segments
+    // carry their own text, so the vocabulary is proven by menu text, not
+    // by control chrome.
     const menu = page.getByRole('menu')
     for (const [name, checked] of [
       ['Default', 'true'],
+      ['Off', 'false'],
       ['Low', 'false'],
       ['Medium', 'false'],
       ['High', 'false'],
       ['Extra High', 'false'],
       ['Max', 'false'],
     ] as const) {
-      const row = menu.getByRole('menuitemradio', { name, exact: true })
+      const row = menu.getByRole('radio', { name, exact: true })
       await expect.poll(async () => row.count()).toBe(1)
       await expect.poll(async () => row.getAttribute('aria-checked')).toBe(checked)
     }
-    await expect.poll(async () => menu.getByText('Off', { exact: true }).count()).toBe(0)
     const snapshot = await captureStableAria(page, '[role="menu"]', scaffold.workspaceCwd)
     await compareOrRefreshGolden(UI_EXPECTED, snapshot, MODE)
 
     // Picking a level is the same gesture that saves the default selection, so
     // the effort lands in the Agent default Settings section beside provider/model.
-    await menu.getByRole('menuitemradio', { name: 'High', exact: true }).click()
+    await menu.getByRole('radio', { name: 'High', exact: true }).click()
     await expect.poll(
       async () => readFile(join(scaffold.harnessHome, 'settings.yaml'), 'utf8'),
       { timeout: 10_000 },
@@ -101,7 +100,7 @@ describe.skipIf(MODE === 'record')('web e2e: declared reasoning efforts reach th
     await expect.poll(() => trigger.getAttribute('aria-label'), { timeout: 10_000 })
       .toBe('选择模型，当前 Acme Think，推理等级 High')
     // List rows are single-shot: picking one dismisses the menu.
-    await expect.poll(async () => menu.getByRole('menuitemradio', { name: 'High', exact: true }).count()).toBe(0)
+    await expect.poll(async () => menu.getByRole('radio', { name: 'High', exact: true }).count()).toBe(0)
     expect(tripwire.pageErrors).toEqual([])
   }, 60_000)
 

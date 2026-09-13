@@ -1,9 +1,9 @@
 - menu "模型与推理等级":
-  - menuitemradio "Default" [checked]:
-    - text: Default
-    - img
-  - menuitemradio "Low"
-  - menuitemradio "Medium"
-  - menuitemradio "High"
-  - menuitemradio "Extra High"
-  - menuitemradio "Max"
+  - radiogroup "推理等级":
+    - radio "Default" [checked]
+    - radio "Off"
+    - radio "Low"
+    - radio "Medium"
+    - radio "High"
+    - radio "Extra High"
+    - radio "Max"

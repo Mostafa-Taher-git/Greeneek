@@ -28,7 +28,6 @@ import {
 import type { PropsLocale } from '@greeneek/gnk-client-ui-slots'
 import type { ModelSelectInjected } from './slots.ts'
 import type { ModelKey } from './locales.ts'
-import { compareEffortIds, isOfferedEffort } from './preview.ts'
 import css from './ModelSelect.module.css'
 
 /** Which pane the dropdown shows: the two-row root or one drilled-in list. */
@@ -41,10 +40,12 @@ interface EffortChoice {
 }
 
 /**
- * The model's real effort levels in canonical power-scale order, with a
- * leading Default row only when the adapter configures no model default.
- * Shared by the drilled Effort pane and the model detail sidecar so both
- * offer exactly what the Host declares — never a client vocabulary.
+ * The model's effort levels exactly as the Host declares them — ids and
+ * names verbatim, in declaration order — with a leading Default row only
+ * when the adapter configures no model default. Shared by the drilled
+ * Effort pane and the model detail sidecar: the user gets the provider's
+ * real levels under their real names, never a client-side vocabulary, and
+ * nothing declared is hidden or re-ranked.
  */
 function reasoningChoices(
   reasoning: ModelReasoning | undefined,
@@ -55,14 +56,11 @@ function reasoningChoices(
     ...reasoning.defaultEffort === undefined
       ? [{ key: 'provider-default', effort: undefined, label: t('effort.providerDefault') }]
       : [],
-    ...reasoning.efforts
-      .filter((effort: ModelReasoningEffort) => isOfferedEffort(effort.id))
-      .sort((a, b) => compareEffortIds(a.id, b.id))
-      .map((effort: ModelReasoningEffort) => ({
-        key: `effort:${effort.id}`,
-        effort: effort.id,
-        label: effort.name,
-      })),
+    ...reasoning.efforts.map((effort: ModelReasoningEffort) => ({
+      key: `effort:${effort.id}`,
+      effort: effort.id,
+      label: effort.name,
+    })),
   ]
 }
 

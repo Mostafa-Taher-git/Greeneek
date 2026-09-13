@@ -79,12 +79,11 @@ describe('ModelSelect reasoning effort', () => {
     })
     fireEvent.click(trigger)
     fireEvent.click(screen.getByRole('menuitem', { name: /推理等级/ }))
-    // One named segment per level in canonical order however the model
-    // declares them; `off`/`minimal` are not offered and descriptions never
-    // render.
+    // Every declared level is offered under its own name, in declaration
+    // order — nothing hidden, nothing re-ranked. Descriptions never render.
     const rows = screen.getAllByRole('radio')
-    expect(rows.map(row => row.textContent)).toEqual(['Low', 'Medium', 'High', 'Extra High', 'Max'])
-    for (const absent of ['Off', 'Minimal', 'Largest budget', 'Default']) {
+    expect(rows.map(row => row.textContent)).toEqual(['Max', 'Off', 'Low', 'Minimal', 'Extra High', 'Medium', 'High'])
+    for (const absent of ['Largest budget', 'Default']) {
       expect(screen.queryByText(absent)).toBeNull()
     }
     expect(screen.getByRole('radio', { name: 'High' }).getAttribute('aria-checked')).toBe('true')
@@ -138,7 +137,7 @@ describe('ModelSelect reasoning effort', () => {
     expect(screen.getByText('Standard')).toBeTruthy()
   })
 
-  it('offers only selectable levels with Max last, never Ultra', () => {
+  it('offers every declared level verbatim, in declaration order', () => {
     const directory = createSnapshotStore(state({
       groups: [{
         id: 'greeneek-official',
@@ -176,15 +175,11 @@ describe('ModelSelect reasoning effort', () => {
       name: '选择模型，当前 Greeneek-V4-Flash，推理等级 Medium',
     }))
     fireEvent.click(screen.getByRole('menuitem', { name: /推理等级/ }))
-    // `off` disables reasoning, `minimal` sits below the scale floor, and
-    // `ultra` is Max's wire spelling — none is a selectable level. The
-    // provider-specific `standard` keeps its place below Max, which closes
-    // the scale as the highest offered effort.
+    // Whatever the provider declares for the model — max, ultra, low,
+    // provider-specific ids — is offered under its real name, in the
+    // provider's own order. The client hides nothing and re-ranks nothing.
     const rows = screen.getAllByRole('radio')
-    expect(rows.map(row => row.textContent)).toEqual(['Low', 'Medium', 'High', 'Standard', 'Max'])
-    for (const absent of ['Off', 'Minimal', 'Ultra']) {
-      expect(screen.queryByText(absent)).toBeNull()
-    }
+    expect(rows.map(row => row.textContent)).toEqual(['Max', 'Ultra', 'Off', 'Low', 'Minimal', 'Standard', 'Medium', 'High'])
   })
 
   it('shows the durable model id when the catalog has no matching display name', () => {

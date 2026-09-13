@@ -66,8 +66,12 @@ function main() {
   // Optional release-tag version override: when provided, the staged app
   // manifest is rewritten to this version while the source manifest stays
   // untouched. This keeps CI builds aligned with the tag without dirtying
-  // the checked-in package.json.
-  const tagVersion = process.env.STAGE_DESKTOP_VERSION ?? undefined
+  // the checked-in package.json. Tags are normalized to plain semver so
+  // electron-builder never sees the `desktop-v` prefix.
+  const rawTagVersion = process.env.STAGE_DESKTOP_VERSION ?? undefined
+  const tagVersion = typeof rawTagVersion === 'string' && rawTagVersion.trim() !== ''
+    ? rawTagVersion.trim().replace(/^desktop-v/i, '')
+    : undefined
 
   // 1. Preconditions: the harness must be built before it can be staged.
   assertPresent(

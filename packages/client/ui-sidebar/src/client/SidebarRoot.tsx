@@ -132,8 +132,6 @@ export function SidebarRoot({
           className={clsx(css.brand, wide && css.wide)}
           aria-label={t('brand.home')}
           onClick={() => { startSession() }}
-          onMouseEnter={() => { if (!wide) toggleSidebar() }}
-          onFocus={() => { if (!wide) toggleSidebar() }}
         >
           <span className={css.brandIdentity} aria-hidden="true">
             <span className={css.brandMark}>

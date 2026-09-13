@@ -97,7 +97,8 @@ describe('ModelSelect reasoning effort', () => {
       })
       expect(trigger.getAttribute('aria-label')).toBe('选择模型，当前 Greeneek-V4-Flash，推理等级 Max')
     })
-    // List rows are single-shot: picking one dismisses the menu.
+    // Effort selection on the current model dismisses the menu; model list
+    // selection stays open so the user can keep browsing/choosing.
     expect(screen.queryByRole('radio', { name: 'Max' })).toBeNull()
   })
 

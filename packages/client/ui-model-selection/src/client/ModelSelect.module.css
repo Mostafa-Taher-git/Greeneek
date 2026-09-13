@@ -295,33 +295,36 @@
   color: var(--dsw-alias-bg-layer-1);
 }
 
-/* Single combined panel so model and effort share one scrollable pane. */
+/* Single combined panel: model list on the left, detail/info on the right. */
 .panelColumns {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   min-height: 0;
-  gap: 8px;
+  gap: 0;
 }
 
 .panelList {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  max-height: min(320px, 50vh);
+  max-height: min(420px, calc(100vh - 96px));
   overflow: auto;
 }
 
 /* Detail panel: model info + real effort levels in the same panel. */
 .detail {
   display: flex;
-  flex: none;
+  flex: 0 0 auto;
   flex-direction: column;
-  min-width: 0;
-  width: 100%;
-  padding: 4px;
-  border-top: 0.5px solid var(--dsw-alias-border-l1);
-  gap: 4px;
+  width: 220px;
+  min-width: 220px;
+  max-height: min(420px, calc(100vh - 96px));
+  overflow: hidden;
+  padding: 12px;
+  border-left: 0.5px solid var(--dsw-alias-border-l1);
+  gap: 8px;
 }
 
 .detailEmpty {
@@ -356,8 +359,6 @@
 .detailEffort {
   display: flex;
   flex-direction: column;
-  padding-top: 8px;
-  border-top: 0.5px solid var(--dsw-alias-border-l1);
   gap: 6px;
 }
 
@@ -367,6 +368,12 @@
   font-size: 12px;
   line-height: 16px;
   font-weight: 500;
+}
+
+.detailEffortSegments {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
 }
 
 /* Retained for compatibility; root cells are no longer rendered. */

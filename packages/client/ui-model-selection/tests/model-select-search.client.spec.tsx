@@ -153,7 +153,7 @@ describe('ModelSelect model search', () => {
     expect(screen.getByRole('menuitemradio', { name: /Acme Flash/ })).toBeDefined()
   })
 
-  it('selects through the filter and dismisses', async () => {
+  it('selects through the filter and keeps the panel open', async () => {
     const directory = createSnapshotStore<ModelDirectoryState>(state())
     const select = vi.fn(async (selection: ModelSelection) => {
       directory.set(state({ current: selection }))
@@ -171,9 +171,8 @@ describe('ModelSelect model search', () => {
     fireEvent.change(screen.getByLabelText('搜索模型'), { target: { value: 'mini' } })
     fireEvent.click(screen.getByRole('menuitemradio', { name: /Other Mini/ }))
     expect(select).toHaveBeenCalledWith({ provider: 'other', model: 'mini' })
-    await waitFor(() => {
-      expect(screen.queryByRole('menuitemradio', { name: /Other Mini/ })).toBeNull()
-    })
+    // Model selection no longer dismisses the menu; the filtered row remains visible.
+    expect(screen.getByRole('menuitemradio', { name: /Other Mini/ })).toBeDefined()
   })
 
   it('previews the hovered row in the detail panel', () => {

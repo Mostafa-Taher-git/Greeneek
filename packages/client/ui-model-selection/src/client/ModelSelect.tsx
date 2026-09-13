@@ -257,11 +257,10 @@ export function ModelSelect(
 
   const choose = (selection: ModelSelection): void => {
     if (state.current?.provider === selection.provider && state.current.model === selection.model) {
-      close(true)
       return
     }
     lastActionRef.current = 'select'
-    void select(selection).then(settleSelection)
+    void select(selection).then((accepted) => { settleSelection(accepted, false) })
   }
 
   const chooseEffort = (effort: string | undefined, dismiss = true): void => {
@@ -439,7 +438,7 @@ export function ModelSelect(
                       <p className={css.detailEffortTitle}>{t('menu.effort')}</p>
                       <div
                         aria-label={t('menu.effort')}
-                        className={css.effortSegments}
+                        className={clsx(css.effortSegments, css.detailEffortSegments)}
                         role="radiogroup"
                       >
                         {previewEffortChoices.map((choice) => {

@@ -390,6 +390,78 @@ describe('window chrome', () => {
     assert.ok(script.includes('apiOrWarn'))
     assert.ok(script.includes('preload bridge unavailable'))
   })
+
+  it('skips the overlay strip where the web UI owns the titlebar', async () => {
+    const { runInNewContext } = await import('node:vm')
+    const run = ({ webTitlebar }) => {
+      const byId = new Map()
+      const listeners = new Map()
+      const calls = []
+      const makeElement = (tag) => ({
+        tagName: tag,
+        dataset: {},
+        title: '',
+        innerHTML: '',
+        children: [],
+        setAttribute() {},
+        appendChild(child) {
+          this.children.push(child)
+          return child
+        },
+        addEventListener(type, listener) {
+          listeners.set(`${this.id ?? this.tagName}:${type}`, listener)
+        },
+        querySelector() { return null },
+      })
+      const documentElement = {
+        attrs: new Set(webTitlebar ? ['data-desktop-titlebar'] : []),
+        hasAttribute(name) { return this.attrs.has(name) },
+        appendChild(child) {
+          if (child.id !== undefined && child.id !== '') byId.set(child.id, child)
+          return child
+        },
+      }
+      const window = {
+        greeneekDesktop: {
+          windowMinimize() {},
+          windowToggleMaximize() { calls.push('toggle-maximize') },
+          windowClose() {},
+          windowIsMaximized: () => Promise.resolve({ maximized: false }),
+        },
+      }
+      const document = {
+        documentElement,
+        getElementById(id) { return byId.get(id) ?? null },
+        createElement(tag) {
+          const element = makeElement(tag)
+          const original = element.appendChild.bind(element)
+          element.appendChild = (child) => original(child)
+          return new Proxy(element, {
+            set(target, property, value) {
+              if (property === 'id' && typeof value === 'string' && value !== '') {
+                byId.set(value, target)
+              }
+              return Reflect.set(target, property, value)
+            },
+          })
+        },
+      }
+      const script = framelessTitlebarScript()
+      runInNewContext(script, { window, document, console })
+      runInNewContext(script, { window, document, console })
+      return { byId, listeners, calls, window }
+    }
+
+    const splash = run({ webTitlebar: false })
+    assert.ok(splash.byId.has('gnk-titlebar-strip'))
+    assert.ok(splash.byId.has('gnk-titlebar-controls'))
+    assert.equal(splash.byId.get('gnk-titlebar-controls').children.length, 3)
+
+    const web = run({ webTitlebar: true })
+    assert.ok(!web.byId.has('gnk-titlebar-strip'))
+    assert.ok(web.byId.has('gnk-titlebar-controls'))
+    assert.equal(typeof web.window.__gnkTitlebarSync, 'function')
+  })
 })
 
 describe('windows child-process hide', () => {

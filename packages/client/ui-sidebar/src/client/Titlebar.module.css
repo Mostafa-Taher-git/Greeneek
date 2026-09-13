@@ -1,0 +1,45 @@
+/* Desktop titlebar row (40px, mirrors FRAMELESS_TITLEBAR_HEIGHT): the bar
+   itself drags the window; only the toggle opts out. The right reserve
+   matches the desktop-injected window controls (3 x 46px) so no titlebar
+   content ever slides under them. Transparent over the frame base — the
+   Greeneek ink (tokens, panel glyph) carries the brand, no extra chrome. */
+
+.bar {
+  display: flex;
+  align-items: center;
+  height: 40px;
+  padding-left: 8px;
+  padding-right: calc(3 * 46px);
+  box-sizing: border-box;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+
+.toggle {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  corner-shape: round;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+.toggle:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.toggle:focus-visible {
+  outline: 2px solid var(--dsw-alias-border-l3);
+  outline-offset: 1px;
+}

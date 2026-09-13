@@ -299,6 +299,20 @@ describe('AppFrame', () => {
     expect(lastSidebarCall.props).toEqual({ collapsed: true, width: SIDEBAR_COLLAPSED })
   })
 
+  it('renders the titlebar slot only on the desktop host, tracking collapse', () => {
+    expect(mountFrame().slotCalls.some(c => c.key === 'titlebar')).toBe(false)
+    ;(globalThis as { greeneekDesktop?: unknown }).greeneekDesktop = {}
+    try {
+      const open = mountFrame()
+      expect(open.frame.hasAttribute('data-desktop-host')).toBe(true)
+      expect(open.slotCalls.filter(c => c.key === 'titlebar').at(-1)!.props).toEqual({ collapsed: false })
+      act(() => { open.instance.actions.toggleSidebar() })
+      expect(open.slotCalls.filter(c => c.key === 'titlebar').at(-1)!.props).toEqual({ collapsed: true })
+    } finally {
+      delete (globalThis as { greeneekDesktop?: unknown }).greeneekDesktop
+    }
+  })
+
   it('viewport shrink triggers the concession chain via ResizeObserver', () => {
     const { frame, instance } = mountFrame()
     act(() => { instance.actions.openDetails() })

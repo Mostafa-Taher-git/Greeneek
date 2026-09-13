@@ -29,17 +29,6 @@
   padding: 18px 10px 6px;
 }
 
-/* Frameless desktop shell: the rail background owns the window top edge, so
-   the content starts below the 40px drag strip. Mirrors
-   FRAMELESS_TITLEBAR_HEIGHT in apps/desktop/src/frameless-titlebar.js; same
-   release ships both. */
-.root[data-desktop-host] {
-  padding-top: calc(40px + 6px);
-}
-.root.collapsed[data-desktop-host] {
-  padding-top: calc(40px + 18px);
-}
-
 /* Scrollbars in the column are a pointer affordance: the shell adds this
    class whenever the pointer is not inside (SidebarRoot.tsx owns the linger),
    and rebinding ui-theme's indirection pair to `transparent` takes the thumb
@@ -69,12 +58,10 @@
   from { opacity: 0; }
 }
 
-/* At the 150ms rail settle, the four upper controls enter from the former
-   rail right edge over the remaining 150ms of the AppFrame track transition.
-   The bottom-pinned settings seat shares their opacity timeline but stays
-   horizontally fixed. Only a live collapse gets .railIn; a cold collapsed
-   render stays static. */
-.railIn .iconButton,
+/* At the 150ms rail settle, the rail controls enter over the remaining
+   150ms of the AppFrame track transition. The bottom-pinned settings seat
+   shares their opacity timeline but stays horizontally fixed. Only a live
+   collapse gets .railIn; a cold collapsed render stays static. */
 .railIn .newSession,
 .railIn .regionArea {
   animation: rail-in 150ms var(--ds-ease-in-out) backwards;
@@ -95,14 +82,13 @@
   from { opacity: 0; }
 }
 
-/* Logo row (figma pad (4,8,4,8)): expanded keeps the panel toggle at the
-   right edge; the rail gives every control the same base left anchor before
-   the shared entry translation is applied. */
+/* Logo row (figma pad (4,8,4,8)): the brand wordmark, or the static mark
+   on the rail (the fold toggle lives in the desktop titlebar). */
 .logoRow {
   flex: none;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 8px;
   height: 60px;
   padding: 8px 0 8px 4px;
@@ -187,56 +173,11 @@
   letter-spacing: 0;
 }
 
-.iconButton {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: none;
-  border-radius: 50%;
-  corner-shape: round;
-  padding: 0;
-  background: transparent;
-  cursor: pointer;
-  color: var(--dsw-alias-label-secondary);
-}
-
-.iconButton:hover {
-  background: var(--dsw-alias-interactive-bg-hover);
-}
-
-.collapsed .iconButton {
-  width: 36px;
-  height: 36px;
-}
-
-/* Rail logo swap: collapsed, the toggle rests as the whale mark (brand ink,
-   no hover circle) and hovering reveals the panel icon — the expand
-   affordance (figma sidebar-hover flow). Expanded it is a plain panel icon. */
-.collapsed .toggle .panelIcon {
-  display: none;
-}
-
-.collapsed .toggle:hover .panelIcon {
-  display: inline;
-}
-
-.collapsed .toggle:hover .railMark {
-  display: none;
-}
-
+/* Rail mark: the static brand glyph at the rail top. */
 .railMark {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-}
-
-/* Rail icons ride the primary ink (figma rail spec); expanded keeps the
-   secondary icon-button ink. */
-.collapsed .iconButton {
-  color: var(--dsw-alias-label-primary);
 }
 
 .buildVersion {
@@ -360,7 +301,6 @@
 @media (prefers-reduced-motion: reduce) {
   .wide,
   .fading > *,
-  .railIn .iconButton,
   .railIn .newSession,
   .railIn .footArea,
   .railIn .regionArea {

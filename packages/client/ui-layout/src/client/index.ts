@@ -36,7 +36,7 @@ declare module '@greeneek/cordis' {
 declare module '@greeneek/gnk-client-ui-slots' {
   interface SlotMap {
     // The 'root' entry itself is the runtime's built-in slot (declared
-    // there); these four are the frame's children, declared by the same
+    // there); these five are the frame's children, declared by the same
     // register() call that contributes AppFrame. Session owners never pass
     // sessionId: the framework injects it as a standard prop.
     /**
@@ -50,6 +50,13 @@ declare module '@greeneek/gnk-client-ui-slots' {
      * and is expected to render the compact control rail while collapsed.
      */
     'sidebar': { kind: 'single'; scope: 'root'; owner: SidebarOwnerProps }
+    /**
+     * The frameless-desktop titlebar row (40px, toggle left, window
+     * controls right). OCCUPIED by ui-sidebar's Titlebar; rendered only on
+     * the desktop host, spanning all columns above the content grid.
+     * Registering here replaces the desktop titlebar outright.
+     */
+    'titlebar': { kind: 'single'; scope: 'root'; owner: TitlebarOwnerProps }
     /**
      * The whole center column, across both the no-session hero and a live
      * conversation. OCCUPIED by ui-conversation's ConversationRoot, which
@@ -101,6 +108,12 @@ export interface SidebarOwnerProps {
   width: number
 }
 
+/** Titlebar owner share: whether the sidebar is currently closed. */
+export interface TitlebarOwnerProps {
+  /** True when the sidebar is closed (the toggle offers to open it). */
+  collapsed: boolean
+}
+
 /** Conversation owner share: business state and actions belong to the registrant. */
 export interface ConvOwnerProps {}
 
@@ -112,7 +125,7 @@ export const inject = ['slots', 'theme', 'locale']
 
 /**
  * Client plugin body: provide ctx.layout, then one register() call — AppFrame
- * into 'root' with the four child-slot declarations, the layout store seat,
+ * into 'root' with the five child-slot declarations, the layout store seat,
  * and the inject hook that hands the store's bound actions to the service.
  * @param ctx - client root context.
  */
@@ -125,6 +138,7 @@ export function apply(ctx: ClientContext): void {
       locale: 'common',
       children: {
         'sidebar': { kind: 'single', scope: 'root' },
+        'titlebar': { kind: 'single', scope: 'root' },
         'conversation': { kind: 'single', scope: 'session-maybe' },
         'details': { kind: 'single', scope: 'session' },
         'shell.overlay': { kind: 'list', scope: 'root' },

@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { SlotRegistry } from '@greeneek/gnk-client-ui-renderer/client'
 import { LocaleRuntime } from '@greeneek/gnk-client-locale/client'
 import { apply, inject } from '@greeneek/gnk-client-ui-sidebar/client'
-import type { SidebarRootInjected } from '@greeneek/gnk-client-ui-sidebar/client'
+import type { SidebarRootInjected, TitlebarInjected } from '@greeneek/gnk-client-ui-sidebar/client'
 import { apply as hostApply } from '../src/index.ts'
 
 async function bench(declare = true) {
@@ -18,7 +18,13 @@ async function bench(declare = true) {
   const slots = ctx.get('slots') as SlotRegistry
   if (declare) {
     slots.register(
-      { name: 'root', children: { 'sidebar': { kind: 'single', scope: 'root' } } } as never,
+      {
+        name: 'root',
+        children: {
+          'sidebar': { kind: 'single', scope: 'root' },
+          'titlebar': { kind: 'single', scope: 'root' },
+        },
+      } as never,
       () => null,
     )
   }
@@ -54,6 +60,12 @@ describe('ui-sidebar apply', () => {
     expect(b.uiWorkspace.startSession).toHaveBeenLastCalledWith(undefined)
     injected.toggleSidebar()
     expect(b.layout.toggleSidebar).toHaveBeenCalledOnce()
+    expect(b.slots.entries('titlebar')).toHaveLength(1)
+    expect(b.slots.entries('titlebar')[0]!.locale).toBe('sidebar')
+    const titlebarInjected = (b.slots.entries('titlebar')[0]!.inject as () => TitlebarInjected)()
+    expect(Object.keys(titlebarInjected)).toEqual(['toggleSidebar'])
+    titlebarInjected.toggleSidebar()
+    expect(b.layout.toggleSidebar).toHaveBeenCalledTimes(2)
   })
 
   it('fails when no live owner declared the sidebar slot', async () => {

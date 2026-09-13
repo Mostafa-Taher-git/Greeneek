@@ -29,14 +29,29 @@
   border-right: 0.5px solid var(--dsw-alias-border-l3);
 }
 
-/* Frameless desktop shell: the rail owns the window top edge (its own
-   content offsets below the drag strip in SidebarRoot), while the content
-   columns clear the 40px strip here. Mirrors FRAMELESS_TITLEBAR_HEIGHT in
-   apps/desktop/src/frameless-titlebar.js; same release ships both. */
+/* Frameless desktop shell: a 40px titlebar row spans all columns above
+   the content grid (Claude-style: toggle left, window controls right).
+   Mirrors FRAMELESS_TITLEBAR_HEIGHT in
+   apps/desktop/src/frameless-titlebar.js; same release ships both.
+   Browser builds never render the row and keep the single-row grid. */
+.frame[data-desktop-host] {
+  grid-template-rows: 40px minmax(0, 1fr);
+}
+
+.titlebarRow {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  min-height: 0;
+}
+
+.frame[data-desktop-host] .sidebarCol,
 .frame[data-desktop-host] .centerCol,
 .frame[data-desktop-host] .detailsCol {
-  padding-top: 40px;
-  box-sizing: border-box;
+  grid-row: 2;
+}
+
+.frame[data-desktop-host] .handle {
+  top: 40px;
 }
 
 .centerCol {

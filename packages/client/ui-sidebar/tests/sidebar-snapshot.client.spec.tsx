@@ -46,7 +46,10 @@ async function bench(options: { locale?: 'en' } = {}) {
   if (options.locale === 'en') locale.setLocale('en')
   runtime.ctx.provide('locale', locale)
   runtime.slots.installLocale(locale)
-  await runtime.declare({ 'sidebar': { kind: 'single', scope: 'root' } })
+  await runtime.declare({
+    'sidebar': { kind: 'single', scope: 'root' },
+    'titlebar': { kind: 'single', scope: 'root' },
+  })
   await runtime.mount({ inject: [...inject], apply })
   return { runtime, locale }
 }

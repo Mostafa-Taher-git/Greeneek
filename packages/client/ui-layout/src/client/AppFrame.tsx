@@ -23,7 +23,7 @@ import css from './AppFrame.module.css'
 /** Full composed props: runtime share + child-slot render share + store share. */
 export type AppFrameProps =
   & PropsRuntime<'root'>
-  & PropsRenderSlots<'sidebar' | 'conversation' | 'details' | 'shell.overlay'>
+  & PropsRenderSlots<'sidebar' | 'titlebar' | 'conversation' | 'details' | 'shell.overlay'>
   & PropsStore<ReturnType<typeof createLayoutStore>>
   & PropsLocale<'common'>
 
@@ -193,6 +193,14 @@ export function AppFrame({
         productTitle={productTitle}
         {...documentTitle === undefined ? {} : { title: documentTitle }}
       />
+      {/* Frameless-desktop titlebar (Claude-style): sidebar toggle left,
+          window controls right, spanning all columns. Browser builds keep
+          the native chrome and never render this row. */}
+      {desktopHost && (
+        <div className={css.titlebarRow}>
+          {renderSlot('titlebar', { collapsed: sidebarCollapsed })}
+        </div>
+      )}
       <div className={css.sidebarCol}>
         {/* Render-site slot call with live concession output: a closed
             sidebar keeps the mounted slot at the compact-rail width, and the

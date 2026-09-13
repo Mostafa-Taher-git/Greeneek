@@ -1,15 +1,15 @@
 /**
- * Frameless-window chrome for Greeneek Desktop (Windows and Linux): a 40 px
- * drag strip overlaid on the web UI with small custom window controls pinned
- * to the top-right (minimize, maximize/restore, close). The controls are
- * built by an injected script so every page the window shows — the splash
- * and the web UI alike — carries identical chrome without forking the UI.
- * The strip is a pure overlay: the hosted client keeps its sidebar
- * background flush to the window top and offsets its own content below the
- * strip (data-desktop-host), so no body padding is injected here.
- * Buttons resolve the `greeneekDesktop` preload bridge at click time and warn
- * once when it is absent; the main process pushes maximize-state changes
- * back into `__gnkTitlebarSync`.
+ * Frameless-window chrome for Greeneek Desktop (Windows and Linux): small
+ * custom window controls pinned to the top-right (minimize,
+ * maximize/restore, close), built by an injected script so every page the
+ * window shows carries identical chrome without forking the UI. The web UI
+ * owns the 40px titlebar row itself (drag region plus sidebar toggle, with
+ * room reserved for these controls) and marks documentElement with
+ * `data-desktop-titlebar`; pages without one — the splash — get a pure
+ * overlay drag strip instead, so they stay draggable. Buttons resolve the
+ * `greeneekDesktop` preload bridge at click time and warn once when it is
+ * absent; the main process pushes maximize-state changes back into
+ * `__gnkTitlebarSync`.
  */
 export const FRAMELESS_TITLEBAR_HEIGHT = 40
 
@@ -115,7 +115,7 @@ export function framelessTitlebarScript() {
     { action: 'close', label: 'Close', icon: ${JSON.stringify(ICONS.close)} },
   ];
   let strip = document.getElementById('gnk-titlebar-strip');
-  if (!strip) {
+  if (!strip && !document.documentElement.hasAttribute('data-desktop-titlebar')) {
     strip = document.createElement('div');
     strip.id = 'gnk-titlebar-strip';
     document.documentElement.appendChild(strip);
@@ -143,10 +143,12 @@ export function framelessTitlebarScript() {
       controls.appendChild(button);
     }
     document.documentElement.appendChild(controls);
-    strip.addEventListener('dblclick', () => {
-      const api = apiOrWarn();
-      if (api) api.windowToggleMaximize();
-    });
+    if (strip !== null) {
+      strip.addEventListener('dblclick', () => {
+        const api = apiOrWarn();
+        if (api) api.windowToggleMaximize();
+      });
+    }
   }
   const sync = (maximized) => {
     const button = controls.querySelector('[data-action="toggle-maximize"]');

@@ -6,13 +6,15 @@ import type {} from '@greeneek/gnk-client-locale/client'
 import type {} from '@greeneek/gnk-client-ui-renderer/client'
 // Type-only: pulls the Session root standard-props merge.
 import type {} from '@greeneek/gnk-client-ui-session/client'
-import type { SidebarRootInjected } from './contract/slots.ts'
+import type { SidebarRootInjected, TitlebarInjected } from './contract/slots.ts'
 import { SidebarRoot } from './SidebarRoot.tsx'
+import { Titlebar } from './Titlebar.tsx'
 import { en, zh, type SidebarKey } from './locales.ts'
 
 export type {
   SidebarBrandMarkOwnerProps, SidebarBrandNameOwnerProps, SidebarFooterActionOwnerProps,
   SidebarRootComponentProps, SidebarRootInjected, SidebarSectionOwnerProps, SidebarSettingsOwnerProps,
+  TitlebarComponentProps, TitlebarInjected,
 } from './contract/slots.ts'
 export type { SidebarKey } from './locales.ts'
 
@@ -63,5 +65,15 @@ export function apply(ctx: ClientContext): void {
       inject: injectProps,
     }, SidebarRoot),
     'ui-sidebar: slot registration',
+  )
+  ctx.effect(
+    () => ctx.slots.register({
+      name: 'titlebar',
+      locale: NS,
+      inject: (): TitlebarInjected => ({
+        toggleSidebar: () => { ctx.layout.toggleSidebar() },
+      }),
+    }, Titlebar),
+    'ui-sidebar: titlebar registration',
   )
 }

@@ -1,14 +1,15 @@
 /**
- * Sidebar shell: column geometry only. Collapse is a slide plus crossfade:
- * content freezes at its expanded width (inline style) and fades out in place
- * while the sliding column (AppFrame grid tracks) clips it — nothing reflows
- * mid-slide. At settle the wide-only content unmounts and the four upper
- * controls enter the 56px rail from the same horizontal offset (one icon each,
- * same top-down order) on one fade that ends with the slide. The bottom-pinned
- * settings control only fades. The workspace/session browsing region between
- * the New Session button and the foot is the `sidebar.workspaces` registrant's,
- * and the foot holds `sidebar.settings` plus `sidebar.footer.action`; the shell
- * hands them the wide flag (plus an expand request callback for the browser).
+ * Sidebar shell: column geometry only. The brand row holds the wordmark
+ * (expanded, doubling as a New Session shortcut) or the static mark (rail);
+ * the fold toggle lives in the desktop titlebar. Collapse is a slide plus
+ * crossfade: content freezes at its expanded width (inline style) and fades
+ * out in place while the sliding column (AppFrame grid tracks) clips it —
+ * nothing reflows mid-slide. At settle the wide-only content unmounts. The
+ * bottom-pinned settings control only fades. The workspace/session browsing
+ * region between the New Session button and the foot is the
+ * `sidebar.workspaces` registrant's, and the foot holds `sidebar.settings`
+ * plus `sidebar.footer.action`; the shell hands them the wide flag (plus an
+ * expand request callback for the browser).
  *
  * The column also owns whether the scroll regions nested in it draw a
  * scrollbar at all: the shell tracks the pointer and rebinds ui-theme's
@@ -18,7 +19,7 @@
 import { useEffect, useRef, useState } from 'react'
 import clsx from 'clsx'
 import {
-  FishLogo, IconNewChatOutline16, IconPanelLeftOutline16, Tooltip,
+  FishLogo, IconNewChatOutline16, Tooltip,
 } from '@greeneek/gnk-client-ui-primitives'
 import type { SidebarRootComponentProps } from './contract/slots.ts'
 import css from './SidebarRoot.module.css'
@@ -123,13 +124,6 @@ export function SidebarRoot({
 
   const buildVersion = localBuildVersion()
 
-  // Frameless desktop shell: the rail background spans the full window
-  // height; the top offset below keeps every control clear of the drag
-  // strip (SidebarRoot.module.css). Absent in browsers and tests.
-  const [desktopHost] = useState(
-    () => (globalThis as { greeneekDesktop?: unknown }).greeneekDesktop !== undefined,
-  )
-
   return (
     <div
       ref={column}
@@ -137,7 +131,6 @@ export function SidebarRoot({
         css.root, !wide && css.collapsed, !wide && everWide.current && css.railIn,
         collapsed && wide && css.fading, !pointerInside && css.quietBars,
       )}
-      data-desktop-host={desktopHost || undefined}
       style={wide ? { width: collapsed ? lastWideWidth.current : width } : undefined}
       onPointerEnter={() => {
         cancelLinger()
@@ -146,9 +139,7 @@ export function SidebarRoot({
       onPointerLeave={() => { armLinger() }}
     >
       <div className={css.logoRow}>
-        {/* Expanded, the brand doubles as a New Session shortcut; the
-            collapsed rail's logo is the expand toggle below instead. */}
-        {wide && (
+        {wide ? (
           <button
             type="button"
             className={clsx(css.brand, css.wide)}
@@ -173,25 +164,11 @@ export function SidebarRoot({
               </span>
             </span>
           </button>
+        ) : (
+          <span className={css.railMark} aria-hidden="true">
+            {renderSlot('sidebar.brand.mark', { size: 24 }, { fallback: <FishLogo size={24} /> })}
+          </span>
         )}
-        {/* Rail resting state is the whale mark; hovering swaps in the panel
-            icon (the expand affordance, figma sidebar-hover flow). */}
-        <Tooltip label={collapsed ? t('toggle.open') : t('toggle.collapse')} delayMs={500}>
-          <button
-            type="button"
-            className={clsx(css.iconButton, css.toggle)}
-            aria-label={collapsed ? t('toggle.open') : t('toggle.collapse')}
-            onClick={() => { toggleSidebar() }}
-          >
-            {!wide && (
-              <span className={css.railMark} aria-hidden="true">
-                {renderSlot('sidebar.brand.mark', { size: 24 }, { fallback: <FishLogo size={24} /> })}
-              </span>
-            )}
-            {/* Rail icons render at 18 (figma rail spec); expanded keeps the glyph-native sizes. */}
-            <IconPanelLeftOutline16 className={css.panelIcon} size={wide ? 16 : 18} />
-          </button>
-        </Tooltip>
       </div>
 
       {/* Expanded, the button carries its own label — tooltip only on the rail. */}

@@ -67,6 +67,14 @@
   animation: rail-in 150ms var(--ds-ease-in-out) backwards;
 }
 
+.railIn .logoRow {
+  animation: logo-rail-in 150ms var(--ds-ease-in-out) backwards;
+}
+
+.railIn .toggleRail {
+  animation: toggle-rail-in 150ms var(--ds-ease-in-out) backwards;
+}
+
 .railIn .footArea {
   animation: rail-fade-in 150ms var(--ds-ease-in-out) backwards;
 }
@@ -75,6 +83,20 @@
   from {
     opacity: 0;
     transform: translateX(49px);
+  }
+}
+
+@keyframes logo-rail-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes toggle-rail-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
   }
 }
 
@@ -98,10 +120,10 @@
 }
 
 .collapsed .logoRow {
-  height: 36px;
-  padding: 0;
-  margin-bottom: 12px;
-  justify-content: flex-start;
+  height: 40px;
+  padding: 4px 0;
+  margin-bottom: 8px;
+  justify-content: center;
 }
 
 /* Brand group (figma I133:7632): the full wordmark rides the text ink
@@ -113,12 +135,17 @@
   min-width: 0;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   overflow: hidden;
   padding: 0;
   border: none;
   background: transparent;
   color: inherit;
   cursor: pointer;
+}
+
+.collapsed .brand {
+  justify-content: center;
 }
 
 /* Mark and name are independent slots; the shell owns their shared baseline,
@@ -150,6 +177,18 @@
   letter-spacing: 0.04em;
 }
 
+.collapsedBrandName {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  height: 24px;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
 .fallbackBrandName {
   font-size: 17px;
   letter-spacing: 0px;
@@ -173,13 +212,7 @@
   letter-spacing: 0;
 }
 
-/* Rail mark: the static brand glyph at the rail top. */
-.railMark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
+/* Rail mark: removed; logo stays visible in collapsed state. */
 .buildVersion {
   flex: none;
   display: inline-flex;
@@ -235,6 +268,26 @@
 }
 
 .collapsed .newSession:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.toggleRail {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin: 0 0 12px;
+  padding: 0;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.collapsed .toggleRail:hover {
   background: var(--dsw-alias-interactive-bg-hover);
 }
 

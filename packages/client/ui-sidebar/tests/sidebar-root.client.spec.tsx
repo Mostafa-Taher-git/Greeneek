@@ -172,9 +172,9 @@ describe('SidebarRoot shell', () => {
   it('renders statically collapsed on a cold start (no crossfade classes)', () => {
     const b = mountShell({ collapsed: true })
     expect(b.regionOwner().wide).toBe(false)
-    // The rail top is a static mark now; the fold toggle lives in the
-    // desktop titlebar, so no toggle button renders in the column.
+    // The rail top keeps the brand mark visible; the column also exposes
+    // the collapsed sidebar-toggle control directly under it.
     expect(screen.getByTestId('custom-brand-mark')).toBeTruthy()
-    expect(screen.queryByRole('button', { name: 'Open sidebar' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Open sidebar' })).toBeTruthy()
   })
 })

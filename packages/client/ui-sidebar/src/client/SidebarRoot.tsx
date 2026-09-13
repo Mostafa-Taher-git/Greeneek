@@ -19,7 +19,7 @@
 import { useEffect, useRef, useState } from 'react'
 import clsx from 'clsx'
 import {
-  FishLogo, IconNewChatOutline16, Tooltip,
+  FishLogo, IconNewChatOutline16, IconPanelLeftOutline16, Tooltip,
 } from '@greeneek/gnk-client-ui-primitives'
 import type { SidebarRootComponentProps } from './contract/slots.ts'
 import css from './SidebarRoot.module.css'
@@ -137,16 +137,31 @@ export function SidebarRoot({
             <span className={css.brandMark}>
               {renderSlot('sidebar.brand.mark', { size: 24 }, { fallback: <FishLogo size={24} /> })}
             </span>
-            {wide && (
+            {wide ? (
               <span className={css.brandName}>
                 {renderSlot('sidebar.brand.name', {}, {
                   fallback: <span className={css.fallbackBrandName}>Greeneek</span>,
                 })}
               </span>
+            ) : (
+              <span className={css.collapsedBrandName}>Greeneek</span>
             )}
           </span>
         </button>
       </div>
+
+      {!wide && (
+        <Tooltip label={t('toggle.open')} delayMs={500}>
+          <button
+            type="button"
+            className={css.toggleRail}
+            aria-label={t('toggle.open')}
+            onClick={() => { toggleSidebar() }}
+          >
+            <IconPanelLeftOutline16 size={16} />
+          </button>
+        </Tooltip>
+      )}
 
       {/* Expanded, the button carries its own label — tooltip only on the rail. */}
       {wide && (

@@ -18,7 +18,7 @@ import {
   subagentModelCandidates,
   type SubagentModelSelectionSettings,
 } from '../src/client/subagent-model-selection-card-controller.ts'
-import { WebSearchCardController, type EnginePinSettings, type WebSearchSettings } from '../src/client/web-search-card-controller.ts'
+import { WebSearchCardController, type WebSearchSettings } from '../src/client/web-search-card-controller.ts'
 
 /** Make the stub behave like a Host that accepts every write. */
 function acceptWrites<T>(host: StubSettingsScope<T>): void {
@@ -853,19 +853,11 @@ describe('SubagentModelSelectionCardController', () => {
   })
 })
 
-/** Engine-pin scope stub: publishes the pinned provider, accepts pin writes. */
-function engineHost(value: EnginePinSettings = {}) {
-  const host = stubSettingsScope<EnginePinSettings>()
-  acceptWrites(host)
-  host.publish({ status: 'ready', writable: true, value, user: {} })
-  return host
-}
-
 describe('WebSearchCardController', () => {
   it('reads the credential state for the reference the tab names', async () => {
     const host = stubSettingsScope<WebSearchSettings>()
     const credentials = credentialsApi(true)
-    const controller = new WebSearchCardController(host.scope, engineHost().scope, credentials.ctx)
+    const controller = new WebSearchCardController(host.scope, credentials.ctx)
     const state = () => controller.inject().hooks.webSearchCard.getSnapshot()
     await vi.waitFor(() => { expect(credentials.describe).toHaveBeenCalled() })
 
@@ -881,7 +873,7 @@ describe('WebSearchCardController', () => {
   it('writes the staged key through the credentials domain, never the settings section', async () => {
     const host = stubSettingsScope<WebSearchSettings>()
     const credentials = credentialsApi(false)
-    const controller = new WebSearchCardController(host.scope, engineHost().scope, credentials.ctx)
+    const controller = new WebSearchCardController(host.scope, credentials.ctx)
     host.publish({ status: 'ready', writable: true, value: {}, user: {} })
     const face = controller.inject()
 
@@ -906,7 +898,7 @@ describe('WebSearchCardController', () => {
   it('keeps the stored key when the draft is left blank', () => {
     const host = stubSettingsScope<WebSearchSettings>()
     const credentials = credentialsApi(true)
-    const controller = new WebSearchCardController(host.scope, engineHost().scope, credentials.ctx)
+    const controller = new WebSearchCardController(host.scope, credentials.ctx)
     host.publish({ status: 'ready', writable: true, value: {}, user: {} })
     const face = controller.inject()
 
@@ -921,7 +913,7 @@ describe('WebSearchCardController', () => {
   it('re-reads when the Host reports the watched reference changed', async () => {
     const host = stubSettingsScope<WebSearchSettings>()
     const credentials = credentialsApi(false)
-    const controller = new WebSearchCardController(host.scope, engineHost().scope, credentials.ctx)
+    const controller = new WebSearchCardController(host.scope, credentials.ctx)
     host.publish({ status: 'ready', writable: true, value: {}, user: {} })
     await vi.waitFor(() => { expect(credentials.describe).toHaveBeenCalled() })
     credentials.describe.mockClear()
@@ -945,7 +937,7 @@ describe('WebSearchCardController', () => {
   it('addresses the reference the tab declares rather than the default', async () => {
     const host = stubSettingsScope<WebSearchSettings>()
     const credentials = credentialsApi(false)
-    const controller = new WebSearchCardController(host.scope, engineHost().scope, credentials.ctx)
+    const controller = new WebSearchCardController(host.scope, credentials.ctx)
     host.publish({ status: 'ready', writable: true, value: { apiKeyEnv: 'SEARCH_KEY' }, user: {} })
     const face = controller.inject()
 
@@ -959,7 +951,7 @@ describe('WebSearchCardController', () => {
   it('reports a key the Host did not store as a failed save', async () => {
     const host = stubSettingsScope<WebSearchSettings>()
     const credentials = credentialsApi(false)
-    const controller = new WebSearchCardController(host.scope, engineHost().scope, credentials.ctx)
+    const controller = new WebSearchCardController(host.scope, credentials.ctx)
     host.publish({ status: 'ready', writable: true, value: {}, user: {} })
     const face = controller.inject()
 
@@ -979,7 +971,7 @@ describe('WebSearchCardController', () => {
     })
     const describe = vi.fn(refusal)
     const set = vi.fn(refusal)
-    const controller = new WebSearchCardController(host.scope, engineHost().scope, ctxWith({ credentials: { describe, set } }))
+    const controller = new WebSearchCardController(host.scope, ctxWith({ credentials: { describe, set } }))
     const face = controller.inject()
     await vi.waitFor(() => { expect(describe).toHaveBeenCalled() })
 
@@ -1001,7 +993,7 @@ describe('WebSearchCardController', () => {
       ok: false as const,
       error: new RemoteError('gateway/internal', 'no credential provider', {}),
     }))
-    const controller = new WebSearchCardController(host.scope, engineHost().scope, ctxWith({
+    const controller = new WebSearchCardController(host.scope, ctxWith({
       credentials: { describe, set: vi.fn() },
     }))
     await vi.waitFor(() => { expect(describe).toHaveBeenCalled() })
@@ -1013,7 +1005,7 @@ describe('WebSearchCardController', () => {
     const host = stubSettingsScope<WebSearchSettings>()
     acceptWrites(host)
     const credentials = credentialsApi(true)
-    const controller = new WebSearchCardController(host.scope, engineHost().scope, credentials.ctx)
+    const controller = new WebSearchCardController(host.scope, credentials.ctx)
     host.publish({ status: 'ready', writable: true, value: {}, base: {}, user: {} })
     const face = controller.inject()
 
@@ -1024,40 +1016,6 @@ describe('WebSearchCardController', () => {
 
     expect(host.set.mock.calls).toEqual([['baseURL', 'https://other.test'], ['maxUses', 3]])
     expect(credentials.set).not.toHaveBeenCalled()
-  })
-
-  it('projects the pinned provider, defaulting to auto-select', () => {
-    const host = stubSettingsScope<WebSearchSettings>()
-    const credentials = credentialsApi(true)
-    const engine = engineHost({ searchProvider: 'duckduckgo' })
-    const controller = new WebSearchCardController(host.scope, engine.scope, credentials.ctx)
-
-    expect(controller.inject().hooks.webSearchCard.getSnapshot().provider).toBe('duckduckgo')
-
-    engine.publish({ status: 'ready', writable: true, value: {}, user: {} })
-    expect(controller.inject().hooks.webSearchCard.getSnapshot().provider).toBe('')
-  })
-
-  it('writes the provider pin and clears it back to auto-select', () => {
-    const host = stubSettingsScope<WebSearchSettings>()
-    const credentials = credentialsApi(true)
-    const engine = engineHost()
-    const controller = new WebSearchCardController(host.scope, engine.scope, credentials.ctx)
-    const face = controller.inject()
-
-    face.setProvider('exa')
-    expect(engine.set).toHaveBeenCalledWith('searchProvider', 'exa')
-
-    face.setProvider('')
-    expect(engine.unset).toHaveBeenCalledWith('searchProvider')
-  })
-
-  it('refuses a provider id the card does not offer', () => {
-    const host = stubSettingsScope<WebSearchSettings>()
-    const credentials = credentialsApi(true)
-    const controller = new WebSearchCardController(host.scope, engineHost().scope, credentials.ctx)
-
-    expect(() => { controller.inject().setProvider('other-engine') }).toThrow(/not offered/)
   })
 })
 

@@ -16,7 +16,7 @@ Every workspace package (`packages/<family>/<name>`), categorized by what it con
 | LLM | Model routes and provider adapters | `packages/llm/*` |
 | Capability | Every other plugin, grouped by family directory | fallback: anything unmatched |
 
-Scope: 253 workspace packages; every package appears under each of its kinds (22 Tool, 4 Skill, 6 Command, 40 UI, 7 LLM, 181 Capability rows). A package with several kinds (e.g. a tool that also contributes a command) appears in each section.
+Scope: 253 workspace packages; every package appears under each of its kinds (22 Tool, 4 Skill, 6 Command, 39 UI, 7 LLM, 182 Capability rows). A package with several kinds (e.g. a tool that also contributes a command) appears in each section.
 
 ## Tools
 
@@ -105,7 +105,6 @@ Scope: 253 workspace packages; every package appears under each of its kinds (22
 | `@greeneek/gnk-client-ui-tool` | Client Tool presentation plugin for the gnk web client: whole-call tree composition, the keyed per-tool view slot, and the built-in atomic tool cards. |
 | `@greeneek/gnk-client-ui-trajectory` | Trajectory view for the gnk web client: a turn-aware event ledger with an interactive timing overview, registered into the conversation view ring. |
 | `@greeneek/gnk-client-ui-user-questions` | Web ask_user_question feature for the gnk web client: the composer-takeover question UI and the plan-review approval card. |
-| `@greeneek/gnk-client-ui-web-search` | Search-engine preference row for the gnk web client: engine choice plus custom endpoint in Settings General. |
 | `@greeneek/gnk-client-ui-workflow-run` | Durable workflow-run Conversation Node for the gnk web client: reconstructs top-level workflow runs as independent chat nodes with nested member disclosure. |
 | `@greeneek/gnk-client-ui-workspace` | Shared Workspace browser and picker plugin for the gnk web client: grouped or flat session rows, add/rename/reorder, search, fork, archive, and the directory-flow picking hole. |
 | `@greeneek/gnk-client-ui-cordis` | Cordis dynamic-plugin browser surfaces for users and maintainers choosing, composing, or debugging the panel, tool cards, and @pluginId input. |
@@ -134,6 +133,7 @@ Scope: 253 workspace packages; every package appears under each of its kinds (22
 
 | Package | Role |
 | --- | --- |
+| `@greeneek/gnk-api-authorization-controller` | Host Remote owner for the authorization surfaces over the authorization seam: flows, attempt streams, prompt answers, and cancellation. |
 | `@greeneek/gnk-api-gateway` | Typed Client-to-Host calls and streams: dispatch, validation, cancellation, reconnection, and forwarded Host events. |
 | `@greeneek/gnk-api-remotes` | Application Remote assembly: selects typed Host capabilities and forwarded events for Client consumers. |
 | `@greeneek/gnk-api-session-controller` | Host and Client session control: create, resume, prompt, follow history, and project live session state. |

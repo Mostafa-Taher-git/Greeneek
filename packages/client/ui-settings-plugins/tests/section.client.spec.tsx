@@ -42,7 +42,7 @@ function field(text: string, rest: Partial<CardFieldState> = {}): CardFieldState
 }
 
 function cardActions() {
-  return { edit: vi.fn(), resetField: vi.fn(), save: vi.fn(), discard: vi.fn() }
+  return { edit: vi.fn(), resetField: vi.fn(), save: vi.fn(), discard: vi.fn(), setProvider: vi.fn() }
 }
 
 function renderSection(rows: readonly PluginsSettingsTabEntry[]) {
@@ -505,7 +505,9 @@ describe('WebSearchCard', () => {
   function renderWebSearch(state: Partial<WebSearchCardState> = {}) {
     const store = createSnapshotStore<WebSearchCardState>({
       ...settled,
+      provider: '',
       baseURL: field(''),
+      model: field(''),
       maxUses: field('5'),
       apiKey: field(''),
       apiKeyConfigured: false,
@@ -519,7 +521,7 @@ describe('WebSearchCard', () => {
   }
 
   it('reports whether a key is configured without ever showing one', () => {
-    renderWebSearch({ apiKeyConfigured: true })
+    renderWebSearch({ provider: 'greeneek-official', apiKeyConfigured: true })
     fireEvent.click(screen.getByText(en.webSearchTitle))
 
     expect(screen.getByText(en.webSearchApiKeySet)).toBeTruthy()
@@ -527,7 +529,7 @@ describe('WebSearchCard', () => {
   })
 
   it('keeps the key control usable while the settings document is read-only', () => {
-    const actions = renderWebSearch({ writable: false })
+    const actions = renderWebSearch({ provider: 'greeneek-official', writable: false })
     fireEvent.click(screen.getByText(en.webSearchTitle))
 
     const key = screen.getByLabelText(en.webSearchApiKey)
@@ -542,30 +544,76 @@ describe('WebSearchCard', () => {
   it('disables the key control when the reference itself is not writable', () => {
     // A key coming from the process environment: the settings document is
     // writable, the credential is not.
-    renderWebSearch({ apiKeyConfigured: true, apiKeyWritable: false })
+    renderWebSearch({ provider: 'greeneek-official', apiKeyConfigured: true, apiKeyWritable: false })
     fireEvent.click(screen.getByText(en.webSearchTitle))
 
     expect(screen.getByLabelText(en.webSearchApiKey)).toHaveProperty('disabled', true)
     expect(screen.getByLabelText(en.webSearchBaseUrl)).toHaveProperty('disabled', false)
   })
 
-  it('stages the endpoint, the search budget, and their resets', () => {
+  it('stages the endpoint, the model, the search budget, and their resets', () => {
     const actions = renderWebSearch({
+      provider: 'greeneek-official',
       baseURL: field('https://search.test/v1', { overridden: true }),
+      model: field('search-large', { overridden: true }),
       maxUses: field('3', { overridden: true }),
     })
     fireEvent.click(screen.getByText(en.webSearchTitle))
 
     fireEvent.change(screen.getByLabelText(en.webSearchBaseUrl), { target: { value: 'https://other.test' } })
+    fireEvent.change(screen.getByLabelText(en.webSearchModel), { target: { value: 'search-small' } })
     fireEvent.change(screen.getByLabelText(en.webSearchMaxUses), { target: { value: '4' } })
     const resets = screen.getAllByRole('button', { name: en.reset })
-    expect(resets).toHaveLength(2)
+    expect(resets).toHaveLength(3)
     for (const reset of resets) fireEvent.click(reset)
 
     expect(actions.edit.mock.calls).toEqual([
       ['baseURL', 'https://other.test'],
+      ['model', 'search-small'],
       ['maxUses', '4'],
     ])
-    expect(actions.resetField.mock.calls).toEqual([['baseURL'], ['maxUses']])
+    expect(actions.resetField.mock.calls).toEqual([['baseURL'], ['model'], ['maxUses']])
+  })
+
+  it('offers the provider picker and pins the choice', () => {
+    const actions = renderWebSearch()
+    fireEvent.click(screen.getByText(en.webSearchTitle))
+
+    const trigger = screen.getByRole('button', { name: en['webSearch.providerAuto'] })
+    expect(trigger.getAttribute('aria-expanded')).toBe('false')
+    fireEvent.click(trigger)
+    expect(trigger.getAttribute('aria-expanded')).toBe('true')
+    fireEvent.click(screen.getByRole('menuitem', { name: en['webSearch.providerDuckDuckGo'] }))
+
+    expect(actions.setProvider).toHaveBeenCalledWith('duckduckgo')
+    expect(trigger.getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('closes the provider menu on outside pointerdown without pinning', () => {
+    const actions = renderWebSearch()
+    fireEvent.click(screen.getByText(en.webSearchTitle))
+
+    const trigger = screen.getByRole('button', { name: en['webSearch.providerAuto'] })
+    fireEvent.click(trigger)
+    expect(screen.getByRole('menuitem', { name: en['webSearch.providerGoogle'] })).toBeTruthy()
+    fireEvent.pointerDown(document.body)
+    expect(screen.queryByRole('menuitem', { name: en['webSearch.providerGoogle'] })).toBeNull()
+    expect(actions.setProvider).not.toHaveBeenCalled()
+  })
+
+  it('hides the custom endpoint fields unless Custom is active', () => {
+    renderWebSearch({ provider: 'duckduckgo' })
+    fireEvent.click(screen.getByText(en.webSearchTitle))
+
+    expect(screen.queryByLabelText(en.webSearchBaseUrl)).toBeNull()
+    expect(screen.queryByLabelText(en.webSearchApiKey)).toBeNull()
+    expect(screen.getByText(en['webSearch.providerHint'])).toBeTruthy()
+  })
+
+  it('labels an unknown provider id as Custom', () => {
+    renderWebSearch({ provider: 'retired-engine' })
+    fireEvent.click(screen.getByText(en.webSearchTitle))
+
+    expect(screen.getByRole('button', { name: en['webSearch.providerCustom'] })).toBeTruthy()
   })
 })

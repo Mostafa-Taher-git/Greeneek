@@ -1689,9 +1689,6 @@ importers:
       '@greeneek/gnk-client-ui-user-questions':
         specifier: workspace:^
         version: link:../../client/ui-user-questions
-      '@greeneek/gnk-client-ui-web-search':
-        specifier: workspace:^
-        version: link:../../client/ui-web-search
       '@greeneek/gnk-client-ui-workflow-run':
         specifier: workspace:^
         version: link:../../client/ui-workflow-run
@@ -3741,46 +3738,6 @@ importers:
       '@greeneek/gnk-user-questions':
         specifier: workspace:^
         version: link:../../interaction/user-questions
-      '@types/react':
-        specifier: ~18.3.1
-        version: 18.3.31
-      react:
-        specifier: 19.2.6
-        version: 19.2.6
-
-  packages/client/ui-web-search:
-    dependencies:
-      '@greeneek/schemastery':
-        specifier: link:../../../vendor/schemastery
-        version: link:../../../vendor/schemastery
-    devDependencies:
-      '@greeneek/cordis':
-        specifier: workspace:^
-        version: link:../../../vendor/cordis
-      '@greeneek/gnk-client-locale':
-        specifier: workspace:^
-        version: link:../locale
-      '@greeneek/gnk-client-store':
-        specifier: workspace:^
-        version: link:../store
-      '@greeneek/gnk-client-test-runtime':
-        specifier: workspace:^
-        version: link:../../test-support/client-runtime
-      '@greeneek/gnk-client-ui-primitives':
-        specifier: workspace:^
-        version: link:../ui-primitives
-      '@greeneek/gnk-client-ui-renderer':
-        specifier: workspace:^
-        version: link:../ui-renderer
-      '@greeneek/gnk-client-ui-settings':
-        specifier: workspace:^
-        version: link:../ui-settings
-      '@greeneek/gnk-client-ui-slots':
-        specifier: workspace:^
-        version: link:../ui-slots
-      '@greeneek/gnk-settings':
-        specifier: workspace:^
-        version: link:../../settings/settings
       '@types/react':
         specifier: ~18.3.1
         version: 18.3.31

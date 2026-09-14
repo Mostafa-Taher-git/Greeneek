@@ -9,8 +9,12 @@ export type PluginsSettingsLocaleKey =
   | 'bashMaxOutputBytes' | 'bashMaxOutputBytesHint'
   | 'agentLoopTitle' | 'agentLoopDescription' | 'agentLoopMaxParallel' | 'agentLoopMaxParallelHint'
   | 'webSearchTitle' | 'webSearchDescription'
+  | 'webSearch.provider' | 'webSearch.providerAuto' | 'webSearch.providerDuckDuckGo'
+  | 'webSearch.providerGoogle' | 'webSearch.providerExa' | 'webSearch.providerPerplexity'
+  | 'webSearch.providerCustom' | 'webSearch.providerHint'
   | 'webSearchApiKey' | 'webSearchApiKeyHint' | 'webSearchApiKeySet' | 'webSearchApiKeyUnset'
-  | 'webSearchBaseUrl' | 'webSearchBaseUrlHint' | 'webSearchMaxUses' | 'webSearchMaxUsesHint'
+  | 'webSearchBaseUrl' | 'webSearchBaseUrlHint' | 'webSearchModel' | 'webSearchModelHint'
+  | 'webSearchMaxUses' | 'webSearchMaxUsesHint'
   | 'subagentModelSelectionTitle' | 'subagentModelSelectionDescription'
   | 'subagentModelSelectionToggle' | 'subagentModelSelectionChoose' | 'subagentModelSelectionAllowed'
   | 'subagentModelSelectionLoading' | 'subagentModelSelectionLoadFailed' | 'subagentModelSelectionRetry'
@@ -48,13 +52,23 @@ export const en: Record<PluginsSettingsLocaleKey, string> = {
   agentLoopMaxParallel: 'Parallel tool calls',
   agentLoopMaxParallelHint: 'Upper bound on parallel-safe calls running at once within one step.',
   webSearchTitle: 'Web search',
-  webSearchDescription: 'The Greeneek search provider.',
+  webSearchDescription: 'Choose the search provider. DuckDuckGo works with no key; Custom adds your own endpoint.',
+  'webSearch.provider': 'Provider',
+  'webSearch.providerAuto': 'Auto',
+  'webSearch.providerDuckDuckGo': 'DuckDuckGo',
+  'webSearch.providerGoogle': 'Google',
+  'webSearch.providerExa': 'Exa',
+  'webSearch.providerPerplexity': 'Perplexity',
+  'webSearch.providerCustom': 'Custom',
+  'webSearch.providerHint': 'DuckDuckGo searches with no key. Google, Exa, and Perplexity read theirs from the launch environment; Custom uses the endpoint and key below.',
   webSearchApiKey: 'API key',
   webSearchApiKeyHint: 'Stored outside the settings file. Leave blank to keep the current key.',
   webSearchApiKeySet: 'A key is configured.',
   webSearchApiKeyUnset: 'No key is configured; search is unavailable until one is.',
   webSearchBaseUrl: 'Endpoint',
   webSearchBaseUrlHint: 'Leave blank to use the provider default.',
+  webSearchModel: 'Model',
+  webSearchModelHint: 'Leave blank to use the provider default.',
   webSearchMaxUses: 'Max searches per request',
   webSearchMaxUsesHint: 'How many times one request may search before it must answer.',
   subagentModelSelectionTitle: 'Subagent',
@@ -104,13 +118,23 @@ export const zh: Record<PluginsSettingsLocaleKey, string> = {
   agentLoopMaxParallel: '并行工具调用数',
   agentLoopMaxParallelHint: '同一步内最多同时运行多少个可并行的调用。',
   webSearchTitle: '网页搜索',
-  webSearchDescription: 'Greeneek 搜索提供方。',
+  webSearchDescription: '选择搜索提供方。DuckDuckGo 无需密钥即可用；自定义可添加自己的端点。',
+  'webSearch.provider': '提供方',
+  'webSearch.providerAuto': '自动',
+  'webSearch.providerDuckDuckGo': 'DuckDuckGo',
+  'webSearch.providerGoogle': 'Google',
+  'webSearch.providerExa': 'Exa',
+  'webSearch.providerPerplexity': 'Perplexity',
+  'webSearch.providerCustom': '自定义',
+  'webSearch.providerHint': 'DuckDuckGo 无需密钥即可搜索。Google、Exa 和 Perplexity 从启动环境读取密钥；自定义使用下方的端点和密钥。',
   webSearchApiKey: 'API Key',
   webSearchApiKeyHint: '不写入设置文件。留空表示保持当前密钥。',
   webSearchApiKeySet: '已配置密钥。',
   webSearchApiKeyUnset: '未配置密钥；配置之前搜索不可用。',
   webSearchBaseUrl: '接口地址',
   webSearchBaseUrlHint: '留空则使用提供方默认地址。',
+  webSearchModel: '模型',
+  webSearchModelHint: '留空则使用提供方默认模型。',
   webSearchMaxUses: '单次请求最多搜索次数',
   webSearchMaxUsesHint: '一次请求在必须作答前最多可以搜索多少次。',
   subagentModelSelectionTitle: 'Subagent',

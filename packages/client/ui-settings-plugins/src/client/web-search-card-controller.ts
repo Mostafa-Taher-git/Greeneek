@@ -25,6 +25,61 @@ import {
  */
 export const WEB_SEARCH_NS = 'web-search-greeneek'
 
+/**
+ * Namespace owning the search-provider pin. The engine row writes the same
+ * field, so both surfaces stay in sync with no further coordination.
+ */
+export const ENGINE_SETTINGS_NAMESPACE = 'web'
+
+/** Field carrying the pinned search provider id; absence means auto-select. */
+export const ENGINE_PROVIDER_FIELD = 'searchProvider'
+
+/** Empty provider id: no pin, the service auto-selects the usable provider. */
+export const PROVIDER_AUTO = ''
+
+/** Provider id of the DuckDuckGo search backend (keyless: works with no key). */
+export const PROVIDER_DUCKDUCKGO = 'duckduckgo'
+
+/** Provider id of the Google search backend (key from the launch environment). */
+export const PROVIDER_GOOGLE = 'google'
+
+/** Provider id of the Exa search backend (key from the launch environment). */
+export const PROVIDER_EXA = 'exa'
+
+/** Provider id of the Perplexity search backend (key from the launch environment). */
+export const PROVIDER_PERPLEXITY = 'perplexity'
+
+/**
+ * Provider id of the Greeneek search backend, offered in the card as Custom:
+ * it accepts any Anthropic-compatible Messages endpoint, so it is the
+ * vehicle for a user-supplied search provider.
+ */
+export const PROVIDER_CUSTOM = 'greeneek-official'
+
+/** Every provider id the card offers, in display order. */
+export const PROVIDER_IDS = [
+  PROVIDER_AUTO,
+  PROVIDER_DUCKDUCKGO,
+  PROVIDER_GOOGLE,
+  PROVIDER_EXA,
+  PROVIDER_PERPLEXITY,
+  PROVIDER_CUSTOM,
+] as const
+
+/** Provider id the card offers. */
+export type SearchProviderId = typeof PROVIDER_IDS[number]
+
+/** True for a provider id the card offers (anything else fails loud on write). */
+export function isOfferedSearchProvider(id: string): id is SearchProviderId {
+  return (PROVIDER_IDS as readonly string[]).includes(id)
+}
+
+/** The engine-pin section: only the provider choice lives here. */
+export interface EnginePinSettings {
+  /** Pinned search provider id; absence means auto-select. */
+  searchProvider?: string
+}
+
 /** Credential reference the provider resolves when the section names none. */
 const DEFAULT_API_KEY_REF = 'GREENEEK_API_KEY'
 
@@ -37,6 +92,8 @@ export interface WebSearchSettings {
   apiKeyEnv?: string
   /** Provider endpoint; blank inherits the provider default. */
   baseURL?: string
+  /** Provider model; blank inherits the provider default. */
+  model?: string
   /** Maximum searches served within one request. */
   maxUses?: number
 }
@@ -53,8 +110,12 @@ interface CredentialState {
 
 /** What the web-search card renders. */
 export interface WebSearchCardState extends CardShell {
+  /** Active provider id; '' means auto-select. */
+  provider: string
   /** Provider endpoint. */
   baseURL: CardFieldState
+  /** Provider model. */
+  model: CardFieldState
   /** Searches allowed per request. */
   maxUses: CardFieldState
   /** The staged credential, which starts blank on every load. */
@@ -71,6 +132,8 @@ export interface WebSearchCardFace extends CardActions {
     /** Card snapshot bound by the renderer as useWebSearchCard. */
     webSearchCard: SnapshotStore<WebSearchCardState>
   }
+  /** Pin one offered provider id ('' returns to auto-select); unknown ids throw. */
+  setProvider: (id: string) => void
 }
 
 /** Bridges the `web-search-greeneek` scope and the credentials domain onto the card. */
@@ -81,27 +144,32 @@ export class WebSearchCardController {
 
   /**
    * @param scope - the bound settings scope for the `web-search-greeneek` namespace.
+   * @param engineScope - the bound settings scope for the `web` namespace's provider pin.
    * @param ctx - the card plugin's context, whose `remote.credentials` namespace
    * answers for the credential the section references.
    */
   constructor(
     private readonly scope: SettingsScope<WebSearchSettings>,
+    private readonly engineScope: SettingsScope<EnginePinSettings>,
     private readonly ctx: ClientContext,
   ) {
     this.form = new CardForm(
       scope,
-      [textField('baseURL'), numberField('maxUses')],
+      [textField('baseURL'), textField('model'), numberField('maxUses')],
       [{ field: API_KEY_FIELD, write: text => this.writeKey(text) }],
     )
     this.store = this.form.bind(() => this.projection())
     scope.subscribe(() => { void this.readCredential() })
+    engineScope.subscribe(() => { this.store.set(this.projection()) })
     void this.readCredential()
   }
 
   private projection(): WebSearchCardState {
     return {
       ...this.form.shell(),
+      provider: this.engineScope.getSnapshot().value?.searchProvider ?? '',
       baseURL: this.form.field('baseURL'),
+      model: this.form.field('model'),
       maxUses: this.form.field('maxUses'),
       apiKey: this.form.field(API_KEY_FIELD),
       apiKeyConfigured: this.credential.configured,
@@ -158,7 +226,21 @@ export class WebSearchCardController {
    * @returns the card's snapshot and its form actions.
    */
   inject(): WebSearchCardFace {
-    return { hooks: { webSearchCard: this.store }, ...this.form.actions() }
+    return { hooks: { webSearchCard: this.store }, setProvider: (id) => { this.setProvider(id) }, ...this.form.actions() }
+  }
+
+  /**
+   * Pin the search provider this card offers. Writes the same `web` field
+   * the engine row writes, so both surfaces stay in sync.
+   * @param id - one offered provider id; '' returns to auto-select.
+   */
+  private setProvider(id: string): void {
+    if (!isOfferedSearchProvider(id)) throw new Error(`search provider "${id}" is not offered`)
+    if (id === PROVIDER_AUTO) {
+      void this.engineScope.unset(ENGINE_PROVIDER_FIELD)
+      return
+    }
+    void this.engineScope.set(ENGINE_PROVIDER_FIELD, id)
   }
 
   /**

@@ -3427,7 +3427,6 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 - `@greeneek/gnk-client-ui-tool` ([`packages/client/ui-tool/src/index.ts`](../packages/client/ui-tool/src/index.ts))
 - `@greeneek/gnk-client-ui-trajectory` ([`packages/client/ui-trajectory/src/index.ts`](../packages/client/ui-trajectory/src/index.ts))
 - `@greeneek/gnk-client-ui-user-questions` ([`packages/client/ui-user-questions/src/index.ts`](../packages/client/ui-user-questions/src/index.ts))
-- `@greeneek/gnk-client-ui-web-search` ([`packages/client/ui-web-search/src/index.ts`](../packages/client/ui-web-search/src/index.ts))
 - `@greeneek/gnk-client-ui-workflow-run` ([`packages/client/ui-workflow-run/src/index.ts`](../packages/client/ui-workflow-run/src/index.ts))
 - `@greeneek/gnk-client-ui-workspace` ([`packages/client/ui-workspace/src/index.ts`](../packages/client/ui-workspace/src/index.ts))
 - `@greeneek/gnk-command-compact` — requires `commands` · `compaction` ([`packages/compaction/command-compact/src/index.ts`](../packages/compaction/command-compact/src/index.ts))
@@ -3491,6 +3490,7 @@ Imported as libraries by other packages; a `cordis.yml` cannot load them.
 
 - `@greeneek/gnk-agent-loop-testkit` ([`packages/test-support/agent-loop-testkit/src/index.ts`](../packages/test-support/agent-loop-testkit/src/index.ts))
 - `@greeneek/gnk-anonymous-user-id` ([`packages/identity/anonymous-user-id/src/index.ts`](../packages/identity/anonymous-user-id/src/index.ts))
+- `@greeneek/gnk-api-authorization-controller` ([`packages/api/authorization-controller/src/index.ts`](../packages/api/authorization-controller/src/index.ts))
 - `@greeneek/gnk-app-boot` ([`packages/boot/app-boot/src/index.ts`](../packages/boot/app-boot/src/index.ts))
 - `@greeneek/gnk-atomic-write` ([`packages/util/atomic-write/src/index.ts`](../packages/util/atomic-write/src/index.ts))
 - `@greeneek/gnk-base` ([`packages/bundle/base/src/index.ts`](../packages/bundle/base/src/index.ts))

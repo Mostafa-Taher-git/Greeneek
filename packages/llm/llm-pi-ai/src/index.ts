@@ -64,7 +64,7 @@ import type {} from '@greeneek/gnk-settings'
 import { deepEqualJson } from '@greeneek/gnk-util-values'
 import { PiAiAdapter } from './adapter.ts'
 import { authContextFrom, credentialStoreFrom } from './auth.ts'
-import { catalogProviderIds } from './catalog.ts'
+import { catalogProvider, catalogProviderIds } from './catalog.ts'
 import { assertServiceable, Config, resolveProfiles } from './config.ts'
 import type { ResolvedPiAiProviderProfile } from './config.ts'
 import { discoverModels } from './discovery.ts'
@@ -135,8 +135,26 @@ function directoryEntries(
       declared: !catalog.has(provider),
     })
   }
-  for (const provider of catalog) declare(provider, provider)
-  for (const [provider, profile] of profiles) declare(provider, profile.displayName)
+  // A catalog route carries its catalog display name (pi-ai's, or the curated
+  // catalog's), so a surface reads "OpenCode Zen" and "GitHub Copilot" rather
+  // than raw route ids.
+  for (const provider of catalog) {
+    // Both halves read the same installed catalog, so every id resolves its
+    // provider; the fallback only guards a pi-ai upgrade that desynchronizes
+    // its id and provider getters.
+    /* v8 ignore next -- no catalog id misses its provider while both halves read one catalog */
+    declare(provider, catalogProvider(provider)?.name ?? provider)
+  }
+  for (const [provider, profile] of profiles) {
+    // A profile without its own display name inherits the catalog's: a native
+    // save writes only the route key, and the row should still read the name
+    // the add card offered rather than the raw id. An explicit profile name
+    // always wins, including on routes no catalog ships.
+    const displayName = profile.displayName === provider
+      ? (catalogProvider(provider)?.name ?? provider)
+      : profile.displayName
+    declare(provider, displayName)
+  }
   return [...entries.values()]
 }
 

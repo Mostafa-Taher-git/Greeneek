@@ -138,6 +138,9 @@ function scriptedFace(options: {
       set,
       unset: vi.fn(),
     },
+    authorization: {
+      list: vi.fn(() => Promise.resolve(remoteOk([]))),
+    },
   }
   return { face, discover, mutate, set, namespace }
 }

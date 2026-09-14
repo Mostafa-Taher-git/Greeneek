@@ -3,6 +3,7 @@
 import type { Context } from '@greeneek/cordis'
 import agentPresetsRemote from '@greeneek/gnk-agent-presets/remote'
 import commandsRemote from '@greeneek/gnk-commands/remote'
+import authorizationControllerRemote from '@greeneek/gnk-api-authorization-controller/remote'
 import settingsControllerRemote from '@greeneek/gnk-api-settings-controller/remote'
 import goalsRemote from '@greeneek/gnk-goal/remote'
 import llmRemote from '@greeneek/gnk-llm/remote'
@@ -19,6 +20,7 @@ export type { ClientRemote } from '@greeneek/gnk-api-gateway/client'
 export type { PluginInventorySnapshot } from '@greeneek/gnk-host-plugin-inventory/types'
 export type {} from '@greeneek/gnk-agent-presets/remote'
 export type {} from '@greeneek/gnk-commands/remote'
+export type {} from '@greeneek/gnk-api-authorization-controller/remote'
 export type {} from '@greeneek/gnk-api-settings-controller/remote'
 export type {} from '@greeneek/gnk-goal/remote'
 export type {} from '@greeneek/gnk-llm/remote'
@@ -31,6 +33,7 @@ export type {} from '@greeneek/gnk-api-session-controller/remote'
 export type * from '@greeneek/gnk-api-session-controller/types'
 export type {} from '@greeneek/gnk-api-workspace-controller/remote'
 export type * from '@greeneek/gnk-api-workspace-controller/types'
+export type * from '@greeneek/gnk-api-authorization-controller/types'
 export type { SessionJob as JobView } from '@greeneek/gnk-api-session-controller/types'
 // The forwarded-event allowlist's selection seat: without it in the consumer's
 // compilation face `TypertRemoteEvent` is `never` and every `$on` call fails.
@@ -144,7 +147,7 @@ export async function apply(ctx: Context): Promise<() => Promise<void>> {
   const disposers: Array<() => Promise<void>> = []
   try {
     for (const contribution of [
-      agentPresetsRemote, commandsRemote, settingsControllerRemote, goalsRemote, llmRemote, dynamicRemote,
+      agentPresetsRemote, commandsRemote, authorizationControllerRemote, settingsControllerRemote, goalsRemote, llmRemote, dynamicRemote,
       pluginInventoryRemote, messageFeedbackRemote, sessionReferencesRemote,
       subagentsRemote, sessionRemote, workspaceRemote,
     ]) {

@@ -96,6 +96,10 @@
     - id: settings-controller
       name: '@greeneek/gnk-api-settings-controller'
 
+    # Sign-in flows over Typert Remote: listing, attempt streams, and answers.
+    - id: authorization-controller
+      name: '@greeneek/gnk-api-authorization-controller'
+
     # Workspace commands and reconnect-safe projection over Typert Remote.
     - id: workspace-controller
       name: '@greeneek/gnk-api-workspace-controller'

@@ -702,6 +702,25 @@ importers:
         specifier: workspace:^
         version: link:../../interaction/user-approval
 
+  packages/api/authorization-controller:
+    dependencies:
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
+    devDependencies:
+      '@greeneek/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@greeneek/gnk-authorization':
+        specifier: workspace:^
+        version: link:../../credentials/authorization
+      '@greeneek/gnk-credentials':
+        specifier: workspace:^
+        version: link:../../credentials/credentials
+      '@greeneek/gnk-typert-protocol':
+        specifier: workspace:^
+        version: link:../../typert/protocol
+
   packages/api/gateway:
     dependencies:
       '@greeneek/gnk-deque':
@@ -763,6 +782,9 @@ importers:
       '@greeneek/gnk-agent-presets':
         specifier: workspace:^
         version: link:../../preset/agent-presets
+      '@greeneek/gnk-api-authorization-controller':
+        specifier: workspace:^
+        version: link:../authorization-controller
       '@greeneek/gnk-api-gateway':
         specifier: workspace:^
         version: link:../gateway
@@ -1532,6 +1554,9 @@ importers:
       '@greeneek/gnk-agent-presets':
         specifier: workspace:^
         version: link:../../preset/agent-presets
+      '@greeneek/gnk-api-authorization-controller':
+        specifier: workspace:^
+        version: link:../../api/authorization-controller
       '@greeneek/gnk-api-remotes':
         specifier: workspace:^
         version: link:../../api/remotes

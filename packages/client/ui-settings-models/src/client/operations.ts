@@ -7,6 +7,7 @@
 
 import type { Context as ClientContext } from '@greeneek/cordis'
 import type {
+  AuthorizationAnswer, AuthorizationAttemptFrame, AuthorizationEntryView,
   CredentialInfo, LlmDiscoveredModel, LlmModelDiscoveryRequest,
   SettingsNamespaceView, SettingsPathOpView,
 } from '@greeneek/gnk-api-remotes/client'
@@ -71,12 +72,39 @@ export interface ModelsOperations {
    * @returns the candidates, or the refusal.
    */
   discoverModels(settingsNs: string, request: LlmModelDiscoveryRequest): Promise<ModelDiscoveryOutcome>
+  /**
+   * List the sign-in flows the Host offers.
+   * @returns the flows, or an empty list when the seam is absent or the read
+   *   was refused: sign-in is an extra, and the page stays fully usable
+   *   without it (headless compositions mount no authorization seam at all).
+   */
+  listSignInFlows(): Promise<readonly AuthorizationEntryView[]>
+  /**
+   * Open one sign-in attempt as a frame stream.
+   * @param key - the flow's wire key, as listed.
+   * @param method - which of the flow's methods to run, or undefined for its first.
+   * @param signal - aborts the attempt when fired.
+   * @returns the attempt's frames, ending with the settlement.
+   */
+  attemptSignIn(
+    key: string,
+    method: string | undefined,
+    signal: AbortSignal,
+  ): AsyncIterable<AuthorizationAttemptFrame>
+  /**
+   * Answer one open prompt of a running attempt.
+   * @param key - the attempt's wire key.
+   * @param promptId - the id the prompt frame carried.
+   * @param answer - the typed or chosen value, or the human's decline.
+   * @returns the refusal message, or undefined once delivered.
+   */
+  answerSignInPrompt(key: string, promptId: string, answer: AuthorizationAnswer): Promise<string | undefined>
 }
 
 /**
  * Bind the page's Host operations to the plugin's own Remote namespaces.
  * @param ctx - the page plugin's context, which declares `remote.credentials`,
- * `remote.llm`, and `remote.settings` in its own `inject`.
+ * `remote.llm`, `remote.settings`, and `remote.authorization` in its own `inject`.
  * @returns the callbacks the section and its cards are injected with.
  */
 export function createModelsOperations(ctx: ClientContext): ModelsOperations {
@@ -104,6 +132,15 @@ export function createModelsOperations(ctx: ClientContext): ModelsOperations {
       return response.ok
         ? { kind: 'found', models: response.value }
         : { kind: 'refused', message: response.error.message }
+    },
+    listSignInFlows: async () => {
+      const response = await ctx.remote.authorization.list()
+      return response.ok ? response.value : []
+    },
+    attemptSignIn: (key, method, signal) => ctx.remote.authorization.attempt(key, method, signal),
+    answerSignInPrompt: async (key, promptId, answer) => {
+      const response = await ctx.remote.authorization.answer(key, promptId, answer)
+      return response.ok ? undefined : response.error.message
     },
   }
 }

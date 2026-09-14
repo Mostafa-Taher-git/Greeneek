@@ -13,58 +13,61 @@
     - button "Agent 预设":
       - img
       - text: Agent 预设
+    - button "命令":
+      - img
+      - text: 命令
+    - button "关于":
+      - img
+      - text: 关于
   - button "打开配置文件"
   - button "关闭":
     - img
     - text: 关闭
   - heading "模型" [level=2]
   - paragraph: 填入各提供方的 API 密钥即可使用其模型。
-  - list:
-    - listitem:
-      - text: Greeneek
-      - img "API 密钥缺失"
-      - button "编辑 Greeneek (greeneek-official)": 编辑
+  - list
   - text: 提供方
   - combobox "提供方":
-    - option "amazon-bedrock"
-    - option "ant-ling"
-    - option "anthropic"
-    - option "azure-openai-responses"
-    - option "baseten"
-    - option "cerebras"
-    - option "cloudflare-ai-gateway"
-    - option "cloudflare-workers-ai"
-    - option "greeneek"
-    - option "fireworks"
-    - option "github-copilot"
-    - option "google"
-    - option "google-vertex"
-    - option "groq"
-    - option "huggingface"
-    - option "kimi-coding"
-    - option "minimax"
-    - option "minimax-cn" [selected]
-    - option "mistral"
-    - option "moonshotai"
-    - option "moonshotai-cn"
-    - option "nvidia"
-    - option "openai"
-    - option "openai-codex"
-    - option "opencode"
-    - option "opencode-go"
-    - option "openrouter"
-    - option "qwen-token-plan"
-    - option "qwen-token-plan-cn"
-    - option "qwen-token-plan-individual"
-    - option "together"
-    - option "vercel-ai-gateway"
-    - option "xai"
-    - option "xiaomi"
-    - option "xiaomi-token-plan-ams"
-    - option "xiaomi-token-plan-cn"
-    - option "xiaomi-token-plan-sgp"
-    - option "zai"
-    - option "zai-coding-cn"
+    - option "Amazon Bedrock"
+    - option "Ant Ling"
+    - option "Anthropic"
+    - option "Azure OpenAI"
+    - option "Baseten"
+    - option "Cerebras"
+    - option "Cloudflare AI Gateway"
+    - option "Cloudflare Workers AI"
+    - option "DeepSeek"
+    - option "Fireworks"
+    - option "GitHub Copilot"
+    - option "Google"
+    - option "Google Vertex AI"
+    - option "Groq"
+    - option "Hugging Face"
+    - option "Kilo Gateway"
+    - option "Kimi For Coding"
+    - option "MiniMax"
+    - option "MiniMax CN" [selected]
+    - option "Mistral"
+    - option "Moonshot AI"
+    - option "Moonshot AI CN"
+    - option "NVIDIA"
+    - option "OpenAI"
+    - option "OpenAI Codex"
+    - option "OpenCode Zen"
+    - option "OpenCode Go"
+    - option "OpenRouter"
+    - option "Qwen Token Plan"
+    - option "Qwen Token Plan CN"
+    - option "Qwen Token Plan Individual"
+    - option "Together"
+    - option "Vercel AI Gateway"
+    - option "xAI"
+    - option "Xiaomi"
+    - option "Xiaomi Token Plan AMS"
+    - option "Xiaomi Token Plan CN"
+    - option "Xiaomi Token Plan SGP"
+    - option "Z.AI"
+    - option "Z.AI Coding CN"
   - text: API 密钥
   - textbox "API 密钥":
     - /placeholder: 输入 API 密钥，或留空使用环境认证

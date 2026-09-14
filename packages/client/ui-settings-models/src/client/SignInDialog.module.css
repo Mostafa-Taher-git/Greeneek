@@ -1,0 +1,57 @@
+/* Sign-in attempt dialog: method picker, flow notices, prompt form, outcome. */
+.methods {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+}
+
+.methodButton {
+  width: 100%;
+  text-align: left;
+}
+
+.notices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.notice {
+  color: var(--dsw-alias-label-secondary);
+  font-size: 13px;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+
+.noticeCode {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 6px;
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.promptForm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.promptActions {
+  display: flex;
+  gap: 8px;
+}
+
+.status {
+  color: var(--dsw-alias-label-secondary);
+  font-size: 13px;
+  line-height: 20px;
+}

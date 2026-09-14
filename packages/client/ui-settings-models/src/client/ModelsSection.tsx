@@ -12,10 +12,11 @@
  * re-renders from pushed invalidations or the post-apply reload.
  */
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Button, IconPlusOutline16, Modal } from '@greeneek/gnk-client-ui-primitives'
 import type { InjectFace, PropsRenderSlots } from '@greeneek/gnk-client-ui-slots'
+import type { AuthorizationEntryView } from '@greeneek/gnk-api-remotes/client'
 // Type-only: pulls this package's SlotMap merge (the two Models child slots).
 import type {} from './slot-contract.ts'
 import { CustomProviderCard } from './CustomProviderCard.tsx'
@@ -25,6 +26,7 @@ import type { ModelsOperations } from './operations.ts'
 import type { SettingsSchemaOperations } from './schema-operations.ts'
 import { ProviderEditor, type ProviderEditorProps } from './ProviderEditor.tsx'
 import { ModelVisibilityPanel } from './ModelVisibilityPanel.tsx'
+import { SignInDialog } from './SignInDialog.tsx'
 import type { en } from './locales.ts'
 import styles from './ModelsSection.module.css'
 
@@ -189,6 +191,19 @@ export function providerCopy(template: string, target: ProviderIdentity): string
 }
 
 /**
+ * The sign-in flow key for one provider row, when its namespace registers
+ * flows under the adapter's record scope. Only the pi-ai family mounts flows
+ * today (`llm-pi-ai/<route>`); every other namespace offers key entry alone.
+ * @param settingsNs - the row's settings namespace.
+ * @param provider - the row's provider route id.
+ * @returns the wire key to match against the listed flows, or undefined when
+ *   the namespace names no flow scope.
+ */
+export function signInKeyFor(settingsNs: string, provider: string): string | undefined {
+  return settingsNs === 'llm-pi-ai' ? `llm-pi-ai/${provider}` : undefined
+}
+
+/**
  * Render the Models section content column.
  * @param props - slot-delivered injected dependencies.
  * @returns the section, or null while the shell has not injected yet.
@@ -214,6 +229,20 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderS
   const [savedTarget, setSavedTarget] = useState<ProviderIdentity | undefined>(undefined)
   const [declaring, setDeclaring] = useState(false)
   const [dismissedSetup, setDismissedSetup] = useState<ReadonlySet<string>>(() => new Set())
+  const [flows, setFlows] = useState<readonly AuthorizationEntryView[]>([])
+  const [signIn, setSignIn] = useState<AuthorizationEntryView | undefined>(undefined)
+
+  // Sign-in flows are an extra beside the directory: the list arrives once the
+  // page is ready, and an empty answer (seam absent or refused) simply means
+  // no row offers the button.
+  useEffect(() => {
+    if (state.status !== 'ready') return
+    let stale = false
+    void operations.listSignInFlows().then((listed) => {
+      if (!stale) setFlows(listed)
+    })
+    return () => { stale = true }
+  }, [operations, state.status])
 
   const announceSaved = (target: ProviderIdentity): void => {
     // Announced only once the refreshed directory is in the snapshot the
@@ -354,6 +383,12 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderS
           const credentialMissing = !credentialConfigured
             && row.apiKeyEnv !== undefined
             && row.credential?.configured === false
+          // A row offers sign-in only while a listed flow claims its record
+          // key: OAuth-capable routes get the button, key-only routes do not.
+          const flowKey = signInKeyFor(target.settingsNs, target.provider)
+          const flow = flowKey === undefined
+            ? undefined
+            : flows.find(entry => entry.key === flowKey)
           return (
             <li key={row.entry.provider} className={styles['rowCard']}>
               <div className={styles['rowHead']}>
@@ -386,6 +421,19 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderS
                       : null}
                 </span>
                 <span className={styles['rowActions']}>
+                  {flow === undefined ? null : (
+                    <button
+                      type="button"
+                      className={styles['secondaryButton']}
+                      aria-label={providerCopy(t('signInTitle'), target)}
+                      onClick={() => {
+                        setSavedTarget(undefined)
+                        setSignIn(flow)
+                      }}
+                    >
+                      {t('signIn')}
+                    </button>
+                  )}
                   <button
                     type="button"
                     className={styles['secondaryButton']}
@@ -609,6 +657,19 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderS
       >
         {deleteFailure === undefined ? null : <p className={styles['error']}>{deleteFailure}</p>}
       </Modal>
+      {signIn === undefined ? null : (
+        <SignInDialog
+          flowKey={signIn.key}
+          flowLabel={signIn.label}
+          methods={signIn.methods}
+          operations={operations}
+          t={t}
+          onClose={(authorized) => {
+            setSignIn(undefined)
+            if (authorized) void controller.load()
+          }}
+        />
+      )}
     </div>
   )
 }

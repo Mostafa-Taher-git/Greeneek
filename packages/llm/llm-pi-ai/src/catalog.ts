@@ -14,6 +14,9 @@
 
 import { builtinProviders, getBuiltinModels, getBuiltinProviders } from '@earendil-works/pi-ai/providers/all'
 import type { BuiltinProvider } from '@earendil-works/pi-ai/providers/all'
+import {
+  harnessCatalogModels, harnessCatalogProviders, harnessCatalogProviderIds,
+} from './harness-catalog.ts'
 import type {
   AnthropicMessagesCompat,
   Api,
@@ -170,7 +173,8 @@ let providerIndex: Map<string, Provider> | undefined
  * @returns the catalog provider index.
  */
 function catalogProviders(): Map<string, Provider> {
-  providerIndex ??= new Map(builtinProviders().map(provider => [provider.id, provider]))
+  providerIndex ??= new Map(
+    [...builtinProviders(), ...harnessCatalogProviders()].map(provider => [provider.id, provider]))
   return providerIndex
 }
 
@@ -184,11 +188,15 @@ export function catalogProvider(provider: string): Provider | undefined {
 }
 
 /**
- * Every provider route the installed pi-ai catalog ships.
+ * Every provider route the installed catalog ships: pi-ai's builtins, with the
+ * harness's curated providers merged in their sorted position so a
+ * configuration surface lists one deterministic catalog.
  * @returns the catalog provider ids.
  */
 export function catalogProviderIds(): readonly string[] {
-  return getBuiltinProviders()
+  const ids = [...getBuiltinProviders(), ...harnessCatalogProviderIds()]
+  ids.sort((left, right) => (left < right ? -1 : 1))
+  return ids
 }
 
 /**
@@ -197,6 +205,8 @@ export function catalogProviderIds(): readonly string[] {
  * @returns catalog models by id; empty for a route pi-ai does not ship.
  */
 export function catalogModels(provider: string): Map<string, Model<Api>> {
+  const curated = harnessCatalogModels(provider)
+  if (curated !== undefined) return curated
   if (!catalogProviders().has(provider)) return new Map()
   const models = getBuiltinModels(provider as BuiltinProvider) as Model<Api>[]
   return new Map(models.map(model => [model.id, model]))

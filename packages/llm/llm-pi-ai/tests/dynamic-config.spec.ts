@@ -94,7 +94,7 @@ describe('request-level dynamic profiles', () => {
     expect(directory.length).toBeGreaterThan(30)
     expect(directory).toContainEqual({
       provider: 'openai',
-      displayName: 'openai',
+      displayName: 'OpenAI',
       settingsNs: 'llm-pi-ai',
       settingsPath: ['providers', 'openai'],
       declared: false,
@@ -243,6 +243,55 @@ describe('request-level dynamic profiles', () => {
     // changed, so no swap should happen at all.
     await ctx.settings.update(NS, { providers: { anthropic: {}, openai: {} } })
     expect(ctx.llm.listProviders().map(provider => provider.id)).toEqual(before)
+  })
+})
+
+describe('harness-curated catalog', () => {
+  it('lists the Kilo Gateway route under its catalog display name', async () => {
+    const ctx = await boot(await home(), {})
+
+    const directory = ctx.llm.listConfigurableProviders()
+    expect(directory).toContainEqual({
+      provider: 'kilo',
+      displayName: 'Kilo Gateway',
+      settingsNs: 'llm-pi-ai',
+      settingsPath: ['providers', 'kilo'],
+      declared: false,
+    })
+  })
+
+  it('labels the installed catalog routes with their catalog names', async () => {
+    const ctx = await boot(await home(), {})
+
+    const directory = ctx.llm.listConfigurableProviders()
+    const names = new Map(directory.map(entry => [entry.provider, entry.displayName]))
+    expect(names.get('opencode')).toBe('OpenCode Zen')
+    expect(names.get('opencode-go')).toBe('OpenCode Go')
+  })
+
+  it('keeps the catalog name on a profile that sets no display name', async () => {
+    // A native save writes only the route key; the row must still read the
+    // name the add card offered rather than the raw id.
+    const ctx = await boot(await home(), { providers: { 'minimax-cn': {} } })
+
+    const directory = ctx.llm.listConfigurableProviders()
+    expect(directory).toContainEqual({
+      provider: 'minimax-cn',
+      displayName: 'MiniMax CN',
+      settingsNs: 'llm-pi-ai',
+      settingsPath: ['providers', 'minimax-cn'],
+      declared: false,
+    })
+  })
+
+  it('serves the curated Kilo models once the route is configured', async () => {
+    const ctx = await boot(await home(), { providers: { kilo: {} } })
+
+    const models = await ctx.llm.listModels('kilo')
+    const ids = models.map(model => model.id)
+    expect(ids).toContain('kilo-auto/frontier')
+    expect(ids).toContain('openai/gpt-5.4')
+    expect(ids.length).toBeGreaterThanOrEqual(16)
   })
 })
 /* rebrand:ignore-end */

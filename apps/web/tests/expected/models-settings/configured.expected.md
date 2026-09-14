@@ -25,14 +25,14 @@
     - text: 关闭
   - heading "模型" [level=2]
   - paragraph: 填入各提供方的 API 密钥即可使用其模型。
-  - status: 已保存 minimax-cn。
+  - status: 已保存 MiniMax CN (minimax-cn)。
   - list:
     - listitem:
-      - text: minimax-cn
+      - text: MiniMax CN
       - img "API 密钥已配置"
-      - button "编辑 minimax-cn": 编辑
-      - button "编辑 minimax-cn 的模型": 编辑模型
-      - button "删除 minimax-cn": 删除
+      - button "编辑 MiniMax CN (minimax-cn)": 编辑
+      - button "编辑 MiniMax CN (minimax-cn) 的模型": 编辑模型
+      - button "删除 MiniMax CN (minimax-cn)": 删除
   - button "添加提供方":
     - img
     - text: 添加提供方

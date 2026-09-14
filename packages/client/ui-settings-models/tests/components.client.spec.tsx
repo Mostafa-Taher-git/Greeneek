@@ -168,6 +168,7 @@ function scriptedFace(overrides: {
   const mutate = overrides.mutate ?? vi.fn(() => Promise.resolve(remoteOk(providerNamespace)))
   const set = overrides.set ?? vi.fn(() => Promise.resolve(remoteOk(undefined)))
   const unset = overrides.unset ?? vi.fn(() => Promise.resolve(remoteOk(undefined)))
+  const authorizationList = vi.fn(() => Promise.resolve(remoteOk([])))
   const face = {
     llm: {
       listProviders: vi.fn(() => Promise.resolve(remoteOk([
@@ -203,8 +204,11 @@ function scriptedFace(overrides: {
       set,
       unset,
     },
+    authorization: {
+      list: authorizationList,
+    },
   }
-  return { face, update, mutate, set, unset }
+  return { face, update, mutate, set, unset, authorizationList }
 }
 
 type PageContext = ConstructorParameters<typeof ModelsSettingsStore>[0]

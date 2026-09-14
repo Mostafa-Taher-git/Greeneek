@@ -41,6 +41,9 @@ async function bench(isLoopback = true, settings?: object, services: object = {}
     // Models join itself never fetches until a section actually loads. The real
     // ui-settings apply also provides the settingsSchema service.
     settings: settings ?? scriptedSettingsRemote().settings,
+    authorization: {
+      list: vi.fn(() => Promise.resolve({ ok: true, value: [] })),
+    },
   })
   // The fixed Host facts the settings provider reads its persistence from.
   remote.$host = { home: undefined, isLoopback }
@@ -69,7 +72,7 @@ describe('ui-settings-models apply', () => {
   it('declares the services it uses', () => {
     expect(inject).toEqual([
       'slots', 'locale', 'remote', 'remote.credentials', 'remote.llm', 'remote.settings',
-      'settingsScope', 'settingsSchema',
+      'remote.authorization', 'settingsScope', 'settingsSchema',
     ])
   })
 

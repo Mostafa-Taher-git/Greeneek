@@ -106,6 +106,7 @@
     "@greeneek/gnk-session-turn-outline": "workspace:^",
     "@greeneek/gnk-api-session-controller": "workspace:^",
     "@greeneek/gnk-api-settings-controller": "workspace:^",
+    "@greeneek/gnk-api-authorization-controller": "workspace:^",
     "@greeneek/gnk-api-workspace-controller": "workspace:^",
     "@greeneek/gnk-subprocess": "workspace:^",
     "@greeneek/gnk-workspace": "workspace:^",

@@ -650,6 +650,9 @@ export const FOUNDATION_TYPE_NAMES: ReadonlySet<string> = new Set([
 /** Project types deliberately documented outside the subsystems catalog. */
 export const TYPE_LINK_EXEMPTIONS: Readonly<Record<string, string>> = {
   z: 'schemastery schema constructor is owned by vendor/schemastery (vendored upstream)',
+  AuthorizationEntryView: 'web sign-in entry view is owned by packages/api/authorization-controller/src/types.ts',
+  AuthorizationAttemptFrame: 'web sign-in attempt frame is owned by packages/api/authorization-controller/src/types.ts',
+  AuthorizationAnswer: 'web sign-in prompt answer is owned by packages/api/authorization-controller/src/types.ts',
   BeginCommandRequest: 'event-local request contract is owned by packages/client/ui-input-trigger/src/types.ts',
   InsertReferenceRequest: 'event-local request contract is owned by packages/client/ui-input-trigger/src/types.ts',
   ConsumeTokenRequest: 'event-local request contract is owned by packages/client/ui-input-trigger/src/types.ts',

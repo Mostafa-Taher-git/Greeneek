@@ -1379,18 +1379,9 @@ importers:
       '@greeneek/gnk-web-search-duckduckgo':
         specifier: workspace:^
         version: link:../../web/web-search-duckduckgo
-      '@greeneek/gnk-web-search-exa':
-        specifier: workspace:^
-        version: link:../../web/web-search-exa
-      '@greeneek/gnk-web-search-google':
-        specifier: workspace:^
-        version: link:../../web/web-search-google
       '@greeneek/gnk-web-search-greeneek':
         specifier: workspace:^
         version: link:../../web/web-search-greeneek
-      '@greeneek/gnk-web-search-perplexity':
-        specifier: workspace:^
-        version: link:../../web/web-search-perplexity
       '@greeneek/gnk-workflow-worker-thread':
         specifier: workspace:^
         version: link:../../workflow/workflow-worker-thread

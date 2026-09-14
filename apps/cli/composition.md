@@ -160,10 +160,10 @@ flowchart LR
   cfg --> plugin_gnk_base_web
   plugin_gnk_base_web_fetch_http["web-fetch-http<br/>@greeneek/gnk-web-fetch-http"]
   cfg --> plugin_gnk_base_web_fetch_http
-  plugin_gnk_base_web_search_exa["web-search-exa<br/>@greeneek/gnk-web-search-exa"]
-  cfg --> plugin_gnk_base_web_search_exa
-  plugin_gnk_base_web_search_perplexity["web-search-perplexity<br/>@greeneek/gnk-web-search-perplexity"]
-  cfg --> plugin_gnk_base_web_search_perplexity
+  plugin_gnk_base_web_search_duckduckgo["web-search-duckduckgo<br/>@greeneek/gnk-web-search-duckduckgo"]
+  cfg --> plugin_gnk_base_web_search_duckduckgo
+  plugin_gnk_base_web_search_greeneek["web-search-greeneek<br/>@greeneek/gnk-web-search-greeneek"]
+  cfg --> plugin_gnk_base_web_search_greeneek
   plugin_gnk_base_tool_web["tool-web<br/>@greeneek/gnk-tool-web"]
   cfg --> plugin_gnk_base_tool_web
   plugin_gnk_base_tools["tools<br/>@greeneek/gnk-tools"]
@@ -254,8 +254,8 @@ flowchart LR
 | `repeat-tool-reminder` | `@greeneek/gnk-repeat-tool-reminder` |
 | `web` | `@greeneek/gnk-web` |
 | `web-fetch-http` | `@greeneek/gnk-web-fetch-http` |
-| `web-search-exa` | `@greeneek/gnk-web-search-exa` |
-| `web-search-perplexity` | `@greeneek/gnk-web-search-perplexity` |
+| `web-search-duckduckgo` | `@greeneek/gnk-web-search-duckduckgo` |
+| `web-search-greeneek` | `@greeneek/gnk-web-search-greeneek` |
 | `tool-web` | `@greeneek/gnk-tool-web` |
 | `tools` | `@greeneek/gnk-tools` |
 | `system-prompt` | `@greeneek/gnk-system-prompt` |

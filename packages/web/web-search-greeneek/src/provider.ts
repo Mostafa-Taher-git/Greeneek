@@ -191,7 +191,12 @@ export class GreeneekSearchProvider implements WebSearchProvider {
 
   available(): boolean {
     const options = this.resolveOptions()
+    // The shipped default endpoint operates nowhere: an unconfigured Custom
+    // vehicle must not claim usability, or auto-selection turns ambiguous
+    // against the keyless provider on every fresh deployment. An explicitly
+    // configured endpoint counts, wherever it points.
     return ((options.apiKey?.length ?? 0) > 0 || options.resolveApiKey !== undefined)
+      && options.baseURL !== GREENEEK_DEFAULT_BASE_URL
       && URL.canParse(options.baseURL)
       && isPositiveInteger(options.maxTokens)
       && isPositiveInteger(options.maxUses)

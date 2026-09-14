@@ -17,6 +17,7 @@ import type { AnthropicResponse } from '@greeneek/gnk-web-search-greeneek/src/ty
 
 /** Construct the provider over a fixed options value; production passes a live thunk. */
 import type { GreeneekSearchProviderOptions } from '@greeneek/gnk-web-search-greeneek'
+import { GREENEEK_DEFAULT_BASE_URL } from '@greeneek/gnk-web-search-greeneek'
 
 const searchProvider = (options: GreeneekSearchProviderOptions): GreeneekSearchProvider =>
   new GreeneekSearchProvider(() => options)
@@ -164,6 +165,12 @@ describe('GreeneekSearchProvider availability', () => {
 
   it('is available with a key', () => {
     expect(searchProvider(options).available()).toBe(true)
+  })
+
+  it('is unavailable on the shipped default endpoint even with a key', () => {
+    // api.greeneek.dev operates no search endpoint: the default must never
+    // make auto-selection ambiguous against the keyless provider.
+    expect(searchProvider({ ...options, baseURL: GREENEEK_DEFAULT_BASE_URL }).available()).toBe(false)
   })
 
   it('is misconfigured when the base URL is unparseable', () => {
@@ -426,7 +433,7 @@ describe('web-search-greeneek plugin registration', () => {
     vi.stubGlobal('fetch', vi.fn(async () => jsonResponse(searchResponse())))
     const ctx = new Context()
     await ctx.plugin(WebRuntime, { searchProvider: GREENEEK_PROVIDER_ID })
-    const fiber = await ctx.plugin(greeneekPlugin, { apiKey: 'ds-key' })
+    const fiber = await ctx.plugin(greeneekPlugin, { apiKey: 'test-key', baseURL: 'https://api.greeneek.test/anthropic/v1' })
     await expect(ctx.web.search({ query: 'q' })).resolves.toMatchObject({ truncated: false })
     await fiber.dispose()
     await expect(ctx.web.search({ query: 'q' }))
@@ -476,14 +483,16 @@ describe('web-search-greeneek plugin registration', () => {
     const loader = Object.create(Loader.prototype) as Loader
     const unwrapped = loader.unwrapExports(greeneekPlugin) as Parameters<Context['plugin']>[0]
     // A collapsed export shape (dropped inject) would throw "without inject" here.
-    const fiber = await ctx.plugin(unwrapped, { apiKey: 'ds-key' })
+    const fiber = await ctx.plugin(unwrapped, { apiKey: 'test-key', baseURL: 'https://api.greeneek.test/anthropic/v1' })
     await expect(ctx.web.search({ query: 'q' })).resolves.toMatchObject({ truncated: false })
     await fiber.dispose()
   })
 
-  it('falls back to the env key and defaults when config omits them', async () => {
-    const prev = process.env.GREENEEK_API_KEY
+  it('falls back to the env key and env endpoint when config omits them', async () => {
+    const prevKey = process.env.GREENEEK_API_KEY
+    const prevEndpoint = process.env.GREENEEK_SEARCH_BASE_URL
     process.env.GREENEEK_API_KEY = 'env-key'
+    process.env.GREENEEK_SEARCH_BASE_URL = 'https://api.greeneek.test/anthropic/v1'
     try {
       const fetchMock = vi.fn(async () => jsonResponse(searchResponse()))
       vi.stubGlobal('fetch', fetchMock)
@@ -492,13 +501,15 @@ describe('web-search-greeneek plugin registration', () => {
       greeneekPlugin.apply(ctx, {})
       await ctx.web.search({ query: 'q' })
       const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
-      expect(url).toBe('https://api.greeneek.dev/anthropic/v1/messages')
+      expect(url).toBe('https://api.greeneek.test/anthropic/v1/messages')
       expect((init.headers as Record<string, string>)['x-api-key']).toBe('env-key')
       expect(JSON.parse(init.body as string)).toMatchObject({ model: 'greeneek-v4-flash' })
       await ctx.fiber.dispose()
     } finally {
-      if (prev === undefined) delete process.env.GREENEEK_API_KEY
-      else process.env.GREENEEK_API_KEY = prev
+      if (prevKey === undefined) delete process.env.GREENEEK_API_KEY
+      else process.env.GREENEEK_API_KEY = prevKey
+      if (prevEndpoint === undefined) delete process.env.GREENEEK_SEARCH_BASE_URL
+      else process.env.GREENEEK_SEARCH_BASE_URL = prevEndpoint
     }
   })
 
@@ -533,13 +544,35 @@ describe('web-search-greeneek plugin registration', () => {
     }
   })
 
-  it('reports an actionable credential error when neither config nor env supplies a key', async () => {
+  it('reports unavailable when neither an endpoint nor a key is configured', async () => {
     const prev = process.env.GREENEEK_API_KEY
     delete process.env.GREENEEK_API_KEY
     try {
       const ctx = new Context()
       await ctx.plugin(WebRuntime, { searchProvider: GREENEEK_PROVIDER_ID })
       await ctx.plugin(greeneekPlugin, {})
+      let caught: unknown
+      try {
+        await ctx.web.search({ query: 'q' })
+      } catch (error: unknown) {
+        caught = error
+      }
+      // Nothing configured means the shipped default endpoint, which operates
+      // nowhere: the provider stays out of auto-selection instead of failing
+      // the request against it.
+      expect(caught).toMatchObject({ code: 'WEB_PROVIDER_CONFIGURED_UNAVAILABLE' })
+    } finally {
+      if (prev !== undefined) process.env.GREENEEK_API_KEY = prev
+    }
+  })
+
+  it('reports an actionable credential error for an explicit endpoint with no key', async () => {
+    const prev = process.env.GREENEEK_API_KEY
+    delete process.env.GREENEEK_API_KEY
+    try {
+      const ctx = new Context()
+      await ctx.plugin(WebRuntime, { searchProvider: GREENEEK_PROVIDER_ID })
+      await ctx.plugin(greeneekPlugin, { baseURL: 'https://api.greeneek.test/anthropic/v1' })
       let caught: unknown
       try {
         await ctx.web.search({ query: 'q' })

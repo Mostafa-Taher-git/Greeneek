@@ -98,8 +98,8 @@ describe.skipIf(MODE === 'record')('web e2e: declared reasoning efforts reach th
     ).toContain('reasoningEffort: high')
     await expect.poll(() => trigger.getAttribute('aria-label'), { timeout: 10_000 })
       .toBe('选择模型，当前 Acme Think，推理等级 High')
-    // Effort selection dismisses the menu.
-    await expect.poll(async () => slider.count()).toBe(0)
+    // Effort selection keeps the menu open like model selection.
+    await expect.poll(async () => slider.getAttribute('aria-valuetext')).toBe('High')
     expect(tripwire.pageErrors).toEqual([])
   }, 60_000)
 

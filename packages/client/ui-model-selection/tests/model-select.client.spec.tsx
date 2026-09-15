@@ -104,9 +104,12 @@ describe('ModelSelect reasoning effort', () => {
       })
       expect(trigger.getAttribute('aria-label')).toBe('选择模型，当前 Greeneek-V4-Flash，推理等级 Max')
     })
-    // Effort selection on the current model dismisses the menu; model list
-    // selection stays open so the user can keep browsing/choosing.
-    expect(screen.queryByRole('slider')).toBeNull()
+    // Effort selection keeps the menu open like model selection; the slider
+    // follows the new level and a re-pick commits nothing.
+    expect(screen.getByRole('slider', { name: '推理等级' }).getAttribute('aria-valuetext')).toBe('Max')
+    fireEvent.keyDown(screen.getByRole('slider', { name: '推理等级' }), { key: 'Home' })
+    expect(select).toHaveBeenCalledTimes(1)
+    expect(screen.getByRole('slider', { name: '推理等级' })).toBeDefined()
   })
 
   it('offers provider default only when the adapter does not configure a model default', () => {

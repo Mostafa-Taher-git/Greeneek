@@ -243,22 +243,18 @@ export function ModelSelect(
     void select(selection).then((accepted) => { settleSelection(accepted, false) })
   }
 
-  const chooseEffort = (effort: string | undefined, dismiss = true): void => {
+  const chooseEffort = (effort: string | undefined): void => {
     if (state.current === null) return
-    if (effectiveEffort === effort) {
-      close(true)
-      return
-    }
+    // A re-pick of the active level is a no-op: the menu stays open either
+    // way — effort selection never dismisses, like model selection.
+    if (effectiveEffort === effort) return
     const selection: ModelSelection = {
       provider: state.current.provider,
       model: state.current.model,
       ...effort === undefined ? {} : { reasoningEffort: effort },
     }
     lastActionRef.current = 'select'
-    // The slider commits one level: the menu dismisses on acceptance (a
-    // re-pick of the active level just closes). Model rows instead keep the
-    // menu open for browsing.
-    void select(selection).then((accepted) => { settleSelection(accepted, dismiss) })
+    void select(selection).then((accepted) => { settleSelection(accepted, false) })
   }
 
   const waiting = state.current === null && state.status === 'loading'

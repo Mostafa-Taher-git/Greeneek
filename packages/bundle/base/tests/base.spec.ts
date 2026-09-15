@@ -41,7 +41,13 @@ describe('gnk-base bundle', () => {
     })
     expect(rows.filter(row => row.id === 'subagent-codex')).toHaveLength(0)
     expect(rows.filter(row => row.id === 'subagent-claude-code')).toHaveLength(0)
-    expect(rows.find(row => row.id === 'web')?.config).toMatchObject({ fetchProvider: 'http' })
+    expect(rows.find(row => row.id === 'web')?.config).toMatchObject({ fetchProvider: 'http', searchProvider: 'duckduckgo' })
+    expect(rows.find(row => row.id === 'web-search-duckduckgo')).toBeDefined()
+    // Keyed engines stay out of the base: they would ask the user to sign
+    // in, and Custom covers them through the Web search card instead.
+    expect(rows.filter(row => row.id === 'web-search-google')).toHaveLength(0)
+    expect(rows.filter(row => row.id === 'web-search-exa')).toHaveLength(0)
+    expect(rows.filter(row => row.id === 'web-search-perplexity')).toHaveLength(0)
     expect(rows.find(row => row.id === 'web-fetch-http')).toBeDefined()
     expect(rows.find(row => row.id === 'tool-web')?.config).toMatchObject({ fetch: true })
     expect(manifest.dependencies).not.toHaveProperty('@greeneek/gnk-subagent-codex')

@@ -17,4 +17,13 @@ maybe('DuckDuckGoSearchProvider real API', () => {
     expect(result.sources.length).toBeGreaterThan(0)
     for (const source of result.sources) expect(source.url).toMatch(/^https?:\/\//)
   }, 30_000)
+
+  it('falls back to Wikipedia for a query Instant Answer misses', async () => {
+    const provider = new DuckDuckGoSearchProvider({
+      baseURL: process.env.DUCKDUCKGO_BASE_URL ?? DUCKDUCKGO_DEFAULT_BASE_URL,
+    })
+    const result = await provider.search({ query: 'agent harness software' })
+    expect(result.sources.length).toBeGreaterThan(0)
+    for (const source of result.sources) expect(source.url).toMatch(/^https?:\/\//)
+  }, 30_000)
 })

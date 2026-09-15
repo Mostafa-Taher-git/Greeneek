@@ -14,13 +14,19 @@ import type {
   WebSearchResult,
   WebSearchSource,
 } from '@greeneek/gnk-web'
-import type { DuckDuckGoSearchResponse, DuckDuckGoTopic } from './types.ts'
+import type { DuckDuckGoSearchResponse, DuckDuckGoTopic, WikipediaSearchHit, WikipediaSearchResponse } from './types.ts'
 
 /** Stable id this provider registers under. */
 export const DUCKDUCKGO_PROVIDER_ID = 'duckduckgo'
 
 /** Default DuckDuckGo Instant Answer endpoint base; `/` is the operation. */
 export const DUCKDUCKGO_DEFAULT_BASE_URL = 'https://api.duckduckgo.com'
+
+/** Default Wikipedia API base; fallback searches run against it. */
+export const WIKIPEDIA_DEFAULT_BASE_URL = 'https://en.wikipedia.org/w/api.php'
+
+/** Upper bound on fallback hits requested per search. */
+const WIKIPEDIA_MAX_LIMIT = 50
 
 /** Attribution header sent on every request. Bump with the package version. */
 const USER_AGENT = 'greeneek-harness/0.0.1'
@@ -29,6 +35,8 @@ const USER_AGENT = 'greeneek-harness/0.0.1'
 export interface DuckDuckGoSearchProviderOptions {
   /** Endpoint base; `/` is queried. */
   baseURL: string
+  /** Wikipedia API base; fallback searches run against it. */
+  wikipediaBaseURL?: string
 }
 
 /**
@@ -113,11 +121,65 @@ export function mapDuckDuckGoResponse(response: DuckDuckGoSearchResponse): WebSe
   }
 }
 
+/**
+ * Strip the `searchmatch` markup Wikipedia wraps its excerpts in. Entities
+ * stay encoded rather than decoded into lookalike text: the excerpt is a
+ * quoted fragment, not rendered HTML.
+ * @param html - the excerpt as the API returned it.
+ * @returns the excerpt without tags.
+ */
+function stripWikipediaSnippet(html: string): string {
+  return html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()
+}
+
+/**
+ * Map one Wikipedia hit to a normalized source, or `undefined` when it names
+ * no article — the seam has no other field to derive a URL from, and
+ * inventing one would lie.
+ * @param hit - one entry of `query.search`.
+ * @returns the normalized source, or `undefined` for title-less hits.
+ */
+function mapWikipediaHit(hit: WikipediaSearchHit): WebSearchSource | undefined {
+  const title = hit.title ?? ''
+  const pageid = hit.pageid ?? 0
+  if (title.trim().length === 0 || pageid <= 0) return undefined
+  const snippet = hit.snippet ?? ''
+  return {
+    url: `https://en.wikipedia.org/?curid=${pageid}`,
+    title,
+    ...snippet.trim().length > 0 ? { snippet: stripWikipediaSnippet(snippet) } : {},
+  }
+}
+
+/**
+ * Map a Wikipedia search envelope to normalized sources in wire order.
+ * @param response - the parsed `action=query&list=search` body.
+ * @returns the hits that name an article; anything else maps to nothing.
+ */
+export function mapWikipediaResponse(response: WikipediaSearchResponse): WebSearchSource[] {
+  const envelope: unknown = response
+  if (typeof envelope !== 'object' || envelope === null) return []
+  const hits: unknown = response.query?.search ?? []
+  if (!Array.isArray(hits)) return []
+  const sources: WebSearchSource[] = []
+  for (const hit of hits) {
+    if (typeof hit !== 'object' || hit === null) continue
+    const mapped = mapWikipediaHit(hit as WikipediaSearchHit)
+    if (mapped !== undefined) sources.push(mapped)
+  }
+  return sources
+}
+
 /** The DuckDuckGo-backed search provider; HTTP redirects fail as `WEB_PROVIDER_ERROR`. */
 export class DuckDuckGoSearchProvider implements WebSearchProvider {
   readonly id = DUCKDUCKGO_PROVIDER_ID
 
-  constructor(private readonly options: DuckDuckGoSearchProviderOptions) {}
+  /** Wikipedia API base; resolved once because the plugin owns the default. */
+  private readonly wikipediaBaseURL: string
+
+  constructor(private readonly options: DuckDuckGoSearchProviderOptions) {
+    this.wikipediaBaseURL = options.wikipediaBaseURL ?? WIKIPEDIA_DEFAULT_BASE_URL
+  }
 
   /** Keyless by design: usable whenever the endpoint base parses. */
   available(): boolean {
@@ -167,11 +229,46 @@ export class DuckDuckGoSearchProvider implements WebSearchProvider {
 
     try {
       const payload = await response.json() as DuckDuckGoSearchResponse
-      return mapDuckDuckGoResponse(payload)
+      const instant = mapDuckDuckGoResponse(payload)
+      // Instant Answer covers head queries and definitions only; anything
+      // else falls back to Wikipedia rather than reporting nothing.
+      if (instant.sources.length > 0 || instant.content !== undefined) return instant
+      return { sources: await this.wikipediaSources(request, signal), truncated: false }
     } catch (error: unknown) {
       if (error instanceof WebError) throw error
       if (isAbortError(error)) throw new WebError('DuckDuckGo search aborted', 'WEB_ABORTED', { cause: error })
       throw new WebError(`DuckDuckGo returned an unprocessable response body: ${String(error)}`, 'WEB_PROVIDER_ERROR', { cause: error })
+    }
+  }
+
+  /**
+   * Best-effort enrichment behind an answered-but-empty Instant Answer: any
+   * failure here resolves to no sources rather than failing a search whose
+   * primary backend already answered.
+   */
+  private async wikipediaSources(request: WebSearchRequest, signal?: AbortSignal): Promise<WebSearchSource[]> {
+    try {
+      const params = new URLSearchParams({
+        action: 'query',
+        list: 'search',
+        srsearch: request.query,
+        format: 'json',
+        srlimit: String(Math.min(request.maxResults ?? 10, WIKIPEDIA_MAX_LIMIT)),
+      })
+      const response = await fetch(`${this.wikipediaBaseURL}?${params.toString()}`, {
+        method: 'GET',
+        redirect: 'error',
+        headers: {
+          'accept': 'application/json',
+          'user-agent': USER_AGENT,
+        },
+        ...signal !== undefined ? { signal } : {},
+      })
+      if (!response.ok) return []
+      const payload = await response.json() as WikipediaSearchResponse
+      return mapWikipediaResponse(payload)
+    } catch {
+      return []
     }
   }
 }

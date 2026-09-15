@@ -8,7 +8,7 @@ kind: "package-reference"
 
 ## Summary
 
-With `gnk-web-search-duckduckgo`, the harness searches the web through DuckDuckGo's Instant Answer API — no key, no account, usable out of the box. Choose it when a deployment wants search with zero configuration. The abstract maps to the first source, related-topic blurbs to further sources, and a non-blank instant answer (calculations, conversions) to `content`. Entries with a blank URL are dropped. The model-facing `web_search` tool lives in `gnk-tool-web`.
+With `gnk-web-search-duckduckgo`, the harness searches the web through DuckDuckGo's Instant Answer API — no key, no account, usable out of the box. Choose it when a deployment wants search with zero configuration. The abstract maps to the first source, related-topic blurbs to further sources, and a non-blank instant answer (calculations, conversions) to `content`. Entries with a blank URL are dropped. When Instant Answer answers nothing, the provider falls back to a Wikipedia search rather than reporting nothing; a failing fallback resolves empty instead of failing the search. The model-facing `web_search` tool lives in `gnk-tool-web`.
 
 ## Table of Contents
 
@@ -24,11 +24,11 @@ With `gnk-web-search-duckduckgo`, the harness searches the web through DuckDuckG
 <a id="use-this-package"></a>
 ## Use this package
 
-Mount the provider in a composition that already loads the web service; it registers as the `duckduckgo` search provider, so `ctx.web.search()` resolves it automatically when it is the only usable search backend — or pin it with `searchProvider: duckduckgo`. In Settings → General, the search-engine row offers it as DuckDuckGo alongside Google and Custom. Because it needs no key, a deployment with no search keys at all still searches: this provider auto-selects and `web_search` works.
+Mount the provider in a composition that already loads the web service; it registers as the `duckduckgo` search provider, so `ctx.web.search()` resolves it automatically when it is the only usable search backend — or pin it with `searchProvider: duckduckgo`. The base composition pins it as the default, so a fresh download searches with nothing to configure. A deployment that saves a custom endpoint in the Web search card pins that provider instead. Because it needs no key, a deployment with no search keys at all still searches.
 
 ### When to choose it
 
-Choose this backend when a deployment wants search without credentials — local runs, first boot, keyless tiers. Instant Answer shines for entities, facts, calculations, and conversions; it is thinner than Google/Exa for broad exploratory queries, so prefer a keyed provider when recall matters more than zero setup.
+Choose this backend when a deployment wants search without credentials — local runs, first boot, keyless tiers. Instant Answer shines for entities, facts, calculations, and conversions, with a Wikipedia fallback behind its empty answers; it is thinner than a keyed provider for broad exploratory queries, so prefer a custom endpoint when recall matters more than zero setup.
 
 ### Minimal configuration
 
@@ -117,7 +117,7 @@ No direct invalidation; the named consumer owns any request-prefix changes.
 
 These limits define when the provider is a poor fit. They are current package constraints.
 
-- **Instant Answer is thinner than keyed search** — strong for entities, facts, and calculations; broad exploratory queries return fewer, shorter sources than Google/Exa/Perplexity.
+- **Instant Answer is thinner than keyed search** — strong for entities, facts, and calculations, with a Wikipedia fallback behind empty answers; broad exploratory queries return fewer, shorter sources than a keyed endpoint.
 - **No result-count control** — the API takes no count parameter; the seam truncates to `maxResults` but the provider always fetches the API's fixed set.
 - **An entry with a blank URL is dropped entirely** — there is no portable URL to map, so fewer sources than requested can return.
 - **Abort classification is error-shape-based** — only a `DOMException` named `AbortError` maps to `WEB_ABORTED`; an abort carrying a custom reason (such as `gnk-timeout`'s `TimeoutReason`) surfaces as `WEB_PROVIDER_ERROR`.

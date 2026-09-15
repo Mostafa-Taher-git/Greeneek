@@ -12,12 +12,14 @@ import type {} from '@greeneek/gnk-web'
 import {
   DuckDuckGoSearchProvider,
   DUCKDUCKGO_DEFAULT_BASE_URL,
+  WIKIPEDIA_DEFAULT_BASE_URL,
 } from './provider.ts'
 
 export {
   DUCKDUCKGO_DEFAULT_BASE_URL,
   DUCKDUCKGO_PROVIDER_ID,
   DuckDuckGoSearchProvider,
+  WIKIPEDIA_DEFAULT_BASE_URL,
 } from './provider.ts'
 export type { DuckDuckGoSearchProviderOptions } from './provider.ts'
 
@@ -31,15 +33,19 @@ export const inject = ['web']
 export interface Config {
   /** Endpoint base; `/` is queried. Defaults to the public API. */
   baseURL?: string
+  /** Wikipedia API base; fallback searches run against it. Defaults to the public API. */
+  wikipediaBaseURL?: string
 }
 
 export const Config: z<Config> = z.object({
   baseURL: z.string(),
+  wikipediaBaseURL: z.string(),
 })
 
 /** Register the DuckDuckGo search provider with `ctx.web`. */
 export function apply(ctx: Context, config: Config): void {
   ctx.web.registerSearchProvider(new DuckDuckGoSearchProvider({
     baseURL: config.baseURL ?? DUCKDUCKGO_DEFAULT_BASE_URL,
+    wikipediaBaseURL: config.wikipediaBaseURL ?? WIKIPEDIA_DEFAULT_BASE_URL,
   }))
 }

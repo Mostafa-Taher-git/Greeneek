@@ -31,3 +31,20 @@ export interface DuckDuckGoSearchResponse {
   Answer?: string | null
   RelatedTopics?: DuckDuckGoTopic[] | null
 }
+
+/** One Wikipedia search hit inside `query.search`. */
+export interface WikipediaSearchHit {
+  /** Article title; links resolve through the stable page id. */
+  title?: string | null
+  /** Stable article id for the canonical link. */
+  pageid?: number | null
+  /** HTML excerpt with the match wrapped in `searchmatch` spans. */
+  snippet?: string | null
+}
+
+/** Wikipedia API response envelope for `action=query&list=search`. */
+export interface WikipediaSearchResponse {
+  query?: {
+    search?: WikipediaSearchHit[] | null
+  } | null
+}

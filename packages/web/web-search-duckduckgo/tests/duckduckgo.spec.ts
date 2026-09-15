@@ -3,7 +3,8 @@ import { Context } from '@greeneek/cordis'
 import WebRuntime from '@greeneek/gnk-web'
 import { DuckDuckGoSearchProvider, DUCKDUCKGO_PROVIDER_ID } from '@greeneek/gnk-web-search-duckduckgo'
 import * as duckduckgoPlugin from '@greeneek/gnk-web-search-duckduckgo'
-import { mapDuckDuckGoResponse, mapDuckDuckGoTopic } from '../src/provider.ts'
+import { mapDuckDuckGoResponse, mapDuckDuckGoTopic, mapWikipediaResponse } from '../src/provider.ts'
+import type { WikipediaSearchResponse } from '../src/types.ts'
 
 const options = { baseURL: 'https://api.duckduckgo.test' }
 
@@ -95,6 +96,121 @@ describe('DuckDuckGo response mapping', () => {
   })
 })
 
+describe('Wikipedia response mapping', () => {
+  it('maps hits to canonical links with stripped snippets', () => {
+    expect(mapWikipediaResponse({
+      query: {
+        search: [{
+          title: 'Agent harness',
+          pageid: 42,
+          snippet: 'An agent <span class="searchmatch">harness</span> runs  agents.',
+        }],
+      },
+    })).toEqual([{
+      url: 'https://en.wikipedia.org/?curid=42',
+      title: 'Agent harness',
+      snippet: 'An agent harness runs agents.',
+    }])
+  })
+
+  it('drops hits that name no article and envelopes with no hits', () => {
+    expect(mapWikipediaResponse({
+      query: {
+        search: [
+          { title: '  ', pageid: 7, snippet: 'blank title' },
+          { title: 'No id', snippet: 'missing pageid' },
+          { snippet: 'missing title entirely' },
+          { title: 'No snippet', pageid: 8 },
+          'not-an-object',
+          null,
+        ],
+      },
+    } as unknown as WikipediaSearchResponse)).toEqual([{ url: 'https://en.wikipedia.org/?curid=8', title: 'No snippet' }])
+    expect(mapWikipediaResponse({})).toEqual([])
+    expect(mapWikipediaResponse({ query: null })).toEqual([])
+    expect(mapWikipediaResponse({ query: { search: null } })).toEqual([])
+    expect(mapWikipediaResponse({ query: { search: 'nope' as unknown as [] } })).toEqual([])
+    expect(mapWikipediaResponse('nope' as unknown as never)).toEqual([])
+  })
+})
+
+describe('DuckDuckGoSearchProvider Wikipedia fallback', () => {
+  const wikiHit = { title: 'Agent harness', pageid: 42, snippet: 'runs agents' }
+  const wikiBody = { query: { search: [wikiHit] } }
+
+  function emptyInstantThen(body: unknown, init: ResponseInit = {}) {
+    return vi.fn(async (input: unknown) => {
+      const url = String(input)
+      return url.includes('w/api.php') ? jsonResponse(body, init) : jsonResponse({ RelatedTopics: [] })
+    })
+  }
+
+  it('falls back to Wikipedia when Instant Answer is empty', async () => {
+    const fetchMock = emptyInstantThen(wikiBody)
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await new DuckDuckGoSearchProvider(options).search({ query: 'agent harness' })
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    const [url, init] = fetchMock.mock.calls[1] as unknown as [string, RequestInit]
+    const parsed = new URL(url)
+    expect(`${parsed.origin}${parsed.pathname}`).toBe('https://en.wikipedia.org/w/api.php')
+    expect(parsed.searchParams.get('srsearch')).toBe('agent harness')
+    expect(parsed.searchParams.get('srlimit')).toBe('10')
+    expect(init).toMatchObject({ method: 'GET', redirect: 'error' })
+    expect(result).toEqual({
+      sources: [{ url: 'https://en.wikipedia.org/?curid=42', title: 'Agent harness', snippet: 'runs agents' }],
+      truncated: false,
+    })
+  })
+
+  it('caps the fallback hit count at the requested bound', async () => {
+    const fetchMock = emptyInstantThen(wikiBody)
+    vi.stubGlobal('fetch', fetchMock)
+
+    await new DuckDuckGoSearchProvider(options).search({ query: 'q', maxResults: 3 })
+
+    const [url] = fetchMock.mock.calls[1] as unknown as [string, RequestInit]
+    expect(new URL(url).searchParams.get('srlimit')).toBe('3')
+  })
+
+  it('queries a configured Wikipedia base instead of the default', async () => {
+    const fetchMock = emptyInstantThen(wikiBody)
+    vi.stubGlobal('fetch', fetchMock)
+
+    await new DuckDuckGoSearchProvider({ ...options, wikipediaBaseURL: 'https://wiki.test/w/api.php' })
+      .search({ query: 'q' })
+
+    const [url] = fetchMock.mock.calls[1] as unknown as [string, RequestInit]
+    expect(new URL(url).origin).toBe('https://wiki.test')
+  })
+
+  it('skips the fallback when Instant Answer answers', async () => {
+    const fetchMock = vi.fn(async () => jsonResponse({ Answer: '4', RelatedTopics: [] }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await new DuckDuckGoSearchProvider(options).search({ query: '2+2' })
+
+    expect(fetchMock).toHaveBeenCalledOnce()
+    expect(result).toEqual({ sources: [], truncated: false, content: '4' })
+  })
+
+  it('resolves empty when the fallback fails', async () => {
+    for (const wiki of [
+      () => Promise.reject(new TypeError('connection refused')),
+      async () => new Response('down', { status: 502 }),
+      async () => jsonResponse({ query: { search: 'nope' } }),
+    ]) {
+      const fetchMock = vi.fn(async (input: unknown) => {
+        if (String(input).includes('w/api.php')) return wiki()
+        return jsonResponse({ RelatedTopics: [] })
+      })
+      vi.stubGlobal('fetch', fetchMock)
+      await expect(new DuckDuckGoSearchProvider(options).search({ query: 'q' }))
+        .resolves.toEqual({ sources: [], truncated: false })
+    }
+  })
+})
 describe('DuckDuckGoSearchProvider availability', () => {
   it('is available out of the box: no key exists', () => {
     expect(new DuckDuckGoSearchProvider(options).available()).toBe(true)
@@ -107,7 +223,9 @@ describe('DuckDuckGoSearchProvider availability', () => {
 
 describe('DuckDuckGoSearchProvider request mapping', () => {
   it('sends the query as Instant Answer params without redirect following', async () => {
-    const fetchMock = vi.fn(async () => jsonResponse({ RelatedTopics: [] }))
+    const fetchMock = vi.fn(async () => jsonResponse({
+      RelatedTopics: [{ Text: 'blurb', FirstURL: 'https://a.test' }],
+    }))
     vi.stubGlobal('fetch', fetchMock)
 
     const provider = new DuckDuckGoSearchProvider(options)

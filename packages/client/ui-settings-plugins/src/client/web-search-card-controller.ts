@@ -25,6 +25,25 @@ import {
  */
 export const WEB_SEARCH_NS = 'web-search-greeneek'
 
+/** Namespace owning the search-provider pin the card keeps with the endpoint. */
+export const PIN_SETTINGS_NAMESPACE = 'web'
+
+/** Field carrying the pinned search provider id; absence means auto-select. */
+export const PIN_PROVIDER_FIELD = 'searchProvider'
+
+/**
+ * Provider id of the Greeneek search backend: the Custom vehicle this card
+ * configures. Saving an endpoint pins it; clearing the endpoint unpins back
+ * to the deployment default.
+ */
+export const CUSTOM_SEARCH_PROVIDER_ID = 'greeneek-official'
+
+/** The provider-pin section: only the choice lives here. */
+export interface ProviderPinSettings {
+  /** Pinned search provider id; absence means auto-select. */
+  searchProvider?: string
+}
+
 /** Credential reference the provider resolves when the section names none. */
 const DEFAULT_API_KEY_REF = 'GREENEEK_API_KEY'
 
@@ -86,6 +105,7 @@ export class WebSearchCardController {
    */
   constructor(
     private readonly scope: SettingsScope<WebSearchSettings>,
+    private readonly engineScope: SettingsScope<ProviderPinSettings>,
     private readonly ctx: ClientContext,
   ) {
     this.form = new CardForm(
@@ -158,7 +178,25 @@ export class WebSearchCardController {
    * @returns the card's snapshot and its form actions.
    */
   inject(): WebSearchCardFace {
-    return { hooks: { webSearchCard: this.store }, ...this.form.actions() }
+    const actions = this.form.actions()
+    return { hooks: { webSearchCard: this.store }, ...actions, save: () => { void this.saveAndSyncPin() } }
+  }
+
+  /**
+   * Save the staged fields, then keep the provider pin with the committed
+   * endpoint: a saved endpoint pins the Custom vehicle this card configures,
+   * a cleared one unpins back to the deployment default. A refused save
+   * keeps its drafts and moves nothing.
+   */
+  private async saveAndSyncPin(): Promise<void> {
+    const endpoint = this.form.field('baseURL').text
+    await this.form.save()
+    if (this.form.shell().failed) return
+    if (endpoint.trim().length > 0) {
+      void this.engineScope.set(PIN_PROVIDER_FIELD, CUSTOM_SEARCH_PROVIDER_ID)
+    } else {
+      void this.engineScope.unset(PIN_PROVIDER_FIELD)
+    }
   }
 
   /**

@@ -455,17 +455,15 @@
     # Anonymous fetch accepts only public HTTP(S) destinations, resolves and
     # validates every destination, and pins every actual connection.
     #
-    # No search provider is pinned: the Greeneek search route talks to
-    # `api.greeneek.dev`, which no deployment of this repository operates, so
-    # naming it here made every web_search fail against a host that does not
-    # resolve. `gnk-web` auto-selects when exactly one usable search provider is
-    # registered, so mounting one (Exa or Perplexity below, with its key) is all
-    # a deployment needs; with none, `web_search` reports that it is
-    # unconfigured while `web_fetch` keeps working.
+    # DuckDuckGo is the default search provider: keyless, so search works on
+    # a fresh download with nothing to configure. A user-layer
+    # `web.searchProvider` overrides this pin; the Web search card manages
+    # the pin when a custom endpoint is saved or cleared.
     - id: web
       name: '@greeneek/gnk-web'
       config:
         fetchProvider: http
+        searchProvider: duckduckgo
 
     - id: web-fetch-http
       name: '@greeneek/gnk-web-fetch-http'

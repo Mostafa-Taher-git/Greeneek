@@ -253,149 +253,19 @@
   color: var(--dsw-alias-label-primary);
 }
 
-/* Effort picker: wrapping segmented group that can grow to two lines. */
-.effortSegments {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px;
-  padding: 4px;
-  max-width: 100%;
-}
-
-.effortSegment {
-  flex: 1 1 auto;
-  padding: 6px 10px;
-  border: none;
-  border-radius: 8px;
-  outline: none;
-  background: var(--dsw-alias-interactive-bg-hover);
-  color: var(--dsw-alias-label-secondary);
-  font-size: 13px;
-  line-height: 20px;
-  font-weight: 500;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.effortSegment:hover:not(:disabled) {
-  color: var(--dsw-alias-label-primary);
-}
-
-.effortSegment:focus-visible {
-  box-shadow: 0 0 0 2px var(--dsw-alias-border-l3);
-}
-
-.effortSegment:disabled {
-  cursor: default;
-  opacity: 0.6;
-}
-
-.effortSegmentChecked {
-  background: rgba(163, 230, 163, 0.2);
-  color: var(--dsw-alias-label-primary);
-}
-
-/* Single combined panel: model list on the left, detail/info on the right. */
-.panelColumns {
+/* Model pane: back row, search on top, provider-grouped rows. */
+.modelsView {
   display: flex;
-  flex-direction: row;
-  min-height: 0;
-  gap: 0;
-}
-
-.panelList {
-  display: flex;
-  flex: 1 1 auto;
   flex-direction: column;
-  min-width: 0;
   min-height: 0;
   max-height: min(420px, calc(100vh - 96px));
-  overflow: auto;
+  animation: menu-view-in 120ms ease-out;
 }
-
-/* Detail panel: model info + real effort levels in the same panel. */
-.detail {
-  display: flex;
-  flex: 0 0 auto;
-  flex-direction: column;
-  width: 220px;
-  min-width: 220px;
-  max-height: min(420px, calc(100vh - 96px));
-  overflow: hidden;
-  padding: 12px;
-  border-left: 0.5px solid var(--dsw-alias-border-l1);
-  gap: 8px;
+.modelsView .backButton {
+  margin: 8px 8px 0;
 }
-
-.detailEmpty {
-  color: var(--dsw-alias-label-tertiary);
-  font-size: 13px;
-  line-height: 20px;
-}
-
-.detailTitle {
-  margin: 0;
-  color: var(--dsw-alias-label-primary);
-  font-size: 14px;
-  line-height: 20px;
-  font-weight: 600;
-}
-
-.detailProvider {
-  margin: 0;
-  color: var(--dsw-alias-label-tertiary);
-  font-size: 12px;
-  line-height: 16px;
-}
-
-.detailModelButton {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-  text-align: left;
-}
-
-.detailModelButton:hover:not(:disabled) {
-  opacity: 0.9;
-}
-
-.detailModelButton:disabled {
-  cursor: default;
-  opacity: 0.7;
-}
-
-.detailDescription {
-  margin: 0;
-  color: var(--dsw-alias-label-secondary);
-  font-size: 12px;
-  line-height: 18px;
-  text-wrap: pretty;
-}
-
-.detailEffort {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.detailEffortTitle {
-  margin: 0;
-  color: var(--dsw-alias-label-tertiary);
-  font-size: 12px;
-  line-height: 16px;
-  font-weight: 500;
-}
-
-.detailEffortSegments {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px;
+.modelsView .groups {
+  padding: 0 8px 8px;
 }
 
 /* Overview rows: Model drills into the list, the Effort chip into the

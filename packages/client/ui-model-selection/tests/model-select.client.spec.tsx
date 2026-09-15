@@ -221,9 +221,9 @@ describe('ModelSelect reasoning effort', () => {
     fireEvent.click(screen.getByRole('menuitem', { name: /模型/ }))
     expect(screen.queryByRole('menuitemradio', { name: 'removed-model' })).toBeNull()
     expect(screen.getByRole('menuitemradio', { name: /Greeneek-V4-Flash/ })).toBeTruthy()
-    // Rows stay single-line: the description lives only in the detail
-    // sidecar previewing the current model (search still matches it).
-    expect(screen.getByText('Fast catalog description')).toBeDefined()
+    // Rows carry names only: with no sidecar, the catalog description
+    // renders nowhere (search still matches it).
+    expect(screen.queryByText('Fast catalog description')).toBeNull()
   })
 
   it('shows loading until the catalog and Session projection are both ready', async () => {

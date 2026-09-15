@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ModelSelection } from '@greeneek/gnk-api-remotes/client'
 import { createSnapshotStore } from '@greeneek/gnk-client-store'
@@ -180,16 +180,15 @@ describe('ModelSelect model search', () => {
     expect(screen.getByRole('menuitemradio', { name: /Other Mini/ })).toBeDefined()
   })
 
-  it('previews the hovered row in the detail panel', () => {
+  it('shows no sidecar: rows carry names only', () => {
     openModelPane()
-    const detail = screen.getByLabelText('模型详情')
-    expect(detail.textContent).toContain('Acme Flash')
-    fireEvent.mouseEnter(screen.getByRole('menuitemradio', { name: /Other Mini/ }))
-    expect(detail.textContent).toContain('Other Mini')
-    expect(detail.textContent).toContain('Other')
+    expect(screen.queryByLabelText('模型详情')).toBeNull()
+    expect(screen.queryByText('Fastest route')).toBeNull()
+    expect(screen.queryByText('Deepest reasoning')).toBeNull()
+    expect(screen.getByRole('menuitemradio', { name: /Acme Flash/ })).toBeDefined()
   })
 
-  it('taps a previewed effort on the current model like the Effort pane', async () => {
+  it('switches provider from the model list and keeps browsing', async () => {
     const directory = createSnapshotStore<ModelDirectoryState>(state())
     const select = vi.fn(async (selection: ModelSelection) => {
       directory.set(state({ current: selection }))
@@ -205,20 +204,15 @@ describe('ModelSelect model search', () => {
     />)
     fireEvent.click(screen.getByRole('button', { name: /Acme Flash/ }))
     fireEvent.click(screen.getByRole('menuitem', { name: /模型/ }))
-    const detail = screen.getByLabelText('模型详情')
-    expect(within(detail).getByRole('radio', { name: 'Medium' }).getAttribute('aria-checked')).toBe('true')
-    fireEvent.click(within(detail).getByRole('radio', { name: 'High' }))
-    expect(select).toHaveBeenCalledWith({
-      provider: 'acme',
-      model: 'flash',
-      reasoningEffort: 'high',
-    })
+    fireEvent.click(screen.getByRole('menuitemradio', { name: /Acme Pro/ }))
+    expect(select).toHaveBeenCalledWith({ provider: 'acme', model: 'pro' })
+    // Model selection keeps the menu open so the user can keep browsing.
     await waitFor(() => {
-      expect(screen.queryByLabelText('模型详情')).toBeNull()
+      expect(screen.getByRole('menuitemradio', { name: /Acme Pro/ })).toBeDefined()
     })
   })
 
-  it('taps a previewed effort on another model to select both at once', async () => {
+  it('the effort entry follows the newly picked provider model', () => {
     const directory = createSnapshotStore<ModelDirectoryState>(state())
     const select = vi.fn(async (selection: ModelSelection) => {
       directory.set(state({ current: selection }))
@@ -232,19 +226,15 @@ describe('ModelSelect model search', () => {
       select={select}
       t={t}
     />)
+    // Other Mini declares no levels: after picking it, the Effort entry
+    // disables with a note — the slider always shows the live provider
+    // model's real levels, never a stale vocabulary.
     fireEvent.click(screen.getByRole('button', { name: /Acme Flash/ }))
     fireEvent.click(screen.getByRole('menuitem', { name: /模型/ }))
-    fireEvent.mouseEnter(screen.getByRole('menuitemradio', { name: /Acme Pro/ }))
-    const detail = screen.getByLabelText('模型详情')
-    expect(within(detail).getByText('Acme Pro')).toBeDefined()
-    fireEvent.click(within(detail).getByRole('radio', { name: 'High' }))
-    expect(select).toHaveBeenCalledWith({
-      provider: 'acme',
-      model: 'pro',
-      reasoningEffort: 'high',
-    })
-    await waitFor(() => {
-      expect(screen.queryByLabelText('模型详情')).toBeNull()
-    })
+    fireEvent.click(screen.getByRole('menuitemradio', { name: /Other Mini/ }))
+    fireEvent.click(screen.getByRole('button', { name: '模型' }))
+    const chip = screen.getByRole('button', { name: '推理等级' })
+    expect(chip.hasAttribute('disabled')).toBe(true)
+    expect(screen.getByText('当前模型未提供推理等级。')).toBeDefined()
   })
 })

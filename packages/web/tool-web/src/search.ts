@@ -85,7 +85,7 @@ export function formatSearchOutput(result: WebSearchResult): string {
     })
     parts.push(`Sources:\n${lines.join('\n')}`)
   } else if (result.content === undefined || result.content.length === 0) {
-    parts.push('No results found.')
+    parts.push('No results found. Refine the query, or configure a search endpoint under Settings → Plugins → Web search for broader coverage.')
   }
 
   if (result.truncated) parts.push(`(Showing the first ${result.sources.length} sources. Refine the query for more.)`)

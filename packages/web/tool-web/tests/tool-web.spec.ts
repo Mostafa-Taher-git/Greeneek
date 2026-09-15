@@ -70,8 +70,9 @@ describe('search formatting', () => {
   })
 
   it('reports no results when there is neither content nor sources', () => {
-    expect(formatSearchOutput({ sources: [], truncated: false }))
-      .toContain('No results found.')
+    const out = formatSearchOutput({ sources: [], truncated: false })
+    expect(out).toContain('No results found.')
+    expect(out).toContain('Settings → Plugins → Web search')
   })
 
   it('renders content alone when there are no sources', () => {

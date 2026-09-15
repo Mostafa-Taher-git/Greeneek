@@ -107,6 +107,8 @@ describe('web e2e: the composer model switch is the default for later sessions',
     await trigger.click()
     await page.getByRole('menuitem', { name: /模型/ }).click()
     await page.getByRole('menuitemradio', { name: 'Acme Large' }).click()
+    // Model picks keep the menu open for browsing; the row stays visible.
+    await expect.poll(async () => page.getByRole('menuitemradio', { name: 'Acme Large' }).count()).toBe(1)
 
     // The switch is what sets the default: the shared Agent-route settings section
     // now names it, beside the provider profiles the Models page writes.
@@ -124,6 +126,9 @@ describe('web e2e: the composer model switch is the default for later sessions',
     // ...while the one holding a logged route keeps deriving from its log.
     expect(await currentOf(loggedId)).toEqual({ provider: START_ROUTE, model: START_MODEL })
     expect(tripwire.pageErrors).toEqual([])
+    // Leave things as found: the menu stays open after a model pick by
+    // design, and focus sits on the picked row, so Escape closes it here.
+    await page.keyboard.press('Escape')
   }, 60_000)
 
   it('goes inert when the route the default names stops being served', async () => {
@@ -151,9 +156,15 @@ describe('web e2e: the composer model switch is the default for later sessions',
 
     // The way out stays open. Locking the model seat with everything else
     // would leave the composer asking for the one thing it prevents.
+    // The previous test leaves the model menu open by design (model picks
+    // keep browsing). Normalize the toggle: open if closed, reopen if the
+    // click landed on an open menu.
     const seat = page.getByRole('button', { name: /^选择模型/ })
     expect(await seat.isEnabled()).toBe(true)
     await seat.click()
+    if (await page.getByRole('menuitem', { name: /模型/ }).count() === 0) {
+      await seat.click()
+    }
     await page.getByRole('menuitem', { name: /模型/ }).click()
     await page.getByRole('menuitemradio').first().click()
     await expect.poll(async () => box.isEnabled(), { timeout: 15_000 }).toBe(true)

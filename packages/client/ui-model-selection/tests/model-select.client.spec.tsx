@@ -59,7 +59,7 @@ function state(overrides: Partial<ModelDirectoryState> = {}): ModelDirectoryStat
 afterEach(cleanup)
 
 describe('ModelSelect reasoning effort', () => {
-  it('renders effort names without descriptions and submits the effort as part of the session selection', async () => {
+  it('offers the real levels on a stepped slider and submits the effort as part of the session selection', async () => {
     const directory = createSnapshotStore<ModelDirectoryState>(state())
     const select = vi.fn(async (selection: ModelSelection) => {
       directory.set(state({ current: selection }))
@@ -78,17 +78,24 @@ describe('ModelSelect reasoning effort', () => {
       name: '选择模型，当前 Greeneek-V4-Flash，推理等级 High',
     })
     fireEvent.click(trigger)
-    // Every declared level is offered under its own name, in declaration
-    // order — nothing hidden, nothing re-ranked. Descriptions never render.
-    const rows = screen.getAllByRole('radio')
-    expect(rows.map(row => row.textContent)).toEqual(['Max', 'Off', 'Low', 'Minimal', 'Extra High', 'Medium', 'High'])
+    // The overview pairs the Model row with the Effort entry: no Speed, no
+    // duplicate Effort row, and the list stays behind the Model row.
+    expect(screen.getByRole('menuitem', { name: /模型/ })).toBeDefined()
+    expect(screen.queryByRole('radio')).toBeNull()
+    expect(screen.queryByText('Speed')).toBeNull()
+    expect(document.activeElement?.getAttribute('role')).toBe('menuitem')
+
+    fireEvent.click(screen.getByRole('button', { name: '推理等级 · High' }))
+    const slider = screen.getByRole('slider', { name: '推理等级' })
+    // The adapter configures a model default, so the 7 declared levels are
+    // the stops — nothing hidden, nothing re-ranked. Descriptions never render.
+    expect(slider.getAttribute('aria-valuemax')).toBe('6')
+    expect(slider.getAttribute('aria-valuetext')).toBe('High')
     for (const absent of ['Largest budget', 'Default']) {
       expect(screen.queryByText(absent)).toBeNull()
     }
-    expect(screen.getByRole('radio', { name: 'High' }).getAttribute('aria-checked')).toBe('true')
-    expect(screen.getByRole('radio', { name: 'Max' }).getAttribute('aria-checked')).toBe('false')
 
-    fireEvent.click(screen.getByRole('radio', { name: 'Max' }))
+    fireEvent.keyDown(slider, { key: 'Home' })
     await waitFor(() => {
       expect(select).toHaveBeenCalledWith({
         provider: 'greeneek-official',
@@ -99,7 +106,7 @@ describe('ModelSelect reasoning effort', () => {
     })
     // Effort selection on the current model dismisses the menu; model list
     // selection stays open so the user can keep browsing/choosing.
-    expect(screen.queryByRole('radio', { name: 'Max' })).toBeNull()
+    expect(screen.queryByRole('slider')).toBeNull()
   })
 
   it('offers provider default only when the adapter does not configure a model default', () => {
@@ -115,25 +122,34 @@ describe('ModelSelect reasoning effort', () => {
       }],
       current: { provider: 'provider', model: 'model' },
     }))
+    const selectWithDefault = vi.fn().mockResolvedValue(true)
     render(<ModelSelect
       locked={false}
       available
       directory={directory}
       load={vi.fn()}
-      select={vi.fn().mockResolvedValue(true)}
+      select={selectWithDefault}
       t={t}
     />)
 
     fireEvent.click(screen.getByRole('button', {
       name: '选择模型，当前 Model，推理等级 Default',
     }))
-    // Combined panel: effort chips render directly.
-    const rows = screen.getAllByRole('radio')
-    expect(rows.map(row => row.textContent)).toEqual(['Default', 'Standard'])
-    expect(screen.getByRole('radio', { name: 'Default' }).getAttribute('aria-checked')).toBe('true')
-    // Default names the trigger caption; every offered level names its row.
-    expect(screen.getAllByText('Default')).toHaveLength(2)
+    fireEvent.click(screen.getByRole('button', { name: '推理等级 · Default' }))
+    // The slider opens on Default with Standard as the only other stop.
+    const slider = screen.getByRole('slider', { name: '推理等级' })
+    expect(slider.getAttribute('aria-valuemax')).toBe('1')
+    expect(slider.getAttribute('aria-valuenow')).toBe('0')
+    expect(slider.getAttribute('aria-valuetext')).toBe('Default')
+    // Default names the trigger caption; every offered level names its stop.
+    expect(screen.getAllByText('Default')).toHaveLength(3)
     expect(screen.getByText('Standard')).toBeTruthy()
+    fireEvent.keyDown(slider, { key: 'End' })
+    expect(selectWithDefault).toHaveBeenCalledWith({
+      provider: 'provider',
+      model: 'model',
+      reasoningEffort: 'standard',
+    })
   })
 
   it('offers every declared level verbatim, in declaration order', () => {
@@ -173,9 +189,14 @@ describe('ModelSelect reasoning effort', () => {
     fireEvent.click(screen.getByRole('button', {
       name: '选择模型，当前 Greeneek-V4-Flash，推理等级 Medium',
     }))
-    // Combined panel: model rows and effort chips render together.
-    const rows = screen.getAllByRole('radio')
-    expect(rows.map(row => row.textContent)).toEqual(['Max', 'Ultra', 'Off', 'Low', 'Minimal', 'Standard', 'Medium', 'High'])
+    fireEvent.click(screen.getByRole('button', { name: '推理等级 · Medium' }))
+    // Eight declared levels, model default Medium: eight stops, first stop
+    // Max and last stop High name the endpoint captions.
+    const slider = screen.getByRole('slider', { name: '推理等级' })
+    expect(slider.getAttribute('aria-valuemax')).toBe('7')
+    expect(slider.getAttribute('aria-valuetext')).toBe('Medium')
+    expect(screen.getByText('Max')).toBeDefined()
+    expect(screen.getByText('High')).toBeDefined()
   })
 
   it('shows the durable model id when the catalog has no matching display name', () => {
@@ -195,7 +216,9 @@ describe('ModelSelect reasoning effort', () => {
     const trigger = screen.getByRole('button', { name: '选择模型，当前 greeneek-official/removed-model' })
     expect(trigger.textContent).toContain('greeneek-official/removed-model')
     fireEvent.click(trigger)
-    expect(screen.queryByRole('menuitem', { name: /推理等级/ })).toBeNull()
+    // The overview greets first: no list rows until the Model row drills in.
+    expect(screen.queryByRole('menuitemradio', { name: 'removed-model' })).toBeNull()
+    fireEvent.click(screen.getByRole('menuitem', { name: /模型/ }))
     expect(screen.queryByRole('menuitemradio', { name: 'removed-model' })).toBeNull()
     expect(screen.getByRole('menuitemradio', { name: /Greeneek-V4-Flash/ })).toBeTruthy()
     // Rows stay single-line: the description lives only in the detail
@@ -253,6 +276,7 @@ describe('ModelSelect reasoning effort', () => {
     />)
 
     fireEvent.click(screen.getByRole('button', { name: /选择模型|当前/ }))
+    fireEvent.click(screen.getByRole('menuitem', { name: /模型/ }))
     fireEvent.click(screen.getByRole('menuitemradio', { name: /Greeneek-V4-Pro/ }))
     const toast = await screen.findByRole('alert')
     expect(toast.textContent).toContain('模型操作失败：session/model-unavailable: session already contains images')
@@ -273,5 +297,120 @@ describe('ModelSelect reasoning effort', () => {
 
     expect(screen.queryByRole('button')).toBeNull()
     expect(load).not.toHaveBeenCalled()
+  })
+
+  it('drills from the overview into each pane, backs out, and resets on reopen', () => {
+    const directory = createSnapshotStore<ModelDirectoryState>(state())
+    render(<ModelSelect
+      locked={false}
+      available
+      directory={directory}
+      load={vi.fn()}
+      select={vi.fn().mockResolvedValue(true)}
+      t={t}
+    />)
+
+    const trigger = screen.getByRole('button', {
+      name: '选择模型，当前 Greeneek-V4-Flash，推理等级 High',
+    })
+    fireEvent.click(trigger)
+    expect(screen.getByRole('menuitem', { name: /模型/ })).toBeDefined()
+    expect(screen.queryByLabelText('搜索模型')).toBeNull()
+
+    fireEvent.click(screen.getByRole('menuitem', { name: /模型/ }))
+    expect(document.activeElement?.getAttribute('aria-label')).toBe('搜索模型')
+    expect(screen.getByRole('menuitemradio', { name: /Greeneek-V4-Flash/ })).toBeDefined()
+    fireEvent.click(screen.getByRole('button', { name: '模型' }))
+    expect(screen.getByRole('menuitem', { name: /模型/ })).toBeDefined()
+    expect(screen.queryByLabelText('搜索模型')).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: '推理等级 · High' }))
+    const slider = screen.getByRole('slider', { name: '推理等级' })
+    expect(document.activeElement).toBe(slider)
+    fireEvent.click(screen.getByRole('button', { name: '推理等级' }))
+    expect(screen.queryByRole('slider')).toBeNull()
+    expect(screen.getByRole('menuitem', { name: /模型/ })).toBeDefined()
+
+    fireEvent.click(screen.getByRole('menuitem', { name: /模型/ }))
+    fireEvent.keyDown(screen.getByLabelText('搜索模型'), { key: 'Escape' })
+    fireEvent.click(trigger)
+    expect(screen.getByRole('menuitem', { name: /模型/ })).toBeDefined()
+    expect(screen.queryByLabelText('搜索模型')).toBeNull()
+  })
+
+  it('disables the Effort entry with a note when the model declares no levels', () => {
+    const directory = createSnapshotStore<ModelDirectoryState>(state({
+      groups: [{
+        id: 'plain',
+        name: 'Plain',
+        models: [{ id: 'basic', name: 'Basic' }],
+      }],
+      current: { provider: 'plain', model: 'basic' },
+    }))
+    render(<ModelSelect
+      locked={false}
+      available
+      directory={directory}
+      load={vi.fn()}
+      select={vi.fn().mockResolvedValue(true)}
+      t={t}
+    />)
+
+    fireEvent.click(screen.getByRole('button', { name: '选择模型，当前 Basic' }))
+    const chip = screen.getByRole('button', { name: '推理等级' })
+    expect(chip.hasAttribute('disabled')).toBe(true)
+    expect(screen.getByText('当前模型未提供推理等级。')).toBeDefined()
+    expect(screen.queryByRole('slider')).toBeNull()
+  })
+
+  it('keeps the slider inert while a selection is in flight', async () => {
+    const directory = createSnapshotStore<ModelDirectoryState>(state())
+    render(<ModelSelect
+      locked={false}
+      available
+      directory={directory}
+      load={vi.fn()}
+      select={vi.fn().mockResolvedValue(true)}
+      t={t}
+    />)
+
+    fireEvent.click(screen.getByRole('button', {
+      name: '选择模型，当前 Greeneek-V4-Flash，推理等级 High',
+    }))
+    fireEvent.click(screen.getByRole('button', { name: '推理等级 · High' }))
+    directory.set(state({ status: 'selecting' }))
+    const busySlider = await screen.findByRole('slider', { name: '推理等级' })
+    expect(busySlider.getAttribute('aria-disabled')).toBe('true')
+    fireEvent.keyDown(busySlider, { key: 'ArrowRight' })
+    expect(screen.getByRole('slider', { name: '推理等级' })).toBeDefined()
+  })
+
+  it('names the effort loss when the catalog drops levels mid-pane', async () => {
+    const directory = createSnapshotStore<ModelDirectoryState>(state())
+    render(<ModelSelect
+      locked={false}
+      available
+      directory={directory}
+      load={vi.fn()}
+      select={vi.fn().mockResolvedValue(true)}
+      t={t}
+    />)
+
+    fireEvent.click(screen.getByRole('button', {
+      name: '选择模型，当前 Greeneek-V4-Flash，推理等级 High',
+    }))
+    fireEvent.click(screen.getByRole('button', { name: '推理等级 · High' }))
+    expect(screen.getByRole('slider', { name: '推理等级' })).toBeDefined()
+    directory.set(state({
+      groups: [{
+        id: 'greeneek-official',
+        name: 'Greeneek',
+        models: [{ id: 'greeneek-v4-flash', name: 'Greeneek-V4-Flash' }],
+      }],
+    }))
+    await waitFor(() => {
+      expect(screen.queryByRole('slider')).toBeNull()
+    })
+    expect(screen.getByText('当前模型未提供推理等级。')).toBeDefined()
   })
 })

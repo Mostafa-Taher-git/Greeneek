@@ -65,42 +65,41 @@ describe.skipIf(MODE === 'record')('web e2e: declared reasoning efforts reach th
     const trigger = page.getByRole('button', { name: /^选择模型/ })
     await trigger.waitFor({ timeout: 15_000 })
     await trigger.click()
-    await page.getByRole('menuitem', { name: /推理等级/ }).click()
+    // The overview pairs the Model row with the Effort entry: no Speed row,
+    // no duplicate Effort row.
+    await expect.poll(async () => page.getByRole('menuitem', { name: /模型/ }).count()).toBe(1)
+    await page.getByRole('button', { name: '推理等级 · Default' }).click()
 
-    // One named segment per declared level, in declaration order: the
+    // One stop per declared level, in declaration order: the
     // provider-default entry (the route configures no `reasoning`), then
     // every declared id under its real name — including `off`, which the
-    // profile declares as a supported level that sends nothing. Segments
-    // carry their own text, so the vocabulary is proven by menu text, not
-    // by control chrome.
-    const menu = page.getByRole('menu')
-    for (const [name, checked] of [
-      ['Default', 'true'],
-      ['Off', 'false'],
-      ['Low', 'false'],
-      ['Medium', 'false'],
-      ['High', 'false'],
-      ['Extra High', 'false'],
-      ['Max', 'false'],
-    ] as const) {
-      const row = menu.getByRole('radio', { name, exact: true })
-      await expect.poll(async () => row.count()).toBe(1)
-      await expect.poll(async () => row.getAttribute('aria-checked')).toBe(checked)
-    }
-    const snapshot = await captureStableAria(page, '[role="menu"]', scaffold.workspaceCwd)
+    // profile declares as a supported level that sends nothing. The slider
+    // proves the vocabulary by stop count and endpoint captions, not by
+    // control chrome.
+    const menu = page.getByRole('dialog', { name: '模型与推理等级' })
+    const slider = menu.getByRole('slider', { name: '推理等级' })
+    await expect.poll(async () => slider.getAttribute('aria-valuemax')).toBe('6')
+    await expect.poll(async () => slider.getAttribute('aria-valuenow')).toBe('0')
+    await expect.poll(async () => slider.getAttribute('aria-valuetext')).toBe('Default')
+    await expect.poll(async () => menu.getByText('Default').count()).toBe(2)
+    await expect.poll(async () => menu.getByText('Max').count()).toBe(1)
+    const snapshot = await captureStableAria(page, '[role="dialog"]', scaffold.workspaceCwd)
     await compareOrRefreshGolden(UI_EXPECTED, snapshot, MODE)
 
-    // Picking a level is the same gesture that saves the default selection, so
-    // the effort lands in the Agent default Settings section beside provider/model.
-    await menu.getByRole('radio', { name: 'High', exact: true }).click()
+    // Clicking the track at the High stop's fraction commits High: picking a
+    // level is the same gesture that saves the default selection, so the
+    // effort lands in the Agent default Settings section beside provider/model.
+    const box = await slider.boundingBox()
+    if (box === null) throw new Error('effort slider has no layout box')
+    await page.mouse.click(box.x + (box.width * 4) / 6, box.y + box.height / 2)
     await expect.poll(
       async () => readFile(join(scaffold.harnessHome, 'settings.yaml'), 'utf8'),
       { timeout: 10_000 },
     ).toContain('reasoningEffort: high')
     await expect.poll(() => trigger.getAttribute('aria-label'), { timeout: 10_000 })
       .toBe('选择模型，当前 Acme Think，推理等级 High')
-    // List rows are single-shot: picking one dismisses the menu.
-    await expect.poll(async () => menu.getByRole('radio', { name: 'High', exact: true }).count()).toBe(0)
+    // Effort selection dismisses the menu.
+    await expect.poll(async () => slider.count()).toBe(0)
     expect(tripwire.pageErrors).toEqual([])
   }, 60_000)
 

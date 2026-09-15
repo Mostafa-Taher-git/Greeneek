@@ -3,16 +3,15 @@
   min-width: 0;
 }
 
-/* Figma 313:14108 ToggleButton: 13/20 medium secondary label, 4px gap,
-   12px caption chevron; 28px chip height matches the sibling Plan /
-   Read-only selects in the same tool row. */
+/* Figma 313:14108 ToggleButton grown into the pasted selector's pill: 36px
+   tall, fully rounded, model · effort plus chevron. */
 .trigger {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   min-width: 0;
-  height: 32px;
-  padding: 0 10px;
+  height: 36px;
+  padding: 0 14px 0 12px;
   border: none;
   border-radius: 999px;
   outline: none;
@@ -399,46 +398,229 @@
   gap: 4px;
 }
 
-/* Retained for compatibility; root cells are no longer rendered. */
-.cell {
-  box-sizing: border-box;
+/* Overview rows: Model drills into the list, the Effort chip into the
+   slider. Single-line rows; values truncate, never wrap. */
+.menuView {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 8px 6px;
+  animation: menu-view-in 120ms ease-out;
+}
+.menuRow {
   display: flex;
   align-items: center;
   gap: 8px;
-  width: auto;
-  min-width: 100%;
-  height: 40px;
-  padding: 0 10px;
-  border: none;
+  width: 100%;
+  min-height: 36px;
+  padding: 0 10px 0 12px;
+  border: 0;
   border-radius: 10px;
   background: transparent;
   color: var(--dsw-alias-label-primary);
-  font-size: 14px;
-  line-height: 22px;
-  cursor: pointer;
+  font: inherit;
   text-align: left;
+  cursor: pointer;
 }
-
-.cell:hover {
+.menuRow:hover {
   background: var(--dsw-alias-interactive-bg-hover);
 }
-
-.cellLabel {
-  flex: 0 0 auto;
-  white-space: nowrap;
+.menuRow:focus-visible {
+  outline: 2px solid var(--dsw-alias-state-success-primary);
+  outline-offset: -2px;
 }
-
-.cellValue {
-  flex: 1 1 auto;
+.menuRowLabel {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  flex: none;
+}
+.menuRowValue {
+  flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: 14px;
+  color: var(--dsw-alias-label-secondary);
   text-align: right;
+}
+.menuRowChevron {
+  flex: none;
   color: var(--dsw-alias-label-tertiary);
 }
+.menuDivider {
+  height: 1px;
+  margin: 5px 3px;
+  background: var(--dsw-alias-border-l3);
+}
+.effortChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  align-self: flex-start;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.effortChip:hover:not(:disabled) {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+}
+.effortChip:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+.effortChip:focus-visible {
+  outline: 2px solid var(--dsw-alias-state-success-primary);
+  outline-offset: -2px;
+}
+.effortChipLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.effortEmpty {
+  margin: 4px 12px 6px;
+  font-size: 13px;
+  color: var(--dsw-alias-label-secondary);
+}
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  align-self: flex-start;
+  min-height: 32px;
+  margin: 8px 8px 0;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.backButton:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+}
+.backButton:focus-visible {
+  outline: 2px solid var(--dsw-alias-state-success-primary);
+  outline-offset: -2px;
+}
 
-.cellChevron {
-  flex: 0 0 auto;
-  color: var(--dsw-alias-label-tertiary);
+/* Stepped effort slider: track with stop ticks, green fill, knob. Position
+   rides inline styles; the knob eases between stops. */
+.effortView {
+  display: flex;
+  flex-direction: column;
+  padding: 0 8px 8px;
+  animation: menu-view-in 120ms ease-out;
+}
+.effortView .backButton {
+  margin: 8px 0 0;
+}
+.sliderValue {
+  margin: 12px 8px 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dsw-alias-label-primary);
+  text-align: center;
+}
+.slider {
+  position: relative;
+  height: 38px;
+  margin: 0 12px;
+  touch-action: none;
+  cursor: pointer;
+  outline: none;
+}
+.slider:focus-visible::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 999px;
+  border: 2px solid var(--dsw-alias-state-success-primary);
+  pointer-events: none;
+}
+.sliderTrack {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  translate: 0 -50%;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--dsw-alias-interactive-bg-hover);
+  overflow: hidden;
+}
+.sliderTicks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.sliderTick {
+  position: absolute;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--dsw-alias-label-tertiary);
+  translate: -50% -50%;
+}
+.sliderFill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 999px;
+  background: var(--dsw-alias-state-success-primary);
+}
+.sliderKnob {
+  position: absolute;
+  top: 50%;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: #fff;
+  translate: -50% -50%;
+  box-shadow:
+    0 0 0 0.5px rgba(26, 29, 33, 0.03),
+    0 1px 2px rgba(26, 29, 33, 0.10),
+    0 2px 6px rgba(26, 29, 33, 0.14);
+  transition: left 140ms ease-out;
+  pointer-events: none;
+}
+.sliderCaptions {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 6px 12px 4px;
+}
+.sliderCaption {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: var(--dsw-alias-label-secondary);
+}
+@keyframes menu-view-in {
+  from { opacity: 0; translate: 0 4px; }
+  to { opacity: 1; translate: 0 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .menuView,
+  .effortView {
+    animation: none;
+  }
+  .sliderKnob {
+    transition: none;
+  }
 }

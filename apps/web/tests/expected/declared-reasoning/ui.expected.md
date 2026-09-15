@@ -1,9 +1,5 @@
-- menu "模型与推理等级":
-  - radiogroup "推理等级":
-    - radio "Default" [checked]
-    - radio "Off"
-    - radio "Low"
-    - radio "Medium"
-    - radio "High"
-    - radio "Extra High"
-    - radio "Max"
+- dialog "模型与推理等级":
+  - button "推理等级":
+    - img
+    - text: 推理等级
+  - slider "推理等级"

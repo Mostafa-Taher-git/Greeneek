@@ -71,6 +71,8 @@ function openModelPane(directory = createSnapshotStore(state())): void {
     t={t}
   />)
   fireEvent.click(screen.getByRole('button', { name: /Acme Flash/ }))
+  // The overview greets first; the Model row drills into the searchable list.
+  fireEvent.click(screen.getByRole('menuitem', { name: /模型/ }))
 }
 
 afterEach(cleanup)
@@ -143,12 +145,14 @@ describe('ModelSelect model search', () => {
     />)
     const trigger = screen.getByRole('button', { name: /Acme Flash/ })
     fireEvent.click(trigger)
+    fireEvent.click(screen.getByRole('menuitem', { name: /模型/ }))
     const search = screen.getByLabelText('搜索模型')
     fireEvent.change(search, { target: { value: 'pro' } })
     search.focus()
     fireEvent.keyDown(search, { key: 'Escape' })
     fireEvent.keyDown(screen.getByRole('menuitemradio', { name: /Acme Pro/ }), { key: 'Escape' })
     fireEvent.click(trigger)
+    fireEvent.click(screen.getByRole('menuitem', { name: /模型/ }))
     expect(screen.getByDisplayValue('')).toBeDefined()
     expect(screen.getByRole('menuitemradio', { name: /Acme Flash/ })).toBeDefined()
   })
@@ -168,6 +172,7 @@ describe('ModelSelect model search', () => {
       t={t}
     />)
     fireEvent.click(screen.getByRole('button', { name: /Acme Flash/ }))
+    fireEvent.click(screen.getByRole('menuitem', { name: /模型/ }))
     fireEvent.change(screen.getByLabelText('搜索模型'), { target: { value: 'mini' } })
     fireEvent.click(screen.getByRole('menuitemradio', { name: /Other Mini/ }))
     expect(select).toHaveBeenCalledWith({ provider: 'other', model: 'mini' })
@@ -199,6 +204,7 @@ describe('ModelSelect model search', () => {
       t={t}
     />)
     fireEvent.click(screen.getByRole('button', { name: /Acme Flash/ }))
+    fireEvent.click(screen.getByRole('menuitem', { name: /模型/ }))
     const detail = screen.getByLabelText('模型详情')
     expect(within(detail).getByRole('radio', { name: 'Medium' }).getAttribute('aria-checked')).toBe('true')
     fireEvent.click(within(detail).getByRole('radio', { name: 'High' }))
@@ -227,6 +233,7 @@ describe('ModelSelect model search', () => {
       t={t}
     />)
     fireEvent.click(screen.getByRole('button', { name: /Acme Flash/ }))
+    fireEvent.click(screen.getByRole('menuitem', { name: /模型/ }))
     fireEvent.mouseEnter(screen.getByRole('menuitemradio', { name: /Acme Pro/ }))
     const detail = screen.getByLabelText('模型详情')
     expect(within(detail).getByText('Acme Pro')).toBeDefined()

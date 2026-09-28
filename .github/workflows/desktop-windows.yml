@@ -52,7 +52,7 @@ jobs:
             apps/desktop/.staging/app/dist/Greeneek-Desktop-latest-*
           retention-days: 14
       - if: startsWith(github.ref, 'refs/tags/desktop-')
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           name: ${{ github.ref_name }}
           files: |

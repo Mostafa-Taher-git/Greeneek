@@ -55,7 +55,7 @@ jobs:
           ls apps/desktop/.staging/app/dist/*.AppImage
           ls apps/desktop/.staging/app/dist/*.zsync
         shell: bash
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: linux-desktop-artifacts
           path: |

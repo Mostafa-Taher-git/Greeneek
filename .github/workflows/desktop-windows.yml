@@ -41,7 +41,7 @@ jobs:
       - run: node apps/desktop/scripts/prepare-release-assets.mjs --dist .staging/app/dist
       - if: startsWith(github.ref, 'refs/tags/desktop-')
         run: node apps/desktop/scripts/prepare-release-assets.mjs --dist .staging/app/dist --tag "${{ github.ref_name }}"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: windows-desktop-artifacts
           path: |

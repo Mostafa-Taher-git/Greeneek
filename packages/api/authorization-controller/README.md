@@ -16,6 +16,7 @@ kind: "package-reference"
 - [Credential hygiene](#credential-hygiene)
 - [Adding it to your composition](#adding-it-to-your-composition)
 - [Source map](#source-map)
+- [Dev Note](#dev-note)
 
 -----
 
@@ -50,3 +51,17 @@ The client face mounts the generated contribution through `@greeneek/gnk-api-rem
 | --- | --- |
 | `src/authorization.ts` | The controller: namespace methods, the attempt-stream bridge, prompt bookkeeping, and the refusal mapping |
 | `src/types.ts` | Wire-safe views and the domain failure codes, without cordis/service imports |
+
+-----
+
+<a id="dev-note"></a>
+### Dev Note
+
+<details>
+<summary>Working context for maintainers — click to expand</summary>
+
+None.
+
+</details>
+
+**Runtime invariant:** No companion is published. The authorization seam owns flows and stored attempts; this package only carries their Remote faces onto the wire.

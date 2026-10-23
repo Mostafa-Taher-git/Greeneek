@@ -14,6 +14,7 @@
   padding: 0 14px 0 12px;
   border: none;
   border-radius: 999px;
+  corner-shape: round;
   outline: none;
   background: var(--dsw-alias-interactive-bg-hover);
   color: var(--dsw-alias-label-primary);
@@ -319,7 +320,7 @@
   color: var(--dsw-alias-label-tertiary);
 }
 .menuDivider {
-  height: 1px;
+  height: 0.5px;
   margin: 5px 3px;
   background: var(--dsw-alias-border-l3);
 }
@@ -416,6 +417,7 @@
   position: absolute;
   inset: -4px;
   border-radius: 999px;
+  corner-shape: round;
   border: 2px solid var(--dsw-alias-state-success-primary);
   pointer-events: none;
 }
@@ -427,6 +429,7 @@
   translate: 0 -50%;
   height: 28px;
   border-radius: 999px;
+  corner-shape: round;
   background: var(--dsw-alias-interactive-bg-hover);
   overflow: hidden;
 }
@@ -441,6 +444,7 @@
   width: 5px;
   height: 5px;
   border-radius: 999px;
+  corner-shape: round;
   background: var(--dsw-alias-label-tertiary);
   translate: -50% -50%;
 }
@@ -450,6 +454,7 @@
   top: 0;
   bottom: 0;
   border-radius: 999px;
+  corner-shape: round;
   background: var(--dsw-alias-state-success-primary);
 }
 .sliderKnob {
@@ -458,6 +463,7 @@
   width: 34px;
   height: 34px;
   border-radius: 999px;
+  corner-shape: round;
   background: #fff;
   translate: -50% -50%;
   box-shadow:

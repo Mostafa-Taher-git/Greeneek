@@ -121,6 +121,52 @@ async begin(request: AuthorizationRequest): Promise<AuthorizationOutcome>
 
 Source: [`packages/credentials/authorization/src/index.ts`](../../packages/credentials/authorization/src/index.ts)
 
+<a id="ctxauthorizationcontroller--authorizationcontroller"></a>
+
+### `ctx.authorizationController` — `AuthorizationController`
+
+Host service backing the generated `ctx.remote.authorization` namespace. It carries every wire obligation the authorization seam itself does not: key-grammar validation at the parser, one attempt-stream bridge per call, prompt bookkeeping across separate RPC calls, and the refusal mapping. Credential values never cross this namespace in either direction.
+
+```ts cordis-catalog
+/**
+ * Every registered flow, for a page listing what can be signed into.
+ * @returns one view per flow, in registration order.
+ * @throws RemoteError when no authorization seam is mounted.
+ */
+@Remote list(): Promise<AuthorizationEntryView[]>
+
+/**
+ * Run one attempt as a stream. The page reads frames as they happen, answers
+ * prompts through `answer()`, and cancels by aborting the stream: the
+ * carrier's signal is the request signal the seam withdraws through.
+ * @param key - the credential record to authorize, as its `scope/id` string.
+ * @param method - which of the flow's methods to run, or `undefined` for its first.
+ * @param signal - carrier cancellation; aborting it withdraws the attempt.
+ * @returns the attempt's frames, ending with the settlement.
+ * @throws RemoteError when the request is malformed, no flow claims the key, it
+ *   offers no such method, an attempt is already running, or the flow failed.
+ */
+@Remote({ mode: 'stream' }) attempt(key: string, method: string | undefined, signal: AbortSignal): AsyncIterable<AuthorizationAttemptFrame>
+
+/**
+ * Answer one open prompt of a running attempt.
+ * @param key - the attempt's wire key.
+ * @param promptId - the id the prompt frame carried.
+ * @param answer - the typed or chosen value, or the human's decline.
+ * @throws RemoteError when the prompt is not, or is no longer, in flight.
+ */
+@Remote answer(key: string, promptId: string, answer: AuthorizationAnswer): void
+
+/**
+ * Withdraw the attempt running for a key, if any. A page that closes its
+ * dialog without closing the stream cancels here instead.
+ * @param key - the credential record whose attempt should stop, as its `scope/id` string.
+ */
+@Remote cancel(key: string): void
+```
+
+Source: [`packages/api/authorization-controller/src/authorization.ts`](../../packages/api/authorization-controller/src/authorization.ts)
+
 <a id="ctxcredentials--credentialprovider-abstract-seam"></a>
 
 ### `ctx.credentials` — `CredentialProvider` (abstract seam)

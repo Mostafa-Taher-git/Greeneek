@@ -59,6 +59,7 @@ export const SERVICE_PAGE: Record<string, string> = {
   compaction: 'compaction.md',
   cordisInspect: 'extensions.md',
   authorization: 'credentials.md',
+  authorizationController: 'credentials.md',
   credentials: 'credentials.md',
   credentialsController: 'credentials.md',
   settingsController: 'settings.md',

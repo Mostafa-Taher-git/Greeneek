@@ -54,6 +54,10 @@
       "@greeneek/gnk-api-workspace-controller": ["./packages/api/workspace-controller/src/index.ts"],
       "@greeneek/gnk-api-workspace-controller/client": ["./packages/api/workspace-controller/src/client/index.ts"],
       "@greeneek/gnk-api-workspace-controller/types": ["./packages/api/workspace-controller/src/types.ts"],
+      // The api/ folder is role-named without the api- prefix its npm names carry,
+      // so the authorization controller stays hand-written like its siblings above.
+      "@greeneek/gnk-api-authorization-controller": ["./packages/api/authorization-controller/src/index.ts"],
+      "@greeneek/gnk-api-authorization-controller/types": ["./packages/api/authorization-controller/src/types.ts"],
       "@greeneek/gnk-typert-protocol": ["./packages/typert/protocol/src/index.ts"],
       "@greeneek/gnk-typert-protocol/types": ["./packages/typert/protocol/src/types.ts"],
       "@greeneek/gnk-typert-loader": ["./packages/typert/loader/src/index.ts"],

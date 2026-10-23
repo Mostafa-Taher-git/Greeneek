@@ -17,7 +17,6 @@ import type { AnthropicResponse } from '@greeneek/gnk-web-search-greeneek/src/ty
 
 /** Construct the provider over a fixed options value; production passes a live thunk. */
 import type { GreeneekSearchProviderOptions } from '@greeneek/gnk-web-search-greeneek'
-import { GREENEEK_DEFAULT_BASE_URL } from '@greeneek/gnk-web-search-greeneek'
 
 const searchProvider = (options: GreeneekSearchProviderOptions): GreeneekSearchProvider =>
   new GreeneekSearchProvider(() => options)
@@ -41,6 +40,9 @@ const options = {
   maxTokens: 4096,
   maxUses: 5,
 }
+
+/** The configured options without the endpoint: `exactOptionalPropertyTypes` forbids writing `baseURL: undefined`. */
+const { baseURL: _configuredEndpoint, ...unconfiguredOptions } = options
 
 function jsonResponse(body: unknown, init: ResponseInit = {}): Response {
   return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' }, ...init })
@@ -167,10 +169,26 @@ describe('GreeneekSearchProvider availability', () => {
     expect(searchProvider(options).available()).toBe(true)
   })
 
-  it('is unavailable on the shipped default endpoint even with a key', () => {
-    // api.greeneek.dev operates no search endpoint: the default must never
-    // make auto-selection ambiguous against the keyless provider.
-    expect(searchProvider({ ...options, baseURL: GREENEEK_DEFAULT_BASE_URL }).available()).toBe(false)
+  it('is unavailable while no endpoint is configured, even with a key', () => {
+    // There is no shipped search endpoint: an unconfigured Custom vehicle
+    // must not make auto-selection ambiguous against the keyless provider.
+    expect(searchProvider(unconfiguredOptions).available()).toBe(false)
+  })
+
+  it('fails typed endpoint-missing before any dispatch when no endpoint is configured', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    const recordRequest = vi.fn()
+    const error = await rejectedWebError(
+      searchProvider({ ...unconfiguredOptions, recordRequest }).search({ query: 'hello' }),
+    )
+    // The remedy names the config field, the settings page, and the env var;
+    // neither the request recorder nor the HTTP plane observed anything.
+    expect(error.code).toBe('WEB_PROVIDER_ENDPOINT_MISSING')
+    expect(error.message).toContain('web-search-greeneek')
+    expect(error.message).toContain('GREENEEK_SEARCH_BASE_URL')
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(recordRequest).not.toHaveBeenCalled()
   })
 
   it('is misconfigured when the base URL is unparseable', () => {
@@ -557,9 +575,8 @@ describe('web-search-greeneek plugin registration', () => {
       } catch (error: unknown) {
         caught = error
       }
-      // Nothing configured means the shipped default endpoint, which operates
-      // nowhere: the provider stays out of auto-selection instead of failing
-      // the request against it.
+      // Nothing configured means no endpoint at all: the provider stays out
+      // of auto-selection instead of failing the request.
       expect(caught).toMatchObject({ code: 'WEB_PROVIDER_CONFIGURED_UNAVAILABLE' })
     } finally {
       if (prev !== undefined) process.env.GREENEEK_API_KEY = prev

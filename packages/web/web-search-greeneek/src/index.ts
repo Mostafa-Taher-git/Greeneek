@@ -1,7 +1,9 @@
 /**
  * Register a Greeneek-backed provider in `ctx.web`. It calls the Anthropic-compatible Messages API
  * with native `web_search_20250305`. The provider reuses `GREENEEK_API_KEY` but not
- * `GREENEEK_BASE_URL`, because search and chat-completions use different bases.
+ * `GREENEEK_BASE_URL`, because search and chat-completions use different bases. The
+ * endpoint always comes from the deployment: no shipped endpoint exists, and without
+ * one the provider stays unavailable and fails typed `WEB_PROVIDER_ENDPOINT_MISSING`.
  * @module @greeneek/gnk-web-search-greeneek
  */
 
@@ -17,7 +19,6 @@ import type {} from '@greeneek/gnk-web'
 import {
   GreeneekSearchProvider,
   GREENEEK_DEFAULT_API_VERSION,
-  GREENEEK_DEFAULT_BASE_URL,
   GREENEEK_DEFAULT_MAX_TOKENS,
   GREENEEK_DEFAULT_MAX_USES,
   GREENEEK_DEFAULT_MODEL,
@@ -27,7 +28,6 @@ import type { GreeneekSearchProviderOptions } from './provider.ts'
 export {
   GreeneekSearchProvider,
   GREENEEK_DEFAULT_API_VERSION,
-  GREENEEK_DEFAULT_BASE_URL,
   GREENEEK_DEFAULT_MAX_TOKENS,
   GREENEEK_DEFAULT_MAX_USES,
   GREENEEK_DEFAULT_MODEL,
@@ -49,7 +49,7 @@ export interface Config {
   apiKey?: string
   /** Credential reference resolved for each search; defaults to `GREENEEK_API_KEY`. */
   apiKeyEnv?: string
-  /** Anthropic-compatible endpoint base; `/messages` is appended. */
+  /** Anthropic-compatible endpoint base (`/messages` is appended); there is no shipped default. */
   baseURL?: string
   /** Anthropic-format model name. Defaults to `greeneek-v4-flash`. */
   model?: string
@@ -100,10 +100,11 @@ function resolveOptions(ctx: Context, config: Config): GreeneekSearchProviderOpt
     : undefined
   // The egress guard validates the resolved endpoint (absolute URL, plus the
   // strict-mode allow-list when enabled); no provider is blocked by default.
+  // An absent endpoint skips it: the provider serves only its typed
+  // endpoint-missing failure until the deployment configures one.
   const baseURL = config.baseURL
     ?? launchEnvironmentOf(ctx).get(SEARCH_BASE_URL_ENV)?.value
-    ?? GREENEEK_DEFAULT_BASE_URL
-  assertEgressAllowed(baseURL)
+  if (baseURL !== undefined) assertEgressAllowed(baseURL)
   return {
     ...literalApiKey === undefined ? {} : { apiKey: literalApiKey },
     resolveApiKey: async () => {
@@ -114,7 +115,7 @@ function resolveOptions(ctx: Context, config: Config): GreeneekSearchProviderOpt
       return ambient !== undefined && ambient.value.length > 0 ? ambient.value : undefined
     },
     apiKeyEnv,
-    baseURL,
+    ...baseURL === undefined ? {} : { baseURL },
     model: config.model ?? GREENEEK_DEFAULT_MODEL,
     apiVersion: config.apiVersion ?? GREENEEK_DEFAULT_API_VERSION,
     maxTokens: config.maxTokens ?? GREENEEK_DEFAULT_MAX_TOKENS,

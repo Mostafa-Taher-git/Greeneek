@@ -149,6 +149,18 @@ async function launch() {
   // Best-effort before start: the profile may not exist until first boot.
   await ensurePinnedStore(webProfileDir(gnkHome))
 
+  // Registered before the window exists: the splash page and web UI invoke
+  // bridge channels from `did-finish-load`, so handlers must already be in
+  // place. The update manager boots later and reaches the channels through
+  // the late-bound accessor.
+  registerDesktopBridge({
+    ipcMain,
+    app,
+    appDir: fileURLToPath(new URL('..', import.meta.url)),
+    getUpdateManager: () => updateManager,
+    getWindow: () => mainWindow,
+  })
+
   const startupReady = createWindow()
   try {
     createTray()
@@ -231,13 +243,6 @@ async function launch() {
     // keep working: the bridge degrades its update channels to unsupported.
     console.error(`Self-update is unavailable: ${error instanceof Error ? error.message : String(error)}`)
   }
-  registerDesktopBridge({
-    ipcMain,
-    app,
-    appDir: fileURLToPath(new URL('..', import.meta.url)),
-    updateManager,
-    getWindow: () => mainWindow,
-  })
 }
 
 const hasSingleInstanceLock = app.requestSingleInstanceLock()

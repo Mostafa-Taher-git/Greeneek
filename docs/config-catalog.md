@@ -954,13 +954,15 @@ Requires: `llm`
  * as the `llm-greeneek` settings-section shape. Every field is optional in
  * yml: a missing API key resolves through {@link Config.apiKeyEnv} at each
  * request (a request without any key fails with `MISSING_CREDENTIAL`, not at
- * plugin load), omitted thinking mode uses the provider default, and omitted
- * reasoning effort resolves to `high`.
+ * plugin load), an absent endpoint resolves through {@link Config.baseURL}
+ * and `$GREENEEK_BASE_URL` the same way (a request without either fails with
+ * `MISSING_ENDPOINT`, not at plugin load), omitted thinking mode uses the
+ * provider default, and omitted reasoning effort resolves to `high`.
  */
 export interface Config {
   /** Credential reference (environment-variable name) resolved per request; defaults to `GREENEEK_API_KEY`. */
   apiKeyEnv?: string
-  /** Endpoint base; falls back to $GREENEEK_BASE_URL from a trusted environment layer, then the public API. */
+  /** Endpoint base (`/chat/completions` is appended); falls back to `$GREENEEK_BASE_URL`. There is no shipped endpoint. */
   baseURL?: string
   /** Deployment thinking policy; `disabled` limits every conversation request to `off`. */
   thinking?: 'enabled' | 'disabled'
@@ -1021,7 +1023,7 @@ export interface GreeneekCatalogModel {
 
 Depends on: [`ModelModality`](../packages/llm/llm/src/index.ts) · [`RetryPolicyConfig`](../packages/llm/llm/src/index.ts)
 
-Source: [`packages/llm/llm-greeneek/src/index.ts:126`](../packages/llm/llm-greeneek/src/index.ts)
+Source: [`packages/llm/llm-greeneek/src/index.ts:128`](../packages/llm/llm-greeneek/src/index.ts)
 
 <a id="greeneekgnk-llm-pi-ai"></a>
 
@@ -3226,10 +3228,12 @@ Requires: `web`
 export interface Config {
   /** Endpoint base; `/` is queried. Defaults to the public API. */
   baseURL?: string
+  /** Wikipedia API base; fallback searches run against it. Defaults to the public API. */
+  wikipediaBaseURL?: string
 }
 ```
 
-Source: [`packages/web/web-search-duckduckgo/src/index.ts:31`](../packages/web/web-search-duckduckgo/src/index.ts)
+Source: [`packages/web/web-search-duckduckgo/src/index.ts:33`](../packages/web/web-search-duckduckgo/src/index.ts)
 
 <a id="greeneekgnk-web-search-exa"></a>
 
@@ -3290,7 +3294,7 @@ export interface Config {
   apiKey?: string
   /** Credential reference resolved for each search; defaults to `GREENEEK_API_KEY`. */
   apiKeyEnv?: string
-  /** Anthropic-compatible endpoint base; `/messages` is appended. */
+  /** Anthropic-compatible endpoint base (`/messages` is appended); there is no shipped default. */
   baseURL?: string
   /** Anthropic-format model name. Defaults to `greeneek-v4-flash`. */
   model?: string

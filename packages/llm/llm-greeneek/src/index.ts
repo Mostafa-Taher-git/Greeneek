@@ -37,7 +37,7 @@ import {
   DEFAULT_STREAM_IDLE_TIMEOUT_MS,
   GreeneekAdapter,
 } from './adapter.ts'
-import type { GreeneekCatalogModel, GreeneekConnectionOptions } from './adapter.ts'
+import type { GreeneekCatalogModel, GreeneekConnectionFacts } from './adapter.ts'
 import {
   DEFAULT_LOW_DETAIL_IMAGE_PIXEL_BUDGET,
   DEFAULT_MAX_IMAGES_PER_REQUEST,
@@ -120,13 +120,15 @@ const MODEL_MODALITIES = ['text', 'image'] as const satisfies readonly ModelModa
  * as the `llm-greeneek` settings-section shape. Every field is optional in
  * yml: a missing API key resolves through {@link Config.apiKeyEnv} at each
  * request (a request without any key fails with `MISSING_CREDENTIAL`, not at
- * plugin load), omitted thinking mode uses the provider default, and omitted
- * reasoning effort resolves to `high`.
+ * plugin load), an absent endpoint resolves through {@link Config.baseURL}
+ * and `$GREENEEK_BASE_URL` the same way (a request without either fails with
+ * `MISSING_ENDPOINT`, not at plugin load), omitted thinking mode uses the
+ * provider default, and omitted reasoning effort resolves to `high`.
  */
 export interface Config {
   /** Credential reference (environment-variable name) resolved per request; defaults to `GREENEEK_API_KEY`. */
   apiKeyEnv?: string
-  /** Endpoint base; falls back to $GREENEEK_BASE_URL from a trusted environment layer, then the public API. */
+  /** Endpoint base (`/chat/completions` is appended); falls back to `$GREENEEK_BASE_URL`. There is no shipped endpoint. */
   baseURL?: string
   /** Deployment thinking policy; `disabled` limits every conversation request to `off`. */
   thinking?: 'enabled' | 'disabled'
@@ -197,9 +199,6 @@ export const Config: z<Config> = z.object({
   retryPolicy: RetryPolicySchema,
 })
 
-/** Public API default; the internal endpoint comes from $GREENEEK_BASE_URL. */
-export const PUBLIC_BASE_URL = 'https://api.greeneek.dev'
-
 /** Environment variable naming this provider's endpoint, honored only from trusted layers. */
 const BASE_URL_ENV = 'GREENEEK_BASE_URL'
 
@@ -207,9 +206,20 @@ const BASE_URL_ENV = 'GREENEEK_BASE_URL'
  * One resolution's complete request facts. Connection and credential facts
  * are one value on purpose: a snapshot the resolver rejects keeps the whole
  * previous generation, so a request can never pair a stale endpoint with a
- * newer key.
+ * newer key. The endpoint member stays optional — there is no shipped one —
+ * and an operation without it fails typed `MISSING_ENDPOINT`.
  */
-export type ResolvedGreeneekOptions = GreeneekConnectionOptions
+export type ResolvedGreeneekOptions = GreeneekConnectionFacts
+export type { GreeneekConnectionFacts } from './adapter.ts'
+
+/** Typed failure when neither the plugin section nor the environment names an endpoint. */
+function missingEndpointError(): LlmError {
+  return new LlmError(
+    `llm-greeneek: no endpoint for provider route "${PROVIDER}"; set the llm-greeneek.baseURL config field`
+    + ' (the web Models page exposes it), or export GREENEEK_BASE_URL in the launching environment',
+    'MISSING_ENDPOINT',
+  )
+}
 
 /** Resolve, validate, and detach the advisory model catalog. */
 function resolveModels(models: readonly GreeneekCatalogModel[] | undefined): GreeneekCatalogModel[] {
@@ -374,15 +384,15 @@ export function resolveAdapterOptions(config: Config, environment?: LaunchEnviro
     || fileQuotaCleanupBatch > 1_000) {
     throw new Error('llm-greeneek: fileQuotaCleanupBatch must be an integer from 1 through 1000')
   }
-  const baseURL = config.baseURL
-    ?? environment?.get(BASE_URL_ENV)?.value
-    ?? PUBLIC_BASE_URL
+  const baseURL = config.baseURL ?? environment?.get(BASE_URL_ENV)?.value
   // The egress guard validates the resolved endpoint (absolute URL, plus the
   // strict-mode allow-list when enabled); no provider is blocked by default.
-  assertEgressAllowed(baseURL)
+  // An absent endpoint skips it: the plugin boots usable-but-unconfigured and
+  // every request fails with `MISSING_ENDPOINT` instead of fetching anywhere.
+  if (baseURL !== undefined) assertEgressAllowed(baseURL)
   return {
     apiKeyEnv: credentialRef(config.apiKeyEnv ?? DEFAULT_API_KEY_ENV),
-    baseURL,
+    ...baseURL === undefined ? {} : { baseURL },
     defaults: {
       thinking: config.thinking,
       reasoningEffort: config.reasoningEffort,
@@ -459,6 +469,7 @@ export function apply(ctx: Context, config: Config): void {
   const resolveUserId = (): AnonymousUserId => userId ??= getOrCreateAnonymousUserId()
   const adapter = new GreeneekAdapter({
     options,
+    missingEndpoint: missingEndpointError,
     resolveApiKey,
     resolveUserId,
     resolveAttachments: () => ctx.get('attachments'),

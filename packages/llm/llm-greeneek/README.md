@@ -36,7 +36,7 @@ Choose this adapter when the deployment operates its own Greeneek-protocol endpo
 - name: '@greeneek/gnk-llm-greeneek'
   config:
     apiKeyEnv: GREENEEK_API_KEY  # credential reference, resolved per request
-    baseURL: https://gateway.internal # your endpoint; $GREENEEK_BASE_URL then config (the built-in default names no operated service — always override it)
+    baseURL: https://gateway.internal # your endpoint; $GREENEEK_BASE_URL then config — there is no built-in default
     reasoningEffort: high        # optional; off | low | high | max
     maxTokens: 256000            # optional per-request output cap
     maxRequestFilesBytes: 134217728
@@ -50,7 +50,7 @@ A request selects the route with `provider: greeneek-official`; the model id pas
 | Field | Default | Meaning |
 |---|---|---|
 | `apiKeyEnv` | `GREENEEK_API_KEY` | Credential reference resolved per request through the credentials seam, then the environment |
-| `baseURL` | placeholder only | Endpoint base; `$GREENEEK_BASE_URL` wins when set, then config. The built-in default names a host this repository does not operate — always configure a reachable endpoint |
+| `baseURL` | _(none)_ | Endpoint base; `$GREENEEK_BASE_URL` wins when set, then config. There is no built-in endpoint: without either, every request fails with `MISSING_ENDPOINT` naming both remedies |
 | `thinking` | `enabled` | Deployment policy; `disabled` locks every request to `off` |
 | `reasoningEffort` | `high` | Default effort: `off`, `low`, `high`, or `max` |
 | `maxTokens` | `256,000` | Per-request output cap; a model's own cap and explicit request values win |
@@ -91,7 +91,7 @@ When `ctx.greeneekLlmApiExtensions` is present, the adapter prepares its registe
 
 ### Failures and recovery
 
-Non-2xx responses fail with stable codes: `AUTH` (401/403), `QUOTA`, `RATE_LIMIT`, `CONTEXT_WINDOW_EXCEEDED`, `INVALID_REQUEST`, `SERVER`, and `HTTP_<status>` otherwise; pre-response transport failures throw `TRANSPORT`, caller aborts throw `ABORTED`, and stream-idle expiry throws `TIMEOUT`. Request-extension preparation, field collision, or post-2xx acceptance fails with `REQUEST_EXTENSION`. A normalized-image rejection names every plausible attachment and its durable position when the provider does not identify a file id. Stale-file rejection invalidates the named mappings (or every mapping used by the attempt) and permits one replacement chat attempt. Protocol violations throw `STREAM_CLOSED` or `MALFORMED_RESPONSE`, and a terminal `stop` with no content blocks becomes `EMPTY_RESPONSE`, which the default retry policy retries. A request with no key anywhere fails with `MISSING_CREDENTIAL`, and a malformed credential fails with `INVALID_CREDENTIAL` naming the reference to fix — never any part of the key.
+Non-2xx responses fail with stable codes: `AUTH` (401/403), `QUOTA`, `RATE_LIMIT`, `CONTEXT_WINDOW_EXCEEDED`, `INVALID_REQUEST`, `SERVER`, and `HTTP_<status>` otherwise; pre-response transport failures throw `TRANSPORT`, caller aborts throw `ABORTED`, and stream-idle expiry throws `TIMEOUT`. Request-extension preparation, field collision, or post-2xx acceptance fails with `REQUEST_EXTENSION`. A normalized-image rejection names every plausible attachment and its durable position when the provider does not identify a file id. Stale-file rejection invalidates the named mappings (or every mapping used by the attempt) and permits one replacement chat attempt. Protocol violations throw `STREAM_CLOSED` or `MALFORMED_RESPONSE`, and a terminal `stop` with no content blocks becomes `EMPTY_RESPONSE`, which the default retry policy retries. A request with no key anywhere fails with `MISSING_CREDENTIAL`, and a malformed credential fails with `INVALID_CREDENTIAL` naming the reference to fix — never any part of the key. A request with no endpoint configured anywhere (`llm-greeneek.baseURL` and `$GREENEEK_BASE_URL` both absent) fails with `MISSING_ENDPOINT` naming exactly those two remedies; the plugin still loads and lists the route.
 
 -----
 

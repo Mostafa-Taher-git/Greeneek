@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import {
   GreeneekSearchProvider,
   GREENEEK_DEFAULT_API_VERSION,
-  GREENEEK_DEFAULT_BASE_URL,
   GREENEEK_DEFAULT_MAX_TOKENS,
   GREENEEK_DEFAULT_MAX_USES,
   GREENEEK_DEFAULT_MODEL,
@@ -24,9 +23,14 @@ const maybe = apiKey !== undefined && apiKey.length > 0 ? describe : describe.sk
 
 maybe('GreeneekSearchProvider real API', () => {
   it.skip('returns citeable sources for a live query via native web_search', async () => {
+    // The endpoint always comes from the deployment; there is no shipped one.
+    const baseURL = process.env.GREENEEK_SEARCH_BASE_URL
+    if (baseURL === undefined || baseURL.length === 0) {
+      throw new Error('real-API probe ran without GREENEEK_SEARCH_BASE_URL')
+    }
     const provider = searchProvider({
       apiKey: apiKey!,
-      baseURL: process.env.GREENEEK_SEARCH_BASE_URL ?? GREENEEK_DEFAULT_BASE_URL,
+      baseURL,
       model: process.env.GREENEEK_SEARCH_MODEL ?? GREENEEK_DEFAULT_MODEL,
       apiVersion: GREENEEK_DEFAULT_API_VERSION,
       maxTokens: GREENEEK_DEFAULT_MAX_TOKENS,

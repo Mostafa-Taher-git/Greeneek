@@ -5,7 +5,7 @@ Start the Web UI through the [root README](../../../README.md#run); the command 
 
 ## Configure a model
 
-Open **Settings → Models**, enter a [Greeneek API key](https://platform.greeneek.dev/), and save it. The model route becomes usable immediately without restarting the server.
+Open **Settings → Models**, enter an API key for the model provider you use, and save it. The model route becomes usable immediately without restarting the server.
 
 The [model configuration guide](./providers.md) covers other providers and custom OpenAI-compatible endpoints.
 

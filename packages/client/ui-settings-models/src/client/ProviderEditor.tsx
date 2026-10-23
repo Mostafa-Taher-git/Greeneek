@@ -42,9 +42,6 @@ import styles from './ModelsSection.module.css'
 /** Per-adapter-family curated field sets (unknown namespaces get the hint alone). */
 type EditorLayout = 'greeneek' | 'pi-ai' | 'unknown'
 
-/** The public Greeneek endpoint shown as the greeneek base-URL placeholder. */
-const GREENEEK_PUBLIC_BASE_URL = 'https://api.greeneek.dev'
-
 /** Props of {@link ProviderEditor}. */
 export interface ProviderEditorProps {
   /** Provider route id. */
@@ -414,7 +411,7 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
                 type="text"
                 value={stringAt(draft, 'baseURL') ?? ''}
                 placeholder={family === 'greeneek'
-                  ? GREENEEK_PUBLIC_BASE_URL
+                  ? t('baseUrlGreeneek')
                   : stringAt(fallback, 'baseURL') ?? t('baseUrlDefault')}
                 aria-label={t('baseUrl')}
                 disabled={disabled}

@@ -9,6 +9,10 @@ This file lists **direct** dependencies declared by the workspace and the explic
 
 The complete npm transitive closure, including the Landlock launcher workspace, is recorded with exact pinned versions in [`pnpm-lock.yaml`](pnpm-lock.yaml) — inspect it with `pnpm licenses list`. The Python closure is recorded separately in [`python/sdk/uv.lock`](python/sdk/uv.lock).
 
+## Upstream harness
+
+Greeneek is a derivative work of the [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (MIT); the [LICENSE](LICENSE) carries its copyright notice. The fork point is upstream commit `818c4f344e` (release `0.1.2-rc.1`, 2026-09-03). The vendored Cordis libraries below keep their own upstream provenance in [`vendor/README.md`](vendor/README.md).
+
 ## Vendored source (`vendor/`)
 
 The Cordis framework and its foundation libraries are source-vendored into this repository rather than consumed from npm, and republished under the `@greeneek` scope. All are MIT-licensed; each directory preserves its upstream `LICENSE` file. Exact upstream commits and local modifications are recorded in [`vendor/README.md`](vendor/README.md).

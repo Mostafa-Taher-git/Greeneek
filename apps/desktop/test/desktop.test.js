@@ -1,11 +1,17 @@
 import { strict as assert } from 'node:assert'
+import { join } from 'node:path'
 import { describe, it } from 'node:test'
 import { clearStaleGnkAuthCookies, GNK_AUTH_COOKIE_PREFIX } from '../src/cookies.js'
 import {
+  BOOT_HEALTH_FILE_NAME,
+  GNK_LOG_FILE_NAME,
   gnkLogPath,
+  HARNESS_DIR_NAME,
+  LAUNCH_ROOT_DIR_NAME,
   launchRootDir,
   resolveDesktopGnkHome,
   bootHealthPath,
+  UPDATE_SKIP_FILE_NAME,
   updateSkipPath,
   webProfileDir,
 } from '../src/paths.js'
@@ -43,16 +49,16 @@ function fakeCookieStore(cookies) {
 describe('paths', () => {
   it('prefers an exported GNK_HOME and isolates by default', () => {
     assert.equal(resolveDesktopGnkHome({ GNK_HOME: '/shared/home' }, '/userData'), '/shared/home')
-    assert.equal(resolveDesktopGnkHome({ GNK_HOME: '   ' }, '/userData'), '/userData/harness')
-    assert.equal(resolveDesktopGnkHome({}, '/userData'), '/userData/harness')
+    assert.equal(resolveDesktopGnkHome({ GNK_HOME: '   ' }, '/userData'), join('/userData', HARNESS_DIR_NAME))
+    assert.equal(resolveDesktopGnkHome({}, '/userData'), join('/userData', HARNESS_DIR_NAME))
   })
 
   it('lays out launch root, log, skip file, and web profile', () => {
-    assert.equal(launchRootDir('/u'), '/u/launch-root')
-    assert.equal(gnkLogPath('/logs'), '/logs/gnk.log')
-    assert.equal(updateSkipPath('/u'), '/u/update-skip.json')
-    assert.equal(bootHealthPath('/u'), '/u/boot-health.json')
-    assert.equal(webProfileDir('/h'), '/h/profiles/web')
+    assert.equal(launchRootDir('/u'), join('/u', LAUNCH_ROOT_DIR_NAME))
+    assert.equal(gnkLogPath('/logs'), join('/logs', GNK_LOG_FILE_NAME))
+    assert.equal(updateSkipPath('/u'), join('/u', UPDATE_SKIP_FILE_NAME))
+    assert.equal(bootHealthPath('/u'), join('/u', BOOT_HEALTH_FILE_NAME))
+    assert.equal(webProfileDir('/h'), join('/h', 'profiles', 'web'))
   })
 })
 

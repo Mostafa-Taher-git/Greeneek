@@ -28,12 +28,15 @@ each one explicitly.
 6. **Context file** → N/A: this fork has no `DSH.md`/`.dshignore`/`dshrc` concept
    (agent instructions live in `AGENTS.md` chains, which are brand-neutral). Inventory
    verified: zero occurrences.
-7. **Model provider after severance** → the Greeneek gateway:
-   `https://api.greeneek.dev` (chat-completions compatible), overridable via
-   `GREENEEK_BASE_URL`. Catalog/wire ids rename with the brand (`deepseek-chat` →
+7. **Model provider after severance** → the deployment's own endpoint: BYOK-only,
+   no shipped default (the retired `api.greeneek.dev` default was removed once no
+   service operated it). The chat adapter honors `llm-greeneek.baseURL`
+   (`$GREENEEK_BASE_URL` when unset) and the search provider
+   `web-search-greeneek.baseURL` / `$GREENEEK_SEARCH_BASE_URL`; both fail typed when
+   neither names an endpoint. Catalog/wire ids rename with the brand (`deepseek-chat` →
    `greeneek-chat`, `deepseek-v4-flash` → `greeneek-v4-flash`, provider route
-   `deepseek-official` → `greeneek-official`); they are catalog data of OUR gateway now,
-   not values of the retired upstream service. Egress to any `*.deepseek.*` host is
+   `deepseek-official` → `greeneek-official`); they are catalog data for the user's own
+   gateway, not values of the retired upstream service. Egress to any `*.deepseek.*` host is
    refused at runtime by `@greeneek/gnk-egress-guard` (see §P8) — the only intentional
    DeepSeek strings left in sources are the guard's blocklist and the legal/provenance
    allowlist.

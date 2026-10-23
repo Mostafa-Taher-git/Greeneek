@@ -25,6 +25,12 @@ It is built on an **everything-is-a-plugin** architecture and powered by [Cordis
 
 Documentation: see the in-repository [user guide](docs/user/guide/index.md) and [development guide](docs/development.md).
 
+<!-- rebrand:ignore-start — upstream attribution; the brand pass must keep these lines verbatim (MIT obligation). -->
+## Origins and attribution
+
+Greeneek is a fork of [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (`dsh`), MIT-licensed. The fork point is upstream commit `818c4f344e` (release `0.1.2-rc.1`, 2026-09-03); upstream commits after that point are not automatically tracked — the plugin architecture, the `@greeneek` rescope, and the brand are all Greeneek-local work on that foundation. The [LICENSE](./LICENSE) carries both copyright notices, and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) records the harness's dependency disclosures.
+<!-- rebrand:ignore-end -->
+
 ## Brand and models
 
 - The app brand stays **Greeneek**.

@@ -136,6 +136,35 @@ describe('desktop bridge', () => {
     await handlers.get('greeneek-desktop:window-minimize')()
     assert.deepEqual(calls, ['minimize'])
   })
+
+  it('picks up an update manager attached after registration', async () => {
+    const handlers = new Map()
+    let updateManager
+    registerDesktopBridge({
+      ipcMain: { handle: (channel, handler) => { handlers.set(channel, handler) } },
+      app: { getVersion: () => '0.1.0' },
+      appDir: '/app',
+      getUpdateManager: () => updateManager,
+      readHarnessVersion: () => '1.1.0-alpha.0',
+    })
+    assert.deepEqual(await handlers.get('greeneek-desktop:update-status')(), { state: 'unsupported' })
+    updateManager = {
+      state: 'idle',
+      checked: 0,
+      installed: 0,
+      getState() { return this.state },
+      async checkForUpdates() {
+        this.checked += 1
+        this.state = 'checking'
+      },
+      quitAndInstall() { this.installed += 1 },
+    }
+    assert.deepEqual(await handlers.get('greeneek-desktop:update-status')(), { state: 'idle' })
+    assert.deepEqual(await handlers.get('greeneek-desktop:check-updates')(), { state: 'checking' })
+    assert.equal(updateManager.checked, 1)
+    await handlers.get('greeneek-desktop:install-update')()
+    assert.equal(updateManager.installed, 1)
+  })
 })
 
 describe('resolveAutoUpdater', () => {

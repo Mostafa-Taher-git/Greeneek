@@ -477,8 +477,9 @@
       name: '@greeneek/gnk-web-search-duckduckgo'
 
     # The Custom engine vehicle: an Anthropic-compatible Messages endpoint the
-    # user points at their own search backend. Unusable until its endpoint and
-    # key are configured, so it never disturbs auto-selection before then.
+    # user points at their own search backend — there is no shipped endpoint.
+    # Unusable until its endpoint and key are configured, so it never
+    # disturbs auto-selection before then.
     - id: web-search-greeneek
       name: '@greeneek/gnk-web-search-greeneek'
 
@@ -517,12 +518,12 @@
     - id: fs-sandbox
       name: '@greeneek/gnk-fs-sandbox'
 
-    # The native Greeneek adapter is NOT mounted here. It speaks to
-    # `api.greeneek.dev`, which no deployment of this repository operates, so
-    # shipping it would put a route in the model picker that can never answer a
-    # request and make it the default every new session starts on. Providers
-    # come from the user's own keys through `llm-pi-ai` above; a deployment that
-    # does run a Greeneek-protocol endpoint mounts the adapter itself:
+    # The native Greeneek adapter is NOT mounted here. It serves the
+    # deploying entity's own Greeneek-protocol endpoint, and shipping an
+    # unconfigured route would put a row in the model picker that answers
+    # every request with MISSING_ENDPOINT until it is configured. Providers
+    # come from the user's own keys through `llm-pi-ai` above; a deployment
+    # that runs a Greeneek-protocol endpoint mounts the adapter itself:
     #
     #   - insert:
     #       - id: llm-greeneek

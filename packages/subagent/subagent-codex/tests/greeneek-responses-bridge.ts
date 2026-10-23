@@ -6,7 +6,6 @@ import type {
 } from 'node:http'
 import { completeResponsesEvents } from './responses-fixture.ts'
 
-const OFFICIAL_GREENEEK_BASE_URL = 'https://api.greeneek.dev'
 const MAX_REQUEST_BYTES = 1_048_576
 
 /** One running test-only Responses-to-Greeneek bridge. */
@@ -54,10 +53,10 @@ function taskText(body: Record<string, unknown>): string {
 }
 
 function greeneekBaseUrl(): string {
-  const configured = (process.env.GREENEEK_BASE_URL ?? OFFICIAL_GREENEEK_BASE_URL)
-    .replace(/\/+$/, '')
-  if (configured !== OFFICIAL_GREENEEK_BASE_URL) {
-    throw new Error('Codex Greeneek e2e requires the official Greeneek base URL')
+  // The endpoint always comes from the deployment; there is no official one.
+  const configured = (process.env.GREENEEK_BASE_URL ?? '').replace(/\/+$/, '')
+  if (configured.length === 0) {
+    throw new Error('Codex Greeneek e2e requires GREENEEK_BASE_URL')
   }
   return configured
 }

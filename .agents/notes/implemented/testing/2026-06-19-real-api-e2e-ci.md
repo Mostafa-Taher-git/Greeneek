@@ -48,7 +48,7 @@ The repo secret is named `GREENEEK_API_KEY_EXTERNAL`; it is mapped to the `GREEN
 
 - **Step-scoped secret.** `GREENEEK_API_KEY` is set in the `env:` of only the preflight and e2e steps, never job-level — so checkout/setup-node/install never see it. A compromised install-time lifecycle script in a dependency cannot read a secret that isn't in its environment.
 - **`permissions: contents: read`.** The job only reads the repo to run tests; it needs no write scopes (no PR comments, no status writes), so the `GITHUB_TOKEN` is dropped to least privilege.
-- **`GREENEEK_BASE_URL` pinned** to `https://api.greeneek.dev` on the e2e step. The adapter would default to this when unset ([packages/llm/llm-greeneek/src/index.ts](../../../../packages/llm/llm-greeneek/src/index.ts) `PUBLIC_BASE_URL`), but pinning is self-documenting and hermetic — a stray repo-root `.env` (which `vitest.e2e.config.ts` loads if present) cannot silently redirect the run to another endpoint.
+- **`GREENEEK_BASE_URL` pinned** to the endpoint the CI key actually serves, explicitly on the e2e step. There is no shipped default endpoint (`PUBLIC_BASE_URL` was removed with the [required-explicit-endpoints decision](../bug-fix/2026-10-23-required-explicit-provider-endpoints.md)), so the pin names the endpoint the run must reach, and the required-explicit suites fail loud when it is absent. A stray repo-root `.env` (which `vitest.e2e.config.ts` loads if present) cannot silently redirect the run to another endpoint.
 - **No secret echoed.** The preflight prints only `GREENEEK_API_KEY present.` — not the value or its length.
 
 ### Scope, runtime shape

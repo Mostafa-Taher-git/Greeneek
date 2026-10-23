@@ -179,7 +179,9 @@ export const BLOCK_END = /rebrand:ignore-end/;
 export const RESIDUE_ALLOWLIST = [
   { file: /^(\.\/)?apps\/cli\/package\.json$/, why: 'D2: the "dsh" bin alias line is the deprecation contract itself; re-runs cannot see a marker inside JSON, and PROTECTED_LINE already pins it' },
   { file: /^(\.\/)?LICENSE$/, why: 'retained upstream copyright attribution' },
+  { file: /^(\.\/)?README\.md$/, why: 'retained upstream attribution section (fork origin and licensing); the notice text behind rebrand:ignore-start/end is the legal obligation' },
   { file: /^(\.\/)?THIRD_PARTY_NOTICES\.md$/, why: 'upstream fork provenance table (deepseek-harness org ids)' },
+  { file: /^(\.\/)?scripts\/gen-third-party-notices\.ts$/, why: 'the generator renders the upstream-harness section into THIRD_PARTY_NOTICES.md; the tokens it embeds land in the allowlisted output file' },
   { file: /^(\.\/)?docs\/migration-from-deepseek\.(zh\.)?md$/, why: 'intentional migration guide (both locales)' },
   { file: /^(\.\/)?scripts\/rebrand\//, why: 'the codemod itself' },
   { file: /^(\.\/)?\.rebrand\//, why: 'baseline snapshots taken pre-rebrand' },
@@ -189,6 +191,8 @@ export const RESIDUE_ALLOWLIST = [
   { file: /^(\.\/)?scripts\/brand-sweep\.sh$/, why: 'the gate quotes the tokens it forbids' },
   { file: /^(\.\/)?packages\/llm\/llm-pi-ai\//, why: 'B4: pi-ai upstream catalog provider ids and thinkingFormat wire values — typed contract of @earendil-works/pi-ai; DeepSeek endpoints stay refused by the egress guard in buildProvider (decisions.md D16)' },
   { file: /^(\.\/)?apps\/web\/tests\/expected\/models-settings\/empty\.expected\.md$/, why: 'D16: aria snapshot of the pi-ai upstream provider catalog — deepseek is a catalog id like cerebras/fireworks, not a brand claim' },
+  { file: /^(\.\/)?apps\/web\/tests\/expected\/onboarding-usable-provider\//, why: 'D16: recorded aria snapshots name the deepseek catalog option like every other external model provider' },
+  { file: /^(\.\/)?packages\/client\/ui-settings-models\/tests\/sign-in-dialog\.client\.spec\.tsx$/, why: 'D16: the spec drives the provider catalog (deepseek id + DEEPSEEK_API_KEY env) to assert its dismissal path' },
 ];
 
 /**

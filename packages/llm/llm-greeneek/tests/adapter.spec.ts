@@ -2211,14 +2211,25 @@ describe('plugin registration and config', () => {
     ])
     expect(resolveAdapterOptions({ baseURL: 'https://gateway.internal' }, shell).baseURL).toBe('https://gateway.internal')
   })
-  it('defaults to the public base URL without config or env', async () => {
+  it('boots without an endpoint and fails every request typed MISSING_ENDPOINT', async () => {
     vi.stubEnv('GREENEEK_API_KEY', 'k')
     vi.stubEnv('GREENEEK_BASE_URL', undefined)
     const ctx = new Context()
     await ctx.plugin(LlmRuntime)
-    // Registration succeeds; no call is made (would hit api.greeneek.dev).
+    // Registration succeeds; the route answers requests with the typed
+    // missing-endpoint failure before anything is sent anywhere.
     await ctx.plugin(LlmGreeneek, {})
     expect(ctx.llm.listProviders()).toEqual([{ id: 'greeneek-official', name: 'Greeneek' }])
+    const result = await assemble(ctx, { model: 'greeneek-v4-flash', messages: [] })
+    expect(result.finish).toEqual({
+      kind: 'error',
+      failure: {
+        code: 'MISSING_ENDPOINT',
+        message: expect.stringMatching(
+          /no endpoint for provider route "greeneek-official"; set the llm-greeneek\.baseURL.*GREENEEK_BASE_URL/s,
+        ),
+      },
+    })
   })
 
   it('adapter is constructible directly for embedding over the shared resolver', async () => {

@@ -26,14 +26,6 @@ import type {
 /** Stable id this provider registers under. */
 export const GREENEEK_PROVIDER_ID = 'greeneek-official'
 
-/**
- * Default endpoint: Greeneek's Anthropic-compatible API, `/v1` included
- * (`/messages` is appended). This is NOT the chat-completions base
- * (`https://api.greeneek.dev`) `@greeneek/gnk-llm-greeneek` uses, so this
- * provider does NOT reuse `$GREENEEK_BASE_URL` — only the API key is shared.
- */
-export const GREENEEK_DEFAULT_BASE_URL = 'https://api.greeneek.dev/anthropic/v1'
-
 /** Default Anthropic-format model name (aligned with the repo's Greeneek model vocabulary). */
 export const GREENEEK_DEFAULT_MODEL = 'greeneek-v4-flash'
 
@@ -92,8 +84,8 @@ export interface GreeneekSearchProviderOptions {
   resolveApiKey?: () => Promise<string | undefined>
   /** Credential reference named by missing-credential diagnostics. */
   apiKeyEnv?: CredentialRef
-  /** Endpoint base; `/messages` is appended. */
-  baseURL: string
+  /** Endpoint base; `/messages` is appended. There is no shipped endpoint: absent means not configured. */
+  baseURL?: string
   /** Anthropic-format model name. */
   model: string
   /** `anthropic-version` header value. */
@@ -191,12 +183,12 @@ export class GreeneekSearchProvider implements WebSearchProvider {
 
   available(): boolean {
     const options = this.resolveOptions()
-    // The shipped default endpoint operates nowhere: an unconfigured Custom
-    // vehicle must not claim usability, or auto-selection turns ambiguous
-    // against the keyless provider on every fresh deployment. An explicitly
-    // configured endpoint counts, wherever it points.
+    // An unconfigured Custom vehicle must not claim usability, or
+    // auto-selection turns ambiguous against the keyless provider on every
+    // fresh deployment. Any explicitly configured endpoint counts, wherever
+    // it points.
     return ((options.apiKey?.length ?? 0) > 0 || options.resolveApiKey !== undefined)
-      && options.baseURL !== GREENEEK_DEFAULT_BASE_URL
+      && options.baseURL !== undefined
       && URL.canParse(options.baseURL)
       && isPositiveInteger(options.maxTokens)
       && isPositiveInteger(options.maxUses)
@@ -207,6 +199,17 @@ export class GreeneekSearchProvider implements WebSearchProvider {
     // settings write landing inside that await must not send the key resolved
     // from the old section to the endpoint named by the new one.
     const options = this.resolveOptions()
+    if (options.baseURL === undefined) {
+      // Fail before dispatch or credential resolution: with no endpoint there
+      // is nowhere to send anything, and the remedy names the exact surfaces
+      // the deployment can configure instead.
+      throw new WebError(
+        'Greeneek search has no endpoint; set "baseURL" in the web-search-greeneek config'
+        + ' (Settings > Plugins > Plugin configuration > Web search), or export GREENEEK_SEARCH_BASE_URL'
+        + ' in the launching environment',
+        'WEB_PROVIDER_ENDPOINT_MISSING',
+      )
+    }
     const apiKey = await this.apiKey(options, signal)
     throwIfSearchAborted(signal)
     const endpoint = `${options.baseURL}/messages`

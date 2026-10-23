@@ -111,10 +111,30 @@ export interface GreeneekConnectionOptions {
   retryPolicy: ResolvedRetryPolicy
 }
 
+/**
+ * One resolution's complete request facts before the endpoint check. The
+ * plugin resolves at registration and on every settings change, while only
+ * an operation actually needs an endpoint: registry observers and model
+ * metadata read every other member. The adapter narrows these facts into a
+ * {@link GreeneekConnectionOptions} at each operation's entry and fails
+ * typed `MISSING_ENDPOINT` when the endpoint is absent, so a plugin boots
+ * and answers metadata without one.
+ */
+export interface GreeneekConnectionFacts extends Omit<GreeneekConnectionOptions, 'baseURL'> {
+  /** Endpoint base; `/chat/completions` is appended. Absent until the deployment configures one. */
+  baseURL?: string
+}
+
 /** Constructor options for {@link GreeneekAdapter}: the operation-local resolution hooks the plugin owns. */
 export interface GreeneekAdapterOptions {
   /** Current validated connection facts; called once per operation. */
-  options: () => GreeneekConnectionOptions
+  options: () => GreeneekConnectionFacts
+  /**
+   * Diagnostic for an operation that starts with no endpoint configured.
+   * The embedder owns the message because only it names its config surface;
+   * the adapter falls back to its own generic `MISSING_ENDPOINT`.
+   */
+  missingEndpoint?: () => LlmError
   /**
    * Resolve the bearer token for the connection facts of one request. The
    * snapshot is passed in — never re-read — so the key can only ever come
@@ -358,6 +378,21 @@ export class GreeneekAdapter extends LlmAdapter {
     this.files = config.resolveFiles?.() ?? new GreeneekFileStore()
   }
 
+  /**
+   * The one operation-local narrow from facts to a connection: the endpoint
+   * check happens here, before anything reads `baseURL`, so an operation
+   * without a configured endpoint fails typed `MISSING_ENDPOINT` and no
+   * request body, credential, or URL fragment reaches the wire.
+   */
+  private connection(): GreeneekConnectionOptions {
+    const { baseURL, ...facts } = this.config.options()
+    if (baseURL === undefined) {
+      throw this.config.missingEndpoint?.()
+        ?? new LlmError('Greeneek request failed: no endpoint (baseURL) is configured for the route', 'MISSING_ENDPOINT')
+    }
+    return { ...facts, baseURL }
+  }
+
   override providerInfo(provider: string): LlmProviderInfo {
     return { id: provider, name: 'Greeneek' }
   }
@@ -391,7 +426,7 @@ export class GreeneekAdapter extends LlmAdapter {
   }
 
   private modelInfoFor(
-    connection: GreeneekConnectionOptions,
+    connection: GreeneekConnectionFacts,
     provider: string,
     model: string,
   ): LlmResolvedModelInfo {
@@ -430,15 +465,17 @@ export class GreeneekAdapter extends LlmAdapter {
   }
 
   override prepareCall(provider: string, model: string, _signal?: AbortSignal): Promise<PreparedAdapterCall> {
-    const connection = this.config.options()
+    const facts = this.config.options()
     return Promise.resolve({
-      model: this.modelInfoFor(connection, provider, model),
-      stream: options => this.streamWithConnection(options, connection),
+      model: this.modelInfoFor(facts, provider, model),
+      // The stream closure resolves its own snapshot when the loop starts the
+      // call, so a settings change landing between the two takes effect there.
+      stream: options => this.streamWithConnection(options, this.connection()),
     })
   }
 
   stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
-    return this.streamWithConnection(options, this.config.options())
+    return this.streamWithConnection(options, this.connection())
   }
 
   private async * streamWithConnection(

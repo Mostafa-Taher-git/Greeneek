@@ -20,11 +20,17 @@ export const BRIDGE_CHANNELS = [
 
 /**
  * Register the renderer bridge on an ipcMain-like handler table.
- * The update manager is optional: without one the update channels degrade
- * to `unsupported` (a state the UI already renders) while versions and
- * window controls keep working.
- * @param options - ipcMain, app, staged app dir, the update manager, and a
- * window accessor for the frameless controls (optional in tests).
+ * The update manager is optional and may not exist yet at registration time:
+ * the bridge must be wired before the window's first page load (the injected
+ * frameless controls invoke channels from `did-finish-load`), while the
+ * update manager only exists after the service boots. Pass it through
+ * `getUpdateManager` for late binding, or directly when it already exists
+ * (tests). Without a manager the update channels degrade to `unsupported`
+ * (a state the UI already renders) while versions and window controls keep
+ * working.
+ * @param options - ipcMain, app, staged app dir, a update-manager accessor
+ * or manager, a harness version reader, and a window accessor for the
+ * frameless controls (optional in tests).
  * @returns nothing.
  */
 export function registerDesktopBridge({
@@ -32,23 +38,26 @@ export function registerDesktopBridge({
   app,
   appDir,
   updateManager,
+  getUpdateManager,
   readHarnessVersion = bundledHarnessVersion,
   getWindow = () => undefined,
 }) {
+  const manager = () => getUpdateManager?.() ?? updateManager
   ipcMain.handle('greeneek-desktop:versions', () => ({
     desktop: app.getVersion(),
     harness: readHarnessVersion(appDir),
   }))
   ipcMain.handle('greeneek-desktop:update-status', () => ({
-    state: updateManager?.getState() ?? 'unsupported',
+    state: manager()?.getState() ?? 'unsupported',
   }))
   ipcMain.handle('greeneek-desktop:check-updates', async () => {
-    if (updateManager === undefined) return { state: 'unsupported' }
-    await updateManager.checkForUpdates({ manual: true })
-    return { state: updateManager.getState() }
+    const updateManagerLike = manager()
+    if (updateManagerLike === undefined) return { state: 'unsupported' }
+    await updateManagerLike.checkForUpdates({ manual: true })
+    return { state: updateManagerLike.getState() }
   })
   ipcMain.handle('greeneek-desktop:install-update', () => {
-    updateManager?.quitAndInstall()
+    manager()?.quitAndInstall()
   })
   ipcMain.handle('greeneek-desktop:window-minimize', () => {
     getWindow()?.minimize()

@@ -20,7 +20,6 @@ import LocalSubprocessRuntime from '@greeneek/gnk-subprocess-local'
 import * as claudeCode from '../src/index.ts'
 
 const execFileAsync = promisify(execFile)
-const OFFICIAL_GREENEEK_BASE_URL = 'https://api.greeneek.dev'
 const GREENEEK_MODEL = 'greeneek-v4-flash'
 const sdkRoot = dirname(fileURLToPath(
   import.meta.resolve('@anthropic-ai/claude-agent-sdk'),
@@ -49,10 +48,10 @@ afterEach(async () => {
 })
 
 function greeneekBaseUrl(): string {
-  const configured = (process.env.GREENEEK_BASE_URL ?? OFFICIAL_GREENEEK_BASE_URL)
-    .replace(/\/+$/, '')
-  if (configured !== OFFICIAL_GREENEEK_BASE_URL) {
-    throw new Error('Claude Code Greeneek e2e requires the official Greeneek base URL')
+  // The endpoint always comes from the deployment; there is no official one.
+  const configured = (process.env.GREENEEK_BASE_URL ?? '').replace(/\/+$/, '')
+  if (configured.length === 0) {
+    throw new Error('Claude Code Greeneek e2e requires GREENEEK_BASE_URL')
   }
   return configured
 }

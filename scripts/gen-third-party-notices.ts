@@ -615,6 +615,12 @@ function verifyBuildTimePins(): void {
 /** SPDX identifiers this project may ship without further review. */
 const PERMISSIVE_LICENSES = new Set(['MIT', 'ISC', 'BSD-2-Clause', 'BSD-3-Clause', 'Apache-2.0', '0BSD', 'Unlicense', 'CC0-1.0', 'BlueOak-1.0.0', 'Python-2.0'])
 
+/** Facts about the upstream harness this fork must attribute (MIT obligation). */
+const UPSTREAM_HARNESS = {
+  name: 'DeepSeek Harness',
+  repo: 'https://github.com/deepseek-ai/deepseek-harness',
+}
+
 /** Evaluate a parsed SPDX expression under the repository's license policy. */
 function isPermissiveSpdx(expression: ReturnType<typeof parseSpdx>): boolean {
   if ('conjunction' in expression) {
@@ -730,6 +736,10 @@ Greeneek Harness is licensed under [MIT](LICENSE). It depends on the third-party
 This file lists **direct** dependencies declared by the workspace and the explicitly disclosed official Claude Code platform payload closure. It is generated from the workspace manifests by \`scripts/gen-third-party-notices.ts\`: a pre-commit hook regenerates it whenever a staged file changes one of its inputs, and \`scripts/gen-third-party-notices.spec.ts\` asserts in the test lane that the committed bytes match. Deleting a manifest runs no hook, so that case is caught by the assertion instead. Run \`pnpm run verify-third-party-notices\` for the standalone check.
 
 The complete npm transitive closure, including the Landlock launcher workspace, is recorded with exact pinned versions in [\`pnpm-lock.yaml\`](pnpm-lock.yaml) — inspect it with \`pnpm licenses list\`. The Python closure is recorded separately in [\`python/sdk/uv.lock\`](python/sdk/uv.lock).
+
+## Upstream harness
+
+Greeneek is a derivative work of the [${UPSTREAM_HARNESS.name}](${UPSTREAM_HARNESS.repo}) (MIT); the [LICENSE](LICENSE) carries its copyright notice. The fork point is upstream commit \`818c4f344e\` (release \`0.1.2-rc.1\`, 2026-09-03). The vendored Cordis libraries below keep their own upstream provenance in [\`vendor/README.md\`](vendor/README.md).
 
 ## Vendored source (\`vendor/\`)
 

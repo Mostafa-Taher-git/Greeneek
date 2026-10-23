@@ -30,7 +30,7 @@
       - group:
         - text: 自定义设置 API 地址
         - textbox "API 地址":
-          - /placeholder: https://api.greeneek.dev
+          - /placeholder: 你的 Greeneek 协议接口地址
         - region "模型目录":
           - text: 模型目录 已自定义模型目录
           - button "恢复默认模型"

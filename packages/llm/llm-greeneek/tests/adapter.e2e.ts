@@ -143,7 +143,9 @@ describe.skipIf(!process.env.GREENEEK_API_KEY)('llm-greeneek e2e (real API)', ()
   it.skipIf(!VISION_E2E_ENABLED)('uses the built-in official route to upload, reference, and delete one image', async () => {
     const key = process.env.GREENEEK_API_KEY
     if (key === undefined) throw new Error('e2e ran without GREENEEK_API_KEY')
-    const baseURL = process.env.GREENEEK_BASE_URL ?? LlmGreeneek.PUBLIC_BASE_URL
+    // There is no shipped endpoint: the deployment supplies its own.
+    const baseURL = process.env.GREENEEK_BASE_URL
+    if (baseURL === undefined) throw new Error('e2e ran without GREENEEK_BASE_URL')
     const ctx = await harness(VISION, { baseURL })
     await ctx.plugin(E2eAttachmentStore)
     const attachments = ctx.attachments as E2eAttachmentStore

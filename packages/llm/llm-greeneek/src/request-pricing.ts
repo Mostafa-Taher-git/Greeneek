@@ -14,7 +14,7 @@ import type { ImageAttachmentAccessResolver, LlmImageRequestPrice, LlmImageReque
 import { requestImageDimensions } from '@greeneek/gnk-attachment'
 import type { ImageAttachmentRef, ImageRequestPolicy } from '@greeneek/gnk-attachment'
 import { greeneekImageTokens } from './image-tokens.ts'
-import type { GreeneekCatalogModel, GreeneekConnectionOptions } from './adapter.ts'
+import type { GreeneekCatalogModel, GreeneekConnectionFacts } from './adapter.ts'
 
 /** Default bound on accumulated file-referenced image bytes per request. */
 export const DEFAULT_MAX_REQUEST_FILES_BYTES = 128 * 1024 * 1024
@@ -71,7 +71,7 @@ function textOnlyPrice(ref: ImageAttachmentRef): LlmImageRequestPrice {
  * @returns synchronous per-occurrence pricing for the route.
  */
 export function greeneekImageRequestPricing(
-  connection: GreeneekConnectionOptions,
+  connection: GreeneekConnectionFacts,
   model: string,
   resolveAccess?: ImageAttachmentAccessResolver,
 ): LlmImageRequestPricing {

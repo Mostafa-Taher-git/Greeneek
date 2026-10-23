@@ -2239,6 +2239,27 @@ describe('plugin registration and config', () => {
     await expect(adapter.listModels('greeneek-official')).resolves.toHaveLength(3)
   })
 
+  it('direct embedding without a missingEndpoint hook fails with the generic message', async () => {
+    vi.stubEnv('GREENEEK_API_KEY', 'k')
+    vi.stubEnv('GREENEEK_BASE_URL', undefined)
+    const adapter = new GreeneekAdapter({
+      options: () => resolveAdapterOptions({}),
+      resolveApiKey: () => Promise.resolve('k'),
+      resolveUserId: () => TEST_USER_ID,
+      prepareExtensions: noExtensions,
+    })
+    // `stream()` narrows eagerly, so the failure throws from the call itself.
+    let failure: LlmError | undefined
+    try {
+      adapter.stream({ provider: 'greeneek-official', model: 'm', messages: [] })
+    } catch (error) {
+      failure = error instanceof LlmError ? error : undefined
+    }
+    expect(failure).toBeDefined()
+    expect(failure?.code).toBe('MISSING_ENDPOINT')
+    expect(failure?.message).toBe('Greeneek request failed: no endpoint (baseURL) is configured for the route')
+  })
+
   it('resolves connection facts and the credential exactly once per stream call', async () => {
     const server = await mockServer([{ kind: 'sse', events: textEvents }])
     const options = vi.fn(() => resolveAdapterOptions({ baseURL: server.url }))

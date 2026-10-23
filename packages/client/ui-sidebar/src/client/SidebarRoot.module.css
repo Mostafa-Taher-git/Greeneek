@@ -7,6 +7,18 @@
 
 .root {
   --gnk-sidebar-inline-padding: 12px;
+  /* Sidebar-local neon accent (V2). The hue is still a theme token, so light
+     mode gets the deeper brand green and dark mode the lifted one — only the
+     alpha blends and the overshoot curve live here, because the neon treatment
+     belongs to this shell rather than to the shared theme. */
+  --gnk-sidebar-neon: var(--dsw-static-greeneek-450);
+  --gnk-sidebar-neon-15: color-mix(in srgb, var(--gnk-sidebar-neon) 15%, transparent);
+  --gnk-sidebar-neon-35: color-mix(in srgb, var(--gnk-sidebar-neon) 35%, transparent);
+  --gnk-sidebar-neon-50: color-mix(in srgb, var(--gnk-sidebar-neon) 50%, transparent);
+  /* A gentle overshoot: the entrance settles with a breath of travel past its
+     seat instead of easing flat. 1.2 stays shy of a visible bounce. */
+  --gnk-sidebar-neon-ease: cubic-bezier(0.34, 1.2, 0.5, 1);
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -29,6 +41,38 @@
   padding: 18px 10px 6px;
 }
 
+/* The leading neon edge (V2): a 1px hairline on the column's trailing edge,
+   brightest at mid-height and dissolving into both ends so it reads as light
+   bleeding off the sidebar rather than a drawn divider. It sits INSIDE the
+   column (right: 0) — the shell must not add horizontal overflow — and is a
+   gradient, never a border-token fill, so the elevation hairline contract
+   keeps its 0.5px neutral strokes to itself. The rail drops the line: at 56px
+   there is no conversation seam left to separate. */
+.root::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  z-index: 1;
+  width: 1px;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    var(--gnk-sidebar-neon-50) 18%,
+    var(--gnk-sidebar-neon) 50%,
+    var(--gnk-sidebar-neon-50) 82%,
+    transparent 100%
+  );
+  opacity: 0.5;
+  pointer-events: none;
+  transition: opacity 180ms var(--ds-ease-in-out);
+}
+
+.root.collapsed::after {
+  opacity: 0;
+}
+
 /* Scrollbars in the column are a pointer affordance: the shell adds this
    class whenever the pointer is not inside (SidebarRoot.tsx owns the linger),
    and rebinding ui-theme's indirection pair to `transparent` takes the thumb
@@ -43,10 +87,16 @@
 }
 
 /* Collapse phase 1: the whole frozen-width content fades out in place over
-   150ms; at settle the children unmount/snap to the rail layout. */
+   150ms; at settle the children unmount/snap to the rail layout. A 6px drift
+   toward the rail rides the same clock so the fade melts into the column
+   instead of vanishing on the spot — small enough to read as depth, not as a
+   slide, and the frozen width still guarantees no mid-collapse reflow. */
 .fading > * {
   opacity: 0;
-  transition: opacity 150ms var(--ds-ease-in-out);
+  transform: translateX(-6px);
+  transition:
+    opacity 150ms var(--ds-ease-in-out),
+    transform 150ms var(--ds-ease-in-out);
 }
 
 /* Wide-only content fades back in on expand remount. */
@@ -58,25 +108,31 @@
   from { opacity: 0; }
 }
 
-/* At the 150ms rail settle, the rail controls enter over the remaining
-   150ms of the AppFrame track transition. The bottom-pinned settings seat
-   shares their opacity timeline but stays horizontally fixed. Only a live
-   collapse gets .railIn; a cold collapsed render stays static. */
-.railIn .newSession,
-.railIn .regionArea {
-  animation: rail-in 150ms var(--ds-ease-in-out) backwards;
-}
-
+/* At the 150ms rail settle, the rail controls enter in a brand-first stagger:
+   mark (0ms) → fold toggle (30ms) → New Session (60ms) → browsing region
+   (90ms) → foot (120ms). The 200ms entrances therefore finish by 320ms, just
+   after the AppFrame track lands, so the column fills itself in top-to-bottom
+   instead of snapping all at once. The bottom-pinned settings seat shares the
+   opacity choreography but stays horizontally fixed. Only a live collapse gets
+   .railIn; a cold collapsed render stays static. */
 .railIn .logoRow {
-  animation: logo-rail-in 150ms var(--ds-ease-in-out) backwards;
+  animation: logo-rail-in 200ms var(--gnk-sidebar-neon-ease) 0ms backwards;
 }
 
 .railIn .toggleRail {
-  animation: toggle-rail-in 150ms var(--ds-ease-in-out) backwards;
+  animation: toggle-rail-in 200ms var(--gnk-sidebar-neon-ease) 30ms backwards;
+}
+
+.railIn .newSession {
+  animation: rail-in 200ms var(--gnk-sidebar-neon-ease) 60ms backwards;
+}
+
+.railIn .regionArea {
+  animation: rail-in 200ms var(--gnk-sidebar-neon-ease) 90ms backwards;
 }
 
 .railIn .footArea {
-  animation: rail-fade-in 150ms var(--ds-ease-in-out) backwards;
+  animation: rail-fade-in 200ms var(--gnk-sidebar-neon-ease) 120ms backwards;
 }
 
 @keyframes rail-in {
@@ -102,6 +158,67 @@
 
 @keyframes rail-fade-in {
   from { opacity: 0; }
+}
+
+/* Expand entrance (V2): the inverse choreography, in the same top-to-bottom
+   order. The rail's toggle is already gone here, so the mark (0ms) hands off
+   to New Session (60ms), then the browsing region (90ms), then the foot
+   (120ms). SidebarRoot.tsx adds .expanding for one expand and drops it again,
+   so a cold expanded paint is still and every later expand replays it. */
+.expanding .logoRow {
+  animation: neon-expand-in 200ms var(--gnk-sidebar-neon-ease) 0ms backwards;
+}
+
+.expanding .newSession {
+  animation: neon-expand-in 200ms var(--gnk-sidebar-neon-ease) 60ms backwards;
+}
+
+.expanding .regionArea {
+  animation: neon-expand-in 200ms var(--gnk-sidebar-neon-ease) 90ms backwards;
+}
+
+.expanding .footArea {
+  animation: neon-expand-in 200ms var(--gnk-sidebar-neon-ease) 120ms backwards;
+}
+
+@keyframes neon-expand-in {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+}
+
+/* Brand bloom, part of the same expand stagger: one soft halo swell as the
+   column opens, settling into the constant ambient glow the expanded mark
+   carries below. Never loops — the class itself is one-shot. */
+.expanding .brandMark {
+  animation: neon-brand-bloom 420ms var(--ds-ease-in-out) 0ms backwards;
+}
+
+@keyframes neon-brand-bloom {
+  from { filter: drop-shadow(0 0 2px var(--gnk-sidebar-neon-15)); }
+  40% { filter: drop-shadow(0 0 12px var(--gnk-sidebar-neon-50)); }
+  to { filter: drop-shadow(0 0 6px var(--gnk-sidebar-neon-35)); }
+}
+
+/* The attention magnet: one neon band crosses the New Session capsule on
+   expand (480ms, peaking at 0.15 opacity), then the class drops and the
+   capsule is still. It rides ::before so the JSX stays untouched; the
+   capsule's overflow clip and 12px radius shape the band. */
+.expanding .newSession::before {
+  animation: neon-sweep 480ms var(--ds-ease-in-out) 60ms both;
+}
+
+@keyframes neon-sweep {
+  from {
+    opacity: 0;
+    transform: translateX(-120%);
+  }
+  45% { opacity: 0.15; }
+  to {
+    opacity: 0;
+    transform: translateX(360%);
+  }
 }
 
 /* Logo row (figma pad (4,8,4,8)): the brand wordmark, or the static mark
@@ -163,6 +280,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  transition: filter 200ms var(--ds-ease-in-out);
+}
+
+/* Constant ambient halo on the expanded mark (V2): diffuse and static — a
+   resting brand glow, not a pulse. The rail omits it; at 56px a halo behind
+   the mark reads as a smudge rather than as light. */
+.root:not(.collapsed) .brandMark {
+  filter: drop-shadow(0 0 6px var(--gnk-sidebar-neon-35));
 }
 
 .brandName {
@@ -232,6 +357,7 @@
 /* New Session: 38px bar, 12px radius (figma 133:7634 geometry, squared-off
    corners); collapsed it renders as the rail's plain icon control. */
 .newSession {
+  position: relative;
   flex: none;
   display: flex;
   align-items: center;
@@ -250,10 +376,41 @@
   line-height: 22px;
   cursor: pointer;
   overflow: hidden;
+  /* The neon hover/bloom is a shadow + 1px lift; naming the properties keeps
+     the label from re-transitioning on every hover-in. */
+  transition:
+    background-color 150ms var(--ds-ease-in-out),
+    box-shadow 180ms var(--ds-ease-in-out),
+    transform 180ms var(--gnk-sidebar-neon-ease);
 }
 
-.newSession:hover {
+/* The sheen band for the expand entrance. It lives here (empty, transparent)
+   so the animation only has to move and fade it; the capsule's overflow clip
+   and radius do the shaping, so no radius of its own is needed. */
+.newSession::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 55%;
+  background: linear-gradient(100deg, transparent, var(--gnk-sidebar-neon), transparent);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Neon hover/focus bloom (V2) on the expanded capsule only. The rail's 36px
+   icon control would read as a flicker against the mark, so it keeps the flat
+   hover fill; the expanded capsule layers a green halo over the existing
+   hover background and lifts a single pixel. A shadow, not a border, keeps
+   the elevation hairline contract intact. */
+.root:not(.collapsed) .newSession:hover,
+.root:not(.collapsed) .newSession:focus-visible {
   background: var(--dsw-alias-button-floating-hover);
+  box-shadow:
+    0 0 0 0.5px var(--gnk-sidebar-neon-35),
+    0 0 18px -6px var(--gnk-sidebar-neon-50);
+  transform: translateY(-1px);
 }
 
 .collapsed .newSession {
@@ -354,10 +511,38 @@
 @media (prefers-reduced-motion: reduce) {
   .wide,
   .fading > *,
+  .railIn .logoRow,
+  .railIn .toggleRail,
   .railIn .newSession,
+  .railIn .regionArea,
   .railIn .footArea,
-  .railIn .regionArea {
+  .expanding .logoRow,
+  .expanding .newSession,
+  .expanding .regionArea,
+  .expanding .footArea,
+  .expanding .brandMark,
+  .expanding .newSession::before,
+  .root::after,
+  .brandMark,
+  .newSession {
     transition: none;
     animation: none;
+  }
+
+  /* No travel either: the collapse fade stays in place instead of drifting,
+     the expanded capsule does not lift on hover/focus, and the one-shot sheen
+     stays dark. The resting neon look (edge, ambient mark glow) is static, so
+     it survives untouched. */
+  .fading > * {
+    transform: none;
+  }
+
+  .root:not(.collapsed) .newSession:hover,
+  .root:not(.collapsed) .newSession:focus-visible {
+    transform: none;
+  }
+
+  .expanding .newSession::before {
+    opacity: 0;
   }
 }

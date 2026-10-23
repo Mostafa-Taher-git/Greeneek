@@ -16,7 +16,7 @@
  * scrollbar indirection away while it is elsewhere, so a list the user is not
  * pointing at carries no bar.
  */
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import clsx from 'clsx'
 import {
   FishLogo, IconNewChatOutline16, IconPanelLeftOutline16, Tooltip,
@@ -26,6 +26,15 @@ import css from './SidebarRoot.module.css'
 
 /** Wide-content unmount delay; matches the 150ms wide-content fade-out. */
 const COLLAPSE_SETTLE_MS = 150
+
+/**
+ * One-shot expand entrance window. The child stagger itself ends at 320ms
+ * (120ms delay + 200ms entrance), but the New Session sheen starts at 60ms and
+ * runs 480ms, so the `.expanding` class must live ~600ms to let it finish. It
+ * must drop again so the next expand can restart the choreography — a class
+ * that stayed on would play once per app session instead of once per expand.
+ */
+const EXPAND_SETTLE_MS = 600
 
 /**
  * How long the column's scrollbars stay drawn after the pointer leaves it.
@@ -57,6 +66,30 @@ export function SidebarRoot({
     return () => { window.clearTimeout(timer) }
   }, [collapsed])
   const wide = !collapsed || !settled
+
+  // Expand entrance (V2): a live collapsed → expanded flip gets the neon
+  // stagger (logo, New Session, browsing region, foot) and the one-shot sheen
+  // across the New Session capsule. A cold expanded render never sets it, so
+  // the first paint is still, and a collapse mid-entrance clears it so the
+  // collapse choreography owns the column again.
+  const [expanding, setExpanding] = useState(false)
+  const wasCollapsed = useRef(collapsed)
+  // Layout effect, not effect: the class has to be on the FIRST painted frame
+  // of the expanded tree. An after-paint effect would let the wide content
+  // flash at rest for a frame, then snap back to the entrance's hidden start.
+  useLayoutEffect(() => {
+    const was = wasCollapsed.current
+    wasCollapsed.current = collapsed
+    setExpanding(!collapsed && was)
+  }, [collapsed])
+
+  // Drop the one-shot class once the slowest entrance (the sheen) finishes, so
+  // a later expand replays the choreography instead of finding it still set.
+  useEffect(() => {
+    if (!expanding) return
+    const timer = window.setTimeout(() => { setExpanding(false) }, EXPAND_SETTLE_MS)
+    return () => { window.clearTimeout(timer) }
+  }, [expanding])
 
   // Freeze the content at its expanded width while it fades out (collapsed
   // && wide): the sliding column then clips it instead of reflowing it. The
@@ -118,6 +151,7 @@ export function SidebarRoot({
       className={clsx(
         css.root, !wide && css.collapsed, !wide && everWide.current && css.railIn,
         collapsed && wide && css.fading, !pointerInside && css.quietBars,
+        expanding && css.expanding,
       )}
       style={wide ? { width: collapsed ? lastWideWidth.current : width } : undefined}
       onPointerEnter={() => {

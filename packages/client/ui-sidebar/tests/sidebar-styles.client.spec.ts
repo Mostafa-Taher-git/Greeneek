@@ -40,21 +40,40 @@ describe('SidebarRoot.module.css', () => {
     expect(declarations('.collapsed .regionArea')?.get('margin-right')).toBe('0')
   })
 
-  it('moves the rail controls while the settings seat only fades', () => {
-    const animation = 'rail-in 150ms var(--ds-ease-in-out) backwards'
-    for (const selector of [
-      '.railIn .newSession',
-      '.railIn .regionArea',
-    ]) {
-      expect(declarations(selector)?.get('animation')).toBe(animation)
+  it('stages the rail controls top-to-bottom while the settings seat only fades', () => {
+    // The V2 entrance is a choreography, not one shared animation: each seat
+    // gets its own delay so the rail fills in mark → toggle → New Session →
+    // region → foot. Pin the pairs, including the overshoot curve.
+    const stagger: Array<[selector: string, animation: string]> = [
+      ['.railIn .logoRow', 'logo-rail-in 200ms var(--gnk-sidebar-neon-ease) 0ms backwards'],
+      ['.railIn .toggleRail', 'toggle-rail-in 200ms var(--gnk-sidebar-neon-ease) 30ms backwards'],
+      ['.railIn .newSession', 'rail-in 200ms var(--gnk-sidebar-neon-ease) 60ms backwards'],
+      ['.railIn .regionArea', 'rail-in 200ms var(--gnk-sidebar-neon-ease) 90ms backwards'],
+      ['.railIn .footArea', 'rail-fade-in 200ms var(--gnk-sidebar-neon-ease) 120ms backwards'],
+    ]
+    for (const [selector, animation] of stagger) {
+      expect(declarations(selector)?.get('animation'), selector).toBe(animation)
     }
-    expect(declarations('.railIn .footArea')?.get('animation')).toBe(
-      'rail-fade-in 150ms var(--ds-ease-in-out) backwards',
-    )
     expect(css).toMatch(
       /@keyframes rail-in\s*\{\s*from\s*\{\s*opacity: 0;\s*transform: translateX\(49px\);\s*}\s*}/,
     )
     expect(css).toMatch(/@keyframes rail-fade-in\s*\{\s*from\s*\{\s*opacity: 0;\s*}\s*}/)
+  })
+
+  it('replays the expand choreography only through the one-shot class', () => {
+    // The class (SidebarRoot.tsx) is what gates the expand entrance and its
+    // sheen; a cold expanded paint must not animate the arrival.
+    for (const selector of [
+      '.expanding .logoRow',
+      '.expanding .newSession',
+      '.expanding .regionArea',
+      '.expanding .footArea',
+    ]) {
+      expect(declarations(selector)?.get('animation'), selector)
+        .toMatch(/^neon-expand-in 200ms var\(--gnk-sidebar-neon-ease\) \d+ms backwards$/)
+    }
+    expect(declarations('.expanding .newSession::before')?.get('animation'))
+      .toBe('neon-sweep 480ms var(--ds-ease-in-out) 60ms both')
   })
 
   it('gives shell rail controls the same base anchor for their shared translation', () => {

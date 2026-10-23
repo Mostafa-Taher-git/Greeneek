@@ -2225,9 +2225,8 @@ describe('plugin registration and config', () => {
       kind: 'error',
       failure: {
         code: 'MISSING_ENDPOINT',
-        message: expect.stringMatching(
-          /no endpoint for provider route "greeneek-official"; set the llm-greeneek\.baseURL.*GREENEEK_BASE_URL/s,
-        ),
+        message:
+          'llm-greeneek: no endpoint for provider route "greeneek-official"; set the llm-greeneek.baseURL config field (the web Models page exposes it), or export GREENEEK_BASE_URL in the launching environment',
       },
     })
   })

@@ -673,18 +673,41 @@ function hasRequestHeaderAfterDescriptor(content: string): boolean {
     && events.slice(descriptor + 1).some(event => event.type === 'request/header')
 }
 
+/**
+ * Poll `check` until it is true, then reject with `message` once the deadline
+ * passes. `vi.waitFor` can replace a callback error with its generic
+ * "Timed out in waitFor!" when a slow poll cannot settle before the deadline,
+ * which drops the record name and deadline from the failure; this loop always
+ * evaluates one completed check against the deadline. A rejected `check`
+ * propagates unchanged, so a malformed persisted record is still a scenario bug.
+ */
+async function waitForPersistedRecord(
+  check: () => Promise<boolean>,
+  message: string,
+  timeoutMs: number,
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs
+  for (;;) {
+    if (await check()) return
+    if (Date.now() >= deadline) throw new Error(message)
+    await new Promise((resolve) => { setTimeout(resolve, WAIT_POLL_INTERVAL_MS) })
+  }
+}
+
 /** Wait until a complete provider or fallback title record follows the latest closed turn. */
 async function waitForPersistedTitleAfterTurnEnd(
   root: string,
   sessionId: string,
   timeoutMs = DEFAULT_WAIT_TIMEOUT_MS,
 ): Promise<void> {
-  await vi.waitFor(async () => {
-    const log = (await harvestSessionLogs(root)).find(candidate => candidate.id === sessionId)
-    if (log === undefined || !latestTitleFollowsTurnEnd(log.content)) {
-      throw new Error(`snapshot-harness: session "${sessionId}" did not persist session/title after turn/end within ${timeoutMs}ms`)
-    }
-  }, { interval: WAIT_POLL_INTERVAL_MS, timeout: timeoutMs })
+  await waitForPersistedRecord(
+    async () => {
+      const log = (await harvestSessionLogs(root)).find(candidate => candidate.id === sessionId)
+      return log !== undefined && latestTitleFollowsTurnEnd(log.content)
+    },
+    `snapshot-harness: session "${sessionId}" did not persist session/title after turn/end within ${timeoutMs}ms`,
+    timeoutMs,
+  )
 }
 
 /** Wait until a complete record of `type` follows the latest closed turn. */
@@ -694,12 +717,14 @@ async function waitForPersistedEventAfterTurnEnd(
   type: string,
   timeoutMs = DEFAULT_WAIT_TIMEOUT_MS,
 ): Promise<void> {
-  await vi.waitFor(async () => {
-    const log = (await harvestSessionLogs(root)).find(candidate => candidate.id === sessionId)
-    if (log === undefined || !latestEventFollowsTurnEnd(log.content, type)) {
-      throw new Error(`snapshot-harness: session "${sessionId}" did not persist ${type} after turn/end within ${timeoutMs}ms`)
-    }
-  }, { interval: WAIT_POLL_INTERVAL_MS, timeout: timeoutMs })
+  await waitForPersistedRecord(
+    async () => {
+      const log = (await harvestSessionLogs(root)).find(candidate => candidate.id === sessionId)
+      return log !== undefined && latestEventFollowsTurnEnd(log.content, type)
+    },
+    `snapshot-harness: session "${sessionId}" did not persist ${type} after turn/end within ${timeoutMs}ms`,
+    timeoutMs,
+  )
 }
 
 /** Wait for a cwd-relative marker proving an external action reached readiness. */

@@ -161,10 +161,10 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
       },
       {
         signature: 'async resolve(id?: string): Promise<AgentPreset>',
-        description: 'Resolve one preset by id.\n\nA broken preset resolves — deleting one, reading one, and reporting one all need the row — and the mounting paths refuse it AFTER resolution through resolveMountable.',
+        description: 'Resolve one preset by id.\n\nA broken preset resolves — deleting one, reading one, and reporting one all need the row — and the mounting paths refuse it AFTER resolution through resolveMountable.\n\nAn unnamed request is the default pick for a session about to be created, and its id comes from a setting or a composition row that can outlive the preset: a deleted preset, a renamed directory, a settings document copied from another deployment. That pick must never brick a new session, so an unknown default falls back to `standard` with a warning; an explicit id still fails, because silently composing a different preset would misreport what the caller asked for.',
         parameters: [{ name: 'id', description: 'the preset id, or `undefined` for {@link defaultId}.' }],
-        returns: 'the resolved preset.',
-        throws: ['when no configured root supplies that id.'],
+        returns: 'the resolved preset; the `standard` fallback for an unknown default when one is supplied.',
+        throws: ['when no configured root supplies an explicit id, or when the unknown default has no `standard` preset to fall back to.'],
       },
       {
         signature: 'async mount(agentCtx: Context, id?: string): Promise<AgentPreset>',

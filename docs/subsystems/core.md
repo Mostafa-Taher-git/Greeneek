@@ -458,9 +458,19 @@ async compositionInventory(): Promise<AgentPresetComposition[]>
  * A broken preset resolves — deleting one, reading one, and reporting one
  * all need the row — and the mounting paths refuse it AFTER resolution
  * through {@link resolveMountable}.
+ *
+ * An unnamed request is the default pick for a session about to be created,
+ * and its id comes from a setting or a composition row that can outlive the
+ * preset: a deleted preset, a renamed directory, a settings document copied
+ * from another deployment. That pick must never brick a new session, so an
+ * unknown default falls back to `standard` with a warning; an explicit id
+ * still fails, because silently composing a different preset would
+ * misreport what the caller asked for.
  * @param id - the preset id, or `undefined` for {@link defaultId}.
- * @returns the resolved preset.
- * @throws when no configured root supplies that id.
+ * @returns the resolved preset; the `standard` fallback for an unknown
+ *   default when one is supplied.
+ * @throws when no configured root supplies an explicit id, or when the
+ *   unknown default has no `standard` preset to fall back to.
  */
 async resolve(id?: string): Promise<AgentPreset>
 

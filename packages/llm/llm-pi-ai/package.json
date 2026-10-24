@@ -41,7 +41,7 @@
     "@greeneek/gnk-brand": "workspace:^",
     "@greeneek/gnk-util-values": "workspace:^",
     "@greeneek/schemastery": "workspace:^",
-    "@earendil-works/pi-ai": "^0.84.2",
+    "@earendil-works/pi-ai": "^0.87.1",
     "@greeneek/gnk-egress": "workspace:^"
   },
   "devDependencies": {

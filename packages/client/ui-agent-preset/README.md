@@ -24,7 +24,7 @@ This package provides the agent-preset surfaces of the Web GUI: a chip on the ne
 <a id="use-this-package"></a>
 ## Use this package
 
-Mount this plugin alongside the settings and conversation packages; the preset surfaces then appear where their slots render. The new-session chip opens on the deployment default and stages a pick that lands on the next blank session; the stage is spent on first use, so the following new session opens on the default again.
+Mount this plugin alongside the settings and conversation packages; the preset surfaces then appear where their slots render. The new-session chip opens on the deployment default and stages a pick that lands on the next blank session; the stage is spent on first use, so the following new session opens on the default again. The chip presents the two shipped modes, Standard and Creator; PTC remains a legal preset reachable through Settings or a custom preset copy, and recorded PTC sessions keep replaying their composition, but it no longer has a pill of its own.
 
 ### Managing the roster
 

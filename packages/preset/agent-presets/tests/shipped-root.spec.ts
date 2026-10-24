@@ -86,6 +86,9 @@ describe('the shipped preset root', () => {
     const ctx = await roster({ includeUserRoot: false })
 
     const listed = await ctx.agentPresets.list()
+    // PTC stays on the roster after v0.3.4 retires its new-session pill: the
+    // composition, `run_code`, the demo script, and the replay fixtures all
+    // still name it. Only the hero row's ordering dropped it.
     expect(listed.map(preset => preset.id).sort()).toEqual(['cordis', 'ptc', 'standard'])
     expect(listed.every(preset => preset.trust === 'system')).toBe(true)
     // Not `broken === undefined`: health asks whether each row's package is
@@ -95,6 +98,17 @@ describe('the shipped preset root', () => {
     // malformed would be a different one, and this asserts there is none.
     expect(listed.map(preset => preset.broken)
       .filter(reason => reason !== undefined && !reason.includes('cannot be resolved'))).toEqual([])
+  })
+
+  it('keeps PTC a legal default and a resolvable preset after its pill retires', async () => {
+    const ctx = await roster({ default: 'ptc', includeUserRoot: false })
+
+    // No hero pill, no change to the preset: a deployment or user that already
+    // defaults to PTC keeps composing it, and Settings can still read and
+    // mount it by id.
+    expect((await ctx.agentPresets.resolve()).id).toBe('ptc')
+    expect((await ctx.agentPresets.resolve('ptc')).trust).toBe('system')
+    expect((await ctx.agentPresets.readDocument('ptc')).agentPreset).toBe('ptc')
   })
 
   it('prepends the shipped root before configured roots and the derived user root', async () => {

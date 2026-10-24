@@ -54,6 +54,14 @@ export type {
 /** Settings namespace carrying the user's chosen default preset. */
 export const SETTINGS_NAMESPACE = 'agent-presets'
 
+/**
+ * The preset a new session composes when the configured default names one the
+ * roster no longer supplies. Fixed rather than "any other preset": `standard`
+ * is the shipped fallback every deployment configures, so the substituted
+ * composition is predictable to anyone reading the warning.
+ */
+const FALLBACK_PRESET_ID = 'standard'
+
 /** Refuse an empty preset id before invoking a domain operation. */
 function validatePresetId(value: string, field: 'agentPreset' | 'from'): void {
   if (value.length === 0) {
@@ -236,6 +244,10 @@ export class AgentPresets extends TypertRemoteService {
    * Read per call rather than cached: the settings document is hot-reloaded, so
    * changing the default takes effect on the next session created and leaves
    * every running session on the preset it was composed from.
+   *
+   * Reported verbatim, even when the id outlived its preset: this is the
+   * configured value, and {@link resolve} is what decides that a new session
+   * composes the fallback instead.
    */
   get defaultId(): string {
     return this.settings?.get().default ?? this.config.default
@@ -336,9 +348,19 @@ export class AgentPresets extends TypertRemoteService {
    * A broken preset resolves — deleting one, reading one, and reporting one
    * all need the row — and the mounting paths refuse it AFTER resolution
    * through {@link resolveMountable}.
+   *
+   * An unnamed request is the default pick for a session about to be created,
+   * and its id comes from a setting or a composition row that can outlive the
+   * preset: a deleted preset, a renamed directory, a settings document copied
+   * from another deployment. That pick must never brick a new session, so an
+   * unknown default falls back to `standard` with a warning; an explicit id
+   * still fails, because silently composing a different preset would
+   * misreport what the caller asked for.
    * @param id - the preset id, or `undefined` for {@link defaultId}.
-   * @returns the resolved preset.
-   * @throws when no configured root supplies that id.
+   * @returns the resolved preset; the `standard` fallback for an unknown
+   *   default when one is supplied.
+   * @throws when no configured root supplies an explicit id, or when the
+   *   unknown default has no `standard` preset to fall back to.
    */
   async resolve(id?: string): Promise<AgentPreset> {
     const wanted = id ?? this.defaultId
@@ -346,9 +368,21 @@ export class AgentPresets extends TypertRemoteService {
     const found = presets.find(preset => preset.id === wanted)
     if (found === undefined) {
       const available = presets.map(preset => preset.id)
+      const availableText = available.join(', ') || 'none'
+      if (id === undefined) {
+        const fallback = presets.find(preset => preset.id === FALLBACK_PRESET_ID)
+        if (fallback !== undefined) {
+          this.ctx.logger.warn(
+            `agent-presets: the configured default preset "${wanted}" is not on the roster `
+            + `(available: ${availableText}); composing new sessions from "${FALLBACK_PRESET_ID}" `
+            + 'instead. Choose another default in Settings, or restore the preset.',
+          )
+          return fallback
+        }
+      }
       throw new RemoteError(
         'agent-preset/not-found',
-        `agent-presets: preset "${wanted}" not found (available: ${available.join(', ') || 'none'})`,
+        `agent-presets: preset "${wanted}" not found (available: ${availableText})`,
         { agentPreset: wanted, available },
       )
     }

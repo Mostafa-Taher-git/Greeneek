@@ -16,6 +16,16 @@ describe('presetDisplayText', () => {
     })
   })
 
+  it('keeps PTC copy for the preset after its new-session pill retires', () => {
+    // Removing the pill leaves the preset a legal composition: Settings and
+    // custom presets still start it, and recorded sessions still name it, so
+    // its dictionary copy stays.
+    expect(presetDisplayText({ id: 'ptc', trust: 'system' }, t)).toEqual({
+      name: 't:presetPtcName',
+      description: 't:presetPtcDescription',
+    })
+  })
+
   it('keeps user-authored metadata untranslated', () => {
     expect(presetDisplayText({ id: 'mine', trust: 'user', name: '我的模式', description: '自述' }, t))
       .toEqual({ name: '我的模式', description: '自述' })

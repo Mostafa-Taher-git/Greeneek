@@ -91,11 +91,10 @@ describe('the new-session mode switcher', () => {
 
   it('orders shipped modes first, placeholders next, authored presets last', () => {
     renderSeat({
-      current: 'ptc',
+      current: 'cordis',
       options: [
         { id: 'mine', trust: 'user' },
         { id: 'cordis', trust: 'system' },
-        { id: 'ptc', trust: 'system' },
         { id: 'standard', trust: 'system' },
       ],
     })
@@ -103,15 +102,40 @@ describe('the new-session mode switcher', () => {
     const names = screen.getAllByRole('radio').map(radio => radio.getAttribute('aria-label') ?? radio.textContent)
     expect(names).toEqual([
       en.presetStandardName,
-      en.presetPtcName,
       en.presetCordisName,
       en.presetArmyName,
       en.presetMaestroName,
       'mine',
     ])
-    expect(screen.getByRole('radio', { name: en.presetPtcName }).getAttribute('aria-checked')).toBe('true')
+    expect(screen.getByRole('radio', { name: en.presetCordisName }).getAttribute('aria-checked')).toBe('true')
     expect(screen.getByRole('radio', { name: en.presetArmyName })).toHaveProperty('disabled', true)
     expect(screen.getByRole('radio', { name: en.presetMaestroName })).toHaveProperty('disabled', true)
+  })
+
+  it('retires the PTC pill while the roster keeps supplying the preset', () => {
+    const options = [
+      { id: 'mine', trust: 'user' as const },
+      { id: 'cordis', trust: 'system' as const },
+      { id: 'ptc', trust: 'system' as const },
+      { id: 'standard', trust: 'system' as const },
+    ]
+    renderSeat({ current: 'ptc', options })
+
+    // PTC still composes sessions — Settings and custom presets start it, and
+    // recorded PTC sessions keep replaying — but v0.3.4 retires its hero pill,
+    // so the row offers the two shipped modes and appends only `mine`.
+    expect(options.map(option => option.id)).toContain('ptc')
+    expect(screen.queryByRole('radio', { name: en.presetPtcName })).toBeNull()
+    expect(screen.getAllByRole('radio').map(radio => radio.getAttribute('aria-label') ?? radio.textContent))
+      .toEqual([
+        en.presetStandardName,
+        en.presetCordisName,
+        en.presetArmyName,
+        en.presetMaestroName,
+        'mine',
+      ])
+    // A session already on PTC checks no pill rather than inventing one.
+    expect(screen.queryByRole('radio', { checked: true })).toBeNull()
   })
 
   it('falls back to the id when the staged preset published no name', () => {

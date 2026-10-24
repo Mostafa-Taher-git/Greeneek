@@ -18,7 +18,6 @@ import type { InjectFace, PropsLocale, PropsRuntime } from '@greeneek/gnk-client
 import {
   IconAgentPresetOutline16,
   IconBrainCircuit16,
-  IconCircleDashedCheck16,
   IconCirclePile16,
   IconSparkle16,
   IconSquareDashedBottomCode16,
@@ -57,8 +56,22 @@ export interface AgentPresetSeatInjected {
  */
 const REFUSAL_HOLD_MS = 8000
 
-/** Shipped modes in row order; everything else appends after them. */
-const MODE_ORDER = ['standard', 'ptc', 'cordis'] as const
+/**
+ * Shipped modes in row order. PTC is deliberately absent since v0.3.4: its
+ * preset still composes sessions and stays on the roster, but the new-session
+ * row offers the two shipped modes.
+ */
+const MODE_ORDER = ['standard', 'cordis'] as const
+
+/**
+ * Roster presets the row never appends. Membership in {@link MODE_ORDER} only
+ * decides the shipped positions; everything else is appended as an authored
+ * preset, so retiring a pill means hiding it here as well.
+ *
+ * PTC remains a legal preset: Settings and custom presets still start it, and
+ * sessions recorded under it keep replaying their composition.
+ */
+const HIDDEN_FROM_ROW: ReadonlySet<string> = new Set(['ptc'])
 
 /** Full component props. */
 export type AgentPresetSeatProps =
@@ -105,9 +118,7 @@ export function AgentPresetSeat({ load, select, introduced, useAgentPresetSeat, 
         description: text.description ?? t('noDescription'),
         icon: id === 'standard'
           ? <IconSquareDashedBottomCode16 size={16} />
-          : id === 'ptc'
-            ? <IconCircleDashedCheck16 size={16} />
-            : <IconSparkle16 size={16} />,
+          : <IconSparkle16 size={16} />,
       }]
     }),
     // Placeholder modes for v1.1.1: visible and previewable, never selectable
@@ -129,9 +140,11 @@ export function AgentPresetSeat({ load, select, introduced, useAgentPresetSeat, 
       disabledReason: t('switcherComingSoon'),
     },
     // Authored presets keep a live pill after the shipped set: hiding them
-    // would strand sessions their owners can still start elsewhere.
+    // would strand sessions their owners can still start elsewhere. A retired
+    // shipped preset is the one exception — its row lives in Settings now.
     ...state.options
-      .filter(option => !(MODE_ORDER as readonly string[]).includes(option.id))
+      .filter(option =>
+        !(MODE_ORDER as readonly string[]).includes(option.id) && !HIDDEN_FROM_ROW.has(option.id))
       .map((option) => {
         const text = presetDisplayText(option, t)
         return {

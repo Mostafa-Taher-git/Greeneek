@@ -19,7 +19,7 @@ import ToolRuntime from '@greeneek/gnk-tools'
 import AgentRegistry from '@greeneek/gnk-agent'
 import AgentLoop from '@greeneek/gnk-agent-loop'
 import FileSettingsProvider from '@greeneek/gnk-settings-file'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import AgentPresets, { COMPOSITION_FILE, SETTINGS_NAMESPACE } from '@greeneek/gnk-agent-presets'
 
 const FIXTURES = join(dirname(fileURLToPath(import.meta.url)), 'fixtures')
@@ -32,6 +32,7 @@ const NS = SETTINGS_NAMESPACE
  */
 async function harness(
   extraRoots: readonly { path: string; trust: 'system' | 'user' }[] = [],
+  deploymentDefault = 'standard',
 ): Promise<{ ctx: Context; settingsFile: string; settingsFiber: { dispose: () => unknown } }> {
   const home = await mkdtemp(join(tmpdir(), 'gnk-preset-settings-'))
   const settingsFile = join(home, 'settings.yaml')
@@ -50,7 +51,12 @@ async function harness(
   await ctx.plugin(AgentLoop, { agents: [] })
   const settingsFiber = ctx.plugin(FileSettingsProvider, { path: settingsFile, watch: false })
   await settingsFiber
-  await ctx.plugin(AgentPresets, { default: 'standard', roots: [...ROOTS, ...extraRoots], includeShippedRoot: false, includeUserRoot: false })
+  await ctx.plugin(AgentPresets, {
+    default: deploymentDefault,
+    roots: [...ROOTS, ...extraRoots],
+    includeShippedRoot: false,
+    includeUserRoot: false,
+  })
   return { ctx, settingsFile, settingsFiber }
 }
 
@@ -137,15 +143,62 @@ describe('the default preset as a user setting', () => {
     expect((await ctx.agentPresets.resolve()).id).toBe('standard')
   })
 
-  it('reports an unknown user default only when a session tries to use it', async () => {
+  it('falls back to standard, loudly, when the deployment default names no preset', async () => {
+    const { ctx } = await harness([], 'vanished')
+    const warnings: string[] = []
+    ctx.logger.warn = ((message: unknown) => { warnings.push(String(message)) }) as typeof ctx.logger.warn
+
+    // The composition default is an input, not a guarantee: a copied cordis.yml
+    // can name a preset this deployment never shipped. A new session still
+    // starts, on `standard`, and the substitution is reported.
+    expect((await ctx.agentPresets.resolve()).id).toBe('standard')
+    expect(warnings).toHaveLength(1)
+    expect(warnings[0]).toContain('configured default preset "vanished"')
+    expect(warnings[0]).toContain('"standard"')
+  })
+
+  it('does the same when the stale id is the user setting', async () => {
     const { ctx } = await harness()
+    const warnings: string[] = []
+    ctx.logger.warn = ((message: unknown) => { warnings.push(String(message)) }) as typeof ctx.logger.warn
 
     // Storing it succeeds — the roster is a live directory, so a name that is
-    // absent now may exist by the time a session asks for it.
+    // absent now may exist by the time a session asks for it. If it still does
+    // not, the default pick falls back rather than failing session creation.
     await ctx.settings.update(NS, { default: 'no-such-preset' })
 
-    await expect(ctx.agentPresets.resolve())
-      .rejects.toThrow(/preset "no-such-preset" not found/)
+    expect((await ctx.agentPresets.resolve()).id).toBe('standard')
+    expect(warnings).toHaveLength(1)
+    expect(warnings[0]).toContain('configured default preset "no-such-preset"')
+  })
+
+  it('composes a new session from standard instead of failing to start', async () => {
+    const { ctx } = await harness()
+    const warn = vi.spyOn(ctx.logger, 'warn').mockImplementation(() => {})
+    await ctx.settings.update(NS, { default: 'no-such-preset' })
+
+    const handle = await ctx.agents.create({
+      sessionId: SessionId('settings-stale-default'),
+      setup: async (agentCtx: Context) => void await ctx.agentPresets.mount(agentCtx),
+    })
+    try {
+      expect(ctx.agentPresets.composedPreset(handle.agent.ctx)).toBe('standard')
+      expect(toolNames(ctx, handle.agent)).toEqual(['alpha'])
+    } finally {
+      await handle.dispose()
+    }
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('"no-such-preset"'))
+  })
+
+  it('keeps the loud not-found for an id a session names explicitly', async () => {
+    const { ctx } = await harness()
+    const warn = vi.spyOn(ctx.logger, 'warn').mockImplementation(() => {})
+
+    // The fallback covers only the absent pick. An explicit request names a
+    // composition, and substituting another would misreport the session.
+    await expect(ctx.agentPresets.resolve('no-such-preset'))
+      .rejects.toMatchObject({ code: 'agent-preset/not-found' })
+    expect(warn).not.toHaveBeenCalled()
   })
 })
 

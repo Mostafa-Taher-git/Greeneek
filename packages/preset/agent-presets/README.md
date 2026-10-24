@@ -67,6 +67,8 @@ agent-presets:
 
 The value is read when a session is created, so a changed default affects only sessions created afterwards; running sessions stay on the preset they were composed from. Clearing the user field re-inherits the composition default.
 
+A default id can outlive the preset it names — a deleted preset, a renamed directory, a settings document copied from another deployment. A session created without an explicit pick then composes `standard` and logs a warning naming the stale id, rather than failing to start; an id a caller names explicitly still fails with `agent-preset/not-found`, because substituting a different composition would misreport that session.
+
 ### Authoring presets
 
 Authoring is copy-only: creating a preset copies an existing preset's whole directory — composition, display metadata, skill directories, assets — into the first `user` root. The copy keeps the source's description but gets its own id and an optional display name, so no caller supplies composition text and a copy grants nothing the roster did not already carry. After creation, everything happens in the preset's own files.

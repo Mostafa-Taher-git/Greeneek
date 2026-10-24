@@ -1,9 +1,14 @@
-/* Sidebar column: same dark background as the frame so sidebar and
-   main surface read as one surface. Collapse is a slide + crossfade, not
-   a morph: the content holds its frozen expanded layout (inline width set
-   by the component) and fades in place (.fading) while the sliding column
-   (AppFrame grid tracks) clips it; the rail layout (.collapsed) only
-   applies after the fade settles, so nothing reflows mid-slide. */
+/* Sidebar column: a floating glass panel — the Glass Console look. The shell
+   stands off the frame by an 8px breathing gap on every side; the panel
+   itself (.root::before) is a translucent, green-veiled layer with a soft
+   brand mist, a 1px ring, a top sheen and a grounding shadow, while the raw
+   frame background shows through the gap as the seam. The panel is decorative
+   only: it hangs off ::before at negative z under an isolated stacking
+   context, so the collapse contract is untouched. Collapse remains a slide +
+   crossfade, not a morph: the content holds its frozen expanded layout
+   (inline width set by the component) and fades in place (.fading) while the
+   sliding column (AppFrame grid tracks) clips it; the rail layout (.collapsed)
+   only applies after the fade settles, so nothing reflows mid-slide. */
 
 .root {
   --gnk-sidebar-inline-padding: 12px;
@@ -12,19 +17,30 @@
      alpha blends and the overshoot curve live here, because the neon treatment
      belongs to this shell rather than to the shared theme. */
   --gnk-sidebar-neon: var(--dsw-static-greeneek-450);
+  --gnk-sidebar-neon-10: color-mix(in srgb, var(--gnk-sidebar-neon) 10%, transparent);
   --gnk-sidebar-neon-15: color-mix(in srgb, var(--gnk-sidebar-neon) 15%, transparent);
   --gnk-sidebar-neon-35: color-mix(in srgb, var(--gnk-sidebar-neon) 35%, transparent);
   --gnk-sidebar-neon-50: color-mix(in srgb, var(--gnk-sidebar-neon) 50%, transparent);
   /* A gentle overshoot: the entrance settles with a breath of travel past its
      seat instead of easing flat. 1.2 stays shy of a visible bounce. */
   --gnk-sidebar-neon-ease: cubic-bezier(0.34, 1.2, 0.5, 1);
+  /* Glass panel geometry + materials. Every value mixes from theme tokens, so
+     both modes get a true glass: dark gets translucent near-black with lifted
+     sage mist, light gets translucent near-white with deep green mist — the
+     same theme-following hue the V2 hairline used. */
+  --gnk-sidebar-glass-inset: 8px;
+  --gnk-sidebar-radius: 16px;
+  --gnk-sidebar-glass-tint: color-mix(in srgb, var(--dsw-alias-bg-base) 78%, transparent);
+  --gnk-sidebar-glass-ring: color-mix(in srgb, var(--gnk-sidebar-neon) 26%, transparent);
+  --gnk-sidebar-glass-sheen: color-mix(in srgb, var(--dsw-alias-label-primary) 7%, transparent);
   position: relative;
+  isolation: isolate; /* keeps the negative-z panel inside this shell */
   display: flex;
   flex-direction: column;
   height: 100%;
-  padding: 6px var(--gnk-sidebar-inline-padding);
+  padding: 10px var(--gnk-sidebar-inline-padding);
   box-sizing: border-box;
-  background: var(--dsw-alias-bg-base);
+  background: transparent;
 
   color: var(--dsw-alias-label-primary);
   font-size: 14px;
@@ -35,42 +51,38 @@
 }
 
 /* Rail geometry (figma rail spec): 36x36 control boxes centered in the 56px
-   rail (10px side padding), 12px vertical rhythm, 18px from the rail top to
-   the whale's box (24px to the 24-wide whale glyph itself). */
+   rail (10px side padding), 12px vertical rhythm. The vertical paddings clear
+   the panel's rounded corners instead of the column square edges. */
 .root.collapsed {
-  padding: 18px 10px 6px;
+  padding: 14px 10px;
 }
 
-/* The leading neon edge (V2): a 1px hairline on the column's trailing edge,
-   brightest at mid-height and dissolving into both ends so it reads as light
-   bleeding off the sidebar rather than a drawn divider. It sits INSIDE the
-   column (right: 0) — the shell must not add horizontal overflow — and is a
-   gradient, never a border-token fill, so the elevation hairline contract
-   keeps its 0.5px neutral strokes to itself. The rail drops the line: at 56px
-   there is no conversation seam left to separate. */
-.root::after {
+/* The glass panel (Glass Console): one decorative layer that carries the
+   material so neither the flex layout nor the AppFrame track clip see it.
+   Negative z under .root's isolation keeps it below every interactive child
+   without lifting those children onto their own layers. The ring is drawn
+   inside a box-shadow (never a border-token border), and the mist/veil mix
+   from the neon token so the hue follows the same theme pairing as the
+   collapse choreography. */
+.root::before {
   content: '';
   position: absolute;
-  top: 0;
-  bottom: 0;
-  right: 0;
-  z-index: 1;
-  width: 1px;
-  background: linear-gradient(
-    to bottom,
-    transparent 0%,
-    var(--gnk-sidebar-neon-50) 18%,
-    var(--gnk-sidebar-neon) 50%,
-    var(--gnk-sidebar-neon-50) 82%,
-    transparent 100%
-  );
-  opacity: 0.5;
+  inset: var(--gnk-sidebar-glass-inset);
+  z-index: -1;
   pointer-events: none;
-  transition: opacity 180ms var(--ds-ease-in-out);
-}
-
-.root.collapsed::after {
-  opacity: 0;
+  border-radius: var(--gnk-sidebar-radius);
+  background:
+    radial-gradient(120% 90% at 82% 22%, var(--gnk-sidebar-neon-15), transparent 70%),
+    radial-gradient(110% 80% at 22% 84%, var(--gnk-sidebar-neon-10), transparent 72%),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0)),
+    var(--gnk-sidebar-glass-tint);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  backdrop-filter: blur(14px) saturate(1.1);
+  box-shadow:
+    inset 0 0 0 1px var(--gnk-sidebar-glass-ring),
+    inset 0 1px 0 var(--gnk-sidebar-glass-sheen),
+    0 24px 56px -28px rgba(8, 12, 9, 0.5),
+    0 2px 10px -4px rgba(8, 12, 9, 0.3);
 }
 
 /* Scrollbars in the column are a pointer affordance: the shell adds this
@@ -355,7 +367,9 @@
 }
 
 /* New Session: 38px bar, 12px radius (figma 133:7634 geometry, squared-off
-   corners); collapsed it renders as the rail's plain icon control. */
+   corners); collapsed it renders as the rail's plain icon control. The
+   expanded capsule is the Glass Console material: a translucent green wash
+   bounded by a ring and topped with a sheen — never a solid border fill. */
 .newSession {
   position: relative;
   flex: none;
@@ -367,9 +381,9 @@
   padding: 8px 16px;
   margin: 0 2px 8px;
   box-sizing: border-box;
-  border: 0.5px solid var(--dsw-alias-border-l3);
+  border: 0.5px solid transparent;
   border-radius: 12px;
-  background: var(--dsw-alias-button-elevated-fill);
+  background: color-mix(in srgb, var(--gnk-sidebar-neon) 13%, transparent);
   color: var(--dsw-alias-label-primary);
   font-size: 14px;
   font-weight: 500;
@@ -382,6 +396,9 @@
     background-color 150ms var(--ds-ease-in-out),
     box-shadow 180ms var(--ds-ease-in-out),
     transform 180ms var(--gnk-sidebar-neon-ease);
+  box-shadow:
+    inset 0 0 0 1px var(--gnk-sidebar-glass-ring),
+    inset 0 1px 0 var(--gnk-sidebar-glass-sheen);
 }
 
 /* The sheen band for the expand entrance. It lives here (empty, transparent)
@@ -401,14 +418,15 @@
 
 /* Neon hover/focus bloom (V2) on the expanded capsule only. The rail's 36px
    icon control would read as a flicker against the mark, so it keeps the flat
-   hover fill; the expanded capsule layers a green halo over the existing
-   hover background and lifts a single pixel. A shadow, not a border, keeps
+   hover fill; the expanded capsule deepens its own green wash and layers the
+   halo over it while lifting a single pixel. A shadow, not a border, keeps
    the elevation hairline contract intact. */
 .root:not(.collapsed) .newSession:hover,
 .root:not(.collapsed) .newSession:focus-visible {
-  background: var(--dsw-alias-button-floating-hover);
+  background: color-mix(in srgb, var(--gnk-sidebar-neon) 20%, transparent);
   box-shadow:
-    0 0 0 0.5px var(--gnk-sidebar-neon-35),
+    inset 0 0 0 1px color-mix(in srgb, var(--gnk-sidebar-neon) 40%, transparent),
+    inset 0 1px 0 var(--gnk-sidebar-glass-sheen),
     0 0 18px -6px var(--gnk-sidebar-neon-50);
   transform: translateY(-1px);
 }
@@ -422,6 +440,9 @@
   gap: 0;
   border-color: transparent;
   background: transparent;
+  /* The rail icon control drops the capsule's glass: at 36px a green wash and
+     ring read as a smudge next to the mark. */
+  box-shadow: none;
 }
 
 .collapsed .newSession:hover {
@@ -459,15 +480,16 @@
 }
 
 /* Region seat: always mounted so the foot never moves. Its trailing margin
-   cancels the wide shell inset so the nested scrollbar can sit at the sidebar
-   edge; the browser restores that inset inside its own rows. */
+   cancels the wide shell inset down to the glass panel's edge, so the nested
+   scrollbar lands on the glass instead of on the frame gap; the browser
+   restores that inset inside its own rows. */
 .regionArea {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
   margin-left: -4px;
-  margin-right: calc(-1 * var(--gnk-sidebar-inline-padding));
+  margin-right: calc(-1 * var(--gnk-sidebar-inline-padding) + var(--gnk-sidebar-glass-inset));
   padding-left: 4px;
   overflow: hidden;
 }
@@ -522,7 +544,6 @@
   .expanding .footArea,
   .expanding .brandMark,
   .expanding .newSession::before,
-  .root::after,
   .brandMark,
   .newSession {
     transition: none;

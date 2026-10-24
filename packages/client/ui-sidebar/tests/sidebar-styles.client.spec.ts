@@ -29,15 +29,36 @@ describe('SidebarRoot.module.css', () => {
   it('shares and cancels the wide shell trailing padding structurally', () => {
     const root = declarations('.root')
     expect(root?.get('--gnk-sidebar-inline-padding')).toBe('12px')
-    expect(root?.get('padding')).toBe('6px var(--gnk-sidebar-inline-padding)')
+    expect(root?.get('padding')).toBe('10px var(--gnk-sidebar-inline-padding)')
     expect(declarations('.regionArea')?.get('margin-left')).toBe('-4px')
     expect(declarations('.regionArea')?.get('padding-left')).toBe('4px')
     expect(declarations('.regionArea')?.get('margin-right')).toBe(
-      'calc(-1 * var(--gnk-sidebar-inline-padding))',
+      'calc(-1 * var(--gnk-sidebar-inline-padding) + var(--gnk-sidebar-glass-inset))',
     )
     expect(declarations('.collapsed .regionArea')?.get('margin-left')).toBe('0')
     expect(declarations('.collapsed .regionArea')?.get('padding-left')).toBe('0')
     expect(declarations('.collapsed .regionArea')?.get('margin-right')).toBe('0')
+  })
+
+  it('suspends the shell as a floating glass panel', () => {
+    // The Glass Console material is one decorative layer: a translucent
+    // panel inset 8px on every side, ringed with a green shadow ring and
+    // misted from the neon token, drawn by ::before at negative z inside
+    // .root's own stacking context. No child layout moves for it, and the
+    // ring is box-shadow — never a border-token border.
+    const root = declarations('.root')
+    expect(root?.get('background')).toBe('transparent')
+    expect(root?.get('--gnk-sidebar-glass-inset')).toBe('8px')
+    expect(root?.get('isolation')).toBe('isolate')
+    const panel = declarations('.root::before')
+    expect(panel?.get('inset')).toBe('var(--gnk-sidebar-glass-inset)')
+    expect(panel?.get('border-radius')).toBe('var(--gnk-sidebar-radius)')
+    expect(panel?.get('z-index'), panel?.get('z-index')).toBe('-1')
+    expect(panel?.get('backdrop-filter'), 'panel blur').toContain('blur(14px)')
+    expect(panel?.get('box-shadow'), 'panel ring').toContain(
+      'inset 0 0 0 1px var(--gnk-sidebar-glass-ring)',
+    )
+    expect(declarations('.root.collapsed')?.get('padding')).toBe('14px 10px')
   })
 
   it('stages the rail controls top-to-bottom while the settings seat only fades', () => {

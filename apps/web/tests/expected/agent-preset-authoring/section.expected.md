@@ -48,6 +48,16 @@
         - img
         - text: 复制
     - listitem:
+      - 'button "设为默认: 像素设计师（预览）"':
+        - text: 像素设计师（预览） 内置 设计类 Agent：通过 Craft 网关调用已安装的创意应用（PhotoCraft、PdfCraft 等），配备文件读写、检索、访谈、待办与计划工具。
+        - code: pixels-designer
+      - 'button "查看: 像素设计师（预览）"':
+        - img
+        - text: 查看
+      - 'button "复制: 像素设计师（预览）"':
+        - img
+        - text: 复制
+    - listitem:
       - 'button "设为默认: 创造模式"':
         - text: 创造模式 内置 用于创建自定义 Agent preset：具备标准模式的全部能力，并提供运行时检查、插件实验和 preset 创作指导。
         - code: cordis
@@ -55,6 +65,16 @@
         - img
         - text: 查看
       - 'button "复制: 创造模式"':
+        - img
+        - text: 复制
+    - listitem:
+      - 'button "设为默认: 导师（预览）"':
+        - text: 导师（预览） 内置 教学类 Agent：访谈后起草讲义、教程与简历，通过 Craft 网关调用文档应用导出 PDF，配备文件读写、检索、访谈与待办工具。
+        - code: instructor
+      - 'button "查看: 导师（预览）"':
+        - img
+        - text: 查看
+      - 'button "复制: 导师（预览）"':
         - img
         - text: 复制
   - heading "自定义" [level=3]

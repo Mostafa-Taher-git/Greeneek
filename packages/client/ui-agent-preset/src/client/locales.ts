@@ -7,6 +7,8 @@ export type AgentPresetSettingsKey =
   | 'presetStandardName' | 'presetStandardDescription'
   | 'presetPtcName' | 'presetPtcDescription'
   | 'presetCordisName' | 'presetCordisDescription'
+  | 'presetPixelsDesignerName' | 'presetPixelsDesignerDescription'
+  | 'presetInstructorName' | 'presetInstructorDescription'
   | 'presetArmyName' | 'presetArmyDescription'
   | 'presetMaestroName' | 'presetMaestroDescription'
   | 'switcherLabel' | 'switcherComingSoon'
@@ -41,6 +43,12 @@ export const en: Record<AgentPresetSettingsKey, string> = {
   presetCordisName: 'Creator mode',
   presetCordisDescription:
     'Built for creating custom agent presets, with all Standard mode capabilities plus runtime inspection, plugin experiments, and preset-authoring guidance.',
+  presetPixelsDesignerName: 'Pixels Designer (preview)',
+  presetPixelsDesignerDescription:
+    'Design agent that drives installed creative apps through the Craft gateway, with file editing, search, interviews, todos, and planning.',
+  presetInstructorName: 'Instructor (preview)',
+  presetInstructorDescription:
+    'Teaching agent that interviews, drafts lessons, tutorials, and CVs as markdown, and exports them through the Craft gateway\'s document apps.',
   // Placeholder modes for v1.1.1: real presets and copy land with the plan.
   presetArmyName: 'Army mode',
   presetArmyDescription: 'Coming soon.',
@@ -103,6 +111,10 @@ export const zh: Record<AgentPresetSettingsKey, string> = {
   presetPtcDescription: '功能完整的编码 Agent，但默认不提供 workflow 工具；其他工具通过 PTC 模式 SDK 呈现，让模型用一个 TypeScript 程序组合多步操作。',
   presetCordisName: '创造模式',
   presetCordisDescription: '用于创建自定义 Agent preset：具备标准模式的全部能力，并提供运行时检查、插件实验和 preset 创作指导。',
+  presetPixelsDesignerName: '像素设计师（预览）',
+  presetPixelsDesignerDescription: '设计类 Agent：通过 Craft 网关调用已安装的创意应用（PhotoCraft、PdfCraft 等），配备文件读写、检索、访谈、待办与计划工具。',
+  presetInstructorName: '导师（预览）',
+  presetInstructorDescription: '教学类 Agent：访谈后起草讲义、教程与简历，通过 Craft 网关调用文档应用导出 PDF，配备文件读写、检索、访谈与待办工具。',
   // Placeholder modes for v1.1.1: real presets and copy land with the plan.
   presetArmyName: 'Army 模式',
   presetArmyDescription: '即将推出。',

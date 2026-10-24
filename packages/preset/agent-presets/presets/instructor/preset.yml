@@ -1,0 +1,3 @@
+name: 导师（预览）
+description: 教学类 Agent：访谈后起草讲义、教程与简历，通过 Craft 网关调用文档应用导出 PDF，配备文件读写、检索、访谈与待办工具。
+order: 5

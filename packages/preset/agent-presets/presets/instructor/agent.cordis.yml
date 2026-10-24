@@ -1,0 +1,85 @@
+# The `instructor` agent preset (preview): a teaching agent that drafts
+# lessons, tutorials, and CVs as markdown and exports them through the Craft
+# gateway's document apps instead of a static tool fan-out.
+#
+# Preview stance: the document quartet (WordCraft, DeckCraft, GridCraft,
+# PdfCraft) becomes available through the gateway as each matures; the pilot
+# manifests cover only what `craft_list_apps` measures today, and no parity
+# promise is made for the rest.
+
+# ── identity ────────────────────────────────────────────────────────────────
+
+- id: persona
+  name: '@greeneek/gnk-persona'
+  config:
+    text: |-
+      You are a teaching agent powered by the {{model}} model. Your working directory is {{cwd}}.
+
+      You operate document desktop apps through two gateway tools only: `craft_list_apps` reports each pilot app's measured state, and `craft_open_app` opens one app's headless session and mounts its curated tools. Call `craft_list_apps` before promising any app-specific work; treat only `ready` and `running` as usable. When an app is `not-installed` or `app-installed-cli-missing`, say which app is missing and deliver the markdown draft — never claim an app ran.
+
+      Never invent credentials, work history, or qualifications. Every fact in a learner-facing document or CV must trace to user input or to a source you fetched and cite; when a fact is missing, ask for it or leave an explicit placeholder, never fill the gap yourself.
+
+      The flagship flow is a CV: interview with `ask_user_question` for each section, draft the markdown in the workspace, present a review checklist and get the user's explicit sign-off on the draft, then export the PDF through PdfCraft headless. WordCraft and DeckCraft are optional enhancements when measured ready; the markdown-to-PDF path is always the critical path.
+
+      Every Craft input and output is a real file under the session workspace. If opening a downstream app fails after earlier steps succeeded, report the failure explicitly with what was and was not produced; never substitute a silent fallback.
+
+- id: agent-instructions
+  name: '@greeneek/gnk-agent-instructions'
+  config:
+    maxBytes: 65536
+
+# ── craft gateway ───────────────────────────────────────────────────────────
+
+# The `craft` service is stateful (live child processes, per-launch control
+# token, concurrency cap), so all three rows share one entry-local realm: a
+# root-realm `craft` would be process-global and the second preset session
+# would collide. `craft-local` registers the host provider that discovers and
+# spawns headless app processes; `tool-craft` contributes the two gateway
+# tools and mounts each app's curated bridge while its session is active.
+- id: craft
+  name: cordis:group
+  group: true
+  isolate:
+    craft: true
+  config:
+    - id: craft-service
+      name: '@greeneek/gnk-craft'
+      config:
+        maxActiveApps: 2
+
+    - id: craft-local
+      name: '@greeneek/gnk-craft-local'
+
+    - id: tool-craft
+      name: '@greeneek/gnk-tool-craft'
+
+# ── workspace files ─────────────────────────────────────────────────────────
+
+# Both register into the host `tools` registry and provide nothing, so they
+# need no realm. The `fs` service and its policy stay in the host.
+- id: tool-fs
+  name: '@greeneek/gnk-tool-fs'
+
+- id: tool-fs-search
+  name: '@greeneek/gnk-tool-fs-search'
+  config:
+    sampleOverCapGlobResults: false
+
+# ── model-facing rows ───────────────────────────────────────────────────────
+
+- id: tool-ask-user
+  name: '@greeneek/gnk-tool-ask-user'
+
+- id: tool-todo
+  name: '@greeneek/gnk-tool-todo'
+  config:
+    allowParallelInProgress: true
+
+# The `web` service and its search provider stay in the host composition; only
+# the model-facing tool is per-session. Fetch backs the cited-source rule in
+# the persona: fetched facts enter documents with their source.
+- id: tool-web
+  name: '@greeneek/gnk-tool-web'
+  config:
+    fetch: true
+    searchTimeoutMs: 60000

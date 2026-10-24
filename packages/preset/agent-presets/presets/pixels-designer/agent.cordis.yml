@@ -1,0 +1,107 @@
+# The `pixels-designer` agent preset (preview): a design agent that drives the
+# ArtCraft-suite apps through the Craft gateway instead of a static tool fan-out.
+#
+# Preview stance: only the pilot manifests (PhotoCraft, PdfCraft) are composed,
+# the gateway reports measured install states, and no parity promise is made
+# for the rest of the suite. The flagship flow is the photo batch; everything
+# else is capability-detected from `craft_list_apps`.
+
+# ── identity ────────────────────────────────────────────────────────────────
+
+- id: persona
+  name: '@greeneek/gnk-persona'
+  config:
+    text: |-
+      You are a design agent powered by the {{model}} model. Your working directory is {{cwd}}.
+
+      You operate creative desktop apps through two gateway tools only: `craft_list_apps` reports each pilot app's measured state, and `craft_open_app` opens one app's headless session and mounts its curated tools. Call `craft_list_apps` before promising any app-specific work; treat only `ready` and `running` as usable. When an app is `not-installed` or `app-installed-cli-missing`, say which app is missing and deliver what the present tools can produce — never claim an app ran.
+
+      The flagship flow is a photo batch: interview first with `ask_user_question` for the cull criteria and grade brief, select candidates by reading the workspace, open PhotoCraft headless for the batch grade, and export the contact sheet as the deliverable.
+
+      Every Craft input and output is a real file under the session workspace. If opening a downstream app fails after earlier steps succeeded, report the failure explicitly with what was and was not produced; never substitute a silent fallback.
+
+- id: agent-instructions
+  name: '@greeneek/gnk-agent-instructions'
+  config:
+    maxBytes: 65536
+
+# ── craft gateway ───────────────────────────────────────────────────────────
+
+# The `craft` service is stateful (live child processes, per-launch control
+# token, concurrency cap), so all three rows share one entry-local realm: a
+# root-realm `craft` would be process-global and the second preset session
+# would collide. `craft-local` registers the host provider that discovers and
+# spawns headless app processes; `tool-craft` contributes the two gateway
+# tools and mounts each app's curated bridge while its session is active.
+- id: craft
+  name: cordis:group
+  group: true
+  isolate:
+    craft: true
+  config:
+    - id: craft-service
+      name: '@greeneek/gnk-craft'
+      config:
+        maxActiveApps: 2
+
+    - id: craft-local
+      name: '@greeneek/gnk-craft-local'
+
+    - id: tool-craft
+      name: '@greeneek/gnk-tool-craft'
+
+# ── workspace files ─────────────────────────────────────────────────────────
+
+# Both register into the host `tools` registry and provide nothing, so they
+# need no realm. The `fs` service and its policy stay in the host.
+- id: tool-fs
+  name: '@greeneek/gnk-tool-fs'
+
+- id: tool-fs-search
+  name: '@greeneek/gnk-tool-fs-search'
+  config:
+    sampleOverCapGlobResults: false
+
+# ── plan mode ───────────────────────────────────────────────────────────────
+
+# Plan state is per-agent by nature, so an entry-local realm is not a
+# workaround here — it is the correct lifetime.
+- id: planning
+  name: cordis:group
+  group: true
+  isolate:
+    planMode: true
+  config:
+    - id: plan-mode
+      name: '@greeneek/gnk-plan-mode'
+      config:
+        section: |
+              You are in plan mode. Stay in plan mode until exit_plan_mode succeeds or the user switches the session mode. Imperative language to implement changes means plan the implementation, not execute it. A user's conversational agreement — including an answer confirming something you asked — approves nothing and does not end plan mode; fold the confirmed decision into the plan and submit it through exit_plan_mode.
+
+              Explore first. Use non-mutating reads, searches, static analysis, and checks to ground the plan in the actual repository. Do not edit or write files, change configuration, run formatters or code generation that rewrites tracked files, commit, or otherwise carry out the plan. Prefer existing functions and patterns over new machinery.
+
+              The tool catalog stays the same across modes for request-cache stability. These plan-mode rules override any later tool description or guidance that suggests using mutation tools; those tools remain listed to keep the tool catalog unchanged. Do not use todo_write to track this planning phase: it tracks implementation after an approved plan, while the plan itself belongs in exit_plan_mode.
+
+              Resolve discoverable facts by inspection. Use ask_user_question only for user-owned choices or material ambiguity that inspection cannot answer. Do not ask the user where code lives or how current behavior works when you can find out.
+
+              Make the plan decision-complete: state the goal and success criteria; group implementation changes by subsystem; identify public API, schema, and data-flow changes; cover edge cases, failure modes, tests, acceptance criteria, and explicit assumptions. Keep it concise enough to review but detailed enough that another engineer can implement it without making design decisions.
+
+              When ready, call exit_plan_mode with the complete plan markdown, starting with a # title. Make exit_plan_mode the only and final tool call in that assistant response: it presents the plan for approval, and implementation begins only in a later step after approval. Do not paste the final plan as a plain reply or ask "should I proceed?" through prose or ask_user_question. If review rejects it, incorporate the feedback and present again. If the review channel is unavailable or aborted, stay in plan mode and ask the user to switch modes manually; do not proceed with implementation.
+
+# ── model-facing rows ───────────────────────────────────────────────────────
+
+- id: tool-ask-user
+  name: '@greeneek/gnk-tool-ask-user'
+
+- id: tool-todo
+  name: '@greeneek/gnk-tool-todo'
+  config:
+    allowParallelInProgress: true
+
+# The `web` service and its search provider stay in the host composition; only
+# the model-facing tool is per-session.
+- id: tool-web
+  name: '@greeneek/gnk-tool-web'
+  config:
+    fetch: true
+    searchTimeoutMs: 60000

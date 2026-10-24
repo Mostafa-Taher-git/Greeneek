@@ -1,4 +1,4 @@
-/** Web-localized copy for the three shipped presets and file copy for every other row. */
+/** Web-localized copy for every shipped preset and file copy for every other row. */
 
 import { describe, expect, it } from 'vitest'
 import { en, presetDisplayText, zh } from '../src/client/locales.ts'
@@ -10,6 +10,8 @@ describe('preset display copy', () => {
     ['standard', 'presetStandardName', 'presetStandardDescription'],
     ['ptc', 'presetPtcName', 'presetPtcDescription'],
     ['cordis', 'presetCordisName', 'presetCordisDescription'],
+    ['pixels-designer', 'presetPixelsDesignerName', 'presetPixelsDesignerDescription'],
+    ['instructor', 'presetInstructorName', 'presetInstructorDescription'],
   ] as const)('localizes the shipped %s preset in English and Chinese', (id, nameKey, descriptionKey) => {
     const preset = { id, trust: 'system' as const, name: 'file name', description: 'file description' }
 

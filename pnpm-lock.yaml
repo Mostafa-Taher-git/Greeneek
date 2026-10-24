@@ -180,6 +180,12 @@ importers:
       '@greeneek/gnk-cordis-client-runner':
         specifier: workspace:^
         version: link:../../packages/extensions/cordis-client-runner
+      '@greeneek/gnk-craft':
+        specifier: workspace:^
+        version: link:../../packages/craft/craft
+      '@greeneek/gnk-craft-local':
+        specifier: workspace:^
+        version: link:../../packages/craft/craft-local
       '@greeneek/gnk-fs-local':
         specifier: workspace:^
         version: link:../../packages/fs/fs-local
@@ -270,6 +276,9 @@ importers:
       '@greeneek/gnk-tool-cordis':
         specifier: workspace:^
         version: link:../../packages/extensions/tool-cordis
+      '@greeneek/gnk-tool-craft':
+        specifier: workspace:^
+        version: link:../../packages/craft/tool-craft
       '@greeneek/gnk-tool-fs':
         specifier: workspace:^
         version: link:../../packages/fs/tool-fs

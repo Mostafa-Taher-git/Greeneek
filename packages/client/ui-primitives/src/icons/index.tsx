@@ -1006,3 +1006,35 @@ export const IconInfoOutline16 = ({ size = 16, className }: IconProps) => (
     </g>
   </svg>
 )
+
+/** lucide palette (ISC), scaled to the 16 grid: Pixels Designer mode. */
+export const IconPalette16 = ({ size = 16, className }: IconProps) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path
+      d="M8 14.67a.67.67 0 0 1 0-13.33 6.67 6 0 0 1 6.67 6 3.33 3.33 0 0 1-3.33 3.33h-1.5a1.17 1.17 0 0 0-.93 1.87l.2.27a1.17 1.17 0 0 1-.93 1.87z"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <g fill="currentColor">
+      <circle cx="9" cy="4.33" r=".33" />
+      <circle cx="11.67" cy="7" r=".33" />
+      <circle cx="4.33" cy="8.33" r=".33" />
+      <circle cx="5.67" cy="5" r=".33" />
+    </g>
+  </svg>
+)
+
+/** lucide graduation-cap (ISC), scaled to the 16 grid: Instructor mode. */
+export const IconGraduationCap16 = ({ size = 16, className }: IconProps) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path
+      d="M14.28 7.28a.67.67 0 0 0-.01-1.23L8.55 3.45a1.33 1.33 0 0 0-1.11 0L1.73 6.05a.67.67 0 0 0 0 1.22l5.71 2.61a1.33 1.33 0 0 0 1.11 0zM14.67 6.67v4M4 8.33v2.34a4 2 0 0 0 8 0V8.33"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+)

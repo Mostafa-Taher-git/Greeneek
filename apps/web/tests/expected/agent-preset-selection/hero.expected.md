@@ -4,7 +4,8 @@
   - img
 - radiogroup "Agent mode":
   - radio "Standard mode" [checked]
-  - radio "PTC mode"
+  - radio "Pixels Designer (preview)"
+  - radio "Instructor (preview)"
   - radio "Creator mode"
   - radio "Army mode" [disabled]
   - radio "Maestro mode" [disabled]

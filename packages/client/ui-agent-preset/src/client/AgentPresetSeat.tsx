@@ -13,12 +13,15 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import type { SnapshotStore } from '@greeneek/gnk-client-store'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@greeneek/gnk-client-ui-slots'
 import {
   IconAgentPresetOutline16,
   IconBrainCircuit16,
   IconCirclePile16,
+  IconGraduationCap16,
+  IconPalette16,
   IconSparkle16,
   IconSquareDashedBottomCode16,
   IconWarningOutline16,
@@ -59,9 +62,18 @@ const REFUSAL_HOLD_MS = 8000
 /**
  * Shipped modes in row order. PTC is deliberately absent since v0.3.4: its
  * preset still composes sessions and stays on the roster, but the new-session
- * row offers the two shipped modes.
+ * row offers the shipped modes instead. The preview presets keep their
+ * `(preview)` copy so a pilot surface is never mistaken for a promise.
  */
-const MODE_ORDER = ['standard', 'cordis'] as const
+const MODE_ORDER = ['standard', 'pixels-designer', 'instructor', 'cordis'] as const
+
+/** Row icon per shipped mode, keyed by {@link MODE_ORDER} id. */
+const MODE_ICONS: Readonly<Record<(typeof MODE_ORDER)[number], ReactNode>> = {
+  standard: <IconSquareDashedBottomCode16 size={16} />,
+  'pixels-designer': <IconPalette16 size={16} />,
+  instructor: <IconGraduationCap16 size={16} />,
+  cordis: <IconSparkle16 size={16} />,
+}
 
 /**
  * Roster presets the row never appends. Membership in {@link MODE_ORDER} only
@@ -116,9 +128,7 @@ export function AgentPresetSeat({ load, select, introduced, useAgentPresetSeat, 
         id: option.id,
         name: text.name,
         description: text.description ?? t('noDescription'),
-        icon: id === 'standard'
-          ? <IconSquareDashedBottomCode16 size={16} />
-          : <IconSparkle16 size={16} />,
+        icon: MODE_ICONS[id],
       }]
     }),
     // Placeholder modes for v1.1.1: visible and previewable, never selectable

@@ -223,7 +223,7 @@ describe('the shipped Web composition', () => {
     const listed = await ctx.agentPresets.list()
 
     expect(listed.filter(preset => preset.trust === 'system').map(preset => preset.id).sort())
-      .toEqual(['cordis', 'ptc', 'standard'])
+      .toEqual(['cordis', 'instructor', 'pixels-designer', 'ptc', 'standard'])
     expect(listed.find(preset => preset.id === 'narrow')?.trust).toBe('user')
     expect(ctx.agentPresets.defaultId).toBe('standard')
   })
@@ -958,7 +958,7 @@ describe('a composition that configures its own preset roots', () => {
     ])
 
     const listed = await rootsCtx.agentPresets.list()
-    expect(listed.map(preset => preset.id).sort()).toEqual(['cordis', 'ptc', 'standard', 'team-spec'])
+    expect(listed.map(preset => preset.id).sort()).toEqual(['cordis', 'instructor', 'pixels-designer', 'ptc', 'standard', 'team-spec'])
     expect(listed.every(preset => preset.broken === undefined)).toBe(true)
     // The shipped root comes first: a configured directory claiming a shipped
     // id is shadowed, never the other way around.

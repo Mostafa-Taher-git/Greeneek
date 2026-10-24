@@ -264,17 +264,19 @@ describe('web e2e: agent-preset selection', () => {
     const order = await group.getByRole('radio').evaluateAll(
       radios => radios.map(radio => radio.textContent),
     )
-    expect(order.slice(0, 5)).toEqual([
-      'Standard mode', 'PTC mode', 'Creator mode', 'Army mode', 'Maestro mode',
+    expect(order.slice(0, 6)).toEqual([
+      'Standard mode', 'Pixels Designer (preview)', 'Instructor (preview)', 'Creator mode',
+      'Army mode', 'Maestro mode',
     ])
-    expect(order.slice(5).sort()).toEqual(['Narrow mode', 'Refusing mode'])
+    expect(order.slice(6).sort()).toEqual(['Narrow mode', 'Refusing mode'])
     expect(await group.getByRole('radio', { name: 'Army mode', exact: true }).isDisabled()).toBe(true)
     expect(await group.getByRole('radio', { name: 'Maestro mode', exact: true }).isDisabled()).toBe(true)
     // Idle shows the staged label alone; hovering the row reveals every label.
-    const ptcLabel = group.getByRole('radio', { name: 'PTC mode', exact: true }).getByText('PTC mode', { exact: true })
-    await expect.poll(() => ptcLabel.isHidden()).toBe(true)
+    const pixelsLabel = group.getByRole('radio', { name: 'Pixels Designer (preview)', exact: true })
+      .getByText('Pixels Designer (preview)', { exact: true })
+    await expect.poll(() => pixelsLabel.isHidden()).toBe(true)
     await group.hover()
-    await expect.poll(() => ptcLabel.isVisible()).toBe(true)
+    await expect.poll(() => pixelsLabel.isVisible()).toBe(true)
     const creatorLabel = group.getByRole('radio', { name: 'Creator mode', exact: true })
       .getByText('Creator mode', { exact: true })
     await expect.poll(() => creatorLabel.isVisible()).toBe(true)

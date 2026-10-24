@@ -1,0 +1,3 @@
+name: 像素设计师（预览）
+description: 设计类 Agent：通过 Craft 网关调用已安装的创意应用（PhotoCraft、PdfCraft 等），配备文件读写、检索、访谈、待办与计划工具。
+order: 3

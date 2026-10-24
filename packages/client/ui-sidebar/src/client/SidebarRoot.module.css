@@ -1,14 +1,16 @@
-/* Sidebar column: a floating glass panel — the Glass Console look. The shell
-   stands off the frame by an 8px breathing gap on every side; the panel
-   itself (.root::before) is a translucent, green-veiled layer with a soft
-   brand mist, a 1px ring, a top sheen and a grounding shadow, while the raw
-   frame background shows through the gap as the seam. The panel is decorative
-   only: it hangs off ::before at negative z under an isolated stacking
-   context, so the collapse contract is untouched. Collapse remains a slide +
-   crossfade, not a morph: the content holds its frozen expanded layout
-   (inline width set by the component) and fades in place (.fading) while the
-   sliding column (AppFrame grid tracks) clips it; the rail layout (.collapsed)
-   only applies after the fade settles, so nothing reflows mid-slide. */
+/* Sidebar column: the Edge Frame shell — one flat brand surface, flush to
+   the column, closed by a single hairline seam on its right edge; collapsed,
+   the same surface floats as a bordered compact rail card (inset 8px,
+   rounded). All the old glass (translucent veil, mist, blur, sheen) is gone:
+   the material is the base token over the seam, and the only brand light is
+   the mark's ambient halo. The panel is decorative only: it hangs off
+   ::before at negative z under an isolated stacking context, so the collapse
+   contract is untouched. Collapse remains a slide + crossfade, not a morph:
+   the content holds its frozen expanded layout (inline width set by the
+   component) and fades in place (.fading) while the sliding column (AppFrame
+   grid tracks) clips it; the rail layout (.collapsed) only applies after the
+   fade settles, so nothing reflows mid-slide. The inset/geometry variance
+   between the two states rides the same clock (150ms melt). */
 
 .root {
   --gnk-sidebar-inline-padding: 12px;
@@ -17,22 +19,19 @@
      alpha blends and the overshoot curve live here, because the neon treatment
      belongs to this shell rather than to the shared theme. */
   --gnk-sidebar-neon: var(--dsw-static-greeneek-450);
-  --gnk-sidebar-neon-10: color-mix(in srgb, var(--gnk-sidebar-neon) 10%, transparent);
   --gnk-sidebar-neon-15: color-mix(in srgb, var(--gnk-sidebar-neon) 15%, transparent);
+  --gnk-sidebar-neon-26: color-mix(in srgb, var(--gnk-sidebar-neon) 26%, transparent);
   --gnk-sidebar-neon-35: color-mix(in srgb, var(--gnk-sidebar-neon) 35%, transparent);
   --gnk-sidebar-neon-50: color-mix(in srgb, var(--gnk-sidebar-neon) 50%, transparent);
   /* A gentle overshoot: the entrance settles with a breath of travel past its
      seat instead of easing flat. 1.2 stays shy of a visible bounce. */
   --gnk-sidebar-neon-ease: cubic-bezier(0.34, 1.2, 0.5, 1);
-  /* Glass panel geometry + materials. Every value mixes from theme tokens, so
-     both modes get a true glass: dark gets translucent near-black with lifted
-     sage mist, light gets translucent near-white with deep green mist — the
-     same theme-following hue the V2 hairline used. */
+  /* Panel geometry. The inset var's name is legacy from the Glass Console;
+     it still drives exactly two things — the rail card's breathing inset and
+     the region's trailing margin below — and the expanded state collapses it
+     to 0 so those two stay in lockstep in both layouts. */
   --gnk-sidebar-glass-inset: 8px;
   --gnk-sidebar-radius: 16px;
-  --gnk-sidebar-glass-tint: color-mix(in srgb, var(--dsw-alias-bg-base) 78%, transparent);
-  --gnk-sidebar-glass-ring: color-mix(in srgb, var(--gnk-sidebar-neon) 26%, transparent);
-  --gnk-sidebar-glass-sheen: color-mix(in srgb, var(--dsw-alias-label-primary) 7%, transparent);
   position: relative;
   isolation: isolate; /* keeps the negative-z panel inside this shell */
   display: flex;
@@ -57,13 +56,25 @@
   padding: 14px 10px;
 }
 
-/* The glass panel (Glass Console): one decorative layer that carries the
-   material so neither the flex layout nor the AppFrame track clip see it.
-   Negative z under .root's isolation keeps it below every interactive child
-   without lifting those children onto their own layers. The ring is drawn
-   inside a box-shadow (never a border-token border), and the mist/veil mix
-   from the neon token so the hue follows the same theme pairing as the
-   collapse choreography. */
+/* Expanded, the column is flush: the inset collapses to 0 so the panel spans
+   the whole track and reads as one surface with a seam instead of a card. The
+   region's trailing margin below rides the same var, so the browser's edge
+   math and the material edge move together. The var flip is instant, but both
+   the painted panel and the margin melt over the fade clock (see the
+   transitions on ::before and .regionArea) instead of stepping. */
+.root:not(.collapsed) {
+  --gnk-sidebar-glass-inset: 0px;
+  --gnk-sidebar-radius: 0px;
+}
+
+/* The Edge Frame panel: one decorative layer that carries the material so
+   neither the flex layout nor the AppFrame track clip see it. Negative z
+   under .root's isolation keeps it below every interactive child without
+   lifting those children onto their own layers. The material is solid — the
+   base surface token, no veil, mist, or blur — and the edge language is a
+   single hairline: a 1px outer ring on the floating rail card, a 1px right
+   seam on the flush expanded column. Shadow-only edges, never border-token
+   borders. The inset/radius/shadow glide on the collapse clock. */
 .root::before {
   content: '';
   position: absolute;
@@ -71,18 +82,18 @@
   z-index: -1;
   pointer-events: none;
   border-radius: var(--gnk-sidebar-radius);
-  background:
-    radial-gradient(120% 90% at 82% 22%, var(--gnk-sidebar-neon-15), transparent 70%),
-    radial-gradient(110% 80% at 22% 84%, var(--gnk-sidebar-neon-10), transparent 72%),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0)),
-    var(--gnk-sidebar-glass-tint);
-  -webkit-backdrop-filter: blur(14px) saturate(1.1);
-  backdrop-filter: blur(14px) saturate(1.1);
-  box-shadow:
-    inset 0 0 0 1px var(--gnk-sidebar-glass-ring),
-    inset 0 1px 0 var(--gnk-sidebar-glass-sheen),
-    0 24px 56px -28px rgba(8, 12, 9, 0.5),
-    0 2px 10px -4px rgba(8, 12, 9, 0.3);
+  background: var(--dsw-alias-bg-base);
+  box-shadow: 0 0 0 1px var(--dsw-alias-border-l1);
+  transition:
+    inset 150ms var(--ds-ease-in-out),
+    border-radius 150ms var(--ds-ease-in-out),
+    box-shadow 150ms var(--ds-ease-in-out);
+}
+
+/* The flush expanded column trades the outer ring for the one seam that
+   closes it against the conversation surface. */
+.root:not(.collapsed)::before {
+  box-shadow: inset -1px 0 0 var(--dsw-alias-border-l1);
 }
 
 /* Scrollbars in the column are a pointer affordance: the shell adds this
@@ -120,27 +131,27 @@
   from { opacity: 0; }
 }
 
-/* At the 150ms rail settle, the rail controls enter in a brand-first stagger:
-   mark (0ms) → fold toggle (30ms) → New Session (60ms) → browsing region
-   (90ms) → foot (120ms). The 200ms entrances therefore finish by 320ms, just
-   after the AppFrame track lands, so the column fills itself in top-to-bottom
-   instead of snapping all at once. The bottom-pinned settings seat shares the
-   opacity choreography but stays horizontally fixed. Only a live collapse gets
-   .railIn; a cold collapsed render stays static. */
-.railIn .logoRow {
-  animation: logo-rail-in 200ms var(--gnk-sidebar-neon-ease) 0ms backwards;
-}
-
+/* At the 150ms rail settle, the rail controls enter top-to-bottom:
+   fold toggle (0ms) → New Session (30ms) → browsing region (90ms) → brand
+   mark (120ms, dropping into its bottom seat as the foot fades in beside
+   it). The 200ms entrances therefore finish by 320ms, just after the
+   AppFrame track lands, so the column fills itself from top to bottom
+   instead of snapping all at once. Only a live collapse gets .railIn; a
+   cold collapsed render stays static. */
 .railIn .toggleRail {
-  animation: toggle-rail-in 200ms var(--gnk-sidebar-neon-ease) 30ms backwards;
+  animation: toggle-rail-in 200ms var(--gnk-sidebar-neon-ease) 0ms backwards;
 }
 
 .railIn .newSession {
-  animation: rail-in 200ms var(--gnk-sidebar-neon-ease) 60ms backwards;
+  animation: rail-in 200ms var(--gnk-sidebar-neon-ease) 30ms backwards;
 }
 
 .railIn .regionArea {
   animation: rail-in 200ms var(--gnk-sidebar-neon-ease) 90ms backwards;
+}
+
+.railIn .logoRow {
+  animation: logo-rail-in 200ms var(--gnk-sidebar-neon-ease) 120ms backwards;
 }
 
 .railIn .footArea {
@@ -172,21 +183,21 @@
   from { opacity: 0; }
 }
 
-/* Expand entrance (V2): the inverse choreography, in the same top-to-bottom
-   order. The rail's toggle is already gone here, so the mark (0ms) hands off
-   to New Session (60ms), then the browsing region (90ms), then the foot
-   (120ms). SidebarRoot.tsx adds .expanding for one expand and drops it again,
-   so a cold expanded paint is still and every later expand replays it. */
-.expanding .logoRow {
-  animation: neon-expand-in 200ms var(--gnk-sidebar-neon-ease) 0ms backwards;
-}
-
+/* Expand entrance (V2): the inverse choreography, again top-to-bottom from
+   the column's new reading order — New Session (60ms, with its sheen), the
+   browsing region (90ms), then the brand mark (120ms) and the foot together.
+   SidebarRoot.tsx adds .expanding for one expand and drops it again, so a
+   cold expanded paint is still and every later expand replays it. */
 .expanding .newSession {
   animation: neon-expand-in 200ms var(--gnk-sidebar-neon-ease) 60ms backwards;
 }
 
 .expanding .regionArea {
   animation: neon-expand-in 200ms var(--gnk-sidebar-neon-ease) 90ms backwards;
+}
+
+.expanding .logoRow {
+  animation: neon-expand-in 200ms var(--gnk-sidebar-neon-ease) 120ms backwards;
 }
 
 .expanding .footArea {
@@ -201,10 +212,11 @@
 }
 
 /* Brand bloom, part of the same expand stagger: one soft halo swell as the
-   column opens, settling into the constant ambient glow the expanded mark
-   carries below. Never loops — the class itself is one-shot. */
+   mark arrives in its bottom seat, settling into the constant ambient glow
+   the expanded mark carries below. Never loops — the class itself is
+   one-shot. */
 .expanding .brandMark {
-  animation: neon-brand-bloom 420ms var(--ds-ease-in-out) 0ms backwards;
+  animation: neon-brand-bloom 420ms var(--ds-ease-in-out) 120ms backwards;
 }
 
 @keyframes neon-brand-bloom {
@@ -233,8 +245,9 @@
   }
 }
 
-/* Logo row (figma pad (4,8,4,8)): the brand wordmark, or the static mark
-   on the rail (the fold toggle lives in the desktop titlebar). */
+/* Logo row (figma pad (4,8,4,8)): the brand wordmark in its bottom seat —
+   above the foot stack in both states (the fold toggle lives in the desktop
+   titlebar). The rail shows the static mark only. */
 .logoRow {
   flex: none;
   display: flex;
@@ -251,7 +264,9 @@
 .collapsed .logoRow {
   height: 40px;
   padding: 4px 0;
-  margin-bottom: 8px;
+  /* The seat order puts the wordmark above the collapsing foot, not at the
+     column head; the rail keeps it there with a simple vertical center. */
+  margin-bottom: 0;
   justify-content: center;
 }
 
@@ -314,18 +329,6 @@
   letter-spacing: 0.04em;
 }
 
-.collapsedBrandName {
-  display: inline-flex;
-  align-items: center;
-  min-width: 0;
-  height: 24px;
-  font-size: 16px;
-  font-weight: 600;
-  line-height: 24px;
-  letter-spacing: 0.04em;
-  white-space: nowrap;
-}
-
 .fallbackBrandName {
   font-size: 17px;
   letter-spacing: 0px;
@@ -368,8 +371,8 @@
 
 /* New Session: 38px bar, 12px radius (figma 133:7634 geometry, squared-off
    corners); collapsed it renders as the rail's plain icon control. The
-   expanded capsule is the Glass Console material: a translucent green wash
-   bounded by a ring and topped with a sheen — never a solid border fill. */
+   expanded capsule is the Edge Frame material: a translucent green wash
+   bounded by a 1px neon ring — never a solid border fill, never glass. */
 .newSession {
   position: relative;
   flex: none;
@@ -396,9 +399,7 @@
     background-color 150ms var(--ds-ease-in-out),
     box-shadow 180ms var(--ds-ease-in-out),
     transform 180ms var(--gnk-sidebar-neon-ease);
-  box-shadow:
-    inset 0 0 0 1px var(--gnk-sidebar-glass-ring),
-    inset 0 1px 0 var(--gnk-sidebar-glass-sheen);
+  box-shadow: inset 0 0 0 1px var(--gnk-sidebar-neon-26);
 }
 
 /* The sheen band for the expand entrance. It lives here (empty, transparent)
@@ -426,7 +427,6 @@
   background: color-mix(in srgb, var(--gnk-sidebar-neon) 20%, transparent);
   box-shadow:
     inset 0 0 0 1px color-mix(in srgb, var(--gnk-sidebar-neon) 40%, transparent),
-    inset 0 1px 0 var(--gnk-sidebar-glass-sheen),
     0 0 18px -6px var(--gnk-sidebar-neon-50);
   transform: translateY(-1px);
 }
@@ -480,8 +480,10 @@
 }
 
 /* Region seat: always mounted so the foot never moves. Its trailing margin
-   cancels the wide shell inset down to the glass panel's edge, so the nested
-   scrollbar lands on the glass instead of on the frame gap; the browser
+   cancels the wide shell inset down to the material's own edge — the inline
+   padding minus the panel inset (8px on the floating rail card, 0px on the
+   flush expanded column, whose scrollbar lands on the very seam) — and the
+   margin melts on the fade clock so the variant flip never steps. The browser
    restores that inset inside its own rows. */
 .regionArea {
   flex: 1;
@@ -492,6 +494,7 @@
   margin-right: calc(-1 * var(--gnk-sidebar-inline-padding) + var(--gnk-sidebar-glass-inset));
   padding-left: 4px;
   overflow: hidden;
+  transition: margin-right 150ms var(--ds-ease-in-out);
 }
 
 .collapsed .regionArea {
@@ -545,7 +548,9 @@
   .expanding .brandMark,
   .expanding .newSession::before,
   .brandMark,
-  .newSession {
+  .newSession,
+  .root::before,
+  .regionArea {
     transition: none;
     animation: none;
   }

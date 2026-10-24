@@ -40,21 +40,24 @@
   width: 100%;
   max-width: var(--gnk-composer-card-max-width);
   padding-top: 10px;
-  /* Input stroke: the light neutral (l2, one step above the menus' l1),
-     drawn as the elevation hairline so it costs no layout; the shadow is the
-     soft elevation tier. Fill: the input surface token (elevated in dark). */
+  /* Input stroke: the Edge Frame edge — a hairline mixed from the text ink
+     (theme-following), drawn as the elevation hairline so it costs no
+     layout; the shadow is the soft elevation tier. Fill: the card is a
+     transparency over the base, not an opaque elevated panel — it lifts by
+     its own layer and the pointer brings the brand hue to the edge. */
   border: 0;
-  --dsw-elevation-stroke-color: var(--dsw-alias-border-l2);
+  --dsw-elevation-stroke-color: color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);
   border-radius: 22px;
-  background: var(--dsw-specific-input-major);
+  background: color-mix(in srgb, var(--dsw-alias-label-primary) 3%, transparent);
   box-shadow: var(--dsw-elevation-soft);
+  transition: box-shadow 180ms var(--ds-ease-in-out);
   /* The draft text follows the Settings font-size preference (the textarea,
      mirror, and backdrop all inherit from here, so the three layers stay in
      step); the line height keeps the default 10px leading via the shared px
      delta. */
   font-size: var(--gnk-content-font-size, 14px);
   line-height: calc(24px + var(--gnk-content-font-delta, 0px));
-  /* Elevated surface in dark, same as the menus: the draft scrollport inside
+  /* The draft scrollport inside
      scrolls once the composer hits its height cap, so the thumb takes the l2
      pair. Declared on the card because the elevation belongs to the surface,
      and the custom properties inherit down to the box that actually scrolls
@@ -63,12 +66,21 @@
   --gnk-scrollbar-thumb-hover: var(--dsw-alias-scrollbar-hover-l2);
 }
 
+/* Pointer-carrying edge (Edge Frame): hover or focus lifts the stroke from
+   the ink hairline to the brand hue — the same theme pairing the sidebar
+   shell's neon follows, so light mode gets the deeper green. The
+   workspace-trigger state keeps its own dashed ::after answer instead. */
+.card:hover:not(.cardWorkspaceTrigger),
+.card:focus-within:not(.cardWorkspaceTrigger) {
+  --dsw-elevation-stroke-color: color-mix(in srgb, var(--dsw-static-greeneek-450) 38%, transparent);
+}
+
 /* No-workspace trigger state: dashed l4 stroke marks the card as a pick-a-
    workspace affordance rather than a live composer; hover answers in the
    business blue to invite the click. Native `dashed` has a fixed browser
-   pattern, so the stroke is an ::after overlay: theme-token background masked
-   by an SVG dash ring (stroke-width 2 centered on the box edge = 1px visible
-   inside), which keeps the 22px radius and both themes. */
+   pattern, so the stroke is an ::after overlay: theme-token background
+   masked by an SVG dash ring (stroke-width 2 centered on the box edge = 1px
+   visible inside), which keeps the 22px radius and both themes. */
 .cardWorkspaceTrigger {
   --dsw-elevation-stroke-color: transparent;
   cursor: pointer;

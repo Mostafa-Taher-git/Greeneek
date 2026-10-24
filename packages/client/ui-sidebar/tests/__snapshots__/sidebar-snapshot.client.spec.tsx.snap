@@ -9,6 +9,33 @@ exports[`sidebar shell snapshots > renders the collapsed rail after the crossfad
     class="root fading quietBars"
     style="width: 300px;"
   >
+    <button
+      aria-label="New session"
+      class="newSession"
+      type="button"
+    >
+      <svg
+        data-content="c0ce4dcc"
+        fill="none"
+        height="14"
+        viewBox="0 0 16 16"
+        width="14"
+        xmlns="http://www.w3.org/2000/svg"
+      />
+      <span
+        class="newSessionLabel wide"
+      >
+        New Session
+      </span>
+    </button>
+    <div
+      class="regionArea"
+    >
+      <div
+        data-slot="sidebar.workspaces"
+        style="display: contents;"
+      />
+    </div>
     <div
       class="logoRow"
     >
@@ -54,33 +81,6 @@ exports[`sidebar shell snapshots > renders the collapsed rail after the crossfad
           </span>
         </span>
       </button>
-    </div>
-    <button
-      aria-label="New session"
-      class="newSession"
-      type="button"
-    >
-      <svg
-        data-content="c0ce4dcc"
-        fill="none"
-        height="14"
-        viewBox="0 0 16 16"
-        width="14"
-        xmlns="http://www.w3.org/2000/svg"
-      />
-      <span
-        class="newSessionLabel wide"
-      >
-        New Session
-      </span>
-    </button>
-    <div
-      class="regionArea"
-    >
-      <div
-        data-slot="sidebar.workspaces"
-        style="display: contents;"
-      />
     </div>
     <div
       class="footArea"
@@ -115,6 +115,33 @@ exports[`sidebar shell snapshots > renders the expanded column (wordmark, capsul
     class="root quietBars"
     style="width: 300px;"
   >
+    <button
+      aria-label="New session"
+      class="newSession"
+      type="button"
+    >
+      <svg
+        data-content="c0ce4dcc"
+        fill="none"
+        height="14"
+        viewBox="0 0 16 16"
+        width="14"
+        xmlns="http://www.w3.org/2000/svg"
+      />
+      <span
+        class="newSessionLabel wide"
+      >
+        New Session
+      </span>
+    </button>
+    <div
+      class="regionArea"
+    >
+      <div
+        data-slot="sidebar.workspaces"
+        style="display: contents;"
+      />
+    </div>
     <div
       class="logoRow"
     >
@@ -161,33 +188,6 @@ exports[`sidebar shell snapshots > renders the expanded column (wordmark, capsul
         </span>
       </button>
     </div>
-    <button
-      aria-label="New session"
-      class="newSession"
-      type="button"
-    >
-      <svg
-        data-content="c0ce4dcc"
-        fill="none"
-        height="14"
-        viewBox="0 0 16 16"
-        width="14"
-        xmlns="http://www.w3.org/2000/svg"
-      />
-      <span
-        class="newSessionLabel wide"
-      >
-        New Session
-      </span>
-    </button>
-    <div
-      class="regionArea"
-    >
-      <div
-        data-slot="sidebar.workspaces"
-        style="display: contents;"
-      />
-    </div>
     <div
       class="footArea"
     >
@@ -221,6 +221,33 @@ exports[`sidebar shell snapshots > renders the expanded column in the default lo
     class="root quietBars"
     style="width: 300px;"
   >
+    <button
+      aria-label="新建会话"
+      class="newSession"
+      type="button"
+    >
+      <svg
+        data-content="c0ce4dcc"
+        fill="none"
+        height="14"
+        viewBox="0 0 16 16"
+        width="14"
+        xmlns="http://www.w3.org/2000/svg"
+      />
+      <span
+        class="newSessionLabel wide"
+      >
+        新会话
+      </span>
+    </button>
+    <div
+      class="regionArea"
+    >
+      <div
+        data-slot="sidebar.workspaces"
+        style="display: contents;"
+      />
+    </div>
     <div
       class="logoRow"
     >
@@ -266,33 +293,6 @@ exports[`sidebar shell snapshots > renders the expanded column in the default lo
           </span>
         </span>
       </button>
-    </div>
-    <button
-      aria-label="新建会话"
-      class="newSession"
-      type="button"
-    >
-      <svg
-        data-content="c0ce4dcc"
-        fill="none"
-        height="14"
-        viewBox="0 0 16 16"
-        width="14"
-        xmlns="http://www.w3.org/2000/svg"
-      />
-      <span
-        class="newSessionLabel wide"
-      >
-        新会话
-      </span>
-    </button>
-    <div
-      class="regionArea"
-    >
-      <div
-        data-slot="sidebar.workspaces"
-        style="display: contents;"
-      />
     </div>
     <div
       class="footArea"

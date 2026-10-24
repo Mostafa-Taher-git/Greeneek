@@ -1,14 +1,15 @@
 /**
- * Sidebar shell: column geometry only. The brand row holds the wordmark
- * (expanded, doubling as a New Session shortcut) or the static mark (rail);
- * the fold toggle lives in the desktop titlebar. Collapse is a slide plus
- * crossfade: content freezes at its expanded width (inline style) and fades
- * out in place while the sliding column (AppFrame grid tracks) clips it —
- * nothing reflows mid-slide. At settle the wide-only content unmounts. The
- * bottom-pinned settings control only fades. The workspace/session browsing
- * region between the New Session button and the foot is the
- * `sidebar.workspaces` registrant's, and the foot holds `sidebar.settings`
- * plus `sidebar.footer.action`; the shell hands them the wide flag (plus an
+ * Sidebar shell: column geometry only. The brand row is the column's bottom
+ * seat (above the foot stack): the wordmark expanded — doubling as a New
+ * Session shortcut — or the static mark on the rail; the fold toggle lives
+ * in the desktop titlebar. Collapse is a slide plus crossfade: content
+ * freezes at its expanded width (inline style) and fades out in place while
+ * the sliding column (AppFrame grid tracks) clips it — nothing reflows
+ * mid-slide. At settle the wide-only content unmounts. The bottom-pinned
+ * settings control only fades. The workspace/session browsing region between
+ * the New Session button and the brand row is the `sidebar.workspaces`
+ * registrant's, and the foot holds `sidebar.settings` plus
+ * `sidebar.footer.action`; the shell hands them the wide flag (plus an
  * expand request callback for the browser).
  *
  * The column also owns whether the scroll regions nested in it draw a
@@ -68,10 +69,10 @@ export function SidebarRoot({
   const wide = !collapsed || !settled
 
   // Expand entrance (V2): a live collapsed → expanded flip gets the neon
-  // stagger (logo, New Session, browsing region, foot) and the one-shot sheen
-  // across the New Session capsule. A cold expanded render never sets it, so
-  // the first paint is still, and a collapse mid-entrance clears it so the
-  // collapse choreography owns the column again.
+  // stagger (New Session, browsing region, brand mark, foot) and the one-shot
+  // sheen across the New Session capsule. A cold expanded render never sets
+  // it, so the first paint is still, and a collapse mid-entrance clears it so
+  // the collapse choreography owns the column again.
   const [expanding, setExpanding] = useState(false)
   const wasCollapsed = useRef(collapsed)
   // Layout effect, not effect: the class has to be on the FIRST painted frame
@@ -160,30 +161,6 @@ export function SidebarRoot({
       }}
       onPointerLeave={() => { armLinger() }}
     >
-      <div className={css.logoRow}>
-        <button
-          type="button"
-          className={clsx(css.brand, wide && css.wide)}
-          aria-label={t('brand.home')}
-          onClick={() => { startSession() }}
-        >
-          <span className={css.brandIdentity} aria-hidden="true">
-            <span className={css.brandMark}>
-              {renderSlot('sidebar.brand.mark', { size: 24 }, { fallback: <FishLogo size={24} /> })}
-            </span>
-            {wide ? (
-              <span className={css.brandName}>
-                {renderSlot('sidebar.brand.name', {}, {
-                  fallback: <span className={css.fallbackBrandName}>Greeneek</span>,
-                })}
-              </span>
-            ) : (
-              <span className={css.collapsedBrandName}>Greeneek</span>
-            )}
-          </span>
-        </button>
-      </div>
-
       {!wide && (
         <Tooltip label={t('toggle.open')} delayMs={500}>
           <button
@@ -213,12 +190,36 @@ export function SidebarRoot({
       )}
 
       {/* The browsing region fills the column between the controls and the
-          foot in both states; its rail icon column rides the same slot. */}
+          brand row in both states; its rail icon column rides the same slot. */}
       <div className={css.regionArea}>
         {renderSlot('sidebar.workspaces', {
           wide,
           expandSidebar: () => { if (collapsed) toggleSidebar() },
         })}
+      </div>
+
+      {/* Brand seat: the wordmark sits at the column's bottom, above the foot
+          stack, in both sidebar widths. */}
+      <div className={css.logoRow}>
+        <button
+          type="button"
+          className={clsx(css.brand, wide && css.wide)}
+          aria-label={t('brand.home')}
+          onClick={() => { startSession() }}
+        >
+          <span className={css.brandIdentity} aria-hidden="true">
+            <span className={css.brandMark}>
+              {renderSlot('sidebar.brand.mark', { size: 24 }, { fallback: <FishLogo size={24} /> })}
+            </span>
+            {wide && (
+              <span className={css.brandName}>
+                {renderSlot('sidebar.brand.name', {}, {
+                  fallback: <span className={css.fallbackBrandName}>Greeneek</span>,
+                })}
+              </span>
+            )}
+          </span>
+        </button>
       </div>
 
       {/* Footer actions stack above Settings in both sidebar widths. */}

@@ -10,6 +10,31 @@
   transition: grid-template-columns var(--ds-transition-duration-slow) var(--ds-ease-in-out);
 }
 
+/* Edge Frame crown: the app shell's one brand light — a 3px brand line
+   across the very top of the window, above the titlebar row (and present on
+   browser builds too, where it crowns the chrome-less viewport). Purely
+   decorative: pointer-events none keeps every titlebar control and drag
+   region under it live, and the hue follows the sidebar shell's theme
+   pairing so light mode gets the deeper green. */
+.frame::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 5;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--dsw-static-greeneek-450) 30%,
+    var(--dsw-static-greeneek-500) 50%,
+    var(--dsw-static-greeneek-450) 70%,
+    transparent
+  );
+}
+
 /* Dragging writes widths at pointer cadence; easing them would detach the
    column from the handle. */
 .frame[data-dragging] {

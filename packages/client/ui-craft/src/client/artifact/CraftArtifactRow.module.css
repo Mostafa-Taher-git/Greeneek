@@ -71,6 +71,7 @@
   white-space: nowrap;
   border: 1px solid var(--dsw-alias-border);
   border-radius: 999px;
+  corner-shape: round;
   background: transparent;
   color: var(--dsw-alias-label-primary);
   font-family: var(--dsw-font-mono, monospace);

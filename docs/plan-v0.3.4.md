@@ -47,7 +47,8 @@ Nothing here starts until §12 answers are in.
    rule; CV = markdown→PDF primary path (ChatGPT).
 9. **New M0 stage**: baseline pin, #86 update, upstream-sync accept/rework table (#71/#75/#67/#80),
    because A/B/F/G all touch surfaces those issues re-platform (Claude's blocking finding).
-10. **Execution tiering**: free `deepseek-v4.1-flash-free` subagents for explore/spec/mechanical/UI;
+10. **Execution tiering**: free flash-tier subagents (the approved execution model) for
+    explore/spec/mechanical/UI;
     strong model for engines, concurrency, credentials/roots/git and the theme ladder (Claude), with
     a mandatory post-wave gate sweep (`vitest --coverage`, `verify-client-domain-graph`,
     `verify-client-ui-i18n`, `verify-cordis-config`) plus jscpd/coverage fixes (Arena).
@@ -337,8 +338,8 @@ integration for any app pre-gate, 32+ concurrency, third theme (if user picks re
 
 ## 10. Execution strategy (token discipline, per the user's rule)
 
-- Heavy lifting runs on **`opencode/deepseek-v4.1-flash-free` subagents, maximally parallel when
-  steps are independent**, following the established pipeline: explore/verify subagent →
+- Heavy lifting runs on **free flash-tier subagents (the approved execution model), maximally
+  parallel when steps are independent**, following the established pipeline: explore/verify subagent →
   implementation spec (saved file) → implement+tests subagent → main-session review → commit → CI
   watch → user visual pick (HTML preview for anything visual).
 - **Tiering exception** (Claude): engine design/concurrency, anything touching credentials, file
@@ -387,7 +388,7 @@ integration for any app pre-gate, 32+ concurrency, third theme (if user picks re
 7. **Baseline locked**: 0.3.4 ships from `main @ c66636d` with the documented accept-rework table.
 8. **Army defaults confirmed**: 8 concurrent (ceiling 16 via config), hard budget kill.
 9. **New requirement (owner)**: after all workstreams ship, run a **full end-to-end test of
-   everything in Greeneek** — deepseek subagent sweep plus live checks — and fix or document
+   everything in Greeneek** — a free-model subagent sweep plus live checks — and fix or document
    every finding before the release is called done.
 
 ---
@@ -434,7 +435,7 @@ Each reviewer's full verbatim store: `reviews/Review N — <name>.md`.
    shipped per workstream.
 9. **Final release gate**: a full end-to-end test sweep of Greeneek (boot, both themes, sessions,
    all modes incl. bridge flows, Army/Maestro runs, settings, localization, desktop packaging
-   sanity) executed with deepseek subagents + main-session review; every finding fixed or
+   sanity) executed with free-model subagents + main-session review; every finding fixed or
    explicitly documented before the release tag.
 
 ---

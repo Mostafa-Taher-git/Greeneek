@@ -127,8 +127,12 @@ function byRecency(a: SessionSummary, b: SessionSummary): number {
  * is visible. Subagent children use their parent header catalog; archived
  * sessions are visible nowhere, while their accounting slots remain so
  * unarchiving restores position.
+ * @param session - list summary to test.
+ * @param current - currently selected Session id.
+ * @param archived - registry-global archived Session ids.
+ * @returns whether the Session may appear in a browsing surface.
  */
-function sessionVisible(session: SessionSummary, current: SessionId | undefined, archived: ReadonlySet<SessionId>): boolean {
+export function sessionVisible(session: SessionSummary, current: SessionId | undefined, archived: ReadonlySet<SessionId>): boolean {
   return session.origin !== 'subagent'
     && !archived.has(session.id)
     && (!session.blank || session.id === current)

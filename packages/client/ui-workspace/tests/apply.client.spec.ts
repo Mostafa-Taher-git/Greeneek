@@ -5,6 +5,8 @@ import { RemoteError, TestRemote } from '@greeneek/gnk-client-test-runtime'
 import { LocaleRuntime } from '@greeneek/gnk-client-locale/client'
 import { apply, inject } from '@greeneek/gnk-client-ui-workspace/client'
 import type { WorkspaceBrowserInjected, WorkspacePickerInjected } from '@greeneek/gnk-client-ui-workspace/client'
+import type { RecentSessionsInjected } from '../src/client/RecentSessionsSeat.tsx'
+import { RecentSessionsSeat } from '../src/client/RecentSessionsSeat.tsx'
 import { WorkspaceBrowser } from '../src/client/rows/WorkspaceBrowser.tsx'
 import { WorkspacePicker } from '../src/client/WorkspacePicker.tsx'
 import { apply as hostApply } from '../src/index.ts'
@@ -75,7 +77,11 @@ async function bench() {
   }
 }
 
-type HoleName = 'sidebar.workspaces' | 'conversation.hero.workspace' | 'conversation.empty.workspace'
+type HoleName =
+  | 'sidebar.workspaces'
+  | 'conversation.hero.workspace'
+  | 'conversation.hero.recentSessions'
+  | 'conversation.empty.workspace'
 
 /** Declare any subset of the holes with a single root registration ('root' is a single slot). */
 function declare(slots: SlotRegistry, ...names: HoleName[]): () => void {
@@ -192,14 +198,36 @@ describe('ui-workspace apply', () => {
       .rejects.toThrow('index unavailable')
   })
 
+  it('registers the hero recent-sessions seat and routes row opens', async () => {
+    const b = await bench()
+    declare(b.slots, 'conversation.hero.recentSessions')
+    await b.ctx.plugin({ inject: [...inject], apply }).await()
+
+    const entry = b.slots.entries('conversation.hero.recentSessions')[0]!
+    expect(entry.component).toBe(RecentSessionsSeat)
+    // The hero seat shares this package's copy namespace.
+    expect(entry.locale).toBe('workspace')
+
+    const injected = (entry.inject as unknown as () => RecentSessionsInjected)()
+    injected.open('session' as never)
+    expect(b.open).toHaveBeenCalledWith('session')
+  })
+
   it('unregisters every entry on teardown', async () => {
     const b = await bench()
-    declare(b.slots, 'sidebar.workspaces', 'conversation.hero.workspace', 'conversation.empty.workspace')
+    declare(
+      b.slots,
+      'sidebar.workspaces',
+      'conversation.hero.workspace',
+      'conversation.hero.recentSessions',
+      'conversation.empty.workspace',
+    )
     const fiber = b.ctx.plugin({ inject: [...inject], apply })
     await fiber.await()
     await fiber.dispose()
     expect(b.slots.entries('sidebar.workspaces')).toHaveLength(0)
     expect(b.slots.entries('conversation.hero.workspace')).toHaveLength(0)
+    expect(b.slots.entries('conversation.hero.recentSessions')).toHaveLength(0)
     // expect(b.slots.entries('conversation.empty.workspace')).toHaveLength(0)
   })
 })

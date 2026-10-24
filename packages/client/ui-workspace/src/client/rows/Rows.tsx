@@ -28,7 +28,7 @@ function displayTitle(node: SessionNode, t: RowTranslate): string {
 }
 
 /** Localized compact relative time ("刚刚"/"5分钟" in zh, "now"/"5min" in en). */
-function timeLabel(updatedAt: number, now: number, t: RowTranslate): string {
+export function timeLabel(updatedAt: number, now: number, t: WorkspaceBrowserProps['t']): string {
   const { unit, n } = relativeTime(updatedAt, now)
   return unit === 'now' ? t('time.now') : t(`time.${unit}`, { n })
 }

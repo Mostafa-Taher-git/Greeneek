@@ -1,12 +1,14 @@
 /**
- * Workspace plugin, browser half. Two registrations: WorkspaceBrowser fills
+ * Workspace plugin, browser half. Three registrations: WorkspaceBrowser fills
  * the sidebar shell's `sidebar.workspaces` hole (the whole browsing region),
- * and WorkspacePicker fills the conversation hero's picker hole
- * (`conversation.hero.workspace` — both hero forms). Both read real Host
- * Workspaces through the global useWorkspaces hook, and each declares its
- * own `single` directory-flow child hole for the composed picker package's
- * client half (see the contract module doc). Export discipline:
- * packages/client/AGENTS.md.
+ * WorkspacePicker fills the conversation hero's picker hole
+ * (`conversation.hero.workspace` — both hero forms), and RecentSessionsSeat
+ * fills the hero's recent-sessions hole (`conversation.hero.recentSessions`)
+ * with the targeted Workspace's newest sessions. All read real Host
+ * Workspaces through the global useWorkspaces hook. The two picker surfaces
+ * declare their own `single` directory-flow child hole for the composed
+ * picker package's client half (see the contract module doc). Export
+ * discipline: packages/client/AGENTS.md.
  */
 import type { Context } from '@greeneek/cordis'
 import type { RemoteHostFacts } from '@greeneek/gnk-api-remotes/client'
@@ -23,9 +25,11 @@ import type {} from '@greeneek/gnk-client-ui-renderer/client'
 // Type-only: pulls the Session root standard-hook merge.
 import type {} from '@greeneek/gnk-client-ui-session/client'
 import type { WorkspaceBrowserInjected, WorkspacePickerInjected } from './contract/slots.ts'
+import type { RecentSessionsInjected } from './RecentSessionsSeat.tsx'
 import { UiWorkspaceService } from './navigation.ts'
 import { createWorkspaceViewStore } from './stores.ts'
 import { WorkspaceBrowser } from './rows/WorkspaceBrowser.tsx'
+import { RecentSessionsSeat } from './RecentSessionsSeat.tsx'
 import { WorkspacePicker } from './WorkspacePicker.tsx'
 import { en, zh, type WorkspaceKey } from './locales.ts'
 
@@ -134,8 +138,12 @@ export function apply(ctx: Context): void {
     createWorkspace: input => workspaces.create(input),
     hooks: { directoryFlow: pickerFlowSource },
   })
-  // Each registration declares its directory-flow child in the same call;
-  // slot injection follows both the owner and declaration HMR lifetimes.
+  const recentSessionsInjected = (): RecentSessionsInjected => ({
+    open: (sessionId) => { sessions.open(sessionId) },
+  })
+  // The two picker registrations declare their directory-flow child in the
+  // same call; the recent-sessions seat has no children. Slot injection
+  // follows each owner and declaration HMR lifetime.
   ctx.slots.inject('sidebar.workspaces', () => ctx.slots.register(
     {
       name: 'sidebar.workspaces',
@@ -154,5 +162,13 @@ export function apply(ctx: Context): void {
       locale: NS,
     },
     WorkspacePicker,
+  ))
+  ctx.slots.inject('conversation.hero.recentSessions', () => ctx.slots.register(
+    {
+      name: 'conversation.hero.recentSessions',
+      inject: recentSessionsInjected,
+      locale: NS,
+    },
+    RecentSessionsSeat,
   ))
 }

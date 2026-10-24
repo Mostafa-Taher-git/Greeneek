@@ -612,6 +612,13 @@ describe('ConversationRoot resident composer', () => {
     // The agent-preset chip sits in the same row, for the same reason: both
     // choices are only open before the first message.
     expect(b.slotCalls).toContain('conversation.hero.agentPreset')
+    // Recent sessions close the hero stack, under the mode row.
+    expect(b.slotCalls).toContain('conversation.hero.recentSessions')
+
+    // Once a turn has run the hero chrome is gone, so the recent list is too.
+    const active = mount(sessionSnapshotOf())
+    expect(active.view.container.querySelector('[data-phase]')?.getAttribute('data-phase')).toBe('active')
+    expect(active.slotCalls).not.toContain('conversation.hero.recentSessions')
   })
 
   it('prompt failure renders the promptError strip (ordinary failure, no transaction UI)', () => {

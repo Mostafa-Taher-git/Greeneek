@@ -1,0 +1,50 @@
+/* Hero recent sessions: a short, quiet list under the mode row. No glass, no
+   glow, no solid borders — row selection grammar stays in Rows.module.css. */
+
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+/* Small muted section label in the hero's typographic voice (12/18, medium). */
+.heading {
+  margin: 0 0 2px 8px;
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 500;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Button reset wins on specificity (`button.row`), so the shared .sessionRow
+   chrome (hover fill, height, cursor) still applies from Rows.module.css. */
+button.row {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+}
+
+button.row:focus-visible {
+  outline: 2px solid var(--dsw-alias-state-business-primary);
+  outline-offset: -2px;
+}
+
+.empty {
+  margin: 0 0 0 8px;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--dsw-alias-label-tertiary);
+}

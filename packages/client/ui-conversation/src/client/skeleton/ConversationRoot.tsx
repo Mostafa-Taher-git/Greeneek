@@ -291,6 +291,10 @@ export function ConversationRoot({
           ? undefined
           : workspaceLabel(cwd)))
 
+  // The chip and the recent-sessions list share one target Workspace: a
+  // just-picked one wins until the session lands in it.
+  const workspaceId = pendingWorkspaceId ?? sessionWorkspace?.workspaceId
+
   const heroWorkspaceRow = (
     <div className={css.heroWorkspaceRow}>
       <WorkspaceChip
@@ -303,12 +307,12 @@ export function ConversationRoot({
       {renderSlot('conversation.hero.workspace', {
         open: pickerOpen,
         anchorRef: pickerAnchor,
-        selectedId: pendingWorkspaceId ?? sessionWorkspace?.workspaceId,
-        onPick: (workspaceId) => {
+        selectedId: workspaceId,
+        onPick: (pickedId) => {
           setPickerOpen(false)
-          setPendingWorkspaceId(workspaceId)
-          void selectWorkspace(workspaceId).catch(() => {
-            setPendingWorkspaceId(current => current === workspaceId ? undefined : current)
+          setPendingWorkspaceId(pickedId)
+          void selectWorkspace(pickedId).catch(() => {
+            setPendingWorkspaceId(current => current === pickedId ? undefined : current)
           })
         },
         onClose: () => { setPickerOpen(false) },
@@ -354,6 +358,11 @@ export function ConversationRoot({
       {hero && (
         <div className={css.heroModeRow} data-testid="hero-mode-row">
           {renderSlot('conversation.hero.agentPreset', {})}
+        </div>
+      )}
+      {hero && (
+        <div className={css.heroRecentRow} data-testid="hero-recent-row">
+          {renderSlot('conversation.hero.recentSessions', { workspaceId })}
         </div>
       )}
     </div>

@@ -69,6 +69,14 @@ describe('WorkspaceBrowser.module.css list', () => {
     expect(list!.get('scrollbar-gutter')).toBe('stable')
   })
 
+  it('fades the list bottom into the shell surface, not a sidebar fill', () => {
+    // The Edge Frame shell material is the base token itself; the melt must
+    // match it exactly or the fade paints as a visible band.
+    expect(declarations('.fade')?.get('background')).toBe(
+      'linear-gradient(to bottom, transparent, var(--dsw-alias-bg-base))',
+    )
+  })
+
   it('keeps 2px between rows and 4px between workspace groups', () => {
     expect(declarations('.flatList > * + *')?.get('margin-top')).toBe('2px')
     expect(declarations(".searchTree > [role='treeitem'] + [role='treeitem']")?.get('margin-top')).toBe('2px')

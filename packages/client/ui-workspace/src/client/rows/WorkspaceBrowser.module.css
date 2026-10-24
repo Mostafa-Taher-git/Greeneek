@@ -308,14 +308,15 @@
 }
 
 /* Bottom fade: compact overlay pinned to the visible bottom,
-   transparent -> sidebar fill so it tracks the theme. */
+   transparent -> the shell's own flat surface so the melt is invisible
+   against the panel and only softens rows that scroll under it. */
 .fade {
   position: absolute;
   left: 0;
   right: var(--gnk-session-list-edge-inset);
   bottom: 0;
   height: 24px;
-  background: linear-gradient(to bottom, transparent, var(--dsw-specific-sidebar-fill));
+  background: linear-gradient(to bottom, transparent, var(--dsw-alias-bg-base));
   pointer-events: none;
 }
 

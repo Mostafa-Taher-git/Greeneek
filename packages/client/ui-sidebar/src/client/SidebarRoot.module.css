@@ -19,9 +19,7 @@
      alpha blends and the overshoot curve live here, because the neon treatment
      belongs to this shell rather than to the shared theme. */
   --gnk-sidebar-neon: var(--dsw-static-greeneek-450);
-  --gnk-sidebar-neon-15: color-mix(in srgb, var(--gnk-sidebar-neon) 15%, transparent);
   --gnk-sidebar-neon-26: color-mix(in srgb, var(--gnk-sidebar-neon) 26%, transparent);
-  --gnk-sidebar-neon-35: color-mix(in srgb, var(--gnk-sidebar-neon) 35%, transparent);
   --gnk-sidebar-neon-50: color-mix(in srgb, var(--gnk-sidebar-neon) 50%, transparent);
   /* A gentle overshoot: the entrance settles with a breath of travel past its
      seat instead of easing flat. 1.2 stays shy of a visible bounce. */
@@ -34,6 +32,14 @@
   --gnk-sidebar-radius: 16px;
   position: relative;
   isolation: isolate; /* keeps the negative-z panel inside this shell */
+  /* ...and keeps the settings dialog — a position:fixed descendant that
+     ui-settings mounts in this column — owned by THIS stacking context.
+     Without an explicit level here, that context rides the auto band, and
+     the conversation column's own z-index:0 subtree (later in DOM) paints
+     over the whole sidebar, burying the dialog. 30 clears every in-frame
+     composite band (composer seat 9, hero 10, drag pill 2, crown 5) so the
+     open dialog covers the app as a modal should. */
+  z-index: 30;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -132,22 +138,17 @@
 }
 
 /* At the 150ms rail settle, the rail controls enter top-to-bottom:
-   fold toggle (0ms) → New Session (30ms) → browsing region (90ms) → brand
-   mark (120ms, dropping into its bottom seat as the foot fades in beside
-   it). The 200ms entrances therefore finish by 320ms, just after the
-   AppFrame track lands, so the column fills itself from top to bottom
-   instead of snapping all at once. Only a live collapse gets .railIn; a
-   cold collapsed render stays static. */
-.railIn .toggleRail {
-  animation: toggle-rail-in 200ms var(--gnk-sidebar-neon-ease) 0ms backwards;
-}
-
+   New Session (0ms) → browsing region (60ms) → brand mark (120ms, dropping
+   into its bottom seat as the foot fades in beside it). The 200ms entrances
+   therefore finish by 320ms, just after the AppFrame track lands, so the
+   column fills itself from top to bottom instead of snapping all at once.
+   Only a live collapse gets .railIn; a cold collapsed render stays static. */
 .railIn .newSession {
-  animation: rail-in 200ms var(--gnk-sidebar-neon-ease) 30ms backwards;
+  animation: rail-in 200ms var(--gnk-sidebar-neon-ease) 0ms backwards;
 }
 
 .railIn .regionArea {
-  animation: rail-in 200ms var(--gnk-sidebar-neon-ease) 90ms backwards;
+  animation: rail-in 200ms var(--gnk-sidebar-neon-ease) 60ms backwards;
 }
 
 .railIn .logoRow {
@@ -169,13 +170,6 @@
   from {
     opacity: 0;
     transform: translateY(-8px);
-  }
-}
-
-@keyframes toggle-rail-in {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
   }
 }
 
@@ -209,20 +203,6 @@
     opacity: 0;
     transform: translateX(-8px);
   }
-}
-
-/* Brand bloom, part of the same expand stagger: one soft halo swell as the
-   mark arrives in its bottom seat, settling into the constant ambient glow
-   the expanded mark carries below. Never loops — the class itself is
-   one-shot. */
-.expanding .brandMark {
-  animation: neon-brand-bloom 420ms var(--ds-ease-in-out) 120ms backwards;
-}
-
-@keyframes neon-brand-bloom {
-  from { filter: drop-shadow(0 0 2px var(--gnk-sidebar-neon-15)); }
-  40% { filter: drop-shadow(0 0 12px var(--gnk-sidebar-neon-50)); }
-  to { filter: drop-shadow(0 0 6px var(--gnk-sidebar-neon-35)); }
 }
 
 /* The attention magnet: one neon band crosses the New Session capsule on
@@ -307,15 +287,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: filter 200ms var(--ds-ease-in-out);
 }
 
-/* Constant ambient halo on the expanded mark (V2): diffuse and static — a
-   resting brand glow, not a pulse. The rail omits it; at 56px a halo behind
-   the mark reads as a smudge rather than as light. */
-.root:not(.collapsed) .brandMark {
-  filter: drop-shadow(0 0 6px var(--gnk-sidebar-neon-35));
-}
+/* The mark is deliberately unlit in the Edge Frame shell: no ambient halo,
+   no bloom — the brand color itself is the light. (The one brand glow left
+   in the shell is the AppFrame crown line above the window.) */
 
 .brandName {
   display: inline-flex;
@@ -449,25 +425,9 @@
   background: var(--dsw-alias-interactive-bg-hover);
 }
 
-.toggleRail {
-  flex: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  margin: 0 0 12px;
-  padding: 0;
-  border: none;
-  border-radius: 12px;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-}
-
-.collapsed .toggleRail:hover {
-  background: var(--dsw-alias-interactive-bg-hover);
-}
+/* The fold toggle does not exist on the rail: the desktop titlebar owns the
+   one collapse control (a second one here was a duplicate affordance, and
+   the rail reads cleaner without it). */
 
 .newSessionLabel {
   max-width: 200px;
@@ -537,7 +497,6 @@
   .wide,
   .fading > *,
   .railIn .logoRow,
-  .railIn .toggleRail,
   .railIn .newSession,
   .railIn .regionArea,
   .railIn .footArea,

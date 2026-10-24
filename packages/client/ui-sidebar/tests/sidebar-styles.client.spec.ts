@@ -52,6 +52,9 @@ describe('SidebarRoot.module.css', () => {
     expect(root?.get('background')).toBe('transparent')
     expect(root?.get('--gnk-sidebar-glass-inset')).toBe('8px')
     expect(root?.get('isolation')).toBe('isolate')
+    // The explicit level keeps the settings dialog — a fixed descendant of
+    // this context — above the conversation column's z-index:0 subtree.
+    expect(root?.get('z-index')).toBe('30')
     const flush = declarations('.root:not(.collapsed)')
     expect(flush?.get('--gnk-sidebar-glass-inset')).toBe('0px')
     expect(flush?.get('--gnk-sidebar-radius')).toBe('0px')
@@ -85,9 +88,8 @@ describe('SidebarRoot.module.css', () => {
     // → brand mark (its new bottom seat, dropping into place beside the
     // fading foot). Pin the pairs, including the overshoot curve.
     const stagger: Array<[selector: string, animation: string]> = [
-      ['.railIn .toggleRail', 'toggle-rail-in 200ms var(--gnk-sidebar-neon-ease) 0ms backwards'],
-      ['.railIn .newSession', 'rail-in 200ms var(--gnk-sidebar-neon-ease) 30ms backwards'],
-      ['.railIn .regionArea', 'rail-in 200ms var(--gnk-sidebar-neon-ease) 90ms backwards'],
+      ['.railIn .newSession', 'rail-in 200ms var(--gnk-sidebar-neon-ease) 0ms backwards'],
+      ['.railIn .regionArea', 'rail-in 200ms var(--gnk-sidebar-neon-ease) 60ms backwards'],
       ['.railIn .logoRow', 'logo-rail-in 200ms var(--gnk-sidebar-neon-ease) 120ms backwards'],
       ['.railIn .footArea', 'rail-fade-in 200ms var(--gnk-sidebar-neon-ease) 120ms backwards'],
     ]

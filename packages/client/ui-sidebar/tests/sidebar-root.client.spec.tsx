@@ -172,9 +172,8 @@ describe('SidebarRoot shell', () => {
   it('renders statically collapsed on a cold start (no crossfade classes)', () => {
     const b = mountShell({ collapsed: true })
     expect(b.regionOwner().wide).toBe(false)
-    // The rail keeps the brand mark visible in its bottom seat; the column
-    // exposes the collapsed sidebar-toggle control near the top.
+    // The rail keeps the brand mark visible in its bottom seat; the one
+    // collapse control lives in the desktop titlebar, not on the rail.
     expect(screen.getByTestId('custom-brand-mark')).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Open sidebar' })).toBeTruthy()
   })
 })

@@ -106,7 +106,11 @@
   width: 8px;
   margin-left: -4px;
   cursor: col-resize;
-  z-index: 2;
+  /* The sidebar owns an explicit stacking level above the conversation's
+     inner bands (see SidebarRoot.module.css), so the grab strip sits above
+     both columns' subtrees and stays live over the sidebar's scrollbar
+     edge. */
+  z-index: 40;
   touch-action: none;
   /* Rides the same curve as the tracks so the pill stays on the moving
      border during collapse/expand; paused while dragging (frame rule). */

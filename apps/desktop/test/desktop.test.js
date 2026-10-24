@@ -367,7 +367,7 @@ describe('window chrome', () => {
     assert.equal(createWindowOptions('win32', false).frame, false)
     assert.equal(createWindowOptions('linux', false).frame, false)
     assert.equal(createWindowOptions('linux', true).backgroundColor, '#111813')
-    assert.equal(createWindowOptions('linux', false).backgroundColor, '#fdfefa')
+    assert.equal(createWindowOptions('linux', false).backgroundColor, '#eeeeee')
   })
 
   it('keeps the renderer sandboxed with no preload unless the bridge is attached', () => {

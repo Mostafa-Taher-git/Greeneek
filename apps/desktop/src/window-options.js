@@ -16,7 +16,7 @@ export function createWindowOptions(platform = process.platform, useDarkColors =
     minHeight: 640,
     show: false,
     title: 'Greeneek',
-    backgroundColor: useDarkColors ? '#111813' : '#fdfefa',
+    backgroundColor: useDarkColors ? '#111813' : '#eeeeee',
     frame: !frameless,
     titleBarStyle: frameless ? 'hidden' : 'default',
     autoHideMenuBar: frameless,

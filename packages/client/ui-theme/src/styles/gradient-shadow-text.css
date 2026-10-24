@@ -1,6 +1,6 @@
 body {
-  --dsw-linear-gradient-think: linear-gradient(180deg, #fff 20.19%, rgba(255, 255, 255, 0) 100%);
-  --dsw-linear-think-select: linear-gradient(180deg, #f5f6f7 20.19%, rgba(245, 246, 247, 0) 100%);
+  --dsw-linear-gradient-think: linear-gradient(180deg, var(--dsw-alias-bg-base) 20.19%, rgba(255, 255, 255, 0) 100%);
+  --dsw-linear-think-select: linear-gradient(180deg, var(--dsw-alias-bg-base) 20.19%, rgba(245, 246, 247, 0) 100%);
   /* 阴影 */
   --dsw-shadow-lv1: 0 2px 4px 0 rgba(0, 0, 0, 0.05);
   --dsw-shadow-lv1-blur: 0 4px 12px 0 rgba(0, 0, 0, 0.02);

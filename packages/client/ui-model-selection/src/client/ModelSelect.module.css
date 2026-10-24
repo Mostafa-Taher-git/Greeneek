@@ -464,7 +464,7 @@
   height: 34px;
   border-radius: 999px;
   corner-shape: round;
-  background: #fff;
+  background: var(--dsw-static-neutral-00);
   translate: -50% -50%;
   box-shadow:
     0 0 0 0.5px rgba(26, 29, 33, 0.03),

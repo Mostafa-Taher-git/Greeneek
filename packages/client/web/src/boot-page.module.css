@@ -1,11 +1,11 @@
 /* The framework-free boot page cannot depend on theme delivery succeeding. */
 
 .boot {
-  --gnk-boot-bg: #fdfefa;
+  --gnk-boot-bg: #eeeeee;
   --gnk-boot-label-primary: #293c30;
-  --gnk-boot-label-secondary: #627063;
-  --gnk-boot-label-tertiary: #879083;
-  --gnk-boot-border: rgb(41 60 48 / 10%);
+  --gnk-boot-label-secondary: #5a5a5a;
+  --gnk-boot-label-tertiary: #626262;
+  --gnk-boot-border: rgb(41 60 48 / 14%);
   --gnk-boot-brand: #328352;
 
   height: 100%;

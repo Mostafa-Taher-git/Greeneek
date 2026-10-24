@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { ThemeSnapshot } from '@greeneek/gnk-client-ui-theme/client'
 import { DARK_ATTRIBUTE, ThemePresenter } from '@greeneek/gnk-client-ui-layout/src/client/theme-presenter.ts'
 
-const LIGHT_THEME_COLOR = 'rgb(255, 255, 255)'
+const LIGHT_THEME_COLOR = 'rgb(238, 238, 238)'
 const DARK_THEME_COLOR = 'rgb(21, 21, 23)'
 
 function snapshot(colorScheme: 'light' | 'dark', tokens: Record<string, string> = {}, fontSize = 14): ThemeSnapshot {

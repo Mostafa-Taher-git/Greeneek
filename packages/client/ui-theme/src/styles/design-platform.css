@@ -5,7 +5,12 @@
 /* Palette remap (1.1): the `-bluish` static names are historic — their values
    are the sage/paper greens of the product palette, in light and dark ramps.
    Success/warn/danger intentionally stay on the original green/amber/red so
-   signal hues keep their meaning; borders stay translucent and adaptive. */
+   signal hues keep their meaning; borders stay translucent and adaptive.
+   Light appearance (v0.3.4): the light `-bluish` low steps are a pure,
+   untinted gray ladder anchored at #EEEEEE (values release — names, alias
+   structure and the dark ramp below are unchanged); `greeneek-*` keeps the
+   brand greens. The 400–700 steps are the text ladder, calibrated to AA on
+   the new base (caption 3.40:1, tertiary 5.17:1, secondary 5.94:1). */
 body {
   --dsw-static-amber-100: rgb(254, 245, 231);
   --dsw-static-amber-400: rgb(247, 173, 49);
@@ -43,9 +48,9 @@ body {
   --dsw-static-neutral-1000: rgb(0, 0, 0);
   --dsw-static-neutral-100: rgb(245, 245, 245);
   --dsw-static-neutral-150: rgb(237, 237, 237);
-  --dsw-static-neutral-200: rgb(196, 204, 191);
+  --dsw-static-neutral-200: rgb(196, 196, 196);
   --dsw-static-neutral-250: rgb(220, 220, 220);
-  --dsw-static-neutral-300: rgb(164, 173, 160);
+  --dsw-static-neutral-300: rgb(177, 177, 177);
   --dsw-static-neutral-400: rgb(162, 164, 166);
   --dsw-static-neutral-500: rgb(127, 130, 135);
   --dsw-static-neutral-50: rgb(250, 250, 250);
@@ -55,20 +60,20 @@ body {
   --dsw-static-neutral-800: rgb(41, 41, 41);
   --dsw-static-neutral-850: rgb(33, 33, 35);
   --dsw-static-neutral-900: rgb(15, 15, 15);
-  --dsw-static-neutral-bluish-00: rgb(253, 254, 250);
+  --dsw-static-neutral-bluish-00: rgb(238, 238, 238);
   --dsw-static-neutral-bluish-1000: rgb(41, 60, 48);
-  --dsw-static-neutral-bluish-100: rgb(228, 233, 223);
-  --dsw-static-neutral-bluish-150: rgb(213, 233, 201);
-  --dsw-static-neutral-bluish-200: rgb(217, 226, 217);
-  --dsw-static-neutral-bluish-300: rgb(164, 173, 160);
-  --dsw-static-neutral-bluish-400: rgb(164, 173, 160);
-  --dsw-static-neutral-bluish-500: rgb(135, 144, 131);
-  --dsw-static-neutral-bluish-50: rgb(247, 249, 245);
-  --dsw-static-neutral-bluish-600: rgb(135, 144, 131);
-  --dsw-static-neutral-bluish-60: rgb(240, 244, 236);
-  --dsw-static-neutral-bluish-700: rgb(98, 112, 99);
+  --dsw-static-neutral-bluish-100: rgb(210, 210, 210);
+  --dsw-static-neutral-bluish-150: rgb(200, 200, 200);
+  --dsw-static-neutral-bluish-200: rgb(196, 196, 196);
+  --dsw-static-neutral-bluish-300: rgb(177, 177, 177);
+  --dsw-static-neutral-bluish-400: rgb(128, 128, 128);
+  --dsw-static-neutral-bluish-500: rgb(118, 118, 118);
+  --dsw-static-neutral-bluish-50: rgb(230, 230, 230);
+  --dsw-static-neutral-bluish-600: rgb(98, 98, 98);
+  --dsw-static-neutral-bluish-60: rgb(224, 224, 224);
+  --dsw-static-neutral-bluish-700: rgb(90, 90, 90);
   --dsw-static-neutral-bluish-750: rgb(39, 112, 68);
-  --dsw-static-neutral-bluish-75: rgb(234, 242, 229);
+  --dsw-static-neutral-bluish-75: rgb(218, 218, 218);
   --dsw-static-neutral-bluish-800: rgb(34, 57, 44);
   --dsw-static-neutral-bluish-850: rgb(34, 57, 44);
   --dsw-static-neutral-bluish-875: rgb(35, 35, 36);
@@ -159,10 +164,13 @@ body[data-ds-dark-theme] {
 }
 
 body {
-  --dsw-alias-bg-base: var(--dsw-static-neutral-bluish-00);
-  --dsw-alias-bg-layer-1: var(--dsw-static-neutral-bluish-00);
-  --dsw-alias-bg-layer-2: var(--dsw-static-neutral-bluish-00);
-  --dsw-alias-bg-layer-3: var(--dsw-static-neutral-bluish-00);
+  /* Light elevation ladder (v0.3.4): the base reads #EEEEEE and each raised
+     surface steps lighter, so base/layer/popover never collapse flat-on-flat.
+     bg-overlay is the popover/dialog surface — same top rung as layer-3. */
+  --dsw-alias-bg-base: #EEEEEE;
+  --dsw-alias-bg-layer-1: #F2F2F2;
+  --dsw-alias-bg-layer-2: #F7F7F7;
+  --dsw-alias-bg-layer-3: #FBFBFB;
   --dsw-alias-bg-mask-1: rgba(0, 0, 0, 0.24);
   --dsw-alias-bg-mask-2: rgba(0, 0, 0, 0.12);
   --dsw-alias-bg-mask-3: rgba(0, 0, 0, 0.48);
@@ -170,15 +178,17 @@ body {
   --dsw-alias-bg-mask-drop: rgba(255, 255, 255, 0.7);
   --dsw-alias-bg-module-platform: var(--dsw-static-neutral-bluish-60);
   --dsw-alias-bg-multi-select: var(--dsw-static-neutral-bluish-60);
-  --dsw-alias-bg-overlay: var(--dsw-static-neutral-bluish-150);
+  --dsw-alias-bg-overlay: #FBFBFB;
   --dsw-alias-bg-skeleton: rgba(41, 60, 48, 0.04);
   --dsw-alias-border-inverted2: rgba(0, 0, 0, 0);
   --dsw-alias-border-inverted: rgba(0, 0, 0, 0);
-  --dsw-alias-border-l1: rgba(41, 60, 48, 0.04);
-  --dsw-alias-border-l2-darkmode-thin: rgba(41, 60, 48, 0.1);
-  --dsw-alias-border-l2: rgba(41, 60, 48, 0.1);
-  --dsw-alias-border-l3: rgba(41, 60, 48, 0.12);
-  --dsw-alias-border-l4: rgba(41, 60, 48, 0.16);
+  /* Alphas re-derived over the #EEEEEE base: l2 lands at 0.14 so hairlines
+     keep the same perceived weight they had over the old near-white base. */
+  --dsw-alias-border-l1: rgba(41, 60, 48, 0.06);
+  --dsw-alias-border-l2-darkmode-thin: rgba(41, 60, 48, 0.14);
+  --dsw-alias-border-l2: rgba(41, 60, 48, 0.14);
+  --dsw-alias-border-l3: rgba(41, 60, 48, 0.16);
+  --dsw-alias-border-l4: rgba(41, 60, 48, 0.2);
   --dsw-alias-brand-primary-invert: var(--dsw-static-neutral-bluish-1000);
   --dsw-alias-brand-primary-new-colorprimary-new-color: rgb(50, 131, 82);
   --dsw-alias-brand-primary: var(--dsw-static-neutral-bluish-1000);
@@ -207,8 +217,8 @@ body {
   --dsw-alias-label-dimmed: var(--dsw-static-neutral-bluish-200);
   --dsw-alias-label-primary-bluish: var(--dsw-static-blue-900);
   --dsw-alias-label-primary-dimmed: var(--dsw-static-neutral-bluish-950);
-  --dsw-alias-label-primary-foreground: var(--dsw-static-neutral-bluish-00);
-  --dsw-alias-label-primary-inverted: var(--dsw-static-neutral-bluish-00);
+  --dsw-alias-label-primary-foreground: var(--dsw-static-neutral-00);
+  --dsw-alias-label-primary-inverted: var(--dsw-static-neutral-00);
   --dsw-alias-label-primary: var(--dsw-static-neutral-bluish-1000);
   --dsw-alias-label-secondary: var(--dsw-static-neutral-bluish-700);
   --dsw-alias-label-tertiary: var(--dsw-static-neutral-bluish-600);

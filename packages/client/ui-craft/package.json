@@ -1,0 +1,66 @@
+{
+  "name": "@greeneek/gnk-client-ui-craft",
+  "description": "Web Craft suite settings section and artifact tool card for the headless Craft bridge pilot",
+  "version": "1.1.0-alpha.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/greeneek/greeneek-harness.git",
+    "directory": "packages/client/ui-craft"
+  },
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "types": "./lib/types/client/index.d.ts",
+      "default": "./lib/client.js"
+    },
+    "./src/*": "./src/*",
+    "./package.json": "./package.json"
+  },
+  "gnk": {
+    "client": {
+      "inject": [
+        "@greeneek/gnk-client-locale",
+        "@greeneek/gnk-client-ui-renderer",
+        "@greeneek/gnk-client-ui-settings",
+        "@greeneek/gnk-client-ui-tool"
+      ],
+      "platform": "web"
+    }
+  },
+  "scripts": {
+    "bundle": "tsdown",
+    "watch": "tsdown --watch"
+  },
+  "license": "MIT",
+  "peerDependencies": {
+    "@greeneek/cordis": "workspace:^"
+  },
+  "devDependencies": {
+    "@greeneek/cordis": "workspace:^",
+    "@greeneek/gnk-client-locale": "workspace:^",
+    "@greeneek/gnk-client-test-runtime": "workspace:^",
+    "@greeneek/gnk-client-ui-primitives": "workspace:^",
+    "@greeneek/gnk-client-ui-renderer": "workspace:^",
+    "@greeneek/gnk-client-ui-settings": "workspace:^",
+    "@greeneek/gnk-client-ui-slots": "workspace:^",
+    "@greeneek/gnk-client-ui-tool": "workspace:^",
+    "@testing-library/react": "^16.1.0",
+    "@types/react": "~18.3.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/client.js",
+    "lib/types/**/*.d.ts"
+  ]
+}

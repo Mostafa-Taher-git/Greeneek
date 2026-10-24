@@ -11,7 +11,7 @@ import SystemPrompt from '@greeneek/gnk-system-prompt'
 import ToolRuntime from '@greeneek/gnk-tools'
 import type { JsonValue } from '@greeneek/gnk-util-values'
 import type { PostToolDecision } from '@greeneek/gnk-tools'
-import { publicToolName, syncTools, type ToolBridgeOptions } from '@greeneek/gnk-mcp-client/src/tools.ts'
+import { matchesToolFilter, publicToolName, syncTools, type ToolBridgeOptions } from '@greeneek/gnk-mcp-client/src/tools.ts'
 import { createTransport } from '@greeneek/gnk-mcp-client/src/transport.ts'
 import type { Config } from '@greeneek/gnk-mcp-client'
 
@@ -181,6 +181,29 @@ describe('publicToolName', () => {
   })
 })
 
+describe('matchesToolFilter', () => {
+  it('keeps every tool when no filter is configured', () => {
+    expect(matchesToolFilter(undefined, 'anything')).toBe(true)
+  })
+
+  it('keeps exactly the listed names for an array filter', () => {
+    const filter = ['alpha', 'beta'] as const
+    expect(matchesToolFilter(filter, 'alpha')).toBe(true)
+    expect(matchesToolFilter(filter, 'gamma')).toBe(false)
+  })
+
+  it('defers to the predicate for a function filter', () => {
+    const seen: string[] = []
+    const filter = (name: string): boolean => {
+      seen.push(name)
+      return name.startsWith('craft_')
+    }
+    expect(matchesToolFilter(filter, 'craft_export')).toBe(true)
+    expect(matchesToolFilter(filter, 'system_shell')).toBe(false)
+    expect(seen).toEqual(['craft_export', 'system_shell'])
+  })
+})
+
 describe('syncTools', () => {
   let ctx: Context
 
@@ -202,6 +225,48 @@ describe('syncTools', () => {
     // Raw names are NOT registered.
     expect(ctx.tools.get('greet')).toBeUndefined()
     expect(ctx.tools.get('add')).toBeUndefined()
+  })
+
+  it('registers only the tools allowed by an array filter', async () => {
+    const client = createMockClient([
+      { name: 'export', inputSchema: { type: 'object' } },
+      { name: 'system_shell', inputSchema: { type: 'object' } },
+    ])
+
+    const disposers = await syncTools(client as never, ctx, { ...defaultOpts, toolFilter: ['export'] }, new Map())
+
+    expect([...disposers.keys()]).toEqual(['mcp__srv__export'])
+    expect(ctx.tools.get('mcp__srv__export')).toBeDefined()
+    expect(ctx.tools.get('mcp__srv__system_shell')).toBeUndefined()
+  })
+
+  it('registers only the tools accepted by a predicate filter, evaluated on raw names', async () => {
+    const client = createMockClient([
+      { name: 'craft_export', inputSchema: { type: 'object' } },
+      { name: 'system_shell', inputSchema: { type: 'object' } },
+    ])
+    const names: string[] = []
+
+    const disposers = await syncTools(
+      client as never,
+      ctx,
+      { ...defaultOpts, toolFilter: (name) => { names.push(name); return name.startsWith('craft_') } },
+      new Map(),
+    )
+
+    expect(names).toEqual(['craft_export', 'system_shell'])
+    expect([...disposers.keys()]).toEqual(['mcp__srv__craft_export'])
+  })
+
+  it('unregisters a previously allowed tool when the filter stops allowing it', async () => {
+    const client = createMockClient([{ name: 'alpha', inputSchema: { type: 'object' } }])
+    const first = await syncTools(client as never, ctx, { ...defaultOpts, toolFilter: ['alpha'] }, new Map())
+    expect(ctx.tools.get('mcp__srv__alpha')).toBeDefined()
+
+    const second = await syncTools(client as never, ctx, { ...defaultOpts, toolFilter: [] }, first)
+
+    expect(second.size).toBe(0)
+    expect(ctx.tools.get('mcp__srv__alpha')).toBeUndefined()
   })
 
   it('lets two servers publish the same raw name side by side', async () => {

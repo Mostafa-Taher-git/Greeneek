@@ -55,6 +55,8 @@ import * as ToolGoal from '@greeneek/gnk-tool-goal'
 import * as ToolSchedule from '@greeneek/gnk-schedule'
 import Lsp from '@greeneek/gnk-lsp'
 import * as ToolLsp from '@greeneek/gnk-tool-lsp'
+import CraftRuntime from '@greeneek/gnk-craft'
+import * as ToolCraft from '@greeneek/gnk-tool-craft'
 import * as ToolSkill from '@greeneek/gnk-tool-skill'
 import * as ToolSessionQuery from '@greeneek/gnk-tool-session-query'
 import * as ToolTasks from '@greeneek/gnk-tool-jobs'
@@ -271,6 +273,20 @@ const TOOL_PACKAGES: ToolPackage[] = [
     },
     note:
       'Not in any shipped tree (a deliberate opt-in — dynamic package code reaches the real runtime, see .agents/notes/implemented/feature/2026-07-08-self-referential-cordis-toolset.md). The toolset injects `ctx.dynamicCordisRunner` from `@greeneek/gnk-cordis-host-runner`, which owns the definition registry and the vm sandbox; a composition missing it never activates the tools. A running package may register ADDITIONAL model-visible tools until it is stopped, undefined, or GNK restarts; a full changed request header logs those tool-set changes.',
+  },
+  {
+    pkg: '@greeneek/gnk-tool-craft',
+    dir: 'tool-craft',
+    source: 'packages/craft/tool-craft/src/index.ts',
+    requires: ['ctx.tools', 'ctx.craft', 'ctx.skills', 'a registered CraftHostProvider at open time'],
+    writes: ['tool/call', 'tool/result', 'runtime tool and skill registrations while an app session is active'],
+    async mount(ctx) {
+      await ctx.plugin(CraftRuntime)
+      await ctx.plugin(SkillRegistry)
+      await ctx.plugin(ToolCraft)
+    },
+    note:
+      'The v0.3.4 Craft pilot gateway: two schemas while no app is active. Opening an app mounts its manifest-curated bridge tools under the shared `mcp__<app>__<tool>` naming contract and its recipe as a runtime skill; those registrations are absent from this static catalog because they exist only for the session between open and close. No shipped profile or preset composes the gateway yet (desktop-only, see .agents/notes/implemented/feature/2026-10-24-v0.3.4-craft-bridge-pilot.md), and attach mode refuses until the upstream authenticated control channel ships.',
   },
   {
     pkg: '@greeneek/gnk-tool-bash-persistent',

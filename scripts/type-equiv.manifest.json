@@ -450,6 +450,36 @@
       "source": "packages/llm/token-meter/src/types.ts"
     },
     {
+      "doc": "docs/subsystems/craft.md",
+      "symbol": "CraftAppManifest",
+      "source": "packages/craft/craft/src/types.ts"
+    },
+    {
+      "doc": "docs/subsystems/craft.md",
+      "symbol": "CraftHostProvider",
+      "source": "packages/craft/craft/src/types.ts"
+    },
+    {
+      "doc": "docs/subsystems/craft.md",
+      "symbol": "CraftOpenRequest",
+      "source": "packages/craft/craft/src/types.ts"
+    },
+    {
+      "doc": "docs/subsystems/craft.md",
+      "symbol": "CraftSession",
+      "source": "packages/craft/craft/src/types.ts"
+    },
+    {
+      "doc": "docs/subsystems/craft.md",
+      "symbol": "CraftStatus",
+      "source": "packages/craft/craft/src/types.ts"
+    },
+    {
+      "doc": "docs/subsystems/craft.md",
+      "symbol": "CraftRecipe",
+      "source": "packages/craft/craft/src/types.ts"
+    },
+    {
       "doc": "docs/subsystems/session.md",
       "symbol": "UserMessage",
       "source": "packages/llm/llm/src/message.ts"

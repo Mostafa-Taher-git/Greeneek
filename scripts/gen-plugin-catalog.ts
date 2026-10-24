@@ -7,7 +7,7 @@
  */
 
 import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { join, resolve, sep } from 'node:path'
 
 const REPO = resolve(import.meta.dirname, '..')
 const OUT = join(REPO, 'docs', 'plugin-catalog.md')
@@ -89,7 +89,8 @@ export function commandSeamPackages(): Set<string> {
         if (COMMAND_MARKERS.some(marker => text.includes(marker))) {
           const packagesRoot = join(REPO, 'packages')
           const rel = full.slice(packagesRoot.length + 1)
-          hits.add(rel.split('/').slice(0, 2).join('/'))
+          // Native separators vary by platform; catalog keys are always `group/dir`.
+          hits.add(rel.split(sep).slice(0, 2).join('/'))
         }
       }
     }

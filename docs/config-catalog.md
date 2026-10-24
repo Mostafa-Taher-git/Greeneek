@@ -484,6 +484,24 @@ export interface Config {
 
 Source: [`packages/extensions/cordis-host-runner/src/index.ts:88`](../packages/extensions/cordis-host-runner/src/index.ts)
 
+<a id="greeneekgnk-craft-local"></a>
+
+## `@greeneek/gnk-craft-local`
+
+```ts config-catalog
+/** Resolved local provider configuration. */
+export interface CraftLocalConfig {
+  /** Per JSON-RPC request deadline in milliseconds. */
+  readonly requestTimeoutMs: number
+  /** Terminate escalation grace for a spawned app process tree. */
+  readonly graceMs: number
+  /** Bound on waiting for a terminated process to settle during close. */
+  readonly closeGraceMs: number
+}
+```
+
+Source: [`packages/craft/craft-local/src/types.ts:83`](../packages/craft/craft-local/src/types.ts)
+
 <a id="greeneekgnk-credentials-local"></a>
 
 ## `@greeneek/gnk-credentials-local`
@@ -1502,7 +1520,7 @@ export interface ReconnectConfig {
 }
 ```
 
-Source: [`packages/mcp/mcp-client/src/index.ts:98`](../packages/mcp/mcp-client/src/index.ts)
+Source: [`packages/mcp/mcp-client/src/index.ts:100`](../packages/mcp/mcp-client/src/index.ts)
 
 <a id="greeneekgnk-message-feedback"></a>
 
@@ -3404,6 +3422,7 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 - `@greeneek/gnk-client-ui-commands` ([`packages/client/ui-commands/src/index.ts`](../packages/client/ui-commands/src/index.ts))
 - `@greeneek/gnk-client-ui-conversation` ([`packages/client/ui-conversation/src/index.ts`](../packages/client/ui-conversation/src/index.ts))
 - `@greeneek/gnk-client-ui-cordis` ([`packages/extensions/ui-cordis/src/index.ts`](../packages/extensions/ui-cordis/src/index.ts))
+- `@greeneek/gnk-client-ui-craft` ([`packages/client/ui-craft/src/index.ts`](../packages/client/ui-craft/src/index.ts))
 - `@greeneek/gnk-client-ui-deliverables` — requires `systemPrompt` ([`packages/client/ui-deliverables/src/index.ts`](../packages/client/ui-deliverables/src/index.ts))
 - `@greeneek/gnk-client-ui-directory-picker-browse` ([`packages/client/ui-directory-picker-browse/src/index.ts`](../packages/client/ui-directory-picker-browse/src/index.ts))
 - `@greeneek/gnk-client-ui-directory-picker-native` ([`packages/client/ui-directory-picker-native/src/index.ts`](../packages/client/ui-directory-picker-native/src/index.ts))
@@ -3505,6 +3524,7 @@ Imported as libraries by other packages; a `cordis.yml` cannot load them.
 - `@greeneek/gnk-client-ui-slots` ([`packages/client/ui-slots/src/index.ts`](../packages/client/ui-slots/src/index.ts))
 - `@greeneek/gnk-client-web` ([`packages/client/web/src/index.ts`](../packages/client/web/src/index.ts))
 - `@greeneek/gnk-cmdline` ([`packages/boot/cmdline/src/index.ts`](../packages/boot/cmdline/src/index.ts))
+- `@greeneek/gnk-craft` ([`packages/craft/craft/src/index.ts`](../packages/craft/craft/src/index.ts))
 - `@greeneek/gnk-deque` ([`packages/util/deque/src/index.ts`](../packages/util/deque/src/index.ts))
 - `@greeneek/gnk-egress` ([`packages/util/egress/src/index.ts`](../packages/util/egress/src/index.ts))
 - `@greeneek/gnk-experimental-agent-team-profile` ([`packages/experimental/agent-team-profile/src/index.ts`](../packages/experimental/agent-team-profile/src/index.ts))
@@ -3528,6 +3548,7 @@ Imported as libraries by other packages; a `cordis.yml` cannot load them.
 - `@greeneek/gnk-session-title-llm` ([`packages/session/session-title-llm/src/index.ts`](../packages/session/session-title-llm/src/index.ts))
 - `@greeneek/gnk-subagent-in-process-driver` ([`packages/subagent/subagent-in-process-driver/src/index.ts`](../packages/subagent/subagent-in-process-driver/src/index.ts))
 - `@greeneek/gnk-timeout` ([`packages/util/timeout/src/index.ts`](../packages/util/timeout/src/index.ts))
+- `@greeneek/gnk-tool-craft` ([`packages/craft/tool-craft/src/index.ts`](../packages/craft/tool-craft/src/index.ts))
 - `@greeneek/gnk-typert-generator` ([`packages/typert/generator/src/index.ts`](../packages/typert/generator/src/index.ts))
 - `@greeneek/gnk-typert-protocol` ([`packages/typert/protocol/src/index.ts`](../packages/typert/protocol/src/index.ts))
 - `@greeneek/gnk-typert-registry` ([`packages/typert/registry/src/index.ts`](../packages/typert/registry/src/index.ts))

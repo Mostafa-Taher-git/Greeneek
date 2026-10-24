@@ -16,6 +16,8 @@ kind: "package-reference"
 - [Credential hygiene](#credential-hygiene)
 - [Adding it to your composition](#adding-it-to-your-composition)
 - [Source map](#source-map)
+- [Model Experience](#model-experience)
+- [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
 - [Dev Note](#dev-note)
 
 -----
@@ -51,6 +53,24 @@ The client face mounts the generated contribution through `@greeneek/gnk-api-rem
 | --- | --- |
 | `src/authorization.ts` | The controller: namespace methods, the attempt-stream bridge, prompt bookkeeping, and the refusal mapping |
 | `src/types.ts` | Wire-safe views and the domain failure codes, without cordis/service imports |
+
+-----
+
+<a id="model-experience"></a>
+## Model Experience
+
+None, as this package carries human-driven sign-in flows to the browser and contributes nothing to a model request.
+
+#### KV Cache effect
+
+None; the package never assembles or sends provider requests.
+
+## Known Limitations and Deferred Work
+
+<a id="known-limitations-and-deferred-work"></a>
+
+- **An absent seam reports at call time** — with no authorization seam composed, the namespace still registers and every method reports an actionable configuration error; the composition owns adding the seam.
+- **One attempt per key** — a second attempt for a busy key is refused with `authorization/in-flight`; attempts are neither shared nor queued.
 
 -----
 

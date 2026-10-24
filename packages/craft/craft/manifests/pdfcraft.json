@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "id": "pdfcraft",
+  "displayName": "PdfCraft",
+  "aliases": ["printcraft"],
+  "cliStem": "pdfcraft",
+  "headlessSupported": true,
+  "minVersion": "1.0.0",
+  "attach": {
+    "supported": false,
+    "enabled": false,
+    "reason": "Live attach has no authenticated channel in the v0.3.4 pilot; headless jobs only."
+  },
+  "launch": {
+    "headless": "pdfcraft-cli --headless",
+    "connected": "pdfcraft --control {jobRoot}"
+  },
+  "roots": {
+    "read": "workspace",
+    "write": "job-out"
+  },
+  "cancellation": "child-process-kill",
+  "riskyCommandClasses": ["overwrite", "save-over", "print"],
+  "sources": [
+    {
+      "label": "PdfCraft headless CLI reference",
+      "url": "https://craft.example/docs/pdfcraft-headless",
+      "verified": false
+    }
+  ],
+  "recipe": {
+    "name": "craft-pdfcraft",
+    "description": "Run PdfCraft headless commands and collect rendered pages from the job out/ directory.",
+    "file": "recipes/pdfcraft.md"
+  },
+  "headless": {
+    "listMethod": "command_list",
+    "toolFilter": ["command_list", "command_run", "command_batch", "render_preview"],
+    "artifactTools": ["render_preview"]
+  }
+}

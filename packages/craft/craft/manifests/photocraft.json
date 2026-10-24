@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "id": "photocraft",
+  "displayName": "PhotoCraft",
+  "aliases": [],
+  "cliStem": "photocraft",
+  "headlessSupported": true,
+  "minVersion": "1.0.0",
+  "attach": {
+    "supported": false,
+    "enabled": false,
+    "reason": "Live attach has no authenticated channel in the v0.3.4 pilot; headless jobs only."
+  },
+  "launch": {
+    "headless": "photocraft-cli --headless",
+    "connected": "photocraft --control {jobRoot}"
+  },
+  "roots": {
+    "read": "workspace",
+    "write": "job-out"
+  },
+  "cancellation": "child-process-kill",
+  "riskyCommandClasses": ["overwrite", "save-over", "print"],
+  "sources": [
+    {
+      "label": "PhotoCraft headless CLI reference",
+      "url": "https://craft.example/docs/photocraft-headless",
+      "verified": false
+    }
+  ],
+  "recipe": {
+    "name": "craft-photocraft",
+    "description": "Run PhotoCraft headless commands and collect artifacts from the job out/ directory.",
+    "file": "recipes/photocraft.md"
+  },
+  "headless": {
+    "listMethod": "command_list",
+    "toolFilter": ["command_list", "command_run", "command_batch", "render_preview", "screenshot"],
+    "artifactTools": ["render_preview", "screenshot"]
+  }
+}

@@ -1062,4 +1062,4 @@ Source: [`packages/core/session/src/types.ts:289`](../packages/core/session/src/
 'web/greeneek-search-llm-request': GreeneekSearchLlmRequest
 ```
 
-Source: [`packages/web/web-search-greeneek/src/provider.ts:83`](../packages/web/web-search-greeneek/src/provider.ts)
+Source: [`packages/web/web-search-greeneek/src/provider.ts:75`](../packages/web/web-search-greeneek/src/provider.ts)

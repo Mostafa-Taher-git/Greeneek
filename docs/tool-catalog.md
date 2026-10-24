@@ -21,6 +21,7 @@ This table connects model-visible tool names to the plugin package and service s
 | `@greeneek/gnk-tool-bash` | `bash` | `ctx.tools`, `ctx.shell`, `ctx.systemPrompt`, `ctx.shellEnv`, `ctx.jobs at call time for run_in_background` | `tool/call`, `tool/result` | - | The bash tool is the model-facing consumer of the bash executor seam. A `run_in_background` run registers with the generic `ctx.jobs` runtime and is collected/stopped through the `job_*` tools from `@greeneek/gnk-tool-jobs`; the `enableRunInBackground` config (default true) removes the parameter entirely when disabled. |
 | `@greeneek/gnk-tool-pwsh` | `pwsh` | `ctx.tools`, `ctx.shell`, `ctx.systemPrompt`, `ctx.shellEnv`, `ctx.jobs at call time for run_in_background` | `tool/call`, `tool/result` | - | The pwsh tool is the PowerShell-dialect consumer of the bash executor seam for Windows compositions (a PowerShell executor such as `@greeneek/gnk-pwsh-local` backs `ctx.shell`); it mirrors the bash tool call-for-call minus sandbox controls — `run_in_background` runs register with the generic `ctx.jobs` runtime and are collected/stopped through the `job_*` tools, and the managed `GNK_*` environment comes from `@greeneek/gnk-shell-env`. Each call runs in a fresh process (no persistent PTY session), with native `C:\...` paths and `$env:NAME` variables. |
 | `@greeneek/gnk-tool-cordis` | `cordis_define`, `cordis_inspect_list`, `cordis_inspect_query`, `cordis_inspect_self`, `cordis_run`, `cordis_stop`, `cordis_undefine` | `ctx.tools`, `ctx.dynamicCordisRunner` | `tool/call`, `tool/result`, `process-local dynamic package lifecycle` | - | Not in any shipped tree (a deliberate opt-in — dynamic package code reaches the real runtime, see .agents/notes/implemented/feature/2026-07-08-self-referential-cordis-toolset.md). The toolset injects `ctx.dynamicCordisRunner` from `@greeneek/gnk-cordis-host-runner`, which owns the definition registry and the vm sandbox; a composition missing it never activates the tools. A running package may register ADDITIONAL model-visible tools until it is stopped, undefined, or GNK restarts; a full changed request header logs those tool-set changes. |
+| `@greeneek/gnk-tool-craft` | `craft_list_apps`, `craft_open_app` | `ctx.tools`, `ctx.craft`, `ctx.skills`, `a registered CraftHostProvider at open time` | `tool/call`, `tool/result`, `runtime tool and skill registrations while an app session is active` | - | The v0.3.4 Craft pilot gateway: two schemas while no app is active. Opening an app mounts its manifest-curated bridge tools under the shared `mcp__<app>__<tool>` naming contract and its recipe as a runtime skill; those registrations are absent from this static catalog because they exist only for the session between open and close. No shipped profile or preset composes the gateway yet (desktop-only, see .agents/notes/implemented/feature/2026-10-24-v0.3.4-craft-bridge-pilot.md), and attach mode refuses until the upstream authenticated control channel ships. |
 | `@greeneek/gnk-tool-bash-persistent` | `bash` | `ctx.tools`, `ctx.terminals`, `an owning Agent at execution time` | `tool/call`, `PTY shell state`, `tool/result` | - | One owner-isolated persistent bash tool; deployment composition supplies the PTY backend and may override the model-facing environment description. |
 | `@greeneek/gnk-tool-pwsh-persistent` | `pwsh` | `ctx.tools`, `ctx.terminals`, `an owning Agent at execution time` | `tool/call`, `PTY shell state`, `tool/result` | - | One owner-isolated persistent pwsh tool, the Windows counterpart of the persistent bash tool; deployment composition supplies a pwsh-dialect PTY backend and may override the model-facing environment description. |
 | `@greeneek/gnk-tool-str-replace-editor` | `str_replace_editor` | `ctx.tools`, `ctx.fs` | `tool/call`, `fs/observed after view presence/absence, edit absence, or successful mutation`, `tool/result` | - | Standalone view/create/unique literal replace/line insert tool over the filesystem seam; it composes with any shell or terminal API. |
@@ -499,6 +500,57 @@ Permanently remove a dynamic Plugin owned by the current Session. If it is runni
 Source: [`packages/extensions/tool-cordis/src/index.ts`](../packages/extensions/tool-cordis/src/index.ts)
 
 Not in any shipped tree (a deliberate opt-in — dynamic package code reaches the real runtime, see .agents/notes/implemented/feature/2026-07-08-self-referential-cordis-toolset.md). The toolset injects `ctx.dynamicCordisRunner` from `@greeneek/gnk-cordis-host-runner`, which owns the definition registry and the vm sandbox; a composition missing it never activates the tools. A running package may register ADDITIONAL model-visible tools until it is stopped, undefined, or GNK restarts; a full changed request header logs those tool-set changes.
+
+<a id="greeneekgnk-tool-craft"></a>
+
+## `@greeneek/gnk-tool-craft`
+
+### `craft_list_apps`
+
+List the Craft apps available in this build and their measured installation state. Call this before opening an app; opening an app is what mounts its tools.
+
+```json
+{
+  "type": "object",
+  "properties": {},
+  "additionalProperties": false
+}
+```
+
+Source: [`packages/craft/tool-craft/src/index.ts`](../packages/craft/tool-craft/src/index.ts)
+
+### `craft_open_app`
+
+Open one Craft app in headless mode and mount its curated tools, or close an app that is already running. Attach mode is refused unless the app manifest enables it.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "app": {
+      "type": "string",
+      "description": "App id or alias, for example photocraft or pdfcraft."
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "headless",
+        "attach",
+        "close"
+      ],
+      "description": "headless opens a job session, attach is gated, close releases a running app."
+    }
+  },
+  "required": [
+    "app"
+  ],
+  "additionalProperties": false
+}
+```
+
+Source: [`packages/craft/tool-craft/src/index.ts`](../packages/craft/tool-craft/src/index.ts)
+
+The v0.3.4 Craft pilot gateway: two schemas while no app is active. Opening an app mounts its manifest-curated bridge tools under the shared `mcp__<app>__<tool>` naming contract and its recipe as a runtime skill; those registrations are absent from this static catalog because they exist only for the session between open and close. No shipped profile or preset composes the gateway yet (desktop-only, see .agents/notes/implemented/feature/2026-10-24-v0.3.4-craft-bridge-pilot.md), and attach mode refuses until the upstream authenticated control channel ships.
 
 <a id="greeneekgnk-tool-bash-persistent"></a>
 

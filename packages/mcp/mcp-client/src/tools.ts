@@ -26,12 +26,34 @@ import { assertSupportedJsonSchema } from '@greeneek/gnk-tools'
 import type { JsonSchemaNode } from '@greeneek/gnk-tools'
 import type { JsonValue } from '@greeneek/gnk-util-values'
 
+/** Tool-name filter applied at synchronization time. */
+export type ToolFilter = readonly string[] | ((name: string) => boolean)
+
 /** Resolved options relevant to tool bridging. */
 export interface ToolBridgeOptions {
   /** Whether a registry conflict is contained or rejects this synchronization. */
   registrationFailure: 'contain' | 'throw'
   serverName: string
   toolCallTimeoutMs: number
+  /**
+   * Optional allowlist applied to the server's raw tool names before a
+   * definition is built. Omission keeps every advertised tool. An array keeps
+   * exactly the listed names; a function keeps names for which it returns
+   * `true`. Filtering happens during the fetch phase, so a filtered-out tool
+   * never reaches the registry and never holds a public name.
+   */
+  toolFilter?: ToolFilter | undefined
+}
+
+/**
+ * Evaluate one tool-name filter.
+ * @param filter - configured allowlist, predicate, or undefined.
+ * @param name - the server's raw tool name.
+ * @returns whether the tool may register.
+ */
+export function matchesToolFilter(filter: ToolFilter | undefined, name: string): boolean {
+  if (filter === undefined) return true
+  return typeof filter === 'function' ? filter(name) : filter.includes(name)
 }
 
 /** State for one sync generation: the current set of disposers keyed by public name. */
@@ -153,6 +175,7 @@ export async function syncTools(
   do {
     const response = await listToolsUncached(client, cursor)
     for (const tool of response.tools) {
+      if (!matchesToolFilter(opts.toolFilter, tool.name)) continue
       const publicName = publicToolName(opts.serverName, tool.name)
       if (definitions.has(publicName)) {
         throw new Error(

@@ -104,6 +104,7 @@ This section explains the design decisions behind the bridge and points at the c
 - **Server-qualified identity.** Every MCP tool has the stable identity `(serverName, rawName)`. The namespace is local configuration, never the remote `serverInfo.name` — the remote name is untrusted, not unique across deployments, and can change on upgrade, none of which may silently rename model-facing tools.
 - **Naming is a pinned contract.** Public names are pure functions of `(serverName, rawName)` and satisfy the Greeneek function-name contract; lossy normalization appends a 12-hex-char SHA-256 hash so distinct identities never collapse. Session history and permission rules therefore survive HMR swaps, re-syncs, and other servers' changes.
 - **The raw name is the only wire name.** `tools/call` always receives the raw name; the public name is never sent to the server and never parsed to recover the raw name.
+- **Sync-time filtering.** `ToolBridgeOptions.toolFilter` narrows the advertised raw names during the fetch phase, so a filtered-out tool never holds a public name. `matchesToolFilter` and `publicToolName` are exported because the Craft app bridge registers under the same naming contract and reuses this filtering instead of defining its own.
 - **Full generation or none.** Syncs swap generations atomically: a fetch failure keeps the previous generation, and a registration conflict rolls back the entire attempted generation.
 - **One canonical value, one projection.** The executor returns the protocol-complete canonical `McpResult`; a separate ordered projection prepares Native content, and `finalizeContent` installs it only when the registry's post-execute result is unchanged, so policy blocks and value replacements stay authoritative.
 
@@ -113,7 +114,7 @@ This section explains the design decisions behind the bridge and points at the c
 |---|---|
 | [`src/index.ts`](src/index.ts) | Plugin entry: `Config` schema, `serverName` reservation, activation await |
 | [`src/connection.ts`](src/connection.ts) | Connection supervisor: client generations, reconnect policy, attempt budget, disposal |
-| [`src/tools.ts`](src/tools.ts) | Tool bridge: discovery, naming, registration swap, execution, image projection |
+| [`src/tools.ts`](src/tools.ts) | Tool bridge: discovery, naming, sync-time filtering, registration swap, execution, image projection |
 | [`src/transport.ts`](src/transport.ts) | Transport factory: stdio spawn with scrubbed env, Streamable HTTP |
 | — | No runtime invariant companion is published; MCP generations contribute through the tool registry, but the bridge exposes no independent server-to-tool snapshot after an asynchronous resync. |
 

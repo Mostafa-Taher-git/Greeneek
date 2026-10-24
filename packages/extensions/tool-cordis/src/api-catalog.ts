@@ -711,6 +711,65 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'craft',
+    summary: 'Craft bridge service.',
+    description: 'Craft bridge service. One instance per context.',
+    methods: [
+      {
+        signature: 'registerProvider(provider: CraftHostProvider): () => void',
+        description: 'Register one host provider. Duplicate ids fail loud.',
+        parameters: [{ name: 'provider', description: 'platform adapter.' }],
+        returns: 'the disposer that unregisters it.',
+      },
+      {
+        signature: 'listApps(): readonly CraftAppManifest[]',
+        description: 'Every pilot manifest in catalog order.',
+        parameters: [],
+        returns: 'the manifests, ordered as the catalog declares them.',
+      },
+      {
+        signature: 'app(app: string): CraftAppManifest',
+        description: 'Resolve one app id or alias.',
+        parameters: [{ name: 'app', description: 'id or alias.' }],
+        returns: 'the manifest.',
+      },
+      {
+        signature: 'attachEnabled(app: string | CraftAppManifest): boolean',
+        description: 'Whether attach mode may be published for an app.',
+        parameters: [{ name: 'app', description: 'id, alias, or manifest.' }],
+        returns: '`attach.supported && attach.enabled`.',
+      },
+      {
+        signature: 'recipe(app: string): CraftRecipe',
+        description: 'Read one app\'s recipe.',
+        parameters: [{ name: 'app', description: 'id or alias.' }],
+        returns: 'the recipe skill content.',
+      },
+      {
+        signature: 'async status(app: string, signal: AbortSignal = new AbortController().signal): Promise<CraftStatus>',
+        description: 'Measure one app installation. An active session always reports `running`.',
+        parameters: [{ name: 'app', description: 'id or alias.' }, { name: 'signal', description: 'cancellation for discovery.' }],
+        returns: 'the published status.',
+      },
+      {
+        signature: 'async open(request: CraftOpenRequest): Promise<CraftSession>',
+        description: 'Open one headless session.\n\nOrder is security-significant: app resolution, attach gate, headless capability, root validation, concurrency cap, provider selection, token minting, then spawn and catalog discovery. A failed discovery closes the freshly spawned process before the error escapes.',
+        parameters: [{ name: 'request', description: 'app, mode, workspace root, and cancellation.' }],
+        returns: 'the live session.',
+      },
+      {
+        signature: 'async closeSession(id: string): Promise<void>',
+        description: 'Close one session by id.',
+        parameters: [{ name: 'id', description: 'session id returned by {@link open}.' }],
+      },
+      {
+        signature: 'async closeAll(): Promise<void>',
+        description: 'Close every live session. Failures are contained: teardown must not throw out of a disposal path, and one stuck app must not strand the others.',
+        parameters: [],
+      },
+    ],
+  },
+  {
     key: 'credentials',
     summary: 'Abstract credential service over two key spaces that answer two questions.',
     description: 'Abstract credential service over two key spaces that answer two questions.\n\nA CredentialRef answers "what is behind this environment-variable name", layered over the process environment, the provider-managed store, and `.env` files. One seam-wide rule binds that half: an empty stored value is absent everywhere — `resolve` skips it, `describe` reports it unconfigured — so a blank never masquerades as a configured secret.\n\nA CredentialKey answers "what credential does this plugin hold for this id". Nothing can layer here — an authorization grant has no environment to be read from — so presence of the record is the whole fact, and modifyRecord is the only write path because a correct write depends on the current value (a token refresh is read-decide-replace under one lock).',
@@ -3877,6 +3936,86 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'CordisRuntimeTreeReader',
     declaration: 'export interface CordisRuntimeTreeReader {\n    getTree(): Promise<CordisRuntimeTree>;\n}',
+  },
+  {
+    name: 'CraftAppManifest',
+    declaration: 'export interface CraftAppManifest {\n    readonly schemaVersion: 1;\n    readonly id: string;\n    readonly displayName: string;\n    readonly aliases: readonly string[];\n    readonly cliStem: string;\n    readonly headlessSupported: boolean;\n    readonly minVersion: string;\n    readonly attach: CraftAttachPolicy;\n    readonly launch: CraftLaunchTemplates;\n    readonly roots: CraftManifestRoots;\n    readonly cancellation: \'child-process-kill\';\n    readonly riskyCommandClasses: readonly string[];\n    readonly sources: readonly CraftManifestSource[];\n    readonly recipe: CraftRecipeRef;\n    readonly headless: CraftHeadlessSpec;\n}',
+  },
+  {
+    name: 'CraftAppState',
+    declaration: 'export type CraftAppState = \'not-installed\' | \'app-installed-cli-missing\' | \'ready\' | \'running\';',
+  },
+  {
+    name: 'CraftAttachPolicy',
+    declaration: 'export interface CraftAttachPolicy {\n    readonly supported: boolean;\n    readonly enabled: boolean;\n    readonly reason: string;\n}',
+  },
+  {
+    name: 'CraftCallResult',
+    declaration: 'export interface CraftCallResult {\n    readonly content: readonly Readonly<Record<string, unknown>>[];\n    readonly artifacts?: readonly string[];\n    readonly isError?: boolean;\n}',
+  },
+  {
+    name: 'CraftDiscovery',
+    declaration: 'export interface CraftDiscovery {\n    readonly state: CraftAppState;\n    readonly executable?: string;\n    readonly version?: string;\n    readonly detail?: string;\n}',
+  },
+  {
+    name: 'CraftHeadlessSpec',
+    declaration: 'export interface CraftHeadlessSpec {\n    readonly listMethod: string;\n    readonly toolFilter: readonly string[];\n    readonly artifactTools: readonly string[];\n}',
+  },
+  {
+    name: 'CraftHostOpenRequest',
+    declaration: 'export interface CraftHostOpenRequest {\n    readonly app: CraftAppManifest;\n    readonly workspaceRoot: string;\n    readonly roots: CraftRoots;\n    readonly controlToken: string;\n    readonly signal: AbortSignal;\n}',
+  },
+  {
+    name: 'CraftHostProvider',
+    declaration: 'export interface CraftHostProvider {\n    readonly id: string;\n    discover(app: CraftAppManifest, options: {\n        readonly signal: AbortSignal;\n    }): Promise<CraftDiscovery>;\n    open(request: CraftHostOpenRequest): Promise<CraftHostSession>;\n    launchConnected?(request: {\n        readonly app: CraftAppManifest;\n        readonly workspaceRoot: string;\n        readonly roots: CraftRoots;\n    }): Promise<void>;\n}',
+  },
+  {
+    name: 'CraftHostSession',
+    declaration: 'export interface CraftHostSession {\n    readonly transport: CraftTransport;\n    close(): Promise<void>;\n}',
+  },
+  {
+    name: 'CraftLaunchTemplates',
+    declaration: 'export interface CraftLaunchTemplates {\n    readonly headless: string;\n    readonly connected: string;\n}',
+  },
+  {
+    name: 'CraftManifestRoots',
+    declaration: 'export interface CraftManifestRoots {\n    readonly read: \'workspace\';\n    readonly write: \'job-out\';\n}',
+  },
+  {
+    name: 'CraftManifestSource',
+    declaration: 'export interface CraftManifestSource {\n    readonly label: string;\n    readonly url: string;\n    readonly verified: boolean;\n}',
+  },
+  {
+    name: 'CraftOpenRequest',
+    declaration: 'export interface CraftOpenRequest {\n    readonly app: string;\n    readonly mode?: \'headless\' | \'attach\';\n    readonly workspaceRoot: string;\n    readonly signal?: AbortSignal;\n}',
+  },
+  {
+    name: 'CraftRecipe',
+    declaration: 'export interface CraftRecipe {\n    readonly name: string;\n    readonly description: string;\n    readonly content: string;\n}',
+  },
+  {
+    name: 'CraftRecipeRef',
+    declaration: 'export interface CraftRecipeRef {\n    readonly name: string;\n    readonly description: string;\n    readonly file: string;\n}',
+  },
+  {
+    name: 'CraftRoots',
+    declaration: 'export interface CraftRoots {\n    readonly read: string;\n    readonly write: string;\n}',
+  },
+  {
+    name: 'CraftSession',
+    declaration: 'export interface CraftSession {\n    readonly id: string;\n    readonly app: string;\n    readonly mode: \'headless\';\n    readonly roots: CraftRoots;\n    readonly tools: readonly CraftToolDescriptor[];\n    readonly transport: CraftTransport;\n    close(): Promise<void>;\n}',
+  },
+  {
+    name: 'CraftStatus',
+    declaration: 'export interface CraftStatus {\n    readonly app: string;\n    readonly displayName: string;\n    readonly state: CraftAppState;\n    readonly executable?: string;\n    readonly version?: string;\n    readonly detail?: string;\n}',
+  },
+  {
+    name: 'CraftToolDescriptor',
+    declaration: 'export interface CraftToolDescriptor {\n    readonly name: string;\n    readonly description: string;\n    readonly inputSchema: Readonly<Record<string, unknown>>;\n}',
+  },
+  {
+    name: 'CraftTransport',
+    declaration: 'export interface CraftTransport {\n    listTools(): Promise<readonly CraftToolDescriptor[]>;\n    callTool(name: string, args: Readonly<Record<string, unknown>>, options: {\n        readonly signal: AbortSignal;\n    }): Promise<CraftCallResult>;\n    close(): Promise<void>;\n}',
   },
   {
     name: 'CreateAgentOptions',

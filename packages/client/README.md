@@ -56,6 +56,7 @@ The kernel packages boot and serve the page; the UI feature packages present it.
 | [`ui-subagent/`](ui-subagent/README.md) | Provides subagent navigation, child transcript states, and inline references | — |
 | [`ui-schedule/`](ui-schedule/README.md) | Lists the current Session's active reminders in a read-only header catalog | — |
 | [`ui-jobs/`](ui-jobs/README.md) | Lists this session's background jobs in the conversation header | — |
+| [`ui-craft/`](ui-craft/README.md) | Provides the Craft pilot's settings section and artifact tool card | — |
 | [`ui-model-selection/`](ui-model-selection/README.md) | Provides model selection in conversation surfaces | — |
 | [`ui-permission-presets/`](ui-permission-presets/README.md) | Configures default permissions and switches the current session's access | — |
 | [`ui-plan/`](ui-plan/README.md) | Presents active plan-mode status and its exit control | — |
@@ -66,7 +67,6 @@ The kernel packages boot and serve the page; the UI feature packages present it.
 | [`ui-settings-general/`](ui-settings-general/README.md) | Provides the general settings section | — |
 | [`ui-settings-models/`](ui-settings-models/README.md) | Provides model-provider configuration and Greeneek onboarding | — |
 | [`ui-settings-plugin-inventory/`](ui-settings-plugin-inventory/README.md) | Contributes the read-only Host Loader inventory tab to Plugins settings | — |
-| [`ui-web-search/`](ui-web-search/README.md) | Provides the search-engine preference row in General settings | — |
 | [`ui-deliverables/`](ui-deliverables/README.md) | Produces the produced-files turn tail and clickable final-response file references | — |
 | [`ui-message-feedback/`](ui-message-feedback/README.md) | Contributes per-message feedback controls to the assistant-message action strip | — |
 | [`ui-directory-picker-browse/`](ui-directory-picker-browse/README.md) | In-app directory browsing surface for the workspace directory flow | — |

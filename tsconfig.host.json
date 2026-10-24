@@ -332,6 +332,9 @@
     { "path": "./packages/lsp/lsp" },
     { "path": "./packages/lsp/lsp-stdio" },
     { "path": "./packages/lsp/tool-lsp" },
+    { "path": "./packages/craft/craft" },
+    { "path": "./packages/craft/craft-local" },
+    { "path": "./packages/craft/tool-craft" },
     { "path": "./apps/cli" }
   ]
 }

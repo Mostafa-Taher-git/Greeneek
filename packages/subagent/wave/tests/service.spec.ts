@@ -75,7 +75,7 @@ describe('WaveRuntime admission and configuration', () => {
   ])('rejects invalid programmatic config %j', async (config) => {
     // Plugin mounts validate through the Config schema first; a direct
     // WaveRuntime construction still fails loud with the engine's own error.
-    expect(() => new WaveRuntime(new Context(), config)).toThrowError(expect.objectContaining({ code: 'INVALID_CONFIG' }))
+    expect(() => new WaveRuntime(new Context(), config)).toThrow(expect.objectContaining({ code: 'INVALID_CONFIG' }))
   })
 
   it('accepts the documented config bounds', async () => {
@@ -272,7 +272,7 @@ describe('WaveRuntime budget enforcement', () => {
     const { ctx, waves, provider, parent } = await setupWave()
     const pending = waves.startWave(waveRequest(parent, [member()], { maxTokensPerMember: 10 }))
     await vi.waitFor(() => { expect(provider.runs).toHaveLength(1) })
-    vi.spyOn(ctx.sessionProjections, 'stateOf').mockReturnValue(usage(11) as never)
+    vi.spyOn(ctx.sessionProjections, 'stateOf').mockReturnValue(usage(11))
 
     await expect(preStep(ctx, childAgent(provider.runs[0]!))).resolves.toEqual({ kind: 'reject' })
     const result = await pending
@@ -284,7 +284,7 @@ describe('WaveRuntime budget enforcement', () => {
     const { ctx, waves, provider, parent } = await setupWave({ maxConcurrent: 2 })
     const pending = waves.startWave(waveRequest(parent, [member(), member()], { maxWaveTokens: 15 }))
     await vi.waitFor(() => { expect(provider.runs).toHaveLength(2) })
-    vi.spyOn(ctx.sessionProjections, 'stateOf').mockReturnValue(usage(10) as never)
+    vi.spyOn(ctx.sessionProjections, 'stateOf').mockReturnValue(usage(10))
 
     await expect(preStep(ctx, childAgent(provider.runs[0]!))).resolves.toEqual({ kind: 'enter', messages: [] })
     await expect(preStep(ctx, childAgent(provider.runs[1]!))).resolves.toEqual({ kind: 'reject' })
@@ -298,9 +298,9 @@ describe('WaveRuntime budget enforcement', () => {
     const pending = waves.startWave(waveRequest(parent, [member()]))
     await vi.waitFor(() => { expect(provider.runs).toHaveLength(1) })
     const stateOf = vi.spyOn(ctx.sessionProjections, 'stateOf')
-    stateOf.mockReturnValue(usage(0) as never)
+    stateOf.mockReturnValue(usage(0))
     await expect(preStep(ctx, childAgent(provider.runs[0]!))).resolves.toEqual({ kind: 'enter', messages: [] })
-    stateOf.mockReturnValue(usage(12) as never)
+    stateOf.mockReturnValue(usage(12))
     await expect(preStep(ctx, childAgent(provider.runs[0]!))).resolves.toEqual({ kind: 'enter', messages: [] })
     await expect(preStep(ctx, fakeParent('unrelated'))).resolves.toEqual({ kind: 'enter', messages: [] })
     expect(provider.requests[0]?.signal.aborted).toBe(false)
@@ -393,23 +393,23 @@ describe('WaveRuntime remote controls and lifetime', () => {
     const { waves, parent } = await setupWave()
     const waveId = WaveId('absent-wave')
     const memberId = WaveMemberId('absent-member')
-    expect(() => waves.remoteExportList(SessionId(''))).toThrowError(expect.objectContaining({ code: 'gateway/bad-request' }))
-    expect(() => waves.remoteCancelMember(WaveId(''), memberId)).toThrowError(expect.objectContaining({ code: 'gateway/bad-request' }))
-    expect(() => waves.remoteCancelWave(WaveId(''))).toThrowError(expect.objectContaining({ code: 'gateway/bad-request' }))
-    expect(() => waves.remoteCancelAll(SessionId(''))).toThrowError(expect.objectContaining({ code: 'gateway/bad-request' }))
-    expect(() => waves.cancelWave(waveId)).toThrowError(expect.objectContaining({ code: 'WAVE_NOT_FOUND' }))
-    expect(() => waves.remoteCancelWave(waveId)).toThrowError(expect.objectContaining({ code: 'wave/not-found' }))
-    expect(() => waves.remoteCancelMember(waveId, memberId)).toThrowError(expect.objectContaining({ code: 'wave/not-found' }))
+    expect(() => waves.remoteExportList(SessionId(''))).toThrow(expect.objectContaining({ code: 'gateway/bad-request' }))
+    expect(() => waves.remoteCancelMember(WaveId(''), memberId)).toThrow(expect.objectContaining({ code: 'gateway/bad-request' }))
+    expect(() => waves.remoteCancelWave(WaveId(''))).toThrow(expect.objectContaining({ code: 'gateway/bad-request' }))
+    expect(() => waves.remoteCancelAll(SessionId(''))).toThrow(expect.objectContaining({ code: 'gateway/bad-request' }))
+    expect(() => { waves.cancelWave(waveId) }).toThrow(expect.objectContaining({ code: 'WAVE_NOT_FOUND' }))
+    expect(() => waves.remoteCancelWave(waveId)).toThrow(expect.objectContaining({ code: 'wave/not-found' }))
+    expect(() => waves.remoteCancelMember(waveId, memberId)).toThrow(expect.objectContaining({ code: 'wave/not-found' }))
 
     const pending = waves.startWave(waveRequest(parent, [member()]))
     const view = waves.listWaves(parent.id)[0]!
-    expect(() => waves.cancelMember(view.waveId, memberId)).toThrowError(expect.objectContaining({ code: 'MEMBER_NOT_FOUND' }))
-    expect(() => waves.remoteCancelMember(view.waveId, memberId)).toThrowError(expect.objectContaining({
+    expect(() => { waves.cancelMember(view.waveId, memberId) }).toThrow(expect.objectContaining({ code: 'MEMBER_NOT_FOUND' }))
+    expect(() => waves.remoteCancelMember(view.waveId, memberId)).toThrow(expect.objectContaining({
       code: 'wave/member-not-found',
       details: { waveId: String(view.waveId), memberId: String(memberId) },
     }))
     const cancel = vi.spyOn(waves, 'cancelWave').mockImplementation(() => { throw new Error('control failed') })
-    expect(() => waves.remoteCancelWave(view.waveId)).toThrowError(expect.objectContaining({ code: 'gateway/internal' }))
+    expect(() => waves.remoteCancelWave(view.waveId)).toThrow(expect.objectContaining({ code: 'gateway/internal' }))
     cancel.mockRestore()
     waves.cancelWave(view.waveId)
     await pending
@@ -500,7 +500,7 @@ describe('WaveRuntime helper and lifetime edges', () => {
     ctx.subagents.registerProvider(rejecting)
     const pending = waves.startWave(waveRequest(parent, [member({}, { provider: rejecting.name })], { maxTokensPerMember: 10 }))
     await vi.waitFor(() => { expect(rejecting.runs).toHaveLength(1) })
-    vi.spyOn(ctx.sessionProjections, 'stateOf').mockReturnValue(usage(11) as never)
+    vi.spyOn(ctx.sessionProjections, 'stateOf').mockReturnValue(usage(11))
     await expect(preStep(ctx, childAgent(rejecting.runs[0]!))).resolves.toEqual({ kind: 'reject' })
     await expect(pending).resolves.toMatchObject({
       outcome: 'partial',

@@ -18,7 +18,7 @@
     "injectWorkspacePackages": true
   },
   "scripts": {
-    "start": "electron .",
+    "start": "node scripts/launch.mjs",
     "test": "node --test test/*.test.js",
     "stage": "node scripts/stage.mjs",
     "dist:linux": "node scripts/verify-target.mjs linux x64 && node scripts/stage.mjs && electron-builder --project .staging/app --linux deb appimage --x64 --publish never",

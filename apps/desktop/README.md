@@ -37,6 +37,8 @@ pnpm --filter @greeneek/desktop run start
 pnpm --filter @greeneek/desktop run test
 ```
 
+`run start` spawns the installed Electron binary with `ELECTRON_RUN_AS_NODE` removed. VS Code-derived editors export that variable to every child process, and while it is set the binary runs as bare Node, where `src/main.js` imports the `electron` npm stub instead of the Electron API.
+
 ## Release
 
 Tag format: `desktop-v0.1.0`. The `desktop.yml` and `desktop-windows.yml` workflows build Linux `.deb` + `AppImage` and Windows NSIS + ZIP, upload artifacts, and create a GitHub Release with `-latest-` aliases.

@@ -696,9 +696,7 @@ describe('a delegated child', () => {
     const child = await parent.agent.ctx.agents.create({
       sessionId: SessionId('preset-child'),
       meta: childSessionMeta(parent.agent, 1, false),
-      setup: (agentCtx) => {
-        applyChildComposition(agentCtx, parent.agent, {})
-      },
+      setup: agentCtx => applyChildComposition(agentCtx, parent.agent, {}),
     })
     try {
       expect(toolNames(ctx, child.agent)).toEqual(toolNames(ctx, parent.agent))
@@ -722,9 +720,7 @@ describe('a delegated child', () => {
     const child = await parent.agent.ctx.agents.create({
       sessionId: SessionId('preset-child-switch'),
       meta: childSessionMeta(parent.agent, 1, false),
-      setup: (agentCtx) => {
-        applyChildComposition(agentCtx, parent.agent, {})
-      },
+      setup: agentCtx => applyChildComposition(agentCtx, parent.agent, {}),
     })
     try {
       // The live scope chain is the authority, not the parent's creation

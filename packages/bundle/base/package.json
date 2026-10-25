@@ -89,6 +89,7 @@
     "@greeneek/gnk-subagent": "workspace:^",
     "@greeneek/gnk-subagent-fork-in-process": "workspace:^",
     "@greeneek/gnk-subagent-spawn-in-process": "workspace:^",
+    "@greeneek/gnk-subagent-wave": "workspace:^",
     "@greeneek/gnk-subprocess-local": "workspace:^",
     "@greeneek/gnk-system-prompt": "workspace:^",
     "@greeneek/gnk-jobs-local": "workspace:^",

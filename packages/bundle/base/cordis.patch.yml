@@ -360,6 +360,13 @@
       config:
         providerName: fork
 
+    # Army wave engine. `waves` holds live fleets addressed by Lead session id
+    # and publishes the browser control face the fleet surfaces poll, so it
+    # stays in the host plane next to the subagent registry it consumes. Budget
+    # metering reads the host `tokenUsage` projection mounted above.
+    - id: subagent-wave
+      name: '@greeneek/gnk-subagent-wave'
+
     # Continuable background children are selected per delegation tool. The
     # separately loaded follow-up tool registers the one global `send_message`.
     - id: tool-subagent-control

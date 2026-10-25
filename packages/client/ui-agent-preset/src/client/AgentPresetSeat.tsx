@@ -62,14 +62,16 @@ const REFUSAL_HOLD_MS = 8000
 /**
  * Shipped modes in row order. PTC is deliberately absent since v0.3.4: its
  * preset still composes sessions and stays on the roster, but the new-session
- * row offers the shipped modes instead. The preview presets keep their
- * `(preview)` copy so a pilot surface is never mistaken for a promise.
+ * row offers the shipped modes instead. Working modes come before the preview
+ * presets, which keep their `(preview)` copy so a pilot surface is never
+ * mistaken for a promise.
  */
-const MODE_ORDER = ['standard', 'pixels-designer', 'instructor', 'cordis'] as const
+const MODE_ORDER = ['standard', 'army', 'pixels-designer', 'instructor', 'cordis'] as const
 
 /** Row icon per shipped mode, keyed by {@link MODE_ORDER} id. */
 const MODE_ICONS: Readonly<Record<(typeof MODE_ORDER)[number], ReactNode>> = {
   standard: <IconSquareDashedBottomCode16 size={16} />,
+  army: <IconCirclePile16 size={16} />,
   'pixels-designer': <IconPalette16 size={16} />,
   instructor: <IconGraduationCap16 size={16} />,
   cordis: <IconSparkle16 size={16} />,
@@ -131,16 +133,8 @@ export function AgentPresetSeat({ load, select, introduced, useAgentPresetSeat, 
         icon: MODE_ICONS[id],
       }]
     }),
-    // Placeholder modes for v1.1.1: visible and previewable, never selectable
-    // until their presets land.
-    {
-      id: 'army',
-      name: t('presetArmyName'),
-      description: t('presetArmyDescription'),
-      icon: <IconCirclePile16 size={16} />,
-      disabled: true,
-      disabledReason: t('switcherComingSoon'),
-    },
+    // Placeholder mode for v0.3.5: visible and previewable, never selectable
+    // until its preset lands.
     {
       id: 'maestro',
       name: t('presetMaestroName'),

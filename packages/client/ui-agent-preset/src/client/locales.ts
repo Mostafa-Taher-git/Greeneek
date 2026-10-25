@@ -49,9 +49,10 @@ export const en: Record<AgentPresetSettingsKey, string> = {
   presetInstructorName: 'Instructor (preview)',
   presetInstructorDescription:
     'Teaching agent that interviews, drafts lessons, tutorials, and CVs as markdown, and exports them through the Craft gateway\'s document apps.',
-  // Placeholder modes for v1.1.1: real presets and copy land with the plan.
+  // Maestro still ships as a disabled row; its copy lands with its preset.
   presetArmyName: 'Army mode',
-  presetArmyDescription: 'Coming soon.',
+  presetArmyDescription:
+    'Fleet coding agent: fans independent work out to concurrent one-shot subagents, keeps only their structured results, and reports a partially finished wave as what it is.',
   presetMaestroName: 'Maestro mode',
   presetMaestroDescription: 'Coming soon.',
   switcherLabel: 'Agent mode',
@@ -115,9 +116,9 @@ export const zh: Record<AgentPresetSettingsKey, string> = {
   presetPixelsDesignerDescription: '设计类 Agent：通过 Craft 网关调用已安装的创意应用（PhotoCraft、PdfCraft 等），配备文件读写、检索、访谈、待办与计划工具。',
   presetInstructorName: '导师（预览）',
   presetInstructorDescription: '教学类 Agent：访谈后起草讲义、教程与简历，通过 Craft 网关调用文档应用导出 PDF，配备文件读写、检索、访谈与待办工具。',
-  // Placeholder modes for v1.1.1: real presets and copy land with the plan.
+  // Maestro still ships as a disabled row; its copy lands with its preset.
   presetArmyName: 'Army 模式',
-  presetArmyDescription: '即将推出。',
+  presetArmyDescription: '群控编码 Agent：把可并行的工作交给并发的一次性子代理，只保留它们返回的结构化结果，并把部分完成的波次如实报告。',
   presetMaestroName: 'Maestro 模式',
   presetMaestroDescription: '即将推出。',
   switcherLabel: 'Agent 模式',

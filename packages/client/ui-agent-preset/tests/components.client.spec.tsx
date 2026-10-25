@@ -30,6 +30,7 @@ const SEAT_READY: AgentPresetSeatState = {
   current: 'standard',
   options: [
     { id: 'standard', trust: 'system', name: '标准模式', description: '完整的编码 agent。' },
+    { id: 'army', trust: 'system', name: 'Army 模式' },
     { id: 'mine', trust: 'user' },
   ],
   busy: false,
@@ -96,19 +97,20 @@ describe('the new-session mode switcher', () => {
         { id: 'mine', trust: 'user' },
         { id: 'cordis', trust: 'system' },
         { id: 'standard', trust: 'system' },
+        { id: 'army', trust: 'system' },
       ],
     })
 
     const names = screen.getAllByRole('radio').map(radio => radio.getAttribute('aria-label') ?? radio.textContent)
     expect(names).toEqual([
       en.presetStandardName,
-      en.presetCordisName,
       en.presetArmyName,
+      en.presetCordisName,
       en.presetMaestroName,
       'mine',
     ])
     expect(screen.getByRole('radio', { name: en.presetCordisName }).getAttribute('aria-checked')).toBe('true')
-    expect(screen.getByRole('radio', { name: en.presetArmyName })).toHaveProperty('disabled', true)
+    expect(screen.getByRole('radio', { name: en.presetArmyName })).toHaveProperty('disabled', false)
     expect(screen.getByRole('radio', { name: en.presetMaestroName })).toHaveProperty('disabled', true)
   })
 
@@ -118,19 +120,20 @@ describe('the new-session mode switcher', () => {
       { id: 'cordis', trust: 'system' as const },
       { id: 'ptc', trust: 'system' as const },
       { id: 'standard', trust: 'system' as const },
+      { id: 'army', trust: 'system' as const },
     ]
     renderSeat({ current: 'ptc', options })
 
     // PTC still composes sessions — Settings and custom presets start it, and
     // recorded PTC sessions keep replaying — but v0.3.4 retires its hero pill,
-    // so the row offers the two shipped modes and appends only `mine`.
+    // so the row offers the shipped modes and appends only `mine`.
     expect(options.map(option => option.id)).toContain('ptc')
     expect(screen.queryByRole('radio', { name: en.presetPtcName })).toBeNull()
     expect(screen.getAllByRole('radio').map(radio => radio.getAttribute('aria-label') ?? radio.textContent))
       .toEqual([
         en.presetStandardName,
-        en.presetCordisName,
         en.presetArmyName,
+        en.presetCordisName,
         en.presetMaestroName,
         'mine',
       ])

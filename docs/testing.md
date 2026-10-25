@@ -48,6 +48,10 @@ An e2e assertion re-runs the command or re-reads the file externally; a keyword 
 - Protocol and operating-system fixtures that do not load Cordis run erasable `.ts` directly with Node, without tsx or the root paths map.
 - Only a test whose subject is source-path resolution may select `src`; state that contract in the test.
 
+## Replay lanes run on macOS and Linux
+
+Recorded Web and session fixtures embed the recording host's POSIX temporary-directory path, and the Web scaffold substitutes it into fixture JSON (`realizeSeedFixture` in `apps/web/tests/scaffold.ts`). A Windows workspace root therefore yields invalid JSON, and goldens that parse still differ by path. Run these lanes and `GNK_SNAPSHOT=refresh` on macOS or Linux, where CI owns them.
+
 ## When a snapshot test is required
 
 Every non-trivial model-, protocol-, or human-visible change adds or updates a keyless recorded-session scenario in the same PR; package, e2e, mock-only, and rationale evidence does not replace the assembled transcript. Headless, SDK, ACP, and Web recordings live under `snapshots/session/`, `snapshots/sdk/`, `snapshots/acp/`, and `snapshots/web/`; a Web rendering may explicitly borrow another scenario's canonical session. Expected output that is not driven by a recorded session stays with its owning app, package, or script under `tests/expected/` and does not use the `*.snapshot.ts` suffix. [`gnk-session-snapshot`](../packages/test-support/session-snapshot/README.md) owns the shared storage rules and profile adapters. Agent-loop, session-lifecycle, and `SessionEventMap` changes update both SDK projections: `snapshots/sdk/` owns TypeScript, while required Python-runtime CI owns `scripts/snapshots/python-sdk-single-exe/`. New capability seams and lifecycle or transcript variants name every required tier at plan time.

@@ -35,6 +35,6 @@ describe('gen-plugin-catalog', () => {
       expect(doc).toContain(`## ${kind === 'UI' ? 'UI surfaces' : kind === 'LLM' ? 'LLM routes' : kind === 'Capability' ? 'Capabilities' : `${kind}s`}`)
     }
     expect(doc).toContain('23 Tool')
-    expect(doc).toContain('257 workspace packages')
+    expect(doc).toContain('258 workspace packages')
   })
 })

@@ -16,7 +16,7 @@ Every workspace package (`packages/<family>/<name>`), categorized by what it con
 | LLM | Model routes and provider adapters | `packages/llm/*` |
 | Capability | Every other plugin, grouped by family directory | fallback: anything unmatched |
 
-Scope: 257 workspace packages; every package appears under each of its kinds (23 Tool, 4 Skill, 6 Command, 40 UI, 7 LLM, 184 Capability rows). A package with several kinds (e.g. a tool that also contributes a command) appears in each section.
+Scope: 258 workspace packages; every package appears under each of its kinds (23 Tool, 4 Skill, 6 Command, 40 UI, 7 LLM, 185 Capability rows). A package with several kinds (e.g. a tool that also contributes a command) appears in each section.
 
 ## Tools
 
@@ -463,6 +463,7 @@ Scope: 257 workspace packages; every package appears under each of its kinds (23
 | `@greeneek/gnk-subagent-gnk-sdk` | The out-of-process SDK subagent backend for users and maintainers choosing a delegation provider, configuring a child Harness runtime command, or debugging remote child runs. |
 | `@greeneek/gnk-subagent-in-process-driver` | Shared in-process subagent run driver for maintainers and backend authors understanding or extending the spawn and fork run lifecycle. |
 | `@greeneek/gnk-subagent-spawn-in-process` | In-process spawn subagent backend for users and maintainers choosing, configuring, or debugging fresh-child delegation. |
+| `@greeneek/gnk-subagent-wave` | The Army wave engine (ctx.waves): concurrent one-shot subagent fleets with budgets, engine-owned cancellation, and browser fleet views. |
 
 ### `subprocess/`
 

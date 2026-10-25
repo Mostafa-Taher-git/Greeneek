@@ -49,3 +49,25 @@ export const en: Record<ScheduleCatalogKey, string> = {
 
 /** Key domain of the Schedule catalog namespace. */
 export type ScheduleCatalogKey = keyof typeof zh
+
+/** Arabic dictionary, checked complete against the zh key set. */
+export const ar = {
+  'trigger.one': '{count} تذكير',
+  'trigger.other': '{count} تذكيرات',
+  'list.aria': 'التذكيرات النشطة',
+  'status.scheduled': 'مجدول',
+  'status.overdue': 'متأخر',
+  'frequency.once': 'مرة واحدة',
+  'frequency.every': 'كل {value} {unit}',
+  'unit.day.one': 'يوم',
+  'unit.day.other': 'أيام',
+  'unit.hour.one': 'ساعة',
+  'unit.hour.other': 'ساعات',
+  'unit.minute.one': 'دقيقة',
+  'unit.minute.other': 'دقائق',
+  'unit.second.one': 'ثانية',
+  'unit.second.other': 'ثوانٍ',
+  'relative.now': 'يستحق الآن',
+  'relative.future': 'بعد {value} {unit}',
+  'relative.overdue': 'متأخر بـ {value} {unit}',
+} satisfies Record<ScheduleCatalogKey, string>

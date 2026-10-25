@@ -48,3 +48,17 @@ export const en = {
   'time.months': '{n}mo',
   'time.years': '{n}y',
 } satisfies Record<ReferenceKey, string>
+
+/** Arabic dictionary, checked complete against the zh key set. */
+export const ar = {
+  'section.files': 'الملفات والمجلدات',
+  'section.sessions': 'الجلسات',
+  'candidate.noCwd': '(بدون مجلد عمل)',
+  'crumb.root': 'مساحة العمل',
+  'time.now': 'الآن',
+  'time.minutes': '{n} د',
+  'time.hours': '{n} س',
+  'time.days': '{n} ي',
+  'time.months': '{n} ش',
+  'time.years': '{n} ن',
+} satisfies Record<ReferenceKey, string>

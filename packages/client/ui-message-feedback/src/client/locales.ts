@@ -43,3 +43,20 @@ export const en = {
   'error.load': 'Could not load feedback',
   'error.generic': 'Could not save feedback',
 } satisfies Record<MessageFeedbackKey, string>
+
+/** Arabic dictionary, checked complete against the zh key set. */
+export const ar = {
+  'action.like': 'رد جيد',
+  'action.likeActive': 'إزالة التقييم',
+  'action.dislike': 'رد سيئ',
+  'action.dislikeActive': 'إزالة التقييم',
+  'note.open': 'أضف ملاحظة',
+  'note.dialog': 'الملاحظات',
+  'note.placeholder': 'ما الذي كان جيدًا أو خاطئًا في هذا الرد؟ (اختياري)',
+  'note.save': 'حفظ',
+  'note.cancel': 'إلغاء',
+  'note.aria': 'ملاحظة على هذا الرد',
+  'error.conflict': 'غُيّرت هذه الملاحظات في موضع آخر؛ تُعرض الحالة الأحدث.',
+  'error.load': 'تعذّر تحميل حالة الملاحظات',
+  'error.generic': 'تعذّر حفظ الملاحظات',
+} satisfies Record<MessageFeedbackKey, string>

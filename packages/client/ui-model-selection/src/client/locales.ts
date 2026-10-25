@@ -45,6 +45,7 @@ export const zh = {
   'metric.speed': '速度',
   'metric.context': '上下文',
   'metric.cost': '成本',
+  'metric.aria': '{label}：{value}/{max}',
 } satisfies Record<string, string>
 
 /** The model namespace key union. */
@@ -87,4 +88,45 @@ export const en = {
   'metric.speed': 'Speed',
   'metric.context': 'Context',
   'metric.cost': 'Cost',
+  'metric.aria': '{label}: {value} out of {max}',
+} satisfies Record<ModelKey, string>
+
+/** Arabic dictionary, checked complete against the zh key set. */
+export const ar = {
+  'command.description': 'اختر النموذج لهذه المحادثة',
+  'option.loadError': 'تعذّر تحميل الدليل: {message}',
+  'trigger.fallback': 'اختر نموذجًا',
+  'trigger.loading': 'جارٍ تحميل النماذج…',
+  'trigger.selectAria': 'اختر نموذجًا',
+  'trigger.aria': 'اختر نموذجًا، الحالي {model}',
+  'trigger.ariaEffort': 'اختر نموذجًا، الحالي {model}، جهد الاستدلال {effort}',
+  'menu.aria': 'النموذج والجهد',
+  'menu.model': 'النموذج',
+  'menu.effort': 'الجهد',
+  'effort.sliderAria': 'جهد الاستدلال',
+  'model.searchAria': 'ابحث في النماذج',
+  'model.searchPlaceholder': 'ابحث في النماذج…',
+  'model.emptySearch': 'لا توجد نماذج مطابقة — جرّب بحثًا مختلفًا.',
+  'effort.providerDefault': 'الافتراضي',
+  'status.loading': 'جارٍ تحديث قائمة النماذج…',
+  'error.action': 'فشلت عملية النموذج: {message}',
+  'action.reload': 'إعادة التحميل',
+  'warning.groupLoad': 'تعذّر تحميل {name}: {message}',
+  'empty.models': 'لا توجد نماذج متاحة.',
+  'blocked.composer': 'هذا النموذج غير متاح — اختر نموذجًا للمتابعة',
+  'empty.efforts': 'لا يوفّر هذا النموذج مستويات جهد للاستدلال.',
+  'panel.searchAria': 'ابحث في النماذج',
+  'panel.searchPlaceholder': 'ابحث في النماذج…',
+  'panel.listAria': 'قائمة النماذج',
+  'panel.detailAria': 'تفاصيل النموذج',
+  'panel.emptySearch': 'لا توجد نماذج مطابقة — جرّب بحثًا مختلفًا.',
+  'panel.reasoning': 'الجهد',
+  'panel.promptAria': 'الموجّه',
+  'panel.promptPlaceholder': 'ما الذي تريد تنفيذه؟',
+  'panel.send': 'إرسال',
+  'metric.intelligence': 'الذكاء',
+  'metric.speed': 'السرعة',
+  'metric.context': 'السياق',
+  'metric.cost': 'التكلفة',
+  'metric.aria': '{label}: {value} من أصل {max}',
 } satisfies Record<ModelKey, string>

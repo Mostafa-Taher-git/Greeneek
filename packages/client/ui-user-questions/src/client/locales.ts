@@ -40,3 +40,22 @@ export const en = {
   'plan.decline': 'Refuse',
   'plan.discuss': 'Chat about it',
 } satisfies Record<QuestionKey, string>
+
+/** Arabic dictionary, checked complete against the zh key set. */
+export const ar = {
+  'error.incomplete': 'أكمل هذا السؤال أولًا.',
+  'error.unanswered': 'اختر خيارًا أو أدخل إجابة مخصصة.',
+  'nav.prev': 'السؤال السابق',
+  'nav.next': 'السؤال التالي',
+  'nav.minimize': 'طيّ بطاقة الأسئلة',
+  'nav.maximize': 'توسيع بطاقة الأسئلة',
+  'nav.cancel': 'تجاهل كل الأسئلة',
+  'option.recommended': 'موصى به',
+  'custom.placeholder': 'اكتب إجابتك',
+  'action.skip': 'تخطي هذا السؤال',
+  'action.next': 'التالي',
+  'plan.header': 'مراجعة الخطة',
+  'plan.approve': 'اعتماد التنفيذ',
+  'plan.decline': 'رفض',
+  'plan.discuss': 'المناقشة في المحادثة',
+} satisfies Record<QuestionKey, string>

@@ -63,3 +63,32 @@ export const en = {
   'artifact.empty': 'No artifacts from this call',
   'artifact.openAria': 'Open {name}',
 } satisfies Record<CraftKey, string>
+
+/** Arabic dictionary, checked complete against the zh key set. */
+export const ar = {
+  'section.nav': 'Craft',
+  'section.lead': 'جسر بلا واجهة لتطبيقات Craft على هذا الجهاز: اعرض حالة التثبيت وتحقّق من كل تثبيت واستخدم أدواتها داخل جلسة.',
+  'section.loading': 'جارٍ قراءة حالة تطبيقات Craft…',
+  'section.error': 'تعذّر تحميل حالة تطبيقات Craft',
+  'section.retry': 'إعادة المحاولة',
+  'section.empty': 'لا تتوفر تطبيقات Craft في هذا الإصدار',
+  'section.unavailable': 'جسر Craft الخاص بسطح المكتب غير متاح هنا — ثبّت تطبيق Greeneek لسطح المكتب لتدير تطبيقات Craft.',
+  'state.not-installed': 'غير مثبَّت',
+  'state.app-installed-cli-missing': 'التطبيق مثبَّت وأداة CLI مفقودة',
+  'state.ready': 'جاهز',
+  'state.running': 'قيد التشغيل',
+  'state.unavailable': 'الجسر غير متاح',
+  'action.check': 'التحقق من التثبيت',
+  'action.checking': 'جارٍ التحقق…',
+  'action.launch': 'الاتصال والفتح',
+  'action.launching': 'جارٍ الفتح…',
+  'action.launcher': 'فتح التطبيق',
+  'action.download': 'تنزيل',
+  'action.failed': 'فشل الإجراء — أعد المحاولة',
+  'artifact.title': 'مخرجات Craft',
+  'artifact.count': '{count} ملف',
+  'artifact.running': 'جارٍ الإنشاء…',
+  'artifact.failed': 'فشل استدعاء Craft',
+  'artifact.empty': 'لا مخرجات من هذا الاستدعاء',
+  'artifact.openAria': 'فتح {name}',
+} satisfies Record<CraftKey, string>

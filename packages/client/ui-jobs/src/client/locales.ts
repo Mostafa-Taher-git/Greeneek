@@ -41,5 +41,24 @@ export const en: Record<JobKey, string> = {
   'duration.title.done': 'Took {duration}',
 }
 
+/** Arabic dictionary, checked complete against the zh key set. */
+export const ar = {
+  'count.live.one': '{count} مهمة خلفية قيد التشغيل',
+  'count.live.other': '{count} مهام خلفية قيد التشغيل',
+  'count.idle.one': '{count} مهمة خلفية',
+  'count.idle.other': '{count} مهام خلفية',
+  'list.aria': 'المهام الخلفية',
+  'status.running': 'قيد التشغيل',
+  'status.stopping': 'جارٍ الإيقاف',
+  'status.completed': 'مكتملة',
+  'status.killed': 'ملغاة',
+  'status.failed': 'فاشلة',
+  'duration.seconds': '{seconds} ث',
+  'duration.minutes': '{minutes} د {seconds} ث',
+  'duration.hours': '{hours} س {minutes} د',
+  'duration.title.live': 'تعمل منذ {duration}',
+  'duration.title.done': 'استغرقت {duration}',
+} satisfies Record<JobKey, string>
+
 /** Key domain of the `job` namespace (zh is the source of truth). */
 export type JobKey = keyof typeof zh

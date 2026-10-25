@@ -49,3 +49,25 @@ export const en: Record<WorkflowRunKey, string> = {
 
 /** Union of this namespace's dictionary keys. */
 export type WorkflowRunKey = keyof typeof zh
+
+/** Arabic dictionary, checked complete against the zh key set. */
+export const ar = {
+  'run.title': '{name}',
+  'run.members.one': '{count} عضو',
+  'run.members.other': '{count} من الأعضاء',
+  'run.empty': 'لم يبدأ أي عضو',
+  'phase.unassigned': 'بلا مرحلة',
+  'phase.empty': 'اسم مرحلة فارغ',
+  'statusCount.running': 'قيد التشغيل {count}',
+  'statusCount.completed': 'مكتمل {count}',
+  'statusCount.failed': 'فشل {count}',
+  'statusCount.cancelled': 'ملغى {count}',
+  'statusCount.interrupted': 'مقاطَع {count}',
+  'member.empty': 'اسم عضو فارغ',
+  'member.open': 'فتح {name}',
+  'status.running': 'قيد التشغيل',
+  'status.completed': 'مكتمل',
+  'status.failed': 'فشل',
+  'status.cancelled': 'أُلغي',
+  'status.interrupted': 'قُطع',
+} satisfies Record<WorkflowRunKey, string>

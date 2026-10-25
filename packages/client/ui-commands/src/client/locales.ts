@@ -40,3 +40,22 @@ export const en = {
   'section.empty': 'No commands available to this session',
   'section.noSession': 'No active session — open one to see its commands here',
 } satisfies Record<CommandKey, string>
+
+/** Arabic dictionary, checked complete against the zh key set. */
+export const ar = {
+  'search.placeholder': 'بحث…',
+  'search.aria': 'تصفية الخيارات',
+  'status.loading': 'جارٍ تحميل الخيارات…',
+  'status.applying': 'جارٍ التطبيق…',
+  'status.empty': 'لا توجد خيارات',
+  'overlay.aria': 'خيارات /{command}',
+  'listbox.aria': 'النتائج المطابقة لـ /{command}',
+  'notice.imagesUnsupported': '/{command} لا يقبل إرفاق الصور، أزِل الصور أولًا',
+  'section.nav': 'الأوامر',
+  'section.lead': 'أوامر الشرطة المائلة المتاحة للجلسة الحالية (كتابة / تفتح قائمة الأوامر نفسها)',
+  'section.loading': 'جارٍ تحميل الأوامر…',
+  'section.error': 'تعذّر تحميل الأوامر',
+  'section.retry': 'إعادة المحاولة',
+  'section.empty': 'لا توجد أوامر متاحة لهذه الجلسة',
+  'section.noSession': 'لا توجد جلسة نشطة — افتح جلسة لعرض أوامرها هنا',
+} satisfies Record<CommandKey, string>

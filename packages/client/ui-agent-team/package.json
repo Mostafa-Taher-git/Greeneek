@@ -46,17 +46,6 @@
     "react": "^18.2.0"
   },
   "peerDependencies": {
-    "@greeneek/gnk-api-remotes": "workspace:^",
-    "@greeneek/gnk-api-session-controller": "workspace:^",
-    "@greeneek/gnk-client-locale": "workspace:^",
-    "@greeneek/gnk-client-ui-conversation": "workspace:^",
-    "@greeneek/gnk-client-ui-primitives": "workspace:^",
-    "@greeneek/gnk-client-ui-renderer": "workspace:^",
-    "@greeneek/gnk-client-ui-session": "workspace:^",
-    "@greeneek/gnk-client-ui-slots": "workspace:^",
-    "@greeneek/gnk-agent-team": "workspace:^",
-    "@greeneek/gnk-session": "workspace:^",
-    "@greeneek/gnk-typert-protocol": "workspace:^",
     "@greeneek/cordis": "workspace:^"
   },
   "devDependencies": {

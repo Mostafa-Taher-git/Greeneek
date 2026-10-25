@@ -28,3 +28,16 @@ export const en = {
   'fontSize.increase': 'Increase font size',
   'fontSize.decrease': 'Decrease font size',
 } satisfies Record<ThemeKey, string>
+
+/** Arabic dictionary, checked complete against the zh key set; the px unit stays verbatim. */
+export const ar = {
+  'appearance.title': 'المظهر',
+  'appearance.light': 'فاتح',
+  'appearance.dark': 'داكن',
+  'appearance.system': 'اتباع النظام',
+  'fontSize.title': 'حجم الخط',
+  'fontSize.description': 'يؤثر في حجم خط محتوى المحادثة فقط',
+  'fontSize.unit': 'px',
+  'fontSize.increase': 'تكبير حجم الخط',
+  'fontSize.decrease': 'تصغير حجم الخط',
+} satisfies Record<ThemeKey, string>

@@ -68,11 +68,15 @@ function metricColor(value: number, invert: boolean): string {
   return '#e5484d'
 }
 
-function MetricBar({ label, value, hint, invert = false }: {
+/** Segment count of one metric bar; the accessible name reads the same total. */
+const METRIC_MAX = 10
+
+function MetricBar({ label, value, hint, invert = false, t }: {
   label: string
   value: number
   hint?: string | undefined
   invert?: boolean | undefined
+  t: PreviewT
 }) {
   const color = metricColor(value, invert)
   return (
@@ -81,8 +85,12 @@ function MetricBar({ label, value, hint, invert = false }: {
         <span className={css.metricLabel}>{label}</span>
         {hint !== undefined && <span className={css.metricHint} title={hint}>ⓘ</span>}
       </div>
-      <div aria-label={`${label}: ${value} out of 10`} className={css.metricBar} role="img">
-        {Array.from({ length: 10 }, (_, index) => (
+      <div
+        aria-label={t('metric.aria', { label, value: String(value), max: String(METRIC_MAX) })}
+        className={css.metricBar}
+        role="img"
+      >
+        {Array.from({ length: METRIC_MAX }, (_, index) => (
           <div className={css.segment} key={index}>
             {index < value && <div className={css.segmentFilled} style={{ backgroundColor: color }} />}
           </div>
@@ -251,17 +259,19 @@ export function ModelSelectorPanel({
             )}
             {selected.metrics !== undefined && (
               <div className={css.metrics}>
-                <MetricBar label={t('metric.intelligence')} value={selected.metrics.intelligence} />
-                <MetricBar label={t('metric.speed')} value={selected.metrics.speed} />
+                <MetricBar label={t('metric.intelligence')} t={t} value={selected.metrics.intelligence} />
+                <MetricBar label={t('metric.speed')} t={t} value={selected.metrics.speed} />
                 <MetricBar
                   hint={selected.contextHint}
                   label={t('metric.context')}
+                  t={t}
                   value={selected.metrics.context}
                 />
                 <MetricBar
                   hint={selected.costHint}
                   invert
                   label={t('metric.cost')}
+                  t={t}
                   value={selected.metrics.cost}
                 />
               </div>

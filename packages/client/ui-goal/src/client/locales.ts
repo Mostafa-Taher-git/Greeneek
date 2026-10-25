@@ -32,3 +32,18 @@ export const en = {
   'action.edit': 'Edit goal',
   'action.clear': 'Clear goal',
 } satisfies Record<GoalKey, string>
+
+/** Arabic dictionary, checked complete against the zh key set. */
+export const ar = {
+  'phase.active': 'هدف قيد التنفيذ',
+  'phase.paused': 'هدف متوقف مؤقتًا',
+  'phase.blocked': 'هدف معطَّل',
+  'objective.aria': 'محتوى الهدف',
+  'commandInput.aria': 'إدخال الأمر',
+  'action.save': 'حفظ الهدف',
+  'action.cancel': 'إلغاء التحرير',
+  'action.pause': 'إيقاف الهدف مؤقتًا',
+  'action.resume': 'استئناف الهدف',
+  'action.edit': 'تحرير الهدف',
+  'action.clear': 'مسح الهدف',
+} satisfies Record<GoalKey, string>

@@ -21,5 +21,14 @@ export const en: Record<DeliverablesKey, string> = {
   'produced.showInFolder': 'Show in folder',
 }
 
+/** Arabic dictionary (same key set). */
+export const ar = {
+  'produced.label': 'المخرجات',
+  'produced.moreOne': '+ 1 ملف',
+  'produced.more': '+ {count} ملفات',
+  'produced.open': 'فتح {name}',
+  'produced.showInFolder': 'إظهار في المجلد',
+} satisfies Record<DeliverablesKey, string>
+
 /** Union of this namespace's dictionary keys. */
 export type DeliverablesKey = keyof typeof zh

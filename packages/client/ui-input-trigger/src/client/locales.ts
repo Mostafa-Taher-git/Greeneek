@@ -32,3 +32,16 @@ export const en = {
   'crumbs.aria': 'Folder navigation',
   'suggestions.aria': 'Trigger suggestions',
 } satisfies Record<MenuKey, string>
+
+/** Arabic dictionary, checked complete against the zh key set. */
+export const ar = {
+  'command': 'الأوامر',
+  'skill': 'المهارات',
+  'subagent': 'الوكلاء الفرعيون',
+  'loading': 'جارٍ التحميل…',
+  'drill.aria': 'تصفّح المجلد',
+  'drill.hint': 'تصفّح المجلد',
+  'drill.key': 'Tab',
+  'crumbs.aria': 'التنقل في المجلدات',
+  'suggestions.aria': 'اقتراحات المُشغِّل',
+} satisfies Record<MenuKey, string>

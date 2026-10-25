@@ -61,3 +61,31 @@ export const en = {
   'pill.stop.aria': 'Emergency-stop the whole fleet',
   'pill.close.aria': 'Close the fleet panel',
 } satisfies Record<FleetKey, string>
+
+/** Arabic dictionary, checked complete against the zh key set; Army and tok stay verbatim. */
+export const ar = {
+  'panel.loading': 'جارٍ تحميل الأسطول…',
+  'panel.empty': 'لا توجد موجات Army نشطة لهذه الجلسة.',
+  'panel.degraded': 'عرض الأسطول غير متاح مؤقتًا: انقطع الاتصال بالمضيف.',
+  'wave.members': '{count} من الأعضاء',
+  'wave.closed': 'مغلق',
+  'status.queued': 'في قائمة الانتظار',
+  'status.running': 'قيد التشغيل',
+  'status.completed': 'مكتمل',
+  'status.failed': 'فشل',
+  'status.cancelled': 'أُلغي',
+  'status.budgetKilled': 'أُنهي لتجاوز الميزانية',
+  'tokens': '{tokens} tok',
+  'stop.member': 'إيقاف العضو',
+  'stop.wave': 'إيقاف هذه الموجة',
+  'stop.all': 'إيقاف طارئ',
+  'stop.all.confirm': 'انقر مجددًا لتأكيد إيقاف جميع الأعضاء',
+  'stop.stopped': 'أُرسل أمر الإيقاف',
+  'stop.failed': 'فشل الإيقاف: {message} ({code})',
+  'open.child': 'فتح الجلسة الفرعية',
+  'pill.open.aria': 'فتح لوحة أسطول Army',
+  'pill.label': '{label} · قيد التشغيل {running}',
+  'pill.label.degraded': '{label} · العرض قديم',
+  'pill.stop.aria': 'إيقاف طارئ للأسطول بأكمله',
+  'pill.close.aria': 'إغلاق لوحة الأسطول',
+} satisfies Record<FleetKey, string>

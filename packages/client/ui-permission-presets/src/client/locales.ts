@@ -35,6 +35,22 @@ export const en = {
   'confirm.enable': 'Enable Full access',
 } satisfies Record<PermissionSettingsKey, string>
 
+/** Arabic dictionary, checked complete against the zh key set. */
+export const ar = {
+  'title': 'الأذونات',
+  'description': 'اختر وضع الأذونات الافتراضي للجلسات الجديدة',
+  'loading': 'جارٍ التحميل',
+  'unavailable': 'غير متاح',
+  'preset.readOnly': 'للقراءة فقط',
+  'preset.workspaceWrite': 'كتابة في مساحة العمل',
+  'preset.fullAccess': 'وصول كامل',
+  'confirm.title': 'تمكين الوصول الكامل؟',
+  'confirm.description': 'تمكين الوصول الكامل يقلل خطوات التأكيد في الجلسات الجديدة ويتيح تنفيذ مزيد من الإجراءات مباشرة، بما فيها الإجراءات الحساسة وتغيير الملفات والأوامر الخارجية. استخدمه فقط إذا كنت تثق بالمهام اللاحقة.',
+  'confirm.acknowledge': 'أفهم المخاطر وأرغب في المتابعة',
+  'confirm.cancel': 'إلغاء',
+  'confirm.enable': 'تمكين الوصول الكامل',
+} satisfies Record<PermissionSettingsKey, string>
+
 /** Simplified Chinese dictionary for the current-session popup gate. */
 export const accessZh = {
   'preset.readOnly': '仅可查看',
@@ -60,4 +76,16 @@ export const accessEn = {
   'confirm.acknowledge': 'I understand the risks and want to continue',
   'confirm.cancel': 'Cancel',
   'confirm.enable': 'Enable Full access',
+} satisfies Record<PermissionAccessKey, string>
+
+/** Arabic dictionary for the current-session popup gate. */
+export const accessAr = {
+  'preset.readOnly': 'للقراءة فقط',
+  'preset.workspaceWrite': 'كتابة في مساحة العمل',
+  'preset.fullAccess': 'وصول كامل',
+  'confirm.title': 'تمكين الوصول الكامل؟',
+  'confirm.description': 'عند تمكين الوصول الكامل تقل خطوات التأكيد ويستطيع الوكيل تنفيذ مزيد من الإجراءات مباشرة، بما فيها الإجراءات الحساسة وتغيير الملفات والأوامر الخارجية. استخدمه فقط إذا كنت تثق بالمهمة الحالية.',
+  'confirm.acknowledge': 'أفهم المخاطر وأرغب في المتابعة',
+  'confirm.cancel': 'إلغاء',
+  'confirm.enable': 'تمكين الوصول الكامل',
 } satisfies Record<PermissionAccessKey, string>

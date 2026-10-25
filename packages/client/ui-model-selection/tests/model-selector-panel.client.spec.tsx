@@ -3,9 +3,17 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ModelSelectorPanel } from '../src/client/ModelSelectorPanel.tsx'
 import { directoryPreviewModels, type PreviewModel } from '../src/client/preview.ts'
-import { en } from '../src/client/locales.ts'
+import { ar, en, zh, type ModelKey } from '../src/client/locales.ts'
 
-const t = (key: keyof typeof en): string => en[key]
+/** Panel `t` seat over one dictionary, `{name}` substitution included. */
+const translate = (dictionary: Record<ModelKey, string>) =>
+  (key: ModelKey, params?: Record<string, string>): string =>
+    Object.entries(params ?? {}).reduce(
+      (text, [name, value]) => text.replaceAll(`{${name}}`, value),
+      dictionary[key],
+    )
+
+const t = translate(en)
 
 const MODELS: PreviewModel[] = [
   {
@@ -95,6 +103,19 @@ describe('ModelSelectorPanel', () => {
     expect(screen.getByRole('img', { name: 'Cost: 10 out of 10' })).toBeDefined()
     fireEvent.click(screen.getByRole('option', { name: /GPT-5.5/ }))
     expect(screen.queryByRole('img', { name: /out of 10/ })).toBeNull()
+  })
+
+  it('builds the metric bar name from the locale template', () => {
+    const cases = [
+      { dictionary: en, name: 'Speed: 5 out of 10' },
+      { dictionary: zh, name: '速度：5/10' },
+      { dictionary: ar, name: 'السرعة: 5 من أصل 10' },
+    ] as const
+    for (const { dictionary, name } of cases) {
+      render(<ModelSelectorPanel models={MODELS} t={translate(dictionary)} />)
+      expect(screen.getByRole('img', { name })).toBeDefined()
+      cleanup()
+    }
   })
 
   it('submits the selected model, effort, and prompt', () => {

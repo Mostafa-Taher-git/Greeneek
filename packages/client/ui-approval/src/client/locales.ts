@@ -20,3 +20,12 @@ export const en = {
   reject: 'Reject',
   allowOnce: 'Allow once',
 } satisfies Record<ApprovalKey, string>
+
+/** Arabic dictionary, checked against the Chinese key set. */
+export const ar = {
+  waiting: 'بانتظار الموافقة',
+  'detail.aria': 'تفاصيل الموافقة',
+  escalation: 'الأداة {toolName} تطلب تنفيذًا بصلاحيات موسّعة',
+  reject: 'رفض',
+  allowOnce: 'السماح مرة واحدة',
+} satisfies Record<ApprovalKey, string>

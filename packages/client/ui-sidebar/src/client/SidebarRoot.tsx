@@ -203,7 +203,7 @@ export function SidebarRoot({
             {wide && (
               <span className={css.brandName}>
                 {renderSlot('sidebar.brand.name', {}, {
-                  fallback: <span className={css.fallbackBrandName}>Greeneek</span>,
+                  fallback: <span className={css.fallbackBrandName}>{t('brand.name')}</span>,
                 })}
               </span>
             )}

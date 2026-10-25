@@ -60,8 +60,8 @@ function moduleShortName(moduleName: string): string {
     .replace(/^gnk-(?:host-|client-)?/, '')
 }
 
-/** Derive a stable UI category from a plugin module name. */
-function moduleCategory(moduleName: string): string {
+/** Assign one plugin module to its UI category; modules outside the known groups land in the locale-owned bucket. */
+function moduleCategory(moduleName: string, t: Translate): string {
   const normalized = moduleName.toLowerCase()
   const categories: [string[], string][] = [
     [['web-search', 'web-fetch', 'exa', 'duckduckgo', 'perplexity', 'google'], 'Search'],
@@ -75,16 +75,16 @@ function moduleCategory(moduleName: string): string {
   for (const [needles, category] of categories) {
     if (needles.some(needle => normalized.includes(needle))) return category
   }
-  return 'Other'
+  return t('categoryOther')
 }
 
 /** Group rows by category while keeping failed entries first within each bucket. */
 type CategoryBucket = { failed: AgentPresetRow[] | PluginInventoryEntry[]; regular: AgentPresetRow[] | PluginInventoryEntry[] }
 
-function categoryBucket(rows: readonly AgentPresetRow[] | readonly PluginInventoryEntry[]): Map<string, CategoryBucket> {
+function categoryBucket(rows: readonly AgentPresetRow[] | readonly PluginInventoryEntry[], t: Translate): Map<string, CategoryBucket> {
   const buckets = new Map<string, CategoryBucket>()
   for (const row of rows) {
-    const category = moduleCategory(row.moduleName)
+    const category = moduleCategory(row.moduleName, t)
     const bucket = buckets.get(category) ?? { failed: [], regular: [] }
     if ((row as PluginInventoryEntry).fiberPhase === 'failed' || (row as AgentPresetRow).fiberPhase === 'failed') {
       ;(bucket.failed as Array<AgentPresetRow | PluginInventoryEntry>).push(row)
@@ -459,7 +459,7 @@ export function PluginInventorySettingsTab({ list, presetName, t }: PluginInvent
                   {selectedRows.length > 0 ? (
                     <div className={css.categoryCatalog}>
                       {(() => {
-                        const presetBuckets = Array.from(categoryBucket(selectedRows).entries())
+                        const presetBuckets = Array.from(categoryBucket(selectedRows, t).entries())
                         presetBuckets.sort((a, b) => a[0].localeCompare(b[0]))
                         return presetBuckets.map(([category, bucket], categoryIndex) => (
                           <section className={css.categoryGroup} key={`preset-category-${category}`}>
@@ -533,7 +533,7 @@ export function PluginInventorySettingsTab({ list, presetName, t }: PluginInvent
               {globalEffectiveOpen && globalCount > 0 ? (
                 <div id={`${sectionId}-global`} className={css.categoryCatalog}>
                   {(() => {
-                    const globalBuckets = Array.from(categoryBucket([...filteredFailed, ...filteredRegular]).entries())
+                    const globalBuckets = Array.from(categoryBucket([...filteredFailed, ...filteredRegular], t).entries())
                     globalBuckets.sort((a, b) => a[0].localeCompare(b[0]))
                     return globalBuckets.map(([category, bucket]) => (
                       <section className={css.categoryGroup} key={`global-category-${category}`}>

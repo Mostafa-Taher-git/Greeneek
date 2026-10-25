@@ -1,9 +1,10 @@
-/** Experimental-package publication and dependency constraints. */
+/** Experimental-package and deployment-root publication and dependency constraints. */
 
 import { describe, expect, it } from 'vitest'
 import {
   checkExperimentalDependencyIsolation,
   checkExperimentalManifest,
+  checkWorkspaceManifest,
   expectedGnkPackageFiles,
   type WorkspaceManifest,
 } from './check-workspace-constraints.ts'
@@ -72,6 +73,33 @@ describe('experimental workspace constraints', () => {
 
     expect(checkExperimentalDependencyIsolation(manifests)).toEqual([
       '@greeneek/gnk-python-runtime: dependencies.@greeneek/gnk-experimental-prototype must not reference an experimental package',
+    ])
+  })
+})
+
+describe('deployment-root constraints', () => {
+  const desktop: WorkspaceManifest = { dir: 'apps/desktop', manifest: { name: '@greeneek/desktop', private: true } }
+
+  it('exempts a private deployment root from release-member publication metadata', () => {
+    expect(checkWorkspaceManifest(desktop)).toEqual([])
+  })
+
+  it('rejects a deployment root that publishes or claims publication access', () => {
+    expect(checkWorkspaceManifest({
+      dir: 'apps/desktop',
+      manifest: { name: '@greeneek/desktop', publishConfig: { access: 'public' } },
+    })).toEqual([
+      expect.stringContaining('@greeneek/desktop: deployment root must set "private": true'),
+      expect.stringContaining('@greeneek/desktop: deployment root must omit publishConfig'),
+    ])
+  })
+
+  it('requires a deployment root that stages a payload to pin its files list', () => {
+    expect(checkWorkspaceManifest({
+      ...desktop,
+      manifest: { ...desktop.manifest, files: ['src/**'] },
+    })).toEqual([
+      expect.stringContaining('@greeneek/desktop: package.json files must be'),
     ])
   })
 })

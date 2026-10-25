@@ -132,6 +132,10 @@ export abstract class ReleaseFamily {
       const version = requireString(manifest, 'version', normalized)
       if (name === WORKSPACE_ROOT_PACKAGE) throw new Error(`${normalized} selected the workspace root`)
       if (!name.startsWith('@greeneek/')) throw new Error(`${normalized} must name an @greeneek package`)
+      // A private manifest is a deployment root: it ships through its own pipeline
+      // (`scripts/check-workspace-constraints.ts` `DEPLOYMENT_ROOT_DIRECTORIES`),
+      // so it carries no family version and nothing here may pack or publish it.
+      if (manifest.private === true) throw new Error(`${normalized} is private; release family ${this.id} publishes every manifest it selects, so a deployment root stays out of its patterns`)
       if (seen.has(name)) throw new Error(`${name} appears twice in release family ${this.id}`)
       seen.add(name)
       members.push({
@@ -320,7 +324,11 @@ export abstract class ReleaseFamily {
 /** Release packages and apps: one shared version across the whole family. */
 class GnkFamily extends ReleaseFamily {
   readonly id = 'gnk'
-  readonly patterns = ['packages/!(experimental)/*/package.json', 'apps/*/package.json'] as const
+  // `apps/desktop` and `apps/landing` are deployment roots
+  // (`scripts/check-workspace-constraints.ts` `DEPLOYMENT_ROOT_DIRECTORIES`): the
+  // desktop installers come from `desktop-v*` tags and the landing site from
+  // Vercel, so neither carries the family version and neither packs or publishes.
+  readonly patterns = ['packages/!(experimental)/*/package.json', 'apps/!(desktop|landing)/package.json'] as const
   readonly tagPrefix = 'gnk-v'
 
   /** Require current artifacts from a complete official client build. */

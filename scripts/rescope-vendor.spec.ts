@@ -1,11 +1,16 @@
 /**
  * Acceptance-path coverage for the rescope codemod's exact-edit classifier: a
  * duplicated insertion — what a non-idempotent apply produces — must be
- * rejected rather than applied again.
+ * rejected rather than applied again. The mapping lists also prove they hold no
+ * reference to a file the tree no longer carries.
  */
 
+import { existsSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { exactEditState } from './rescope-vendor.ts'
+import { EXACT_EDITS, GENERIC_SKIPS, exactEditState } from './rescope-vendor.ts'
+
+const root = resolve(import.meta.dirname, '..')
 
 const ANCHOR = '\n## Sync procedure'
 const INSERTED = `\n15. **rescope**: one log entry.\n${ANCHOR}`
@@ -37,5 +42,14 @@ describe('exactEditState', () => {
     // A moved or partially applied site: neither state is complete.
     expect(exactEditState('a = 1\nb = 2\n', 'a = 1', 'b = 2', 1)).toBe('invalid')
     expect(exactEditState('x\n', 'a = 1', 'b = 2', 1)).toBe('invalid')
+  })
+})
+
+describe('mapping references', () => {
+  it('names only files the worktree tracks, so deleting a page retires its edits', () => {
+    // The bilingual cookbook pages were deleted while their zh exact edits and
+    // skips stayed, and `--check` died on the read instead of reporting them.
+    const targets = [...EXACT_EDITS.map(edit => edit.file), ...GENERIC_SKIPS.map(skip => skip.file)]
+    expect(targets.filter(file => !existsSync(resolve(root, file)))).toEqual([])
   })
 })

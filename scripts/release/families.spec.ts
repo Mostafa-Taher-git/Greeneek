@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { officialClientBuildEnvironment, writeClientBuildRecord } from '../client-build-environment.ts'
+import { DEPLOYMENT_ROOT_DIRECTORIES } from '../check-workspace-constraints.ts'
 import { releaseFamily, type ReleaseMember } from './families.ts'
 import { compareVersions, nextVendorVersion, planShared, reachesPayload } from './bump.ts'
 
@@ -50,6 +51,28 @@ describe('release families', () => {
     expect(names).not.toContain('@greeneek/gnk-experimental-inspector')
     expect(names).toContain('@greeneek/gnk-agent-team')
     expect(names).toContain('@greeneek/gnk-tool-agent-team')
+  })
+
+  it('selects no deployment root, so its own pipeline owns its version and artifact', () => {
+    const repositoryRoot = resolve(import.meta.dirname, '../..')
+    for (const family of [releaseFamily('gnk'), releaseFamily('vendor')]) {
+      const directories = family.members(repositoryRoot).map(member => member.directory)
+      expect(directories.filter(dir => dir in DEPLOYMENT_ROOT_DIRECTORIES)).toEqual([])
+    }
+    // The apps that stay in the family are the ones npm carries.
+    const apps = releaseFamily('gnk').members(repositoryRoot)
+      .filter(member => member.directory.startsWith('apps/'))
+      .map(member => member.directory)
+    expect(apps).toEqual(['apps/cli', 'apps/web'])
+  })
+
+  it('rejects a private manifest that a family pattern still selects', () => {
+    const root = mkdtempSync(join(tmpdir(), 'gnk-release-private-'))
+    roots.push(root)
+    write(join(root, 'package.json'), '{"version":"0.0.1"}\n')
+    write(join(root, 'apps/prototype/package.json'), '{"name":"@greeneek/gnk-prototype","version":"0.0.1","private":true}\n')
+
+    expect(() => { releaseFamily('gnk').members(root) }).toThrow(/is private/)
   })
 
   it('bumps private gnk packages without adding release tags', () => {

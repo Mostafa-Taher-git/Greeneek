@@ -25,7 +25,10 @@ const DEFAULT_OUTPUT_DIRECTORY = '.artifacts/npm-baseline'
 const PACKAGE_PATTERNS = [
   'vendor/*/package.json',
   'packages/!(experimental)/*/package.json',
-  'apps/*/package.json',
+  // Deployment roots (`scripts/check-workspace-constraints.ts`
+  // `DEPLOYMENT_ROOT_DIRECTORIES`) ship through their own pipelines, so the
+  // baseline never stages or publishes them.
+  'apps/!(desktop|landing)/package.json',
 ] as const
 const DEPENDENCY_SECTIONS = [
   'dependencies',

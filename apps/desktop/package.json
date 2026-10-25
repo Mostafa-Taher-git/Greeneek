@@ -1,6 +1,7 @@
 {
   "name": "@greeneek/desktop",
   "version": "0.2.0",
+  "private": true,
   "description": "Greeneek Desktop: installable Electron shell that boots gnk web locally.",
   "type": "module",
   "main": "src/main.js",
@@ -9,9 +10,6 @@
     "type": "git",
     "url": "git+https://github.com/Mostafa-Taher-git/Greeneek.git",
     "directory": "apps/desktop"
-  },
-  "publishConfig": {
-    "access": "public"
   },
   "author": "Mostafa Taher <mostafa.taher@example.com>",
   "pnpm": {

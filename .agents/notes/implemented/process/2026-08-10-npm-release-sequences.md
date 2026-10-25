@@ -21,7 +21,7 @@ Two hard blockers sat in the way. All 217 workspace manifests set `private: true
 
 | Sequence | Members | Version baseline | Tag | Workflow |
 |---|---|---|---|---|
-| gnk | Publish set: non-experimental `packages/*/*` + `apps/*`; private experimental packages join only the shared version bump | one version for the publish set, private gnk packages, and workspace root, `0.0.x` | `gnk-v<version>` | `release.yml` (pack) / `release-publish.yml` (publish) |
+| gnk | Publish set: non-experimental `packages/*/*` + `apps/*` except the deployment roots ([`apps/desktop` and `apps/landing`](2026-10-26-deployment-roots-outside-npm-release-families.md)); private experimental packages join only the shared version bump | one version for the publish set, private gnk packages, and workspace root, `0.0.x` | `gnk-v<version>` | `release.yml` (pack) / `release-publish.yml` (publish) |
 | vendored framework | the nine `vendor/*` packages | each package on its own version line | `vendor-<package>-v<version>` (one per package) | `release-vendor.yml` (pack) / `release-vendor-publish.yml` (publish) |
 | native | `native/landlock-run/packages/*` | its own `0.0.x` | `landlock-run-v<version>` | `landlock-run-release.yml` |
 
@@ -127,7 +127,7 @@ The verification also packs the Landlock entry, which `gnk-sandbox-local` declar
 | Item | Content |
 |---|---|
 | release-set manifests | `private: true` removed; `publishConfig.access` per sequence and `repository` with each package's `directory` added |
-| release-set boundary | every member of `packages/*/*`, `apps/*`, and `vendor/*` |
+| release-set boundary | every member of `packages/*/*`, `apps/*` other than the deployment roots `apps/desktop` and `apps/landing`, and `vendor/*` ([deployment roots](2026-10-26-deployment-roots-outside-npm-release-families.md)) |
 | dependency protocol | workspace-internal references are `workspace:^`, with `check-workspace-constraints.ts` and the invariant-companion rule requiring it |
 | root `AGENTS.md` | the convention that vendored packages are `private: true` no longer holds |
 | `vendor/README.md` | records `src` joining `cordis`'s `files` as a local modification |

@@ -57,7 +57,11 @@ const RENAMES: readonly Rename[] = [
 
 const EXTENSIONS = ['.ts', '.tsx', '.js', '.mjs', '.cjs', '.tpl', '.json', '.yml', '.yaml', '.md'] as const
 
-/** An exact-string edit the token rule cannot express, with its required hit count. */
+/**
+ * An exact-string edit the token rule cannot express, with its required hit
+ * count. `file` is a tracked path: deleting the file retires its edits in the
+ * same commit, and {@link main} rejects an edit whose target left the tree.
+ */
 interface ExactEdit {
   readonly id: string
   readonly file: string
@@ -76,7 +80,12 @@ interface GenericSkip {
   readonly upstream: readonly string[]
 }
 
-const GENERIC_SKIPS: readonly GenericSkip[] = [
+/**
+ * Files where an upstream name is product data or an upstream identifier, so the
+ * generic pass is disabled for the listed names there. Exported for the stale
+ * reference spec: every entry names a file in the tree.
+ */
+export const GENERIC_SKIPS: readonly GenericSkip[] = [
   // `Symbol.for('schemastery')` and the `vendor:` metadata field are upstream identifiers.
   { file: 'vendor/schemastery/src/index.ts', upstream: ['schemastery'] },
   // Asserts the vendored-manifest table, which gains an upstream-name column.
@@ -86,13 +95,18 @@ const GENERIC_SKIPS: readonly GenericSkip[] = [
   // product data, not a package reference. Renaming it changed which preset
   // the creator flow stages and which id the roster reports.
   { file: 'packages/client/ui-agent-preset/src/client/AgentPresetSection.tsx', upstream: ['cordis'] },
+  { file: 'packages/client/ui-agent-preset/src/client/AgentPresetSeat.tsx', upstream: ['cordis'] },
   { file: 'packages/preset/agent-presets/tests/shipped-root.spec.ts', upstream: ['cordis'] },
   { file: 'packages/client/ui-agent-preset/src/client/index.ts', upstream: ['cordis'] },
   { file: 'packages/client/ui-agent-preset/tests/apply.client.spec.ts', upstream: ['cordis'] },
+  { file: 'packages/client/ui-agent-preset/tests/components.client.spec.tsx', upstream: ['cordis'] },
   { file: 'packages/client/ui-agent-preset/tests/locales.client.spec.ts', upstream: ['cordis'] },
   { file: 'packages/client/ui-agent-preset/tests/section.client.spec.tsx', upstream: ['cordis'] },
   { file: 'apps/cli/tests/web-agent-presets.e2e.ts', upstream: ['cordis'] },
   { file: 'apps/web/tests/agent-preset-authoring.e2e.ts', upstream: ['cordis'] },
+  // The plan quotes the preset ids in `MODE_ORDER` and the presets directory, so
+  // its `cordis` names the preset a pill selects, not a package.
+  { file: 'docs/plan-v0.3.4.md', upstream: ['cordis'] },
   { file: 'packages/preset/agent-presets/tests/session.spec.ts', upstream: ['cordis'] },
   // The preset's own composition: its header comment and its system prompt name
   // the preset a model mounts, so the scoped name would send the model after an
@@ -106,9 +120,7 @@ const GENERIC_SKIPS: readonly GenericSkip[] = [
   // `cordis/*` is the extensions event domain, not a package subpath. The
   // generated catalogs and every producer/consumer must preserve that wire id.
   { file: 'docs/event-producer-consumer.md', upstream: ['cordis'] },
-  { file: 'docs/event-producer-consumer.zh.md', upstream: ['cordis'] },
   { file: 'docs/subsystems/extensions.md', upstream: ['cordis'] },
-  { file: 'docs/subsystems/extensions.zh.md', upstream: ['cordis'] },
   { file: 'packages/api/remotes/src/remote-events.ts', upstream: ['cordis'] },
   { file: 'packages/extensions/cordis-client-runner/src/client/index.ts', upstream: ['cordis'] },
   { file: 'packages/extensions/cordis-client-runner/src/client/runtime.ts', upstream: ['cordis'] },
@@ -169,9 +181,10 @@ const POSTCONDITIONS: readonly PostCondition[] = [
 /**
  * Every exact edit, in application order. Each `find` is written against the
  * PRE-rename text because these run before the generic pass, so no `find` may
- * quote a neighbouring line the generic pass would rewrite.
+ * quote a neighbouring line the generic pass would rewrite. Exported for the
+ * stale reference spec: every entry names a file in the tree.
  */
-const EXACT_EDITS: readonly ExactEdit[] = [
+export const EXACT_EDITS: readonly ExactEdit[] = [
   {
     id: 'cordis-walk-merge-head',
     file: 'scripts/cordis-walk.ts',
@@ -286,25 +299,11 @@ const VENDORED_LIBRARY = /^@greeneek\\/(cosmokit|schemastery)(\\/|$)/
     expect: 1,
   },
   {
-    id: 'vendoring-cookbook-tree-comment-zh',
-    file: 'docs/cookbook/adding-a-vendored-package.zh.md',
-    find: '  package.json     # from upstream; set "private": true, keep name/exports/type',
-    replace: '  package.json     # from upstream; rescope the name, keep exports/type (publishable release member, no private flag)',
-    expect: 1,
-  },
-  {
     // The checklist told the next vendoring to keep upstream's name.
     id: 'vendoring-cookbook-name-invariant',
     file: 'docs/cookbook/adding-a-vendored-package.md',
     find: "keep upstream's `name`/`version`/`exports`/`type`",
     replace: "rescope the `name` ([mapping](../rescope.md)) while keeping upstream's `exports`/`type`",
-    expect: 1,
-  },
-  {
-    id: 'vendoring-cookbook-name-invariant-zh',
-    file: 'docs/cookbook/adding-a-vendored-package.zh.md',
-    find: '保留上游的 `name`/`version`/`exports`/`type`',
-    replace: '改写 `name` 的 scope（[映射](../rescope.zh.md)），保留上游的 `exports`/`type`',
     expect: 1,
   },
   {
@@ -435,7 +434,7 @@ function excluded(file: string): boolean {
   // sources on disk — including the notes this rescope leaves alone.
   if (file.startsWith('scripts/snapshots/')) return true
   // The mapping documents state both names on purpose.
-  if (file === 'docs/rescope.md' || file === 'docs/rescope.zh.md') return true
+  if (file === 'docs/rescope.md') return true
   if (file.endsWith('.i18n.yaml')) return true // blob-hash records, re-recorded by the pairing gate
   if (file === 'pnpm-lock.yaml') return true // regenerated by pnpm install
   if (/^vendor\/[^/]+\/(README\.md|LICENSE)$/.test(file)) return true // upstream files kept verbatim
@@ -578,6 +577,12 @@ function main(): void {
   const planned: { edit: ExactEdit; path: string; find: string; replace: string }[] = []
   for (const edit of EXACT_EDITS) {
     const path = resolve(root, edit.file)
+    // A deleted target leaves its edit behind exactly as a deleted zh cookbook page
+    // did: report the stale expectation instead of crashing on the read.
+    if (!existsSync(path)) {
+      failures.push(`exact edit ${edit.id}: ${edit.file} is absent — deleting the file retires its exact edits`)
+      continue
+    }
     const before = readFileSync(path, 'utf8')
     const find = reverse ? edit.replace : edit.find
     const replace = reverse ? edit.find : edit.replace

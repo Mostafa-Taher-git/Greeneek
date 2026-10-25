@@ -41,8 +41,9 @@ const publicLandlockPackages = new Set([
 const publicationSourceAllowlist: Readonly<Record<string, readonly string[]>> = {
   '@greeneek/node-addon-landlock-run': ['src/main.c'],
   // The desktop shell ships its own runtime JS: the Electron main process,
-  // the gnk entry wrapper, and the Windows console helpers are the product,
-  // and pnpm deploy materializes exactly these paths into staging.
+  // the gnk entry wrapper, and the Windows console helpers are the product, and
+  // `apps/desktop/scripts/stage.mjs` copies exactly these paths into the staging
+  // app that electron-builder packs.
   '@greeneek/desktop': ['src/**', 'config/**'],
 }
 const repositoryUrl = 'git+https://github.com/greeneek/greeneek-harness.git'
@@ -56,8 +57,23 @@ const publishedRepositoryUrl = 'git+https://github.com/greeneek/greeneek-harness
 const experimentalPackageDirectory = /^packages\/experimental\/[^/]+$/
 /** npm namespace reserved for private experimental packages. */
 const experimentalPackageNamePrefix = '@greeneek/gnk-experimental-'
+/**
+ * Workspace apps that are deployed by their own pipeline and never published to
+ * npm, so they are not release members and stay out of every release family's
+ * discovery patterns. Reasons are reviewable policy: a new app cannot silently
+ * inherit an exemption, and each manifest must say so with `"private": true` and
+ * no `publishConfig`.
+ */
+export const DEPLOYMENT_ROOT_DIRECTORIES: Readonly<Record<string, string>> = {
+  'apps/desktop': 'electron-builder installers published to GitHub Releases from `desktop-v<semver>` tags (.github/workflows/desktop.yml), which stamp the manifest version from the tag rather than following the gnk family version.',
+  'apps/landing': 'Static marketing site built by Vercel from the apps/landing root (apps/landing/README.md); its `dist/index.html` is deployment output, never an npm payload.',
+}
 /** Directories whose packages this repository publishes: one release member each. */
 const releaseMemberDirectory = /^(?:packages\/(?!experimental\/)[^/]+\/[^/]+|apps\/[^/]+|vendor\/[^/]+)$/
+/** Whether one workspace directory is a deployment root outside every release family. */
+function isDeploymentRoot(dir: string): boolean {
+  return DEPLOYMENT_ROOT_DIRECTORIES[dir] !== undefined
+}
 const localArtifactDirs = new Set(['node_modules'])
 const appPackageFiles: Readonly<Record<string, readonly string[]>> = {
   '@greeneek/gnk': ['lib/*.js'],
@@ -298,6 +314,15 @@ export function checkWorkspaceManifest({ dir, manifest }: WorkspaceManifest): st
       || manifest.repository.directory !== expectedDirectory) {
       errors.push(`${label}: published Landlock package repository must use ${repositoryUrl} with directory ${expectedDirectory} for trusted publishing`)
     }
+  } else if (isDeploymentRoot(dir)) {
+    // Deployed by its own pipeline and never packed for npm, so it holds none of
+    // the release-member publication metadata below.
+    if (manifest.private !== true) {
+      errors.push(`${label}: deployment root must set "private": true`)
+    }
+    if (manifest.publishConfig !== undefined) {
+      errors.push(`${label}: deployment root must omit publishConfig`)
+    }
   } else if (releaseMemberDirectory.test(dir)) {
     // Release members state that they are publishable: npm refuses a private
     // package, and the repository field is how a consumer finds the source of
@@ -337,7 +362,12 @@ export function checkWorkspaceManifest({ dir, manifest }: WorkspaceManifest): st
     }
   }
 
-  if (dir.startsWith('apps/') && manifest.name?.startsWith('@greeneek/')) {
+  // An app pins the file list its own release path ships. apps/desktop declares
+  // the runtime its staging copy reads, apps/web the `dist` a tarball carries,
+  // and apps/landing builds a single-file site on Vercel from source, so it
+  // declares none; a deployment root is the only case allowed to omit the list.
+  if (dir.startsWith('apps/') && manifest.name?.startsWith('@greeneek/')
+    && (!isDeploymentRoot(dir) || manifest.files !== undefined)) {
     const expectedFiles = appPackageFiles[manifest.name]
     if (expectedFiles === undefined) {
       errors.push(`${label}: app package has no publication files policy`)

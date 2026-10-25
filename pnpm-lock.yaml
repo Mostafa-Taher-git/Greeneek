@@ -6714,6 +6714,9 @@ importers:
       '@greeneek/gnk-atomic-write':
         specifier: workspace:^
         version: link:../../util/atomic-write
+      '@greeneek/gnk-fs-local':
+        specifier: workspace:^
+        version: link:../../fs/fs-local
       '@greeneek/gnk-home-paths':
         specifier: workspace:^
         version: link:../../util/home-paths
@@ -6723,6 +6726,9 @@ importers:
       '@greeneek/gnk-llm':
         specifier: workspace:^
         version: link:../../llm/llm
+      '@greeneek/gnk-persona':
+        specifier: workspace:^
+        version: link:../persona
       '@greeneek/gnk-scope':
         specifier: workspace:^
         version: link:../../core/scope
@@ -6741,6 +6747,21 @@ importers:
       '@greeneek/gnk-system-prompt':
         specifier: workspace:^
         version: link:../../core/system-prompt
+      '@greeneek/gnk-terminal':
+        specifier: workspace:^
+        version: link:../../terminal/terminal
+      '@greeneek/gnk-terminal-bash':
+        specifier: workspace:^
+        version: link:../../terminal/terminal-bash
+      '@greeneek/gnk-tool-bash-persistent':
+        specifier: workspace:^
+        version: link:../../shell/tool-bash-persistent
+      '@greeneek/gnk-tool-pwsh-persistent':
+        specifier: workspace:^
+        version: link:../../shell/tool-pwsh-persistent
+      '@greeneek/gnk-tool-str-replace-editor':
+        specifier: workspace:^
+        version: link:../../fs/tool-str-replace-editor
       '@greeneek/gnk-tools':
         specifier: workspace:^
         version: link:../../core/tools

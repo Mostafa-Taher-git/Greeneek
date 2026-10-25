@@ -34,6 +34,7 @@ The subagent group is the delegation family: it lets an agent hand a task to a c
 | [`tool-subagent/`](tool-subagent/README.md) | Exposes delegation to the model | registers on `ctx.tools` |
 | [`tool-subagent-control/`](tool-subagent-control/README.md) | Exposes adjacent-Agent messaging, interrupt, and listing to the model | registers on `ctx.tools` |
 | [`wave/`](wave/README.md) | Army wave engine: concurrent one-shot fleets with budgets, cancellation, and fleet views | `ctx.waves` |
+| [`tool-wave/`](tool-wave/README.md) | Exposes Army Lead fleet dispatch (`wave_dispatch`) and cancellation (`wave_cancel`) to the model | registers on `ctx.tools` |
 
 -----
 

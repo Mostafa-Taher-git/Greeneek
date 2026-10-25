@@ -16,7 +16,7 @@ Every workspace package (`packages/<family>/<name>`), categorized by what it con
 | LLM | Model routes and provider adapters | `packages/llm/*` |
 | Capability | Every other plugin, grouped by family directory | fallback: anything unmatched |
 
-Scope: 258 workspace packages; every package appears under each of its kinds (23 Tool, 4 Skill, 6 Command, 40 UI, 7 LLM, 185 Capability rows). A package with several kinds (e.g. a tool that also contributes a command) appears in each section.
+Scope: 259 workspace packages; every package appears under each of its kinds (24 Tool, 4 Skill, 6 Command, 40 UI, 7 LLM, 185 Capability rows). A package with several kinds (e.g. a tool that also contributes a command) appears in each section.
 
 ## Tools
 
@@ -40,6 +40,7 @@ Scope: 258 workspace packages; every package appears under each of its kinds (23
 | `@greeneek/gnk-tool-skill` | The model-facing skill catalog and loader tool for users and maintainers understanding what agents see, or configuring the session skill catalog. |
 | `@greeneek/gnk-tool-subagent` | Model-facing subagent delegation tool for users and maintainers configuring, composing, or debugging delegation over a subagent provider. |
 | `@greeneek/gnk-tool-subagent-control` | Global send_message, interrupt_agent, and list_agents tools for users and maintainers composing or debugging continuable-child control. |
+| `@greeneek/gnk-tool-wave` | Model-facing Army Lead tools for users and maintainers configuring, composing, or debugging concurrent one-shot subagent fleets over a wave engine. |
 | `@greeneek/gnk-tool-terminal` | Six model-facing persistent terminal tools with owner isolation, bounded results, and optional background sends for agents that need cross-call terminal state. |
 | `@greeneek/gnk-tool-todo` | The model-facing todo_write tool over the Greeneek Harness session log: whole-list replacement, per-session ownership, and the todos projection, for users and maintainers choosing, configuring, or debugging the tool. |
 | `@greeneek/gnk-tool-web` | The model-facing web tools (web_search, web_fetch) over ctx.web: how deployments enable, configure, and observe the search and fetch tools the model sees. |

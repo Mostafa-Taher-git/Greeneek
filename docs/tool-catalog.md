@@ -36,6 +36,7 @@ This table connects model-visible tool names to the plugin package and service s
 | `@greeneek/gnk-tool-session-query` | `session_event_read`, `session_event_search`, `session_event_trace`, `session_search`, `session_trace` | `ctx.tools`, `ctx.systemPrompt`, `ctx.sessionQuery`, `a calling Agent for workspace authority` | `tool/call`, `tool/result` | - | The five read-only tools hide provider cursors and authorize every result from the immutable calling agent session. The package is opt-in; compositions that need enforced deadlines or bounded inline output also mount the generic timeout or spill policies. |
 | `@greeneek/gnk-tool-subagent` | `list_subagent_models`, `subagent` | `ctx.tools`, `ctx.subagents`, `ctx.systemPrompt`, `ctx.llm for model discovery and selected-route validation` | `tool/call`, `tool/result`, `child session events through the chosen provider` | `subagent`, `subagent_fork` | The registered delegation name is the load-time `toolName` config (default `subagent`); the default schema above has model selection off, while the discovery schema is shown as the fixed companion available in an enabled Session. Web presets sample the Plugins preference for each new top-level Session and preserve that decision for its child Sessions; `subagent_fork` remains fixed-route. Each instance independently controls whether it reads model-selection settings and its background behavior through `modelSelectionSettings`, `backgroundMode`, and `enableRunInBackground`. |
 | `@greeneek/gnk-tool-subagent-control` | `interrupt_agent`, `list_agents`, `send_message` | `ctx.tools`, `ctx.subagents`, `ctx.agents and ctx.sessionProjections (list_agents only)` | `tool/call`, `tool/result`, `child session events through ctx.subagents` | - | The globally named control tools over continuable background subagents: provider-bound `tool-subagent` instances register distinct delegation tools, while this package registers `send_message` and `interrupt_agent` once, plus `list_agents` from its separately loaded `/list-agents` plugin (whose catalog rows use the sessionProjections and live Agent registries). |
+| `@greeneek/gnk-tool-wave` | `wave_cancel`, `wave_dispatch` | `ctx.tools`, `ctx.waves`, `a calling Agent at execution time` | `tool/call`, `tool/result`, `the wave/* durable records of its fleets` | - | Both fleet tools always mount together. `wave_dispatch` waits for the whole wave and owns no parent conversation of the members; a member `provider` names a `ctx.subagents` provider instead of the configured default. The member byte cap (`WaveRuntimeConfig.maxResultBytes`) is runtime config, not an argument. |
 | `@greeneek/gnk-tool-jobs` | `job_kill`, `job_list`, `job_output` | `ctx.tools`, `ctx.jobs`, `ctx.systemPrompt` | `tool/call`, `tool/result`, `user/message via agent.inject() for background completion notices` | - | The kind-agnostic background-job controller: background bash commands, PTY sends, and subagents are read, listed, and killed through the same three tools. Loading the plugin attaches the controller that arms producers' `ctx.jobs.start()`. |
 | `@greeneek/gnk-experimental-tool-agent-team` | `interrupt_agent`, `list_agents`, `send_message`, `spawn_teammate`, `team_task_create`, `team_task_get`, `team_task_list`, `team_task_update`, `wait_agent` | `ctx.tools`, `ctx.systemPrompt`, `ctx.agentTeams`, `an exact live Team member Agent` | `tool/call`, `team/member`, `team/message/queued`, `team/message/delivered`, `team/task`, `tool/result` | - | All nine tools are scoped to implicit Team Leads and durable teammates. The shipped gnk-base bundle keeps the package disabled; the documented Agent Teams profile patch enables it while disabling the legacy continuable-child control names. |
 | `@greeneek/gnk-tool-todo` | `todo_write` | `ctx.tools`, `owning Agent session` | `tool/call`, `todo/write`, `tool/result` | - | todo_write is session-owned state; UIs render the latest todo/write event as a checklist. `allowParallelInProgress` is required with no default, so the catalog states its choice: `true`, whose description invites several `in_progress` items. A deployment choosing `false` receives the same tool with a description asking for exactly one active task. |
@@ -1716,6 +1717,101 @@ Send a message to a direct continuable child by its agent id. If you are a resid
 Source: [`packages/subagent/tool-subagent-control/src/index.ts`](../packages/subagent/tool-subagent-control/src/index.ts)
 
 The globally named control tools over continuable background subagents: provider-bound `tool-subagent` instances register distinct delegation tools, while this package registers `send_message` and `interrupt_agent` once, plus `list_agents` from its separately loaded `/list-agents` plugin (whose catalog rows use the sessionProjections and live Agent registries).
+
+<a id="greeneekgnk-tool-wave"></a>
+
+## `@greeneek/gnk-tool-wave`
+
+### `wave_cancel`
+
+Cancel fleets this conversation started with wave_dispatch that are still running. With `wave_id`, cancel exactly that retained wave; without it, emergency-stop every unsettled fleet of this conversation. Settled waves are left alone and reported as already settled, so calling this after a dispatch finished is always safe.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "wave_id": {
+      "type": "string",
+      "description": "Cancel exactly the retained wave with this id; omit it to cancel every unsettled fleet dispatched from this conversation."
+    }
+  }
+}
+```
+
+Source: [`packages/subagent/tool-wave/src/index.ts`](../packages/subagent/tool-wave/src/index.ts)
+
+### `wave_dispatch`
+
+Dispatch a wave: a fleet of one-shot subagents that runs concurrently until every member settles, and returns one report row per member — final output, status, tokens, and child session id. Each member does not see this conversation, so give every member a complete, standalone prompt. Use it to fan out independent work (research across several questions, parallel implementation, multi-reviewer checks) in one call instead of one delegation per subtask. A member that fails or exceeds its budget settles as a failed or budget-killed row; the wave still returns, with any token ceilings enforced by the engine.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "label": {
+      "type": "string",
+      "description": "Short fleet label kept in this session's wave records."
+    },
+    "members": {
+      "type": "array",
+      "description": "The fleet: one one-shot subagent per entry, launched concurrently and reported in this order.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "description": "Complete, standalone task for this member; members do not share this conversation."
+          },
+          "role": {
+            "type": "string",
+            "description": "Display role for this member (for example \"reviewer\"), kept beside its result row."
+          },
+          "provider": {
+            "type": "string",
+            "description": "Subagent provider for this member, overriding the configured default provider."
+          },
+          "model": {
+            "type": "string",
+            "description": "Model id pinned for this member, interpreted by its provider."
+          },
+          "reasoning_effort": {
+            "type": "string",
+            "description": "Reasoning effort for this member when the effective provider route supports one."
+          }
+        },
+        "required": [
+          "prompt"
+        ]
+      }
+    },
+    "on_complete": {
+      "type": "string",
+      "description": "What a failed or budget-killed member does to its siblings: `continue-others` (default) lets them finish; `fail-fast` cancels every remaining active member.",
+      "enum": [
+        "continue-others",
+        "fail-fast"
+      ]
+    },
+    "max_tokens_per_member": {
+      "type": "integer",
+      "description": "Token ceiling per member; a member exceeding it is killed at its next step boundary. Omit for no per-member ceiling."
+    },
+    "max_wave_tokens": {
+      "type": "integer",
+      "description": "Token ceiling across the whole fleet; breaching it kills every active member. Omit for no fleet ceiling."
+    }
+  },
+  "required": [
+    "label",
+    "members"
+  ]
+}
+```
+
+Source: [`packages/subagent/tool-wave/src/index.ts`](../packages/subagent/tool-wave/src/index.ts)
+
+Both fleet tools always mount together. `wave_dispatch` waits for the whole wave and owns no parent conversation of the members; a member `provider` names a `ctx.subagents` provider instead of the configured default. The member byte cap (`WaveRuntimeConfig.maxResultBytes`) is runtime config, not an argument.
 
 <a id="greeneekgnk-tool-jobs"></a>
 

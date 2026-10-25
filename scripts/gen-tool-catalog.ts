@@ -64,6 +64,8 @@ import type TeamService from '@greeneek/gnk-experimental-agent-team'
 import * as ToolTeam from '@greeneek/gnk-experimental-tool-agent-team'
 import * as ToolTodo from '@greeneek/gnk-tool-todo'
 import * as ToolSubagent from '@greeneek/gnk-tool-subagent'
+import * as ToolWave from '@greeneek/gnk-tool-wave'
+import WaveRuntime from '@greeneek/gnk-subagent-wave'
 import { registerListSubagentModels } from '../packages/subagent/tool-subagent/src/list-models.ts'
 import * as ToolWeb from '@greeneek/gnk-tool-web'
 import VmWorkflowEngine from '@greeneek/gnk-workflow-worker-thread'
@@ -509,6 +511,24 @@ const TOOL_PACKAGES: ToolPackage[] = [
     },
     note:
       'The globally named control tools over continuable background subagents: provider-bound `tool-subagent` instances register distinct delegation tools, while this package registers `send_message` and `interrupt_agent` once, plus `list_agents` from its separately loaded `/list-agents` plugin (whose catalog rows use the sessionProjections and live Agent registries).',
+  },
+  {
+    pkg: '@greeneek/gnk-tool-wave',
+    dir: 'tool-wave',
+    source: 'packages/subagent/tool-wave/src/index.ts',
+    requires: ['ctx.tools', 'ctx.waves', 'a calling Agent at execution time'],
+    writes: ['tool/call', 'tool/result', 'the wave/* durable records of its fleets'],
+    async mount(ctx) {
+      await ctx.plugin(SubagentRuntime)
+      registerCatalogSubagentProvider(ctx, 'mock')
+      await ctx.plugin(WaveRuntime)
+      await ctx.plugin(ToolWave, { provider: 'mock' })
+    },
+    note:
+      'Both fleet tools always mount together. `wave_dispatch` waits for the whole wave and owns no parent '
+      + 'conversation of the members; a member `provider` names a `ctx.subagents` provider instead of the '
+      + 'configured default. The member byte cap (`WaveRuntimeConfig.maxResultBytes`) is runtime config, not '
+      + 'an argument.',
   },
   {
     pkg: '@greeneek/gnk-tool-jobs',

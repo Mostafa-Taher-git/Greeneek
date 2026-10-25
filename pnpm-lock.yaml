@@ -8901,6 +8901,43 @@ importers:
         specifier: workspace:^
         version: link:../../core/tools
 
+  packages/subagent/tool-wave:
+    dependencies:
+      '@greeneek/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+    devDependencies:
+      '@greeneek/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@greeneek/gnk-agent':
+        specifier: workspace:^
+        version: link:../../core/agent
+      '@greeneek/gnk-llm':
+        specifier: workspace:^
+        version: link:../../llm/llm
+      '@greeneek/gnk-session':
+        specifier: workspace:^
+        version: link:../../core/session
+      '@greeneek/gnk-session-projection':
+        specifier: workspace:^
+        version: link:../../session/session-projection
+      '@greeneek/gnk-subagent':
+        specifier: workspace:^
+        version: link:../subagent
+      '@greeneek/gnk-subagent-wave':
+        specifier: workspace:^
+        version: link:../wave
+      '@greeneek/gnk-system-prompt':
+        specifier: workspace:^
+        version: link:../../core/system-prompt
+      '@greeneek/gnk-token-meter':
+        specifier: workspace:^
+        version: link:../../llm/token-meter
+      '@greeneek/gnk-tools':
+        specifier: workspace:^
+        version: link:../../core/tools
+
   packages/subagent/wave:
     dependencies:
       '@greeneek/gnk-brand':

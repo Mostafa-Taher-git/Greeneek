@@ -414,6 +414,7 @@
       "@greeneek/gnk-tool-terminal": ["./packages/terminal/tool-terminal/src"],
       "@greeneek/gnk-tool-todo": ["./packages/todo/tool-todo/src"],
       "@greeneek/gnk-tool-todo/invariant": ["./packages/todo/tool-todo/src/invariant.ts"],
+      "@greeneek/gnk-tool-wave": ["./packages/subagent/tool-wave/src"],
       "@greeneek/gnk-tool-web": ["./packages/web/tool-web/src"],
       "@greeneek/gnk-tool-workflow": ["./packages/workflow/tool-workflow/src"],
       "@greeneek/gnk-tool-workflow/invariant": ["./packages/workflow/tool-workflow/src/invariant.ts"],

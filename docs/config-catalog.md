@@ -3034,6 +3034,22 @@ export interface Config {
 
 Source: [`packages/todo/tool-todo/src/index.ts:29`](../packages/todo/tool-todo/src/index.ts)
 
+<a id="greeneekgnk-tool-wave"></a>
+
+## `@greeneek/gnk-tool-wave`
+
+Requires: `tools` · `waves`
+
+```ts config-catalog
+/** Plugin settings. */
+export interface Config {
+  /** Registry name of the `ctx.subagents` provider used when a member omits its own `provider`. */
+  provider: string
+}
+```
+
+Source: [`packages/subagent/tool-wave/src/index.ts:30`](../packages/subagent/tool-wave/src/index.ts)
+
 <a id="greeneekgnk-tool-web"></a>
 
 ## `@greeneek/gnk-tool-web`
@@ -3547,6 +3563,7 @@ Imported as libraries by other packages; a `cordis.yml` cannot load them.
 - `@greeneek/gnk-session-telemetry` ([`packages/session/session-telemetry/src/index.ts`](../packages/session/session-telemetry/src/index.ts))
 - `@greeneek/gnk-session-title-llm` ([`packages/session/session-title-llm/src/index.ts`](../packages/session/session-title-llm/src/index.ts))
 - `@greeneek/gnk-subagent-in-process-driver` ([`packages/subagent/subagent-in-process-driver/src/index.ts`](../packages/subagent/subagent-in-process-driver/src/index.ts))
+- `@greeneek/gnk-subagent-wave` ([`packages/subagent/wave/src/index.ts`](../packages/subagent/wave/src/index.ts))
 - `@greeneek/gnk-timeout` ([`packages/util/timeout/src/index.ts`](../packages/util/timeout/src/index.ts))
 - `@greeneek/gnk-tool-craft` ([`packages/craft/tool-craft/src/index.ts`](../packages/craft/tool-craft/src/index.ts))
 - `@greeneek/gnk-typert-generator` ([`packages/typert/generator/src/index.ts`](../packages/typert/generator/src/index.ts))

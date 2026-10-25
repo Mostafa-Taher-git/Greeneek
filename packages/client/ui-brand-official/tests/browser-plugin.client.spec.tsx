@@ -78,10 +78,13 @@ describe('official browser-brand plugin', () => {
     expect(subject.slots.entries(HERO_HOLE)).toHaveLength(0)
   })
 
-  it('renders the official name independently from both requested mark sizes', () => {
-    const name = render(<OfficialBrandName />)
+  it('renders the official name from the seated wordmark and both requested mark sizes', () => {
+    const name = render(<OfficialBrandName wordmark="Greeneek" />)
     expect(name.container.textContent).toBe('Greeneek')
     expect(name.container.querySelector('img')).toBeNull()
+    // The occupant forwards the seat's text; it never embeds a product word.
+    name.rerender(<OfficialBrandName wordmark="Other" />)
+    expect(name.container.textContent).toBe('Other')
     name.unmount()
 
     const mark = render(<OfficialBrandMark size={34} />)

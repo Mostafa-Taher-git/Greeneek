@@ -2,9 +2,11 @@ import type { CSSProperties } from 'react'
 import { FishLogo } from './FishLogo.tsx'
 import type { IconProps } from './icons/props.ts'
 
-/** Display options for the Greeneek brand wordmark. */
+/** Display options for the brand wordmark. */
 export interface BrandWordmarkProps extends IconProps {
-  /** Whether to include the leading Greeneek mark; defaults to true. */
+  /** The localized brand name to render. */
+  wordmark: string
+  /** Whether to include the leading brand mark; defaults to true. */
   includeMark?: boolean | undefined
 }
 
@@ -31,17 +33,18 @@ function textStyle(size: number): CSSProperties {
 }
 
 /**
- * Render the Greeneek brand wordmark.
+ * Render the brand wordmark from caller-supplied text.
+ * @param props.wordmark - the localized brand name to render.
  * @param props.size - height in px (default 24).
  * @param props.className - extra class for layout placement.
- * @param props.includeMark - whether to include the leading Greeneek mark.
- * @returns the Greeneek wordmark.
+ * @param props.includeMark - whether to include the leading brand mark.
+ * @returns the brand wordmark.
  */
-export function BrandWordmark({ size = 24, className, includeMark = true }: BrandWordmarkProps) {
+export function BrandWordmark({ wordmark, size = 24, className, includeMark = true }: BrandWordmarkProps) {
   return (
     <span className={className} style={rootStyle(size)} aria-hidden="true">
       {includeMark ? <FishLogo size={size} /> : null}
-      <span style={textStyle(size)}>Greeneek</span>
+      <span style={textStyle(size)}>{wordmark}</span>
     </span>
   )
 }

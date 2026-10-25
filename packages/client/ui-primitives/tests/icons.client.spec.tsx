@@ -70,13 +70,13 @@ describe('FishLogo', () => {
 })
 
 describe('BrandWordmark', () => {
-  it('renders the name as text and controls the leading mark independently', () => {
-    const view = render(<primitives.BrandWordmark />)
+  it('renders the caller\'s text and controls the leading mark independently', () => {
+    const view = render(<primitives.BrandWordmark wordmark="Greeneek" />)
     expect(view.container.textContent).toBe('Greeneek')
     expect(view.container.querySelectorAll('img')).toHaveLength(1)
 
-    view.rerender(<primitives.BrandWordmark includeMark={false} />)
-    expect(view.container.textContent).toBe('Greeneek')
+    view.rerender(<primitives.BrandWordmark wordmark="Other" includeMark={false} />)
+    expect(view.container.textContent).toBe('Other')
     expect(view.container.querySelectorAll('img')).toHaveLength(0)
   })
 })

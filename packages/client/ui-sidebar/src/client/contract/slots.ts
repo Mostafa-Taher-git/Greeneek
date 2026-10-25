@@ -53,10 +53,16 @@ export interface SidebarBrandMarkOwnerProps {
   size: number
 }
 
-/** Empty owner share for the sidebar brand-name occupant. */
+/**
+ * Brand-name text supplied to the sidebar brand-name occupant.
+ *
+ * The sidebar owns the localized name through its own dictionary, so an
+ * occupant renders the text it is given rather than embedding a product word
+ * that no locale owns.
+ */
 export interface SidebarBrandNameOwnerProps {
-  /** Marker field: the occupant owns its own content and width. */
-  children?: never
+  /** The localized brand name to render. */
+  wordmark: string
 }
 
 /**

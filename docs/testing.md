@@ -48,9 +48,9 @@ An e2e assertion re-runs the command or re-reads the file externally; a keyword 
 - Protocol and operating-system fixtures that do not load Cordis run erasable `.ts` directly with Node, without tsx or the root paths map.
 - Only a test whose subject is source-path resolution may select `src`; state that contract in the test.
 
-## Replay lanes run on macOS and Linux
+## Replay and symlink fixtures need a POSIX checkout
 
-Recorded Web and session fixtures embed the recording host's POSIX temporary-directory path, and the Web scaffold substitutes it into fixture JSON (`realizeSeedFixture` in `apps/web/tests/scaffold.ts`). A Windows workspace root therefore yields invalid JSON, and goldens that parse still differ by path. Run these lanes and `GNK_SNAPSHOT=refresh` on macOS or Linux, where CI owns them.
+Web and session fixtures embed the recording host's POSIX paths, so a Windows root yields invalid JSON (`realizeSeedFixture` in `apps/web/tests/scaffold.ts`) and differing goldens. Git for Windows also clones with `core.symlinks=false` unless developer mode is enabled, so an indexed symlink lands as text holding its target and `verify-cordis-config` rejects the ACP `cordis.yml` fixture. Both are host limits: run these lanes and `GNK_SNAPSHOT=refresh` on macOS or Linux, and prove the symlinked fixture there rather than replacing it with a copy.
 
 ## When a snapshot test is required
 

@@ -6,36 +6,14 @@
  * @module @greeneek/gnk-subagent-wave/types
  */
 
-import type { Branded } from '@greeneek/gnk-brand'
 import type { Agent } from '@greeneek/gnk-agent'
 import type { ContentBlock } from '@greeneek/gnk-llm'
-import type { SessionId } from '@greeneek/gnk-session'
-import type { SubagentStartRequest } from '@greeneek/gnk-subagent'
-import type { SubagentStopReason } from '@greeneek/gnk-subagent'
+import type { SubagentStartRequest, SubagentStopReason } from '@greeneek/gnk-subagent'
 
-/** Identifies one accepted wave for its whole lifetime. */
-export type WaveId = Branded<'WaveId'>
+import type { WaveId, WaveMemberView } from './views.ts'
 
-/**
- * Brand a string as a {@link WaveId}.
- * @param id - the raw wave id.
- * @returns the same string, branded.
- */
-export function WaveId(id: string): WaveId {
-  return id as WaveId
-}
-
-/** Identifies one member across its queue, run, and terminal record. */
-export type WaveMemberId = Branded<'WaveMemberId'>
-
-/**
- * Brand a string as a {@link WaveMemberId}.
- * @param id - the raw member id.
- * @returns the same string, branded.
- */
-export function WaveMemberId(id: string): WaveMemberId {
-  return id as WaveMemberId
-}
+export { WaveId, WaveMemberId } from './views.ts'
+export type { WaveMemberStatus, WaveMemberView, WaveView } from './views.ts'
 
 /** One member's start-time ask; the engine supplies `parent` and `signal`. */
 export type WaveMemberRequest = Omit<SubagentStartRequest, 'parent' | 'signal'>
@@ -69,29 +47,6 @@ export interface WaveRequest {
   readonly maxWaveTokens?: number
 }
 
-/** Lifecycle state of one wave member. */
-export type WaveMemberStatus = 'queued' | 'running' | 'completed' | 'failed' | 'cancelled' | 'budget-killed'
-
-/** Live fleet row for one member, safe to render while the wave runs. */
-export interface WaveMemberView {
-  /** Stable member identity within the wave. */
-  readonly memberId: WaveMemberId
-  /** The spec's display role. */
-  readonly role?: string
-  /** Provider name from the spec. */
-  readonly provider: string
-  /** Current lifecycle state. */
-  readonly status: WaveMemberStatus
-  /** Published child session id; absent until the provider fulfills the run. */
-  readonly childSessionId?: SessionId
-  /** Child model tokens measured at the latest budget check. */
-  readonly tokensUsed: number
-  /** Provider model id when the request pinned one through agent options. */
-  readonly model?: string
-  /** Non-failure detail kept from a non-`completed` settlement. */
-  readonly diagnostic?: string
-}
-
 /** One fleet row plus a capped preview of the member's terminal output. */
 export interface WaveMemberResult extends WaveMemberView {
   /** The child's final assistant output, truncated to the configured byte cap. */
@@ -115,20 +70,6 @@ export interface WaveResult {
   readonly outcome: 'completed' | 'partial' | 'cancelled'
   /** Every member's terminal record in dispatch order. */
   readonly members: readonly WaveMemberResult[]
-}
-
-/** A browser-visible wave snapshot. */
-export interface WaveView {
-  /** The wave's identity. */
-  readonly waveId: WaveId
-  /** The wave label from the request. */
-  readonly label: string
-  /** Parent session id the wave was started for. */
-  readonly parentSessionId: SessionId
-  /** Whether every member has settled. */
-  readonly closed: boolean
-  /** Live member rows in dispatch order. */
-  readonly members: readonly WaveMemberView[]
 }
 
 /** Deployable wave-engine settings, changeable from cordis.yml. */

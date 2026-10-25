@@ -2728,6 +2728,68 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'waves',
+    summary: 'Wave engine over the subagent seam.',
+    description: 'Wave engine over the subagent seam. One instance per context; every wave is bound to its Lead agent\'s lifetime.',
+    methods: [
+      {
+        signature: 'async startWave(request: WaveRequest): Promise<WaveResult>',
+        description: 'Accept one wave and launch all members under the shared concurrency cap. Resolves when every member has settled (or been cancelled), with results in dispatch order. Never rejects for a member-level failure; those settle as `failed`/`budget-killed` rows.',
+        parameters: [{ name: 'request', description: 'Lead agent, label, member specs, completion and budget policy.' }],
+        returns: 'the settled wave.',
+        throws: ['{@link WaveError} `EMPTY_WAVE` for no members or `NO_PROVIDER` for a provider the subagent registry does not resolve.'],
+      },
+      {
+        signature: 'listWaves(parentSessionId: SessionId): readonly WaveView[]',
+        description: 'Live snapshots for one Lead session, in acceptance order; closed waves remain listed until their Lead agent disposes.',
+        parameters: [{ name: 'parentSessionId', description: 'the Lead session address.' }],
+        returns: 'every retained wave view for that parent.',
+      },
+      {
+        signature: 'cancelMember(waveId: WaveId, memberId: WaveMemberId): void',
+        description: 'Cancel one member. A queued member settles without launching; a running member\'s child observes the abort signal.',
+        parameters: [{ name: 'waveId', description: 'the owning wave.' }, { name: 'memberId', description: 'the target member.' }],
+        throws: ['{@link WaveError} `WAVE_NOT_FOUND` or `MEMBER_NOT_FOUND`.'],
+      },
+      {
+        signature: 'cancelWave(waveId: WaveId): void',
+        description: 'Cancel every unsettled member of one wave.',
+        parameters: [{ name: 'waveId', description: 'the target wave.' }],
+        throws: ['{@link WaveError} `WAVE_NOT_FOUND` when no wave carries the id.'],
+      },
+      {
+        signature: 'cancelAllForParent(parentSessionId: SessionId): readonly WaveId[]',
+        description: 'Emergency stop: cancel every unsettled member of every wave owned by one Lead session.',
+        parameters: [{ name: 'parentSessionId', description: 'the Lead session address.' }],
+        returns: 'the ids of the waves that received the abort.',
+      },
+      {
+        signature: '@Remote(\'list\') remoteExportList(parentSessionId: SessionId): readonly WaveView[]',
+        description: 'Remote face of listWaves: the Lead session\'s fleet views in acceptance order.',
+        parameters: [{ name: 'parentSessionId', description: 'the Lead session address.' }],
+        returns: 'every retained wave view; closed waves stay listed until the Lead agent disposes.',
+      },
+      {
+        signature: '@Remote(\'cancelMember\') remoteCancelMember(waveId: WaveId, memberId: WaveMemberId): { cancelled: true }',
+        description: 'Remote face of cancelMember; unknown ids surface as typed RemoteError codes instead of host throws.',
+        parameters: [{ name: 'waveId', description: 'the owning wave.' }, { name: 'memberId', description: 'the target member.' }],
+        returns: 'cancellation confirmation.',
+      },
+      {
+        signature: '@Remote(\'cancelWave\') remoteCancelWave(waveId: WaveId): { cancelled: true }',
+        description: 'Remote face of cancelWave; unknown ids surface as typed RemoteError codes instead of host throws.',
+        parameters: [{ name: 'waveId', description: 'the target wave.' }],
+        returns: 'cancellation confirmation.',
+      },
+      {
+        signature: '@Remote(\'cancelAll\') remoteCancelAll(parentSessionId: SessionId): { waveIds: readonly WaveId[] }',
+        description: 'Remote face of cancelAllForParent, the emergency stop.',
+        parameters: [{ name: 'parentSessionId', description: 'the Lead session address.' }],
+        returns: 'the ids of the waves that received the abort.',
+      },
+    ],
+  },
+  {
     key: 'web',
     summary: 'The web access service.',
     description: 'The web access service. Registered as `ctx.web` (one instance per context).\n\nSelection semantics (resolved at execution time, never order-dependent):\n\n- A configured id that is registered and `available()` → that provider.\n- A configured id not registered → `WEB_PROVIDER_CONFIGURED_MISSING`.\n- A configured id registered but unavailable → `WEB_PROVIDER_CONFIGURED_UNAVAILABLE`.\n- No id configured, exactly one registered usable provider → that provider.\n- No id configured, multiple usable providers → `WEB_PROVIDER_AMBIGUOUS`.\n- No id configured, no usable provider → `WEB_PROVIDER_UNAVAILABLE`.',
@@ -6168,6 +6230,46 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'VerifiedWebhookDelivery',
     declaration: 'export interface VerifiedWebhookDelivery<K extends string = string> {\n    readonly kind: K;\n    readonly source: WebhookSourceId;\n    readonly deliveryId: WebhookDeliveryId;\n    readonly event: WebhookEventOf<K>;\n    readonly receivedAt: number;\n}',
+  },
+  {
+    name: 'WaveId',
+    declaration: 'export type WaveId = Branded<\'WaveId\'>;',
+  },
+  {
+    name: 'WaveMemberId',
+    declaration: 'export type WaveMemberId = Branded<\'WaveMemberId\'>;',
+  },
+  {
+    name: 'WaveMemberRequest',
+    declaration: 'export type WaveMemberRequest = Omit<SubagentStartRequest, \'parent\' | \'signal\'>;',
+  },
+  {
+    name: 'WaveMemberResult',
+    declaration: 'export interface WaveMemberResult extends WaveMemberView {\n    readonly output: readonly ContentBlock[];\n    readonly truncated: boolean;\n    readonly structured?: unknown;\n    readonly stopReason?: SubagentStopReason;\n}',
+  },
+  {
+    name: 'WaveMemberSpec',
+    declaration: 'export interface WaveMemberSpec {\n    readonly provider: string;\n    readonly role?: string;\n    readonly request: WaveMemberRequest;\n}',
+  },
+  {
+    name: 'WaveMemberStatus',
+    declaration: 'export type WaveMemberStatus = \'queued\' | \'running\' | \'completed\' | \'failed\' | \'cancelled\' | \'budget-killed\';',
+  },
+  {
+    name: 'WaveMemberView',
+    declaration: 'export interface WaveMemberView {\n    readonly memberId: WaveMemberId;\n    readonly role?: string;\n    readonly provider: string;\n    readonly status: WaveMemberStatus;\n    readonly childSessionId?: SessionId;\n    readonly tokensUsed: number;\n    readonly model?: string;\n    readonly diagnostic?: string;\n}',
+  },
+  {
+    name: 'WaveRequest',
+    declaration: 'export interface WaveRequest {\n    readonly parent: Agent;\n    readonly label: string;\n    readonly members: readonly WaveMemberSpec[];\n    readonly onComplete?: \'continue-others\' | \'fail-fast\';\n    readonly maxTokensPerMember?: number;\n    readonly maxWaveTokens?: number;\n}',
+  },
+  {
+    name: 'WaveResult',
+    declaration: 'export interface WaveResult {\n    readonly waveId: WaveId;\n    readonly outcome: \'completed\' | \'partial\' | \'cancelled\';\n    readonly members: readonly WaveMemberResult[];\n}',
+  },
+  {
+    name: 'WaveView',
+    declaration: 'export interface WaveView {\n    readonly waveId: WaveId;\n    readonly label: string;\n    readonly parentSessionId: SessionId;\n    readonly closed: boolean;\n    readonly members: readonly WaveMemberView[];\n}',
   },
   {
     name: 'WebBootBatch',

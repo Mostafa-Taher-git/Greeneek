@@ -679,6 +679,94 @@ Types: [Agent](core.md) · [ContentBlock](llm-streaming.md) · [MessageId](llm-s
 
 Source: [`packages/subagent/subagent/src/index.ts`](../../packages/subagent/subagent/src/index.ts)
 
+<a id="ctxwaves--waveruntime"></a>
+
+### `ctx.waves` — `WaveRuntime`
+
+Wave engine over the subagent seam. One instance per context; every wave is bound to its Lead agent's lifetime.
+
+```ts cordis-catalog
+/**
+ * Accept one wave and launch all members under the shared concurrency cap.
+ * Resolves when every member has settled (or been cancelled), with results
+ * in dispatch order. Never rejects for a member-level failure; those settle
+ * as `failed`/`budget-killed` rows.
+ * @param request - Lead agent, label, member specs, completion and budget policy.
+ * @returns the settled wave.
+ * @throws {@link WaveError} `EMPTY_WAVE` for no members or `NO_PROVIDER` for
+ *   a provider the subagent registry does not resolve.
+ */
+async startWave(request: WaveRequest): Promise<WaveResult>
+
+/**
+ * Live snapshots for one Lead session, in acceptance order; closed waves
+ * remain listed until their Lead agent disposes.
+ * @param parentSessionId - the Lead session address.
+ * @returns every retained wave view for that parent.
+ */
+listWaves(parentSessionId: SessionId): readonly WaveView[]
+
+/**
+ * Cancel one member. A queued member settles without launching; a running
+ * member's child observes the abort signal.
+ * @param waveId - the owning wave.
+ * @param memberId - the target member.
+ * @throws {@link WaveError} `WAVE_NOT_FOUND` or `MEMBER_NOT_FOUND`.
+ */
+cancelMember(waveId: WaveId, memberId: WaveMemberId): void
+
+/**
+ * Cancel every unsettled member of one wave.
+ * @param waveId - the target wave.
+ * @throws {@link WaveError} `WAVE_NOT_FOUND` when no wave carries the id.
+ */
+cancelWave(waveId: WaveId): void
+
+/**
+ * Emergency stop: cancel every unsettled member of every wave owned by one
+ * Lead session.
+ * @param parentSessionId - the Lead session address.
+ * @returns the ids of the waves that received the abort.
+ */
+cancelAllForParent(parentSessionId: SessionId): readonly WaveId[]
+
+/**
+ * Remote face of {@link listWaves}: the Lead session's fleet views in
+ * acceptance order.
+ * @param parentSessionId - the Lead session address.
+ * @returns every retained wave view; closed waves stay listed until the Lead agent disposes.
+ */
+@Remote('list') remoteExportList(parentSessionId: SessionId): readonly WaveView[]
+
+/**
+ * Remote face of {@link cancelMember}; unknown ids surface as typed
+ * RemoteError codes instead of host throws.
+ * @param waveId - the owning wave.
+ * @param memberId - the target member.
+ * @returns cancellation confirmation.
+ */
+@Remote('cancelMember') remoteCancelMember(waveId: WaveId, memberId: WaveMemberId): { cancelled: true }
+
+/**
+ * Remote face of {@link cancelWave}; unknown ids surface as typed
+ * RemoteError codes instead of host throws.
+ * @param waveId - the target wave.
+ * @returns cancellation confirmation.
+ */
+@Remote('cancelWave') remoteCancelWave(waveId: WaveId): { cancelled: true }
+
+/**
+ * Remote face of {@link cancelAllForParent}, the emergency stop.
+ * @param parentSessionId - the Lead session address.
+ * @returns the ids of the waves that received the abort.
+ */
+@Remote('cancelAll') remoteCancelAll(parentSessionId: SessionId): { waveIds: readonly WaveId[] }
+```
+
+Types: [SessionId](core.md)
+
+Source: [`packages/subagent/wave/src/service.ts`](../../packages/subagent/wave/src/service.ts)
+
 <a id="subagent-events"></a>
 
 ### `subagent/*` events

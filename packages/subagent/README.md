@@ -33,6 +33,7 @@ The subagent group is the delegation family: it lets an agent hand a task to a c
 | [`subagent-gnk-sdk/`](subagent-gnk-sdk/README.md) | Runs an out-of-process Harness child through the TypeScript SDK | registers on `ctx.subagents` |
 | [`tool-subagent/`](tool-subagent/README.md) | Exposes delegation to the model | registers on `ctx.tools` |
 | [`tool-subagent-control/`](tool-subagent-control/README.md) | Exposes adjacent-Agent messaging, interrupt, and listing to the model | registers on `ctx.tools` |
+| [`wave/`](wave/README.md) | Army wave engine: concurrent one-shot fleets with budgets, cancellation, and fleet views | `ctx.waves` |
 
 -----
 

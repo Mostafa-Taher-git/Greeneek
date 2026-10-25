@@ -93,6 +93,7 @@ const SENTENCE_MODEL_EXPERIENCE: Readonly<Record<string, SentenceContract>> = {
   'packages/client/ui-craft': { kind: 'none', reason: 'Browser-side projection of durable Craft bridge results and host-reported installation state; gnk-tool-craft owns the model-facing surface.' },
   'packages/craft/craft': { kind: 'indirect', reason: 'The service registers no model surface; gnk-tool-craft mounts the gateway tools and recipe skills built on its catalog, status, and sessions.' },
   'packages/craft/craft-local': { kind: 'indirect', reason: 'The host provider executes calls; gnk-tool-craft owns the model-facing registrations those calls answer through.' },
+  'packages/subagent/wave': { kind: 'indirect', reason: 'The engine registers no model surface; the Army Lead tool Consumer owns the fleet-delegation tool whose schema and results this engine serves.' },
   'packages/client/ui-schedule': { kind: 'none', reason: 'Browser-side read-only projection of active Schedule records; gnk-schedule owns the model-facing tools and delivery.' },
   'packages/client/ui-workflow-run': { kind: 'none', reason: 'Browser-side UI plugin layer; renders durable workflow records without changing model context.' },
   'packages/client/ui-input-trigger': { kind: 'none', reason: 'Browser-side UI plugin layer; registers nothing model-facing.' },

@@ -233,6 +233,10 @@
       // util/ folders are role-named without the util- prefix their npm names carry,
       // so these aliases stay hand-written like gnk-util-crypto above.
       "@greeneek/gnk-util-time": ["./packages/util/time/src"],
+      // subagent/wave carries the wave- role npm name its directory does not, so the
+      // generated region cannot map it; this alias stays hand-written.
+      "@greeneek/gnk-subagent-wave": ["./packages/subagent/wave/src"],
+      "@greeneek/gnk-subagent-wave/client": ["./packages/subagent/wave/src/client.ts"],
       // BEGIN generated package aliases — pnpm run gen-tsconfig-paths
       "@greeneek/gnk-acp": ["./packages/acp/acp/src"],
       "@greeneek/gnk-acp-app": ["./packages/bundle/acp-app/src"],

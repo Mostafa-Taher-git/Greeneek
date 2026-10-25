@@ -1,0 +1,79 @@
+{
+  "name": "@greeneek/gnk-subagent-wave",
+  "description": "Army wave engine (ctx.waves): concurrent one-shot subagent fleets with budgets, cancellation, and fleet views",
+  "version": "1.1.0-alpha.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/greeneek/greeneek-harness.git",
+    "directory": "packages/subagent/wave"
+  },
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "types": "./lib/types/client.d.ts",
+      "default": "./lib/types/client.js"
+    },
+    "./typert": {
+      "types": "./lib/typert.host.d.ts",
+      "default": "./lib/typert.host.js"
+    },
+    "./remote": {
+      "types": "./lib/typert.remote-client.d.ts",
+      "default": "./lib/typert.remote-client.js"
+    },
+    "./src/*": "./src/*",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/types/**/*.js",
+    "lib/types/**/*.d.ts",
+    "lib/typert.host.js",
+    "lib/typert.host.d.ts",
+    "lib/typert.remote-client.js",
+    "lib/typert.remote-client.d.ts"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@greeneek/gnk-brand": "workspace:^",
+    "@greeneek/schemastery": "workspace:^",
+    "zod": "^4.4.3"
+  },
+  "peerDependencies": {
+    "@greeneek/cordis": "workspace:^",
+    "@greeneek/gnk-agent": "workspace:^",
+    "@greeneek/gnk-llm": "workspace:^",
+    "@greeneek/gnk-session": "workspace:^",
+    "@greeneek/gnk-session-projection": "workspace:^",
+    "@greeneek/gnk-subagent": "workspace:^",
+    "@greeneek/gnk-token-meter": "workspace:^",
+    "@greeneek/gnk-typert-protocol": "workspace:^"
+  },
+  "peerDependenciesMeta": {
+    "@greeneek/gnk-session-projection": {
+      "optional": true
+    },
+    "@greeneek/gnk-token-meter": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@greeneek/cordis": "workspace:^",
+    "@greeneek/gnk-agent": "workspace:^",
+    "@greeneek/gnk-llm": "workspace:^",
+    "@greeneek/gnk-session": "workspace:^",
+    "@greeneek/gnk-session-projection": "workspace:^",
+    "@greeneek/gnk-subagent": "workspace:^",
+    "@greeneek/gnk-token-meter": "workspace:^",
+    "@greeneek/gnk-typert-protocol": "workspace:^"
+  }
+}

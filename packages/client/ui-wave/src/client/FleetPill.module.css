@@ -1,0 +1,133 @@
+/* Composer pill: one line naming the live fleet, a stop mark at its end, and the
+   full fleet body in an overlay above the composer. */
+
+.root {
+  position: relative;
+  min-width: 0;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 28px;
+  padding: 2px 2px 2px 8px;
+  border-radius: 999px;
+  corner-shape: round;
+  background: var(--dsw-alias-bg-layer-1);
+  color: var(--dsw-alias-label-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.pill[data-degraded] {
+  color: var(--dsw-alias-state-warn-label);
+}
+
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.label {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--dsw-alias-label-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trigger svg {
+  flex: none;
+  transition: transform 120ms ease;
+}
+
+.triggerOpen {
+  transform: rotate(180deg);
+}
+
+/* The stop mark is the pill's one light moment: colour, not glow, and it stays
+   legible without the tooltip. */
+.stop {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 999px;
+  corner-shape: round;
+  background: transparent;
+  color: var(--dsw-alias-state-error-primary);
+  cursor: pointer;
+}
+
+.stop:hover,
+.stop[data-armed] {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.stop[data-armed] {
+  color: var(--dsw-alias-state-warn-primary);
+}
+
+.notice {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.overlay {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  z-index: 100;
+  box-sizing: border-box;
+  width: min(420px, calc(100vw - 32px));
+  max-height: min(460px, calc(100vh - 200px));
+  padding: 12px;
+  overflow-y: auto;
+  border-radius: 16px;
+  background: var(--dsw-specific-menu);
+  --gnk-scrollbar-thumb: var(--dsw-alias-scrollbar-bg-l2);
+  --gnk-scrollbar-thumb-hover: var(--dsw-alias-scrollbar-hover-l2);
+  --dsw-elevation-stroke-color: var(--dsw-alias-border-l1);
+  box-shadow: var(--dsw-elevation-prominent);
+}
+
+.overlayClose {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 999px;
+  corner-shape: round;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  cursor: pointer;
+}
+
+.overlayClose:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trigger svg {
+    transition: none;
+  }
+}

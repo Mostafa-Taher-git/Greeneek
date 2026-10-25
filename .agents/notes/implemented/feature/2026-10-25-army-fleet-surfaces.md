@@ -1,0 +1,59 @@
+# Agent Note: Army fleet surfaces read the wave engine through its own browser face
+
+Status: implemented
+
+## Problem
+
+The wave engine, its durable `wave/*` Session events, and the Lead-facing `wave_dispatch`/`wave_cancel` tools landed as three commits with nothing on the browser side and nothing composing them: a reader could not see a running fleet, could not abort one from the GUI, and no session could select an Army agent. Two constraints shaped the surface rather than taste. First, the engine keeps member progress in host memory and publishes no `@Remote` event for it, so a live fleet view has to re-read `waves/list` instead of subscribing. Second, the engine's browser-safe module (`src/client.ts` → `src/types.ts`) imported the Host Session service, the Agent, and the subagent start request, so reaching the wave face from any Client program pulled `packages/core/session`'s `Context.sessions: SessionStore` merge into that program and displaced the Client's own `ISessions` merge — every package importing `@greeneek/gnk-api-remotes/client` then failed to typecheck `ctx.sessions.openSubagent`, `scopeOf`, and `binding`.
+
+## Decision
+
+**The wave package's browser face carries only what a browser may render.** `packages/subagent/wave/src/views.ts` owns the ids (with their brand helpers), `WaveMemberStatus`, `WaveMemberView`, and `WaveView`, and imports `@greeneek/gnk-brand` plus `@greeneek/gnk-session/types` — the same subpath discipline `@greeneek/gnk-subagent/control-types` already follows. `src/types.ts` re-exports that vocabulary for Host consumers and keeps the Lead-facing values (`WaveRequest`, `WaveMemberSpec`, `WaveMemberResult`, `WaveResult`) whose `Agent`, `ContentBlock`, and `SubagentStartRequest` imports belong to the Host plane. `src/client.ts` now re-exports the views alone, so a Client program never reaches a Host declaration through this package. Settled member output stays out of the browser face because only the Lead's context sees it.
+
+**The Client assembly selects the `waves` namespace.** `packages/api/remotes/src/client/index.ts` mounts the generated `@greeneek/gnk-subagent-wave/remote` contribution beside `subagents`, merging its `TypertRemoteNamespaceMap` entry so `ctx.remote.waves.list/cancelMember/cancelWave/cancelAll` exist for the shipped web profile, and re-exports the views type-only.
+
+**One mirror per Lead session serves both surfaces.** `@greeneek/gnk-client-ui-wave` (`packages/client/ui-wave`) registers a `conversation.details.fleet` body and a `conversation.input.left` pill, and hands both the same `FleetMirror` for that Session id. The mirror is a bare observable in the reserved `hooks` compartment, so the renderer binds `useFleet` and no component holds a timer or a subscription. Sampling follows attention: the loop starts when the first surface subscribes and stops when the last unsubscribes, one second while the snapshot reports an unclosed wave and five seconds once every wave has settled. A sample is republished only when a rendered field moved — wave label, closed flag, member status, token count, child session, or diagnostic — because the Remote builds fresh objects per call. A carrier rejection and a rejected `RemoteResult` both set `degraded` while keeping the last rows, and the loop keeps running so the mirror recovers on its own. `stopAll`, `stopWave`, and `stopMember` call their endpoint and then schedule an immediate sample.
+
+**Tab arbitration reads the registry, not the Army package.** ui-chat declares `conversation.details.fleet` as a child of its `details` entry and publishes occupancy through `FleetTabAvailability`, which projects `slots.entriesOfSlot(key).length > 0` and re-reads on that key's batched `subscribe` notifications; the register call's inject face carries it as the `fleet` hook. Chat therefore learns "a fleet body exists" from the same authority that decides whether it renders, with no import of a feature package. The picked tab lives in the existing per-Session `chatStore` as `detailsTab`, and `select` clears it when the target carries a `callId`, so a Tool-row click returns the panel to the Tool body. The Tool body keeps the call name at its top while the tab strip holds the header's title seat.
+
+**The mass cancel asks twice.** Both surfaces render the emergency stop and share `useEmergencyStop`, which arms on the first click, disarms after five seconds, and answers through one notice line that row-level stops also write. Arming state lives in a ref as well as in React state because the confirming click can land in the same commit as the arming click, where a render-closure value is still stale.
+
+**Composition: the engine stays Host-plane, the tools are agent-plane.** `packages/bundle/base/cordis.patch.yml` mounts `@greeneek/gnk-subagent-wave` beside the subagent registry and providers, so `waves` publishes into the root realm where the Typert gateway discovers Remote bindings; the new `army` preset (`packages/preset/agent-presets/presets/army/`) contributes `@greeneek/gnk-tool-wave` with `provider: spawn` plus the workspace, shell, todo, ask-user, and web tools, and its persona states the fleet discipline: dispatch only independent work, one self-contained task per member, results not transcripts, partial completion reported as such. `MODE_ORDER` gained `army` with the pile icon, and the disabled `army` placeholder left the pill row; `presetArmyDescription` replaced "Coming soon." in both dictionaries.
+
+## Alternatives considered
+
+**A per-session `hasFleet` fact published to Chat.** Rejected: the only channels that cross feature packages are slots and `import type` declarations, so a second data path would either duplicate the registry's occupancy answer or make Chat depend on Army. Occupancy is coarse (one registration serves every session scope), which is why the pill — not the tab strip — is the surface that appears and disappears with a fleet.
+
+**Mounting `waves` inside the Army preset's realm.** Rejected: the gateway enumerates Remote bindings from the root context's `reflect.props`, so an entry-local `waves` would answer no browser call; the engine is parent-session-keyed by design and belongs beside `subagents`.
+
+**Event-pushed fleet rows.** Deferred to the engine: it would need a `@Remote` event source per member transition, and the plan's UI coalescing target (10–15 Hz) is already satisfied by sampling a bounded roster once a second at far less machinery.
+
+**A `Config` field for the poll cadence.** Rejected: repository-wide rules require a tunable to vary by deployment, and this cadence is the mirror's own sampling rate — bounded by the engine's roster, not by topology. The two constants name their reason at their declaration.
+
+**Reusing the details column's single child slot for the fleet.** Rejected: shadowing `conversation.details.tool` would make the fleet replace the Tool inspector rather than sit beside it, and the plan's one-click switch would be impossible.
+
+## Consequences
+
+- Army mode is reachable end to end: select the mode, `wave_dispatch` fans out, the rows appear in the details column and the composer pill, and every stop path in the engine has a control.
+- The wave engine's two deferred gaps — browser fleet view and composition preset — are closed; `Maestro` remains a disabled placeholder row.
+- `@greeneek/gnk-subagent-wave/client` no longer exports `WaveMemberResult` or `WaveResult`; no consumer named them from that face.
+- Every Client package that selects `@greeneek/gnk-api-remotes/client` now compiles against `ISessions` again, which is also the guard that keeps future wave-face edits Host-import-free.
+- The Fleet tab strip appears in every session while the surface is mounted, and its body states when the session has no wave; the pill is the affordance that tracks fleet presence.
+- Budget enforcement remains the engine's: with the `tokenUsage` projection unmounted, configured ceilings read zero and no kill fires, a limit restated in the engine README and inherited by these surfaces.
+
+## Testing
+
+- `pnpm exec vitest run packages/client/ui-wave packages/client/ui-chat` — 44 ui-wave tests (mirror sampling and cadence, degraded recovery, disposal, panel states and rows, stop affordances, pill presence, overlay and keyboard dismissal, plugin registration and verbs) plus the ui-chat details suites, all green.
+- `pnpm exec vitest run --coverage --coverage.include="packages/client/ui-wave/src/**" --coverage.include="packages/client/ui-chat/src/client/details/**"` — 100% statements, branches, functions, and lines for every file in both scopes, including `fleet-tab.ts` and `DetailsPanel.tsx`.
+- `pnpm run test:gui` — 303 files, 4138 tests green; the details-panel prop fixtures in `ui-tool` (six) and `ui-chat` (two), the two Chat store shape assertions, the injected-face key list, and the mode-pill roster/order/glyph specs were updated with the contracts they pin.
+
+## Verification
+
+- `pnpm run typecheck` and `pnpm run lint` — clean; the `waves` client-face split restored `ctx.sessions: ISessions` for every Client program that selects `@greeneek/gnk-api-remotes/client`.
+- `pnpm run doc-sync` — 30 gates green after regenerating the plugin, config, client slot, tool, Cordis API, persistence, module-graph, scoped-event, and doc-graph artifacts. `scripts/gen-doc-graphs.ts` gained the `waves` and `craft` service-role classifications (the Craft wave left `craft` unclassified, so the gate failed before this change too), and `scripts/verify-package-readme-model-experience.ts` audited the ui-wave short Model Experience sentence.
+- `pnpm run publint` and `pnpm run verify-runtime-closure` green — the closure now counts 6 agent presets and 132 workspace packages after adding `@greeneek/gnk-tool-wave` and the missing `@greeneek/gnk-subagent-wave`, Craft trio, and `@greeneek/gnk-egress` pins to `python/sdk-runtime/package.json`.
+- `pnpm run constraints` — the `@greeneek/gnk-craft` publication-files finding is fixed through the `packageFileExtras` policy (its manifests and recipes are shipped data); the four remaining findings are `apps/desktop` and `apps/landing` release-member publication policy, untouched here.
+- `pnpm run verify-client-ui-i18n` — four pre-existing findings remain, none in these packages: `ui-model-selection/src/client/ModelSelectorPanel.tsx:84`, `ui-primitives/src/BrandWordmark.tsx:44`, `ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.tsx:78`, `ui-sidebar/src/client/SidebarRoot.tsx:206`. The first two categories need a locale-owner decision (metric-scale label; brand-name rendering versus `ui-brand-official`), so they are left for their surfaces rather than answered here.
+- `pnpm run verify-cordis-config` — findings limited to `apps/cli/tests/profiles/acp/cordis.yml` and the `agent-presets` narrow test fixtures; no new preset or bundle row is implicated.
+- `pnpm run test:snapshot` fails on this Windows host for path reasons unrelated to this change: recorded `session.jsonl` fixtures carry POSIX temporary-directory paths, so the replay compares `{{cwd}}` against `C:\Users\...\acp-snap-cwd-*` across 92 ACP and SDK cases. No failure names the wave, preset, or client surfaces touched here. The Linux lane owns this signal.
+- `pnpm run duplication` — two clones, both in `packages/web/web-search-*`; the new `.tsx` surfaces report zero.

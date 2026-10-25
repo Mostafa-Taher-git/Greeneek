@@ -1,9 +1,10 @@
 /** Per-Session Chat selection store shared by the transcript and details panel. */
 import { defineStore, type EngineStoreHandle } from '@greeneek/gnk-client-store'
-import type { ChatStoreState, SelectionTarget, TurnProcessViewEntry } from './contract/store.ts'
+import type { ChatStoreState, DetailsTab, SelectionTarget, TurnProcessViewEntry } from './contract/store.ts'
 
 type ChatActions = {
   select: (draft: ChatStoreState, target: SelectionTarget | null) => void
+  setDetailsTab: (draft: ChatStoreState, tab: DetailsTab | null) => void
   setTurnProcessOpen: (
     draft: ChatStoreState,
     turn: number,
@@ -31,9 +32,15 @@ export function storedTurnProcessEntry(
  */
 export function createChatStore(): EngineStoreHandle<ChatStoreState, ChatActions> {
   return defineStore({
-    init: (): ChatStoreState => ({ selection: null, turnProcesses: [] }),
+    init: (): ChatStoreState => ({ selection: null, turnProcesses: [], detailsTab: null }),
     actions: {
-      select: (draft, target: SelectionTarget | null) => { draft.selection = target },
+      // A Tool-row click is the strongest intent the transcript can express,
+      // so it retires the panel's explicit tab choice along with the selection.
+      select: (draft, target: SelectionTarget | null) => {
+        draft.selection = target
+        if (target?.callId !== undefined) draft.detailsTab = null
+      },
+      setDetailsTab: (draft, tab: DetailsTab | null) => { draft.detailsTab = tab },
       setTurnProcessOpen: (draft, turn, answerStep, open) => {
         const index = draft.turnProcesses.findIndex(entry => entry.turn === turn)
         if (!open) {

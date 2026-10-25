@@ -259,6 +259,12 @@
     - id: ui-subagent
       name: '@greeneek/gnk-client-ui-subagent'
 
+    # Army fleet surfaces: the details-panel Fleet tab and the composer pill,
+    # both polled from the host `waves` Remote face. A session with no wave
+    # renders neither, so the row costs nothing outside Army runs.
+    - id: ui-wave
+      name: '@greeneek/gnk-client-ui-wave'
+
     - id: ui-reference
       name: '@greeneek/gnk-client-ui-reference'
 

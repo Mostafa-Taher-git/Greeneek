@@ -90,6 +90,7 @@ const SENTENCE_MODEL_EXPERIENCE: Readonly<Record<string, SentenceContract>> = {
   'packages/client/ui-message-feedback': { kind: 'none', reason: 'Browser-side controls over the message-feedback sidecar; ratings and notes never enter the Session log, model context, or telemetry.' },
   'packages/client/ui-tool': { kind: 'none', reason: 'Browser-side Tool presentation layer; renders logged calls without changing model context.' },
   'packages/client/ui-jobs': { kind: 'none', reason: 'Browser-side read-only projection of ctx.jobs records; gnk-tool-jobs owns the model-facing behavior.' },
+  'packages/client/ui-wave': { kind: 'none', reason: 'Browser-side read-only projection of ctx.waves fleet views; gnk-tool-wave owns the model-facing fleet behavior.' },
   'packages/client/ui-craft': { kind: 'none', reason: 'Browser-side projection of durable Craft bridge results and host-reported installation state; gnk-tool-craft owns the model-facing surface.' },
   'packages/craft/craft': { kind: 'indirect', reason: 'The service registers no model surface; gnk-tool-craft mounts the gateway tools and recipe skills built on its catalog, status, and sessions.' },
   'packages/craft/craft-local': { kind: 'indirect', reason: 'The host provider executes calls; gnk-tool-craft owns the model-facing registrations those calls answer through.' },

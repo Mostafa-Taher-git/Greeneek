@@ -1091,7 +1091,7 @@ Source: [`packages/core/session/src/types.ts:289`](../packages/core/session/src/
 }
 ```
 
-Source: [`packages/subagent/wave/src/types.ts:166`](../packages/subagent/wave/src/types.ts)
+Source: [`packages/subagent/wave/src/types.ts:107`](../packages/subagent/wave/src/types.ts)
 
 <a id="wavemember-settled--log-only"></a>
 
@@ -1123,7 +1123,7 @@ Source: [`packages/subagent/wave/src/types.ts:166`](../packages/subagent/wave/sr
 }
 ```
 
-Source: [`packages/subagent/wave/src/types.ts:197`](../packages/subagent/wave/src/types.ts)
+Source: [`packages/subagent/wave/src/types.ts:138`](../packages/subagent/wave/src/types.ts)
 
 <a id="wavesettled--log-only"></a>
 
@@ -1160,7 +1160,7 @@ Source: [`packages/subagent/wave/src/types.ts:197`](../packages/subagent/wave/sr
 }
 ```
 
-Source: [`packages/subagent/wave/src/types.ts:220`](../packages/subagent/wave/src/types.ts)
+Source: [`packages/subagent/wave/src/types.ts:161`](../packages/subagent/wave/src/types.ts)
 
 ### `web/*`
 

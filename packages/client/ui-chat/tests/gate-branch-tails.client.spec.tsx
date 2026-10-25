@@ -137,6 +137,7 @@ describe('render branch tails', () => {
     const workspaces = emptyWorkspaces()
     const view = render(
       <DetailsPanel
+        useFleet={bindSnapshotSelector(createSnapshotStore(false))}
         SessionProvider={SessionProviderStub}
         renderSlot={renderToolDetailsProbe()}
         sessionId={SID}
@@ -199,6 +200,7 @@ describe('render branch tails', () => {
     const owners: DetailsToolOwnerProps[] = []
     const view = render(
       <DetailsPanel
+        useFleet={bindSnapshotSelector(createSnapshotStore(false))}
         SessionProvider={SessionProviderStub}
         renderSlot={renderToolDetailsProbe(owners)}
         sessionId={SID}

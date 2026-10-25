@@ -26,6 +26,7 @@ import { registerChatNodeRenderers } from './chat/register-node-renderers.ts'
 import { StatsLine } from './chat/StatsLine.tsx'
 import { registerConversationNodes } from './conversation-nodes/register.ts'
 import { DetailsPanel } from './details/DetailsPanel.tsx'
+import { FleetTabAvailability } from './details/fleet-tab.ts'
 import { en, NS, zh } from './locale.ts'
 import { TranscriptViewRow, type TranscriptViewRowInjected } from './settings/TranscriptViewRow.tsx'
 import { createChatStore } from './stores.ts'
@@ -160,11 +161,24 @@ export function apply(ctx: Context): void {
   ctx.slots.inject('conversation.approval.detail', () =>
     ctx.slots.register({ name: 'conversation.approval.detail' }, ApprovalCommand))
 
-  ctx.slots.inject('details', () => ctx.slots.register({
-    name: 'details',
-    locale: NS,
-    children: { 'conversation.details.tool': { kind: 'single', scope: 'session' } },
-    store: chatStore,
-    inject: (): DetailsInjected => ({ closeDetails: () => { ctx.layout.closeDetails() } }),
-  }, DetailsPanel))
+  ctx.slots.inject('details', () => {
+    const fleetTab = new FleetTabAvailability(ctx.slots)
+    const disposePanel = ctx.slots.register({
+      name: 'details',
+      locale: NS,
+      children: {
+        'conversation.details.tool': { kind: 'single', scope: 'session' },
+        'conversation.details.fleet': { kind: 'single', scope: 'session' },
+      },
+      store: chatStore,
+      inject: (): DetailsInjected => ({
+        closeDetails: () => { ctx.layout.closeDetails() },
+        hooks: { fleet: fleetTab },
+      }),
+    }, DetailsPanel)
+    return () => {
+      fleetTab.dispose()
+      disposePanel()
+    }
+  })
 }

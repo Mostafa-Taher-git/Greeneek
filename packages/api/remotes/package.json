@@ -76,6 +76,7 @@
     "@greeneek/gnk-session-reference": "workspace:^",
     "@greeneek/gnk-settings": "workspace:^",
     "@greeneek/gnk-subagent": "workspace:^",
+    "@greeneek/gnk-subagent-wave": "workspace:^",
     "@greeneek/gnk-user-approval": "workspace:^",
     "@greeneek/gnk-user-questions": "workspace:^",
     "@greeneek/gnk-client-connection": "workspace:^",

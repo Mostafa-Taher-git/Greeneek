@@ -32,6 +32,47 @@
   white-space: nowrap;
 }
 
+/* Tab row replacing the title seat while a fleet body competes for the panel.
+   The active tab carries the view's single brand mark: label weight plus one
+   hairline under it. */
+.tabs {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  gap: 2px;
+}
+
+.tab {
+  padding: 0 8px;
+  border: 0;
+  border-bottom: 1.5px solid transparent;
+  background: transparent;
+  font-size: 13px;
+  line-height: 26px;
+  color: var(--dsw-alias-label-secondary);
+  cursor: pointer;
+}
+
+.tab:hover {
+  color: var(--dsw-alias-label-primary);
+}
+
+.tab[aria-selected='true'] {
+  border-bottom-color: var(--dsw-alias-brand-text);
+  font-weight: 500;
+  color: var(--dsw-alias-label-primary);
+}
+
+/* Call name the body owns when the tab row holds the header's title seat. */
+.callName {
+  margin-bottom: 10px;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  color: var(--dsw-alias-label-primary);
+  overflow-wrap: anywhere;
+}
+
 .close {
   display: grid;
   flex: none;

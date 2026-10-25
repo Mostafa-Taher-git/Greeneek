@@ -17,8 +17,16 @@ export interface TurnProcessViewEntry {
   readonly answerStep: number
 }
 
+/** Body the details panel shows while more than one surface competes for it. */
+export type DetailsTab = 'tool' | 'fleet'
+
 /** Per-Session state shared only by the Chat view and details surface. */
 export interface ChatStoreState {
   selection: SelectionTarget | null
   turnProcesses: TurnProcessViewEntry[]
+  /**
+   * Explicit details-tab choice. `null` is the panel's default Tool body, and
+   * selecting a Tool call in the transcript returns the panel to that default.
+   */
+  detailsTab: DetailsTab | null
 }

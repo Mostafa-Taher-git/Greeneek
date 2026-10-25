@@ -78,6 +78,8 @@
     "@greeneek/gnk-client-ui-input-trigger": "workspace:^",
     "@greeneek/gnk-client-ui-reference": "workspace:^",
     "@greeneek/gnk-client-ui-subagent": "workspace:^",
+    "@greeneek/gnk-client-ui-wave": "workspace:^",
+    "@greeneek/gnk-tool-wave": "workspace:^",
     "@greeneek/gnk-client-ui-jobs": "workspace:^",
     "@greeneek/gnk-client-ui-theme": "workspace:^",
     "@greeneek/gnk-client-ui-tool": "workspace:^",

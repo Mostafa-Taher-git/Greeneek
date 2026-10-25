@@ -16,7 +16,7 @@ Every workspace package (`packages/<family>/<name>`), categorized by what it con
 | LLM | Model routes and provider adapters | `packages/llm/*` |
 | Capability | Every other plugin, grouped by family directory | fallback: anything unmatched |
 
-Scope: 259 workspace packages; every package appears under each of its kinds (24 Tool, 4 Skill, 6 Command, 40 UI, 7 LLM, 185 Capability rows). A package with several kinds (e.g. a tool that also contributes a command) appears in each section.
+Scope: 260 workspace packages; every package appears under each of its kinds (24 Tool, 4 Skill, 6 Command, 41 UI, 7 LLM, 185 Capability rows). A package with several kinds (e.g. a tool that also contributes a command) appears in each section.
 
 ## Tools
 
@@ -108,6 +108,7 @@ Scope: 259 workspace packages; every package appears under each of its kinds (24
 | `@greeneek/gnk-client-ui-tool` | Client Tool presentation plugin for the gnk web client: whole-call tree composition, the keyed per-tool view slot, and the built-in atomic tool cards. |
 | `@greeneek/gnk-client-ui-trajectory` | Trajectory view for the gnk web client: a turn-aware event ledger with an interactive timing overview, registered into the conversation view ring. |
 | `@greeneek/gnk-client-ui-user-questions` | Web ask_user_question feature for the gnk web client: the composer-takeover question UI and the plan-review approval card. |
+| `@greeneek/gnk-client-ui-wave` | Web Army fleet surfaces: the details-panel Fleet tab and the composer pill, polled from the wave engine's browser control face; for users and maintainers of fleet delegation. |
 | `@greeneek/gnk-client-ui-workflow-run` | Durable workflow-run Conversation Node for the gnk web client: reconstructs top-level workflow runs as independent chat nodes with nested member disclosure. |
 | `@greeneek/gnk-client-ui-workspace` | Shared Workspace browser and picker plugin for the gnk web client: grouped or flat session rows, add/rename/reorder, search, fork, archive, and the directory-flow picking hole. |
 | `@greeneek/gnk-client-ui-cordis` | Cordis dynamic-plugin browser surfaces for users and maintainers choosing, composing, or debugging the panel, tool cards, and @pluginId input. |

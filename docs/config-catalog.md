@@ -3466,6 +3466,7 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 - `@greeneek/gnk-client-ui-tool` ([`packages/client/ui-tool/src/index.ts`](../packages/client/ui-tool/src/index.ts))
 - `@greeneek/gnk-client-ui-trajectory` ([`packages/client/ui-trajectory/src/index.ts`](../packages/client/ui-trajectory/src/index.ts))
 - `@greeneek/gnk-client-ui-user-questions` ([`packages/client/ui-user-questions/src/index.ts`](../packages/client/ui-user-questions/src/index.ts))
+- `@greeneek/gnk-client-ui-wave` ([`packages/client/ui-wave/src/index.ts`](../packages/client/ui-wave/src/index.ts))
 - `@greeneek/gnk-client-ui-workflow-run` ([`packages/client/ui-workflow-run/src/index.ts`](../packages/client/ui-workflow-run/src/index.ts))
 - `@greeneek/gnk-client-ui-workspace` ([`packages/client/ui-workspace/src/index.ts`](../packages/client/ui-workspace/src/index.ts))
 - `@greeneek/gnk-command-compact` — requires `commands` · `compaction` ([`packages/compaction/command-compact/src/index.ts`](../packages/compaction/command-compact/src/index.ts))

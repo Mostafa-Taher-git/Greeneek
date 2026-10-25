@@ -158,6 +158,9 @@ const packageFileExtras: Readonly<Record<string, readonly string[]>> = {
   '@greeneek/gnk-client-ui-theme': ['lib/styles'],
   // The CPython side ships as source .py files, published as-is rather than built.
   '@greeneek/gnk-experimental-code-runtime-python': ['py/**/*.py'],
+  // The Craft pilot ships its per-app manifests and recipe files as data: the
+  // capability matrix is a release artifact the bridge reads at runtime.
+  '@greeneek/gnk-craft': ['manifests/**/*.json', 'recipes/**/*.md'],
   // The shipped preset compositions travel inside the roster package.
   '@greeneek/gnk-agent-presets': ['presets'],
   // The Web Host mounts the default-off settings owner independently of each

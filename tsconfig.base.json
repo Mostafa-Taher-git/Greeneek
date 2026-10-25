@@ -191,6 +191,8 @@
       "@greeneek/gnk-client-ui-agent-preset": ["./packages/client/ui-agent-preset/src"],
       "@greeneek/gnk-client-ui-craft": ["./packages/client/ui-craft/src"],
       "@greeneek/gnk-client-ui-craft/client": ["./packages/client/ui-craft/src/client/index.ts"],
+      "@greeneek/gnk-client-ui-wave": ["./packages/client/ui-wave/src"],
+      "@greeneek/gnk-client-ui-wave/client": ["./packages/client/ui-wave/src/client/index.ts"],
       "@greeneek/gnk-client-ui-permission-presets": ["./packages/client/ui-permission-presets/src"],
       "@greeneek/gnk-client-ui-skill": ["./packages/client/ui-skill/src"],
       "@greeneek/gnk-client-ui-subagent": ["./packages/client/ui-subagent/src"],

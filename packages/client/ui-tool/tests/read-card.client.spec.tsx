@@ -298,6 +298,7 @@ describe('DetailsPanel Output section (read)', () => {
     const attention = createSnapshotStore(new Map())
     return render(
       <DetailsPanel
+        useFleet={bindSnapshotSelector(createSnapshotStore(false))}
         renderSlot={renderToolDetails(t, description)}
         SessionProvider={({ children }) => children}
         sessionId={SID}

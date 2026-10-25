@@ -845,6 +845,9 @@ importers:
       '@greeneek/gnk-subagent':
         specifier: workspace:^
         version: link:../../subagent/subagent
+      '@greeneek/gnk-subagent-wave':
+        specifier: workspace:^
+        version: link:../../subagent/wave
       '@greeneek/gnk-typert-protocol':
         specifier: workspace:^
         version: link:../../typert/protocol
@@ -1310,6 +1313,9 @@ importers:
       '@greeneek/gnk-subagent-spawn-in-process':
         specifier: workspace:^
         version: link:../../subagent/subagent-spawn-in-process
+      '@greeneek/gnk-subagent-wave':
+        specifier: workspace:^
+        version: link:../../subagent/wave
       '@greeneek/gnk-subprocess-local':
         specifier: workspace:^
         version: link:../../subprocess/subprocess-local
@@ -1689,6 +1695,9 @@ importers:
       '@greeneek/gnk-client-ui-user-questions':
         specifier: workspace:^
         version: link:../../client/ui-user-questions
+      '@greeneek/gnk-client-ui-wave':
+        specifier: workspace:^
+        version: link:../../client/ui-wave
       '@greeneek/gnk-client-ui-workflow-run':
         specifier: workspace:^
         version: link:../../client/ui-workflow-run
@@ -1755,6 +1764,9 @@ importers:
       '@greeneek/gnk-tool-subagent':
         specifier: workspace:^
         version: link:../../subagent/tool-subagent
+      '@greeneek/gnk-tool-wave':
+        specifier: workspace:^
+        version: link:../../subagent/tool-wave
       '@greeneek/gnk-web-frontend':
         specifier: workspace:^
         version: link:../../../apps/web
@@ -3783,6 +3795,66 @@ importers:
       react:
         specifier: 19.2.6
         version: 19.2.6
+
+  packages/client/ui-wave:
+    devDependencies:
+      '@greeneek/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@greeneek/gnk-api-remotes':
+        specifier: workspace:^
+        version: link:../../api/remotes
+      '@greeneek/gnk-api-session-controller':
+        specifier: workspace:^
+        version: link:../../api/session-controller
+      '@greeneek/gnk-client-locale':
+        specifier: workspace:^
+        version: link:../locale
+      '@greeneek/gnk-client-store':
+        specifier: workspace:^
+        version: link:../store
+      '@greeneek/gnk-client-test-runtime':
+        specifier: workspace:^
+        version: link:../../test-support/client-runtime
+      '@greeneek/gnk-client-ui-chat':
+        specifier: workspace:^
+        version: link:../ui-chat
+      '@greeneek/gnk-client-ui-conversation':
+        specifier: workspace:^
+        version: link:../ui-conversation
+      '@greeneek/gnk-client-ui-primitives':
+        specifier: workspace:^
+        version: link:../ui-primitives
+      '@greeneek/gnk-client-ui-renderer':
+        specifier: workspace:^
+        version: link:../ui-renderer
+      '@greeneek/gnk-client-ui-session':
+        specifier: workspace:^
+        version: link:../ui-session
+      '@greeneek/gnk-client-ui-slots':
+        specifier: workspace:^
+        version: link:../ui-slots
+      '@greeneek/gnk-session':
+        specifier: workspace:^
+        version: link:../../core/session
+      '@greeneek/gnk-subagent-wave':
+        specifier: workspace:^
+        version: link:../../subagent/wave
+      '@greeneek/gnk-typert-protocol':
+        specifier: workspace:^
+        version: link:../../typert/protocol
+      '@testing-library/react':
+        specifier: ^16.1.0
+        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+      '@types/react':
+        specifier: ~18.3.1
+        version: 18.3.31
+      react:
+        specifier: 19.2.6
+        version: 19.2.6
+      react-dom:
+        specifier: 19.2.6
+        version: 19.2.6(react@19.2.6)
 
   packages/client/ui-workflow-run:
     devDependencies:
@@ -10077,9 +10149,18 @@ importers:
       '@greeneek/gnk-cordis-host-runner':
         specifier: workspace:^
         version: link:../../packages/extensions/cordis-host-runner
+      '@greeneek/gnk-craft':
+        specifier: workspace:^
+        version: link:../../packages/craft/craft
+      '@greeneek/gnk-craft-local':
+        specifier: workspace:^
+        version: link:../../packages/craft/craft-local
       '@greeneek/gnk-credentials':
         specifier: workspace:^
         version: link:../../packages/credentials/credentials
+      '@greeneek/gnk-egress':
+        specifier: workspace:^
+        version: link:../../packages/util/egress
       '@greeneek/gnk-fs':
         specifier: workspace:^
         version: link:../../packages/fs/fs
@@ -10245,6 +10326,9 @@ importers:
       '@greeneek/gnk-subagent-spawn-in-process':
         specifier: workspace:^
         version: link:../../packages/subagent/subagent-spawn-in-process
+      '@greeneek/gnk-subagent-wave':
+        specifier: workspace:^
+        version: link:../../packages/subagent/wave
       '@greeneek/gnk-subprocess':
         specifier: workspace:^
         version: link:../../packages/subprocess/subprocess
@@ -10281,6 +10365,9 @@ importers:
       '@greeneek/gnk-tool-cordis':
         specifier: workspace:^
         version: link:../../packages/extensions/tool-cordis
+      '@greeneek/gnk-tool-craft':
+        specifier: workspace:^
+        version: link:../../packages/craft/tool-craft
       '@greeneek/gnk-tool-fs':
         specifier: workspace:^
         version: link:../../packages/fs/tool-fs
@@ -10317,6 +10404,9 @@ importers:
       '@greeneek/gnk-tool-todo':
         specifier: workspace:^
         version: link:../../packages/todo/tool-todo
+      '@greeneek/gnk-tool-wave':
+        specifier: workspace:^
+        version: link:../../packages/subagent/tool-wave
       '@greeneek/gnk-tool-web':
         specifier: workspace:^
         version: link:../../packages/web/tool-web

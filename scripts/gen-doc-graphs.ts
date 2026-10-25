@@ -563,6 +563,23 @@ const SERVICE_ROLES: ServiceRole[] = [
     note: 'Providers implement transports; the service also owns optional Activation-based continuation orchestration, tool-subagent selects one-shot or continuable delegation, tool-subagent-control delivers follow-ups, and tool-ralph requires one fresh structured-output route.',
   },
   {
+    key: 'waves',
+    pkg: 'wave',
+    title: 'Army wave engine',
+    mode: 'seam',
+    consumers: ['tool-wave'],
+    note: 'One Lead session admits concurrent one-shot members under a shared cap with per-member and per-wave token budgets and engine-owned cancellation; tool-wave is the model-facing Consumer, and the engine\'s generated Remote face — mounted by the remotes assembly and polled by ui-wave — is the browser path to the same fleet views.',
+  },
+  {
+    key: 'craft',
+    pkg: 'craft',
+    title: 'ArtCraft app catalog and bridge session state',
+    mode: 'seam',
+    implementations: ['craft-local'],
+    consumers: ['tool-craft'],
+    note: 'The service owns per-app manifests, measured install states, and open headless or attached sessions; craft-local discovers and spawns the app CLI through the subprocess seam, and tool-craft mounts the two gateway tools plus each open app\'s curated bridge.',
+  },
+  {
     key: 'agentTeams',
     pkg: 'experimental-agent-team',
     title: 'Agent Teams coordination domain',

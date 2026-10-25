@@ -153,7 +153,7 @@ describe('Chat inject API', () => {
     const b = await bench()
     const entry = b.runtime.slots.entries('details')[0]!
     const injected = (entry.inject as unknown as () => DetailsInjected)()
-    expect(Object.keys(injected)).toEqual(['closeDetails'])
+    expect(Object.keys(injected)).toEqual(['closeDetails', 'hooks'])
     injected.closeDetails()
     expect(b.layout.closeDetails).toHaveBeenCalledOnce()
     expect(b.runtime.storeOf('details', ROOT)).toBe(b.runtime.storeOf('conversation.view', ROOT))

@@ -6,7 +6,7 @@ import type {
   MessageImageLoader, MessageImagesOwnerProps, RenderMessageImages, TurnLocation,
 } from '@greeneek/gnk-client-ui-conversation/client'
 import type {
-  InjectFace, KeyedSnapshotSelectorHook, PropsLocale, PropsRenderSlots, PropsRuntime, PropsStore,
+  HostObservable, InjectFace, KeyedSnapshotSelectorHook, PropsLocale, PropsRenderSlots, PropsRuntime, PropsStore,
   SlotHookFactory, SnapshotSelectorHook,
 } from '@greeneek/gnk-client-ui-slots'
 import type { SnapshotStore } from '@greeneek/gnk-client-store'
@@ -167,12 +167,20 @@ export type MessageImagesProps = PropsRuntime<'conversation.message.images'> & P
 /** Details-panel callbacks. */
 export interface DetailsInjected {
   closeDetails: () => void
+  hooks: {
+    /**
+     * Whether some surface occupies the Fleet body slot for this app session.
+     * The panel shows its tab strip only while this is true, so a session with
+     * no fleet surface keeps the single-body details panel.
+     */
+    fleet: HostObservable<boolean>
+  }
 }
 
 /** Full details-panel props. */
 export type DetailsSlotProps =
   PropsRuntime<'details'>
-  & PropsRenderSlots<'conversation.details.tool'>
+  & PropsRenderSlots<'conversation.details.tool' | 'conversation.details.fleet'>
   & PropsStore<ChatStore>
   & InjectFace<DetailsInjected>
   & PropsLocale<'chat'>
@@ -232,5 +240,12 @@ declare module '@greeneek/gnk-client-ui-slots' {
      * replaces the shipped Tool details renderer; absence uses the raw fallback.
      */
     'conversation.details.tool': { kind: 'single'; scope: 'session'; owner: DetailsToolOwnerProps }
+    /**
+     * Whole details-panel body for one Lead session's Army fleet. The
+     * component receives nothing from the panel: its verbs and live mirror
+     * ride its own registration's inject face. The panel renders this body in
+     * place of the Tool body, and an unoccupied slot removes the tab strip.
+     */
+    'conversation.details.fleet': { kind: 'single'; scope: 'session' }
   }
 }

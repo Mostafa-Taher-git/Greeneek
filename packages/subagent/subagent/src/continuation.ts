@@ -440,6 +440,17 @@ export class SubagentContinuationManager {
     this.assertAdmitting(parent)
     const persistence = this.requirePersistence()
     assertSubagentMaxDepth(request.maxDepth)
+    // A lane preset cannot survive this child. Cold resume rebuilds composition
+    // from the version-pinned `subagent/descriptor`, which records persona and
+    // tool filter only, so accepting the field would run the first activation on
+    // the lane preset and every later activation on the parent's. Reject while
+    // the request is still the only fact, before any child resource exists.
+    if (request.agentPreset !== undefined) {
+      throw new SubagentError(
+        'continuable children compose from their parent; agentPreset is a one-shot start field',
+        'UNSUPPORTED_CAPABILITY',
+      )
+    }
     const childId = spec.childId ?? brandString<SessionId>(randomUUID())
     this.assertChildIdAvailable(childId)
     const childDepth = resolveChildDepth(parent, request.maxDepth)
@@ -1214,14 +1225,14 @@ export class SubagentContinuationManager {
     // `AgentRegistry.enter()` is the authoritative collision boundary for an id
     // some other owner holds — a duplicate would reject there with rollback.
     inputs.signal.throwIfAborted()
-    const setup = (childCtx: Context): void => {
+    const setup = async (childCtx: Context): Promise<void> => {
       // Only fresh creation seeds the delegation policy onto the child's own
       // log (after any fork seed, so fresh policy wins stale seed state); a
       // cold resume replays those persisted events instead.
       if (create !== undefined) {
         appendDelegatedPolicyOverrides((childCtx.agent as Agent).session, create.delegatedPolicies)
       }
-      applyChildComposition(childCtx, parent, inputs.composition)
+      await applyChildComposition(childCtx, parent, inputs.composition)
     }
     const observer = this.host.observeActivation(provider, childId, parent)
     // Agent creation owns rollback before handle transfer. A rejection leaves

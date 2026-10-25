@@ -36,6 +36,7 @@ export class ControlledProvider implements SubagentProvider {
     depthLimit: true,
     toolFilter: true,
     persona: true,
+    agentPreset: true,
   }
   readonly inheritsParentContext = false
   readonly requests: ResolvedSubagentStartRequest[] = []

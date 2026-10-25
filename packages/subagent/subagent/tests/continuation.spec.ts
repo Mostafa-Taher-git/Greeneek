@@ -261,7 +261,7 @@ describe('SubagentRuntime.startContinuable', () => {
     const start = vi.fn(async () => { throw new Error('must not dispatch') })
     ctx.subagents.registerProvider({
       name: 'one-shot',
-      capabilities: { agentOptions: false, outputSchema: false, depthLimit: false, toolFilter: false, persona: false },
+      capabilities: { agentOptions: false, outputSchema: false, depthLimit: false, toolFilter: false, persona: false, agentPreset: false },
       inheritsParentContext: false,
       start,
     })
@@ -270,6 +270,24 @@ describe('SubagentRuntime.startContinuable', () => {
       .rejects.toThrow(/does not support continuable children/)
     expect(start).not.toHaveBeenCalled()
     // No child Agent and no session were created.
+    expect(ctx.agents.list().map(agent => agent.id)).toEqual([SessionId('parent')])
+  })
+
+  it('refuses a lane preset on a continuable child before reserving an id', async () => {
+    const { ctx, parent } = await setup([])
+
+    await expect(ctx.subagents.startContinuable({
+      ...startSpec(parent),
+      request: {
+        prompt: [{ type: 'text' as const, text: 'child task' }],
+        parent,
+        agentPreset: 'reviewing',
+      },
+    })).rejects.toMatchObject({ code: 'UNSUPPORTED_CAPABILITY' })
+
+    // Cold resume rebuilds composition from the version-pinned descriptor, which
+    // records persona and tool filter only, so a lane child would change
+    // identity on resume. Refusal beats a child that works once.
     expect(ctx.agents.list().map(agent => agent.id)).toEqual([SessionId('parent')])
   })
 
@@ -714,7 +732,7 @@ describe('direct-child Queue residency routing', () => {
     await ctx.plugin(SubagentInvariant)
     const disposeProvider = ctx.subagents.registerProvider({
       name: 'retired',
-      capabilities: { agentOptions: false, outputSchema: false, depthLimit: false, toolFilter: false, persona: false },
+      capabilities: { agentOptions: false, outputSchema: false, depthLimit: false, toolFilter: false, persona: false, agentPreset: false },
       inheritsParentContext: false,
       start: async () => { throw new Error('one-shot start is not used') },
       prepareContinuable: () => Promise.resolve({}),

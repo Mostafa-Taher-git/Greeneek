@@ -89,6 +89,7 @@ export interface SubagentCapabilities {
   readonly depthLimit: boolean
   readonly toolFilter: boolean
   readonly persona: boolean
+  readonly agentPreset: boolean
 }
 
 /**
@@ -154,6 +155,19 @@ export interface SubagentStartRequest {
    * persona (strict `{{…}}` interpolation against the registered variables).
    */
   readonly persona?: string
+  /**
+   * Optional agent-preset id the child composes from instead of inheriting the
+   * parent's composition. Requires {@link SubagentCapabilities.agentPreset};
+   * rejected at start otherwise. In-process backends resolve the id and join
+   * its standing composition inside the child's creation window, so an unknown
+   * or unusable preset rolls the child back before publication rather than
+   * running it on the parent's tools. The resolved id is what the child's
+   * session header records, which is how a cold read reconstructs the child's
+   * own tool set. This is the lane mechanism Maestro needs — a docs lane on the
+   * instructor preset beside a code lane on standard — and it composes presets,
+   * not partial tool lists: a child either runs a preset or inherits its parent.
+   */
+  readonly agentPreset?: string
 }
 
 /**

@@ -43,7 +43,7 @@ An agent that calls the tool gets the child's final answer as the tool result. M
 
 ### One-shot and continuable children
 
-One-shot children run once and settle with a single result, plus an optional structured output and a safe diagnostic on failure. A start request may override the child Agent's provider, model, reasoning effort, and output-token limit through `agentOptions`; every requested option requires the provider's matching capability. Continuable children keep a durable session and accept later messages in order: the caller receives a stable child id, sends adjacent-Agent messages, and can interrupt the current turn without destroying the child. The tool row's `backgroundMode` picks the shape (`one-shot` by default, or `continuable` on providers that support it).
+One-shot children run once and settle with a single result, plus an optional structured output and a safe diagnostic on failure. A start request may override the child Agent's provider, model, reasoning effort, and output-token limit through `agentOptions`, and may name a different agent preset through `agentPreset`; every requested option requires the provider's matching capability. Continuable children keep a durable session and accept later messages in order: the caller receives a stable child id, sends adjacent-Agent messages, and can interrupt the current turn without destroying the child. The tool row's `backgroundMode` picks the shape (`one-shot` by default, or `continuable` on providers that support it).
 
 ### Messaging, interrupting, and discovering
 
@@ -87,6 +87,8 @@ This section explains how the service is built and where the observable behavior
 ### One-shot flow
 
 A request is validated against the provider's advertised capabilities, a durable descriptor is snapshotted, and the provider builds the child. Both in-process providers advertise `agentOptions`: child creation merges requested fields over the provider, model, and reasoning effort in the parent's latest logged request, falls back to creation options before the first request, and retains the configured token limit. A route change without an explicit effort clears the inherited route-owned effort so the selected model resolves its default. GNK SDK also advertises this capability and publishes immutable `agentRouteDefaults`, which supply its instance provider/model defaults before exact-route preflight; `start()` still owns direct callers and the output cap. ACP, Codex, and Claude Code reject agent-route overrides rather than silently ignoring them. On success the run is published and ownership transfers to the caller; on failure the provider rolls back every unpublished resource. The result carries the child's final output, an optional structured value, a stop reason, and an optional safe diagnostic.
+
+An `agentPreset` request replaces the composition a child inherits: the in-process driver joins that preset's standing mount inside the Agent factory's unpublished creation window, so the child's first request carries the lane's own tools and prompt sections while the parent keeps its own, and an unknown id rejects the creation before any child exists. The child header records the lane id so a cold read reconstructs the tools that child had. Continuable starts reject the field, because their cold resume restores composition from the version-pinned descriptor rather than from a live parent. A lane changes only the child's request; the parent's stable prompt prefix and cache are untouched.
 
 ### Continuable flow
 

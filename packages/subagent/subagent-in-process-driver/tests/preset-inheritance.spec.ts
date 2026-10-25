@@ -134,4 +134,32 @@ describe('a child agent composed in-process', () => {
     expect(run.localAgent?.session.header.agentPreset).toBe('reviewing')
     await run.dispose()
   })
+
+  it('composes the lane preset it asked for rather than its parent\'s', async () => {
+    const { ctx, adapter, parent } = await setupPresetHost()
+
+    const run = await startInProcessRun({ ...spawnRequest(parent), agentPreset: 'reviewing' }, {})
+    await run.result
+
+    // The model-visible result is the lane's own tool set, not a restriction of
+    // the parent's, and the header names the lane so a cold read reconstructs it.
+    const childRequest = adapter.requests.at(-1)
+    expect(childRequest?.tools?.map(tool => tool.name)).toEqual(['reviewing_only'])
+    expect(run.localAgent?.session.header.agentPreset).toBe('reviewing')
+    expect(ctx.tools.schemas(parent).map(schema => schema.name)).toEqual(['preset_only'])
+    await run.dispose()
+  })
+
+  it('refuses an unknown lane preset before publishing a child', async () => {
+    const { ctx, parent } = await setupPresetHost()
+    const beforeAgents = ctx.agents.list().length
+
+    await expect(startInProcessRun({ ...spawnRequest(parent), agentPreset: 'no-such-preset' }, {}))
+      .rejects.toThrow(/no-such-preset/)
+
+    // The lane resolves inside the creation window, so rejection leaves nothing
+    // behind: no published child, and the parent keeps its own composition.
+    expect(ctx.agents.list()).toHaveLength(beforeAgents)
+    expect(ctx.tools.schemas(parent).map(schema => schema.name)).toEqual(['preset_only'])
+  })
 })

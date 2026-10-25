@@ -293,6 +293,7 @@ describe('gnk-subagent-spawn-in-process', () => {
       depthLimit: true,
       toolFilter: true,
       persona: true,
+      agentPreset: true,
     })
   })
 

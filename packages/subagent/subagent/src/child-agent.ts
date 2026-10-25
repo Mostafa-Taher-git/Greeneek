@@ -133,18 +133,20 @@ export function resolveChildAgentOptions(
  * @param parent - the delegating parent agent.
  * @param childDepth - the resolved delegation depth to persist.
  * @param isSeeded - whether this child inherits a parent-log prefix, including an explicitly empty one.
+ * @param agentPreset - the lane preset the child composes from, when one was requested.
  * @returns the `meta` for `ctx.agents.create()`.
  */
 export function childSessionMeta(
   parent: Agent,
   childDepth: number,
   isSeeded: boolean,
+  agentPreset?: string,
 ): NonNullable<CreateAgentOptions['meta']> {
   const parentHeader = parent.session.header
-  const agentPreset = parent.ctx.get('agentPresets')?.composedPreset(parent.ctx)
+  const composedPreset = agentPreset ?? parent.ctx.get('agentPresets')?.composedPreset(parent.ctx)
   return {
     ...parentHeader.cwd !== undefined ? { cwd: parentHeader.cwd } : {},
-    ...agentPreset === undefined ? {} : { agentPreset },
+    ...composedPreset === undefined ? {} : { agentPreset: composedPreset },
     parentSession: parentHeader.id,
     isSeeded,
     // Navigation classification only; the descriptor remains the authority
@@ -161,6 +163,15 @@ export interface ChildComposition {
   readonly persona?: string | undefined
   /** Per-child tool scoping. */
   readonly toolFilter?: ToolRestriction | undefined
+  /**
+   * Lane preset id. The child joins that preset's standing composition instead
+   * of its parent's, so a lane runs a complete preset — its own tools, prompt
+   * sections, and plugins — rather than a restriction of the parent's.
+   * `undefined` inherits the parent. Continuable children ignore it: their
+   * cold resume rebuilds composition from the version-pinned
+   * `subagent/descriptor`, which records persona and tool filter only.
+   */
+  readonly agentPreset?: string | undefined
 }
 
 /**
@@ -194,14 +205,27 @@ export const SUBAGENT_DELEGATION_CONTEXT
  * unrepresentable at the call sites.
  * @param childCtx - the child agent's scoped creation context.
  * @param parent - the delegating parent whose composition the child joins.
- * @param composition - the per-child persona and tool filter to install.
+ * @param composition - the per-child lane preset, persona, and tool filter.
+ * @returns a promise that settles once the composition is installed; the agent
+ * factory awaits it before the child publishes, so an unknown lane preset rolls
+ * the creation back instead of publishing a mis-composed session.
+ * @throws when a lane preset is requested and no agent-preset service is
+ * composed, or when the requested preset is unknown or unusable.
  */
-export function applyChildComposition(
+export async function applyChildComposition(
   childCtx: Context,
   parent: Agent,
   composition: ChildComposition,
-): void {
-  childCtx.get('agentPresets')?.composeFrom(childCtx, parent.ctx)
+): Promise<void> {
+  const presets = childCtx.get('agentPresets')
+  if (composition.agentPreset !== undefined) {
+    if (presets === undefined) {
+      throw new Error(
+        `subagent: cannot compose lane preset "${composition.agentPreset}" without the agent-preset service`,
+      )
+    }
+    await presets.mount(childCtx, composition.agentPreset)
+  } else presets?.composeFrom(childCtx, parent.ctx)
   childCtx.systemPrompt.context({
     name: 'subagent:delegation',
     order: childCtx.systemPrompt.getContextOrder('SUBAGENT_DELEGATION'),

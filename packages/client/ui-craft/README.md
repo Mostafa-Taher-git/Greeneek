@@ -56,6 +56,8 @@ The card is collapsed by default: a state dot, the artifact title, the file coun
 
 </details>
 
+**Runtime invariant:** No companion is published. The browser face owns no host state: the section renders what an injected `CraftSettingsSource` reports and the artifact card mirrors tool-call results, so a guard face would have nothing local to cross-check.
+
 -----
 
 <a id="further-exploration"></a>

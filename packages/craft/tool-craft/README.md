@@ -52,6 +52,8 @@ No configuration. The tool surface, app roster, and concurrency limit come from 
 
 </details>
 
+**Runtime invariant:** No companion is published. The gateway keeps no state beyond per-app tool-and-skill bridges mounted through `ctx.craft`, and artifact paths are confined before any result reaches the model, so each mount is already its own guarded unit.
+
 -----
 
 <a id="further-exploration"></a>

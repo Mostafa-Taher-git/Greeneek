@@ -66,6 +66,8 @@ The service mounts onto the root context as `ctx.craft`. Providers register via 
 
 </details>
 
+**Runtime invariant:** No companion is published. Manifest validation, the four-state lifecycle, and root confinement are enforced at `CraftRuntime` admission itself, so a guard face would only restate checks the service already owns.
+
 -----
 
 <a id="further-exploration"></a>

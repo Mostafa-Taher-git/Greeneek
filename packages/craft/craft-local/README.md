@@ -61,6 +61,8 @@ The provider implements `CraftHostProvider` and registers on `ctx.craft`. During
 
 </details>
 
+**Runtime invariant:** No companion is published. Everything the adapter holds — installs it discovers, control tokens it writes, headless sessions it spawns — is created per call and disposed with the session fiber, so one provider instance cannot diverge from the platform.
+
 -----
 
 <a id="further-exploration"></a>

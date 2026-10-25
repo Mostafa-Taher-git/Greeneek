@@ -50,6 +50,8 @@ With the flag set, only hosts on `STRICT_ALLOWED_HOSTS` pass — the harness shi
 
 One module holds the whole policy. A URL is parsed once; a non-absolute or unparseable input is refused immediately so a caller never sees a bare `TypeError` instead of a config error. The hostname is matched against the blocklist first — empty by default, so nothing is refused there — and only then does strict mode consult the allow-list. `EgressBlockedError` carries the offending `hostname` so resolvers can render it into their own error surface.
 
+**Runtime invariant:** No companion is published. The policy surface is one immutable boot-time configuration consulted by a pure check, so a guard face would only duplicate `assertEgressAllowed` byte for byte.
+
 ## Further Exploration
 
 - [Egress specs](tests/egress.spec.ts) — the open-by-default contract, strict mode, and the unparseable-input contract.

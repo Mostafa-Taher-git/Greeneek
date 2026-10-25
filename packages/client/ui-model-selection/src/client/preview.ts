@@ -37,7 +37,11 @@ export interface PreviewModel {
   readonly costHint?: string | undefined
 }
 
-/** Flatten provider groups into preview rows; ids stay opaque, never parsed. */
+/**
+ * Flatten provider groups into preview rows; ids stay opaque, never parsed.
+ * @param groups - the directory's provider groups, in reported order.
+ * @returns one row per model, addressed by its group and model ids.
+ */
 export function directoryPreviewModels(
   groups: readonly ModelProviderGroup[],
 ): PreviewModel[] {

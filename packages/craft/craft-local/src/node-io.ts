@@ -117,7 +117,12 @@ export function createNodeLocalIo(
   }
 }
 
-/** Run one external command and return its stdout. */
+/**
+ * Run one external command and return its stdout.
+ * @param file - the executable to spawn.
+ * @param args - the argument vector passed to it.
+ * @returns the command's standard output, decoded as UTF-8.
+ */
 export function defaultExec(file: string, args: readonly string[]): string {
   return execFileSync(file, [...args], {
     encoding: 'utf8',

@@ -279,7 +279,10 @@ export class CraftCatalog {
     }
   }
 
-  /** Every manifest in catalog order. */
+  /**
+   * Every manifest in catalog order.
+   * @returns the registered app manifests, unmodified.
+   */
   apps(): readonly CraftAppManifest[] {
     return this.manifests
   }

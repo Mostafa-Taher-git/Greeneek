@@ -90,7 +90,10 @@ export class AttemptRegistry {
     this.attempts.get(key)?.delete(promptId)
   }
 
-  /** Drop every prompt of one attempt. */
+  /**
+   * Drop every prompt of one attempt.
+   * @param key - the attempt key whose recorded prompts are forgotten.
+   */
   dropAll(key: string): void {
     this.attempts.delete(key)
   }

@@ -1,6 +1,0 @@
-# Private Agent Teams Web layer. Apply after gnk-web-app and the host-side
-# gnk-agent-team-profile so the browser mounts only when the Team service is present.
-
-- insert:
-    - id: ui-agent-team
-      name: '@greeneek/gnk-experimental-client-ui-agent-team'

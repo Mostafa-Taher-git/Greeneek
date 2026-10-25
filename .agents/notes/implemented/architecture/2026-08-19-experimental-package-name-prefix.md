@@ -11,7 +11,7 @@ Directory placement, private manifests, and release-family filtering keep experi
 
 Every package directly below `packages/experimental/` uses the `@greeneek/gnk-experimental-*` npm prefix. The workspace constraints gate discovers those manifests and rejects a missing prefix alongside the existing `private: true` and omitted-`publishConfig` requirements.
 
-Agent Teams uses `@greeneek/gnk-experimental-agent-team` from `packages/experimental/agent-team` and `@greeneek/gnk-experimental-tool-agent-team` from `packages/experimental/tool-agent-team`. Package imports, Cordis configuration rows, generated catalogs, and repository metadata use those names without compatibility aliases.
+`packages/experimental/inspector` publishes as `@greeneek/gnk-experimental-inspector`, and package imports, Cordis configuration rows, generated catalogs, and repository metadata use those names without compatibility aliases. Agent Teams is the family that has since left the prefix: [the promotion record](2026-10-25-agent-team-promotion.md) names the five release-member names and directories that replace them.
 
 Promotion moves a package to its product-role group, removes `experimental-` from its npm name, and updates every repository reference atomically. The pre-release compatibility policy permits that rename without an alias package.
 

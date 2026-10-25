@@ -60,8 +60,8 @@ import * as ToolCraft from '@greeneek/gnk-tool-craft'
 import * as ToolSkill from '@greeneek/gnk-tool-skill'
 import * as ToolSessionQuery from '@greeneek/gnk-tool-session-query'
 import * as ToolTasks from '@greeneek/gnk-tool-jobs'
-import type TeamService from '@greeneek/gnk-experimental-agent-team'
-import * as ToolTeam from '@greeneek/gnk-experimental-tool-agent-team'
+import type TeamService from '@greeneek/gnk-agent-team'
+import * as ToolTeam from '@greeneek/gnk-tool-agent-team'
 import * as ToolTodo from '@greeneek/gnk-tool-todo'
 import * as ToolSubagent from '@greeneek/gnk-tool-subagent'
 import * as ToolWave from '@greeneek/gnk-tool-wave'
@@ -544,9 +544,9 @@ const TOOL_PACKAGES: ToolPackage[] = [
       'The kind-agnostic background-job controller: background bash commands, PTY sends, and subagents are read, listed, and killed through the same three tools. Loading the plugin attaches the controller that arms producers\' `ctx.jobs.start()`.',
   },
   {
-    pkg: '@greeneek/gnk-experimental-tool-agent-team',
+    pkg: '@greeneek/gnk-tool-agent-team',
     dir: 'tool-agent-team',
-    source: 'packages/experimental/tool-agent-team/src/index.ts',
+    source: 'packages/subagent/tool-agent-team/src/index.ts',
     requires: ['ctx.tools', 'ctx.systemPrompt', 'ctx.agentTeams', 'an exact live Team member Agent'],
     writes: ['tool/call', 'team/member', 'team/message/queued', 'team/message/delivered', 'team/task', 'tool/result'],
     async mount(ctx) {

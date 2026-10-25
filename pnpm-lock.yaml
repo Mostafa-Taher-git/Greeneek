@@ -355,6 +355,12 @@ importers:
       '@greeneek/gnk-agent':
         specifier: workspace:^
         version: link:../../packages/core/agent
+      '@greeneek/gnk-agent-team':
+        specifier: workspace:^
+        version: link:../../packages/subagent/agent-team
+      '@greeneek/gnk-agent-team-profile':
+        specifier: workspace:^
+        version: link:../../packages/bundle/agent-team-profile
       '@greeneek/gnk-attachment-local':
         specifier: workspace:^
         version: link:../../packages/attachment/attachment-local
@@ -364,18 +370,9 @@ importers:
       '@greeneek/gnk-credentials-local':
         specifier: workspace:^
         version: link:../../packages/credentials/credentials-local
-      '@greeneek/gnk-experimental-agent-team':
-        specifier: workspace:^
-        version: link:../../packages/experimental/agent-team
-      '@greeneek/gnk-experimental-agent-team-profile':
-        specifier: workspace:^
-        version: link:../../packages/experimental/agent-team-profile
       '@greeneek/gnk-experimental-code-runtime-python':
         specifier: workspace:^
         version: link:../../packages/experimental/code-runtime-python
-      '@greeneek/gnk-experimental-tool-agent-team':
-        specifier: workspace:^
-        version: link:../../packages/experimental/tool-agent-team
       '@greeneek/gnk-fs-observation-policy':
         specifier: workspace:^
         version: link:../../packages/fs/fs-observation-policy
@@ -457,6 +454,9 @@ importers:
       '@greeneek/gnk-system-prompt':
         specifier: workspace:^
         version: link:../../packages/core/system-prompt
+      '@greeneek/gnk-tool-agent-team':
+        specifier: workspace:^
+        version: link:../../packages/subagent/tool-agent-team
       '@greeneek/gnk-tools':
         specifier: workspace:^
         version: link:../../packages/core/tools
@@ -1139,6 +1139,41 @@ importers:
       '@greeneek/cordis-plugin-include':
         specifier: workspace:^
         version: link:../../../vendor/include
+
+  packages/bundle/agent-team-profile:
+    dependencies:
+      '@greeneek/gnk-agent-team':
+        specifier: workspace:^
+        version: link:../../subagent/agent-team
+      '@greeneek/gnk-tool-agent-team':
+        specifier: workspace:^
+        version: link:../../subagent/tool-agent-team
+    devDependencies:
+      '@greeneek/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@greeneek/cordis-plugin-include':
+        specifier: workspace:^
+        version: link:../../../vendor/include
+      js-yaml:
+        specifier: ^4.2.0
+        version: 4.3.1
+
+  packages/bundle/agent-team-web-profile:
+    dependencies:
+      '@greeneek/gnk-client-ui-agent-team':
+        specifier: workspace:^
+        version: link:../../client/ui-agent-team
+    devDependencies:
+      '@greeneek/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@greeneek/cordis-plugin-include':
+        specifier: workspace:^
+        version: link:../../../vendor/include
+      js-yaml:
+        specifier: ^4.2.0
+        version: 4.3.1
 
   packages/bundle/base:
     dependencies:
@@ -1991,6 +2026,61 @@ importers:
       react:
         specifier: 19.2.6
         version: 19.2.6
+
+  packages/client/ui-agent-team:
+    dependencies:
+      react:
+        specifier: 19.2.6
+        version: 19.2.6
+    devDependencies:
+      '@greeneek/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@greeneek/gnk-agent-team':
+        specifier: workspace:^
+        version: link:../../subagent/agent-team
+      '@greeneek/gnk-api-remotes':
+        specifier: workspace:^
+        version: link:../../api/remotes
+      '@greeneek/gnk-api-session-controller':
+        specifier: workspace:^
+        version: link:../../api/session-controller
+      '@greeneek/gnk-client-locale':
+        specifier: workspace:^
+        version: link:../locale
+      '@greeneek/gnk-client-test-runtime':
+        specifier: workspace:^
+        version: link:../../test-support/client-runtime
+      '@greeneek/gnk-client-ui-conversation':
+        specifier: workspace:^
+        version: link:../ui-conversation
+      '@greeneek/gnk-client-ui-primitives':
+        specifier: workspace:^
+        version: link:../ui-primitives
+      '@greeneek/gnk-client-ui-renderer':
+        specifier: workspace:^
+        version: link:../ui-renderer
+      '@greeneek/gnk-client-ui-session':
+        specifier: workspace:^
+        version: link:../ui-session
+      '@greeneek/gnk-client-ui-slots':
+        specifier: workspace:^
+        version: link:../ui-slots
+      '@greeneek/gnk-session':
+        specifier: workspace:^
+        version: link:../../core/session
+      '@greeneek/gnk-typert-protocol':
+        specifier: workspace:^
+        version: link:../../typert/protocol
+      '@testing-library/react':
+        specifier: ^16.1.0
+        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+      '@types/react':
+        specifier: ~18.3.1
+        version: 18.3.31
+      react-dom:
+        specifier: 19.2.6
+        version: 19.2.6(react@19.2.6)
 
   packages/client/ui-approval:
     devDependencies:
@@ -4825,154 +4915,6 @@ importers:
         specifier: workspace:^
         version: link:../../util/timeout
 
-  packages/experimental/agent-team:
-    dependencies:
-      '@greeneek/gnk-brand':
-        specifier: workspace:^
-        version: link:../../util/brand
-      '@greeneek/schemastery':
-        specifier: link:../../../vendor/schemastery
-        version: link:../../../vendor/schemastery
-      zod:
-        specifier: ^4.4.3
-        version: 4.4.3
-    devDependencies:
-      '@greeneek/cordis':
-        specifier: workspace:^
-        version: link:../../../vendor/cordis
-      '@greeneek/gnk-agent':
-        specifier: workspace:^
-        version: link:../../core/agent
-      '@greeneek/gnk-agent-loop':
-        specifier: workspace:^
-        version: link:../../core/agent-loop
-      '@greeneek/gnk-agent-loop-testkit':
-        specifier: workspace:^
-        version: link:../../test-support/agent-loop-testkit
-      '@greeneek/gnk-invariants':
-        specifier: workspace:^
-        version: link:../../runtime-diagnostics/invariants
-      '@greeneek/gnk-llm':
-        specifier: workspace:^
-        version: link:../../llm/llm
-      '@greeneek/gnk-session':
-        specifier: workspace:^
-        version: link:../../core/session
-      '@greeneek/gnk-session-persistence':
-        specifier: workspace:^
-        version: link:../../session/session-persistence
-      '@greeneek/gnk-session-persistence-jsonl':
-        specifier: workspace:^
-        version: link:../../session/session-persistence-jsonl
-      '@greeneek/gnk-session-projection':
-        specifier: workspace:^
-        version: link:../../session/session-projection
-      '@greeneek/gnk-session-query':
-        specifier: workspace:^
-        version: link:../../session-query/session-query
-      '@greeneek/gnk-subagent':
-        specifier: workspace:^
-        version: link:../../subagent/subagent
-      '@greeneek/gnk-subagent-fork-in-process':
-        specifier: workspace:^
-        version: link:../../subagent/subagent-fork-in-process
-      '@greeneek/gnk-subagent-spawn-in-process':
-        specifier: workspace:^
-        version: link:../../subagent/subagent-spawn-in-process
-      '@greeneek/gnk-typert-protocol':
-        specifier: workspace:^
-        version: link:../../typert/protocol
-
-  packages/experimental/agent-team-profile:
-    dependencies:
-      '@greeneek/gnk-experimental-agent-team':
-        specifier: workspace:^
-        version: link:../agent-team
-      '@greeneek/gnk-experimental-tool-agent-team':
-        specifier: workspace:^
-        version: link:../tool-agent-team
-    devDependencies:
-      '@greeneek/cordis':
-        specifier: workspace:^
-        version: link:../../../vendor/cordis
-      '@greeneek/cordis-plugin-include':
-        specifier: workspace:^
-        version: link:../../../vendor/include
-      js-yaml:
-        specifier: ^4.2.0
-        version: 4.3.1
-
-  packages/experimental/agent-team-web-profile:
-    dependencies:
-      '@greeneek/gnk-experimental-client-ui-agent-team':
-        specifier: workspace:^
-        version: link:../client-ui-agent-team
-    devDependencies:
-      '@greeneek/cordis':
-        specifier: workspace:^
-        version: link:../../../vendor/cordis
-      '@greeneek/cordis-plugin-include':
-        specifier: workspace:^
-        version: link:../../../vendor/include
-      js-yaml:
-        specifier: ^4.2.0
-        version: 4.3.1
-
-  packages/experimental/client-ui-agent-team:
-    dependencies:
-      react:
-        specifier: 19.2.6
-        version: 19.2.6
-    devDependencies:
-      '@greeneek/cordis':
-        specifier: workspace:^
-        version: link:../../../vendor/cordis
-      '@greeneek/gnk-api-remotes':
-        specifier: workspace:^
-        version: link:../../api/remotes
-      '@greeneek/gnk-api-session-controller':
-        specifier: workspace:^
-        version: link:../../api/session-controller
-      '@greeneek/gnk-client-locale':
-        specifier: workspace:^
-        version: link:../../client/locale
-      '@greeneek/gnk-client-test-runtime':
-        specifier: workspace:^
-        version: link:../../test-support/client-runtime
-      '@greeneek/gnk-client-ui-conversation':
-        specifier: workspace:^
-        version: link:../../client/ui-conversation
-      '@greeneek/gnk-client-ui-primitives':
-        specifier: workspace:^
-        version: link:../../client/ui-primitives
-      '@greeneek/gnk-client-ui-renderer':
-        specifier: workspace:^
-        version: link:../../client/ui-renderer
-      '@greeneek/gnk-client-ui-session':
-        specifier: workspace:^
-        version: link:../../client/ui-session
-      '@greeneek/gnk-client-ui-slots':
-        specifier: workspace:^
-        version: link:../../client/ui-slots
-      '@greeneek/gnk-experimental-agent-team':
-        specifier: workspace:^
-        version: link:../agent-team
-      '@greeneek/gnk-session':
-        specifier: workspace:^
-        version: link:../../core/session
-      '@greeneek/gnk-typert-protocol':
-        specifier: workspace:^
-        version: link:../../typert/protocol
-      '@testing-library/react':
-        specifier: ^16.1.0
-        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
-      '@types/react':
-        specifier: ~18.3.1
-        version: 18.3.31
-      react-dom:
-        specifier: 19.2.6
-        version: 19.2.6(react@19.2.6)
-
   packages/experimental/code-runtime-python:
     dependencies:
       '@greeneek/schemastery':
@@ -5031,61 +4973,6 @@ importers:
       tsx:
         specifier: ^4.19.2
         version: 4.22.4
-
-  packages/experimental/tool-agent-team:
-    dependencies:
-      '@greeneek/schemastery':
-        specifier: link:../../../vendor/schemastery
-        version: link:../../../vendor/schemastery
-    devDependencies:
-      '@greeneek/cordis':
-        specifier: workspace:^
-        version: link:../../../vendor/cordis
-      '@greeneek/gnk-agent':
-        specifier: workspace:^
-        version: link:../../core/agent
-      '@greeneek/gnk-agent-loop':
-        specifier: workspace:^
-        version: link:../../core/agent-loop
-      '@greeneek/gnk-agent-loop-testkit':
-        specifier: workspace:^
-        version: link:../../test-support/agent-loop-testkit
-      '@greeneek/gnk-experimental-agent-team':
-        specifier: workspace:^
-        version: link:../agent-team
-      '@greeneek/gnk-scope':
-        specifier: workspace:^
-        version: link:../../core/scope
-      '@greeneek/gnk-session':
-        specifier: workspace:^
-        version: link:../../core/session
-      '@greeneek/gnk-session-persistence-jsonl':
-        specifier: workspace:^
-        version: link:../../session/session-persistence-jsonl
-      '@greeneek/gnk-session-projection':
-        specifier: workspace:^
-        version: link:../../session/session-projection
-      '@greeneek/gnk-session-query':
-        specifier: workspace:^
-        version: link:../../session-query/session-query
-      '@greeneek/gnk-subagent':
-        specifier: workspace:^
-        version: link:../../subagent/subagent
-      '@greeneek/gnk-subagent-fork-in-process':
-        specifier: workspace:^
-        version: link:../../subagent/subagent-fork-in-process
-      '@greeneek/gnk-subagent-spawn-in-process':
-        specifier: workspace:^
-        version: link:../../subagent/subagent-spawn-in-process
-      '@greeneek/gnk-system-prompt':
-        specifier: workspace:^
-        version: link:../../core/system-prompt
-      '@greeneek/gnk-tool-subagent-control':
-        specifier: workspace:^
-        version: link:../../subagent/tool-subagent-control
-      '@greeneek/gnk-tools':
-        specifier: workspace:^
-        version: link:../../core/tools
 
   packages/experimental/webworker-packer:
     dependencies:
@@ -8351,6 +8238,64 @@ importers:
         specifier: workspace:^
         version: link:../storage
 
+  packages/subagent/agent-team:
+    dependencies:
+      '@greeneek/gnk-brand':
+        specifier: workspace:^
+        version: link:../../util/brand
+      '@greeneek/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
+    devDependencies:
+      '@greeneek/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@greeneek/gnk-agent':
+        specifier: workspace:^
+        version: link:../../core/agent
+      '@greeneek/gnk-agent-loop':
+        specifier: workspace:^
+        version: link:../../core/agent-loop
+      '@greeneek/gnk-agent-loop-testkit':
+        specifier: workspace:^
+        version: link:../../test-support/agent-loop-testkit
+      '@greeneek/gnk-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@greeneek/gnk-llm':
+        specifier: workspace:^
+        version: link:../../llm/llm
+      '@greeneek/gnk-session':
+        specifier: workspace:^
+        version: link:../../core/session
+      '@greeneek/gnk-session-persistence':
+        specifier: workspace:^
+        version: link:../../session/session-persistence
+      '@greeneek/gnk-session-persistence-jsonl':
+        specifier: workspace:^
+        version: link:../../session/session-persistence-jsonl
+      '@greeneek/gnk-session-projection':
+        specifier: workspace:^
+        version: link:../../session/session-projection
+      '@greeneek/gnk-session-query':
+        specifier: workspace:^
+        version: link:../../session-query/session-query
+      '@greeneek/gnk-subagent':
+        specifier: workspace:^
+        version: link:../subagent
+      '@greeneek/gnk-subagent-fork-in-process':
+        specifier: workspace:^
+        version: link:../subagent-fork-in-process
+      '@greeneek/gnk-subagent-spawn-in-process':
+        specifier: workspace:^
+        version: link:../subagent-spawn-in-process
+      '@greeneek/gnk-typert-protocol':
+        specifier: workspace:^
+        version: link:../../typert/protocol
+
   packages/subagent/subagent:
     dependencies:
       '@greeneek/gnk-brand':
@@ -8856,6 +8801,61 @@ importers:
       '@greeneek/gnk-tool-subagent':
         specifier: workspace:^
         version: link:../tool-subagent
+
+  packages/subagent/tool-agent-team:
+    dependencies:
+      '@greeneek/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+    devDependencies:
+      '@greeneek/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@greeneek/gnk-agent':
+        specifier: workspace:^
+        version: link:../../core/agent
+      '@greeneek/gnk-agent-loop':
+        specifier: workspace:^
+        version: link:../../core/agent-loop
+      '@greeneek/gnk-agent-loop-testkit':
+        specifier: workspace:^
+        version: link:../../test-support/agent-loop-testkit
+      '@greeneek/gnk-agent-team':
+        specifier: workspace:^
+        version: link:../agent-team
+      '@greeneek/gnk-scope':
+        specifier: workspace:^
+        version: link:../../core/scope
+      '@greeneek/gnk-session':
+        specifier: workspace:^
+        version: link:../../core/session
+      '@greeneek/gnk-session-persistence-jsonl':
+        specifier: workspace:^
+        version: link:../../session/session-persistence-jsonl
+      '@greeneek/gnk-session-projection':
+        specifier: workspace:^
+        version: link:../../session/session-projection
+      '@greeneek/gnk-session-query':
+        specifier: workspace:^
+        version: link:../../session-query/session-query
+      '@greeneek/gnk-subagent':
+        specifier: workspace:^
+        version: link:../subagent
+      '@greeneek/gnk-subagent-fork-in-process':
+        specifier: workspace:^
+        version: link:../subagent-fork-in-process
+      '@greeneek/gnk-subagent-spawn-in-process':
+        specifier: workspace:^
+        version: link:../subagent-spawn-in-process
+      '@greeneek/gnk-system-prompt':
+        specifier: workspace:^
+        version: link:../../core/system-prompt
+      '@greeneek/gnk-tool-subagent-control':
+        specifier: workspace:^
+        version: link:../tool-subagent-control
+      '@greeneek/gnk-tools':
+        specifier: workspace:^
+        version: link:../../core/tools
 
   packages/subagent/tool-subagent:
     dependencies:

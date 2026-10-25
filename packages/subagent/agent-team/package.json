@@ -1,0 +1,88 @@
+{
+  "name": "@greeneek/gnk-agent-team",
+  "description": "Implicit-root Agent Teams roster, durable peer mailbox, and shared task DAG",
+  "version": "1.1.0-alpha.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/greeneek/greeneek-harness.git",
+    "directory": "packages/subagent/agent-team"
+  },
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./invariant": {
+      "types": "./lib/types/invariant.d.ts",
+      "default": "./lib/invariant.js"
+    },
+    "./client": {
+      "types": "./lib/types/client.d.ts",
+      "default": "./lib/types/client.js"
+    },
+    "./types": {
+      "types": "./lib/types/types.d.ts",
+      "default": "./lib/types/types.js"
+    },
+    "./typert": {
+      "types": "./lib/typert.host.d.ts",
+      "default": "./lib/typert.host.js"
+    },
+    "./remote": {
+      "types": "./lib/typert.remote-client.d.ts",
+      "default": "./lib/typert.remote-client.js"
+    },
+    "./src/*": "./src/*",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/invariant.js",
+    "lib/types/**/*.js",
+    "lib/types/**/*.d.ts",
+    "lib/typert.host.js",
+    "lib/typert.host.d.ts",
+    "lib/typert.remote-client.js",
+    "lib/typert.remote-client.d.ts"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@greeneek/gnk-brand": "workspace:^",
+    "@greeneek/schemastery": "workspace:^",
+    "zod": "^4.4.3"
+  },
+  "peerDependencies": {
+    "@greeneek/cordis": "workspace:^",
+    "@greeneek/gnk-agent": "workspace:^",
+    "@greeneek/gnk-invariants": "workspace:^",
+    "@greeneek/gnk-llm": "workspace:^",
+    "@greeneek/gnk-session": "workspace:^",
+    "@greeneek/gnk-session-persistence": "workspace:^",
+    "@greeneek/gnk-session-projection": "workspace:^",
+    "@greeneek/gnk-subagent": "workspace:^",
+    "@greeneek/gnk-typert-protocol": "workspace:^"
+  },
+  "devDependencies": {
+    "@greeneek/cordis": "workspace:^",
+    "@greeneek/gnk-agent": "workspace:^",
+    "@greeneek/gnk-agent-loop": "workspace:^",
+    "@greeneek/gnk-agent-loop-testkit": "workspace:^",
+    "@greeneek/gnk-invariants": "workspace:^",
+    "@greeneek/gnk-llm": "workspace:^",
+    "@greeneek/gnk-session": "workspace:^",
+    "@greeneek/gnk-session-persistence": "workspace:^",
+    "@greeneek/gnk-session-persistence-jsonl": "workspace:^",
+    "@greeneek/gnk-session-projection": "workspace:^",
+    "@greeneek/gnk-session-query": "workspace:^",
+    "@greeneek/gnk-subagent": "workspace:^",
+    "@greeneek/gnk-subagent-fork-in-process": "workspace:^",
+    "@greeneek/gnk-subagent-spawn-in-process": "workspace:^",
+    "@greeneek/gnk-typert-protocol": "workspace:^"
+  }
+}

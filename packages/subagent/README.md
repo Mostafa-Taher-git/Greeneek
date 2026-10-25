@@ -35,6 +35,8 @@ The subagent group is the delegation family: it lets an agent hand a task to a c
 | [`tool-subagent-control/`](tool-subagent-control/README.md) | Exposes adjacent-Agent messaging, interrupt, and listing to the model | registers on `ctx.tools` |
 | [`wave/`](wave/README.md) | Army wave engine: concurrent one-shot fleets with budgets, cancellation, and fleet views | `ctx.waves` |
 | [`tool-wave/`](tool-wave/README.md) | Exposes Army Lead fleet dispatch (`wave_dispatch`) and cancellation (`wave_cancel`) to the model | registers on `ctx.tools` |
+| [`agent-team/`](agent-team/README.md) | Maestro coordination domain: named teammate roster, durable peer mailbox, and shared task DAG | `ctx.agentTeams` |
+| [`tool-agent-team/`](tool-agent-team/README.md) | Exposes Maestro teammate and task-board coordination to the model as scoped tools | registers on `ctx.tools` |
 
 -----
 
@@ -42,6 +44,7 @@ The subagent group is the delegation family: it lets an agent hand a task to a c
 ## Related documentation
 
 - [Subagent subsystem](../../docs/subsystems/subagent.md) — the service contract, provider contract, and terminal result semantics.
+- [Agent Teams subsystem](../../docs/subsystems/agent-team.md) — durable Team identity, roster, task board, and mailbox types.
 - [Subagent capability seam](../../.agents/notes/implemented/feature/2026-06-21-subagent-capability-seam.md) — the design record for the delegation capability family.
 - [Continuable background subagents](../../.agents/notes/implemented/feature/2026-07-21-continuable-background-subagents.md) — durable children that accept follow-up turns.
 - [Merged subagent control service](../../.agents/notes/implemented/simplification/2026-07-26-merge-subagent-control-service.md) — the follow-up, interrupt, and listing surface.

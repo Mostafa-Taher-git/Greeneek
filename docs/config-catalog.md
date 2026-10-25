@@ -166,6 +166,30 @@ export type PresetTrust = 'system' | 'user'
 
 Source: [`packages/preset/agent-presets/src/preset.ts:52`](../packages/preset/agent-presets/src/preset.ts)
 
+<a id="greeneekgnk-agent-team"></a>
+
+## `@greeneek/gnk-agent-team`
+
+Requires: `agents` · `sessions` · `sessionPersistence` · `sessionProjections` · `subagents`
+
+```ts config-catalog
+/** Team-service deployment limits. */
+export interface Config {
+  /** Maximum immutable teammate names retained by one Team. */
+  readonly maxMembers?: number
+  /** Maximum non-deleted tasks retained by one Team. */
+  readonly maxTasks?: number
+  /** Maximum queued-minus-delivered messages for one target member. */
+  readonly maxPendingMessagesPerMember?: number
+  /** Maximum UTF-8 bytes in one complete sender-framed delivery. */
+  readonly maxMessageBytes?: number
+  /** Maximum milliseconds allowed for Team-owned runtime disposal. */
+  readonly disposalTimeoutMs?: number
+}
+```
+
+Source: [`packages/subagent/agent-team/src/types.ts:130`](../packages/subagent/agent-team/src/types.ts)
+
 <a id="greeneekgnk-agent-tool-presentation"></a>
 
 ## `@greeneek/gnk-agent-tool-presentation`
@@ -540,30 +564,6 @@ export interface Config {
 
 Source: [`packages/e2b/e2b/src/index.ts:43`](../packages/e2b/e2b/src/index.ts)
 
-<a id="greeneekgnk-experimental-agent-team"></a>
-
-## `@greeneek/gnk-experimental-agent-team`
-
-Requires: `agents` · `sessions` · `sessionPersistence` · `sessionProjections` · `subagents`
-
-```ts config-catalog
-/** Team-service deployment limits. */
-export interface Config {
-  /** Maximum immutable teammate names retained by one Team. */
-  readonly maxMembers?: number
-  /** Maximum non-deleted tasks retained by one Team. */
-  readonly maxTasks?: number
-  /** Maximum queued-minus-delivered messages for one target member. */
-  readonly maxPendingMessagesPerMember?: number
-  /** Maximum UTF-8 bytes in one complete sender-framed delivery. */
-  readonly maxMessageBytes?: number
-  /** Maximum milliseconds allowed for Team-owned runtime disposal. */
-  readonly disposalTimeoutMs?: number
-}
-```
-
-Source: [`packages/experimental/agent-team/src/types.ts:130`](../packages/experimental/agent-team/src/types.ts)
-
 <a id="greeneekgnk-experimental-code-runtime-python"></a>
 
 ## `@greeneek/gnk-experimental-code-runtime-python`
@@ -698,24 +698,6 @@ export interface InspectorOptions {
 ```
 
 Source: [`packages/experimental/inspector/src/index.ts:66`](../packages/experimental/inspector/src/index.ts)
-
-<a id="greeneekgnk-experimental-tool-agent-team"></a>
-
-## `@greeneek/gnk-experimental-tool-agent-team`
-
-Requires: `agents` · `agentTeams` · `tools` · `systemPrompt`
-
-```ts config-catalog
-/** Tool routing configuration. */
-export interface Config {
-  /** Continuable-subagent provider used for fresh teammates. */
-  readonly freshProvider?: string
-  /** Continuable-subagent provider used for completed-prefix fork teammates. */
-  readonly forkProvider?: string
-}
-```
-
-Source: [`packages/experimental/tool-agent-team/src/index.ts:17`](../packages/experimental/tool-agent-team/src/index.ts)
 
 <a id="greeneekgnk-file-reference-local"></a>
 
@@ -2647,6 +2629,24 @@ export type TokenMeterConfig = Record<string, never>
 
 Source: [`packages/llm/token-meter/src/types.ts:13`](../packages/llm/token-meter/src/types.ts)
 
+<a id="greeneekgnk-tool-agent-team"></a>
+
+## `@greeneek/gnk-tool-agent-team`
+
+Requires: `agents` · `agentTeams` · `tools` · `systemPrompt`
+
+```ts config-catalog
+/** Tool routing configuration. */
+export interface Config {
+  /** Continuable-subagent provider used for fresh teammates. */
+  readonly freshProvider?: string
+  /** Continuable-subagent provider used for completed-prefix fork teammates. */
+  readonly forkProvider?: string
+}
+```
+
+Source: [`packages/subagent/tool-agent-team/src/index.ts:17`](../packages/subagent/tool-agent-team/src/index.ts)
+
 <a id="greeneekgnk-tool-bash"></a>
 
 ## `@greeneek/gnk-tool-bash`
@@ -3431,6 +3431,7 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 - `@greeneek/gnk-client-locale` ([`packages/client/locale/src/index.ts`](../packages/client/locale/src/index.ts))
 - `@greeneek/gnk-client-modules` — requires `webServer` · `loader` ([`packages/client/modules/src/index.ts`](../packages/client/modules/src/index.ts))
 - `@greeneek/gnk-client-ui-agent-preset` ([`packages/client/ui-agent-preset/src/index.ts`](../packages/client/ui-agent-preset/src/index.ts))
+- `@greeneek/gnk-client-ui-agent-team` ([`packages/client/ui-agent-team/src/index.ts`](../packages/client/ui-agent-team/src/index.ts))
 - `@greeneek/gnk-client-ui-approval` ([`packages/client/ui-approval/src/index.ts`](../packages/client/ui-approval/src/index.ts))
 - `@greeneek/gnk-client-ui-attachment` ([`packages/client/ui-attachment/src/index.ts`](../packages/client/ui-attachment/src/index.ts))
 - `@greeneek/gnk-client-ui-brand-official` ([`packages/client/ui-brand-official/src/index.ts`](../packages/client/ui-brand-official/src/index.ts))
@@ -3474,7 +3475,6 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 - `@greeneek/gnk-command-goal` — requires `commands` · `goals` ([`packages/goal/command-goal/src/index.ts`](../packages/goal/command-goal/src/index.ts))
 - `@greeneek/gnk-commands` ([`packages/interaction/commands/src/index.ts`](../packages/interaction/commands/src/index.ts))
 - `@greeneek/gnk-cordis-client-runner` ([`packages/extensions/cordis-client-runner/src/index.ts`](../packages/extensions/cordis-client-runner/src/index.ts))
-- `@greeneek/gnk-experimental-client-ui-agent-team` ([`packages/experimental/client-ui-agent-team/src/index.ts`](../packages/experimental/client-ui-agent-team/src/index.ts))
 - `@greeneek/gnk-fs-e2b` — requires `e2b` ([`packages/e2b/fs-e2b/src/index.ts`](../packages/e2b/fs-e2b/src/index.ts))
 - `@greeneek/gnk-fs-observation-policy` ([`packages/fs/fs-observation-policy/src/index.ts`](../packages/fs/fs-observation-policy/src/index.ts))
 - `@greeneek/gnk-goal-round-driver` — requires `agents` · `goals` · `sessions` ([`packages/goal/goal-round-driver/src/index.ts`](../packages/goal/goal-round-driver/src/index.ts))
@@ -3529,6 +3529,8 @@ Abstract service classes — a deployment loads a concrete implementation packag
 Imported as libraries by other packages; a `cordis.yml` cannot load them.
 
 - `@greeneek/gnk-agent-loop-testkit` ([`packages/test-support/agent-loop-testkit/src/index.ts`](../packages/test-support/agent-loop-testkit/src/index.ts))
+- `@greeneek/gnk-agent-team-profile` ([`packages/bundle/agent-team-profile/src/index.ts`](../packages/bundle/agent-team-profile/src/index.ts))
+- `@greeneek/gnk-agent-team-web-profile` ([`packages/bundle/agent-team-web-profile/src/index.ts`](../packages/bundle/agent-team-web-profile/src/index.ts))
 - `@greeneek/gnk-anonymous-user-id` ([`packages/identity/anonymous-user-id/src/index.ts`](../packages/identity/anonymous-user-id/src/index.ts))
 - `@greeneek/gnk-api-authorization-controller` ([`packages/api/authorization-controller/src/index.ts`](../packages/api/authorization-controller/src/index.ts))
 - `@greeneek/gnk-app-boot` ([`packages/boot/app-boot/src/index.ts`](../packages/boot/app-boot/src/index.ts))
@@ -3544,8 +3546,6 @@ Imported as libraries by other packages; a `cordis.yml` cannot load them.
 - `@greeneek/gnk-craft` ([`packages/craft/craft/src/index.ts`](../packages/craft/craft/src/index.ts))
 - `@greeneek/gnk-deque` ([`packages/util/deque/src/index.ts`](../packages/util/deque/src/index.ts))
 - `@greeneek/gnk-egress` ([`packages/util/egress/src/index.ts`](../packages/util/egress/src/index.ts))
-- `@greeneek/gnk-experimental-agent-team-profile` ([`packages/experimental/agent-team-profile/src/index.ts`](../packages/experimental/agent-team-profile/src/index.ts))
-- `@greeneek/gnk-experimental-agent-team-web-profile` ([`packages/experimental/agent-team-web-profile/src/index.ts`](../packages/experimental/agent-team-web-profile/src/index.ts))
 - `@greeneek/gnk-experimental-webworker-packer` ([`packages/experimental/webworker-packer/src/index.ts`](../packages/experimental/webworker-packer/src/index.ts))
 - `@greeneek/gnk-experimental-webworker-runtime` ([`packages/experimental/webworker-runtime/src/index.ts`](../packages/experimental/webworker-runtime/src/index.ts))
 - `@greeneek/gnk-home-paths` ([`packages/util/home-paths/src/index.ts`](../packages/util/home-paths/src/index.ts))

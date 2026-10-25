@@ -16,14 +16,13 @@ Every workspace package (`packages/<family>/<name>`), categorized by what it con
 | LLM | Model routes and provider adapters | `packages/llm/*` |
 | Capability | Every other plugin, grouped by family directory | fallback: anything unmatched |
 
-Scope: 260 workspace packages; every package appears under each of its kinds (24 Tool, 4 Skill, 6 Command, 41 UI, 7 LLM, 185 Capability rows). A package with several kinds (e.g. a tool that also contributes a command) appears in each section.
+Scope: 260 workspace packages; every package appears under each of its kinds (24 Tool, 4 Skill, 6 Command, 42 UI, 7 LLM, 184 Capability rows). A package with several kinds (e.g. a tool that also contributes a command) appears in each section.
 
 ## Tools
 
 | Package | Role |
 | --- | --- |
 | `@greeneek/gnk-tool-craft` | The model-facing Craft gateway: craft_list_apps and craft_open_app stay mounted while no app is active, opening an app mounts its curated tools and recipe skill, and every reported artifact path is confined to the job root. |
-| `@greeneek/gnk-experimental-tool-agent-team` | Nine tools that let the model create, message, and coordinate teammates, for compositions mounting the experimental Team plugins. |
 | `@greeneek/gnk-tool-cordis` | Model-facing Cordis runtime tools for agents and maintainers choosing, composing, or debugging dynamic-package workflows. |
 | `@greeneek/gnk-tool-fs` | The model-facing read, read_image, write, and edit tools for users and maintainers composing or debugging filesystem access for agents. |
 | `@greeneek/gnk-tool-fs-search` | The model-facing glob and grep discovery tools for users and maintainers composing or debugging workspace search for agents. |
@@ -38,6 +37,7 @@ Scope: 260 workspace packages; every package appears under each of its kinds (24
 | `@greeneek/gnk-tool-pwsh` | The model-facing pwsh tool for users and maintainers choosing, configuring, or debugging one-shot PowerShell execution, background jobs, and sandbox escalation on Windows. |
 | `@greeneek/gnk-tool-pwsh-persistent` | The model-facing persistent pwsh tool for users and maintainers choosing, configuring, or debugging owner-scoped PowerShell state that survives across calls. |
 | `@greeneek/gnk-tool-skill` | The model-facing skill catalog and loader tool for users and maintainers understanding what agents see, or configuring the session skill catalog. |
+| `@greeneek/gnk-tool-agent-team` | Nine tools that let the model create, message, and coordinate teammates, for compositions mounting the Team plugins. |
 | `@greeneek/gnk-tool-subagent` | Model-facing subagent delegation tool for users and maintainers configuring, composing, or debugging delegation over a subagent provider. |
 | `@greeneek/gnk-tool-subagent-control` | Global send_message, interrupt_agent, and list_agents tools for users and maintainers composing or debugging continuable-child control. |
 | `@greeneek/gnk-tool-wave` | Model-facing Army Lead tools for users and maintainers configuring, composing, or debugging concurrent one-shot subagent fleets over a wave engine. |
@@ -72,6 +72,7 @@ Scope: 260 workspace packages; every package appears under each of its kinds (24
 | Package | Role |
 | --- | --- |
 | `@greeneek/gnk-client-ui-agent-preset` | Agent-preset surfaces for the Web GUI: the default-preset setting, the new-session chip, the session-header label, and the preset roster management section; for users and maintainers of agent composition. |
+| `@greeneek/gnk-client-ui-agent-team` | Use the Web Agent Teams roster, shared task board, and teammate navigation panel. |
 | `@greeneek/gnk-client-ui-approval` | Browser approval UI that answers Host permission requests through the scoped interaction path. |
 | `@greeneek/gnk-client-ui-attachment` | Attachment presentation for the conversation UI: draft-image rail, document drop target, history-image gallery, and original-image lightbox; for users and maintainers of the Web attachment experience. |
 | `@greeneek/gnk-client-ui-brand-official` | Official Greeneek Harness brand occupants for the sidebar, active only in official builds; for users and maintainers choosing or replacing brand presentation. |
@@ -163,6 +164,8 @@ Scope: 260 workspace packages; every package appears under each of its kinds (24
 | Package | Role |
 | --- | --- |
 | `@greeneek/gnk-acp-app` | Automation-only ACP stdio application profile for users and maintainers launching persistent harness agents. |
+| `@greeneek/gnk-agent-team-profile` | Maestro Agent Teams profile layer over gnk-base, for profiles that want Team-scoped coordination tools while retaining one-shot delegation. |
+| `@greeneek/gnk-agent-team-web-profile` | Add the Agent Teams panel to a Web profile that applies the Host Team layer. |
 | `@greeneek/gnk-base` | The shared gnk core: model access, tools, durable sessions, and safety defaults for every gnk --profile surface, for users composing or customizing a profile. |
 | `@greeneek/gnk-headless` | One-shot task mode for gnk: run a single task from the command line and get the final answer printed, for users scripting or automating gnk. |
 | `@greeneek/gnk-sdk-app` | SDK stdio application profile for users and maintainers launching a JSON-RPC harness runtime. |
@@ -247,10 +250,6 @@ Scope: 260 workspace packages; every package appears under each of its kinds (24
 
 | Package | Role |
 | --- | --- |
-| `@greeneek/gnk-experimental-agent-team` | Run a small team of named agents in one session: durable messages between members and a shared task board, for deployments composing the experimental Team plugins. |
-| `@greeneek/gnk-experimental-agent-team-profile` | Private Agent Teams profile layer over gnk-base, for source-checkout users who want Team-scoped coordination tools while retaining one-shot delegation. |
-| `@greeneek/gnk-experimental-agent-team-web-profile` | Add the experimental Agent Teams panel to a source-checkout Web profile after the Host Team layer. |
-| `@greeneek/gnk-experimental-client-ui-agent-team` | Use and debug the experimental Web Agent Teams roster, shared task board, and teammate navigation panel. |
 | `@greeneek/gnk-experimental-code-runtime-python` | CPython-subprocess code runtime: the gnk-code-runtime seam implementation for Python model code, with the fd-3 wire protocol it speaks. |
 | `@greeneek/gnk-experimental-inspector` | Experimental Chrome DevTools inspection for Host and browser Client Cordis runtimes, including Console evaluation, Sources, Network capture, Elements trees, and a CDP-independent query API. |
 | `@greeneek/gnk-experimental-webworker-packer` | Browser-worker VFS image packaging for maintainers building or debugging the experimental preview deployment. |
@@ -457,6 +456,7 @@ Scope: 260 workspace packages; every package appears under each of its kinds (24
 
 | Package | Role |
 | --- | --- |
+| `@greeneek/gnk-agent-team` | Run a small team of named agents in one session: durable messages between members and a shared task board, for deployments composing the experimental Team plugins. |
 | `@greeneek/gnk-subagent` | The subagent delegation seam for users and maintainers choosing a provider backend, composing delegation tools, or debugging child-agent runs. |
 | `@greeneek/gnk-subagent-acp` | The out-of-process ACP subagent backend for users and maintainers choosing a delegation provider, configuring a child ACP agent command, or debugging remote child runs. |
 | `@greeneek/gnk-subagent-claude-code` | The one-shot Claude Code subagent provider for users and maintainers choosing a product backend, installing a Profile bundle, or configuring an unattended Claude Code delegation. |

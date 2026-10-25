@@ -44,9 +44,12 @@ afterEach(() => {
 describe('release families', () => {
   it('excludes private experimental packages from the gnk release', () => {
     const members = releaseFamily('gnk').members(resolve(import.meta.dirname, '../..'))
+    const names = members.map(member => member.name)
 
     expect(members.some(member => member.directory.startsWith('packages/experimental/'))).toBe(false)
-    expect(members.map(member => member.name)).not.toContain('@greeneek/gnk-experimental-agent-team')
+    expect(names).not.toContain('@greeneek/gnk-experimental-inspector')
+    expect(names).toContain('@greeneek/gnk-agent-team')
+    expect(names).toContain('@greeneek/gnk-tool-agent-team')
   })
 
   it('bumps private gnk packages without adding release tags', () => {

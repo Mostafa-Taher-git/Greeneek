@@ -26,6 +26,8 @@ This group maps the installable patch layers used by `gnk --profile`. Each packa
 | [`web-app`](web-app/README.md) | Browser application layer over base | mounts Web rows |
 | [`headless`](headless/README.md) | One-shot command-line task application over base | `headless-runner` |
 | [`sdk-app`](sdk-app/README.md) | SDK JSON-RPC stdio application over base | mounts the SDK server |
+| [`agent-team-profile`](agent-team-profile/README.md) | Maestro host layer over base: Team domain, Team tools, and the child-tool configuration it replaces | — (patch only) |
+| [`agent-team-web-profile`](agent-team-web-profile/README.md) | Maestro Web layer over `web-app`: mounts the browser roster and task board | — (patch only) |
 | [`sdk-minimal`](sdk-minimal/README.md) | Standalone minimal SDK application without base or Web | — (complete patch tree) |
 
 In-box bundles resolve from the gnk installation; out-of-tree bundles install into a profile through `gnk plugin --profile <name> add <package>`.

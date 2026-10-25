@@ -123,7 +123,7 @@
       "@greeneek/gnk-agent/invariant": ["./packages/core/agent/src/invariant.ts"],
       "@greeneek/gnk-scope/invariant": ["./packages/core/scope/src/invariant.ts"],
       "@greeneek/gnk-agent-loop/invariant": ["./packages/core/agent-loop/src/invariant.ts"],
-      "@greeneek/gnk-experimental-agent-team/invariant": ["./packages/experimental/agent-team/src/invariant.ts"],
+      "@greeneek/gnk-agent-team/invariant": ["./packages/subagent/agent-team/src/invariant.ts"],
       // host/client package names prefix the group dir (gnk-client-<dir>), so
       // the generated aliases below — which map a package only when its name is
       // exactly gnk-<dir> — skip them; strip the group prefix with a dedicated
@@ -196,7 +196,7 @@
       "@greeneek/gnk-client-ui-permission-presets": ["./packages/client/ui-permission-presets/src"],
       "@greeneek/gnk-client-ui-skill": ["./packages/client/ui-skill/src"],
       "@greeneek/gnk-client-ui-subagent": ["./packages/client/ui-subagent/src"],
-      "@greeneek/gnk-experimental-client-ui-agent-team": ["./packages/experimental/client-ui-agent-team/src"],
+      "@greeneek/gnk-client-ui-agent-team": ["./packages/client/ui-agent-team/src"],
       "@greeneek/gnk-client-ui-settings-plugins": ["./packages/client/ui-settings-plugins/src"],
       "@greeneek/gnk-client-ui-jobs": ["./packages/client/ui-jobs/src"],
       "@greeneek/gnk-client-ui-schedule": ["./packages/client/ui-schedule/src"],
@@ -221,10 +221,10 @@
       "@greeneek/gnk-sdk-client": ["./packages/sdk/client/src"],
       "@greeneek/gnk-sdk-protocol": ["./packages/sdk/protocol/src"],
       "@greeneek/gnk-sdk-jsonrpc-server": ["./packages/sdk/server/src"],
-      "@greeneek/gnk-experimental-agent-team": ["./packages/experimental/agent-team/src"],
-      "@greeneek/gnk-experimental-agent-team-profile": ["./packages/experimental/agent-team-profile/src"],
-      "@greeneek/gnk-experimental-agent-team-web-profile": ["./packages/experimental/agent-team-web-profile/src"],
-      "@greeneek/gnk-experimental-tool-agent-team": ["./packages/experimental/tool-agent-team/src"],
+      "@greeneek/gnk-agent-team": ["./packages/subagent/agent-team/src"],
+      "@greeneek/gnk-agent-team-profile": ["./packages/bundle/agent-team-profile/src"],
+      "@greeneek/gnk-agent-team-web-profile": ["./packages/bundle/agent-team-web-profile/src"],
+      "@greeneek/gnk-tool-agent-team": ["./packages/subagent/tool-agent-team/src"],
       "@greeneek/gnk-experimental-webworker-runtime": ["./packages/experimental/webworker-runtime/src"],
       "@greeneek/gnk-experimental-webworker-packer": ["./packages/experimental/webworker-packer/src"],
       "@greeneek/gnk-experimental-inspector": ["./packages/experimental/inspector/src"],

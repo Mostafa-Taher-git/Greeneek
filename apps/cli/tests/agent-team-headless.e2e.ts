@@ -28,14 +28,14 @@ describe('gnk run with Agent Teams enabled', () => {
         name: 'gnk-profile-headless',
         private: true,
         dependencies: {
-          '@greeneek/gnk-experimental-agent-team-profile': 'workspace:^',
+          '@greeneek/gnk-agent-team-profile': 'workspace:^',
         },
         gnk: {
           profile: {
             bundles: [
               '@greeneek/gnk-base',
               '@greeneek/gnk-headless',
-              '@greeneek/gnk-experimental-agent-team-profile',
+              '@greeneek/gnk-agent-team-profile',
             ],
           },
         },

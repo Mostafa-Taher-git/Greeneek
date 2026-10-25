@@ -9,8 +9,12 @@
    Light appearance (v0.3.4): the light `-bluish` low steps are a pure,
    untinted gray ladder anchored at #EEEEEE (values release — names, alias
    structure and the dark ramp below are unchanged); `greeneek-*` keeps the
-   brand greens. The 400–700 steps are the text ladder, calibrated to AA on
-   the new base (caption 3.40:1, tertiary 5.17:1, secondary 5.94:1). */
+   brand greens. `-200/-400/-600/-700` are the text ladder at 108/103/98/90,
+   each carrying WCAG AA 4.5:1 on every surface the Client paints under it
+   (placeholder and caption 4.53:1 at the darkest, `--dsw-alias-markdown-code-
+   block-banner`); `pnpm run verify-theme-contrast` measures these pairings from
+   this file and fails a lightening. `-500` is the selected-state hairline, a
+   non-text 3:1 pairing, so it sits lighter than the caption step by design. */
 body {
   --dsw-static-amber-100: rgb(254, 245, 231);
   --dsw-static-amber-400: rgb(247, 173, 49);
@@ -48,9 +52,9 @@ body {
   --dsw-static-neutral-1000: rgb(0, 0, 0);
   --dsw-static-neutral-100: rgb(245, 245, 245);
   --dsw-static-neutral-150: rgb(237, 237, 237);
-  --dsw-static-neutral-200: rgb(196, 196, 196);
+  --dsw-static-neutral-200: rgb(132, 132, 132);
   --dsw-static-neutral-250: rgb(220, 220, 220);
-  --dsw-static-neutral-300: rgb(177, 177, 177);
+  --dsw-static-neutral-300: rgb(112, 112, 112);
   --dsw-static-neutral-400: rgb(162, 164, 166);
   --dsw-static-neutral-500: rgb(127, 130, 135);
   --dsw-static-neutral-50: rgb(250, 250, 250);
@@ -64,9 +68,9 @@ body {
   --dsw-static-neutral-bluish-1000: rgb(41, 60, 48);
   --dsw-static-neutral-bluish-100: rgb(210, 210, 210);
   --dsw-static-neutral-bluish-150: rgb(200, 200, 200);
-  --dsw-static-neutral-bluish-200: rgb(196, 196, 196);
+  --dsw-static-neutral-bluish-200: rgb(108, 108, 108);
   --dsw-static-neutral-bluish-300: rgb(177, 177, 177);
-  --dsw-static-neutral-bluish-400: rgb(128, 128, 128);
+  --dsw-static-neutral-bluish-400: rgb(103, 103, 103);
   --dsw-static-neutral-bluish-500: rgb(118, 118, 118);
   --dsw-static-neutral-bluish-50: rgb(230, 230, 230);
   --dsw-static-neutral-bluish-600: rgb(98, 98, 98);
@@ -234,7 +238,7 @@ body {
   --dsw-alias-scrollbar-bg-l2: var(--dsw-static-neutral-200);
   --dsw-alias-scrollbar-hover-l1: var(--dsw-static-neutral-300);
   --dsw-alias-scrollbar-hover-l2: var(--dsw-static-neutral-300);
-  --dsw-alias-state-business-primary: var(--dsw-static-greeneek-500);
+  --dsw-alias-state-business-primary: var(--dsw-static-greeneek-600);
   --dsw-alias-state-business-tertiary: var(--dsw-static-greeneek-100);
   --dsw-alias-state-error-primary: var(--dsw-static-red-600);
   --dsw-alias-state-error-secondary: var(--dsw-static-red-400);

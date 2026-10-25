@@ -1,0 +1,232 @@
+name: Desktop release
+
+# One pipeline owns publishing. A tag builds both platforms, then a single
+# publish job needs both artifact sets. The two workflows this replaces each
+# uploaded their own GitHub Release the moment their build finished, so a red
+# CI run on the tagged commit could still ship installers.
+
+on:
+  push:
+    tags:
+      - 'desktop-*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing desktop-v* tag to build and publish'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    name: Required CI on the release commit
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: read
+    outputs:
+      ref: ${{ steps.resolve.outputs.ref }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          fetch-depth: 1
+      - name: Resolve the release ref
+        id: resolve
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "ref=${{ inputs.tag || github.ref_name }}" >> "$GITHUB_OUTPUT"
+      - name: Refuse to publish unless CI is green on this commit
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          sha=$(git rev-parse HEAD)
+          deadline=$(( $(date +%s) + 1800 ))
+          while :; do
+            report=$(gh api "repos/${{ github.repository }}/commits/$sha/check-runs?per_page=100" \
+              --jq '[.check_runs[] | {name, status, conclusion}]')
+            total=$(jq 'length' <<<"$report")
+            if [ "$total" -eq 0 ]; then
+              echo "Refusing to publish: no check run exists for $sha. Push the release commit to main first." >&2
+              exit 1
+            fi
+            # The commit must carry the repository's own CI result, not only an
+            # unrelated bot check.
+            if [ "$(jq '[.[] | select(.name | test("^ci( \\(|$)"))] | length' <<<"$report")" -eq 0 ]; then
+              echo "Refusing to publish: $sha has no ci workflow result." >&2
+              exit 1
+            fi
+            failed=$(jq '[.[] | select(.status == "completed" and .conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral")]' <<<"$report")
+            if [ "$(jq 'length' <<<"$failed")" -gt 0 ]; then
+              echo "Refusing to publish: required checks are not green on $sha" >&2
+              jq -r '.[] | "  \(.name): \(.conclusion)"' <<<"$failed" >&2
+              exit 1
+            fi
+            pending=$(jq '[.[] | select(.status != "completed")] | length' <<<"$report")
+            if [ "$pending" -eq 0 ]; then
+              echo "All $total check run(s) on $sha are green."
+              exit 0
+            fi
+            if [ "$(date +%s)" -ge "$deadline" ]; then
+              echo "Timed out waiting for checks on $sha ($pending still running)." >&2
+              exit 1
+            fi
+            sleep 30
+          done
+
+  linux:
+    name: Linux x64
+    needs: gate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.gate.outputs.ref }}
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build:lib:host
+      - run: pnpm build:lib:client
+      - run: pnpm build:web
+      # One stamping implementation for both platforms: it validates the tag
+      # shape, so a malformed tag fails here instead of shipping a bad version.
+      - if: startsWith(needs.gate.outputs.ref, 'desktop-v')
+        run: node apps/desktop/scripts/stamp-version.mjs "${{ needs.gate.outputs.ref }}"
+      - run: pnpm --filter @greeneek/desktop run dist:linux
+      - name: Drop builder diagnostics from the release set
+        run: rm -f apps/desktop/.staging/app/dist/builder-debug.yml apps/desktop/.staging/app/dist/builder-effective-config.yaml
+      - name: Build AppImage zsync metadata
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq && sudo apt-get install -y -qq zsync
+          DIST=apps/desktop/.staging/app/dist
+          APPIMAGE=$(ls "$DIST"/Greeneek-Desktop-*-linux-x86_64.AppImage | head -1)
+          FILE=$(basename "$APPIMAGE")
+          if [[ "${{ needs.gate.outputs.ref }}" == desktop-* ]]; then REF="${{ needs.gate.outputs.ref }}"; else REF="latest"; fi
+          if [[ "$REF" == "latest" ]]; then URL="https://github.com/${{ github.repository }}/releases/latest/download/$FILE";
+          else URL="https://github.com/${{ github.repository }}/releases/download/$REF/$FILE"; fi
+          zsyncmake -u "$URL" -o "$DIST/$FILE.zsync" "$APPIMAGE"
+          ls "$DIST"/*.zsync
+      - run: node apps/desktop/scripts/prepare-release-assets.mjs --dist .staging/app/dist
+      - if: startsWith(needs.gate.outputs.ref, 'desktop-')
+        run: node apps/desktop/scripts/prepare-release-assets.mjs --dist .staging/app/dist --tag "${{ needs.gate.outputs.ref }}"
+      - name: Assert updater channel files
+        shell: bash
+        run: |
+          ls apps/desktop/.staging/app/dist/latest*.yml
+          ls apps/desktop/.staging/app/dist/*.AppImage
+          ls apps/desktop/.staging/app/dist/*.zsync
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-desktop-artifacts
+          path: |
+            apps/desktop/.staging/app/dist/*.deb
+            apps/desktop/.staging/app/dist/*.AppImage
+            apps/desktop/.staging/app/dist/*.zsync
+            apps/desktop/.staging/app/dist/latest*.yml
+            apps/desktop/.staging/app/dist/*.blockmap
+            apps/desktop/.staging/app/dist/Greeneek-Desktop-latest-*
+          retention-days: 14
+
+  windows:
+    name: Windows x64
+    needs: gate
+    runs-on: windows-2025
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.gate.outputs.ref }}
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build:lib:host
+      - run: pnpm build:lib:client
+      - run: pnpm build:web
+      - if: startsWith(needs.gate.outputs.ref, 'desktop-v')
+        run: node apps/desktop/scripts/stamp-version.mjs "${{ needs.gate.outputs.ref }}"
+      - run: pnpm --filter @greeneek/desktop run dist:win
+      - name: Drop builder diagnostics from the release set
+        shell: pwsh
+        run: |
+          Remove-Item -Force apps/desktop/.staging/app/dist/builder-debug.yml, apps/desktop/.staging/app/dist/builder-effective-config.yaml -ErrorAction SilentlyContinue
+      - name: Assert updater channel files
+        shell: bash
+        run: |
+          ls apps/desktop/.staging/app/dist/latest*.yml
+          ls apps/desktop/.staging/app/dist/*.blockmap
+      - run: node apps/desktop/scripts/prepare-release-assets.mjs --dist .staging/app/dist
+      - if: startsWith(needs.gate.outputs.ref, 'desktop-')
+        run: node apps/desktop/scripts/prepare-release-assets.mjs --dist .staging/app/dist --tag "${{ needs.gate.outputs.ref }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-desktop-artifacts
+          path: |
+            apps/desktop/.staging/app/dist/*.exe
+            apps/desktop/.staging/app/dist/*.zip
+            apps/desktop/.staging/app/dist/*.yml
+            apps/desktop/.staging/app/dist/*.blockmap
+            apps/desktop/.staging/app/dist/Greeneek-Desktop-latest-*
+          retention-days: 14
+
+  publish:
+    name: Publish one GitHub Release
+    needs: [gate, linux, windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-desktop-artifacts
+          path: release-assets/linux
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-desktop-artifacts
+          path: release-assets/windows
+      - name: Assert both platforms produced assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          linux=$(find release-assets/linux -type f | wc -l)
+          windows=$(find release-assets/windows -type f | wc -l)
+          echo "linux assets: $linux, windows assets: $windows"
+          if [ "$linux" -eq 0 ] || [ "$windows" -eq 0 ]; then
+            echo "Refusing to publish a partial release." >&2
+            exit 1
+          fi
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.gate.outputs.ref }}
+          name: ${{ needs.gate.outputs.ref }}
+          files: |
+            release-assets/linux/*
+            release-assets/windows/*
+          fail_on_unmatched_files: true
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

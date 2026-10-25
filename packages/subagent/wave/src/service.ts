@@ -102,11 +102,15 @@ interface MemberState {
   readonly memberId: WaveMemberId
   readonly spec: WaveMemberSpec
   readonly controller: AbortController
+  /** Dispatch index; carried to the durable settlement records. */
+  readonly index: number
   status: WaveMemberStatus
   childSessionId: SessionId | undefined
   tokensUsed: number
   budgetKilled: boolean
   diagnostic: string | undefined
+  /** True once the member's durable settlement record is written. */
+  settled: boolean
   /** Kept for the terminal record; capped when the wave closes. */
   result: SubagentResult | undefined
 }
@@ -121,6 +125,9 @@ interface WaveState {
   closed: boolean
   resolveDone: (result: WaveResult) => void
 }
+
+/** Terminal settlement statuses; a durable record never carries `queued`/`running`. */
+type TerminalWaveMemberStatus = Exclude<WaveMemberStatus, 'queued' | 'running'>
 
 /**
  * Truncate one text string to at most `maxBytes` UTF-8 bytes without
@@ -246,11 +253,13 @@ export class WaveRuntime extends TypertRemoteService {
       memberId: WaveMemberIdBrand(`${String(waveId)}:${index}`),
       spec,
       controller: new AbortController(),
+      index,
       status: 'queued' as WaveMemberStatus,
       childSessionId: undefined,
       tokensUsed: 0,
       budgetKilled: false,
       diagnostic: undefined,
+      settled: false,
       result: undefined,
     }))
     const wave: WaveState = {
@@ -263,6 +272,9 @@ export class WaveRuntime extends TypertRemoteService {
       closed: false,
       resolveDone,
     }
+    // Durable admission precedes membership, so a failed append rejects
+    // startWave before any member launches — all-or-nothing admission.
+    this.appendInitiated(wave)
     this.waves.set(waveId, wave)
     for (const member of members) {
       const task = this.runMember(wave, member)
@@ -439,15 +451,16 @@ export class WaveRuntime extends TypertRemoteService {
       } finally {
         if (member.childSessionId !== undefined) this.childIndex.delete(String(member.childSessionId))
         release?.()
-        this.settleMember(wave)
+        this.settleMember(wave, member)
       }
     }
   }
 
-  /** Close the wave once every member has settled; resolve the caller promise. */
-  private settleMember(wave: WaveState): void {
+  /** Write this member's record, then close the wave once every member settled. */
+  private settleMember(wave: WaveState, member: MemberState): void {
     if (wave.closed) return
-    const open = wave.members.some(member => member.status === 'queued' || member.status === 'running')
+    this.appendMemberSettled(wave, member)
+    const open = wave.members.some(candidate => candidate.status === 'queued' || candidate.status === 'running')
     if (!open) {
       this.closeWave(wave)
       return
@@ -456,15 +469,22 @@ export class WaveRuntime extends TypertRemoteService {
     // still in flight; a user cancel does not trigger it.
     if (wave.request.onComplete === 'fail-fast') {
       const trigger = wave.members.find(
-        member => (member.status === 'failed' || member.status === 'budget-killed') && member.childSessionId !== undefined,
+        candidate => (candidate.status === 'failed' || candidate.status === 'budget-killed')
+          && candidate.childSessionId !== undefined,
       )
       if (trigger !== undefined) this.abortWave(wave, 'fail-fast')
     }
   }
 
-  /** Build terminal records and resolve {@link startWave}. */
+  /** Build terminal records, write remaining member records plus the closing record, and resolve {@link startWave}. */
   private closeWave(wave: WaveState): void {
     wave.closed = true
+    // A member still awaiting its child's disposal at close time gets its
+    // durable record here; its funnel arrives after the close and writes
+    // nothing more, so no member is recorded twice and none is missed.
+    for (const member of wave.members) {
+      this.appendMemberSettled(wave, member)
+    }
     const results: WaveMemberResult[] = wave.members.map(member => this.resultOf(member))
     const statuses = results.map(member => member.status)
     const outcome = statuses.every(status => status === 'completed')
@@ -473,7 +493,73 @@ export class WaveRuntime extends TypertRemoteService {
         ? 'cancelled'
         : 'partial'
     const result: WaveResult = { waveId: wave.waveId, outcome, members: results }
+    wave.parent.session.append('wave/settled', {
+      waveId: String(wave.waveId),
+      outcome,
+      members: wave.members.map(member => this.memberRow(member)),
+    })
     wave.resolveDone(result)
+  }
+
+  /**
+   * Write the member's durable settlement record exactly once, guarded by
+   * {@link MemberState.settled} — set only after the write commits, so a
+   * failed append stays re-attemptable.
+   * @param wave - the owning wave.
+   * @param member - the settled member.
+   */
+  private appendMemberSettled(wave: WaveState, member: MemberState): void {
+    if (member.settled) return
+    wave.parent.session.append('wave/member-settled', {
+      waveId: String(wave.waveId),
+      ...this.memberRow(member),
+    })
+    member.settled = true
+  }
+
+  /**
+   * One member's durable terminal row: the shared shape of the member's own
+   * settlement record and of its row in the wave's closing record.
+   * @param member - the member; a caller runs this only past terminal status.
+   * @returns the JSON-safe row.
+   */
+  private memberRow(member: MemberState): {
+    memberId: string
+    memberIndex: number
+    status: TerminalWaveMemberStatus
+    tokensUsed: number
+    diagnostic?: string
+  } {
+    return {
+      memberId: String(member.memberId),
+      memberIndex: member.index,
+      // runMember settles only past the terminal status assignment, and
+      // closeWave runs only after the open check, so the status is terminal.
+      status: member.status as TerminalWaveMemberStatus,
+      tokensUsed: member.tokensUsed,
+      ...(member.diagnostic === undefined ? {} : { diagnostic: member.diagnostic }),
+    }
+  }
+
+  /**
+   * Write the wave's durable admission record on the Lead's session.
+   * @param wave - the fully built wave; membership is final.
+   */
+  private appendInitiated(wave: WaveState): void {
+    wave.parent.session.append('wave/initiated', {
+      waveId: String(wave.waveId),
+      parentSessionId: String(wave.parentSessionId),
+      label: wave.label,
+      onComplete: wave.request.onComplete ?? 'continue-others',
+      ...(wave.request.maxTokensPerMember === undefined ? {} : { maxTokensPerMember: wave.request.maxTokensPerMember }),
+      ...(wave.request.maxWaveTokens === undefined ? {} : { maxWaveTokens: wave.request.maxWaveTokens }),
+      memberCount: wave.members.length,
+      members: wave.members.map(member => ({
+        memberId: String(member.memberId),
+        provider: member.spec.provider,
+        ...(member.spec.role === undefined ? {} : { role: member.spec.role }),
+      })),
+    })
   }
 
   /** Abort every unsettled member of one wave. */

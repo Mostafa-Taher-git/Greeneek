@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 import { Context } from '@greeneek/cordis'
 import { SessionId } from '@greeneek/gnk-session'
+import type { Agent } from '@greeneek/gnk-agent'
 import type { ContentBlock } from '@greeneek/gnk-llm'
+import type { SessionEventMap } from '@greeneek/gnk-session'
 import type { ResolvedSubagentStartRequest, SubagentResult, SubagentRun } from '@greeneek/gnk-subagent'
 import { truncateUtf8 } from '../src/service.ts'
 import WaveRuntime, {
@@ -29,6 +31,26 @@ function textBytes(result: { readonly output: readonly ContentBlock[] }): number
     (total, block) => total + (block.type === 'text' ? Buffer.byteLength(block.text, 'utf8') : 0),
     0,
   )
+}
+
+/** All `wave/*` records on one Lead's session log, in append order. */
+function waveEvents(parent: Agent) {
+  return parent.session.snapshotEvents().filter(event => event.type.startsWith('wave/'))
+}
+
+/** The admission record's logged data, typed to its payload. */
+function initiatedData(parent: Agent): SessionEventMap['wave/initiated'][] {
+  return waveEvents(parent).flatMap(event => (event.type === 'wave/initiated' ? [event.data] : []))
+}
+
+/** The logged member-settlement rows, typed to their payload. */
+function memberSettledData(parent: Agent): SessionEventMap['wave/member-settled'][] {
+  return waveEvents(parent).flatMap(event => (event.type === 'wave/member-settled' ? [event.data] : []))
+}
+
+/** The closing record's logged data, typed to its payload. */
+function waveSettledData(parent: Agent): SessionEventMap['wave/settled'][] {
+  return waveEvents(parent).flatMap(event => (event.type === 'wave/settled' ? [event.data] : []))
 }
 
 /** Provider whose child result rejects on the abort signal instead of resolving. */
@@ -128,6 +150,18 @@ describe('WaveRuntime dispatch and settlement', () => {
     expect(provider.runs.every(run => run.dispose.mock.calls.length === 1)).toBe(true)
     expect(waves.listWaves(parent.id)[0]?.closed).toBe(true)
 
+    // Member records land in settlement order (1, 2, 0), not dispatch order;
+    // the closing record's member rows keep dispatch order.
+    expect(waveEvents(parent).map(event => event.type)).toEqual([
+      'wave/initiated',
+      'wave/member-settled',
+      'wave/member-settled',
+      'wave/member-settled',
+      'wave/settled',
+    ])
+    expect(memberSettledData(parent).map(row => row.memberIndex)).toEqual([1, 2, 0])
+    expect(waveSettledData(parent)[0]!.members.map(row => row.memberIndex)).toEqual([0, 1, 2])
+
     const closedView = waves.listWaves(parent.id)[0]!
     waves.cancelMember(closedView.waveId, closedView.members[0]!.memberId)
     waves.cancelWave(closedView.waveId)
@@ -170,6 +204,21 @@ describe('WaveRuntime dispatch and settlement', () => {
     expect(result.members.map(row => row.status)).toEqual(['cancelled', 'cancelled'])
     expect(provider.requests[0]?.signal.aborted).toBe(true)
     expect(provider.runs[0]?.dispose).toHaveBeenCalledOnce()
+
+    const waveId = String(view.waveId)
+    expect(waveEvents(parent).map(event => event.type)).toEqual([
+      'wave/initiated',
+      'wave/member-settled',
+      'wave/member-settled',
+      'wave/settled',
+    ])
+    // The queued member settles first with the semaphore's wrapped abort
+    // reason; the running member settles cancelled from the child's aborted
+    // outcome, which carries no diagnostic.
+    expect(memberSettledData(parent)).toEqual([
+      { waveId, memberId: `${waveId}:1`, memberIndex: 1, status: 'cancelled', tokensUsed: 0, diagnostic: 'member cancelled' },
+      { waveId, memberId: `${waveId}:0`, memberIndex: 0, status: 'cancelled', tokensUsed: 0 },
+    ])
   })
 
   it('cancels one wave and emergency-stops only open waves for the requested parent', async () => {
@@ -203,6 +252,22 @@ describe('WaveRuntime dispatch and settlement', () => {
         { status: 'cancelled' },
       ],
     })
+
+    // The triggering failure settles first with its provider diagnostic, the
+    // aborted sibling settles cancelled without one, and the admission record
+    // shows the resolved fail-fast policy.
+    const failedId = String(failed.waves.listWaves(failed.parent.id)[0]!.waveId)
+    expect(waveEvents(failed.parent).map(event => event.type)).toEqual([
+      'wave/initiated',
+      'wave/member-settled',
+      'wave/member-settled',
+      'wave/settled',
+    ])
+    expect(memberSettledData(failed.parent)).toEqual([
+      { waveId: failedId, memberId: `${failedId}:0`, memberIndex: 0, status: 'failed', tokensUsed: 0, diagnostic: 'provider failed' },
+      { waveId: failedId, memberId: `${failedId}:1`, memberIndex: 1, status: 'cancelled', tokensUsed: 0 },
+    ])
+    expect(initiatedData(failed.parent)).toMatchObject([{ onComplete: 'fail-fast' }])
 
     const cancelled = await setupWave({ maxConcurrent: 2 })
     const cancelledWave = cancelled.waves.startWave(waveRequest(cancelled.parent, [member(), member()], { onComplete: 'fail-fast' }))
@@ -278,6 +343,16 @@ describe('WaveRuntime budget enforcement', () => {
     const result = await pending
     expect(result.members[0]).toMatchObject({ status: 'budget-killed', tokensUsed: 11 })
     expect(provider.requests[0]?.signal.aborted).toBe(true)
+
+    expect(waveEvents(parent).map(event => event.type)).toEqual([
+      'wave/initiated',
+      'wave/member-settled',
+      'wave/settled',
+    ])
+    const waveId = String(waves.listWaves(parent.id)[0]!.waveId)
+    expect(memberSettledData(parent)).toEqual([
+      { waveId, memberId: `${waveId}:0`, memberIndex: 0, status: 'budget-killed', tokensUsed: 11, diagnostic: 'member token budget exceeded' },
+    ])
   })
 
   it('aborts every active member when aggregate usage exceeds the wave cap', async () => {
@@ -291,6 +366,18 @@ describe('WaveRuntime budget enforcement', () => {
     const result = await pending
     expect(result.members.map(row => row.status)).toEqual(['cancelled', 'budget-killed'])
     expect(provider.requests.every(request => request.signal.aborted)).toBe(true)
+
+    const waveId = String(waves.listWaves(parent.id)[0]!.waveId)
+    // Both members were metered; only the breaching member settles
+    // budget-killed with the wave-cap diagnostic, and the closing outcome is
+    // partial. Settle order between the two aborted members is not pinned.
+    expect(memberSettledData(parent).filter(row => row.memberIndex === 1)).toEqual([
+      { waveId, memberId: `${waveId}:1`, memberIndex: 1, status: 'budget-killed', tokensUsed: 10, diagnostic: 'wave token budget exceeded' },
+    ])
+    expect(memberSettledData(parent).filter(row => row.memberIndex === 0)).toEqual([
+      { waveId, memberId: `${waveId}:0`, memberIndex: 0, status: 'cancelled', tokensUsed: 10 },
+    ])
+    expect(waveSettledData(parent).map(row => row.outcome)).toEqual(['partial'])
   })
 
   it('meters without a cap and delegates zero or unrelated agents', async () => {
@@ -318,6 +405,103 @@ describe('WaveRuntime budget enforcement', () => {
     })
     provider.runs[0]!.deferred.resolve({ output: [], stopReason: 'error' })
     await expect(pending).resolves.toMatchObject({ members: [{ status: 'failed' }] })
+  })
+})
+
+describe('WaveRuntime durable wave records', () => {
+  it('writes one admission record, one record per member, and a closing record', async () => {
+    const { waves, provider, parent } = await setupWave({ maxConcurrent: 2 })
+    const pending = waves.startWave(waveRequest(parent, [
+      member({}, { role: 'research' }),
+      member(),
+    ], { onComplete: 'fail-fast' }))
+    await vi.waitFor(() => { expect(provider.runs).toHaveLength(2) })
+    // Admission is written before launch, and no member record exists while
+    // the members are still in flight.
+    expect(waveEvents(parent).map(event => event.type)).toEqual(['wave/initiated'])
+    // Resolution order pins member-record order: the second member settles
+    // and appends first even though it is dispatched second.
+    provider.runs[1]!.deferred.resolve(completed('second'))
+    provider.runs[0]!.deferred.resolve(completed('first', { verdict: 'ok' }))
+    await expect(pending).resolves.toMatchObject({ outcome: 'completed' })
+
+    const waveId = String(waves.listWaves(parent.id)[0]!.waveId)
+    // The full wave scope of the fresh parent session pins the record shape
+    // and the three order claims: admission first, member records in
+    // settlement order, the closing record last.
+    expect(waveEvents(parent).map(event => event.type)).toEqual([
+      'wave/initiated',
+      'wave/member-settled',
+      'wave/member-settled',
+      'wave/settled',
+    ])
+    expect(initiatedData(parent)).toEqual([{
+      waveId,
+      parentSessionId: 'wave-parent',
+      label: 'test fleet',
+      onComplete: 'fail-fast',
+      memberCount: 2,
+      members: [
+        { memberId: `${waveId}:0`, provider: 'controlled', role: 'research' },
+        { memberId: `${waveId}:1`, provider: 'controlled' },
+      ],
+    }])
+    expect(memberSettledData(parent)).toEqual([
+      { waveId, memberId: `${waveId}:1`, memberIndex: 1, status: 'completed', tokensUsed: 0 },
+      { waveId, memberId: `${waveId}:0`, memberIndex: 0, status: 'completed', tokensUsed: 0 },
+    ])
+    // The closing record keeps dispatch order in its rows.
+    expect(waveSettledData(parent)).toEqual([{
+      waveId,
+      outcome: 'completed',
+      members: [
+        { memberId: `${waveId}:0`, memberIndex: 0, status: 'completed', tokensUsed: 0 },
+        { memberId: `${waveId}:1`, memberIndex: 1, status: 'completed', tokensUsed: 0 },
+      ],
+    }])
+  })
+
+  it('records a disposal-parked member at close and stays silent after the closing record', async () => {
+    const { waves, provider, parent } = await setupWave({ maxConcurrent: 2 })
+    const pending = waves.startWave(waveRequest(parent, [member(), member()]))
+    await vi.waitFor(() => { expect(provider.runs).toHaveLength(2) })
+    const disposal = Promise.withResolvers<undefined>()
+    provider.runs[0]!.dispose.mockImplementation(() => disposal.promise)
+    // Member 0 settles its child but parks inside disposal; member 1's funnel
+    // is the first to reach settlement and closes the wave for both members.
+    provider.runs[0]!.deferred.resolve(completed('first'))
+    await vi.waitFor(() => { expect(provider.runs[0]!.dispose).toHaveBeenCalledOnce() })
+    provider.runs[1]!.deferred.resolve(completed('second'))
+    await expect(pending).resolves.toMatchObject({ outcome: 'completed' })
+
+    const waveId = String(waves.listWaves(parent.id)[0]!.waveId)
+    expect(waveEvents(parent).map(event => event.type)).toEqual([
+      'wave/initiated',
+      'wave/member-settled',
+      'wave/member-settled',
+      'wave/settled',
+    ])
+    // The closing wave carried the parked member's record after member 1's
+    // own: settlement order, not dispatch order. Nothing was metered, so the
+    // parked member settles with `tokensUsed: 0` and no diagnostic.
+    expect(memberSettledData(parent)).toEqual([
+      { waveId, memberId: `${waveId}:1`, memberIndex: 1, status: 'completed', tokensUsed: 0 },
+      { waveId, memberId: `${waveId}:0`, memberIndex: 0, status: 'completed', tokensUsed: 0 },
+    ])
+    expect(waveSettledData(parent)).toEqual([{
+      waveId,
+      outcome: 'completed',
+      members: [
+        { memberId: `${waveId}:0`, memberIndex: 0, status: 'completed', tokensUsed: 0 },
+        { memberId: `${waveId}:1`, memberIndex: 1, status: 'completed', tokensUsed: 0 },
+      ],
+    }])
+
+    // Unparking runs the parked member's funnel past the close; it writes no
+    // second member record and no second closing record.
+    disposal.resolve(undefined)
+    await expect(pending).resolves.toMatchObject({ outcome: 'completed' })
+    expect(waveEvents(parent)).toHaveLength(4)
   })
 })
 
@@ -520,5 +704,10 @@ describe('WaveRuntime helper and lifetime edges', () => {
       outcome: 'cancelled',
       members: [{ status: 'cancelled', diagnostic: 'dispose failed: reap failed' }],
     })
+
+    const waveId = String(view.waveId)
+    expect(memberSettledData(parent)).toEqual([
+      { waveId, memberId: `${waveId}:0`, memberIndex: 0, status: 'cancelled', tokensUsed: 0, diagnostic: 'dispose failed: reap failed' },
+    ])
   })
 })

@@ -69,7 +69,7 @@ None of its own; only the Lead tool's registration and the wave results it logs 
 
 - **Budgets need the meter** — With `maxTokensPerMember`/`maxWaveTokens` set but no `tokenUsage` projection mounted, metering reads zero and no kill fires; the deployment is misconfigured, not enforced loosely.
 - **In-process fleet only** — Members run through registered subagent providers; the engine adds no transport of its own, so remote fleets depend on a provider that speaks one.
-- **No durable wave record yet** — Wave membership and budgets are process-local until the fleet Session events land; a restart mid-wave cancels by teardown.
+- **Durable records, process-local control** — Waves now write `wave/initiated`, `wave/member-settled`, and `wave/settled` log-only records to the Lead's session (payloads in the generated [persistence log event catalog](../../../docs/persistence-catalog.md)), but membership, budget metering, and fleet views remain process-local: a restart mid-wave still cancels members by teardown, and the fleet UI keeps polling the remote faces rather than deriving its display from the log.
 
 <details>
 <summary>Runtime invariant omission</summary>

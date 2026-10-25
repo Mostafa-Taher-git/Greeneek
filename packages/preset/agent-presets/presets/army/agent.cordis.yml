@@ -1,0 +1,86 @@
+# The `army` agent preset: a Lead agent that fans independent work out to
+# concurrent one-shot subagents and keeps its own context for the merge.
+#
+# This file is an AGENT-PLANE composition, mounted once under a standing scope.
+# The wave engine (`waves`) is deliberately NOT a row here: it holds live
+# fleets addressed by Lead session id and publishes the browser control face, so
+# it belongs to the host plane beside the subagent registry it consumes. This
+# preset contributes only the model-facing fleet tools, which resolve that host
+# service.
+
+# ── identity ────────────────────────────────────────────────────────────────
+
+- id: persona
+  name: '@greeneek/gnk-persona'
+  config:
+    text: >-
+      You are an Army coding agent powered by the {{model}} model. Your working directory is {{cwd}}.
+
+
+      You lead a fleet. `wave_dispatch` starts one wave of concurrent one-shot members and returns only after the whole wave settles, with every member's status, token spend, and result in dispatch order; `wave_cancel` stops one wave or every fleet you own. Members see the task text you give them and nothing else, so each task must carry its own file paths, constraints, and the exact output shape you want.
+
+
+      Dispatch work that is genuinely independent. When one member's result decides the next task, do that step yourself or start a second wave — never guess a sibling's finding. Keep each task narrow enough to finish inside its own budget, and set `maxTokensPerMember` when a task is open-ended.
+
+
+      Only member results reach you; transcripts never do. Cite a member's finding by its status and result, and treat a failed, cancelled, or budget-killed member as work that was not done: report which members completed and which did not instead of smoothing the fleet into one success.
+
+
+      Stop a fleet as soon as the direction changes. Use `wave_cancel` with a wave id to end one wave, and `wave_cancel` in fleet mode to abort every member you still have running.
+
+- id: agent-instructions
+  name: '@greeneek/gnk-agent-instructions'
+  config:
+    maxBytes: 65536
+
+# ── shell ───────────────────────────────────────────────────────────────────
+
+# Both shell tools consume the host `shell` registry; their executors stay
+# host-plane too. The Lead keeps its own verification steps while members take
+# the disjoint edits.
+- id: tool-bash
+  name: '@greeneek/gnk-tool-bash'
+  disabled: !!js process.platform === 'win32'
+
+- id: tool-pwsh
+  name: '@greeneek/gnk-tool-pwsh'
+  disabled: !!js process.platform !== 'win32'
+
+# ── filesystem ──────────────────────────────────────────────────────────────
+
+# Both register into the host `tools` registry and provide nothing, so
+# they need no realm. The `fs` service and its policy stay in the host.
+- id: tool-fs
+  name: '@greeneek/gnk-tool-fs'
+
+- id: tool-fs-search
+  name: '@greeneek/gnk-tool-fs-search'
+
+# ── fleet ───────────────────────────────────────────────────────────────────
+
+# The Lead-facing Consumer of the wave engine: it registers `wave_dispatch` and
+# `wave_cancel` into the host `tools` registry and provides nothing, so it needs
+# no realm. `provider` is the member default resolved from the host subagent
+# registry; a member may still name another provider in its own spec.
+- id: tool-wave
+  name: '@greeneek/gnk-tool-wave'
+  config:
+    provider: spawn
+
+# ── model-facing rows ───────────────────────────────────────────────────────
+
+- id: tool-ask-user
+  name: '@greeneek/gnk-tool-ask-user'
+
+- id: tool-todo
+  name: '@greeneek/gnk-tool-todo'
+  config:
+    allowParallelInProgress: true
+
+# The `web` service and its search provider stay in the host composition; only
+# the model-facing tool is per-session. A Lead fetches the brief it hands out.
+- id: tool-web
+  name: '@greeneek/gnk-tool-web'
+  config:
+    fetch: true
+    searchTimeoutMs: 60000

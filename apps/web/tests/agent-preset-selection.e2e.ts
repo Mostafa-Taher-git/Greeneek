@@ -265,11 +265,11 @@ describe('web e2e: agent-preset selection', () => {
       radios => radios.map(radio => radio.textContent),
     )
     expect(order.slice(0, 6)).toEqual([
-      'Standard mode', 'Pixels Designer (preview)', 'Instructor (preview)', 'Creator mode',
-      'Army mode', 'Maestro mode',
+      'Standard mode', 'Army mode', 'Pixels Designer (preview)', 'Instructor (preview)', 'Creator mode',
+      'Maestro mode',
     ])
     expect(order.slice(6).sort()).toEqual(['Narrow mode', 'Refusing mode'])
-    expect(await group.getByRole('radio', { name: 'Army mode', exact: true }).isDisabled()).toBe(true)
+    expect(await group.getByRole('radio', { name: 'Army mode', exact: true }).isDisabled()).toBe(false)
     expect(await group.getByRole('radio', { name: 'Maestro mode', exact: true }).isDisabled()).toBe(true)
     // Idle shows the staged label alone; hovering the row reveals every label.
     const pixelsLabel = group.getByRole('radio', { name: 'Pixels Designer (preview)', exact: true })

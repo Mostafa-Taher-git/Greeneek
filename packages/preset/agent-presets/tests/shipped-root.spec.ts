@@ -89,9 +89,10 @@ describe('the shipped preset root', () => {
     // PTC stays on the roster after v0.3.4 retires its new-session pill: the
     // composition, `run_code`, the demo script, and the replay fixtures all
     // still name it. Only the hero row's ordering dropped it. The preview
-    // presets join the shipped set as pilot surfaces of the Craft seam.
+    // presets join the shipped set as pilot surfaces of the Craft seam, and
+    // `army` as the wave-engine composition.
     expect(listed.map(preset => preset.id).sort())
-      .toEqual(['cordis', 'instructor', 'pixels-designer', 'ptc', 'standard'])
+      .toEqual(['army', 'cordis', 'instructor', 'pixels-designer', 'ptc', 'standard'])
     expect(listed.every(preset => preset.trust === 'system')).toBe(true)
     // Not `broken === undefined`: health asks whether each row's package is
     // installed above the base, and the shipped rows name packages the
@@ -142,7 +143,7 @@ describe('the shipped preset root', () => {
   })
 
   it('enables web_fetch in each tool-bearing Web app preset', async () => {
-    for (const id of ['cordis', 'instructor', 'pixels-designer', 'ptc', 'standard']) {
+    for (const id of ['army', 'cordis', 'instructor', 'pixels-designer', 'ptc', 'standard']) {
       const entries = await shippedEntries(id)
       const toolWeb: unknown = entries.find((entry: unknown) =>
         typeof entry === 'object' && entry !== null && 'id' in entry && entry.id === 'tool-web')

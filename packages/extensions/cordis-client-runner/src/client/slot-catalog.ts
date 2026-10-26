@@ -2017,7 +2017,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     doc: 'Brand name rendered beside the expanded mark. Declared by this\npackage\'s `sidebar` entry; the shell supplies a generic text fallback.',
     registerOptions: [],
     ownerProps: [
-      '/** Empty owner share for the sidebar brand-name occupant. */\nexport interface SidebarBrandNameOwnerProps {\n  /** Marker field: the occupant owns its own content and width. */\n  children?: never\n}',
+      '/**\n * Brand-name text supplied to the sidebar brand-name occupant.\n *\n * The sidebar owns the localized name through its own dictionary, so an\n * occupant renders the text it is given rather than embedding a product word\n * that no locale owns.\n */\nexport interface SidebarBrandNameOwnerProps {\n  /** The localized brand name to render. */\n  wordmark: string\n}',
     ],
     ownerPropsReferences: [],
     standardProps: [

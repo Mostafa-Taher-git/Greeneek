@@ -126,6 +126,8 @@ flowchart LR
   cfg --> plugin_gnk_base_subagent_fork_in_process
   plugin_gnk_base_subagent_wave["subagent-wave<br/>@greeneek/gnk-subagent-wave"]
   cfg --> plugin_gnk_base_subagent_wave
+  plugin_gnk_base_agent_team["agent-team<br/>@greeneek/gnk-agent-team"]
+  cfg --> plugin_gnk_base_agent_team
   plugin_gnk_base_tool_subagent_control["tool-subagent-control<br/>@greeneek/gnk-tool-subagent-control"]
   cfg --> plugin_gnk_base_tool_subagent_control
   plugin_gnk_base_tool_subagent_list_agents["tool-subagent-list-agents<br/>@greeneek/gnk-tool-subagent-control/list-agents"]
@@ -239,6 +241,7 @@ flowchart LR
 | `subagent-spawn-in-process` | `@greeneek/gnk-subagent-spawn-in-process` |
 | `subagent-fork-in-process` | `@greeneek/gnk-subagent-fork-in-process` |
 | `subagent-wave` | `@greeneek/gnk-subagent-wave` |
+| `agent-team` | `@greeneek/gnk-agent-team` |
 | `tool-subagent-control` | `@greeneek/gnk-tool-subagent-control` |
 | `tool-subagent-list-agents` | `@greeneek/gnk-tool-subagent-control/list-agents` |
 | `tool-subagent` | `@greeneek/gnk-tool-subagent` |

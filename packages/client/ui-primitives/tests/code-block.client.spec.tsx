@@ -45,11 +45,16 @@ describe('highlightToHtml', () => {
   it('lazily loads every read-card grammar: plain first, highlighted after load', async () => {
     // First touch returns the plain fallback (undefined) and starts the import.
     for (const alias of LAZY_ALIASES) expect(highlightToHtml('x', alias)).toBeUndefined()
-    // Once every grammar has registered, the same call highlights.
+    // Once every grammar has registered, the same call highlights. Twenty-three
+    // dynamic imports compete with every other spec file in the same run, so the
+    // budget is generous on purpose: the assertion is that each grammar arrives,
+    // not that it arrives in five seconds. A tighter inner budget than the test
+    // timeout is what made this flake report a generic timeout instead of the
+    // grammar that never loaded.
     await vi.waitFor(() => {
       for (const alias of LAZY_ALIASES) expect(highlightToHtml('x', alias)).toContain('shiki')
-    }, { timeout: 5_000 })
-  })
+    }, { timeout: 15_000 })
+  }, 20_000)
 })
 
 describe('CodeBlock', () => {

@@ -1808,17 +1808,17 @@ class FaceAnalyzer {
       if ((subpath === '.' && !PUBLIC_REMOTE_TYPE_ROOTS.has(registration.name))
         || subpath === './package.json' || subpath === './typert'
         || subpath === './client/typert' || subpath === './remote' || target.includes('*')) continue
-      const sourceFile = this.sourceFiles.get(realPath(sourcePathForExport(registration.root, target)))
-      if (sourceFile === undefined) continue
-      const moduleSymbol = this.checker.getSymbolAtLocation(sourceFile)
-      if (moduleSymbol === undefined) continue
-      for (const exported of this.checker.getExportsOfModule(moduleSymbol)) {
-        if (this.resolveSymbol(exported) !== symbol) continue
-        candidates.push({
-          symbol: this.symbolId(symbol),
-          specifier: packageExportSpecifier(registration.name, subpath),
-          name: exported.name,
-        })
+      for (const moduleFile of this.exportTargetFiles(registration.root, target)) {
+        const moduleSymbol = this.checker.getSymbolAtLocation(moduleFile)
+        if (moduleSymbol === undefined) continue
+        for (const exported of this.checker.getExportsOfModule(moduleSymbol)) {
+          if (this.resolveSymbol(exported) !== symbol) continue
+          candidates.push({
+            symbol: this.symbolId(symbol),
+            specifier: packageExportSpecifier(registration.name, subpath),
+            name: exported.name,
+          })
+        }
       }
     }
     const selected = candidates.sort((left, right) =>
@@ -2487,11 +2487,32 @@ class FaceAnalyzer {
     const target = packageExportTargets(registration.manifest)
       .find(([subpath]) => subpath === module.subpath)?.[1]
     if (target === undefined) return undefined
-    const sourceFile = this.sourceFiles.get(realPath(sourcePathForExport(registration.root, target))) as ts.SourceFile
-    const moduleSymbol = this.checker.getSymbolAtLocation(sourceFile) as ts.Symbol
-    const exported = this.checker.getExportsOfModule(moduleSymbol)
-      .find(candidate => candidate.name === requestedName && this.resolveSymbol(candidate) === symbol)
-    return exported?.name
+    for (const moduleFile of this.exportTargetFiles(registration.root, target)) {
+      const moduleSymbol = this.checker.getSymbolAtLocation(moduleFile) as ts.Symbol
+      const exported = this.checker.getExportsOfModule(moduleSymbol)
+        .find(candidate => candidate.name === requestedName && this.resolveSymbol(candidate) === symbol)
+      if (exported !== undefined) return exported.name
+    }
+    return undefined
+  }
+
+  /**
+   * Program files that can carry a manifest export target, in the order an
+   * import chain may have resolved it. A face program contains only the plane
+   * its imports actually resolved through, and symbol identity is plane-local:
+   * declaration-pinned packages (the authorization controller's `/types`
+   * subpath maps to the built declaration in tsconfig.base.json because the
+   * package owns no client project) present the raw target, while
+   * source-redirected packages present the mapped source. Try both, ranked by
+   * what the manifest names first; the wrong plane never matches by symbol.
+   */
+  private exportTargetFiles(packageRoot: string, target: string): ts.SourceFile[] {
+    const files: ts.SourceFile[] = []
+    const direct = this.sourceFiles.get(realPath(resolve(packageRoot, target.replace(/^\.\//, ''))))
+    if (direct !== undefined) files.push(direct)
+    const mapped = this.sourceFiles.get(realPath(sourcePathForExport(packageRoot, target)))
+    if (mapped !== undefined && mapped !== direct) files.push(mapped)
+    return files
   }
 
   private symbolAtType(node: ts.TypeNode): ts.Symbol | undefined {

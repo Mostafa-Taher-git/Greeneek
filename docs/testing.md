@@ -50,7 +50,7 @@ An e2e assertion re-runs the command or re-reads the file externally; a keyword 
 
 ## Replay and symlink fixtures need a POSIX checkout
 
-Web and session fixtures embed the recording host's POSIX paths, so a Windows root yields invalid JSON (`realizeSeedFixture` in `apps/web/tests/scaffold.ts`) and differing goldens. Git for Windows also clones with `core.symlinks=false` unless developer mode is enabled, so an indexed symlink lands as text holding its target and `verify-cordis-config` rejects the ACP `cordis.yml` fixture. Both are host limits: run these lanes and `GNK_SNAPSHOT=refresh` on macOS or Linux, and prove the symlinked fixture there rather than replacing it with a copy.
+Web and session fixtures embed the recording host's POSIX paths, so a Windows root yields invalid JSON (`realizeSeedFixture` in `apps/web/tests/scaffold.ts`) and differing goldens. Git for Windows also clones with `core.symlinks=false` unless developer mode is enabled, so an indexed symlink lands as text holding its target and `verify-cordis-config` rejects the ACP `cordis.yml` fixture. Byte-for-byte generated-artifact specs (`cordis-catalog.spec.ts`) read the smudged CRLF checkout and fail until `gen-cordis-catalog` rewrites a page in the generator's convention, while `git diff` shows no content delta. All are host limits: run these lanes, `GNK_SNAPSHOT=refresh`, and the byte-equality spec judgment on macOS or Linux, and prove the symlinked fixture there rather than replacing it with a copy.
 
 ## When a snapshot test is required
 

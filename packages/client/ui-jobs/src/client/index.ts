@@ -9,7 +9,7 @@ import { JobListAction } from './JobListAction.tsx'
 import type {} from '@greeneek/gnk-client-locale/client'
 import type {} from '@greeneek/gnk-client-ui-renderer/client'
 import type {} from '@greeneek/gnk-client-ui-session/client'
-import { en, NS, zh, type JobKey } from './locales.ts'
+import { ar, en, NS, zh, type JobKey } from './locales.ts'
 
 declare module '@greeneek/gnk-client-ui-slots' {
   interface LocaleNamespaceMap {
@@ -28,7 +28,7 @@ export const inject = ['sessions', 'slots', 'locale']
  * @param ctx - client root context.
  */
 export function apply(ctx: ClientContext): void {
-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-job: dictionaries')
+  ctx.effect(() => ctx.locale.register(NS, { zh, en, ar }), 'ui-job: dictionaries')
   ctx.slots.inject(
     'conversation.session.header.actions',
     () => ctx.slots.register({

@@ -9,7 +9,7 @@ import type { TypertClientEventListener } from '@greeneek/gnk-typert-protocol'
 import type {} from '@greeneek/gnk-client-locale/client'
 import { ApprovalPanel } from './ApprovalPanel.tsx'
 import { PendingApproval } from './contract/slots.ts'
-import { en, zh } from './locales.ts'
+import { ar, en, zh } from './locales.ts'
 
 export type {
   ApprovalComposerProps,
@@ -73,7 +73,7 @@ async function answerApproval(
  * @param ctx - Client root context.
  */
 export function apply(ctx: ClientContext): void {
-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-approval: dictionaries')
+  ctx.effect(() => ctx.locale.register(NS, { zh, en, ar }), 'ui-approval: dictionaries')
   const registerPendingInteraction = ctx.uiSession.registerPendingInteraction<PendingApproval>(
     () => 0,
   )

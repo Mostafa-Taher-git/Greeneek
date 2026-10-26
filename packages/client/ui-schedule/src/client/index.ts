@@ -7,7 +7,7 @@ import type {} from '@greeneek/gnk-client-ui-renderer/client'
 import type {} from '@greeneek/gnk-client-ui-session/client'
 import type {} from '@greeneek/gnk-schedule/client'
 import { ScheduleCatalogAction } from './ScheduleCatalogAction.tsx'
-import { en, NS, zh, type ScheduleCatalogKey } from './locales.ts'
+import { ar, en, NS, zh, type ScheduleCatalogKey } from './locales.ts'
 
 declare module '@greeneek/gnk-client-ui-slots' {
   interface LocaleNamespaceMap {
@@ -21,7 +21,7 @@ export const inject = ['slots', 'locale']
 
 /** Register the dictionaries and Session-header catalog action. */
 export function apply(ctx: ClientContext): void {
-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-schedule: dictionaries')
+  ctx.effect(() => ctx.locale.register(NS, { zh, en, ar }), 'ui-schedule: dictionaries')
   ctx.slots.inject(
     'conversation.session.header.actions',
     () => ctx.slots.register({

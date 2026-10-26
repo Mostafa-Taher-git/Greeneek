@@ -10,7 +10,9 @@ import {
   apply, inject, SETTINGS_NS,
 } from '@greeneek/gnk-client-locale/client'
 import type { LanguageRowInjected, LocaleRuntime } from '@greeneek/gnk-client-locale/client'
-import { LOCALE_SETTINGS_NAMESPACE, LocaleSettingsSchema } from '../src/locale-settings.ts'
+import {
+  LOCALE_PREFERENCE_FIELD, LOCALE_SETTINGS_NAMESPACE, LocaleSettingsSchema,
+} from '../src/locale-settings.ts'
 import { LanguageRow } from '../src/client/LanguageRow.tsx'
 import type { createLanguageRowStore } from '../src/client/settings-store.ts'
 
@@ -82,10 +84,22 @@ describe('locale apply', () => {
     // Base dictionaries are registered: the (ns, locale) seats are occupied.
     expect(() => locale.register('common', 'zh', {})).toThrow('already has locale')
     expect(() => locale.register('common', 'en', {})).toThrow('already has locale')
+    expect(() => locale.register('common', 'ar', {})).toThrow('already has locale')
     // The lane has no jsdom `window`, so detection never runs and a fresh
     // service opens on FALLBACK_LOCALE (en); read the zh side explicitly.
     locale.setLocale('zh')
     expect(locale.bind(SETTINGS_NS)('language.title')).toBe('语言')
+    locale.setLocale('ar')
+    expect(locale.bind(SETTINGS_NS)('language.title')).toBe('اللغة')
+    // The Arabic pick is an ordinary durable preference: the stored document
+    // receives the same field and value shape the other shipped ids write.
+    await vi.waitFor(() => {
+      expect(before.mutate).toHaveBeenLastCalledWith(
+        LOCALE_SETTINGS_NAMESPACE,
+        [{ op: 'set', path: [LOCALE_PREFERENCE_FIELD], value: 'ar' }],
+        expect.anything(),
+      )
+    })
     const entry = before.slots.entries(SLOT).find(e => e.component === LanguageRow)!
     expect(entry.options).toMatchObject({ id: 'language', order: 0 })
 
@@ -109,7 +123,7 @@ describe('locale apply', () => {
     const { entry, instance, face } = faceOf(b.slots)
     // The inject-time re-sync sealed the init window: the mirror is current.
     expect(instance.getSnapshot().active).toBe('en')
-    expect(instance.getSnapshot().options.map(o => o.id)).toEqual(['zh', 'en'])
+    expect(instance.getSnapshot().options.map(o => o.id)).toEqual(['zh', 'en', 'ar'])
     // Copy rides the standard locale seat: the entry declares the namespace.
     expect(entry.locale).toBe(SETTINGS_NS)
     expect(locale.bind(SETTINGS_NS)('language.title')).toBe('Language')
@@ -138,11 +152,12 @@ describe('locale apply', () => {
     expect(instance.getSnapshot().options).toEqual([
       { id: 'zh', label: '中文' },
       { id: 'en', label: 'English' },
+      { id: 'ar', label: 'العربية' },
       { id: 'ja', label: '日本語' },
     ])
 
     await languagePack.dispose()
-    expect(instance.getSnapshot().options.map(option => option.id)).toEqual(['zh', 'en'])
+    expect(instance.getSnapshot().options.map(option => option.id)).toEqual(['zh', 'en', 'ar'])
   })
 
   it('loads and refreshes the explicit Host preference after nonblocking activation', async () => {

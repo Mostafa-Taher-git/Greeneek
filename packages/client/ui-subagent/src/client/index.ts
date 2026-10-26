@@ -10,7 +10,7 @@ import {
 import type {} from '@greeneek/gnk-client-locale/client'
 import type {} from '@greeneek/gnk-client-ui-renderer/client'
 import type {} from '@greeneek/gnk-client-ui-session/client'
-import { en, NS, zh, type SubagentKey } from './locales.ts'
+import { ar, en, NS, zh, type SubagentKey } from './locales.ts'
 
 declare module '@greeneek/gnk-client-ui-slots' {
   interface LocaleNamespaceMap {
@@ -49,7 +49,7 @@ function selectReadOnlySubagent(owner: ComposerChainProps): SubagentReadOnlyMatc
  * @param ctx - client root context.
  */
 export function apply(ctx: ClientContext): void {
-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-subagent: dictionaries')
+  ctx.effect(() => ctx.locale.register(NS, { zh, en, ar }), 'ui-subagent: dictionaries')
   const sessions = ctx.sessions
   const catalogActions = (_parentSessionId: SessionId): SubagentCatalogInjected => ({
     openChild(address: SubagentAddress) {

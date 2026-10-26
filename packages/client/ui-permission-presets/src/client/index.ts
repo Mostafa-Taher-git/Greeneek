@@ -30,7 +30,7 @@ import type { PermissionSelect } from '@greeneek/gnk-permission-presets/client'
 import { PermissionRow } from './PermissionRow.tsx'
 import type { PermissionRowInjected } from './PermissionRow.tsx'
 import {
-  accessEn, accessZh, en, zh,
+  accessAr, accessEn, accessZh, ar, en, zh,
 } from './locales.ts'
 import {
   displayPermissionPreset, FULL_ACCESS_PRESET,
@@ -111,6 +111,16 @@ export function apply(ctx: ClientContext): void {
         'confirm.cancel': accessEn['confirm.cancel'],
         'confirm.enable': accessEn['confirm.enable'],
       }),
+      ctx.locale.register(ACCESS_NS, 'ar', {
+        'preset.readOnly': accessAr['preset.readOnly'],
+        'preset.workspaceWrite': accessAr['preset.workspaceWrite'],
+        'preset.fullAccess': accessAr['preset.fullAccess'],
+        'confirm.title': accessAr['confirm.title'],
+        'confirm.description': accessAr['confirm.description'],
+        'confirm.acknowledge': accessAr['confirm.acknowledge'],
+        'confirm.cancel': accessAr['confirm.cancel'],
+        'confirm.enable': accessAr['confirm.enable'],
+      }),
     ]
     return () => { for (const dispose of disposers) dispose() }
   }, 'ui-permission: Full access confirmation dictionaries')
@@ -119,7 +129,7 @@ export function apply(ctx: ClientContext): void {
   const sessionFor = (session: ClientSessionContext): SessionFace | undefined =>
     sessions.binding(session.sessionId)?.session
 
-  ctx.effect(() => ctx.locale.register('settings.permission', { zh, en }), 'ui-permission: settings row dictionaries')
+  ctx.effect(() => ctx.locale.register('settings.permission', { zh, en, ar }), 'ui-permission: settings row dictionaries')
 
   // The shared SettingsScope mirror updates after document commits and reconnects.
   const controller = new PermissionPresetSettingsController(

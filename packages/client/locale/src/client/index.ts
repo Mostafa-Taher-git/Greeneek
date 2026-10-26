@@ -15,12 +15,12 @@ import type { SettingsScope } from '@greeneek/gnk-client-ui-settings/client'
 // Type-only: pulls the SlotRegistry service merge (ctx.slots).
 import type {} from '@greeneek/gnk-client-ui-renderer/client'
 import {
-  LOCALE_ID_PATTERN, LOCALE_IDS, LOCALE_PREFERENCE_FIELD, LOCALE_SETTINGS_NAMESPACE,
-  type BuiltInLocaleId, type LocaleId, type LocaleSettings,
+  LOCALE_DOCUMENT_TAGS, LOCALE_ID_PATTERN, LOCALE_IDS, LOCALE_PREFERENCE_FIELD, LOCALE_SETTINGS_NAMESPACE,
+  textDirectionOf, type BuiltInLocaleId, type LocaleId, type LocaleSettings,
 } from '../locale-settings.ts'
-import { en, zh, type CommonKey } from '../locales/index.ts'
+import { ar, en, zh, type CommonKey } from '../locales/index.ts'
 import {
-  en as settingsEn, zh as settingsZh, type SettingsLocaleKey,
+  ar as settingsAr, en as settingsEn, zh as settingsZh, type SettingsLocaleKey,
 } from '../locales/settings.ts'
 import type { LanguageRowInjected } from './LanguageRow.tsx'
 import { LanguageRow } from './LanguageRow.tsx'
@@ -99,8 +99,8 @@ declare module '@greeneek/cordis' {
  * English is both the locale the UI opens in when the browser names no registered
  * language (and for non-browser runs), and the dictionary consulted after the
  * active locale misses a key. One constant serves both because the shipped
- * `zh`/`en` dictionaries carry identical key sets, so neither direction can
- * leave a key unresolved; the residual case points at English rather than
+ * `zh`/`en`/`ar` dictionaries carry identical key sets, so neither direction
+ * can leave a key unresolved; the residual case points at English rather than
  * zh because a browser naming no registered language is the reader least
  * likely to read Chinese.
  */
@@ -112,10 +112,11 @@ export const COMMON_NS = 'common'
 /** Namespace owning this feature's settings-row copy. */
 export const SETTINGS_NS = 'settings.locale'
 
-/** The two locales and dictionaries shipped by this package. */
+/** The locales and their label/fallback metadata, in selector order. */
 const BUILT_IN_LOCALE_METADATA = {
   zh: { label: '中文', fallback: 'en' },
   en: { label: 'English' },
+  ar: { label: 'العربية', fallback: 'en' },
 } as const satisfies Record<BuiltInLocaleId, Omit<LocaleDefinition, 'id'>>
 const BUILT_IN_LOCALES: readonly LocaleDefinition[] = Object.freeze(
   LOCALE_IDS.map(id => Object.freeze({ id, ...BUILT_IN_LOCALE_METADATA[id] })),
@@ -139,14 +140,27 @@ function normalizeLanguage(input: LanguageRegistration): Readonly<LanguageRegist
 }
 
 /**
- * Point `<html lang>` at the active locale, keeping the served document in
- * sync with locale snapshot changes.
+ * `<html lang>` value for a locale id: a shipped locale states the tag it
+ * documents, an external language pack states its own id.
+ * @param id - active locale id.
+ * @returns the BCP 47 tag for the document root.
+ */
+function documentTagOf(id: LocaleId): string {
+  const tags: Readonly<Record<string, string>> = LOCALE_DOCUMENT_TAGS
+  return tags[id] ?? id
+}
+
+/**
+ * Point `<html lang>` and `<html dir>` at the active locale, keeping the
+ * served document in sync with locale snapshot changes.
  * @param snapshot - current locale state, including the active definition.
  */
 function syncDocumentLanguage(snapshot: LocaleSnapshot): void {
   // Non-browser runs (node boots of the client tree) have no document.
   if (typeof document === 'undefined') return
-  document.documentElement.lang = snapshot.active === 'zh' ? 'zh-CN' : snapshot.active
+  const root = document.documentElement
+  root.lang = documentTagOf(snapshot.active)
+  root.dir = textDirectionOf(snapshot.active)
 }
 
 /**
@@ -539,8 +553,8 @@ export const inject = ['slots', 'remote', 'settingsScope']
 export function apply(ctx: ClientContext): void {
   const host = ctx.settingsScope.bind<LocaleSettings>({ namespace: LOCALE_SETTINGS_NAMESPACE })
   const locale = new LocaleRuntime(ctx, host)
-  locale.register(COMMON_NS, { zh, en })
-  locale.register(SETTINGS_NS, { zh: settingsZh, en: settingsEn })
+  locale.register(COMMON_NS, { zh, en, ar })
+  locale.register(SETTINGS_NS, { zh: settingsZh, en: settingsEn, ar: settingsAr })
   ctx.provide('locale', locale)
   // The service IS the LocaleFace (bind + getSnapshot/subscribe): install it
   // so the render machinery can synthesize the `t` standard seat.

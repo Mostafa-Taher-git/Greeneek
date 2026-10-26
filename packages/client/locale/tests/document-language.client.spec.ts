@@ -1,12 +1,13 @@
 // @vitest-environment jsdom
 /**
- * `<html lang>` tracks the active locale.
+ * `<html lang>` and `<html dir>` track the active locale.
  *
  * The served markup declares one language, but the resolved locale may differ
  * (browser detection, or a stored Host preference adopted after activation),
  * and it changes again whenever the user switches. Assistive technology and
- * browser features read this attribute, so a stale value misreports the
- * document language rather than merely looking untidy.
+ * browser features read these attributes, and an Arabic page laid out left to
+ * right misplaces every inline run, so a stale value misreports or mislays the
+ * document rather than merely looking untidy.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@greeneek/cordis'
@@ -48,12 +49,14 @@ async function bench(preference?: string) {
 }
 
 const langOf = (): string => document.documentElement.lang
+const dirOf = (): string => document.documentElement.dir
 
 describe('document language', () => {
   beforeEach(() => {
     // The served markup declares the product default; the plugin must not
     // depend on that value already being correct.
     document.documentElement.lang = 'en'
+    document.documentElement.dir = ''
     Object.defineProperty(navigator, 'languages', { value: ['zh-CN'], configurable: true })
     Object.defineProperty(navigator, 'language', { value: 'zh-CN', configurable: true })
   })
@@ -82,6 +85,24 @@ describe('document language', () => {
     expect(langOf()).toBe('en')
     locale.setLocale('zh')
     expect(langOf()).toBe('zh-CN')
+  })
+
+  it('states the text direction at activation and flips it with the locale', async () => {
+    const { locale } = await bench()
+    // Activation states the direction, not only later switches.
+    expect(dirOf()).toBe('ltr')
+
+    locale.setLocale('ar')
+    expect(langOf()).toBe('ar')
+    expect(dirOf()).toBe('rtl')
+
+    locale.setLocale('en')
+    expect(langOf()).toBe('en')
+    expect(dirOf()).toBe('ltr')
+
+    locale.setLocale('zh')
+    expect(langOf()).toBe('zh-CN')
+    expect(dirOf()).toBe('ltr')
   })
 
   it('follows an explicit Host preference that overrides browser detection', async () => {

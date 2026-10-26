@@ -136,6 +136,15 @@ describe('apply', () => {
           'row.inspect': 'Inspect',
           'menu.userOnly': 'user-only',
         },
+        ar: {
+          'row.title': 'Skill',
+          'row.running': 'جارٍ تحميل Skill',
+          'row.failed': 'فشل تحميل Skill',
+          'row.stopped': 'أُوقف تحميل Skill',
+          'row.instructions': 'التعليمات',
+          'row.inspect': 'فحص',
+          'menu.userOnly': 'للمستخدم فقط',
+        },
       },
     }])
   })

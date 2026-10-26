@@ -23,7 +23,7 @@ import type { PopupSelectInjected } from './PopupSelectView.tsx'
 import { PopupSelectView } from './PopupSelectView.tsx'
 import type { CommandsSectionInjected } from './CommandsSection.tsx'
 import { CommandsSection } from './CommandsSection.tsx'
-import { en, zh, type CommandKey } from './locales.ts'
+import { ar, en, zh, type CommandKey } from './locales.ts'
 
 export { CommandUiRuntime } from './service.ts'
 export { CommandDirectory } from './directory.ts'
@@ -62,7 +62,7 @@ export const inject = ['inputTriggers', 'sessions', 'remote', 'remote.commands',
  * @param ctx - client root context.
  */
 export function apply(ctx: ClientContext): void {
-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-commands: dictionaries')
+  ctx.effect(() => ctx.locale.register(NS, { zh, en, ar }), 'ui-commands: dictionaries')
   ctx.plugin(CommandUiRuntime)
   const t = ctx.locale.bind(NS)
   const listCommands: CommandsSectionInjected['listCommands'] = async (sessionId) => {

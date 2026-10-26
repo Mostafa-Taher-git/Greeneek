@@ -12,6 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, waitFor } from '@testing-library/react'
 import { SlotTestRuntime, usePinnedBrowserLanguages } from '@greeneek/gnk-client-test-runtime'
 import { LocaleRuntime } from '@greeneek/gnk-client-locale/client'
+import { ar as commonAr } from '@greeneek/gnk-client-locale/src/locales/ar.ts'
 import { en as commonEn } from '@greeneek/gnk-client-locale/src/locales/en.ts'
 import { zh as commonZh } from '@greeneek/gnk-client-locale/src/locales/zh.ts'
 import { apply, inject } from '@greeneek/gnk-client-ui-sidebar/client'
@@ -42,7 +43,7 @@ async function bench(options: { locale?: 'en' } = {}) {
   runtime.ctx.provide('layout', { toggleSidebar: vi.fn() })
   runtime.ctx.provide('uiWorkspace', { startSession: vi.fn() } as never)
   const locale = new LocaleRuntime(runtime.ctx)
-  locale.register('common', { zh: commonZh, en: commonEn })
+  locale.register('common', { zh: commonZh, en: commonEn, ar: commonAr })
   if (options.locale === 'en') locale.setLocale('en')
   runtime.ctx.provide('locale', locale)
   runtime.slots.installLocale(locale)

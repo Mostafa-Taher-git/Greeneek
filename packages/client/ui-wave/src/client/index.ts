@@ -22,7 +22,7 @@ import type { FleetInjected } from './contract.ts'
 import { FleetMirror } from './fleet-mirror.ts'
 import { FleetPanel } from './FleetPanel.tsx'
 import { FleetPill } from './FleetPill.tsx'
-import { en, NS, zh, type FleetKey } from './locales.ts'
+import { ar, en, NS, zh, type FleetKey } from './locales.ts'
 
 declare module '@greeneek/gnk-client-ui-slots' {
   interface LocaleNamespaceMap {
@@ -45,7 +45,7 @@ export const inject = ['slots', 'locale', 'sessions', 'remote', 'remote.waves']
  * @param ctx - Client root context.
  */
 export function apply(ctx: ClientContext): void {
-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-wave: dictionaries')
+  ctx.effect(() => ctx.locale.register(NS, { zh, en, ar }), 'ui-wave: dictionaries')
 
   // One mirror per Lead session: the tab and the pill read the same sampled
   // fleet, and its sampling loop runs while either of them is on screen.

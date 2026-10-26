@@ -178,7 +178,7 @@ Scope: 260 workspace packages; every package appears under each of its kinds (24
 | --- | --- |
 | `@greeneek/gnk-client-connection` | Browser-host wire layer for the web GUI: Remote RPC, event-stream delivery with reconnect, exact Fetch routes, the /api HTTP bridge, and the browser-trust fence. |
 | `@greeneek/gnk-client-hmr` | Development-only hot reload for browser client plugins: rebuilding a plugin bundle swaps the running plugin in place, for developers iterating on the web GUI. |
-| `@greeneek/gnk-client-locale` | Localization for the web GUI: the zh/en preference, browser-derived fallback, typed namespace dictionaries, and the framework translation seat, for users and plugin authors. |
+| `@greeneek/gnk-client-locale` | Localization for the web GUI: the stored locale preference, browser-derived fallback, typed namespace dictionaries, the framework translation seat, and document language and direction, for users and plugin authors. |
 | `@greeneek/gnk-client-modules` | Client module system for the web GUI: the host composes the boot graph and serves plugin bundles, and the browser loads them lazily, for users and maintainers composing or debugging client plugins. |
 | `@greeneek/gnk-client-store` | Observable browser state stores with explicit snapshots, subscriptions, and lifecycle ownership. |
 | `@greeneek/gnk-client-web` | Web boot kernel for the web GUI: two-stage boot of the client plugin tree, the framework-free boot page, and the shared module table, for users and maintainers composing or debugging the browser application. |

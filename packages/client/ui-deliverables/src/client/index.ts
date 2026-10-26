@@ -15,7 +15,7 @@ import type {} from '@greeneek/gnk-client-locale/client'
 import type {} from '@greeneek/gnk-client-ui-conversation/client'
 import type {} from '@greeneek/gnk-client-ui-renderer/client'
 import { ProducedFiles } from './ProducedFiles.tsx'
-import { en, NS, zh, type DeliverablesKey } from './locales.ts'
+import { ar, en, NS, zh, type DeliverablesKey } from './locales.ts'
 import {
   deliverablesDefinition, producedFileMentions, selectProducedFiles,
 } from './turn-deliverables.ts'
@@ -65,7 +65,7 @@ export function apply(ctx: ClientContext): void {
     if (requestedWorkspacePathOpen) loadWorkspacePathOpen()
   })
   ctx.uiConversation.events.register(deliverablesDefinition)
-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-deliverables: dictionaries')
+  ctx.effect(() => ctx.locale.register(NS, { zh, en, ar }), 'ui-deliverables: dictionaries')
   ctx.slots.inject(
     'conversation.chat.turnTail',
     () => ctx.slots.register({

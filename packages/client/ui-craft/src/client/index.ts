@@ -22,7 +22,7 @@ import type {} from '@greeneek/gnk-client-ui-tool/client'
 import { CraftArtifactRow } from './artifact/CraftArtifactRow.tsx'
 import { ARTIFACT_TOOL_KEYS, fallbackSource } from './catalog.ts'
 import type { CraftSettingsSource } from './contract.ts'
-import { en, NS, zh, type CraftKey } from './locales.ts'
+import { ar, en, NS, zh, type CraftKey } from './locales.ts'
 import { CraftSection } from './settings/CraftSection.tsx'
 import type { CraftSectionInjected } from './settings/CraftSection.tsx'
 
@@ -62,7 +62,7 @@ export interface CraftPluginOptions {
  * @param options - optional host-backed app source.
  */
 export function apply(ctx: ClientContext, options: CraftPluginOptions = {}): void {
-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-craft: dictionaries')
+  ctx.effect(() => ctx.locale.register(NS, { zh, en, ar }), 'ui-craft: dictionaries')
   const source = options.source ?? fallbackSource()
   const t = ctx.locale.bind(NS)
   ctx.slots.inject('settings.section', () => ctx.slots.register({

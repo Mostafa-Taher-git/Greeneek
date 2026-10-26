@@ -31,5 +31,20 @@ export const en: Record<keyof typeof zh, string> = {
   'dialog.commandFailed': 'Could not start the Session export.',
 }
 
+/** Arabic Session export strings. */
+export const ar: Record<keyof typeof zh, string> = {
+  'header.action': 'سجل الجلسة',
+  'menu.button': 'خيارات الجلسة',
+  'menu.trajectory': 'المسار',
+  'menu.chat': 'المحادثة',
+  'dialog.preparingTitle': 'جارٍ تصدير الجلسة',
+  'dialog.preparingDescription': 'جارٍ تجهيز ملف ZIP يضم هذه الجلسة والجلسات الفرعية والمرفقات.',
+  'dialog.successTitle': 'بدأ تنزيل الجلسة',
+  'dialog.successDescription': 'المتصفح ينزّل ملف ZIP للجلسة.',
+  'dialog.errorTitle': 'فشل تصدير الجلسة',
+  'dialog.close': 'إغلاق',
+  'dialog.commandFailed': 'تعذّر بدء تصدير الجلسة.',
+}
+
 /** Stable locale keys consumed by the shared modal. */
 export type SessionLogDownloadKey = keyof typeof zh

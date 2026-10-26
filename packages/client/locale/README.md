@@ -1,5 +1,5 @@
 ---
-description: "Localization for the web GUI: the zh/en preference, browser-derived fallback, typed namespace dictionaries, and the framework translation seat, for users and plugin authors."
+description: "Localization for the web GUI: the stored locale preference, browser-derived fallback, typed namespace dictionaries, the framework translation seat, and document language and direction, for users and plugin authors."
 kind: "package-reference"
 ---
 
@@ -8,7 +8,7 @@ kind: "package-reference"
 
 ## Summary
 
-`gnk-client-locale` localizes the web GUI: users choose from the registered languages in Settings → General, and the UI copy switches immediately. The package ships `zh` and `en`, while external client plugins can add languages and their namespace dictionaries. On a loopback page, the choice persists as `locale.preference` in `$GNK_HOME/settings.yaml`; a non-loopback page keeps its selection process-local even though Connection authenticates every API method. A fresh browser starts provisionally in the first registered language requested by `navigator` until an allowed Host preference arrives and replaces it live. Plugin authors receive full type checking for the built-in dictionary form and translate through the framework `t` seat; copy rendered through slots follows language switches without a reload.
+`gnk-client-locale` localizes the web GUI: users choose from the registered languages in Settings → General, and the UI copy switches immediately. The package ships `zh`, `en`, and `ar`, while external client plugins can add languages and their namespace dictionaries. On a loopback page, the choice persists as `locale.preference` in `$GNK_HOME/settings.yaml`; a non-loopback page keeps its selection process-local even though Connection authenticates every API method. A fresh browser starts provisionally in the first registered language requested by `navigator` until an allowed Host preference arrives and replaces it live. Plugin authors receive full type checking for the built-in dictionary form and translate through the framework `t` seat; copy rendered through slots follows language switches without a reload.
 
 ## Table of Contents
 
@@ -28,11 +28,11 @@ Use it wherever the web GUI needs a language switch or translated copy: the ship
 
 ### Choosing a language
 
-Open Settings → General and select a registered language. The active locale is applied immediately: the UI copy switches, `<html lang>` points at the external id or built-in document tag, and the choice is written to the durable settings section. A browser without an explicit Host preference selects the first registered language that matches `navigator` by full tag and then primary subtag, falling back to English. A stored external locale waits for its definition to register instead of becoming active while unavailable.
+Open Settings → General and select a registered language. The active locale is applied immediately: the UI copy switches, `<html lang>` and `<html dir>` point at the built-in document tag or the external id and its script direction, and the choice is written to the durable settings section. A browser without an explicit Host preference selects the first registered language that matches `navigator` by full tag and then primary subtag, falling back to English. A stored external locale waits for its definition to register instead of becoming active while unavailable.
 
 ### Registering a dictionary
 
-Call `ctx.locale.register(ns, { zh, en })` with a namespace merged into `LocaleNamespaceMap`; the compiler checks every key against the namespace's typed key union and requires both shipped locales. Consumers translate through `ctx.locale.bind(ns)` or the framework-injected `t` seat. A dictionary registered after the UI is already mounted is picked up without a remount.
+Call `ctx.locale.register(ns, { zh, en, ar })` with a namespace merged into `LocaleNamespaceMap`; the compiler checks every key against the namespace's typed key union and requires every shipped locale. Consumers translate through `ctx.locale.bind(ns)` or the framework-injected `t` seat. A dictionary registered after the UI is already mounted is picked up without a remount.
 
 ### Registering a language pack
 
@@ -82,7 +82,7 @@ The provisional locale comes from the browser (`navigator.languages` matched by 
 
 ### Dictionary lookup
 
-The typed object form requires complete dictionaries for both built-in locales. The per-locale form lets language packs register each namespace independently. For each key, lookup walks the active language's declared fallback chain in the requested namespace, repeats that chain in `common`, then displays the key itself. Bound translate functions retain stable identity per namespace so they can ride inject surfaces without breaking memoization.
+The typed object form requires complete dictionaries for every built-in locale. The per-locale form lets language packs register each namespace independently. For each key, lookup walks the active language's declared fallback chain in the requested namespace, repeats that chain in `common`, then displays the key itself. Bound translate functions retain stable identity per namespace so they can ride inject surfaces without breaking memoization.
 
 ### Source map
 
@@ -90,8 +90,8 @@ The typed object form requires complete dictionaries for both built-in locales. 
 |---|---|
 | [`src/client/index.ts`](src/client/index.ts) | `LocaleRuntime`, dictionary registry, Language row registration, `locale/change` event |
 | [`src/index.ts`](src/index.ts) | Node half: registers the `locale` settings namespace |
-| [`src/locale-settings.ts`](src/locale-settings.ts) | The durable schema for `locale.preference` |
-| [`src/locales/`](src/locales/) | The shipped `zh`/`en` dictionaries |
+| [`src/locale-settings.ts`](src/locale-settings.ts) | Durable schema for `locale.preference`, the shipped `<html lang>` tags, and the text-direction rule |
+| [`src/locales/`](src/locales/) | The shipped `zh`/`en`/`ar` dictionaries |
 
 </details>
 
@@ -126,7 +126,8 @@ None; this package neither assembles nor sends a provider request.
 These limits define where localization is incomplete or frozen at registration time. They are current package constraints, not a task backlog.
 
 - **Registry-held text reads its translation once** — copy captured at registration time outside the slot render path (e.g. the `/model` command description in the command registry) keeps the language it was registered under until re-registration; slot-rendered copy follows switches live.
-- **Language packs own language-specific behavior** — the registry supplies selection, persistence, browser matching, key fallback, and `<html lang>`; it does not add plural rules or bidirectional layout.
+- **Language packs own language-specific behavior** — the registry supplies selection, persistence, browser matching, key fallback, `<html lang>`, and `<html dir>` from the language's primary subtag; it adds no plural rules.
+- **Bidirectional layout is incomplete** — the document direction is set, but client CSS still writes physical properties and icons are not mirrored, so an Arabic page lays out correctly only where a component's layout is direction-neutral.
 
 <a id="dev-note"></a>
 ### Dev Note

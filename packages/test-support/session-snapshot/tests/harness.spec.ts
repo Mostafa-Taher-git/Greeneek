@@ -922,6 +922,18 @@ describe('runScenario', () => {
     )).rejects.toThrow(/did not persist turn\/end within 20ms/)
   })
 
+  it('keeps the budget message when the harvest outlives the window', { timeout: 20_000 }, async () => {
+    // A gathered log read slower than the whole window makes vi.waitFor
+    // time out mid-callback and surface its own timeout text instead of the
+    // callback's assertion; the harness must still reject with the budget
+    // message (one-millisecond window always loses to the first harvest).
+    const missing = await scenario({})
+    await expect(runScenario(
+      { steps: [...boot, { op: 'waitForTurnEnd', timeoutMs: 1 }] },
+      { agent: AGENT, mode: 'replay', fixtureFile: missing.fixtureFile },
+    )).rejects.toThrow(/did not persist turn\/end within 1ms/)
+  })
+
   it('waitForGoalPhase requires the requested durable goal phase', { timeout: 20_000 }, async () => {
     const reached = await scenario({
       prompt: 'hang-until-cancel',

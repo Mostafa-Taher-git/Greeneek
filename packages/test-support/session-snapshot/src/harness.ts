@@ -576,12 +576,21 @@ async function waitForPersistedTurnEnd(
   sessionId: string,
   timeoutMs = DEFAULT_WAIT_TIMEOUT_MS,
 ): Promise<void> {
+  // The budget error is the assertion, so it must survive a load-slowed
+  // harvest: vi.waitFor reports its own timeout text when a poll round
+  // outlives the whole window (CI run 40254789718 lost the exact message that
+  // way), so the rejection rethrows the harness's own error instead.
+  const budgetError = new Error(
+    `snapshot-harness: session "${sessionId}" did not persist turn/end within ${timeoutMs}ms`,
+  )
   await vi.waitFor(async () => {
     const log = (await harvestSessionLogs(root)).find(candidate => candidate.id === sessionId)
     if (log === undefined || !latestTurnIsClosed(log.content)) {
-      throw new Error(`snapshot-harness: session "${sessionId}" did not persist turn/end within ${timeoutMs}ms`)
+      throw budgetError
     }
-  }, { interval: WAIT_POLL_INTERVAL_MS, timeout: timeoutMs })
+  }, { interval: WAIT_POLL_INTERVAL_MS, timeout: timeoutMs }).catch(() => {
+    throw budgetError
+  })
 }
 
 /**

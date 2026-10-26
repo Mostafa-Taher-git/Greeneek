@@ -49,12 +49,13 @@ export const en: Record<AgentPresetSettingsKey, string> = {
   presetInstructorName: 'Instructor (preview)',
   presetInstructorDescription:
     'Teaching agent that interviews, drafts lessons, tutorials, and CVs as markdown, and exports them through the Craft gateway\'s document apps.',
-  // Maestro still ships as a disabled row; its copy lands with its preset.
+  // Army shipped with the wave engine; Maestro below carries its lane preset.
   presetArmyName: 'Army mode',
   presetArmyDescription:
     'Fleet coding agent: fans independent work out to concurrent one-shot subagents, keeps only their structured results, and reports a partially finished wave as what it is.',
   presetMaestroName: 'Maestro mode',
-  presetMaestroDescription: 'Coming soon.',
+  presetMaestroDescription:
+    'Durable lanes under one coordinator: delegates code, docs, and design tasks to in-process members from the standard, instructor, and pixels-designer presets working in parallel.',
   switcherLabel: 'Agent mode',
   switcherComingSoon: 'Coming soon',
   duplicate: 'Duplicate',
@@ -116,11 +117,11 @@ export const zh: Record<AgentPresetSettingsKey, string> = {
   presetPixelsDesignerDescription: '设计类 Agent：通过 Craft 网关调用已安装的创意应用（PhotoCraft、PdfCraft 等），配备文件读写、检索、访谈、待办与计划工具。',
   presetInstructorName: '导师（预览）',
   presetInstructorDescription: '教学类 Agent：访谈后起草讲义、教程与简历，通过 Craft 网关调用文档应用导出 PDF，配备文件读写、检索、访谈与待办工具。',
-  // Maestro still ships as a disabled row; its copy lands with its preset.
+  // Army 随波次引擎发布；下方 Maestro 自带车道预设的文案。
   presetArmyName: 'Army 模式',
   presetArmyDescription: '群控编码 Agent：把可并行的工作交给并发的一次性子代理，只保留它们返回的结构化结果，并把部分完成的波次如实报告。',
   presetMaestroName: 'Maestro 模式',
-  presetMaestroDescription: '即将推出。',
+  presetMaestroDescription: '同一协调者下的持久车道：把代码、文档与设计任务并行委派给来自标准、导师与像素设计预设的进程内成员。',
   switcherLabel: 'Agent 模式',
   switcherComingSoon: '即将推出',
   duplicate: '复制',
@@ -179,11 +180,11 @@ export const ar = {
   presetPixelsDesignerDescription: 'وكيل تصميم يقود تطبيقات الإبداع المثبَّتة عبر بوابة Craft، ويوفّر تحرير الملفات والبحث والمقابلات وقوائم المهام والتخطيط.',
   presetInstructorName: 'المدرِّب (معاينة)',
   presetInstructorDescription: 'وكيل تعليمي يجري المقابلات ويصيغ الدروس والشروحات والسير الذاتية بصيغة markdown، ثم يصدّرها عبر تطبيقات المستندات في بوابة Craft.',
-  // Maestro stays a disabled row, so its name keeps the Latin product spelling.
+  // The Maestro name keeps the Latin product spelling in Arabic, as in English.
   presetArmyName: 'وضع Army',
   presetArmyDescription: 'وكيل برمجة يعمل بأسطول: يوزّع العمل المستقل على وكلاء فرعيين متوازيين لمرة واحدة، ويحتفظ بنتائجهم المهيكلة فقط، ويبلّغ عن الموجة المكتملة جزئيًا كما هي.',
   presetMaestroName: 'وضع Maestro',
-  presetMaestroDescription: 'قريبًا.',
+  presetMaestroDescription: 'مسارات دائمة تحت منسّق واحد: يفوّض مهام الكود والتوثيق والتصميم إلى أعضاء داخل العملية من قوالب المعيار والمعلّم ومصمّم البكسل تعمل بالتوازي.',
   switcherLabel: 'وضع الوكيل',
   switcherComingSoon: 'قريبًا',
   duplicate: 'نسخ',

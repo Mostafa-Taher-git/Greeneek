@@ -56,6 +56,30 @@ export interface WaveMemberView {
   readonly model?: string
   /** Non-failure detail kept from a non-`completed` settlement. */
   readonly diagnostic?: string
+  /**
+   * Name of the child's most recent tool call. The engine subscribes to no
+   * tool event, so no wave-side source fills this yet; a row must render it
+   * only when present.
+   */
+  readonly lastTool?: string
+  /**
+   * Wall-clock milliseconds from launch to settlement. Absent before the member
+   * launches and while it is still running, because no completed timestamp
+   * exists yet; a queued member that never launched has no duration either.
+   */
+  readonly durationMs?: number
+  /**
+   * Pointer strings to artifacts the member's settled result named. The
+   * subagent result carries no artifact vocabulary, so no source fills this
+   * yet; the member drawer renders it only when present.
+   */
+  readonly artifacts?: readonly string[]
+  /**
+   * Tokens charged against the member budget by the `tokenUsage` projection.
+   * Absent until the projection has metered at least one step; `tokensUsed`
+   * stays the always-present cumulative count.
+   */
+  readonly budgetUsed?: number
 }
 
 /** A browser-visible wave snapshot. */

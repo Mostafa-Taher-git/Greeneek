@@ -81,6 +81,27 @@ describe('FleetPanel rows', () => {
     expect(screen.getByTitle('budget cut')).toBeDefined()
   })
 
+  it('shows the last tool and a settled duration only when the view carries them', () => {
+    const { source } = setup()
+    act(() => {
+      source.set({
+        waveViews: [wave({
+          members: [
+            member({ memberId: MEMBER, lastTool: 'bash', durationMs: 250 }),
+            member({ memberId: MEMBER_TWO, lastTool: 'read', durationMs: 1_500 }),
+          ],
+        })],
+        stoppable: true,
+        degraded: false,
+        loading: false,
+      })
+    })
+    expect(screen.getByText('bash')).toBeDefined()
+    expect(screen.getByTitle(en['lastTool'].replace('{tool}', 'bash'))).toBeDefined()
+    expect(screen.getByText(en['duration.milliseconds'].replace('{milliseconds}', '250'))).toBeDefined()
+    expect(screen.getByText(en['duration.seconds'].replace('{seconds}', '2'))).toBeDefined()
+  })
+
   it('marks a settled wave closed and offers its child transcript instead of a stop', () => {
     const { verbs } = setup(settledSnapshot())
     expect(screen.getByText(en['wave.closed'])).toBeDefined()

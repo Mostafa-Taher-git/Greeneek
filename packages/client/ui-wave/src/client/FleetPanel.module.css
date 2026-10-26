@@ -168,6 +168,17 @@
   color: var(--dsw-alias-label-secondary);
 }
 
+.lastTool,
+.duration {
+  flex: none;
+  color: var(--dsw-alias-label-tertiary);
+  font-family: var(--ds-font-family-code);
+}
+
+.duration {
+  font-variant-numeric: tabular-nums;
+}
+
 .tokens {
   flex: none;
   margin-left: auto;

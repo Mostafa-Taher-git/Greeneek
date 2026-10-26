@@ -332,6 +332,69 @@ describe('WaveRuntime dispatch and settlement', () => {
   })
 })
 
+describe('WaveRuntime view fields', () => {
+  it('reports duration only for a launched member that settled, and budget only after metering', async () => {
+    const { ctx, waves, provider, parent } = await setupWave({ maxConcurrent: 1 })
+    const pending = waves.startWave(waveRequest(parent, [member(), member()]))
+    await vi.waitFor(() => { expect(provider.runs).toHaveLength(1) })
+
+    // One running member and one queued member: neither has a completed
+    // timestamp, so neither carries a duration. No projection has metered
+    // either member, so no budget reading exists. The engine has no tool or
+    // artifact source, so those fields stay absent rather than fabricated.
+    const live = waves.listWaves(parent.id)[0]!.members
+    for (const row of live) {
+      expect(row).not.toHaveProperty('durationMs')
+      expect(row).not.toHaveProperty('budgetUsed')
+      expect(row).not.toHaveProperty('lastTool')
+      expect(row).not.toHaveProperty('artifacts')
+    }
+    expect(live.map(row => row.status)).toEqual(['running', 'queued'])
+
+    vi.spyOn(ctx.sessionProjections, 'stateOf').mockReturnValue(usage(12))
+    await expect(preStep(ctx, childAgent(provider.runs[0]!))).resolves.toEqual({ kind: 'enter', messages: [] })
+    const metered = waves.listWaves(parent.id)[0]!.members[0]!
+    expect(metered).toMatchObject({ tokensUsed: 12, budgetUsed: 12 })
+    expect(metered).not.toHaveProperty('durationMs')
+
+    provider.runs[0]!.deferred.resolve(completed('first'))
+    await vi.waitFor(() => { expect(provider.runs).toHaveLength(2) })
+    const firstSettled = waves.listWaves(parent.id)[0]!.members
+    expect(typeof firstSettled[0]!.durationMs).toBe('number')
+    expect(firstSettled[0]!.durationMs).toBeGreaterThanOrEqual(0)
+    expect(firstSettled[0]!.budgetUsed).toBe(12)
+    expect(firstSettled[1]).not.toHaveProperty('durationMs')
+    expect(firstSettled[1]).not.toHaveProperty('budgetUsed')
+
+    provider.runs[1]!.deferred.resolve(completed('second'))
+    await expect(pending).resolves.toMatchObject({ outcome: 'completed' })
+    const settled = waves.listWaves(parent.id)[0]!.members
+    for (const row of settled) {
+      expect(typeof row.durationMs).toBe('number')
+      expect(row.durationMs).toBeGreaterThanOrEqual(0)
+      expect(row).not.toHaveProperty('lastTool')
+      expect(row).not.toHaveProperty('artifacts')
+    }
+    expect(settled[1]).not.toHaveProperty('budgetUsed')
+  })
+
+  it('leaves duration absent for a member cancelled while queued', async () => {
+    const { waves, provider, parent } = await setupWave({ maxConcurrent: 1 })
+    const pending = waves.startWave(waveRequest(parent, [member(), member()]))
+    await vi.waitFor(() => { expect(provider.runs).toHaveLength(1) })
+    const view = waves.listWaves(parent.id)[0]!
+    waves.cancelMember(view.waveId, view.members[1]!.memberId)
+    await vi.waitFor(() => {
+      expect(waves.listWaves(parent.id)[0]?.members[1]?.status).toBe('cancelled')
+    })
+    expect(waves.listWaves(parent.id)[0]!.members[1]).not.toHaveProperty('durationMs')
+
+    provider.runs[0]!.deferred.resolve(completed('first'))
+    await expect(pending).resolves.toMatchObject({ outcome: 'partial' })
+    expect(waves.listWaves(parent.id)[0]!.members[1]).not.toHaveProperty('durationMs')
+  })
+})
+
 describe('WaveRuntime budget enforcement', () => {
   it('kills a member whose cumulative usage exceeds its cap', async () => {
     const { ctx, waves, provider, parent } = await setupWave()

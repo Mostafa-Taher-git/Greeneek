@@ -6,6 +6,20 @@ import css from './FleetPanel.module.css'
 import { useEmergencyStop } from './use-stop.ts'
 
 /**
+ * Render a settled member duration: whole milliseconds under one second, whole
+ * seconds above it.
+ * @param durationMs - launch-to-settlement milliseconds from the engine.
+ * @param t - the fleet translator.
+ * @returns the compact duration cell text.
+ */
+function formatDuration(durationMs: number, t: FleetPanelProps['t']): string {
+  const elapsed = Math.max(0, durationMs)
+  return elapsed < 1_000
+    ? t('duration.milliseconds', { milliseconds: Math.round(elapsed) })
+    : t('duration.seconds', { seconds: Math.round(elapsed / 1_000) })
+}
+
+/**
  * Fleet rows for one Lead session: the wave headers with their live members, one
  * stop affordance per level, and the emergency stop that stays reachable while
  * any wave is open.
@@ -70,6 +84,14 @@ export function FleetPanel({
                     <span className={css.role} title={member.role ?? member.provider}>{member.role ?? member.provider}</span>
                     {member.model !== undefined && <span className={css.model} title={member.model}>{member.model}</span>}
                     <span className={css.status}>{t(state.label)}</span>
+                    {member.lastTool !== undefined && (
+                      <span className={css.lastTool} title={t('lastTool', { tool: member.lastTool })}>
+                        {member.lastTool}
+                      </span>
+                    )}
+                    {member.durationMs !== undefined && (
+                      <span className={css.duration}>{formatDuration(member.durationMs, t)}</span>
+                    )}
                     <span className={css.tokens}>{t('tokens', { tokens: member.tokensUsed })}</span>
                   </span>
                   {isCancellable(member.status) && (

@@ -107,6 +107,12 @@ interface MemberState {
   status: WaveMemberStatus
   childSessionId: SessionId | undefined
   tokensUsed: number
+  /** Cumulative tokens the projection charged to the member budget; absent until metered. */
+  budgetUsed: number | undefined
+  /** Wall-clock launch time; absent until the member leaves the queue. */
+  startedAtMs: number | undefined
+  /** Wall-clock settlement time; absent until the member's funnel reaches settlement. */
+  endedAtMs: number | undefined
   budgetKilled: boolean
   diagnostic: string | undefined
   /** True once the member's durable settlement record is written. */
@@ -257,6 +263,9 @@ export class WaveRuntime extends TypertRemoteService {
       status: 'queued' as WaveMemberStatus,
       childSessionId: undefined,
       tokensUsed: 0,
+      budgetUsed: undefined,
+      startedAtMs: undefined,
+      endedAtMs: undefined,
       budgetKilled: false,
       diagnostic: undefined,
       settled: false,
@@ -417,6 +426,7 @@ export class WaveRuntime extends TypertRemoteService {
       release = await this.semaphore.acquire(member.controller.signal)
       member.controller.signal.throwIfAborted()
       member.status = 'running'
+      member.startedAtMs = Date.now()
       run = await this.ctx.subagents.start(member.spec.provider, {
         ...member.spec.request,
         parent: wave.parent,
@@ -458,6 +468,9 @@ export class WaveRuntime extends TypertRemoteService {
 
   /** Write this member's record, then close the wave once every member settled. */
   private settleMember(wave: WaveState, member: MemberState): void {
+    // The funnel is the member's terminal boundary, including a member whose
+    // wave already closed while it waited for child disposal.
+    member.endedAtMs = Date.now()
     if (wave.closed) return
     this.appendMemberSettled(wave, member)
     const open = wave.members.some(candidate => candidate.status === 'queued' || candidate.status === 'running')
@@ -591,6 +604,7 @@ export class WaveRuntime extends TypertRemoteService {
     }
     const tokens = cumulativeTokens(usage)
     member.tokensUsed = tokens
+    member.budgetUsed = tokens
     if (tokens === 0) return undefined
     const waveTokens = wave.members.reduce((sum, row) => sum + row.tokensUsed, 0)
     const memberExceeded = perMember !== undefined && tokens > perMember
@@ -620,6 +634,9 @@ export class WaveRuntime extends TypertRemoteService {
   }
 
   private viewMember(member: MemberState): WaveMemberView {
+    const durationMs = member.startedAtMs === undefined || member.endedAtMs === undefined
+      ? undefined
+      : member.endedAtMs - member.startedAtMs
     return {
       memberId: member.memberId,
       provider: member.spec.provider,
@@ -631,6 +648,8 @@ export class WaveRuntime extends TypertRemoteService {
         ? {}
         : { model: member.spec.request.agentOptions.model }),
       ...(member.diagnostic === undefined ? {} : { diagnostic: member.diagnostic }),
+      ...(durationMs === undefined ? {} : { durationMs }),
+      ...(member.budgetUsed === undefined ? {} : { budgetUsed: member.budgetUsed }),
     }
   }
 

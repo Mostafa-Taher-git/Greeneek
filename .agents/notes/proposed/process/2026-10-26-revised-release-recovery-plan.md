@@ -4,7 +4,7 @@ Status: proposed
 
 ## Problem
 
-The owner's hand-off plan (2026-10-25) asked a fresh session to audit, correct, and finish the release program. Since then two independent free-model audits (`deepseek-v4.1-flash-free` auditor A on ledger claims, auditor B on missing product work) re-verified the tree, the executor subagent pinned the two CI breakers, and three correction commits landed on main (`3b529c65` preview-badge removal, `208152e6` Maestro copy, `240ae910` source-plane emit pin). Several of the old plan's claims no longer describe reality, and at least one was false (the "25 descriptor-v3 fixtures" re-record). A session handed the old plan would repeat dead work or trust rows the audits falsified.
+The owner's hand-off plan (2026-10-25) asked a fresh session to audit, correct, and finish the release program. Since then two independent free-model audits (both on the approved execution model's flash tier: auditor A verifying ledger claims, auditor B mapping missing product work) re-verified the tree, the executor subagent pinned the two CI breakers, and three correction commits landed on main (`3b529c65` preview-badge removal, `208152e6` Maestro copy, `240ae910` source-plane emit pin). Several of the old plan's claims no longer describe reality, and at least one was false (the "25 descriptor-v3 fixtures" re-record). A session handed the old plan would repeat dead work or trust rows the audits falsified.
 
 ## Proposal
 
@@ -53,7 +53,7 @@ Use this note as the single hand-off plan. It restates the owner's four source d
 
 **Lock 4 — v0.3.6 live pass (needs `GREENEEK_API_KEY`)**
 
-11. Re-record the deferred snapshots (fleet web golden, any locale-affected goldens); run live E2E across standard, army, pixels-designer, instructor, cordis, maestro, craft gateway; pair free-model subagents (DeepSeek V4.1 Flash debate partner) and fix or document every finding; tag `desktop-v0.3.6` only after a ledger with no silent PARTIAL rows.
+11. Re-record the deferred snapshots (fleet web golden, any locale-affected goldens); run live E2E across standard, army, pixels-designer, instructor, cordis, maestro, craft gateway; pair free-model flash-tier subagents as the debate partner (the approved execution model) and fix or document every finding; tag `desktop-v0.3.6` only after a ledger with no silent PARTIAL rows.
 
 ### Review instructions for the next model
 

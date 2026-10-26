@@ -9,7 +9,7 @@
  * suite: the derived writable root is resolved in the constructor.
  */
 
-import { mkdtemp, readFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
@@ -18,7 +18,7 @@ import Loader from '@greeneek/cordis-plugin-loader'
 import Include, { entryListSchema } from '@greeneek/cordis-plugin-include'
 import SessionProjectionRegistry from '@greeneek/gnk-session-projection'
 import * as yaml from 'js-yaml'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import AgentPresets, { SHIPPED_PRESET_ROOT, type Config } from '@greeneek/gnk-agent-presets'
 
 const FIXTURES = join(dirname(fileURLToPath(import.meta.url)), 'fixtures')
@@ -104,15 +104,79 @@ describe('the shipped preset root', () => {
       .filter(reason => reason !== undefined && !reason.includes('cannot be resolved'))).toEqual([])
   })
 
-  it('keeps PTC a legal default and a resolvable preset after its pill retires', async () => {
+  it('sanitizes a stored PTC default to standard and reports the substitution', async () => {
     const ctx = await roster({ default: 'ptc', includeUserRoot: false })
+    const sanitized: Array<{ from: string; to: string }> = []
+    ctx.on('agent-preset/default-sanitized', (payload) => { sanitized.push(payload) })
+    const warn = vi.spyOn(ctx.logger, 'warn').mockImplementation(() => {})
 
-    // No hero pill, no change to the preset: a deployment or user that already
-    // defaults to PTC keeps composing it, and Settings can still read and
-    // mount it by id.
-    expect((await ctx.agentPresets.resolve()).id).toBe('ptc')
+    // The pill is gone and so is PTC as a new-session default: a deployment or
+    // settings document that still stores it composes `standard`, loudly.
+    expect((await ctx.agentPresets.resolve()).id).toBe('standard')
+    expect(sanitized).toEqual([{ from: 'ptc', to: 'standard' }])
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('"ptc"'))
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('"standard"'))
+  })
+
+  it('keeps PTC explicitly resolvable and readable after its default is sanitized', async () => {
+    const ctx = await roster({ default: 'ptc', includeUserRoot: false })
+    const sanitized: Array<{ from: string; to: string }> = []
+    ctx.on('agent-preset/default-sanitized', (payload) => { sanitized.push(payload) })
+
+    // Only the unnamed-default path substitutes. Settings can still read and
+    // mount PTC by id, and a session that explicitly picks it composes it.
+    expect((await ctx.agentPresets.resolve('ptc')).id).toBe('ptc')
     expect((await ctx.agentPresets.resolve('ptc')).trust).toBe('system')
     expect((await ctx.agentPresets.readDocument('ptc')).agentPreset).toBe('ptc')
+    expect(sanitized).toEqual([])
+  })
+
+  it('leaves a stored default that is not the retired preset untouched', async () => {
+    const ctx = await roster({ default: 'cordis', includeUserRoot: false })
+    const sanitized: Array<{ from: string; to: string }> = []
+    ctx.on('agent-preset/default-sanitized', (payload) => { sanitized.push(payload) })
+
+    expect((await ctx.agentPresets.resolve()).id).toBe('cordis')
+    expect(sanitized).toEqual([])
+  })
+
+  it('leaves a user-authored preset that reuses the retired id alone', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'gnk-preset-custom-ptc-'))
+    await mkdir(join(root, 'ptc'))
+    await writeFile(join(root, 'ptc', 'agent.cordis.yml'), '- id: alpha\n  name: ./missing.js\n')
+    const ctx = await roster({
+      default: 'ptc',
+      includeShippedRoot: false,
+      includeUserRoot: false,
+      roots: [{ path: root, trust: 'user' }],
+    })
+    const sanitized: Array<{ from: string; to: string }> = []
+    ctx.on('agent-preset/default-sanitized', (payload) => { sanitized.push(payload) })
+
+    // Retirement removed the shipped PTC's pill, not the id: a deployment that
+    // omits the shipped root and authors its own `ptc` keeps its default.
+    expect((await ctx.agentPresets.resolve()).id).toBe('ptc')
+    expect(sanitized).toEqual([])
+  })
+
+  it('fails loud when a retired default has no standard preset to sanitize to', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'gnk-preset-no-standard-'))
+    await mkdir(join(root, 'ptc'))
+    await writeFile(join(root, 'ptc', 'agent.cordis.yml'), '- id: alpha\n  name: ./missing.js\n')
+    const ctx = await roster({
+      default: 'ptc',
+      includeShippedRoot: false,
+      includeUserRoot: false,
+      roots: [{ path: root, trust: 'system' }],
+    })
+
+    // Composing the retired default silently would defeat the retirement, and
+    // the sanitizer has no substitute to name: report the misconfiguration at
+    // the first point the roster can observe it.
+    await expect(ctx.agentPresets.resolve()).rejects.toMatchObject({
+      code: 'agent-preset/not-found',
+      details: { agentPreset: 'standard' },
+    })
   })
 
   it('prepends the shipped root before configured roots and the derived user root', async () => {

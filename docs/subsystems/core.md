@@ -466,11 +466,18 @@ async compositionInventory(): Promise<AgentPresetComposition[]>
  * unknown default falls back to `standard` with a warning; an explicit id
  * still fails, because silently composing a different preset would
  * misreport what the caller asked for.
+ *
+ * A resolvable default can also be retired: `ptc` keeps its composition but
+ * is no longer a new-session choice (owner plan §3). The unnamed path
+ * substitutes `standard` and reports it as `agent-preset/default-sanitized`;
+ * an explicit `resolve('ptc')` and a user who re-selects PTC for a session
+ * keep composing it.
  * @param id - the preset id, or `undefined` for {@link defaultId}.
- * @returns the resolved preset; the `standard` fallback for an unknown
- *   default when one is supplied.
- * @throws when no configured root supplies an explicit id, or when the
- *   unknown default has no `standard` preset to fall back to.
+ * @returns the resolved preset; the `standard` fallback for an unknown or
+ *   retired default when one is supplied.
+ * @throws when no configured root supplies an explicit id, when the
+ *   unknown default has no `standard` preset to fall back to, or when the
+ *   retired default has no `standard` preset to sanitize it to.
  */
 async resolve(id?: string): Promise<AgentPreset>
 
@@ -1158,6 +1165,28 @@ Source: [`packages/core/agent-loop/src/index.ts`](../../packages/core/agent-loop
 <a id="agent-preset-events"></a>
 
 ### `agent-preset/*` events
+
+<a id="agent-presetdefault-sanitized--emit"></a>
+
+#### `agent-preset/default-sanitized` — emit
+
+The unnamed-default path composed the fallback because the stored default named a preset this release retired. Emitted before the session exists, so it is not a session event; the effective composition is recorded in the session header. An explicit pick of the retired preset never triggers it.
+
+```ts cordis-catalog
+/**
+ * The unnamed-default path composed the fallback because the stored default
+ * named a preset this release retired. Emitted before the session exists,
+ * so it is not a session event; the effective composition is recorded in
+ * the session header. An explicit pick of the retired preset never
+ * triggers it.
+ * @param payload.from - the retired default the stored setting named.
+ * @param payload.to - the preset composed for new sessions instead.
+ * @mode emit
+ */
+'agent-preset/default-sanitized'(payload: { from: string; to: string }): void
+```
+
+Source: [`packages/preset/agent-presets/src/types.ts`](../../packages/preset/agent-presets/src/types.ts)
 
 <a id="agent-presetselected--emit"></a>
 

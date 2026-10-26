@@ -71,6 +71,17 @@ declare module '@greeneek/gnk-session-projection/types' {
 declare module '@greeneek/cordis' {
   interface Events {
     /**
+     * The unnamed-default path composed the fallback because the stored default
+     * named a preset this release retired. Emitted before the session exists,
+     * so it is not a session event; the effective composition is recorded in
+     * the session header. An explicit pick of the retired preset never
+     * triggers it.
+     * @param payload.from - the retired default the stored setting named.
+     * @param payload.to - the preset composed for new sessions instead.
+     * @mode emit
+     */
+    'agent-preset/default-sanitized'(payload: { from: string; to: string }): void
+    /**
      * One session committed a different agent preset to its durable log.
      * Consumers invalidate only state derived from that session's composition.
      * @mode emit

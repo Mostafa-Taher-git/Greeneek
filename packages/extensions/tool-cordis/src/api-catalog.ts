@@ -161,10 +161,10 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
       },
       {
         signature: 'async resolve(id?: string): Promise<AgentPreset>',
-        description: 'Resolve one preset by id.\n\nA broken preset resolves — deleting one, reading one, and reporting one all need the row — and the mounting paths refuse it AFTER resolution through resolveMountable.\n\nAn unnamed request is the default pick for a session about to be created, and its id comes from a setting or a composition row that can outlive the preset: a deleted preset, a renamed directory, a settings document copied from another deployment. That pick must never brick a new session, so an unknown default falls back to `standard` with a warning; an explicit id still fails, because silently composing a different preset would misreport what the caller asked for.',
+        description: 'Resolve one preset by id.\n\nA broken preset resolves — deleting one, reading one, and reporting one all need the row — and the mounting paths refuse it AFTER resolution through resolveMountable.\n\nAn unnamed request is the default pick for a session about to be created, and its id comes from a setting or a composition row that can outlive the preset: a deleted preset, a renamed directory, a settings document copied from another deployment. That pick must never brick a new session, so an unknown default falls back to `standard` with a warning; an explicit id still fails, because silently composing a different preset would misreport what the caller asked for.\n\nA resolvable default can also be retired: `ptc` keeps its composition but is no longer a new-session choice (owner plan §3). The unnamed path substitutes `standard` and reports it as `agent-preset/default-sanitized`; an explicit `resolve(\'ptc\')` and a user who re-selects PTC for a session keep composing it.',
         parameters: [{ name: 'id', description: 'the preset id, or `undefined` for {@link defaultId}.' }],
-        returns: 'the resolved preset; the `standard` fallback for an unknown default when one is supplied.',
-        throws: ['when no configured root supplies an explicit id, or when the unknown default has no `standard` preset to fall back to.'],
+        returns: 'the resolved preset; the `standard` fallback for an unknown or retired default when one is supplied.',
+        throws: ['when no configured root supplies an explicit id, when the unknown default has no `standard` preset to fall back to, or when the retired default has no `standard` preset to sanitize it to.'],
       },
       {
         signature: 'async mount(agentCtx: Context, id?: string): Promise<AgentPreset>',
@@ -3022,6 +3022,14 @@ export const EVENT_API: readonly EventApiEntry[] = [
     summary: 'A declarative agent entry failed before it could publish a live agent.',
     description: 'A declarative agent entry failed before it could publish a live agent. Consumers that buffer work for the configured identity use this transient signal to reject that work instead of waiting forever. Normal factory teardown suppresses failures from the cancelled startup attempt.',
     parameters: [{ name: 'payload', description: '.error - persistence, setup, or publication failure.' }],
+  },
+  {
+    name: 'agent-preset/default-sanitized',
+    mode: 'emit',
+    signature: '\'agent-preset/default-sanitized\'(payload: { from: string; to: string }): void',
+    summary: 'The unnamed-default path composed the fallback because the stored default named a preset this release retired.',
+    description: 'The unnamed-default path composed the fallback because the stored default named a preset this release retired. Emitted before the session exists, so it is not a session event; the effective composition is recorded in the session header. An explicit pick of the retired preset never triggers it.',
+    parameters: [{ name: 'payload', description: '.to - the preset composed for new sessions instead.' }],
   },
   {
     name: 'agent-preset/selected',
@@ -6257,7 +6265,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'WaveMemberView',
-    declaration: 'export interface WaveMemberView {\n    readonly memberId: WaveMemberId;\n    readonly role?: string;\n    readonly provider: string;\n    readonly status: WaveMemberStatus;\n    readonly childSessionId?: SessionId;\n    readonly tokensUsed: number;\n    readonly model?: string;\n    readonly diagnostic?: string;\n}',
+    declaration: 'export interface WaveMemberView {\n    readonly memberId: WaveMemberId;\n    readonly role?: string;\n    readonly provider: string;\n    readonly status: WaveMemberStatus;\n    readonly childSessionId?: SessionId;\n    readonly tokensUsed: number;\n    readonly model?: string;\n    readonly diagnostic?: string;\n    readonly lastTool?: string;\n    readonly durationMs?: number;\n    readonly artifacts?: readonly string[];\n    readonly budgetUsed?: number;\n}',
   },
   {
     name: 'WaveRequest',

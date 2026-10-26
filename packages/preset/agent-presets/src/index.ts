@@ -62,6 +62,17 @@ export const SETTINGS_NAMESPACE = 'agent-presets'
  */
 const FALLBACK_PRESET_ID = 'standard'
 
+/**
+ * A preset that stopped being a shipped default while staying a legal,
+ * explicitly selectable preset. PTC's new-session pill was retired in v0.3.4
+ * (owner plan §3) and its composition, `run_code` capability, demo script, and
+ * replay fixtures all remain, so a settings document that still defaults to it
+ * names a resolvable preset a NEW session must not compose. The substitution
+ * happens only on the unnamed-default path; an explicit `ptc` pick keeps
+ * composing PTC.
+ */
+const RETIRED_DEFAULT_PRESET_ID = 'ptc'
+
 /** Refuse an empty preset id before invoking a domain operation. */
 function validatePresetId(value: string, field: 'agentPreset' | 'from'): void {
   if (value.length === 0) {
@@ -245,9 +256,9 @@ export class AgentPresets extends TypertRemoteService {
    * changing the default takes effect on the next session created and leaves
    * every running session on the preset it was composed from.
    *
-   * Reported verbatim, even when the id outlived its preset: this is the
-   * configured value, and {@link resolve} is what decides that a new session
-   * composes the fallback instead.
+   * Reported verbatim, even when the id outlived its preset or names a retired
+   * default: this is the configured value, and {@link resolve} is what decides
+   * that a new session composes the fallback instead.
    */
   get defaultId(): string {
     return this.settings?.get().default ?? this.config.default
@@ -356,19 +367,26 @@ export class AgentPresets extends TypertRemoteService {
    * unknown default falls back to `standard` with a warning; an explicit id
    * still fails, because silently composing a different preset would
    * misreport what the caller asked for.
+   *
+   * A resolvable default can also be retired: `ptc` keeps its composition but
+   * is no longer a new-session choice (owner plan §3). The unnamed path
+   * substitutes `standard` and reports it as `agent-preset/default-sanitized`;
+   * an explicit `resolve('ptc')` and a user who re-selects PTC for a session
+   * keep composing it.
    * @param id - the preset id, or `undefined` for {@link defaultId}.
-   * @returns the resolved preset; the `standard` fallback for an unknown
-   *   default when one is supplied.
-   * @throws when no configured root supplies an explicit id, or when the
-   *   unknown default has no `standard` preset to fall back to.
+   * @returns the resolved preset; the `standard` fallback for an unknown or
+   *   retired default when one is supplied.
+   * @throws when no configured root supplies an explicit id, when the
+   *   unknown default has no `standard` preset to fall back to, or when the
+   *   retired default has no `standard` preset to sanitize it to.
    */
   async resolve(id?: string): Promise<AgentPreset> {
     const wanted = id ?? this.defaultId
     const presets = await this.list()
+    const available = presets.map(preset => preset.id)
+    const availableText = available.join(', ') || 'none'
     const found = presets.find(preset => preset.id === wanted)
     if (found === undefined) {
-      const available = presets.map(preset => preset.id)
-      const availableText = available.join(', ') || 'none'
       if (id === undefined) {
         const fallback = presets.find(preset => preset.id === FALLBACK_PRESET_ID)
         if (fallback !== undefined) {
@@ -386,7 +404,33 @@ export class AgentPresets extends TypertRemoteService {
         { agentPreset: wanted, available },
       )
     }
-    return found
+    if (id !== undefined || wanted !== RETIRED_DEFAULT_PRESET_ID) return found
+    // A user-authored preset that happens to reuse the id is not the shipped
+    // PTC the pill retirement removed; its default is the user's to keep.
+    if (found.trust !== 'system') return found
+    // The stored default names a preset this release retired. Substituting is
+    // the one case where a RESOLVABLE id is still not what a new session should
+    // compose; the explicit path above keeps the preset reachable.
+    const fallback = presets.find(preset => preset.id === FALLBACK_PRESET_ID)
+    if (fallback === undefined) {
+      // Fails loud rather than silently composing the retired default: the
+      // sanitizer has no substitute to name, and a deployment that removed
+      // `standard` while defaulting to a retired preset is misconfigured at
+      // the earliest point the roster can observe it.
+      throw new RemoteError(
+        'agent-preset/not-found',
+        `agent-presets: the configured default preset "${wanted}" was retired, and no `
+        + `"${FALLBACK_PRESET_ID}" preset is on the roster to sanitize it `
+        + `(available: ${availableText})`,
+        { agentPreset: FALLBACK_PRESET_ID, available },
+      )
+    }
+    this.ctx.logger.warn(
+      `agent-presets: the configured default preset "${wanted}" was retired; composing new sessions `
+      + `from "${fallback.id}" instead. Choose another default in Settings.`,
+    )
+    this.ctx.emit('agent-preset/default-sanitized', { from: wanted, to: fallback.id })
+    return fallback
   }
 
   /**

@@ -135,6 +135,8 @@ A copy dereferences symlinks so it is self-contained, re-tightens the tree to ow
 
 The creation header names the preset a session started with; the `agentPreset` Session projection names the preset it runs. A switch appends an `agent-preset/selected` event after the swap commits because the preset decides the tool schemas and prompt sections the model sees. The service re-emits that committed fact as the unscoped cordis event `agent-preset/selected(sessionId, agentPreset)`. Reconstruction consumes the projection, which starts from the creation header and applies the newest selection; it never folds the log independently.
 
+A stored default that names the retired `ptc` preset is substituted with `standard` on the unnamed-default path only: `resolve()` logs the substitution and emits the cordis event `agent-preset/default-sanitized({ from, to })`, while an explicit `resolve('ptc')` or a session that deliberately picks PTC still composes PTC. The event is not a session event because the sanitizer runs before a session exists; the effective composition is durably recorded in the creation header.
+
 </details>
 
 -----

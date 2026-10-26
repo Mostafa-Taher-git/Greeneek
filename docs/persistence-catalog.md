@@ -1118,6 +1118,12 @@ Source: [`packages/subagent/wave/src/types.ts:107`](../packages/subagent/wave/sr
    * projection; 0 for a member that was never metered or launched.
    */
   tokensUsed: number
+  /**
+   * Wall-clock launch-to-settlement milliseconds; absent when the member
+   * never launched or settled through the wave's close before its own
+   * funnel recorded an end time.
+   */
+  durationMs?: number
   /** Terminal detail when the settlement recorded one; absent otherwise. */
   diagnostic?: string
 }
@@ -1154,13 +1160,15 @@ Source: [`packages/subagent/wave/src/types.ts:138`](../packages/subagent/wave/sr
     status: 'completed' | 'failed' | 'cancelled' | 'budget-killed'
     /** Cumulative child tokens at settlement; 0 when never metered. */
     tokensUsed: number
+    /** Wall-clock launch-to-settlement milliseconds; absent when the member never launched. */
+    durationMs?: number
     /** Terminal detail when the member's settlement recorded one; absent otherwise. */
     diagnostic?: string
   }[]
 }
 ```
 
-Source: [`packages/subagent/wave/src/types.ts:161`](../packages/subagent/wave/src/types.ts)
+Source: [`packages/subagent/wave/src/types.ts:167`](../packages/subagent/wave/src/types.ts)
 
 ### `web/*`
 

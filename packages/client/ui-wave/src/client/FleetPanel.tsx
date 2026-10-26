@@ -76,7 +76,12 @@ export function FleetPanel({
             {wave.members.map((member) => {
               const childSessionId = member.childSessionId
               const state = MEMBER_STATE[member.status]
-              const rowName = `${member.role ?? member.provider} · ${t(state.label)} · ${t('tokens', { tokens: member.tokensUsed })}`
+              // Spend reads against the wave's member ceiling when one exists;
+              // an unmetered or uncapped member reports its plain token count.
+              const spend = member.budgetUsed !== undefined && member.budgetLimit !== undefined
+                ? t('budget', { used: member.budgetUsed, cap: member.budgetLimit })
+                : t('tokens', { tokens: member.tokensUsed })
+              const rowName = `${member.role ?? member.provider} · ${t(state.label)} · ${spend}`
               return (
                 <li key={member.memberId} className={css.row}>
                   <span className={css.rowMain}>
@@ -92,7 +97,7 @@ export function FleetPanel({
                     {member.durationMs !== undefined && (
                       <span className={css.duration}>{formatDuration(member.durationMs, t)}</span>
                     )}
-                    <span className={css.tokens}>{t('tokens', { tokens: member.tokensUsed })}</span>
+                    <span className={css.tokens}>{spend}</span>
                   </span>
                   {isCancellable(member.status) && (
                     <button

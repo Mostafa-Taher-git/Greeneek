@@ -102,6 +102,21 @@ describe('FleetPanel rows', () => {
     expect(screen.getByText(en['duration.seconds'].replace('{seconds}', '2'))).toBeDefined()
   })
 
+  it('reads a metered spend against the wave ceiling in place of the plain token count', () => {
+    const { source } = setup()
+    act(() => {
+      source.set({
+        waveViews: [wave({ members: [member({ tokensUsed: 44, budgetUsed: 40, budgetLimit: 100 })] })],
+        stoppable: true,
+        degraded: false,
+        loading: false,
+      })
+    })
+    expect(screen.getByText(en['budget'].replace('{used}', '40').replace('{cap}', '100'))).toBeDefined()
+    expect(screen.queryByText(en['tokens'].replace('{tokens}', '44'))).toBeNull()
+    expect(screen.getByRole('button', { name: `${en['stop.member']}: writer · ${en['status.running']} · 40 / 100 tok` })).toBeDefined()
+  })
+
   it('marks a settled wave closed and offers its child transcript instead of a stop', () => {
     const { verbs } = setup(settledSnapshot())
     expect(screen.getByText(en['wave.closed'])).toBeDefined()

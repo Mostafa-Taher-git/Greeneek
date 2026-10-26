@@ -7,7 +7,9 @@
  * session serves the details-panel Fleet tab and the composer pill together,
  * and the loop exists only while a surface subscribes to it: with no subscriber
  * the next scheduled sample is dropped instead of burning an RPC on a session
- * nobody is looking at.
+ * nobody is looking at. Accepted samples reach subscribers through an
+ * {@link PUBLISH_WINDOW_MS} coalescing window, so a burst of samples is one
+ * render and the last sample of the burst is the one that renders.
  * @module @greeneek/gnk-client-ui-wave/client/fleet-mirror
  */
 import type { Context as ClientContext } from '@greeneek/cordis'
@@ -26,6 +28,14 @@ const LIVE_POLL_MS = 1_000
  * enough that a fresh dispatch still appears without a user gesture. */
 const IDLE_POLL_MS = 5_000
 
+/**
+ * Coalescing window for subscriber notifications. A burst of accepted samples
+ * — several attention polls, several stop verbs, or a future pushed source —
+ * renders once per window at most, and the last accepted snapshot flushes when
+ * the window closes, so a surface never shows an intermediate row.
+ */
+export const PUBLISH_WINDOW_MS = 80
+
 /** The mirror every fleet surface reads before its first sample lands. */
 const INITIAL: FleetSnapshot = Object.freeze({
   waveViews: [],
@@ -39,9 +49,8 @@ const INITIAL: FleetSnapshot = Object.freeze({
  *
  * Views arrive as freshly built arrays and objects on every sample, so
  * reference equality would republish an unchanged fleet once per second and
- * re-render every row. Closed flags, per-member status, token count, child
- * session, and diagnostic are the fields any fleet surface renders, so they are
- * the fields the mirror tracks.
+ * re-render every row. The fields any fleet surface renders are the fields the
+ * mirror tracks.
  * @param views - the polled wave views.
  * @returns the value to compare against the previous sample.
  */
@@ -49,7 +58,8 @@ function signature(views: readonly WaveView[]): string {
   return views.map(wave => [
     wave.waveId, wave.label, wave.closed ? 1 : 0,
     wave.members.map(member => [
-      member.memberId, member.status, member.tokensUsed,
+      member.memberId, member.status, member.tokensUsed, member.budgetUsed ?? '',
+      member.budgetLimit ?? '', member.lastTool ?? '', member.durationMs ?? '',
       member.childSessionId ?? '', member.diagnostic ?? '',
     ].join('|')).join(';'),
   ].join(':')).join(',')
@@ -57,9 +67,13 @@ function signature(views: readonly WaveView[]): string {
 
 /** Live fleet mirror of one Lead session, owned by the plugin's apply closure. */
 export class FleetMirror implements HostObservable<FleetSnapshot> {
+  /** The snapshot subscribers read; replaced only by a flush. */
   private snapshot: FleetSnapshot = INITIAL
+  /** The last accepted snapshot, published at the next flush and used for cadence. */
+  private latest: FleetSnapshot = INITIAL
   private readonly listeners = new Set<() => void>()
   private timer: ReturnType<typeof setTimeout> | undefined
+  private flushTimer: ReturnType<typeof setTimeout> | undefined
   private inFlight = false
   private disposed = false
 
@@ -72,7 +86,7 @@ export class FleetMirror implements HostObservable<FleetSnapshot> {
     private readonly sessionId: SessionId,
   ) {}
 
-  /** Return the cached snapshot, unchanged until a sample moves a rendered field. */
+  /** Return the published snapshot, unchanged until the coalescing window flushes. */
   getSnapshot = (): FleetSnapshot => this.snapshot
 
   /**
@@ -127,6 +141,7 @@ export class FleetMirror implements HostObservable<FleetSnapshot> {
   dispose(): void {
     this.disposed = true
     this.cancel()
+    this.cancelFlush()
     this.listeners.clear()
   }
 
@@ -186,27 +201,46 @@ export class FleetMirror implements HostObservable<FleetSnapshot> {
       // fact: the last rows stay, the reader learns they may be stale, and the
       // loop keeps running so the mirror recovers once the Host answers again.
       // An already-degraded mirror stays silent so its snapshot identity holds.
-      if (this.snapshot.degraded && !this.snapshot.loading) {
-        this.schedule(this.snapshot.stoppable ? LIVE_POLL_MS : IDLE_POLL_MS)
+      if (this.latest.degraded && !this.latest.loading) {
+        this.schedule(this.latest.stoppable ? LIVE_POLL_MS : IDLE_POLL_MS)
         return
       }
-      this.publish({ ...this.snapshot, degraded: true, loading: false })
-    } else if (signature(views) !== signature(this.snapshot.waveViews)) {
-      this.publish({
+      this.accept({ ...this.latest, degraded: true, loading: false })
+    } else if (signature(views) !== signature(this.latest.waveViews)) {
+      this.accept({
         waveViews: views,
         stoppable: views.some(wave => !wave.closed),
         degraded: false,
         loading: false,
       })
-    } else if (this.snapshot.degraded || this.snapshot.loading) {
-      this.publish({ ...this.snapshot, degraded: false, loading: false })
+    } else if (this.latest.degraded || this.latest.loading) {
+      this.accept({ ...this.latest, degraded: false, loading: false })
     }
-    this.schedule(this.snapshot.stoppable ? LIVE_POLL_MS : IDLE_POLL_MS)
+    this.schedule(this.latest.stoppable ? LIVE_POLL_MS : IDLE_POLL_MS)
   }
 
-  /** Replace the snapshot and notify subscribers, containing one bad listener. */
-  private publish(snapshot: FleetSnapshot): void {
-    this.snapshot = Object.freeze(snapshot)
+  /**
+   * Take one sample as the mirror's current state and hand it to the
+   * coalescing window; a window already open absorbs it, so a burst renders
+   * once and the newest sample is the one that reaches subscribers.
+   * @param snapshot - the sample to publish.
+   */
+  private accept(snapshot: FleetSnapshot): void {
+    this.latest = snapshot
+    this.flushTimer ??= setTimeout(() => { this.flush() }, PUBLISH_WINDOW_MS)
+  }
+
+  /** Publish the newest accepted snapshot and notify subscribers. */
+  private flush(): void {
+    this.flushTimer = undefined
+    this.snapshot = Object.freeze(this.latest)
     notifySubscribers(this.listeners, '[ui-wave] fleet mirror')
+  }
+
+  /** Drop a pending flush; disposal keeps no work queued. */
+  private cancelFlush(): void {
+    if (this.flushTimer === undefined) return
+    clearTimeout(this.flushTimer)
+    this.flushTimer = undefined
   }
 }

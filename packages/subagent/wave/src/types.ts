@@ -149,6 +149,12 @@ declare module '@greeneek/gnk-session/types' {
        * projection; 0 for a member that was never metered or launched.
        */
       tokensUsed: number
+      /**
+       * Wall-clock launch-to-settlement milliseconds; absent when the member
+       * never launched or settled through the wave's close before its own
+       * funnel recorded an end time.
+       */
+      durationMs?: number
       /** Terminal detail when the settlement recorded one; absent otherwise. */
       diagnostic?: string
     }
@@ -176,6 +182,8 @@ declare module '@greeneek/gnk-session/types' {
         status: 'completed' | 'failed' | 'cancelled' | 'budget-killed'
         /** Cumulative child tokens at settlement; 0 when never metered. */
         tokensUsed: number
+        /** Wall-clock launch-to-settlement milliseconds; absent when the member never launched. */
+        durationMs?: number
         /** Terminal detail when the member's settlement recorded one; absent otherwise. */
         diagnostic?: string
       }[]

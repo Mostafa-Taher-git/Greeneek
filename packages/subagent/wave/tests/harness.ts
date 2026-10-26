@@ -3,7 +3,7 @@ import type { Mock } from 'vitest'
 import { Context } from '@greeneek/cordis'
 import type { Agent } from '@greeneek/gnk-agent'
 import TokenMeter from '@greeneek/gnk-token-meter'
-import { Session, SessionId } from '@greeneek/gnk-session'
+import SessionStore, { Session, SessionId } from '@greeneek/gnk-session'
 import SessionProjectionRegistry from '@greeneek/gnk-session-projection'
 import SubagentRuntime from '@greeneek/gnk-subagent'
 import type {
@@ -80,13 +80,14 @@ export interface WaveHarness {
   readonly tokenMeterFiber: { dispose(): Promise<void> } | undefined
 }
 
-/** Mount the real subagent registry, projection registry, and wave service. */
+/** Mount the real session store, subagent registry, projection registry, and wave service. */
 export async function setupWave(
   config: WaveRuntimeConfig = {},
   options: { readonly meter?: boolean; readonly parentId?: string } = {},
 ): Promise<WaveHarness> {
   const ctx = new Context()
   contexts.add(ctx)
+  await ctx.plugin(SessionStore)
   await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(SubagentRuntime)
   const tokenMeterFiber = options.meter === false ? undefined : await ctx.plugin(TokenMeter)

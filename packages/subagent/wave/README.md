@@ -52,6 +52,8 @@ Mount this package with the subagent seam (`@greeneek/gnk-subagent`), at least o
 
 **Settlement.** Terminal status prefers `budget-killed`, then cancellation, then the seam's stop reason. Fail-fast (`onComplete: 'fail-fast'`) triggers only on a failed or budget-killed *launched* member — a user cancel never does. Results return in spec order with text truncated (never split mid-codepoint) and an over-cap `structured` value dropped, each recorded as `truncated: true`. Closed waves stay listed until their Lead agent's `agent/disposed`.
 
+**Member rows.** Every `listWaves` row is re-derived from engine state and the durable records it writes: `status`, `tokensUsed`, `childSessionId`, `model`, and `diagnostic` come from the run; `durationMs` is the member's launch-to-settlement clock, stamped once and written to `wave/member-settled`; `budgetUsed` is the `tokenUsage` projection's cumulative reading and `budgetLimit` the request's `maxTokensPerMember`; and `lastTool` is folded forward from the child session's own logged `tool/call` records, before disposal detaches it. A member card therefore shows the tool it last dispatched, how long it ran, and its spend against the ceiling it was admitted under. `artifacts` has no source: the subagent result reports output, a structured value, a diagnostic, and a stop reason only.
+
 -----
 
 <a id="model-experience"></a>
@@ -68,7 +70,8 @@ None of its own; only the Lead tool's registration and the wave results it logs 
 <a id="known-limitations-and-deferred-work"></a>
 
 - **Budgets need the meter** — With `maxTokensPerMember`/`maxWaveTokens` set but no `tokenUsage` projection mounted, metering reads zero and no kill fires; the deployment is misconfigured, not enforced loosely.
-- **In-process fleet only** — Members run through registered subagent providers; the engine adds no transport of its own, so remote fleets depend on a provider that speaks one.
+- **Artifacts have no source** — `WaveMemberView.artifacts` stays absent because the subagent result names no artifacts; a fleet that lists them needs a result-envelope field on the delegation seam first.
+- **In-process fleet only** — Members run through registered subagent providers; the engine adds no transport of its own, so remote fleets depend on a provider that speaks one. A member whose child session this process does not hold reports no `lastTool`.
 - **Durable records, process-local control** — Waves now write `wave/initiated`, `wave/member-settled`, and `wave/settled` log-only records to the Lead's session (payloads in the generated [persistence log event catalog](../../../docs/persistence-catalog.md)), but membership, budget metering, and fleet views remain process-local: a restart mid-wave still cancels members by teardown, and the fleet UI keeps polling the remote faces rather than deriving its display from the log.
 
 <details>

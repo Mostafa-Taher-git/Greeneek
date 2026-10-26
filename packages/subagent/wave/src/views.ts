@@ -57,29 +57,39 @@ export interface WaveMemberView {
   /** Non-failure detail kept from a non-`completed` settlement. */
   readonly diagnostic?: string
   /**
-   * Name of the child's most recent tool call. The engine subscribes to no
-   * tool event, so no wave-side source fills this yet; a row must render it
-   * only when present.
+   * Name of the last `tool/call` the child logged, which is the tool it is
+   * running at the latest sample. Absent until the child logs one, and for a
+   * child session this process does not hold (a remote provider). The engine
+   * folds the child's own log, so the name is never one the child did not
+   * dispatch.
    */
   readonly lastTool?: string
   /**
-   * Wall-clock milliseconds from launch to settlement. Absent before the member
-   * launches and while it is still running, because no completed timestamp
-   * exists yet; a queued member that never launched has no duration either.
+   * Wall-clock milliseconds from launch to settlement, the same value the
+   * member's `wave/member-settled` record carries. Absent before the member
+   * launches and while it is still running, because no settlement time exists
+   * yet; a member cancelled while queued never launched and has no duration.
    */
   readonly durationMs?: number
   /**
    * Pointer strings to artifacts the member's settled result named. The
-   * subagent result carries no artifact vocabulary, so no source fills this
-   * yet; the member drawer renders it only when present.
+   * subagent result carries no artifact vocabulary, so no source fills this and
+   * a row must render it only when present.
    */
   readonly artifacts?: readonly string[]
   /**
    * Tokens charged against the member budget by the `tokenUsage` projection.
-   * Absent until the projection has metered at least one step; `tokensUsed`
-   * stays the always-present cumulative count.
+   * Absent until the projection has metered at least one step, and reached
+   * through that projection's fold of the logged usage; `tokensUsed` stays the
+   * always-present cumulative count.
    */
   readonly budgetUsed?: number
+  /**
+   * The wave's per-member token ceiling, which a row reads {@link budgetUsed}
+   * against. Absent when the request set no `maxTokensPerMember`; the admitted
+   * value is the one on the wave's `wave/initiated` record.
+   */
+  readonly budgetLimit?: number
 }
 
 /** A browser-visible wave snapshot. */

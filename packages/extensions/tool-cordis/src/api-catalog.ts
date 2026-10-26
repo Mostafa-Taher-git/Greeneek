@@ -6265,7 +6265,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'WaveMemberView',
-    declaration: 'export interface WaveMemberView {\n    readonly memberId: WaveMemberId;\n    readonly role?: string;\n    readonly provider: string;\n    readonly status: WaveMemberStatus;\n    readonly childSessionId?: SessionId;\n    readonly tokensUsed: number;\n    readonly model?: string;\n    readonly diagnostic?: string;\n    readonly lastTool?: string;\n    readonly durationMs?: number;\n    readonly artifacts?: readonly string[];\n    readonly budgetUsed?: number;\n}',
+    declaration: 'export interface WaveMemberView {\n    readonly memberId: WaveMemberId;\n    readonly role?: string;\n    readonly provider: string;\n    readonly status: WaveMemberStatus;\n    readonly childSessionId?: SessionId;\n    readonly tokensUsed: number;\n    readonly model?: string;\n    readonly diagnostic?: string;\n    readonly lastTool?: string;\n    readonly durationMs?: number;\n    readonly artifacts?: readonly string[];\n    readonly budgetUsed?: number;\n    readonly budgetLimit?: number;\n}',
   },
   {
     name: 'WaveRequest',

@@ -19,6 +19,7 @@ import z from '@greeneek/schemastery'
 import type { Agent } from '@greeneek/gnk-agent'
 import type { ContentBlock } from '@greeneek/gnk-llm'
 import type { TokenUsageProjection } from '@greeneek/gnk-token-meter'
+import { SessionLogOffset } from '@greeneek/gnk-session'
 import type { SessionId } from '@greeneek/gnk-session'
 import { Remote, RemoteError, TypertRemoteService } from '@greeneek/gnk-typert-protocol'
 import { z as zod } from 'zod'
@@ -98,6 +99,13 @@ function isAborted(signal: AbortSignal): boolean {
   return signal.aborted
 }
 
+/** Wall-clock launch-to-settlement milliseconds; absent until both ends exist. */
+function durationOf(member: MemberState): number | undefined {
+  return member.startedAtMs === undefined || member.endedAtMs === undefined
+    ? undefined
+    : member.endedAtMs - member.startedAtMs
+}
+
 interface MemberState {
   readonly memberId: WaveMemberId
   readonly spec: WaveMemberSpec
@@ -113,6 +121,10 @@ interface MemberState {
   startedAtMs: number | undefined
   /** Wall-clock settlement time; absent until the member's funnel reaches settlement. */
   endedAtMs: number | undefined
+  /** Name of the last `tool/call` the child logged; absent until one is read. */
+  lastTool: string | undefined
+  /** Child-log position already folded into {@link lastTool}. */
+  toolScanOffset: number
   budgetKilled: boolean
   diagnostic: string | undefined
   /** True once the member's durable settlement record is written. */
@@ -266,6 +278,8 @@ export class WaveRuntime extends TypertRemoteService {
       budgetUsed: undefined,
       startedAtMs: undefined,
       endedAtMs: undefined,
+      lastTool: undefined,
+      toolScanOffset: 0,
       budgetKilled: false,
       diagnostic: undefined,
       settled: false,
@@ -451,6 +465,9 @@ export class WaveRuntime extends TypertRemoteService {
       // only fills one in when none exists.
       if (member.diagnostic === undefined) member.diagnostic = detail
     } finally {
+      // The child's log is the only record of the tools it called, and disposal
+      // detaches it, so the last name is folded before the run is disposed.
+      this.refreshLastTool(member)
       try {
         // The slot remains held until the child reaches quiescence.
         if (run !== undefined) await run.dispose()
@@ -470,7 +487,7 @@ export class WaveRuntime extends TypertRemoteService {
   private settleMember(wave: WaveState, member: MemberState): void {
     // The funnel is the member's terminal boundary, including a member whose
     // wave already closed while it waited for child disposal.
-    member.endedAtMs = Date.now()
+    this.stampSettledAt(member)
     if (wave.closed) return
     this.appendMemberSettled(wave, member)
     const open = wave.members.some(candidate => candidate.status === 'queued' || candidate.status === 'running')
@@ -489,6 +506,16 @@ export class WaveRuntime extends TypertRemoteService {
     }
   }
 
+  /**
+   * Stamp the member's wall-clock settlement time, once. A member whose clock
+   * the wave's close stamps first keeps that time, so the durable record and
+   * every later view report one duration.
+   * @param member - the member reaching a terminal status.
+   */
+  private stampSettledAt(member: MemberState): void {
+    member.endedAtMs ??= Date.now()
+  }
+
   /** Build terminal records, write remaining member records plus the closing record, and resolve {@link startWave}. */
   private closeWave(wave: WaveState): void {
     wave.closed = true
@@ -496,9 +523,10 @@ export class WaveRuntime extends TypertRemoteService {
     // durable record here; its funnel arrives after the close and writes
     // nothing more, so no member is recorded twice and none is missed.
     for (const member of wave.members) {
+      this.stampSettledAt(member)
       this.appendMemberSettled(wave, member)
     }
-    const results: WaveMemberResult[] = wave.members.map(member => this.resultOf(member))
+    const results: WaveMemberResult[] = wave.members.map(member => this.resultOf(wave, member))
     const statuses = results.map(member => member.status)
     const outcome = statuses.every(status => status === 'completed')
       ? 'completed'
@@ -541,8 +569,10 @@ export class WaveRuntime extends TypertRemoteService {
     memberIndex: number
     status: TerminalWaveMemberStatus
     tokensUsed: number
+    durationMs?: number
     diagnostic?: string
   } {
+    const durationMs = durationOf(member)
     return {
       memberId: String(member.memberId),
       memberIndex: member.index,
@@ -550,6 +580,7 @@ export class WaveRuntime extends TypertRemoteService {
       // closeWave runs only after the open check, so the status is terminal.
       status: member.status as TerminalWaveMemberStatus,
       tokensUsed: member.tokensUsed,
+      ...(durationMs === undefined ? {} : { durationMs }),
       ...(member.diagnostic === undefined ? {} : { diagnostic: member.diagnostic }),
     }
   }
@@ -622,21 +653,46 @@ export class WaveRuntime extends TypertRemoteService {
     return undefined
   }
 
-  /** Live fleet view for one wave. */
+  /**
+   * Fold the `tool/call` names the member's child logged into its view state.
+   * The child session owns that record, so each call reads only the events past
+   * the member's cursor. A child session this process does not hold — a remote
+   * provider's, or one already disposed — leaves the last name in place.
+   * @param member - the member whose child log to read.
+   */
+  private refreshLastTool(member: MemberState): void {
+    if (member.childSessionId === undefined) return
+    const child = this.ctx.get('sessions')?.get(member.childSessionId)
+    if (child === undefined || child.seq <= member.toolScanOffset) return
+    for (const event of child.snapshotEvents(SessionLogOffset(member.toolScanOffset), child.seq)) {
+      if (event.type === 'tool/call') member.lastTool = event.data.name
+    }
+    member.toolScanOffset = child.seq
+  }
+
+  /** Live fleet view for one wave, with each row's child log folded up to now. */
   private viewOf(wave: WaveState): WaveView {
     return {
       waveId: wave.waveId,
       label: wave.label,
       parentSessionId: wave.parentSessionId,
       closed: wave.closed,
-      members: wave.members.map(member => this.viewMember(member)),
+      members: wave.members.map((member) => {
+        this.refreshLastTool(member)
+        return this.viewMember(wave, member)
+      }),
     }
   }
 
-  private viewMember(member: MemberState): WaveMemberView {
-    const durationMs = member.startedAtMs === undefined || member.endedAtMs === undefined
-      ? undefined
-      : member.endedAtMs - member.startedAtMs
+  /**
+   * One member row derived from the engine's state and the wave's budgets.
+   * @param wave - the owning wave, which carries the per-member ceiling.
+   * @param member - the member to render.
+   * @returns the browser-safe row.
+   */
+  private viewMember(wave: WaveState, member: MemberState): WaveMemberView {
+    const durationMs = durationOf(member)
+    const budgetLimit = wave.request.maxTokensPerMember
     return {
       memberId: member.memberId,
       provider: member.spec.provider,
@@ -648,14 +704,16 @@ export class WaveRuntime extends TypertRemoteService {
         ? {}
         : { model: member.spec.request.agentOptions.model }),
       ...(member.diagnostic === undefined ? {} : { diagnostic: member.diagnostic }),
+      ...(member.lastTool === undefined ? {} : { lastTool: member.lastTool }),
       ...(durationMs === undefined ? {} : { durationMs }),
       ...(member.budgetUsed === undefined ? {} : { budgetUsed: member.budgetUsed }),
+      ...(budgetLimit === undefined ? {} : { budgetLimit }),
     }
   }
 
   /** Terminal record with the configured byte cap applied to output and structured. */
-  private resultOf(member: MemberState): WaveMemberResult {
-    const base = this.viewMember(member)
+  private resultOf(wave: WaveState, member: MemberState): WaveMemberResult {
+    const base = this.viewMember(wave, member)
     const cap = this.config.maxResultBytes
     let truncated = false
     let output: readonly ContentBlock[] = member.result?.output ?? []

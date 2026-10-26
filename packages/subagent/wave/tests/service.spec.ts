@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { Context } from '@greeneek/cordis'
 import { SessionId } from '@greeneek/gnk-session'
 import type { Agent } from '@greeneek/gnk-agent'
+import { ToolCallId } from '@greeneek/gnk-llm'
 import type { ContentBlock } from '@greeneek/gnk-llm'
 import type { SessionEventMap } from '@greeneek/gnk-session'
 import type { ResolvedSubagentStartRequest, SubagentResult, SubagentRun } from '@greeneek/gnk-subagent'
@@ -51,6 +52,20 @@ function memberSettledData(parent: Agent): SessionEventMap['wave/member-settled'
 /** The closing record's logged data, typed to its payload. */
 function waveSettledData(parent: Agent): SessionEventMap['wave/settled'][] {
   return waveEvents(parent).flatMap(event => (event.type === 'wave/settled' ? [event.data] : []))
+}
+
+/**
+ * Assert each row carries a non-negative duration and clear it, so the rest of
+ * the row still compares exactly — the clock is the one value no spec pins.
+ * @param rows - logged rows that should carry a duration.
+ * @returns the same rows with `durationMs` cleared.
+ */
+function withDurationsCleared<T extends { readonly durationMs?: number }>(rows: readonly T[]): readonly T[] {
+  for (const row of rows) {
+    expect(typeof row.durationMs).toBe('number')
+    expect(row.durationMs).toBeGreaterThanOrEqual(0)
+  }
+  return rows.map(row => ({ ...row, durationMs: undefined }))
 }
 
 /** Provider whose child result rejects on the abort signal instead of resolving. */
@@ -215,8 +230,13 @@ describe('WaveRuntime dispatch and settlement', () => {
     // The queued member settles first with the semaphore's wrapped abort
     // reason; the running member settles cancelled from the child's aborted
     // outcome, which carries no diagnostic.
-    expect(memberSettledData(parent)).toEqual([
+    // The queued member never launched, so its record carries no duration; the
+    // running member's does.
+    const [queuedSettled, runningSettled] = memberSettledData(parent)
+    expect(queuedSettled).toEqual(
       { waveId, memberId: `${waveId}:1`, memberIndex: 1, status: 'cancelled', tokensUsed: 0, diagnostic: 'member cancelled' },
+    )
+    expect(withDurationsCleared([runningSettled!])).toEqual([
       { waveId, memberId: `${waveId}:0`, memberIndex: 0, status: 'cancelled', tokensUsed: 0 },
     ])
   })
@@ -263,7 +283,7 @@ describe('WaveRuntime dispatch and settlement', () => {
       'wave/member-settled',
       'wave/settled',
     ])
-    expect(memberSettledData(failed.parent)).toEqual([
+    expect(withDurationsCleared(memberSettledData(failed.parent))).toEqual([
       { waveId: failedId, memberId: `${failedId}:0`, memberIndex: 0, status: 'failed', tokensUsed: 0, diagnostic: 'provider failed' },
       { waveId: failedId, memberId: `${failedId}:1`, memberIndex: 1, status: 'cancelled', tokensUsed: 0 },
     ])
@@ -340,12 +360,14 @@ describe('WaveRuntime view fields', () => {
 
     // One running member and one queued member: neither has a completed
     // timestamp, so neither carries a duration. No projection has metered
-    // either member, so no budget reading exists. The engine has no tool or
-    // artifact source, so those fields stay absent rather than fabricated.
+    // either member, so no budget reading exists, and this wave set no
+    // member ceiling. The engine has no artifact source, so that field stays
+    // absent rather than fabricated.
     const live = waves.listWaves(parent.id)[0]!.members
     for (const row of live) {
       expect(row).not.toHaveProperty('durationMs')
       expect(row).not.toHaveProperty('budgetUsed')
+      expect(row).not.toHaveProperty('budgetLimit')
       expect(row).not.toHaveProperty('lastTool')
       expect(row).not.toHaveProperty('artifacts')
     }
@@ -393,6 +415,49 @@ describe('WaveRuntime view fields', () => {
     await expect(pending).resolves.toMatchObject({ outcome: 'partial' })
     expect(waves.listWaves(parent.id)[0]!.members[1]).not.toHaveProperty('durationMs')
   })
+
+  it('folds the tool calls the child logged into the live row and the settled result', async () => {
+    const { ctx, waves, provider, parent } = await setupWave()
+    const pending = waves.startWave(waveRequest(parent, [member()]))
+    await vi.waitFor(() => { expect(provider.runs).toHaveLength(1) })
+    expect(waves.listWaves(parent.id)[0]!.members[0]).not.toHaveProperty('lastTool')
+
+    // A child session this process holds is the only place its tool calls are
+    // logged; the row reads the last name from that log and ignores the calmer
+    // events around them.
+    const child = ctx.sessions.create(provider.runs[0]!.id)
+    child.append('turn/start', { turn: 1 })
+    child.append('tool/call', { turn: 1, step: 0, callId: ToolCallId('call-1'), name: 'bash', arguments: '{}' })
+    expect(waves.listWaves(parent.id)[0]!.members[0]!.lastTool).toBe('bash')
+
+    child.append('tool/call', { turn: 1, step: 0, callId: ToolCallId('call-2'), name: 'read', arguments: '{}' })
+    expect(waves.remoteExportList(parent.id)[0]!.members[0]!.lastTool).toBe('read')
+
+    provider.runs[0]!.deferred.resolve(completed('done'))
+    const result = await pending
+    expect(result.members[0]!.lastTool).toBe('read')
+    expect(waves.listWaves(parent.id)[0]!.members[0]!.lastTool).toBe('read')
+  })
+
+  it('reports a budget-killed member with its spend, ceiling, and diagnostic', async () => {
+    const { ctx, waves, provider, parent } = await setupWave()
+    const pending = waves.startWave(waveRequest(parent, [member()], { maxTokensPerMember: 10 }))
+    await vi.waitFor(() => { expect(provider.runs).toHaveLength(1) })
+    vi.spyOn(ctx.sessionProjections, 'stateOf').mockReturnValue(usage(11))
+
+    await expect(preStep(ctx, childAgent(provider.runs[0]!))).resolves.toEqual({ kind: 'reject' })
+    const killed = waves.listWaves(parent.id)[0]!.members[0]!
+    expect(killed).toMatchObject({
+      status: 'budget-killed',
+      tokensUsed: 11,
+      budgetUsed: 11,
+      budgetLimit: 10,
+      diagnostic: 'member token budget exceeded',
+    })
+    await expect(pending).resolves.toMatchObject({
+      members: [{ status: 'budget-killed', budgetLimit: 10, diagnostic: 'member token budget exceeded' }],
+    })
+  })
 })
 
 describe('WaveRuntime budget enforcement', () => {
@@ -413,7 +478,7 @@ describe('WaveRuntime budget enforcement', () => {
       'wave/settled',
     ])
     const waveId = String(waves.listWaves(parent.id)[0]!.waveId)
-    expect(memberSettledData(parent)).toEqual([
+    expect(withDurationsCleared(memberSettledData(parent))).toEqual([
       { waveId, memberId: `${waveId}:0`, memberIndex: 0, status: 'budget-killed', tokensUsed: 11, diagnostic: 'member token budget exceeded' },
     ])
   })
@@ -434,10 +499,10 @@ describe('WaveRuntime budget enforcement', () => {
     // Both members were metered; only the breaching member settles
     // budget-killed with the wave-cap diagnostic, and the closing outcome is
     // partial. Settle order between the two aborted members is not pinned.
-    expect(memberSettledData(parent).filter(row => row.memberIndex === 1)).toEqual([
+    expect(withDurationsCleared(memberSettledData(parent).filter(row => row.memberIndex === 1))).toEqual([
       { waveId, memberId: `${waveId}:1`, memberIndex: 1, status: 'budget-killed', tokensUsed: 10, diagnostic: 'wave token budget exceeded' },
     ])
-    expect(memberSettledData(parent).filter(row => row.memberIndex === 0)).toEqual([
+    expect(withDurationsCleared(memberSettledData(parent).filter(row => row.memberIndex === 0))).toEqual([
       { waveId, memberId: `${waveId}:0`, memberIndex: 0, status: 'cancelled', tokensUsed: 10 },
     ])
     expect(waveSettledData(parent).map(row => row.outcome)).toEqual(['partial'])
@@ -509,12 +574,12 @@ describe('WaveRuntime durable wave records', () => {
         { memberId: `${waveId}:1`, provider: 'controlled' },
       ],
     }])
-    expect(memberSettledData(parent)).toEqual([
+    expect(withDurationsCleared(memberSettledData(parent))).toEqual([
       { waveId, memberId: `${waveId}:1`, memberIndex: 1, status: 'completed', tokensUsed: 0 },
       { waveId, memberId: `${waveId}:0`, memberIndex: 0, status: 'completed', tokensUsed: 0 },
     ])
     // The closing record keeps dispatch order in its rows.
-    expect(waveSettledData(parent)).toEqual([{
+    expect(waveSettledData(parent).map(row => ({ ...row, members: withDurationsCleared(row.members) }))).toEqual([{
       waveId,
       outcome: 'completed',
       members: [
@@ -546,17 +611,18 @@ describe('WaveRuntime durable wave records', () => {
     ])
     // The closing wave carried the parked member's record after member 1's
     // own: settlement order, not dispatch order. Nothing was metered, so the
-    // parked member settles with `tokensUsed: 0` and no diagnostic.
+    // parked member settles with `tokensUsed: 0` and no diagnostic; the close
+    // stamps its settlement time because its record is written there.
     expect(memberSettledData(parent)).toEqual([
-      { waveId, memberId: `${waveId}:1`, memberIndex: 1, status: 'completed', tokensUsed: 0 },
-      { waveId, memberId: `${waveId}:0`, memberIndex: 0, status: 'completed', tokensUsed: 0 },
+      { waveId, memberId: `${waveId}:1`, memberIndex: 1, status: 'completed', tokensUsed: 0, durationMs: expect.any(Number) },
+      { waveId, memberId: `${waveId}:0`, memberIndex: 0, status: 'completed', tokensUsed: 0, durationMs: expect.any(Number) },
     ])
     expect(waveSettledData(parent)).toEqual([{
       waveId,
       outcome: 'completed',
       members: [
-        { memberId: `${waveId}:0`, memberIndex: 0, status: 'completed', tokensUsed: 0 },
-        { memberId: `${waveId}:1`, memberIndex: 1, status: 'completed', tokensUsed: 0 },
+        { memberId: `${waveId}:0`, memberIndex: 0, status: 'completed', tokensUsed: 0, durationMs: expect.any(Number) },
+        { memberId: `${waveId}:1`, memberIndex: 1, status: 'completed', tokensUsed: 0, durationMs: expect.any(Number) },
       ],
     }])
 
@@ -770,7 +836,7 @@ describe('WaveRuntime helper and lifetime edges', () => {
 
     const waveId = String(view.waveId)
     expect(memberSettledData(parent)).toEqual([
-      { waveId, memberId: `${waveId}:0`, memberIndex: 0, status: 'cancelled', tokensUsed: 0, diagnostic: 'dispose failed: reap failed' },
+      { waveId, memberId: `${waveId}:0`, memberIndex: 0, status: 'cancelled', tokensUsed: 0, durationMs: expect.any(Number), diagnostic: 'dispose failed: reap failed' },
     ])
   })
 })

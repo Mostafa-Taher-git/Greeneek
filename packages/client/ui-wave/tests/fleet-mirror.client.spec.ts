@@ -4,7 +4,8 @@ import type { RemoteResult } from '@greeneek/gnk-typert-protocol'
 import type { Context as ClientContext } from '@greeneek/cordis'
 import type { WaveId, WaveMemberId, WaveMemberView, WaveView } from '@greeneek/gnk-subagent-wave/client'
 import type { SessionId } from '@greeneek/gnk-session/types'
-import { FleetMirror } from '../src/client/fleet-mirror.ts'
+import { FleetMirror, PUBLISH_WINDOW_MS } from '../src/client/fleet-mirror.ts'
+import type { FleetSnapshot } from '../src/client/contract.ts'
 
 const SESSION = 'lead-1' as SessionId
 const WAVE = 'wave-1' as WaveId
@@ -59,6 +60,11 @@ function bench(remote = wavesRemote()): { mirror: FleetMirror; remote: ReturnTyp
   return { mirror: new FleetMirror(ctx, SESSION), remote }
 }
 
+/** Advance past the mirror's coalescing window so a pending sample renders. */
+async function flushWindow(): Promise<void> {
+  await vi.advanceTimersByTimeAsync(PUBLISH_WINDOW_MS)
+}
+
 beforeEach(() => {
   vi.useFakeTimers()
 })
@@ -76,6 +82,7 @@ describe('FleetMirror sampling', () => {
     expect(mirror.getSnapshot().loading).toBe(true)
 
     await vi.advanceTimersByTimeAsync(0)
+    await flushWindow()
     expect(mirror.getSnapshot()).toMatchObject({ loading: false, degraded: false, stoppable: true })
     expect(mirror.getSnapshot().waveViews).toHaveLength(1)
     expect(listener).toHaveBeenCalled()
@@ -86,10 +93,12 @@ describe('FleetMirror sampling', () => {
     const { mirror, remote } = bench()
     mirror.subscribe(() => {})
     await vi.advanceTimersByTimeAsync(0)
+    await flushWindow()
     const first = mirror.getSnapshot()
 
     remote.list.mockResolvedValue({ ok: true, value: [wave()] })
     await vi.advanceTimersByTimeAsync(1_000)
+    await flushWindow()
     expect(mirror.getSnapshot()).toBe(first)
     mirror.dispose()
   })
@@ -99,21 +108,27 @@ describe('FleetMirror sampling', () => {
     const listener = vi.fn()
     mirror.subscribe(listener)
     await vi.advanceTimersByTimeAsync(0)
+    await flushWindow()
 
     remote.list.mockResolvedValue({
       ok: true,
       value: [wave({ members: [member({ status: 'completed', tokensUsed: 400 })] })],
     })
     await vi.advanceTimersByTimeAsync(1_000)
+    await flushWindow()
     expect(mirror.getSnapshot().waveViews[0]?.members[0]?.tokensUsed).toBe(400)
 
     // Every member settled, so the wave closes and the loop drops to the idle
     // cadence: nothing at 1s, a sample at 5s.
     remote.list.mockResolvedValue({ ok: true, value: [wave({ closed: true })] })
     await vi.advanceTimersByTimeAsync(1_000)
+    await flushWindow()
+    expect(mirror.getSnapshot().stoppable).toBe(false)
     await vi.advanceTimersByTimeAsync(1_000)
+    await flushWindow()
     const beforeIdle = remote.list.mock.calls.length
     await vi.advanceTimersByTimeAsync(5_000)
+    await flushWindow()
     expect(remote.list.mock.calls.length).toBeGreaterThan(beforeIdle)
     expect(mirror.getSnapshot().stoppable).toBe(false)
     mirror.dispose()
@@ -123,12 +138,14 @@ describe('FleetMirror sampling', () => {
     const { mirror, remote } = bench()
     mirror.subscribe(() => {})
     await vi.advanceTimersByTimeAsync(0)
+    await flushWindow()
 
     remote.list.mockResolvedValue({
       ok: false,
       error: new RemoteError('gateway/internal', 'host gone', {}),
     })
     await vi.advanceTimersByTimeAsync(1_000)
+    await flushWindow()
     expect(mirror.getSnapshot()).toMatchObject({ degraded: true, loading: false })
     expect(mirror.getSnapshot().waveViews).toHaveLength(1)
     mirror.dispose()
@@ -138,14 +155,78 @@ describe('FleetMirror sampling', () => {
     const { mirror, remote } = bench()
     mirror.subscribe(() => {})
     await vi.advanceTimersByTimeAsync(0)
+    await flushWindow()
 
     remote.list.mockRejectedValueOnce(new Error('unmounted'))
     await vi.advanceTimersByTimeAsync(1_000)
+    await flushWindow()
     expect(mirror.getSnapshot().degraded).toBe(true)
 
     remote.list.mockResolvedValue({ ok: true, value: [wave()] })
     await vi.advanceTimersByTimeAsync(1_000)
+    await flushWindow()
     expect(mirror.getSnapshot().degraded).toBe(false)
+    mirror.dispose()
+  })
+
+  it('coalesces a burst of samples into one render whose state is the last sample', async () => {
+    const { mirror, remote } = bench()
+    const rendered: FleetSnapshot[] = []
+    mirror.subscribe(() => { rendered.push(mirror.getSnapshot()) })
+    await vi.advanceTimersByTimeAsync(0)
+    await flushWindow()
+    rendered.length = 0
+
+    // Twenty samples answered inside one window: without coalescing each one
+    // would notify its subscribers, and every reader would render a row that
+    // the next sample replaces.
+    for (let tokens = 1; tokens <= 20; tokens += 1) {
+      remote.list.mockResolvedValueOnce({
+        ok: true,
+        value: [wave({ members: [member({ tokensUsed: tokens })] })],
+      })
+      mirror.refresh()
+      await vi.advanceTimersByTimeAsync(0)
+    }
+    expect(remote.list).toHaveBeenCalledTimes(21)
+    expect(rendered).toHaveLength(0)
+
+    await flushWindow()
+    expect(rendered).toHaveLength(1)
+    expect(rendered[0]?.waveViews[0]?.members[0]?.tokensUsed).toBe(20)
+    expect(mirror.getSnapshot().waveViews[0]?.members[0]?.tokensUsed).toBe(20)
+    mirror.dispose()
+  })
+
+  it('republishes when only a member row field moves', async () => {
+    const { mirror, remote } = bench()
+    const listener = vi.fn()
+    mirror.subscribe(listener)
+    await vi.advanceTimersByTimeAsync(0)
+    await flushWindow()
+
+    remote.list.mockResolvedValue({ ok: true, value: [wave({ members: [member({ lastTool: 'bash' })] })] })
+    await vi.advanceTimersByTimeAsync(1_000)
+    await flushWindow()
+    expect(mirror.getSnapshot().waveViews[0]?.members[0]?.lastTool).toBe('bash')
+
+    remote.list.mockResolvedValue({
+      ok: true,
+      value: [wave({ members: [member({ lastTool: 'bash', budgetUsed: 40, budgetLimit: 100 })] })],
+    })
+    await vi.advanceTimersByTimeAsync(1_000)
+    await flushWindow()
+    expect(mirror.getSnapshot().waveViews[0]?.members[0]).toMatchObject({ budgetUsed: 40, budgetLimit: 100 })
+
+    remote.list.mockResolvedValue({
+      ok: true,
+      value: [wave({
+        members: [member({ lastTool: 'bash', budgetUsed: 40, budgetLimit: 100, status: 'completed', durationMs: 250 })],
+      })],
+    })
+    await vi.advanceTimersByTimeAsync(1_000)
+    await flushWindow()
+    expect(mirror.getSnapshot().waveViews[0]?.members[0]?.durationMs).toBe(250)
     mirror.dispose()
   })
 
@@ -164,6 +245,7 @@ describe('FleetMirror sampling', () => {
 
     resolveList?.({ ok: true, value: [wave()] })
     await vi.advanceTimersByTimeAsync(1_000)
+    await flushWindow()
     expect(mirror.getSnapshot().loading).toBe(false)
     expect(remote.list.mock.calls.length).toBeGreaterThan(1)
     mirror.dispose()
@@ -211,13 +293,16 @@ describe('FleetMirror sampling', () => {
     const { mirror, remote } = bench()
     mirror.subscribe(() => {})
     await vi.advanceTimersByTimeAsync(0)
+    await flushWindow()
     remote.list.mockResolvedValue({
       ok: false,
       error: new RemoteError('gateway/internal', 'host gone', {}),
     })
     await vi.advanceTimersByTimeAsync(1_000)
+    await flushWindow()
     const degraded = mirror.getSnapshot()
     await vi.advanceTimersByTimeAsync(1_000)
+    await flushWindow()
     expect(mirror.getSnapshot()).toBe(degraded)
     expect(remote.list).toHaveBeenCalledTimes(3)
     mirror.dispose()
@@ -238,6 +323,7 @@ describe('FleetMirror sampling', () => {
     remote.list.mockResolvedValue({ ok: true, value: [wave({ closed: true })] })
     mirror.subscribe(() => {})
     await vi.advanceTimersByTimeAsync(0)
+    await flushWindow()
     expect(mirror.getSnapshot().stoppable).toBe(false)
 
     remote.list.mockResolvedValue({
@@ -245,9 +331,11 @@ describe('FleetMirror sampling', () => {
       error: new RemoteError('gateway/internal', 'host gone', {}),
     })
     await vi.advanceTimersByTimeAsync(5_000)
+    await flushWindow()
     expect(mirror.getSnapshot().degraded).toBe(true)
     const samples = remote.list.mock.calls.length
     await vi.advanceTimersByTimeAsync(5_000)
+    await flushWindow()
     expect(remote.list.mock.calls.length).toBe(samples + 1)
     mirror.dispose()
   })

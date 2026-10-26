@@ -614,15 +614,15 @@ describe('WaveRuntime durable wave records', () => {
     // parked member settles with `tokensUsed: 0` and no diagnostic; the close
     // stamps its settlement time because its record is written there.
     expect(memberSettledData(parent)).toEqual([
-      { waveId, memberId: `${waveId}:1`, memberIndex: 1, status: 'completed', tokensUsed: 0, durationMs: expect.any(Number) },
-      { waveId, memberId: `${waveId}:0`, memberIndex: 0, status: 'completed', tokensUsed: 0, durationMs: expect.any(Number) },
+      { waveId, memberId: `${waveId}:1`, memberIndex: 1, status: 'completed', tokensUsed: 0, durationMs: expect.any(Number) as unknown as number },
+      { waveId, memberId: `${waveId}:0`, memberIndex: 0, status: 'completed', tokensUsed: 0, durationMs: expect.any(Number) as unknown as number },
     ])
     expect(waveSettledData(parent)).toEqual([{
       waveId,
       outcome: 'completed',
       members: [
-        { memberId: `${waveId}:0`, memberIndex: 0, status: 'completed', tokensUsed: 0, durationMs: expect.any(Number) },
-        { memberId: `${waveId}:1`, memberIndex: 1, status: 'completed', tokensUsed: 0, durationMs: expect.any(Number) },
+        { memberId: `${waveId}:0`, memberIndex: 0, status: 'completed', tokensUsed: 0, durationMs: expect.any(Number) as unknown as number },
+        { memberId: `${waveId}:1`, memberIndex: 1, status: 'completed', tokensUsed: 0, durationMs: expect.any(Number) as unknown as number },
       ],
     }])
 
@@ -836,7 +836,7 @@ describe('WaveRuntime helper and lifetime edges', () => {
 
     const waveId = String(view.waveId)
     expect(memberSettledData(parent)).toEqual([
-      { waveId, memberId: `${waveId}:0`, memberIndex: 0, status: 'cancelled', tokensUsed: 0, durationMs: expect.any(Number), diagnostic: 'dispose failed: reap failed' },
+      { waveId, memberId: `${waveId}:0`, memberIndex: 0, status: 'cancelled', tokensUsed: 0, durationMs: expect.any(Number) as unknown as number, diagnostic: 'dispose failed: reap failed' },
     ])
   })
 })

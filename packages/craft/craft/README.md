@@ -94,6 +94,7 @@ None of its own; only the tool consumer's mount and dispose of bridge tools chan
 
 - **Live GUI attach gated** — Live attach mode is disabled by default in pilot manifests until upstream authenticated control channel protocols are hardened.
 - **Pilot applications** — Bundles manifests for PhotoCraft and PdfCraft; remaining ArtCraft suite applications are added in follow-on milestones.
+- **Unverified manifest facts** — Both pilot manifests carry `verified: false` provenance entries; their launch templates and headless tool names are not proven against an installed app. The loader validates the flag's type only, and no runtime decision reads it.
 
 <a id="dev-note"></a>
 ### Dev Note

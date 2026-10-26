@@ -167,6 +167,9 @@ jobs:
       - run: pnpm build:lib:host
       - run: pnpm build:lib:client
       - run: pnpm build:web
+      - name: Smoke Craft discovery against the installed ArtCraft suite
+        if: ${{ vars.ARTCRAFT_SMOKE == 'true' }}
+        run: pnpm --filter @greeneek/gnk-craft-local run smoke:discovery
       - if: startsWith(needs.gate.outputs.ref, 'desktop-v')
         run: node apps/desktop/scripts/stamp-version.mjs "${{ needs.gate.outputs.ref }}"
       - run: pnpm --filter @greeneek/desktop run dist:win

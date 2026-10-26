@@ -56,6 +56,16 @@ describe('bundled pilot catalog', () => {
     expect(catalog.require('PDFCRAFT').displayName).toBe('PdfCraft')
   })
 
+  it('publishes unverified provenance without a placeholder host', () => {
+    for (const manifest of loadPilotCatalog().apps()) {
+      expect(manifest.sources.length).toBeGreaterThan(0)
+      for (const source of manifest.sources) {
+        expect(source.verified).toBe(false)
+        expect(source.url).not.toContain('craft.example')
+      }
+    }
+  })
+
   it('resolves a pre-rename alias and reads the recipe from the package', () => {
     const catalog = loadPilotCatalog()
     expect(catalog.find('printcraft')?.id).toBe('pdfcraft')

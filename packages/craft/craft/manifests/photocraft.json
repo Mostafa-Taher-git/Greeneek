@@ -23,8 +23,8 @@
   "riskyCommandClasses": ["overwrite", "save-over", "print"],
   "sources": [
     {
-      "label": "PhotoCraft headless CLI reference",
-      "url": "https://craft.example/docs/photocraft-headless",
+      "label": "Unverified provenance marker: this manifest's ArtCraft facts are not proven against an installed app",
+      "url": "urn:greeneek:unverified:photocraft-headless",
       "verified": false
     }
   ],

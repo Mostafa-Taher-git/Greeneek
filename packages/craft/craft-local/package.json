@@ -11,6 +11,9 @@
     "directory": "packages/craft/craft-local"
   },
   "type": "module",
+  "scripts": {
+    "smoke:discovery": "node --import tsx/esm scripts/check-discovery.ts"
+  },
   "main": "lib/index.js",
   "types": "lib/types/index.d.ts",
   "exports": {

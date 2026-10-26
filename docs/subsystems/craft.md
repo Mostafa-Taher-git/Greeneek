@@ -47,7 +47,7 @@ interface CraftAppManifest {
 }
 ```
 
-Every per-app behavior the bridge needs — launch commands, the attach gate, the curated headless tool filter, artifact tool names, confined roots — lives in a manifest file, never in code. Each fact carries provenance with a `verified` flag; unverified facts are pilot placeholders, not release guarantees. The nested vocabulary (`CraftAttachPolicy`, `CraftLaunchTemplates`, `CraftManifestRoots`, `CraftManifestSource`, `CraftRecipeRef`, `CraftHeadlessSpec`) is declared in the same module.
+Every per-app behavior the bridge needs — launch commands, the attach gate, the curated headless tool filter, artifact tool names, confined roots — lives in a manifest file, never in code. The `sources` list records provenance per manifest entry, not per fact: the loader validates each entry's `label`, `url`, and `verified` fields, and no other code reads them. Unverified entries are pilot placeholders, not release guarantees. The nested vocabulary (`CraftAttachPolicy`, `CraftLaunchTemplates`, `CraftManifestRoots`, `CraftManifestSource`, `CraftRecipeRef`, `CraftHeadlessSpec`) is declared in the same module.
 
 ## `CraftHostProvider`
 

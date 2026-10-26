@@ -41,6 +41,10 @@ Compose this package alongside `@greeneek/gnk-craft` and `@greeneek/gnk-subproce
 
 The provider strictly rejects bare executables on the ambient system `PATH`: only verified absolute paths inside recognized installation roots are accepted.
 
+### Discovery smoke
+
+`pnpm --filter @greeneek/gnk-craft-local run smoke:discovery` loads the bundled pilot manifests, runs the same installation measurement the local provider serves to `ctx.craft`, prints each app's state and absolute CLI path, and exits non-zero unless at least one pilot app is `ready`. It installs and launches nothing.
+
 -----
 
 <a id="understand-the-implementation"></a>

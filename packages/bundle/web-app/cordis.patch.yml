@@ -265,6 +265,11 @@
     - id: ui-wave
       name: '@greeneek/gnk-client-ui-wave'
 
+    # The Maestro roster and task board, addressed by session id and mounted
+    # only when the host Team service answers.
+    - id: ui-agent-team
+      name: '@greeneek/gnk-client-ui-agent-team'
+
     - id: ui-reference
       name: '@greeneek/gnk-client-ui-reference'
 

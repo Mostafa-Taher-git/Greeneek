@@ -79,6 +79,15 @@ export interface Config {
    */
   persona?: string
   /**
+   * Agent-preset id this tool's children compose from instead of inheriting
+   * the caller's composition. Requires the provider's `agentPreset`
+   * capability, and only one-shot delegation: continuable children compose
+   * from their parent because their durable descriptor cannot carry a lane.
+   * Mount one tool per lane with a distinct `toolName` — a fixed preset per
+   * tool keeps each lane's model-visible tool list stable across turns.
+   */
+  preset?: string
+  /**
    * Tool filter applied to every child. Filtered tools disappear from its
    * prompt and reject execution. Requires the provider's `toolFilter`
    * capability; unknown names fail startup.
@@ -120,6 +129,7 @@ export const Config: z<Config> = z.object({
     maxTokens: number
   }),
   persona: z.string(),
+  preset: z.string(),
   // Preserve omission; Schemastery's `{ allow: [] }` default would deny every tool.
   toolFilter: z.object({
     allow: z.array(z.string()).default(undefined as unknown as string[]),
@@ -313,6 +323,15 @@ export function apply(ctx: Context, config: Config): void {
   }
   const backgroundEnabled = config.enableRunInBackground !== false
   const continuable = (config.backgroundMode ?? 'one-shot') === 'continuable'
+  // A continuable child restores composition from its durable descriptor, which
+  // records persona and tool filter only, so a lane here would work for one
+  // activation and silently revert on resume.
+  if (config.preset !== undefined && continuable) {
+    throw new Error('tool-subagent: `preset` requires backgroundMode one-shot; a continuable child composes from its parent')
+  }
+  if (config.preset !== undefined && config.preset.trim().length === 0) {
+    throw new Error('tool-subagent: `preset` must name an agent preset')
+  }
   const toolName = config.toolName ?? 'subagent'
 
   const modelSelectionCapable = config.modelSelectionSettings === true
@@ -511,6 +530,7 @@ export function apply(ctx: Context, config: Config): void {
             parent,
             ...requestedChildAgentOptions !== undefined ? { agentOptions: requestedChildAgentOptions } : {},
             ...config.persona !== undefined ? { persona: config.persona } : {},
+            ...config.preset !== undefined ? { agentPreset: config.preset } : {},
             ...config.toolFilter !== undefined ? { toolFilter: config.toolFilter } : {},
             ...maxDepth !== undefined ? { maxDepth } : {},
           }

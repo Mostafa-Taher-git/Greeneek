@@ -259,18 +259,17 @@ describe('web e2e: agent-preset selection', () => {
   it('lists every mode with its sentence, placeholders parked', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-agent-preset-modes'))
     const group = page.getByRole('radiogroup', { name: 'Agent mode' })
-    // Fixed order: shipped modes, coming-soon placeholders, authored presets
-    // in roster order.
+    // Fixed order: shipped modes first, authored presets in roster order.
     const order = await group.getByRole('radio').evaluateAll(
       radios => radios.map(radio => radio.textContent),
     )
     expect(order.slice(0, 6)).toEqual([
-      'Standard mode', 'Army mode', 'Pixels Designer (preview)', 'Instructor (preview)', 'Creator mode',
-      'Maestro mode',
+      'Standard mode', 'Army mode', 'Maestro mode', 'Pixels Designer (preview)',
+      'Instructor (preview)', 'Creator mode',
     ])
     expect(order.slice(6).sort()).toEqual(['Narrow mode', 'Refusing mode'])
     expect(await group.getByRole('radio', { name: 'Army mode', exact: true }).isDisabled()).toBe(false)
-    expect(await group.getByRole('radio', { name: 'Maestro mode', exact: true }).isDisabled()).toBe(true)
+    expect(await group.getByRole('radio', { name: 'Maestro mode', exact: true }).isDisabled()).toBe(false)
     // Idle shows the staged label alone; hovering the row reveals every label.
     const pixelsLabel = group.getByRole('radio', { name: 'Pixels Designer (preview)', exact: true })
       .getByText('Pixels Designer (preview)', { exact: true })

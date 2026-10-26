@@ -2967,6 +2967,15 @@ export interface Config {
    */
   persona?: string
   /**
+   * Agent-preset id this tool's children compose from instead of inheriting
+   * the caller's composition. Requires the provider's `agentPreset`
+   * capability, and only one-shot delegation: continuable children compose
+   * from their parent because their durable descriptor cannot carry a lane.
+   * Mount one tool per lane with a distinct `toolName` — a fixed preset per
+   * tool keeps each lane's model-visible tool list stable across turns.
+   */
+  preset?: string
+  /**
    * Tool filter applied to every child. Filtered tools disappear from its
    * prompt and reject execution. Requires the provider's `toolFilter`
    * capability; unknown names fail startup.

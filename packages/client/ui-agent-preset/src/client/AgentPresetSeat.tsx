@@ -66,12 +66,13 @@ const REFUSAL_HOLD_MS = 8000
  * presets, which keep their `(preview)` copy so a pilot surface is never
  * mistaken for a promise.
  */
-const MODE_ORDER = ['standard', 'army', 'pixels-designer', 'instructor', 'cordis'] as const
+const MODE_ORDER = ['standard', 'army', 'maestro', 'pixels-designer', 'instructor', 'cordis'] as const
 
 /** Row icon per shipped mode, keyed by {@link MODE_ORDER} id. */
 const MODE_ICONS: Readonly<Record<(typeof MODE_ORDER)[number], ReactNode>> = {
   standard: <IconSquareDashedBottomCode16 size={16} />,
   army: <IconCirclePile16 size={16} />,
+  maestro: <IconBrainCircuit16 size={16} />,
   'pixels-designer': <IconPalette16 size={16} />,
   instructor: <IconGraduationCap16 size={16} />,
   cordis: <IconSparkle16 size={16} />,
@@ -133,16 +134,6 @@ export function AgentPresetSeat({ load, select, introduced, useAgentPresetSeat, 
         icon: MODE_ICONS[id],
       }]
     }),
-    // Placeholder mode for v0.3.5: visible and previewable, never selectable
-    // until its preset lands.
-    {
-      id: 'maestro',
-      name: t('presetMaestroName'),
-      description: t('presetMaestroDescription'),
-      icon: <IconBrainCircuit16 size={16} />,
-      disabled: true,
-      disabledReason: t('switcherComingSoon'),
-    },
     // Authored presets keep a live pill after the shipped set: hiding them
     // would strand sessions their owners can still start elsewhere. A retired
     // shipped preset is the one exception — its row lives in Settings now.

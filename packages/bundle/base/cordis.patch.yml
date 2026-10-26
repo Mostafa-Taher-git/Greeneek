@@ -367,6 +367,18 @@
     - id: subagent-wave
       name: '@greeneek/gnk-subagent-wave'
 
+    # The durable Team domain: roster, mailbox, and task board addressed by
+    # session id. Maestro's preset mounts its model-facing tools; the service
+    # itself holds no per-mode state, so other modes never pay for it.
+    - id: agent-team
+      name: '@greeneek/gnk-agent-team'
+      config:
+        maxMembers: 8
+        maxTasks: 256
+        maxPendingMessagesPerMember: 64
+        maxMessageBytes: 65536
+        disposalTimeoutMs: 5000
+
     # Continuable background children are selected per delegation tool. The
     # separately loaded follow-up tool registers the one global `send_message`.
     - id: tool-subagent-control

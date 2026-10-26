@@ -797,6 +797,50 @@ describe('gnk-tool-subagent', () => {
     const fiber = ctx.plugin(tool, { provider: 'p', toolFilter: {} })
     await expect(fiber).rejects.toThrow(/names neither `allow` nor `deny`/)
   })
+
+  it('refuses a lane preset on a continuable tool at load, not at first delegation', async () => {
+    const ctx = await projectedContext()
+    await ctx.plugin(SystemPrompt)
+    await ctx.plugin(ToolRuntime)
+    await ctx.plugin(SubagentRuntime)
+    ctx.subagents.registerProvider({
+      name: 'p',
+      capabilities: { agentOptions: false, outputSchema: false, depthLimit: false, toolFilter: false, persona: false, agentPreset: true },
+      inheritsParentContext: false,
+      start: () => { throw new Error('unreachable') },
+    })
+    const fiber = ctx.plugin(tool, { provider: 'p', backgroundMode: 'continuable', preset: 'instructor' })
+    // A continuable child restores composition from its durable descriptor,
+    // which cannot carry a lane, so the request must never become legal.
+    await expect(fiber).rejects.toThrow(/requires backgroundMode one-shot/)
+    await expect(ctx.plugin(tool, { provider: 'p', preset: '   ' })).rejects.toThrow(/must name an agent preset/)
+  })
+
+  it('passes a configured lane preset to the start request', async () => {
+    let seen: SubagentStartRequest | undefined
+    const ctx = await projectedContext()
+    await ctx.plugin(SystemPrompt)
+    await ctx.plugin(ToolRuntime)
+    await ctx.plugin(SubagentRuntime)
+    ctx.subagents.registerProvider({
+      name: 'lanes',
+      capabilities: { agentOptions: false, outputSchema: false, depthLimit: true, toolFilter: false, persona: false, agentPreset: true },
+      inheritsParentContext: false,
+      start: (request) => {
+        seen = request
+        return Promise.resolve({
+          id: SessionId('lane-child'),
+          localAgent: undefined,
+          result: Promise.resolve({ output: [{ type: 'text' as const, text: 'ok' }], stopReason: 'completed' as const }),
+          dispose: async () => {},
+        })
+      },
+    })
+    await ctx.plugin(tool, { provider: 'lanes', preset: 'instructor' })
+
+    await callSubagent(ctx, { description: 'd', prompt: 'p' })
+    expect(seen?.agentPreset).toBe('instructor')
+  })
 })
 
 describe('gnk-tool-subagent background mode', () => {

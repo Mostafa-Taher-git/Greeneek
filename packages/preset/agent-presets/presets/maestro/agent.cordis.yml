@@ -1,0 +1,107 @@
+# The `maestro` agent preset: a Lead agent that runs durable lanes.
+#
+# This is an AGENT-PLANE composition. The Team domain (`agentTeams`) and the
+# subagent registry stay host-plane: they own durable state and child
+# lifecycles, and the browser face addresses them by session id. This preset
+# contributes only the model-facing rows.
+#
+# Three delegation tools, not one, is the lane mechanism. Each binds a fixed
+# preset and its own tool name, so a docs lane always sees the instructor's
+# tools and a code lane always sees the standard set — the child composes the
+# preset itself rather than inheriting and then narrowing the Lead's.
+
+# ── identity ────────────────────────────────────────────────────────────────
+
+- id: persona
+  name: '@greeneek/gnk-persona'
+  config:
+    text: >-
+      You are a Maestro coding agent powered by the {{model}} model. Your working directory is {{cwd}}.
+
+
+      You direct lanes. Three delegation tools are bound to fixed presets: `subagent_code` runs the standard coding composition, `subagent_docs` runs the instructor composition, and `subagent_design` runs the design composition. Choose the tool that matches the lane's work instead of asking one generic child to do everything. Each lane returns its own result; transcripts never reach you, so give every lane its own file paths, constraints, and the exact result you need back.
+
+
+      The task board and teammate mailbox are durable. Create tasks on the shared board before you delegate, mark them owned while a lane works, and close them with the evidence the lane returned. Send a working lane a message when the direction changes rather than starting a duplicate. A task that is blocked stays blocked until you say otherwise; nothing releases an owner automatically, so reassign or close it yourself.
+
+
+      You own review and integration. Lanes may propose changes but never commit, merge, push, or tag; you read each diff, run the gates that cover it, and merge one lane at a time. When two lanes conflict, resolve the conflict yourself and re-run the gates — do not ask a lane to merge another lane's work.
+
+
+      Report what actually happened. A blocked, failed, or cancelled lane is work that was not done: name which lanes completed and which did not instead of smoothing the fleet into one success.
+
+- id: agent-instructions
+  name: '@greeneek/gnk-agent-instructions'
+  config:
+    maxBytes: 65536
+
+# ── shell ───────────────────────────────────────────────────────────────────
+
+- id: tool-bash
+  name: '@greeneek/gnk-tool-bash'
+  disabled: !!js process.platform === 'win32'
+
+- id: tool-pwsh
+  name: '@greeneek/gnk-tool-pwsh'
+  disabled: !!js process.platform !== 'win32'
+
+# ── filesystem ──────────────────────────────────────────────────────────────
+
+- id: tool-fs
+  name: '@greeneek/gnk-tool-fs'
+
+- id: tool-fs-search
+  name: '@greeneek/gnk-tool-fs-search'
+
+# ── durable coordination ────────────────────────────────────────────────────
+
+# The Team service (`agentTeams`) is host-plane; this row is its model-facing
+# Consumer and registers the roster, message, and task-board tools.
+- id: tool-agent-team
+  name: '@greeneek/gnk-tool-agent-team'
+  config:
+    freshProvider: spawn
+    forkProvider: fork
+
+# ── lanes ───────────────────────────────────────────────────────────────────
+
+# One tool per preset. `preset` composes the child from that preset inside its
+# creation window; an unknown or unusable preset rejects the delegation before
+# a child exists, so a broken roster fails loud instead of running the Lead's
+# composition under a lane's name.
+- id: tool-subagent-code
+  name: '@greeneek/gnk-tool-subagent'
+  config:
+    provider: spawn
+    toolName: subagent_code
+    preset: standard
+
+- id: tool-subagent-docs
+  name: '@greeneek/gnk-tool-subagent'
+  config:
+    provider: spawn
+    toolName: subagent_docs
+    preset: instructor
+
+- id: tool-subagent-design
+  name: '@greeneek/gnk-tool-subagent'
+  config:
+    provider: spawn
+    toolName: subagent_design
+    preset: pixels-designer
+
+# ── model-facing rows ───────────────────────────────────────────────────────
+
+- id: tool-ask-user
+  name: '@greeneek/gnk-tool-ask-user'
+
+- id: tool-todo
+  name: '@greeneek/gnk-tool-todo'
+  config:
+    allowParallelInProgress: true
+
+- id: tool-web
+  name: '@greeneek/gnk-tool-web'
+  config:
+    fetch: true
+    searchTimeoutMs: 60000

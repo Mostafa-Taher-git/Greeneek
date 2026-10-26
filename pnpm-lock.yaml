@@ -1195,6 +1195,9 @@ importers:
       '@greeneek/gnk-agent-loop':
         specifier: workspace:^
         version: link:../../core/agent-loop
+      '@greeneek/gnk-agent-team':
+        specifier: workspace:^
+        version: link:../../subagent/agent-team
       '@greeneek/gnk-api-gateway':
         specifier: workspace:^
         version: link:../../api/gateway
@@ -1628,6 +1631,9 @@ importers:
       '@greeneek/gnk-client-ui-agent-preset':
         specifier: workspace:^
         version: link:../../client/ui-agent-preset
+      '@greeneek/gnk-client-ui-agent-team':
+        specifier: workspace:^
+        version: link:../../client/ui-agent-team
       '@greeneek/gnk-client-ui-approval':
         specifier: workspace:^
         version: link:../../client/ui-approval
@@ -10119,6 +10125,9 @@ importers:
       '@greeneek/gnk-agent-loop':
         specifier: workspace:^
         version: link:../../packages/core/agent-loop
+      '@greeneek/gnk-agent-team':
+        specifier: workspace:^
+        version: link:../../packages/subagent/agent-team
       '@greeneek/gnk-agent-tool-presentation':
         specifier: workspace:^
         version: link:../../packages/core/agent-tool-presentation
@@ -10143,6 +10152,9 @@ importers:
       '@greeneek/gnk-brand':
         specifier: workspace:^
         version: link:../../packages/util/brand
+      '@greeneek/gnk-client-ui-agent-team':
+        specifier: workspace:^
+        version: link:../../packages/client/ui-agent-team
       '@greeneek/gnk-code-runtime':
         specifier: workspace:^
         version: link:../../packages/code-runtime/code-runtime
@@ -10371,6 +10383,9 @@ importers:
       '@greeneek/gnk-token-meter':
         specifier: workspace:^
         version: link:../../packages/llm/token-meter
+      '@greeneek/gnk-tool-agent-team':
+        specifier: workspace:^
+        version: link:../../packages/subagent/tool-agent-team
       '@greeneek/gnk-tool-ask-user':
         specifier: workspace:^
         version: link:../../packages/interaction/tool-ask-user

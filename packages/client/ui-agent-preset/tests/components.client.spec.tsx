@@ -31,6 +31,7 @@ const SEAT_READY: AgentPresetSeatState = {
   options: [
     { id: 'standard', trust: 'system', name: '标准模式', description: '完整的编码 agent。' },
     { id: 'army', trust: 'system', name: 'Army 模式' },
+    { id: 'maestro', trust: 'system', name: '指挥模式', description: '持久多泳道编排。' },
     { id: 'mine', trust: 'user' },
   ],
   busy: false,
@@ -90,7 +91,7 @@ describe('the new-session mode switcher', () => {
     expect(screen.getByText(en.presetStandardDescription)).toBeTruthy()
   })
 
-  it('orders shipped modes first, placeholders next, authored presets last', () => {
+  it('orders shipped modes first and authored presets last', () => {
     renderSeat({
       current: 'cordis',
       options: [
@@ -98,6 +99,7 @@ describe('the new-session mode switcher', () => {
         { id: 'cordis', trust: 'system' },
         { id: 'standard', trust: 'system' },
         { id: 'army', trust: 'system' },
+        { id: 'maestro', trust: 'system' },
       ],
     })
 
@@ -105,13 +107,14 @@ describe('the new-session mode switcher', () => {
     expect(names).toEqual([
       en.presetStandardName,
       en.presetArmyName,
-      en.presetCordisName,
       en.presetMaestroName,
+      en.presetCordisName,
       'mine',
     ])
     expect(screen.getByRole('radio', { name: en.presetCordisName }).getAttribute('aria-checked')).toBe('true')
     expect(screen.getByRole('radio', { name: en.presetArmyName })).toHaveProperty('disabled', false)
-    expect(screen.getByRole('radio', { name: en.presetMaestroName })).toHaveProperty('disabled', true)
+    // Maestro is a shipped mode now, not a placeholder: the pill starts sessions.
+    expect(screen.getByRole('radio', { name: en.presetMaestroName })).toHaveProperty('disabled', false)
   })
 
   it('retires the PTC pill while the roster keeps supplying the preset', () => {
@@ -121,6 +124,7 @@ describe('the new-session mode switcher', () => {
       { id: 'ptc', trust: 'system' as const },
       { id: 'standard', trust: 'system' as const },
       { id: 'army', trust: 'system' as const },
+      { id: 'maestro', trust: 'system' as const },
     ]
     renderSeat({ current: 'ptc', options })
 
@@ -133,8 +137,8 @@ describe('the new-session mode switcher', () => {
       .toEqual([
         en.presetStandardName,
         en.presetArmyName,
-        en.presetCordisName,
         en.presetMaestroName,
+        en.presetCordisName,
         'mine',
       ])
     // A session already on PTC checks no pill rather than inventing one.

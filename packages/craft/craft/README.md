@@ -95,6 +95,8 @@ None of its own; only the tool consumer's mount and dispose of bridge tools chan
 - **Live GUI attach gated** — Live attach mode is disabled by default in pilot manifests until upstream authenticated control channel protocols are hardened.
 - **Pilot applications** — Bundles manifests for PhotoCraft and PdfCraft; remaining ArtCraft suite applications are added in follow-on milestones.
 - **Unverified manifest facts** — Both pilot manifests carry `verified: false` provenance entries; their launch templates and headless tool names are not proven against an installed app. The loader validates the flag's type only, and no runtime decision reads it.
+- **PhotoCraft headless entry is not the declared template** — the installed `photocraft-cli.exe` (ProductVersion 0.15.1) refuses `photocraft-cli --headless` with `error: unknown command` (exit 2); its help documents `serve` and `mcp` as the headless entry points. `launch.headless` therefore stays unverified and unusable as written. A generated 4x4 PNG did convert headlessly to a 4x4 lossless WebP; the manifest's verified provenance entry carries the command and artifact hash. `headless.listMethod`, `headless.toolFilter`, and `headless.artifactTools` stay unverified: the engine registry lists 935 dotted command ids (`file.new`, `layer.new.layer`, …) and none of the manifest's meta-tool names.
+- **Version floor exceeds the installed build** — the CLI reports ProductVersion 0.15.1 against `minVersion` 1.0.0, so `meetsVersionFloor` classifies any launcher record that carries this version as `app-installed-cli-missing`.
 
 <a id="dev-note"></a>
 ### Dev Note

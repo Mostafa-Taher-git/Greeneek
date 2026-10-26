@@ -23,9 +23,14 @@
   "riskyCommandClasses": ["overwrite", "save-over", "print"],
   "sources": [
     {
-      "label": "Unverified provenance marker: this manifest's ArtCraft facts are not proven against an installed app",
+      "label": "Unverified provenance marker: the launch templates, minimum version, list method, tool filter, artifact tools, risky command classes, and attach facts are not proven against an installed app",
       "url": "urn:greeneek:unverified:photocraft-headless",
       "verified": false
+    },
+    {
+      "label": "Verified headless conversion only: photocraft-cli.exe (ProductVersion 0.15.1) ran info tiny.png and convert tiny.png tiny.webp on a generated 4x4 PNG, both exit 0; tiny.webp is 168 bytes, RIFF/WEBP/VP8L 4x4, sha256 4966b5bff904504c6bbfaf8e1771c80271a543bda9bfcb40811ced9326b21eeb",
+      "url": "urn:greeneek:verified:photocraft-convert:sha256:4966b5bff904504c6bbfaf8e1771c80271a543bda9bfcb40811ced9326b21eeb",
+      "verified": true
     }
   ],
   "recipe": {

@@ -56,11 +56,11 @@ describe('bundled pilot catalog', () => {
     expect(catalog.require('PDFCRAFT').displayName).toBe('PdfCraft')
   })
 
-  it('publishes unverified provenance without a placeholder host', () => {
+  it('publishes declared provenance without a placeholder host', () => {
     for (const manifest of loadPilotCatalog().apps()) {
       expect(manifest.sources.length).toBeGreaterThan(0)
+      expect(manifest.sources.some(source => !source.verified)).toBe(true)
       for (const source of manifest.sources) {
-        expect(source.verified).toBe(false)
         expect(source.url).not.toContain('craft.example')
       }
     }

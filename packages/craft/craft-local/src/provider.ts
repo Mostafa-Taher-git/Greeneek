@@ -5,6 +5,9 @@
  * Security posture: a session refuses to spawn unless discovery proves an
  * absolute CLI and the caller supplied a per-launch control token; the token is
  * written under the confined job root and handed to the app by file path only.
+ * The headless argument vector comes from the manifest's `launch.headless`
+ * template, so which entry point starts the app is manifest data rather than a
+ * second copy in this provider.
  * @module @greeneek/gnk-craft-local/provider
  */
 
@@ -19,6 +22,7 @@ import type {
 } from '@greeneek/gnk-craft'
 import type { SubprocessHandle, SubprocessSpawnSpec } from '@greeneek/gnk-subprocess'
 import { discoverApp } from './discovery.ts'
+import { expandHeadlessLaunch } from './launch.ts'
 import { guiExecutableName, platformPath } from './platform.ts'
 import { JsonRpcCraftTransport } from './transport.ts'
 import type { CraftLocalConfig, CraftLocalIo } from './types.ts'
@@ -80,11 +84,20 @@ export class CraftLocalProvider implements CraftHostProvider {
     }
     const executable = this.requireExecutable(request.app)
     const tokenPath = controlTokenPath(request.roots)
+    // A refused template must fail before the token file exists, so the job
+    // root never keeps a secret for a session that cannot start.
+    const argv = expandHeadlessLaunch(request.app.launch.headless, {
+      app: request.app.displayName,
+      cli: executable,
+      readRoot: request.roots.read,
+      writeRoot: request.roots.write,
+      controlTokenFile: tokenPath,
+    })
     this.io.ensureDir(request.roots.write)
     this.io.writeFile(tokenPath, request.controlToken)
     let handle: SubprocessHandle
     try {
-      handle = this.io.spawn(this.headlessSpec(request, executable, tokenPath))
+      handle = this.io.spawn(this.headlessSpec(request, argv))
     } catch (error: unknown) {
       throw new CraftError(
         `${request.app.displayName} headless CLI could not start`,
@@ -145,23 +158,10 @@ export class CraftLocalProvider implements CraftHostProvider {
     return requireExecutable(app, discoverApp(app, this.io.discovery))
   }
 
-  /** Build the fully specified headless spawn. */
-  private headlessSpec(
-    request: CraftHostOpenRequest,
-    executable: string,
-    tokenPath: string,
-  ): SubprocessSpawnSpec {
+  /** Build the fully specified headless spawn around the expanded argv. */
+  private headlessSpec(request: CraftHostOpenRequest, argv: readonly string[]): SubprocessSpawnSpec {
     return {
-      argv: [
-        executable,
-        '--headless',
-        '--automation-read-root',
-        request.roots.read,
-        '--automation-write-root',
-        request.roots.write,
-        '--control-token-file',
-        tokenPath,
-      ],
+      argv,
       cwd: request.roots.read,
       stdio: {
         stdin: 'pipe',

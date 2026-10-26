@@ -89,7 +89,7 @@ describe('discoverApp', () => {
     expect(discovery.state).toBe('app-installed-cli-missing')
     expect(discovery.executable).toBe(executable)
     expect(discovery.version).toBe('0.9.0')
-    expect(discovery.detail).toContain('older than the required 1.0.0')
+    expect(discovery.detail).toContain(`older than the required ${photocraft.minVersion}`)
   })
 
   it('skips a stale record whose CLI is missing and uses the registry install', () => {

@@ -2,7 +2,7 @@ import { PassThrough } from 'node:stream'
 import { resolve, win32 } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { CraftError, craftRoots, controlTokenPath, loadPilotCatalog } from '@greeneek/gnk-craft'
-import type { CraftHostOpenRequest, CraftRoots } from '@greeneek/gnk-craft'
+import type { CraftAppManifest, CraftHostOpenRequest, CraftRoots } from '@greeneek/gnk-craft'
 import type { SubprocessHandle, SubprocessSpawnSpec } from '@greeneek/gnk-subprocess'
 import { CraftLocalProvider, requireExecutable } from '../src/provider.ts'
 import { cliExecutableName, guiExecutableName } from '../src/platform.ts'
@@ -131,6 +131,11 @@ function openRequest(signal = new AbortController().signal): CraftHostOpenReques
   return { app: photocraft, workspaceRoot: WORKSPACE, roots: ROOTS, controlToken: TOKEN, signal }
 }
 
+/** The pilot manifest with one substituted headless template. */
+function manifestWithTemplate(headless: string): CraftAppManifest {
+  return { ...photocraft, launch: { ...photocraft.launch, headless } }
+}
+
 describe('requireExecutable', () => {
   it('returns the measured executable', () => {
     expect(requireExecutable(photocraft, { state: 'ready', executable: CLI })).toBe(CLI)
@@ -206,7 +211,7 @@ describe('CraftLocalProvider', () => {
     const spec = fixture.spawn.mock.calls[0]?.[0] as SubprocessSpawnSpec
     expect(spec.argv).toEqual([
       CLI,
-      '--headless',
+      'serve',
       '--automation-read-root',
       ROOTS.read,
       '--automation-write-root',
@@ -231,6 +236,44 @@ describe('CraftLocalProvider', () => {
     await expect(session.transport.listTools()).resolves.toEqual([])
     await session.close()
     expect(handle.terminate).toHaveBeenCalled()
+  })
+
+  it('spawns the argument vector the manifest template expands to', async () => {
+    const handle = createHandle()
+    const fixture = localIo(installedIo(), () => handle, { warn: false })
+    const provider = new CraftLocalProvider(fixture.io, config)
+    const app = manifestWithTemplate(
+      '{cli} serve --control-token-file {controlTokenFile} --automation-write-root {writeRoot} --automation-read-root {readRoot}',
+    )
+
+    const session = await provider.open({ ...openRequest(), app })
+
+    const spec = fixture.spawn.mock.calls[0]?.[0] as SubprocessSpawnSpec
+    expect(spec.argv).toEqual([
+      CLI,
+      'serve',
+      '--control-token-file',
+      controlTokenPath(ROOTS),
+      '--automation-write-root',
+      ROOTS.write,
+      '--automation-read-root',
+      ROOTS.read,
+    ])
+    await session.close()
+  })
+
+  it('refuses a template that does not start the serve entry before spawning', async () => {
+    const fixture = localIo(installedIo(), () => createHandle())
+    const provider = new CraftLocalProvider(fixture.io, config)
+
+    const error = await provider.open({ ...openRequest(), app: manifestWithTemplate('photocraft-cli --headless') })
+      .catch((reason: unknown) => reason)
+
+    expect(error).toBeInstanceOf(CraftError)
+    expect((error as CraftError).code).toBe('CRAFT_MANIFEST_INVALID')
+    expect((error as CraftError).message).toContain('must open with {cli}')
+    expect(fixture.writeFile).not.toHaveBeenCalled()
+    expect(fixture.spawn).not.toHaveBeenCalled()
   })
 
   it('contains a spawn-level failure as app-not-ready', async () => {

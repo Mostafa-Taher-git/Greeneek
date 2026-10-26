@@ -8,7 +8,7 @@ kind: "package-reference"
 
 ## Summary
 
-`gnk-agent-team` turns one coding session into a small working team: the session's agent becomes the Lead, creates named teammates for delegated work, exchanges durable messages with them, and tracks shared tasks on a common board. Messages and task state survive crashes, reloads, and interruptions, so a teammate that was offline receives its queued messages when it resumes. It provides no tools of its own — mount the sibling `gnk-tool-agent-team` so the model can create teammates, message them, and use the task board. It ships with the gnk release family, mounts only through the opt-in [`gnk-agent-team-profile`](../../bundle/agent-team-profile/README.md) layer, and needs durable session storage to activate.
+`gnk-agent-team` turns one coding session into a small working team: the session's agent becomes the Lead, creates named teammates for delegated work, exchanges durable messages with them, and tracks shared tasks on a common board. Messages and task state survive crashes, reloads, and interruptions, so a teammate that was offline receives its queued messages when it resumes. It provides no tools of its own — mount the sibling `gnk-tool-agent-team` so the model can create teammates, message them, and use the task board. It ships with the gnk release family, mounts only through the opt-in [`gnk-agent-team-profile`](../../bundle/agent-team-profile/README.md) layer, and needs durable session storage to activate. The package also exports a lane worktree manager that creates one git checkout per writable lane; no mounted plugin calls it yet.
 
 ## Table of Contents
 
@@ -77,6 +77,20 @@ Tasks have an owner: a member claims a task to start work, completes it when don
 
 File hints produce warnings when two in-progress tasks plan to touch overlapping paths — they never block anything. Deleted tasks remain in history but disappear from the active list.
 
+### Lane worktrees
+
+`WorktreeManager` gives each writable lane its own checkout, so two lanes can change the same relative path without observing each other. It is a library, not a mounted service: construct it with the repository root and the harness home, then call it from the code that starts and stops lanes.
+
+| Operation | Result |
+|---|---|
+| `create({ sessionId, lane, signal })` | Creates `<gnkHome>/worktrees/<sessionId>/<lane>` from the repository's current `HEAD` on branch `gnk-lane/<sessionId>/<lane>`; returns the canonical checkout path, the branch, and the recorded base revision |
+| `list({ sessionId, signal })` | Reports the live lanes of one Session with their base revisions, ordered by lane name |
+| `remove({ sessionId, lane, signal })` | Deletes the checkout, its git registration, and its branch; removing a lane that is already absent succeeds |
+
+A Session id and a lane name must each be one path segment of letters, digits, `.`, `_`, or `-`, at most 64 characters, without `..`, a trailing `.`, or a `.lock` suffix. The manager resolves the Session directory through `realpath` and refuses one that resolves outside `<gnkHome>/worktrees`, so `..`, an absolute lane name, and a symlinked Session directory all fail with `WORKTREE_PATH_ESCAPE`. Creating a lane whose checkout path or branch already exists fails with `WORKTREE_EXISTS`; a root that is not a git repository fails with `WORKTREE_NOT_A_REPOSITORY`, and a repository without a commit fails with `WORKTREE_NO_BASE_REVISION`.
+
+The manager owns the lane branch and never advances it; lane work stays uncommitted, so the checkout's `HEAD` stays the recorded base revision the Lead reviews against. It never checks out, resets, cleans, or deletes any other ref, so the repository's primary checkout is not touched. `remove()` unlinks a link planted at the lane path instead of descending through it, and reports `WORKTREE_REMOVE_INCOMPLETE` naming the checkout or branch that survived.
+
 ### Waiting and interruption
 
 A member can wait for the next team change — a teammate's status, an incoming message, or a task update — instead of polling repeatedly; the wait reports only whether it timed out, and the caller re-reads the current state afterward.
@@ -116,6 +130,7 @@ The [Agent Teams Agent Note](../../../.agents/notes/implemented/feature/2026-08-
 | [`src/roster.ts`](src/roster.ts) | Team identity, membership resolution, provisioning, and roster teardown |
 | [`src/mailbox.ts`](src/mailbox.ts) | Durable queue, target-local dispatch, acknowledgement, and recovery |
 | [`src/task-board.ts`](src/task-board.ts) | Task CAS commands, DAG validation, and derived views |
+| [`src/worktrees.ts`](src/worktrees.ts) | Lane checkout creation, listing, and removal below `<gnkHome>/worktrees` |
 | [`src/journal.ts`](src/journal.ts) | Serialized Lead-log transactions and commit notification |
 | [`src/projection.ts`](src/projection.ts) | Strict replay projection that decodes and validates Team events |
 | [`src/activity.ts`](src/activity.ts) | One-shot change waiters and disposal release |
@@ -194,7 +209,8 @@ Peer messages append after the target's reusable history prefix. Cold resume reu
 These limits describe what a team cannot do yet or what needs special operational care. They are current package constraints, not a comparison with other coordination mechanisms.
 
 - **Opt-in composition** — no shipped default profile mounts this package; a profile applies it through [`gnk-agent-team-profile`](../../bundle/agent-team-profile/README.md).
-- **One process and one shared checkout** — members share cwd and observe edits immediately; this package provides no worktree, remote member, merge, or filesystem lock.
+- **One process, one shared checkout** — every live member runs in the Lead's checkout; the lane worktree manager is not wired into lane start, review, merge, or cleanup, so lanes have no isolation until that wiring lands. Cross-process coordination, remote members, merging, and filesystem locks are not provided.
+- **Direct git execution by default** — the subprocess capability is a Cordis service (`ctx.subprocess`), while the worktree module is a Cordis-free library with no Context; naming that service would add a package dependency and project reference for a type the module cannot reach. Its default runner therefore starts the host `git` with `node:child_process.execFile`: argv arrays, the caller's `AbortSignal`, a 1 MiB stdout bound, and the host environment plus `GIT_OPTIONAL_LOCKS=0` and `GIT_TERMINAL_PROMPT=0`. A composition that owns the service passes `runGit` to spawn git through `ctx.subprocess`, which is what puts git in the configured execution world and applies the seam's credential scrub.
 - **Advisory write scopes** — Bash, formatters, code generators, and direct external writers can bypass filesystem version checks; Leads must coordinate ownership and review the final diff.
 - **Flat immutable roster** — only the Lead creates direct teammates; there is no nested Team, rename, deletion, or name reuse.
 - **No automatic ownership release** — idle, interruption, process exit, and failed work do not release a task owner.
@@ -214,6 +230,6 @@ Promoted on 2026-10-25 to [`packages/subagent/agent-team`](../README.md) with it
 
 #### Future directions
 
-Undecided directions include nested Teams, automatic ownership release policies, cross-process mailbox transactions, and filesystem isolation via worktrees; none of these are committed.
+Undecided directions include nested Teams, automatic ownership release policies, and cross-process mailbox transactions.
 
 </details>

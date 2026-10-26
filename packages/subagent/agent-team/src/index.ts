@@ -34,6 +34,16 @@ export type * from './types.ts'
 export type { TeamMembership } from './roster.ts'
 export { TeamId, TeamMessageId, TeamTaskId } from './types.ts'
 export { TeamError } from './error.ts'
+export { GitRevision, WorktreeError, WorktreeManager } from './worktrees.ts'
+export type {
+  LaneWorktree,
+  LaneWorktreeListRequest,
+  LaneWorktreeRequest,
+  WorktreeErrorCode,
+  WorktreeGitInvocation,
+  WorktreeGitRunner,
+  WorktreeManagerOptions,
+} from './worktrees.ts'
 
 declare module '@greeneek/cordis' {
   interface Context {

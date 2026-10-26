@@ -7,7 +7,7 @@ kind: "package-reference"
 
 ## Summary
 
-`gnk-craft-local` provides the local host adapter for `@greeneek/gnk-craft`: it inspects local ArtCraft Launcher installation manifests across platforms (Windows `%LOCALAPPDATA%`, macOS `Application Support`, Linux `~/.local/share`), scans the Windows registry (`HKLM\Software\<App>\InstallDir`) for MSI installations, verifies CLI executable stems with absolute paths, and spawns headless MCP sessions over `ctx.subprocess`. Spawns require a per-launch control token file written under the confined job directory. This package provides no model-facing tools of its own.
+`gnk-craft-local` provides the local host adapter for `@greeneek/gnk-craft`: it inspects local ArtCraft Launcher installation manifests across platforms (Windows `%LOCALAPPDATA%`, macOS `Application Support`, Linux `~/.local/share`), scans the Windows registry (`HKLM\Software\<App>\InstallDir`) for MSI installations, verifies CLI executable stems with absolute paths, and spawns headless `serve` sessions over `ctx.subprocess`. The argument vector comes from the manifest's `launch.headless` template; spawns require a per-launch control token file written under the confined job directory. This package provides no model-facing tools of its own.
 
 ## Table of Contents
 
@@ -53,11 +53,12 @@ The provider strictly rejects bare executables on the ambient system `PATH`: onl
 <details>
 <summary>Implementation internals — click to expand</summary>
 
-The provider implements `CraftHostProvider` and registers on `ctx.craft`. During `discover(app)`, it checks launcher JSON manifests and Windows registry entries, mapping historical application aliases (`printcraft` -> `pdfcraft`). During `open(request)`, it verifies the control token, creates the confined job root, and launches the headless CLI with piped stdio. The returned session wraps a `JsonRpcCraftTransport` that speaks JSON-RPC 2.0 to the headless application process.
+The provider implements `CraftHostProvider` and registers on `ctx.craft`. During `discover(app)`, it checks launcher JSON manifests and Windows registry entries, mapping historical application aliases (`printcraft` -> `pdfcraft`). During `open(request)`, it verifies the control token, expands the manifest's `launch.headless` template into argv — `{cli}`, `{readRoot}`, `{writeRoot}`, and `{controlTokenFile}` are the only placeholders, `{cli}` must open the template, and a template that omits a root or the token file is refused before the token file is written — then creates the confined job root and launches the CLI with piped stdio. The returned session wraps a `JsonRpcCraftTransport` that speaks newline-framed JSON to the headless application process.
 
 | File | Role |
 |---|---|
 | [`src/provider.ts`](src/provider.ts) | `CraftLocalProvider` implementation |
+| [`src/launch.ts`](src/launch.ts) | Headless launch-template expansion and refusal |
 | [`src/discovery.ts`](src/discovery.ts) | Cross-platform manifest and registry discovery |
 | [`src/transport.ts`](src/transport.ts) | JSON-RPC 2.0 frame transport over piped stdio |
 | [`src/platform.ts`](src/platform.ts) | Platform executable naming and path resolution |
@@ -91,7 +92,8 @@ None of its own; the provider plane is host-only and the tool consumer owns the 
 
 <a id="known-limitations-and-deferred-work"></a>
 
-- **Connected GUI mode** — Desktop GUI launching with `--control` loopback is marked desktop-only; live attach is gated.
+- **Connected GUI mode** — Desktop GUI launching with `--control` loopback is marked desktop-only; live attach is gated. `launch.connected` stays display data: the connected argv is fixed in this provider.
+- **Catalog projection** — `JsonRpcCraftTransport.listTools` sends the manifest's `headless.listMethod` and requires an MCP-style `{ tools: [...] }` result, and `callTool` requires a `{ content: [...] }` result. The `serve` server answers method-shaped results (`methods` returns method names, `engine.commands` returns the command registry) and rejects `command_list`, so a session's first catalog call fails until the projection is redone.
 - **Auto-installation** — Does not invoke external installers automatically; missing applications must be installed by the user via ArtCraft Launcher.
 
 <a id="dev-note"></a>

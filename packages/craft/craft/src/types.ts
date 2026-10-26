@@ -18,9 +18,14 @@ export interface CraftManifestSource {
   readonly verified: boolean
 }
 
-/** Launch commands documented for one app. Display/reference data, never shell-interpreted by the bridge. */
+/** Launch commands documented for one app. Headless is expanded into argv by the local provider; connected stays display data. */
 export interface CraftLaunchTemplates {
-  /** Headless CLI invocation template. */
+  /**
+   * Headless invocation template. `{cli}`, `{readRoot}`, `{writeRoot}`, and
+   * `{controlTokenFile}` are the only placeholders, `{cli}` must open the
+   * template, and the local provider refuses a template that omits a root or
+   * the token file.
+   */
   readonly headless: string
   /** GUI invocation template used by "Launch Connected". */
   readonly connected: string

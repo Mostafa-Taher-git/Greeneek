@@ -21,7 +21,7 @@ Greeneek Desktop is an installable Electron shell that hosts the existing Greene
 
 ## Packaging
 
-`pnpm --filter @greeneek/desktop run dist:linux` stages the app and builds Linux artifacts. `dist:win` builds Windows artifacts. Release workflows in `.github/workflows/desktop.yml` and `.github/workflows/desktop-windows.yml` publish tagged builds to GitHub Releases with `-latest-` aliases.
+`pnpm --filter @greeneek/desktop run dist:linux` stages the app and builds Linux artifacts. `dist:win` builds Windows artifacts. `.github/workflows/release-desktop.yml` builds both platforms on a `desktop-*` tag and publishes one GitHub Release with `-latest-` aliases.
 
 ## Safe mode
 

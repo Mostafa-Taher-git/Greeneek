@@ -41,4 +41,4 @@ pnpm --filter @greeneek/desktop run test
 
 ## Release
 
-Tag format: `desktop-v0.1.0`. The `desktop.yml` and `desktop-windows.yml` workflows build Linux `.deb` + `AppImage` and Windows NSIS + ZIP, upload artifacts, and create a GitHub Release with `-latest-` aliases.
+Tag format: `desktop-v0.1.0`. The `release-desktop.yml` workflow builds Linux `.deb` + `AppImage` and Windows NSIS + ZIP, then publishes one GitHub Release with `-latest-` aliases.

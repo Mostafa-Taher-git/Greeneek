@@ -57,7 +57,10 @@
       // The api/ folder is role-named without the api- prefix its npm names carry,
       // so the authorization controller stays hand-written like its siblings above.
       "@greeneek/gnk-api-authorization-controller": ["./packages/api/authorization-controller/src/index.ts"],
-      "@greeneek/gnk-api-authorization-controller/types": ["./packages/api/authorization-controller/src/types.ts"],
+      // This package owns no client project to redirect its source through, so its
+      // `/types` subpath maps to the built declaration: a source alias would enter
+      // every client program as a foreign rootDir file and emit beside the source.
+      "@greeneek/gnk-api-authorization-controller/types": ["./packages/api/authorization-controller/lib/types/types.d.ts"],
       "@greeneek/gnk-typert-protocol": ["./packages/typert/protocol/src/index.ts"],
       "@greeneek/gnk-typert-protocol/types": ["./packages/typert/protocol/src/types.ts"],
       "@greeneek/gnk-typert-loader": ["./packages/typert/loader/src/index.ts"],

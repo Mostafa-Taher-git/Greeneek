@@ -27,8 +27,7 @@ const originalProbe = process.env[PROBE_NAME]
 const roots: string[] = []
 const gnkBuildWorkflows = [
   'ci.yml',
-  'desktop-windows.yml',
-  'desktop.yml',
+  'release-desktop.yml',
 ]
 
 afterEach(() => {

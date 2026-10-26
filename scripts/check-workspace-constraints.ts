@@ -65,7 +65,7 @@ const experimentalPackageNamePrefix = '@greeneek/gnk-experimental-'
  * no `publishConfig`.
  */
 export const DEPLOYMENT_ROOT_DIRECTORIES: Readonly<Record<string, string>> = {
-  'apps/desktop': 'electron-builder installers published to GitHub Releases from `desktop-v<semver>` tags (.github/workflows/desktop.yml), which stamp the manifest version from the tag rather than following the gnk family version.',
+  'apps/desktop': 'electron-builder installers published to GitHub Releases from `desktop-v<semver>` tags (.github/workflows/release-desktop.yml), which stamp the manifest version from the tag rather than following the gnk family version.',
   'apps/landing': 'Static marketing site built by Vercel from the apps/landing root (apps/landing/README.md); its `dist/index.html` is deployment output, never an npm payload.',
 }
 /** Directories whose packages this repository publishes: one release member each. */

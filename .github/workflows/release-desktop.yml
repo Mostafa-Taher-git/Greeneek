@@ -61,19 +61,25 @@ jobs:
             fi
             # The commit must carry the repository's own CI result, not only an
             # unrelated bot check.
-            if [ "$(jq '[.[] | select(.name | test("^ci( \\(|$)"))] | length' <<<"$report")" -eq 0 ]; then
+            ci=$(jq '[.[] | select(.name | test("^ci( \\(|$)"))]' <<<"$report")
+            if [ "$(jq 'length' <<<"$ci")" -eq 0 ]; then
               echo "Refusing to publish: $sha has no ci workflow result." >&2
               exit 1
             fi
-            failed=$(jq '[.[] | select(.status == "completed" and .conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral")]' <<<"$report")
+            # Scope the verdict to the repository's CI workflow. Check runs from
+            # other apps are not release gates, and a failed attempt by an older
+            # or since-deleted release workflow must not block a fresh dispatch —
+            # this run's own platform builds are enforced by the publish job's
+            # needs. Only a red or pending ci result refuses here.
+            failed=$(jq '[.[] | select(.status == "completed" and .conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral")]' <<<"$ci")
             if [ "$(jq 'length' <<<"$failed")" -gt 0 ]; then
               echo "Refusing to publish: required checks are not green on $sha" >&2
               jq -r '.[] | "  \(.name): \(.conclusion)"' <<<"$failed" >&2
               exit 1
             fi
-            pending=$(jq '[.[] | select(.status != "completed")] | length' <<<"$report")
+            pending=$(jq '[.[] | select(.status != "completed")] | length' <<<"$ci")
             if [ "$pending" -eq 0 ]; then
-              echo "All $total check run(s) on $sha are green."
+              echo "All $(jq 'length' <<<"$ci") CI check run(s) on $sha are green."
               exit 0
             fi
             if [ "$(date +%s)" -ge "$deadline" ]; then

@@ -115,6 +115,16 @@ jobs:
       # shape, so a malformed tag fails here instead of shipping a bad version.
       - if: startsWith(needs.gate.outputs.ref, 'desktop-v')
         run: node apps/desktop/scripts/stamp-version.mjs "${{ needs.gate.outputs.ref }}"
+      # Tags before desktop-v0.3.5 did not run `stage.mjs` inside `dist:*`; the
+      # old two-workflow pipeline staged in its own step. A dispatched release
+      # builds the tag's own tree, so stage here when that tree's dist scripts
+      # do not. Newer trees stage themselves and skip this.
+      - name: Stage the desktop app when the tag tree does not
+        shell: bash
+        run: |
+          if [ ! -f apps/desktop/.staging/app/package.json ]; then
+            pnpm --filter @greeneek/desktop run stage
+          fi
       - run: pnpm --filter @greeneek/desktop run dist:linux
       - name: Drop builder diagnostics from the release set
         run: rm -f apps/desktop/.staging/app/dist/builder-debug.yml apps/desktop/.staging/app/dist/builder-effective-config.yaml
@@ -178,6 +188,13 @@ jobs:
         run: pnpm --filter @greeneek/gnk-craft-local run smoke:discovery
       - if: startsWith(needs.gate.outputs.ref, 'desktop-v')
         run: node apps/desktop/scripts/stamp-version.mjs "${{ needs.gate.outputs.ref }}"
+      # See the linux job: pre-desktop-v0.3.5 trees need staging before dist.
+      - name: Stage the desktop app when the tag tree does not
+        shell: bash
+        run: |
+          if [ ! -f apps/desktop/.staging/app/package.json ]; then
+            pnpm --filter @greeneek/desktop run stage
+          fi
       - run: pnpm --filter @greeneek/desktop run dist:win
       - name: Drop builder diagnostics from the release set
         shell: pwsh

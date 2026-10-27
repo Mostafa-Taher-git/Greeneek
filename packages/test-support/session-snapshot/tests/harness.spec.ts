@@ -934,6 +934,35 @@ describe('runScenario', () => {
     )).rejects.toThrow(/did not persist turn\/end within 1ms/)
   })
 
+  it('keeps every migrated budget message in a one-millisecond window', { timeout: 30_000 }, async () => {
+    // The subagent, goal, and inbox waits used vi.waitFor too, so a slow first
+    // harvest replaced "which record is missing" with Vitest's generic
+    // "Timed out in waitFor!" text. One millisecond loses to the first harvest
+    // on every platform, so the assertion must still name the record.
+    const cases: Array<{ step: InputStep; message: RegExp }> = [
+      {
+        step: { op: 'waitForSubagentTurnEnd', timeoutMs: 1 },
+        message: /subagent child #1 did not persist closed turn 1 within 1ms/,
+      },
+      {
+        step: { op: 'waitForGoalPhase', phase: 'blocked', timeoutMs: 1 },
+        message: /did not persist goal phase "blocked" within 1ms/,
+      },
+      {
+        step: { op: 'waitForInboxMessage', text: 'missing', timeoutMs: 1 },
+        message: /did not persist expected inbox message within 1ms/,
+      },
+    ]
+
+    for (const { step, message } of cases) {
+      const missing = await scenario({})
+      await expect(runScenario(
+        { steps: [...boot, step] },
+        { agent: AGENT, mode: 'replay', fixtureFile: missing.fixtureFile },
+      )).rejects.toThrow(message)
+    }
+  })
+
   it('waitForGoalPhase requires the requested durable goal phase', { timeout: 20_000 }, async () => {
     const reached = await scenario({
       prompt: 'hang-until-cancel',

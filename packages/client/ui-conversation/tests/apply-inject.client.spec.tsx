@@ -14,11 +14,16 @@ import {
 import type { SessionId } from '@greeneek/gnk-session/types'
 import type { WorkspaceId } from '@greeneek/gnk-workspace/types'
 import { createConversationStore } from '../src/client/stores.ts'
-import { RemoteError } from '@greeneek/gnk-client-test-runtime'
+import { RemoteError, TestRemote } from '@greeneek/gnk-client-test-runtime'
 
 usePinnedBrowserLanguages('zh-CN')
 
 const ROOT = 'root-1' as SessionId
+
+/** What the scripted `remote.session.presentCodeTools` next answers. */
+type PresentResponse =
+  | { ok: true; value: { presentAs: 'both' } }
+  | { ok: false; error: RemoteError }
 
 type ConversationInstance = ReturnType<ReturnType<typeof createConversationStore>['create']>
 type ConversationActions = ConversationInstance['actions']
@@ -36,6 +41,13 @@ async function bench() {
   runtime.ctx.provide('settingsScope', { bind: () => stubSettingsScope().scope } as never)
   const connectWorkspace = vi.fn(async () => ROOT)
   runtime.ctx.provide('uiWorkspace', { connectWorkspace } as never)
+  // The code tools chip's opt-in remote, scripted over the test double (it
+  // provides 'remote' and 'remote.session' together).
+  let presentResponse: PresentResponse = { ok: true, value: { presentAs: 'both' } }
+  const presented = vi.fn<(request: { sessionId: SessionId }) => Promise<PresentResponse>>(
+    _request => Promise.resolve({ ...presentResponse }),
+  )
+  new TestRemote(runtime.ctx, { session: { presentCodeTools: presented } })
   const sessionFake = sessionFakeFor()
   await runtime.sessions.add({
     id: ROOT,
@@ -87,7 +99,8 @@ async function bench() {
     conversationApi(id).injected.hooks.conversationViews
   return {
     runtime, feature, slots: runtime.slots, entryOf, conversationApi, headerApi, residentApi, composerApi,
-    inputApi, viewSource, sessionFake, connectWorkspace,
+    inputApi, viewSource, sessionFake, connectWorkspace, presented,
+    setPresent: (response: PresentResponse) => { presentResponse = response },
   }
 }
 
@@ -224,6 +237,7 @@ describe('Conversation inject API', () => {
     const absent = injectBar(undefined)
     expect(absent.keyboard).toBeUndefined()
     expect(absent.stop).toBeUndefined()
+    expect(absent.presentCodeTools).toBeUndefined()
     expect(absent.hooks.notices.getSnapshot()).toBeNull()
     expect(absent.hooks.lexicon.getSnapshot().size).toBe(0)
     expect(absent.hooks.menuLauncher.getSnapshot()).toBeNull()
@@ -231,6 +245,28 @@ describe('Conversation inject API', () => {
     const stop = injectBar(ROOT).stop!
     await b.feature.dispose()
     expect(() => { stop() }).toThrow(/unavailable through the session scope/)
+    await b.runtime.dispose()
+  })
+
+  it('exposes the code tools opt-in face through the scripted session remote', async () => {
+    const b = await bench()
+    const face = b.composerApi(ROOT).presentCodeTools
+    expect(face).toBeTypeOf('function')
+    await expect(face!()).resolves.toEqual({ ok: true })
+    expect(b.presented).toHaveBeenCalledTimes(1)
+    expect(b.presented).toHaveBeenCalledWith({ sessionId: ROOT })
+    await b.runtime.dispose()
+  })
+
+  it('maps the wire refusal codes onto the chip reason set', async () => {
+    const b = await bench()
+    const face = b.composerApi(ROOT).presentCodeTools!
+    b.setPresent({ ok: false, error: new RemoteError('tool/presentation-locked', 'locked up', { sessionId: ROOT }) })
+    await expect(face()).resolves.toEqual({ ok: false, reason: 'locked', detail: 'locked up' })
+    b.setPresent({ ok: false, error: new RemoteError('tool/code-runtime-required', 'no runtime', { sessionId: ROOT }) })
+    await expect(face()).resolves.toEqual({ ok: false, reason: 'runtime-required', detail: 'no runtime' })
+    b.setPresent({ ok: false, error: new RemoteError('session/not-found', 'gone', { sessionId: ROOT }) })
+    await expect(face()).resolves.toEqual({ ok: false, reason: 'unavailable', detail: 'gone (session/not-found)' })
     await b.runtime.dispose()
   })
 

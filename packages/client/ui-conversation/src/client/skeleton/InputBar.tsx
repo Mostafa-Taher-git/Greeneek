@@ -33,6 +33,7 @@ import { ComposerContentEditable } from '../input/editor/ComposerContentEditable
 import { DecoratorPortals } from '../input/editor/DecoratorPortals.tsx'
 import { registerComposerKeymap } from '../input/editor/keymap.ts'
 import { attachmentErrorText, imageSizeText } from '../image-labels.ts'
+import { CodeToolsSelect } from './CodeToolsSelect.tsx'
 import { ContextMeter } from './ContextMeter.tsx'
 import { PermissionSelect } from './PermissionSelect.tsx'
 import css from './InputBar.module.css'
@@ -41,7 +42,7 @@ export type InputBarProps = ComposerBarProps
 
 export const InputBar = memo(function InputBar({
   useSession, useInput, inputActions, keyboard, addImages, removeImage, draftImages,
-  resolveSubmitMode, stop, command, t,
+  resolveSubmitMode, stop, command, presentCodeTools, t,
   renderSlot, useNotices, useLexicon, useMenuLauncher,
   useProjection, sessionId, variant, disabled: inert = false, blocked,
   workspacePickerOpen = false, onRequestWorkspace,
@@ -107,6 +108,9 @@ export const InputBar = memo(function InputBar({
   // The Access seat's data: the host-computed permissions projection
   // (undefined = capability absent → the chip renders nothing).
   const permissions = useProjection('permissions')
+  // The code tools chip's data: the folded session presentation (undefined =
+  // nothing landed yet → the chip renders nothing at all).
+  const presentAs = useProjection('presentAs')
 
   // A continuable child without its live parent cannot accept human input,
   // but its independent Stop below stays available while it runs.
@@ -328,6 +332,21 @@ export const InputBar = memo(function InputBar({
     ? null
     : <PermissionSelect key={sessionId} value={permissions} locked={locked} command={command} t={t} />
 
+  // The code tools opt-in chip: the bar answers the opt-in remote directly
+  // (face present with the Session; hidden until a projection baseline
+  // lands). Sibling of the Access chip, never a seat.
+  const codeToolsSelect: ReactNode = presentCodeTools === undefined
+    ? null
+    : (
+      <CodeToolsSelect
+        presentAs={presentAs}
+        presentCodeTools={presentCodeTools}
+        showToast={showToast}
+        locked={locked}
+        t={t}
+      />
+    )
+
   // Claim ghost hint: rendered by CSS as generated content after the last
   // paragraph while the claim's args are blank (a hint implies a single-line
   // token draft). The translated per-command hint wins over the claim's own.
@@ -436,6 +455,7 @@ export const InputBar = memo(function InputBar({
           <div className={css.tools}>
             <div className={css.modes}>
               {accessSelect}
+              {codeToolsSelect}
               {sessionId === undefined ? null : renderSlot('conversation.input.plan', { locked })}
             </div>
             {input === undefined || sessionId === undefined

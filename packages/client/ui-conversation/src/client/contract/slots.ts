@@ -276,6 +276,22 @@ export interface ComposerBarOwnerProps {
   accessory?: ReactNode
 }
 
+/**
+ * One composer code-tools opt-in call's outcome, with the wire failures
+ * pre-mapped to the chip's reason set: `runtime-required` (no code runtime
+ * composed for the Session's Agent), `locked` (the session presentation
+ * lock refused the late declaration), and `unavailable` (the Session cannot
+ * act — a ghost id, a gone binding, or any other refusal).
+ */
+export type PresentCodeToolsResult =
+  | { readonly ok: true }
+  | {
+    readonly ok: false
+    readonly reason: 'unavailable' | 'runtime-required' | 'locked'
+    /** The host's own failure message; the chip renders product copy instead. */
+    readonly detail: string
+  }
+
 /** Package-private operations injected into the resident composer bar. */
 export interface ComposerBarInjected {
   keyboard: ComposerKeyboard | undefined
@@ -289,6 +305,7 @@ export interface ComposerBarInjected {
   ) => InputSubmitMode
   stop: (() => void) | undefined
   command: ((line: string) => Promise<boolean>) | undefined
+  presentCodeTools: (() => Promise<PresentCodeToolsResult>) | undefined
   hooks: {
     notices: ObservableSnapshot<InputNotice | null>
     lexicon: ObservableSnapshot<ReadonlyMap<'/' | '@', readonly string[]>>

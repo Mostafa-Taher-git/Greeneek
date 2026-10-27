@@ -7,7 +7,7 @@ import { LocaleRuntime } from '@greeneek/gnk-client-locale/client'
 import type { ISession } from '@greeneek/gnk-api-session-controller/client'
 import type { PropsRenderSlots } from '@greeneek/gnk-client-ui-slots'
 import {
-  RemoteError, SlotTestRuntime, usePinnedBrowserLanguages, stubSettingsScope,
+  RemoteError, SlotTestRuntime, TestRemote, usePinnedBrowserLanguages, stubSettingsScope,
 } from '@greeneek/gnk-client-test-runtime'
 import { InputHub } from '../src/client/input/hub.ts'
 import { apply, inject, type EmptyWorkspaceOwnerProps } from '@greeneek/gnk-client-ui-conversation/client'
@@ -60,6 +60,9 @@ function WorkspaceProbe({ open }: EmptyWorkspaceOwnerProps) {
 
 async function bench(opts?: { blank?: boolean }) {
   const runtime = await SlotTestRuntime.create()
+  // The Conversation plugin requires the remote namespaces: script the opt-in
+  // the code tools chip faces use.
+  new TestRemote(runtime.ctx, { session: { presentCodeTools: () => Promise.resolve({ ok: true }) } })
   runtime.ctx.provide('uiWorkspace', { connectWorkspace: vi.fn(async () => SID) } as never)
   runtime.ctx.provide('settingsScope', { bind: () => stubSettingsScope().scope } as never)
   const locale = new LocaleRuntime(runtime.ctx)
@@ -82,6 +85,9 @@ async function bench(opts?: { blank?: boolean }) {
 describe('resident composer', () => {
   it('renders the locked view state while no session exists at all', async () => {
     const runtime = await SlotTestRuntime.create()
+    // The Conversation plugin requires the remote namespaces: script the opt-in
+    // the code tools chip faces use.
+    new TestRemote(runtime.ctx, { session: { presentCodeTools: () => Promise.resolve({ ok: true }) } })
     runtime.ctx.provide('uiWorkspace', { connectWorkspace: vi.fn(async () => SID) } as never)
     runtime.ctx.provide('settingsScope', { bind: () => stubSettingsScope().scope } as never)
     const locale = new LocaleRuntime(runtime.ctx)
@@ -109,6 +115,9 @@ describe('resident composer', () => {
 
   it('keeps the complete Hero tree mounted when the first Workspace session appears', async () => {
     const runtime = await SlotTestRuntime.create()
+    // The Conversation plugin requires the remote namespaces: script the opt-in
+    // the code tools chip faces use.
+    new TestRemote(runtime.ctx, { session: { presentCodeTools: () => Promise.resolve({ ok: true }) } })
     runtime.ctx.provide('uiWorkspace', { connectWorkspace: vi.fn(async () => SID) } as never)
     runtime.ctx.provide('settingsScope', { bind: () => stubSettingsScope().scope } as never)
     const locale = new LocaleRuntime(runtime.ctx)
@@ -174,6 +183,9 @@ describe('resident composer', () => {
 describe('prompt rejection through the assembled composer', () => {
   it('renders the promptError alert strip and keeps the draft in the machine', async () => {
     const runtime = await SlotTestRuntime.create()
+    // The Conversation plugin requires the remote namespaces: script the opt-in
+    // the code tools chip faces use.
+    new TestRemote(runtime.ctx, { session: { presentCodeTools: () => Promise.resolve({ ok: true }) } })
     runtime.ctx.provide('uiWorkspace', { connectWorkspace: vi.fn(async () => SID) } as never)
     runtime.ctx.provide('settingsScope', { bind: () => stubSettingsScope().scope } as never)
     const locale = new LocaleRuntime(runtime.ctx)

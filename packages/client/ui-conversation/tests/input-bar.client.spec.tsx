@@ -24,7 +24,7 @@ import type { SubmitOutcome } from '../src/client/contract/input.ts'
 import { SessionInputShell } from '../src/client/input/facade.ts'
 import { $replaceDetectSpanWithText, $selectDetectSpan } from '../src/client/input/editor/span-map.ts'
 import type {
-  ComposerAttachment, ComposerAttachmentsOwnerProps,
+  ComposerAttachment, ComposerAttachmentsOwnerProps, PresentCodeToolsResult,
 } from '../src/client/contract/slots.ts'
 import type { DraftAttachmentId } from '../src/client/contract/input.ts'
 import { InputBar } from '../src/client/skeleton/InputBar.tsx'
@@ -55,6 +55,10 @@ interface BenchOptions {
   /** Hot text-ref lexicon (injects a minimal slash stub exposing only lexicon()). */
   lexicon?: ReadonlyMap<'/' | '@', readonly string[]>
   permissions?: { options: { value: string; name: string; description?: string }[]; currentValue: string }
+  /** The `presentAs` projection value the standard-kit useProjection serves. */
+  presentAs?: 'native' | 'ptc' | 'both' | null
+  /** The injected code tools opt-in face (absent = no chip). */
+  presentCodeTools?: () => Promise<PresentCodeToolsResult>
   /** The `imageLimits` projection value (absent = no attachment service). */
   imageLimits?: {
     maxImageBytes: number
@@ -169,7 +173,8 @@ function bench(over?: BenchOptions) {
     useProjection: ((key: string, selector?: (v: unknown) => unknown) =>
       (selector ?? (v => v))(key === 'permissions'
         ? over?.permissions
-        : key === 'plan' ? over?.plan : key === 'imageLimits' ? over?.imageLimits : undefined)),
+        : key === 'plan' ? over?.plan : key === 'presentAs' ? over?.presentAs
+          : key === 'imageLimits' ? over?.imageLimits : undefined)),
     useInput: bindSnapshotSelector(shell.state),
     inputActions: shell.actions,
     keyboard: shell,
@@ -189,6 +194,7 @@ function bench(over?: BenchOptions) {
     useMenuLauncher: bindSnapshotSelector(menuLauncher),
     stop,
     command: over?.command ?? (() => Promise.resolve(true)),
+    presentCodeTools: over?.presentCodeTools,
     // Mirrors the real lookup chain (conversation namespace, then common).
     t: over?.t ?? makeTranslate(zh, commonZh),
     renderSlot,
@@ -1472,5 +1478,96 @@ describe('composer control seats', () => {
     cleanup()
     const live = bench({ running: true, permissions })
     expect((live.view.getByLabelText(/^访问模式/) as HTMLButtonElement).disabled).toBe(false)
+  })
+
+  it('the code tools chip stays hidden before a baseline lands and without its face', () => {
+    const bare = bench()
+    expect(bare.view.container.querySelector('button[aria-label="代码工具"]')).toBeNull()
+    cleanup()
+    const withFace = bench({ presentCodeTools: () => Promise.resolve({ ok: true }) })
+    expect(withFace.view.container.querySelector('button[aria-label="代码工具"]')).toBeNull()
+    cleanup()
+    const withProjection = bench({ presentAs: null })
+    expect(withProjection.view.container.querySelector('button[aria-label="代码工具"]')).toBeNull()
+  })
+
+  it('the code tools chip renders off-state over a baseline; the menu carries the opt-in and the caveat', () => {
+    const { view } = bench({ presentCodeTools: () => Promise.resolve({ ok: true }), presentAs: null })
+    const trigger = view.getByLabelText('代码工具')
+    expect(trigger.getAttribute('title')).toBe('未开启')
+    fireEvent.click(trigger)
+    expect(view.getByRole('menuitem', { name: '为本会话开启代码工具' })).toBeTruthy()
+    expect(view.getByText(zh['input.codeTools.caveat'])).toBeTruthy()
+  })
+
+  it('opting in calls the injected face and closes the menu on acceptance', async () => {
+    const presentCodeTools = vi.fn(() => Promise.resolve({ ok: true as const }))
+    const { view } = bench({ presentCodeTools, presentAs: null })
+    fireEvent.click(view.getByLabelText('代码工具'))
+    fireEvent.click(view.getByRole('menuitem', { name: '为本会话开启代码工具' }))
+    await act(async () => {})
+    expect(presentCodeTools).toHaveBeenCalledTimes(1)
+    expect(presentCodeTools.mock.calls[0]).toEqual([])
+    await act(async () => {})
+    expect(view.queryByRole('menuitem', { name: '为本会话开启代码工具' })).toBeNull()
+  })
+
+  it('toasts both refusal reasons through the bar banner without closing the menu', async () => {
+    let response: PresentCodeToolsResult = { ok: false, reason: 'locked', detail: '' }
+    const presentCodeTools = vi.fn(() => Promise.resolve(response))
+    const { view } = bench({ presentCodeTools, presentAs: null })
+    fireEvent.click(view.getByLabelText('代码工具'))
+    const row = view.getByRole('menuitem', { name: '为本会话开启代码工具' })
+
+    fireEvent.click(row)
+    await act(async () => {})
+    expect(view.getByRole('alert').textContent).toContain('本会话的代码工具声明方式已锁定')
+    expect(view.queryByRole('menuitem', { name: '为本会话开启代码工具' })).not.toBeNull()
+
+    response = { ok: false, reason: 'runtime-required', detail: '' }
+    fireEvent.click(row)
+    await act(async () => {})
+    expect(view.getByRole('alert').textContent).toContain('该会话没有可用的代码运行时')
+  })
+
+  it('leaves an unavailable refusal silent; the session is dropping', async () => {
+    const presentCodeTools = vi.fn(() => Promise.resolve<PresentCodeToolsResult>(
+      { ok: false, reason: 'unavailable', detail: 'gone' },
+    ))
+    const { view } = bench({ presentCodeTools, presentAs: null })
+    fireEvent.click(view.getByLabelText('代码工具'))
+    fireEvent.click(view.getByRole('menuitem', { name: '为本会话开启代码工具' }))
+    await act(async () => {})
+    expect(presentCodeTools).toHaveBeenCalledOnce()
+    expect(view.queryByRole('alert')).toBeNull()
+    expect(view.queryByRole('menuitem', { name: '为本会话开启代码工具' })).not.toBeNull()
+  })
+
+  it('the on-state chip marks enabled, opens to the caveat alone, and offers no action', () => {
+    const presentCodeTools = vi.fn(() => Promise.resolve({ ok: true as const }))
+    const { view } = bench({ presentCodeTools, presentAs: 'both' })
+    const trigger = view.getByLabelText('代码工具')
+    expect(trigger.getAttribute('title')).toBeNull()
+    expect(trigger.textContent).toContain('代码工具')
+    fireEvent.click(trigger)
+    expect(view.getByText(zh['input.codeTools.caveat'])).toBeTruthy()
+    expect(view.queryByRole('menuitem', { name: '为本会话开启代码工具' })).toBeNull()
+    expect(presentCodeTools).not.toHaveBeenCalled()
+  })
+
+  it('disabled locks the code tools chip (running does not)', () => {
+    const { view } = bench({
+      disabled: true,
+      presentCodeTools: () => Promise.resolve({ ok: true }),
+      presentAs: null,
+    })
+    expect((view.getByLabelText('代码工具') as HTMLButtonElement).disabled).toBe(true)
+    cleanup()
+    const live = bench({
+      running: true,
+      presentCodeTools: () => Promise.resolve({ ok: true }),
+      presentAs: null,
+    })
+    expect((live.view.getByLabelText('代码工具') as HTMLButtonElement).disabled).toBe(false)
   })
 })

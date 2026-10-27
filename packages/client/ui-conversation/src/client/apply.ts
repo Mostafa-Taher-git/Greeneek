@@ -44,6 +44,7 @@ declare module '@greeneek/gnk-client-ui-slots' {
 /** Services required by the Conversation plugin. */
 export const inject = [
   'slots', 'sessions', 'uiSession', 'uiWorkspace', 'locale', 'settingsScope',
+  'remote', 'remote.session',
 ]
 
 // Stable no-session sources keep the renderer's observable-hook cache and
@@ -292,6 +293,7 @@ export function apply(ctx: Context): void {
             submissionPolicy.resolve(running, gesture, steeringAvailable),
           stop: undefined,
           command: undefined,
+          presentCodeTools: undefined,
           hooks: {
             notices: ABSENT_NOTICES,
             lexicon: ABSENT_LEXICON,
@@ -333,6 +335,19 @@ export function apply(ctx: Context): void {
           if (session === undefined) return false
           const result = await session.command(line)
           return result.ok && result.value.matched
+        },
+        presentCodeTools: async () => {
+          const response = await ctx.remote.session.presentCodeTools({ sessionId })
+          if (response.ok) return { ok: true as const }
+          const { code } = response.error
+          if (code === 'tool/code-runtime-required') {
+            return { ok: false as const, reason: 'runtime-required' as const, detail: response.error.message }
+          }
+          if (code === 'tool/presentation-locked') {
+            return { ok: false as const, reason: 'locked' as const, detail: response.error.message }
+          }
+          // Ghost ids and any other refusal read the same: cannot act here.
+          return { ok: false as const, reason: 'unavailable' as const, detail: `${response.error.message} (${code})` }
         },
         hooks: {
           notices: shell.notices,

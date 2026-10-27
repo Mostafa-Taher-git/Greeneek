@@ -224,6 +224,11 @@ export class FakeApiClient {
           payload,
           this.onSelectModel(payload),
         ),
+        presentCodeTools: payload => this.record(
+          'session.presentCodeTools',
+          payload,
+          Promise.resolve(ok({ presentAs: 'both' as const })),
+        ),
         rename: payload => this.record('session.rename', payload, this.onRename(payload)),
         fork: payload => this.record('session.fork', payload, this.onFork(payload)),
         prompt: payload => this.record('session.prompt', payload, this.onPrompt(payload)),

@@ -866,6 +866,9 @@ importers:
       '@greeneek/gnk-deque':
         specifier: workspace:^
         version: link:../../util/deque
+      '@greeneek/gnk-tools':
+        specifier: workspace:^
+        version: link:../../core/tools
       '@greeneek/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery

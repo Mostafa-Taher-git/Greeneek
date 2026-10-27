@@ -24,6 +24,7 @@ import {
 } from './list.ts'
 import { buildModelCatalog } from './catalog.ts'
 import { installModelSelectionProjection } from './model-selection-projection.ts'
+import { installToolPresentationProjection } from './presentation.ts'
 import { SessionSkillCatalog } from './skill-catalog.ts'
 import type {
   ModelCatalog,
@@ -44,6 +45,8 @@ import type {
   SessionOpenWorkspacePathValue,
   SessionPage,
   SessionPageRequest,
+  SessionPresentCodeToolsRequest,
+  SessionPresentCodeToolsValue,
   SessionPromptRequest,
   SessionPromptValue,
   SessionRenameRequest,
@@ -123,6 +126,7 @@ export class SessionController extends TypertRemoteService {
   constructor(ctx: Context, config: Config, internals: SessionControllerInternals = {}) {
     super(ctx, 'sessionController', { namespace: 'session' })
     installModelSelectionProjection(ctx)
+    installToolPresentationProjection(ctx)
     this.agents = new ApiSessionAgentController(ctx)
     this.commands = new SessionCommandController(ctx, this.agents, process.cwd())
     this.controlState = new SessionControlController(ctx)
@@ -252,6 +256,18 @@ export class SessionController extends TypertRemoteService {
   @Remote('selectModel')
   selectModel(request: SessionSelectModelRequest): Promise<SessionSelectModelValue> {
     return this.commands.selectModel(request)
+  }
+
+  /**
+   * Opt one Session into the lazy `both` code-tools presentation.
+   * @param request - Session whose presentation the user turns on.
+   * @returns the presentation now declared for the Session's model.
+   */
+  @Remote('presentCodeTools')
+  presentCodeTools(
+    request: SessionPresentCodeToolsRequest,
+  ): Promise<SessionPresentCodeToolsValue> {
+    return this.commands.presentCodeTools(request)
   }
 
   /**

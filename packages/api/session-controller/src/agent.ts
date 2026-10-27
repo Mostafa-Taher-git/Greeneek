@@ -12,6 +12,7 @@ import { ReasoningEffortId } from '@greeneek/gnk-llm'
 import type { Session, SessionId } from '@greeneek/gnk-session'
 import type { SessionInspection } from '@greeneek/gnk-session-persistence'
 import { SessionQueryError, type SessionObservation } from '@greeneek/gnk-session-query'
+import { ToolPresentationLockedError } from '@greeneek/gnk-tools'
 import { RemoteError } from '@greeneek/gnk-typert-protocol'
 import type {} from '@greeneek/gnk-typert-registry'
 import type { ModelSelection } from './types.ts'
@@ -448,7 +449,7 @@ export class ApiSessionAgentController {
     return (await this.ctx.agents.resume({
       resumeSessionId: sessionId,
       agentOptions: await this.agentOptions(),
-      setup: composition.setup,
+      setup: this.composePresentation(composition.setup, this.presentationOf(observation)),
     })).agent
   }
 
@@ -480,7 +481,7 @@ export class ApiSessionAgentController {
         return (await this.ctx.agents.resume({
           resumeSessionId: sessionId,
           agentOptions: await this.agentOptions(),
-          setup: composition.setup,
+          setup: this.composePresentation(composition.setup, this.presentationOf(observation)),
         })).agent
       } catch (error: unknown) {
         if (!(error instanceof SessionQueryError)
@@ -548,6 +549,40 @@ export class ApiSessionAgentController {
   ): void {
     if (requested === undefined || requested === existing) return
     throw new ApiSessionPresetConflict(sessionId, requested, existing)
+  }
+
+  /**
+   * Read the user's presentation opt-in from an all-projections observation.
+   * @param observation - Session observation carrying its projection snapshot.
+   * @returns the opted-in presentation, or undefined when none is recorded.
+   */
+  private presentationOf(observation: SessionObservation): 'both' | undefined {
+    if (observation.projections === undefined) return undefined
+    return observation.projections.values.presentAs === 'both' ? 'both' : undefined
+  }
+
+  /**
+   * Layer the recorded presentation back onto a composition for resume or
+   * re-adoption. The log already records the user's opt-in, so the
+   * re-declaration is silent: it appends nothing, it only re-mounts what the
+   * previous process had declared on the agent's own scope. A composition
+   * that already declared its own presentation meets the presentation lock,
+   * which is the correct answer for a re-declaration — the scope is already
+   * presenting — so that one refusal is left to the lock's turn-1-final rule.
+   * @param setup - the composed setup the presentation applies over.
+   * @param presentation - the recorded presentation, or undefined for no opt-in.
+   * @returns the setup to hand to Agent create or resume.
+   */
+  private composePresentation(setup: AgentSetup, presentation: 'both' | undefined): AgentSetup {
+    if (presentation === undefined) return setup
+    return async (agentCtx: Context) => {
+      await setup(agentCtx)
+      try {
+        agentCtx.tools.presentAs(presentation)
+      } catch (error: unknown) {
+        if (!(error instanceof ToolPresentationLockedError)) throw error
+      }
+    }
   }
 }
 

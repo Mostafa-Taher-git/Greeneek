@@ -73,9 +73,11 @@ declare module '@greeneek/gnk-session/types' {
      * lock answers any later re-declare of the same scope with the typed
      * `PRESENTATION_LOCKED` refusal and logs nothing, so a replayed session
      * holds one winning declaration per scope. Only a declaration belonging
-     * to a session appends: a composition mount has none, so it is silent
-     * there (the persisted composition vocabulary covers it in the plugin
-     * catalog instead). Log-only: `deriveMessages()` ignores it; UIs pair it
+     * to a session appends: the Session Controller's opt-in remote appends it
+     * exactly once when the user turns the presentation on, a composition
+     * mount has none so it stays silent there, and a resumed process
+     * re-declares silently from the recorded projection. Log-only:
+     * `deriveMessages()` ignores it; UIs pair it
      * with the agent's presentation chip for live state and with the
      * `request/header` series the declaration reopens on resume.
      */

@@ -21,6 +21,8 @@ declare module '@greeneek/gnk-session-projection/types' {
     imageLimits: null
     /** Durable model selection already used by a request and still pending for a later request. */
     modelSelection: ModelSelectionProjectionState
+    /** The tool presentation the user opted this Session into, or null when none has. */
+    presentAs: 'native' | 'ptc' | 'both' | null
   }
   interface SessionProjectionMap {
     /** Persisted facts used to summarize a Session without activating it. */
@@ -29,7 +31,21 @@ declare module '@greeneek/gnk-session-projection/types' {
     imageLimits: ImageAttachmentLimits
     /** Durable model selection already used and selected for the next request. */
     modelSelection: ModelSelectionProjection
+    /** The tool presentation the user opted this Session into, or null when none has. */
+    presentAs: 'native' | 'ptc' | 'both' | null
   }
+}
+
+/** Request the user's opt-in of one Session into the lazy code-tools presentation. */
+export interface SessionPresentCodeToolsRequest {
+  /** The Session whose presentation the user turns on. */
+  readonly sessionId: SessionId
+}
+
+/** Result of a successful opt-in: the presentation now visible to the Session's model. */
+export interface SessionPresentCodeToolsValue {
+  /** The presentation declaring the Session's code tools. */
+  readonly presentAs: 'both'
 }
 
 declare module '@greeneek/gnk-session/types' {
@@ -200,6 +216,8 @@ declare module '@greeneek/gnk-typert-protocol' {
       readonly requestedPreset: string
       readonly existingPreset?: string
     }
+    'tool/code-runtime-required': { readonly sessionId: SessionId }
+    'tool/presentation-locked': { readonly sessionId: SessionId }
     'session/attachment-invalid': { readonly reason: string }
     'session/queue-item-not-found': { readonly itemId: MessageId }
     'session/steer-unavailable': { readonly itemId: MessageId }

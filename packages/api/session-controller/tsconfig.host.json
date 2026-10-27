@@ -17,6 +17,7 @@
     "src/history.ts",
     "src/list.ts",
     "src/model-selection-projection.ts",
+    "src/presentation.ts",
     "src/skill-catalog.ts"
   ],
   "references": [

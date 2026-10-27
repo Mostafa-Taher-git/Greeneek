@@ -94,6 +94,7 @@
     "@greeneek/gnk-session-title": "workspace:^",
     "@greeneek/gnk-skill": "workspace:^",
     "@greeneek/gnk-subagent": "workspace:^",
+    "@greeneek/gnk-tools": "workspace:^",
     "@greeneek/gnk-typert-protocol": "workspace:^",
     "@greeneek/gnk-typert-registry": "workspace:^",
     "@greeneek/gnk-util-time": "workspace:^",

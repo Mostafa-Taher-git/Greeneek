@@ -1474,6 +1474,12 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'the normalized selection installed for the Session.',
       },
       {
+        signature: '@Remote(\'presentCodeTools\') presentCodeTools( request: SessionPresentCodeToolsRequest, ): Promise<SessionPresentCodeToolsValue>',
+        description: 'Opt one Session into the lazy `both` code-tools presentation.',
+        parameters: [{ name: 'request', description: 'Session whose presentation the user turns on.' }],
+        returns: 'the presentation now declared for the Session\'s model.',
+      },
+      {
         signature: '@Remote(\'modelCatalog\') modelCatalog(): Promise<ModelCatalog>',
         description: 'Describe every currently routable model for Host-generation selectors.',
         parameters: [],
@@ -5306,6 +5312,14 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'SessionPersistenceStatOptions',
     declaration: 'export interface SessionPersistenceStatOptions {\n    readonly signal?: AbortSignal;\n}',
+  },
+  {
+    name: 'SessionPresentCodeToolsRequest',
+    declaration: 'export interface SessionPresentCodeToolsRequest {\n    readonly sessionId: SessionId;\n}',
+  },
+  {
+    name: 'SessionPresentCodeToolsValue',
+    declaration: 'export interface SessionPresentCodeToolsValue {\n    readonly presentAs: \'both\';\n}',
   },
   {
     name: 'SessionProjectionBaseline',

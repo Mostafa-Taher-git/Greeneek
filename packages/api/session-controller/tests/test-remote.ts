@@ -44,6 +44,8 @@ import type {
   SessionOpenWorkspacePathValue,
   SessionPage,
   SessionPageRequest,
+  SessionPresentCodeToolsRequest,
+  SessionPresentCodeToolsValue,
   SessionPromptRequest,
   SessionPromptValue,
   SessionRenameRequest,
@@ -63,6 +65,9 @@ export interface TestSessionRemote {
   search(request: SessionSearchRequest, signal?: AbortSignal): Promise<RemoteResult<SessionSearchValue>>
   create(request: SessionCreateRequest): Promise<RemoteResult<SessionCreateValue>>
   selectModel(request: SessionSelectModelRequest): Promise<RemoteResult<SessionSelectModelValue>>
+  presentCodeTools(
+    request: SessionPresentCodeToolsRequest,
+  ): Promise<RemoteResult<SessionPresentCodeToolsValue>>
   modelCatalog(): Promise<RemoteResult<ModelCatalog>>
   rename(request: SessionRenameRequest): Promise<RemoteResult<SessionRenameValue>>
   fork(request: SessionForkRequest): Promise<RemoteResult<SessionForkValue>>
@@ -312,6 +317,7 @@ export function createSessionTestRemote(
     ),
     create: request => remoteResult(() => direct.create(request)),
     selectModel: request => remoteResult(() => direct.selectModel(request)),
+    presentCodeTools: request => remoteResult(() => direct.presentCodeTools(request)),
     modelCatalog: () => remoteResult(() => direct.modelCatalog()),
     rename: request => remoteResult(() => direct.rename(request)),
     fork: request => remoteResult(() => direct.fork(request)),

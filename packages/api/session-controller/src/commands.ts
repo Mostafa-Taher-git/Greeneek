@@ -14,6 +14,7 @@ import { SessionLogOffset, SessionSeq } from '@greeneek/gnk-session'
 import type { SessionEvent, SessionHeader, SessionId, UserMessage } from '@greeneek/gnk-session'
 import { SessionQueryError, type SessionObservation } from '@greeneek/gnk-session-query'
 import { SessionTitleInvalidError } from '@greeneek/gnk-session-title'
+import { ToolPresentationLockedError } from '@greeneek/gnk-tools'
 import { canonicalClientTimeZone } from '@greeneek/gnk-util-time'
 import { RemoteError, remoteErrorOf } from '@greeneek/gnk-typert-protocol'
 import type { Workspace } from '@greeneek/gnk-workspace'
@@ -36,6 +37,8 @@ import type {
   SessionCreateValue,
   SessionForkRequest,
   SessionForkValue,
+  SessionPresentCodeToolsRequest,
+  SessionPresentCodeToolsValue,
   SessionPromptRequest,
   SessionPromptValue,
   SessionRenameRequest,
@@ -151,6 +154,56 @@ export class SessionCommandController {
           { provider: request.provider, model: request.model },
         )
       }
+    })
+  }
+
+  /**
+   * Opt one Session into the lazy `both` code-tools presentation.
+   *
+   * The user's opt-in applies once to the live agent's own scope and is
+   * turn-1-final: the presentation lock answers any later declaration of the
+   * same agent scope with the typed `ToolPresentationLockedError`, rethrown
+   * here as `tool/presentation-locked`. The opt-in is never a deployment
+   * default — nothing reads this call to change composition for sessions
+   * that never asked.
+   * @param request - Session identity.
+   * @returns the now-active presentation.
+   */
+  async presentCodeTools(request: SessionPresentCodeToolsRequest): Promise<SessionPresentCodeToolsValue> {
+    const agent = await this.resolveAgent(request.sessionId)
+    // oxlint-disable-next-line typescript/require-await -- the admission contract wants a Promise, but the declaration chain is synchronous
+    return this.agents.serializeImageAdmission(agent, async () => {
+      if (agent.ctx.get('codeRuntime') === undefined) {
+        throw new RemoteError(
+          'tool/code-runtime-required',
+          'presenting code tools requires a composed code runtime; this deployment mounts no `codeRuntime` provider',
+          { sessionId: request.sessionId },
+        )
+      }
+      let dispose: () => void
+      try {
+        dispose = agent.ctx.tools.presentAs('both')
+      } catch (error: unknown) {
+        if (error instanceof ToolPresentationLockedError) {
+          throw new RemoteError(
+            'tool/presentation-locked',
+            error.message,
+            { sessionId: request.sessionId },
+          )
+        }
+        throw error
+      }
+      try {
+        agent.session.append('tool/present-as', { to: 'both' })
+      } catch (error: unknown) {
+        dispose()
+        throw new RemoteError(
+          'gateway/internal',
+          `failed to record the code-tools declaration for session "${request.sessionId}": ${error instanceof Error ? error.message : String(error)}`,
+          {},
+        )
+      }
+      return { presentAs: 'both' }
     })
   }
 

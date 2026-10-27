@@ -714,6 +714,13 @@ inspect( sessionId: SessionId, signal?: AbortSignal, ): Promise<SessionInspectio
 @Remote('selectModel') selectModel(request: SessionSelectModelRequest): Promise<SessionSelectModelValue>
 
 /**
+ * Opt one Session into the lazy `both` code-tools presentation.
+ * @param request - Session whose presentation the user turns on.
+ * @returns the presentation now declared for the Session's model.
+ */
+@Remote('presentCodeTools') presentCodeTools( request: SessionPresentCodeToolsRequest, ): Promise<SessionPresentCodeToolsValue>
+
+/**
  * Describe every currently routable model for Host-generation selectors.
  * @returns provider-grouped models, the deployment default, and isolated provider failures.
  */

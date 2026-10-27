@@ -1,5 +1,8 @@
 version: 2
 
+# Families that must move together. A single-package bump inside any of these
+# leaves the workspace untypeable or unbuildable, so Dependabot opens one PR per
+# family instead of one PR per package.
 updates:
   - package-ecosystem: "npm"
     directory: "/"
@@ -12,9 +15,37 @@ updates:
       timezone: "Asia/Shanghai"
     cooldown:
       default-days: 30
+    groups:
+      lexical:
+        patterns:
+          - "lexical"
+          - "@lexical/*"
+      tailwind:
+        patterns:
+          - "tailwindcss"
+          - "@tailwindcss/*"
+      opentelemetry:
+        patterns:
+          - "@opentelemetry/*"
+      vite:
+        patterns:
+          - "vite"
+          - "@vitejs/*"
+          - "vitest"
+          - "@vitest/*"
+      electron:
+        patterns:
+          - "electron"
+          - "electron-builder"
+          - "electron-log"
+          - "electron-updater"
+          - "@electron/*"
+      pi-ai:
+        patterns:
+          - "@earendil-works/*"
     labels:
-      - "kind/dependency"
-      - "area/infra"
+      - "dependencies"
+      - "build"
 
   - package-ecosystem: "uv"
     directory: "/python/sdk"
@@ -25,8 +56,8 @@ updates:
     cooldown:
       default-days: 30
     labels:
-      - "kind/dependency"
-      - "area/infra"
+      - "dependencies"
+      - "build"
 
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -36,6 +67,12 @@ updates:
       timezone: "Asia/Shanghai"
     cooldown:
       default-days: 30
+    # Action majors are a lockstep contract: a mixed set of checkout/setup-node
+    # majors runs two different Node versions in one workflow.
+    groups:
+      actions:
+        patterns:
+          - "*"
     labels:
-      - "kind/dependency"
-      - "area/infra"
+      - "dependencies"
+      - "build"

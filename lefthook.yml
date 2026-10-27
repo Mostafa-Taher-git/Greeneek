@@ -40,3 +40,18 @@ pre-push:
   jobs:
     - name: typecheck
       run: pnpm run typecheck
+
+    # Full-repository lint, not the staged subset: it catches the rules that
+    # `.oxlintrc.staged.json` deliberately omits before the push reaches CI.
+    - name: lint
+      run: pnpm run lint
+
+    # The same brand contract CI runs, so a residue/egress regression cannot
+    # land on main and break every concurrent pull request.
+    - name: brand sweep
+      run: ./scripts/brand-sweep.sh
+
+    # Generated catalogs are checked in; a surface edit that forgot to
+    # regenerate them fails here instead of poisoning a later dependency PR.
+    - name: generated catalogs
+      run: pnpm run verify-generated-catalogs

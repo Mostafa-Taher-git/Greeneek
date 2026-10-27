@@ -5,6 +5,10 @@ on:
   pull_request:
     branches: [main, master]
 
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
   ci:
     runs-on: ubuntu-latest
@@ -12,27 +16,29 @@ jobs:
       matrix:
         node: [22]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # Gitleaks scans the push range (base^..head); a shallow checkout
           # lacks the base commit and fails the scan without checking anything.
           fetch-depth: 0
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11.7.0
-      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm typecheck
+      - name: Generated catalogs are current
+        run: pnpm run verify-generated-catalogs
       - run: pnpm test -- --coverage --reporter=verbose
         env:
           CI: true
       - run: pnpm build
+      - name: Build the landing app
+        run: pnpm --filter @greeneek/landing run build
       - name: Secret scan (gitleaks)
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: pnpm audit --audit-level=high

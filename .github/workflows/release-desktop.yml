@@ -1,9 +1,16 @@
 name: Desktop release
 
 # One pipeline owns publishing. A tag builds both platforms, then a single
-# publish job needs both artifact sets. The two workflows this replaces each
-# uploaded their own GitHub Release the moment their build finished, so a red
-# CI run on the tagged commit could still ship installers.
+# assemble job proves the checksums and provenance, and one publish job creates
+# the GitHub Release. Two rules keep a bad build from shipping:
+#
+#   1. the release commit must already carry a successful, complete `CI`
+#      workflow run (not just a check run that happens to be named `ci`), and
+#   2. both platform trees must boot from their unpacked artifact before the
+#      release set is assembled.
+#
+# A manual dispatch with `dry_run` runs the same gates and uploads the verified
+# asset set without creating or updating a Release.
 
 on:
   push:
@@ -12,9 +19,14 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Existing desktop-v* tag to build and publish'
+        description: 'Existing desktop-v* tag to build'
         required: true
         type: string
+      dry_run:
+        description: 'Build and verify without creating or updating a GitHub Release'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -25,69 +37,117 @@ concurrency:
 
 jobs:
   gate:
-    name: Required CI on the release commit
+    name: Gate on complete CI for the release commit
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      actions: read
       checks: read
     outputs:
       ref: ${{ steps.resolve.outputs.ref }}
+      version: ${{ steps.resolve.outputs.version }}
+      sha: ${{ steps.resolve.outputs.sha }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.tag || github.ref }}
           fetch-depth: 1
-      - name: Resolve the release ref
+      - name: Resolve and validate the release tag
         id: resolve
         shell: bash
+        env:
+          REQUESTED_REF: ${{ inputs.tag || github.ref_name }}
         run: |
           set -euo pipefail
-          echo "ref=${{ inputs.tag || github.ref_name }}" >> "$GITHUB_OUTPUT"
-      - name: Refuse to publish unless CI is green on this commit
+          ref="$REQUESTED_REF"
+          if [[ ! "$ref" =~ ^desktop-v[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::not a desktop release tag: $ref" >&2
+            exit 1
+          fi
+          sha=$(git rev-parse HEAD)
+          # The tag must still point at the checked-out commit. Tags are never
+          # moved or deleted: a published tag names bytes users installed.
+          if ! tag_sha=$(git rev-parse "$ref^{commit}" 2>/dev/null); then
+            echo "::error::release tag does not resolve: $ref" >&2
+            exit 1
+          fi
+          if [ "$tag_sha" != "$sha" ]; then
+            echo "::error::$ref points at $tag_sha, not the checked-out $sha" >&2
+            exit 1
+          fi
+          {
+            echo "ref=$ref"
+            echo "version=${ref#desktop-v}"
+            echo "sha=$sha"
+          } >> "$GITHUB_OUTPUT"
+      - name: Require a successful complete CI workflow run
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SHA: ${{ steps.resolve.outputs.sha }}
         run: |
           set -euo pipefail
-          sha=$(git rev-parse HEAD)
           deadline=$(( $(date +%s) + 1800 ))
           while :; do
-            report=$(gh api "repos/${{ github.repository }}/commits/$sha/check-runs?per_page=100" \
-              --jq '[.check_runs[] | {name, status, conclusion}]')
-            total=$(jq 'length' <<<"$report")
-            if [ "$total" -eq 0 ]; then
-              echo "Refusing to publish: no check run exists for $sha. Push the release commit to main first." >&2
-              exit 1
-            fi
-            # The commit must carry the repository's own CI result, not only an
-            # unrelated bot check.
-            ci=$(jq '[.[] | select(.name | test("^ci( \\(|$)"))]' <<<"$report")
-            if [ "$(jq 'length' <<<"$ci")" -eq 0 ]; then
-              echo "Refusing to publish: $sha has no ci workflow result." >&2
-              exit 1
-            fi
-            # Scope the verdict to the repository's CI workflow. Check runs from
-            # other apps are not release gates, and a failed attempt by an older
-            # or since-deleted release workflow must not block a fresh dispatch —
-            # this run's own platform builds are enforced by the publish job's
-            # needs. Only a red or pending ci result refuses here.
-            failed=$(jq '[.[] | select(.status == "completed" and .conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral")]' <<<"$ci")
-            if [ "$(jq 'length' <<<"$failed")" -gt 0 ]; then
-              echo "Refusing to publish: required checks are not green on $sha" >&2
-              jq -r '.[] | "  \(.name): \(.conclusion)"' <<<"$failed" >&2
-              exit 1
-            fi
-            pending=$(jq '[.[] | select(.status != "completed")] | length' <<<"$ci")
-            if [ "$pending" -eq 0 ]; then
-              echo "All $(jq 'length' <<<"$ci") CI check run(s) on $sha are green."
+            runs=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$SHA&per_page=100")
+            green=$(jq --arg sha "$SHA" '
+              [.workflow_runs[]
+               | select(.head_sha == $sha
+                        and .event == "push"
+                        and .status == "completed"
+                        and .conclusion == "success")]
+              | length' <<<"$runs")
+            if [ "$green" -gt 0 ]; then
+              url=$(jq -r --arg sha "$SHA" '
+                [.workflow_runs[]
+                 | select(.head_sha == $sha
+                          and .event == "push"
+                          and .status == "completed"
+                          and .conclusion == "success")][0].html_url' <<<"$runs")
+              echo "Complete CI workflow is green on $SHA: $url"
               exit 0
             fi
-            if [ "$(date +%s)" -ge "$deadline" ]; then
-              echo "Timed out waiting for checks on $sha ($pending still running)." >&2
-              exit 1
+            pending=$(jq '[.workflow_runs[] | select(.status != "completed")] | length' <<<"$runs")
+            if [ "$pending" -gt 0 ]; then
+              if [ "$(date +%s)" -ge "$deadline" ]; then
+                echo "::error::timed out waiting for a CI workflow run on $SHA" >&2
+                exit 1
+              fi
+              echo "$pending CI workflow run(s) still pending on $SHA; waiting 30s"
+              sleep 30
+              continue
             fi
-            sleep 30
+            echo "::error::no successful push CI workflow run exists for $SHA; push the release commit to main first" >&2
+            jq -r '.workflow_runs[] | "  \(.event) \(.status)/\(.conclusion // "none") \(.html_url)"' <<<"$runs" >&2
+            exit 1
           done
+      - name: Require no failed CI check run on the release commit
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SHA: ${{ steps.resolve.outputs.sha }}
+        run: |
+          set -euo pipefail
+          report=$(gh api "repos/$GITHUB_REPOSITORY/commits/$SHA/check-runs?per_page=100")
+          failed=$(jq '
+            [.check_runs[]
+             | select(.name | test("^ci( \\(|$)"))
+             | select(.status == "completed"
+                      and .conclusion != "success"
+                      and .conclusion != "skipped"
+                      and .conclusion != "neutral")]
+            | length' <<<"$report")
+          if [ "$failed" -gt 0 ]; then
+            echo "::error::CI reported failed check runs on $SHA" >&2
+            jq -r '.check_runs[]
+              | select(.name | test("^ci( \\(|$)"))
+              | select(.status == "completed"
+                       and .conclusion != "success"
+                       and .conclusion != "skipped"
+                       and .conclusion != "neutral")
+              | "  \(.name): \(.conclusion)"' <<<"$report" >&2
+            exit 1
+          fi
 
   linux:
     name: Linux x64
@@ -97,13 +157,11 @@ jobs:
       contents: read
       actions: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.gate.outputs.ref }}
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11.7.0
-      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
@@ -111,10 +169,7 @@ jobs:
       - run: pnpm build:lib:host
       - run: pnpm build:lib:client
       - run: pnpm build:web
-      # One stamping implementation for both platforms: it validates the tag
-      # shape, so a malformed tag fails here instead of shipping a bad version.
-      - if: startsWith(needs.gate.outputs.ref, 'desktop-v')
-        run: node apps/desktop/scripts/stamp-version.mjs "${{ needs.gate.outputs.ref }}"
+      - run: node apps/desktop/scripts/stamp-version.mjs "${{ needs.gate.outputs.ref }}"
       # Tags before desktop-v0.3.5 did not run `stage.mjs` inside `dist:*`; the
       # old two-workflow pipeline staged in its own step. A dispatched release
       # builds the tag's own tree, so stage here when that tree's dist scripts
@@ -126,6 +181,8 @@ jobs:
             pnpm --filter @greeneek/desktop run stage
           fi
       - run: pnpm --filter @greeneek/desktop run dist:linux
+      - name: Boot the unpacked Linux tree
+        run: node apps/desktop/scripts/smoke-installed.mjs --app-dir apps/desktop/.staging/app/dist/linux-unpacked/resources/app
       - name: Drop builder diagnostics from the release set
         run: rm -f apps/desktop/.staging/app/dist/builder-debug.yml apps/desktop/.staging/app/dist/builder-effective-config.yaml
       - name: Build AppImage zsync metadata
@@ -135,21 +192,18 @@ jobs:
           DIST=apps/desktop/.staging/app/dist
           APPIMAGE=$(ls "$DIST"/Greeneek-Desktop-*-linux-x86_64.AppImage | head -1)
           FILE=$(basename "$APPIMAGE")
-          if [[ "${{ needs.gate.outputs.ref }}" == desktop-* ]]; then REF="${{ needs.gate.outputs.ref }}"; else REF="latest"; fi
-          if [[ "$REF" == "latest" ]]; then URL="https://github.com/${{ github.repository }}/releases/latest/download/$FILE";
-          else URL="https://github.com/${{ github.repository }}/releases/download/$REF/$FILE"; fi
+          URL="https://github.com/${{ github.repository }}/releases/download/${{ needs.gate.outputs.ref }}/$FILE"
           zsyncmake -u "$URL" -o "$DIST/$FILE.zsync" "$APPIMAGE"
           ls "$DIST"/*.zsync
-      - run: node apps/desktop/scripts/prepare-release-assets.mjs --dist .staging/app/dist
-      - if: startsWith(needs.gate.outputs.ref, 'desktop-')
-        run: node apps/desktop/scripts/prepare-release-assets.mjs --dist .staging/app/dist --tag "${{ needs.gate.outputs.ref }}"
+      - name: Prepare stable download aliases
+        run: node apps/desktop/scripts/prepare-release-assets.mjs --dist apps/desktop/.staging/app/dist --tag "${{ needs.gate.outputs.ref }}"
       - name: Assert updater channel files
         shell: bash
         run: |
           ls apps/desktop/.staging/app/dist/latest*.yml
           ls apps/desktop/.staging/app/dist/*.AppImage
           ls apps/desktop/.staging/app/dist/*.zsync
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: linux-desktop-artifacts
           path: |
@@ -169,13 +223,11 @@ jobs:
       contents: read
       actions: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.gate.outputs.ref }}
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11.7.0
-      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
@@ -186,29 +238,33 @@ jobs:
       - name: Smoke Craft discovery against the installed ArtCraft suite
         if: ${{ vars.ARTCRAFT_SMOKE == 'true' }}
         run: pnpm --filter @greeneek/gnk-craft-local run smoke:discovery
-      - if: startsWith(needs.gate.outputs.ref, 'desktop-v')
-        run: node apps/desktop/scripts/stamp-version.mjs "${{ needs.gate.outputs.ref }}"
+      - run: node apps/desktop/scripts/stamp-version.mjs "${{ needs.gate.outputs.ref }}"
       # See the linux job: pre-desktop-v0.3.5 trees need staging before dist.
       - name: Stage the desktop app when the tag tree does not
-        shell: bash
+        shell: pwsh
         run: |
-          if [ ! -f apps/desktop/.staging/app/package.json ]; then
+          if (-not (Test-Path apps/desktop/.staging/app/package.json)) {
             pnpm --filter @greeneek/desktop run stage
-          fi
+          }
       - run: pnpm --filter @greeneek/desktop run dist:win
+      - name: Boot the unpacked Windows tree
+        shell: pwsh
+        run: node apps/desktop/scripts/smoke-installed.mjs --app-dir apps/desktop/.staging/app/dist/win-unpacked/resources/app
       - name: Drop builder diagnostics from the release set
         shell: pwsh
         run: |
           Remove-Item -Force apps/desktop/.staging/app/dist/builder-debug.yml, apps/desktop/.staging/app/dist/builder-effective-config.yaml -ErrorAction SilentlyContinue
+      - name: Prepare stable download aliases
+        shell: pwsh
+        run: node apps/desktop/scripts/prepare-release-assets.mjs --dist apps/desktop/.staging/app/dist --tag "${{ needs.gate.outputs.ref }}"
       - name: Assert updater channel files
-        shell: bash
+        shell: pwsh
         run: |
-          ls apps/desktop/.staging/app/dist/latest*.yml
-          ls apps/desktop/.staging/app/dist/*.blockmap
-      - run: node apps/desktop/scripts/prepare-release-assets.mjs --dist .staging/app/dist
-      - if: startsWith(needs.gate.outputs.ref, 'desktop-')
-        run: node apps/desktop/scripts/prepare-release-assets.mjs --dist .staging/app/dist --tag "${{ needs.gate.outputs.ref }}"
-      - uses: actions/upload-artifact@v4
+          Get-ChildItem apps/desktop/.staging/app/dist/latest*.yml
+          Get-ChildItem apps/desktop/.staging/app/dist/*.exe
+          Get-ChildItem apps/desktop/.staging/app/dist/*.zip
+          Get-ChildItem apps/desktop/.staging/app/dist/*.blockmap
+      - uses: actions/upload-artifact@v7
         with:
           name: windows-desktop-artifacts
           path: |
@@ -219,39 +275,64 @@ jobs:
             apps/desktop/.staging/app/dist/Greeneek-Desktop-latest-*
           retention-days: 14
 
+  assemble:
+    name: Assemble checksums and release manifest
+    needs: [gate, linux, windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.gate.outputs.ref }}
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: '*-desktop-artifacts'
+          path: release-assets
+          merge-multiple: true
+      - name: Write SHA256SUMS and release-manifest.json
+        run: node apps/desktop/scripts/release-manifest.mjs --root release-assets --tag "${{ needs.gate.outputs.ref }}" --sha "${{ needs.gate.outputs.sha }}"
+      - name: Verify every checksum before publishing
+        run: node apps/desktop/scripts/release-manifest.mjs --root release-assets --verify
+      - name: Summarize the release set
+        run: |
+          {
+            echo "### Desktop release ${{ needs.gate.outputs.ref }}"
+            echo ""
+            echo "- commit: \`${{ needs.gate.outputs.sha }}\`"
+            echo "- dry run: \`${{ inputs.dry_run == true }}\`"
+            echo ""
+            echo '```'
+            cat release-assets/SHA256SUMS
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: desktop-release-assets
+          path: release-assets/**
+          retention-days: 14
+
   publish:
     name: Publish one GitHub Release
-    needs: [gate, linux, windows]
+    needs: [gate, assemble]
+    if: ${{ inputs.dry_run != true }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v7
         with:
-          name: linux-desktop-artifacts
-          path: release-assets/linux
-      - uses: actions/download-artifact@v4
+          ref: ${{ needs.gate.outputs.ref }}
+      - uses: actions/download-artifact@v8
         with:
-          name: windows-desktop-artifacts
-          path: release-assets/windows
-      - name: Assert both platforms produced assets
-        shell: bash
-        run: |
-          set -euo pipefail
-          linux=$(find release-assets/linux -type f | wc -l)
-          windows=$(find release-assets/windows -type f | wc -l)
-          echo "linux assets: $linux, windows assets: $windows"
-          if [ "$linux" -eq 0 ] || [ "$windows" -eq 0 ]; then
-            echo "Refusing to publish a partial release." >&2
-            exit 1
-          fi
-      - uses: softprops/action-gh-release@v2
+          name: desktop-release-assets
+          path: release-assets
+      - name: Verify the downloaded release set
+        run: node apps/desktop/scripts/release-manifest.mjs --root release-assets --verify
+      - uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ needs.gate.outputs.ref }}
           name: ${{ needs.gate.outputs.ref }}
           files: |
-            release-assets/linux/*
-            release-assets/windows/*
+            release-assets/*
           fail_on_unmatched_files: true
           generate_release_notes: true
         env:

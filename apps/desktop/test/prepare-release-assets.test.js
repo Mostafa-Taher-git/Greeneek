@@ -4,8 +4,10 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, it } from 'node:test'
 import {
+  parseDesktopVersion,
   prepareReleaseAssets,
   releaseAssetMappings,
+  resolveReleaseTag,
 } from '../scripts/prepare-release-assets.mjs'
 
 const VERSION = '0.9.0'
@@ -59,5 +61,12 @@ describe('prepare-release-assets', () => {
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }
+  })
+
+  it('does not treat GITHUB_REF_NAME=main as a release tag', () => {
+    assert.equal(resolveReleaseTag(undefined, 'main'), '')
+    assert.equal(resolveReleaseTag(undefined, `desktop-v${VERSION}`), `desktop-v${VERSION}`)
+    assert.equal(resolveReleaseTag(`desktop-v${VERSION}`, 'main'), `desktop-v${VERSION}`)
+    assert.equal(parseDesktopVersion(`desktop-v${VERSION}`), VERSION)
   })
 })

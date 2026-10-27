@@ -14,7 +14,29 @@ import { describe, expect, it } from 'vitest'
 const root = resolve(import.meta.dirname, '..')
 
 describe('CI workflow', () => {
-  it('gives the Wine Host TypeScript compile the repository heap budget', () => {
+  const workflow = loadWorkflow('.github/workflows/ci.yml')
+
+  it('uses only Node 24 action majors', () => {
+    for (const use of collectUses(workflow)) assertCurrentActionMajor(use)
+  })
+
+  it('does not pin pnpm twice', () => {
+    for (const step of allSteps(workflow)) {
+      if (step.uses === 'pnpm/action-setup@v6') expect(step.with).toBeUndefined()
+    }
+  })
+
+  it('verifies generated catalogs and the landing build', () => {
+    const runs = allSteps(workflow)
+      .map(step => step.run)
+      .filter((run): run is string => typeof run === 'string')
+      .join('\n')
+
+    expect(runs).toContain('pnpm run verify-generated-catalogs')
+    expect(runs).toContain('pnpm --filter @greeneek/landing run build')
+  })
+
+  it('keeps the Wine Host TypeScript compile the repository heap budget', () => {
     const wineGates = readFileSync(resolve(root, 'scripts/wine-windows-gates.sh'), 'utf8')
 
     expect(wineGates).toContain(
@@ -35,6 +57,74 @@ describe('CI workflow', () => {
 
     expect(config).not.toContain("pool: process.platform === 'win32' ? 'threads' : 'forks'")
     expect(config.match(/pool: 'forks'/g)).toHaveLength(2)
+  })
+})
+
+describe('Desktop release workflow', () => {
+  const workflow = loadWorkflow('.github/workflows/release-desktop.yml')
+
+  it('offers a dry-run dispatch that cannot publish', () => {
+    if (!isRecord(workflow.on)) throw new TypeError('release workflow must define triggers')
+    const dispatch = workflow.on.workflow_dispatch
+    if (!isRecord(dispatch) || !isRecord(dispatch.inputs) || !isRecord(dispatch.inputs.dry_run)) {
+      throw new TypeError('release workflow must define the dry_run dispatch input')
+    }
+
+    expect(dispatch.inputs.tag).toMatchObject({ required: true, type: 'string' })
+    expect(dispatch.inputs.dry_run).toMatchObject({ required: false, default: false, type: 'boolean' })
+    expect(jobNamed(workflow, 'publish').if).toBe('${{ inputs.dry_run != true }}')
+  })
+
+  it('gates on a successful complete CI workflow run', () => {
+    const gate = runText(jobNamed(workflow, 'gate'))
+
+    expect(gate).toContain('actions/workflows/ci.yml/runs')
+    expect(gate).toContain('.event == "push"')
+    expect(gate).toContain('.status == "completed"')
+    expect(gate).toContain('.conclusion == "success"')
+    expect(gate).toContain('no successful push CI workflow run')
+  })
+
+  it('uses only Node 24 action majors', () => {
+    for (const use of collectUses(workflow)) assertCurrentActionMajor(use)
+  })
+
+  it('does not pin pnpm twice', () => {
+    for (const step of allSteps(workflow)) {
+      if (step.uses === 'pnpm/action-setup@v6') expect(step.with).toBeUndefined()
+    }
+  })
+
+  it('serves native pwsh in every Windows shell step', () => {
+    for (const step of jobSteps(workflow, 'windows')) {
+      if (step.shell !== undefined) expect(step.shell).toBe('pwsh')
+    }
+    expect(runText(jobNamed(workflow, 'windows'))).not.toMatch(/\bshell:\s*bash\b/)
+  })
+
+  it('boots the unpacked tree on both platforms before assembling the release', () => {
+    expect(runText(jobNamed(workflow, 'linux'))).toContain('dist/linux-unpacked/resources/app')
+    expect(runText(jobNamed(workflow, 'windows'))).toContain('dist/win-unpacked/resources/app')
+  })
+
+  it('prepares stable aliases once per platform with the resolved tag', () => {
+    for (const name of ['linux', 'windows']) {
+      const runs = jobSteps(workflow, name)
+        .map(step => step.run)
+        .filter((run): run is string => typeof run === 'string' && run.includes('prepare-release-assets.mjs'))
+
+      expect(runs).toHaveLength(1)
+      expect(runs[0]).toContain('--tag "${{ needs.gate.outputs.ref }}"')
+    }
+  })
+
+  it('writes and re-verifies checksums and the release manifest', () => {
+    const assemble = runText(jobNamed(workflow, 'assemble'))
+    expect(assemble).toContain('release-manifest.mjs --root release-assets')
+    expect(assemble).toContain('release-manifest.mjs --root release-assets --verify')
+
+    const publish = runText(jobNamed(workflow, 'publish'))
+    expect(publish).toContain('release-manifest.mjs --root release-assets --verify')
   })
 })
 
@@ -93,6 +183,117 @@ describe('Git hooks', () => {
     }
   })
 })
+
+describe('Dependency automation', () => {
+  const config = loadWorkflow('.github/dependabot.yml')
+  const updates = (): Record<string, unknown>[] => {
+    if (!Array.isArray(config.updates)) throw new TypeError('dependabot.yml must define updates')
+    return config.updates.map((update, index) => {
+      if (!isRecord(update)) throw new TypeError(`dependabot update ${index} must be a mapping`)
+      return update
+    })
+  }
+
+  function groupsFor(ecosystem: string): Record<string, unknown> {
+    const update = updates().find(candidate => candidate['package-ecosystem'] === ecosystem)
+    if (!isRecord(update?.groups)) throw new TypeError(`${ecosystem} must define update groups`)
+    return update.groups
+  }
+
+  it('groups families that only stay green when they move together', () => {
+    const groups = groupsFor('npm')
+
+    expect(groups.lexical).toMatchObject({ patterns: ['lexical', '@lexical/*'] })
+    expect(groups.tailwind).toMatchObject({ patterns: ['tailwindcss', '@tailwindcss/*'] })
+    expect(groups.opentelemetry).toMatchObject({ patterns: ['@opentelemetry/*'] })
+    expect(groups.vite).toMatchObject({ patterns: ['vite', '@vitejs/*', 'vitest', '@vitest/*'] })
+    expect(groups.electron).toMatchObject({
+      patterns: ['electron', 'electron-builder', 'electron-log', 'electron-updater', '@electron/*'],
+    })
+    expect(groups['pi-ai']).toMatchObject({ patterns: ['@earendil-works/*'] })
+  })
+
+  it('groups GitHub Actions so workflow majors cannot mix', () => {
+    expect(groupsFor('github-actions').actions).toMatchObject({ patterns: ['*'] })
+  })
+
+  it('uses repository labels on every update', () => {
+    const valid = new Set(['dependencies', 'build'])
+    for (const update of updates()) {
+      if (!Array.isArray(update.labels)) throw new TypeError('every dependabot update must declare labels')
+      for (const label of update.labels) expect(valid.has(String(label))).toBe(true)
+    }
+  })
+})
+
+const CURRENT_ACTION_MAJORS: Record<string, string> = {
+  'actions/checkout': 'v7',
+  'actions/setup-node': 'v7',
+  'pnpm/action-setup': 'v6',
+  'actions/upload-artifact': 'v7',
+  'actions/download-artifact': 'v8',
+  'gitleaks/gitleaks-action': 'v3',
+  'softprops/action-gh-release': 'v3',
+}
+
+function assertCurrentActionMajor(use: string): void {
+  if (use.startsWith('./') || use.startsWith('docker://')) return
+  const at = use.lastIndexOf('@')
+  if (at === -1) throw new Error(`${use} has no action major`)
+  const action = use.slice(0, at)
+  const version = use.slice(at + 1)
+  const expected = CURRENT_ACTION_MAJORS[action]
+  if (expected !== undefined && version !== expected) {
+    throw new Error(`${action} must use ${expected}, found ${version === '' ? 'no major' : version}`)
+  }
+}
+
+function workflowJobs(workflow: Record<string, unknown>): Record<string, unknown> {
+  if (!isRecord(workflow.jobs)) throw new TypeError('workflow must define jobs')
+  return workflow.jobs
+}
+
+function jobNamed(workflow: Record<string, unknown>, name: string): Record<string, unknown> {
+  const job = workflowJobs(workflow)[name]
+  if (!isRecord(job)) throw new TypeError(`workflow must define the ${name} job`)
+  return job
+}
+
+function jobSteps(workflow: Record<string, unknown>, name: string): Record<string, unknown>[] {
+  const steps = jobNamed(workflow, name).steps
+  if (!Array.isArray(steps)) throw new TypeError(`${name} must define steps`)
+  return steps.map((step, index) => {
+    if (!isRecord(step)) throw new TypeError(`${name} step ${index} must be a mapping`)
+    return step
+  })
+}
+
+function allSteps(workflow: Record<string, unknown>): Record<string, unknown>[] {
+  return Object.keys(workflowJobs(workflow)).flatMap((name) => {
+    const job = workflowJobs(workflow)[name]
+    return isRecord(job) && Array.isArray(job.steps) ? job.steps.filter(isRecord) : []
+  })
+}
+
+function runText(job: Record<string, unknown>): string {
+  if (!Array.isArray(job.steps)) return ''
+  return job.steps
+    .filter(isRecord)
+    .map(step => (typeof step.run === 'string' ? step.run : ''))
+    .join('\n')
+}
+
+function collectUses(value: unknown, found: string[] = []): string[] {
+  if (Array.isArray(value)) {
+    for (const item of value) collectUses(item, found)
+  } else if (isRecord(value)) {
+    if (typeof value.uses === 'string') found.push(value.uses)
+    for (const [key, child] of Object.entries(value)) {
+      if (key !== 'uses') collectUses(child, found)
+    }
+  }
+  return found
+}
 
 function loadWorkflow(path: string): Record<string, unknown> {
   const workflow: unknown = yaml.load(readFileSync(resolve(root, path), 'utf8'))

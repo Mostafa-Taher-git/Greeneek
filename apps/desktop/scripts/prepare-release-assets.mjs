@@ -20,9 +20,22 @@ export function releaseAssetMappings(version) {
   ]
 }
 
-function parseDesktopVersion(input) {
+export function parseDesktopVersion(input) {
   const match = /^desktop-v(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)$/.exec(input.trim())
-  return match ? match[1] : input
+  return match ? match[1] : input.trim()
+}
+
+/**
+ * Pick the tag that names this release. An explicit `--tag` always wins.
+ * `GITHUB_REF_NAME` only counts when it looks like a desktop tag: a manual
+ * dispatch from `main` must never stamp the branch name into an asset name.
+ * @param explicitTag - value of `--tag`, if any.
+ * @param envRefName - value of `GITHUB_REF_NAME`, if any.
+ * @returns the release tag, or '' when neither names one.
+ */
+export function resolveReleaseTag(explicitTag, envRefName) {
+  if (explicitTag !== undefined && explicitTag !== '') return explicitTag
+  return /^desktop-v/.test(envRefName ?? '') ? envRefName : ''
 }
 
 export function prepareReleaseAssets({ distDir, version }) {
@@ -51,7 +64,7 @@ function argumentValue(name) {
 }
 
 function main() {
-  const tag = argumentValue('--tag') ?? process.env.GITHUB_REF_NAME ?? ''
+  const tag = resolveReleaseTag(argumentValue('--tag'), process.env.GITHUB_REF_NAME)
   const manifest = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'))
   const version = tag ? parseDesktopVersion(tag) : (argumentValue('--version') ?? manifest.version)
   const distDir = path.resolve(root, argumentValue('--dist') ?? 'dist')

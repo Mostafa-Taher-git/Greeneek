@@ -47,11 +47,11 @@
   "dependencies": {
     "clsx": "^2.0.0",
     "@greeneek/schemastery": "workspace:^",
-    "@lexical/history": "^0.49.0",
-    "@lexical/plain-text": "^0.49.0",
-    "@lexical/text": "^0.49.0",
-    "@lexical/utils": "^0.49.0",
-    "lexical": "^0.49.0"
+    "@lexical/history": "^0.51.0",
+    "@lexical/plain-text": "^0.51.0",
+    "@lexical/text": "^0.51.0",
+    "@lexical/utils": "^0.51.0",
+    "lexical": "^0.51.0"
   },
   "peerDependencies": {
     "@greeneek/cordis": "workspace:^"
@@ -87,7 +87,7 @@
     "@greeneek/gnk-util-workspace-path": "workspace:^",
     "@types/react": "~18.3.1",
     "react": "^18.2.0",
-    "@lexical/headless": "^0.49.0",
+    "@lexical/headless": "^0.51.0",
     "react-dom": "^18.2.0",
     "@types/react-dom": "~18.3.0",
     "zod": "^4.4.3",

@@ -3139,7 +3139,7 @@ export interface Config {
 export type ToolPresentationMode = 'native' | 'ptc' | 'both'
 ```
 
-Source: [`packages/core/tools/src/index.ts:647`](../packages/core/tools/src/index.ts)
+Source: [`packages/core/tools/src/index.ts:671`](../packages/core/tools/src/index.ts)
 
 <a id="greeneekgnk-typert-loader"></a>
 

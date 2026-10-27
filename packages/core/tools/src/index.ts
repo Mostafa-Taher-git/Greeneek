@@ -514,6 +514,30 @@ export class ToolOutputError extends HarnessError {
   }
 }
 
+/**
+ * Thrown when a caller asks one scope for a presentation it does not carry.
+ *
+ * A scope's declaration is turn-1-final: the per-session `both` opt-in calls
+ * `presentAs('both')` once when the session's first agent mounts, and no
+ * later re-declare of that scope is a mode change — the lock makes the
+ * attempt a typed refusal instead of a silent fork in what the model sees.
+ * Extends {@link HarnessError} (`code: 'PRESENTATION_LOCKED'`) so callers
+ * that already route on error codes catch it without parsing text.
+ */
+export class ToolPresentationLockedError extends HarnessError {
+  /**
+   * @param locked - the presentation the scope declared earlier.
+   * @param requested - the presentation the late caller asked for.
+   */
+  constructor(locked: ToolPresentationMode, requested: ToolPresentationMode) {
+    super(
+      `tools.presentAs("${requested}") conflicts with "${locked}" already declared for this scope; one composition selects one presentation`,
+      'PRESENTATION_LOCKED',
+    )
+    this.name = 'ToolPresentationLockedError'
+  }
+}
+
 /** Convert one projector exception into the canonical invalid-output failure. */
 function projectionError(toolName: string, projector: 'render' | 'presentationMeta', error: unknown): ToolOutputError {
   return new ToolOutputError(toolName, [`output.${projector} failed: ${errorMessage(error)}`])
@@ -945,7 +969,7 @@ export class ToolRuntime extends Service {
         ctx,
         (layer) => {
           if (layer.mode !== undefined) {
-            throw new Error(`tools.presentAs("${mode}") conflicts with "${layer.mode}" already declared for this scope; one composition selects one presentation`)
+            throw new ToolPresentationLockedError(layer.mode, mode)
           }
           layer.mode = mode
           return () => { layer.mode = undefined }

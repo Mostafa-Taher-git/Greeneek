@@ -884,7 +884,7 @@ Source: [`packages/core/session/src/types.ts:308`](../packages/core/session/src/
 'tool/code-dispatch': PtcDispatchEventData
 ```
 
-Source: [`packages/core/tools/src/types.ts:56`](../packages/core/tools/src/types.ts)
+Source: [`packages/core/tools/src/types.ts:66`](../packages/core/tools/src/types.ts)
 
 <a id="toolcode-dispatch-start--log-only"></a>
 
@@ -907,7 +907,32 @@ Source: [`packages/core/tools/src/types.ts:56`](../packages/core/tools/src/types
 'tool/code-dispatch-start': PtcDispatchStartEventData
 ```
 
-Source: [`packages/core/tools/src/types.ts:40`](../packages/core/tools/src/types.ts)
+Source: [`packages/core/tools/src/types.ts:50`](../packages/core/tools/src/types.ts)
+
+<a id="toolpresent-as--log-only"></a>
+
+#### `tool/present-as` — log-only
+
+```ts persistence-catalog
+/**
+ * One scope DECLARED its tool presentation: the per-session `both` opt-in
+ * calls `ctx.tools.presentAs('both')` once on the agent's own scope, and
+ * a preset composition mounts through the same call on its standing
+ * scope. `to` is the presentation that scope's model sees from the
+ * declaring turn on. A declaration is turn-1-final — the presentation
+ * lock answers any later re-declare of the same scope with the typed
+ * `PRESENTATION_LOCKED` refusal and logs nothing, so a replayed session
+ * holds one winning declaration per scope. Only a declaration belonging
+ * to a session appends: a composition mount has none, so it is silent
+ * there (the persisted composition vocabulary covers it in the plugin
+ * catalog instead). Log-only: `deriveMessages()` ignores it; UIs pair it
+ * with the agent's presentation chip for live state and with the
+ * `request/header` series the declaration reopens on resume.
+ */
+'tool/present-as': ToolPresentationEventData
+```
+
+Source: [`packages/core/tools/src/types.ts:82`](../packages/core/tools/src/types.ts)
 
 <a id="toolresult--surface"></a>
 

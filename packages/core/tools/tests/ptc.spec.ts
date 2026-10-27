@@ -1849,6 +1849,12 @@ describe('per-agent presentation', () => {
     // silently keeping either one would make the composition unreadable.
     expect(() => scope.ctx.tools.presentAs('both'))
       .toThrow('conflicts with "ptc" already declared')
+
+    // The lock is typed: callers that route on error codes (retry/replay/UI)
+    // distinguish it from any other failure without parsing text.
+    expect(() => scope.ctx.tools.presentAs('both')).toThrow(
+      expect.objectContaining({ name: 'ToolPresentationLockedError', code: 'PRESENTATION_LOCKED' }),
+    )
   })
 
   it('refuses an unscoped declaration', async () => {

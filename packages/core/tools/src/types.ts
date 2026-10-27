@@ -22,6 +22,16 @@ export interface PtcDispatchEventData extends PtcDispatchStartEventData {
   content: ContentBlock[]
 }
 
+/** Payload recorded when one scope declares the presentation its model sees. */
+export interface ToolPresentationEventData {
+  /**
+   * The presentation now active for that scope — the same vocabulary as
+   * `ToolPresentationMode` in this package's index, typed inline as a string
+   * union so this durable log vocabulary imports nothing.
+   */
+  to: 'native' | 'ptc' | 'both'
+}
+
 declare module '@greeneek/gnk-session/types' {
   interface SessionEventMap {
     /**
@@ -54,5 +64,21 @@ declare module '@greeneek/gnk-session/types' {
      * construction.
      */
     'tool/code-dispatch': PtcDispatchEventData
+    /**
+     * One scope DECLARED its tool presentation: the per-session `both` opt-in
+     * calls `ctx.tools.presentAs('both')` once on the agent's own scope, and
+     * a preset composition mounts through the same call on its standing
+     * scope. `to` is the presentation that scope's model sees from the
+     * declaring turn on. A declaration is turn-1-final — the presentation
+     * lock answers any later re-declare of the same scope with the typed
+     * `PRESENTATION_LOCKED` refusal and logs nothing, so a replayed session
+     * holds one winning declaration per scope. Only a declaration belonging
+     * to a session appends: a composition mount has none, so it is silent
+     * there (the persisted composition vocabulary covers it in the plugin
+     * catalog instead). Log-only: `deriveMessages()` ignores it; UIs pair it
+     * with the agent's presentation chip for live state and with the
+     * `request/header` series the declaration reopens on resume.
+     */
+    'tool/present-as': ToolPresentationEventData
   }
 }

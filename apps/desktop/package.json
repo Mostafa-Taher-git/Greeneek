@@ -22,6 +22,7 @@
     "dist:linux": "node scripts/verify-target.mjs linux x64 && node scripts/stage.mjs && electron-builder --project .staging/app --linux deb appimage --x64 --publish never",
     "dist:win": "node scripts/verify-target.mjs win32 x64 && node scripts/stage.mjs && electron-builder --project .staging/app --win nsis zip --x64 --publish never",
     "smoke:packaged": "node scripts/smoke-packaged.mjs",
+    "smoke:installed": "node scripts/smoke-installed.mjs",
     "prepare:release-assets": "node scripts/prepare-release-assets.mjs"
   },
   "dependencies": {

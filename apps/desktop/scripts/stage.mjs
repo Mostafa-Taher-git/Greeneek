@@ -11,11 +11,13 @@ import {
   readlinkSync,
   realpathSync,
   rmSync,
+  rmdirSync,
   statSync,
   symlinkSync,
+  unlinkSync,
   writeFileSync,
 } from 'node:fs'
-import { basename, dirname, join, relative, resolve } from 'node:path'
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { builtinModules, createRequire } from 'node:module'
@@ -55,6 +57,19 @@ function assertPresent(path, why) {
  * workspace package is then fully duplicated with its nested `node_modules`
  * until staging exhausts the disk (ENOSPC after hours of copying).
  */
+/**
+ * Whether `candidate` resolves inside `root`. A relative path that climbs out
+ * and an absolute path on another volume both fail; `root` itself counts as
+ * inside so a staging root can be passed to itself.
+ * @param root - directory that must contain the candidate.
+ * @param candidate - path to test, already resolved.
+ * @returns true when the candidate is at or below the root.
+ */
+export function isPathInside(root, candidate) {
+  const rel = relative(root, candidate)
+  return rel === '' || (!isAbsolute(rel) && rel !== '..' && !rel.startsWith(`..${sep}`))
+}
+
 function pathContainsSegment(candidate, segment) {
   return candidate.replace(/\\/g, '/').includes(`/${segment}/`)
 }
@@ -85,6 +100,9 @@ function main() {
   // workspace `node_modules` and pruning devDependency leaves. This
   // avoids `pnpm deploy`/`pnpm install` TTY prompts entirely.
   console.log(`stage: copy node_modules → ${staging}`)
+  // A failed or interrupted stage leaves a half-built closure behind. Starting
+  // from it would preserve files the next copy deliberately omits.
+  rmSync(staging, { recursive: true, force: true })
   mkdirSync(staging, { recursive: true })
   copyFileSync(join(packageDir, 'package.json'), join(staging, 'package.json'))
   copyFileSync(join(repoRoot, 'pnpm-lock.yaml'), join(staging, 'pnpm-lock.yaml'))
@@ -126,6 +144,13 @@ function main() {
   // `@greeneek/gnk-atomic-write` this way). Walk staged manifests to a
   // fixpoint, materializing every missing `@greeneek` dependency from
   // the workspace source.
+  // 2b. Links that point at the build checkout cannot travel to a user
+  // machine. Materialize them before the closure walks the tree, so the walk
+  // sees the bytes that will actually ship instead of the builder's source
+  // layout. A second pass after the closures catches links the closure copies
+  // create while hoisting workspace packages.
+  dereferenceEscapingSymlinks(staging)
+
   const workspaceIndex = workspaceSourceIndex(repoRoot)
   materializeWorkspaceClosure(staging, workspaceIndex, rootDev)
 
@@ -135,6 +160,17 @@ function main() {
   // manifest to a fixpoint, materializing missing externals from the
   // workspace source; version conflicts nest under the importer.
   materializeExternalClosure(staging, repoRoot, workspaceIndex)
+
+  if (dereferenceEscapingSymlinks(staging) > 0) {
+    materializeWorkspaceClosure(staging, workspaceIndex, rootDev)
+    materializeExternalClosure(staging, repoRoot, workspaceIndex)
+  }
+
+  // 2d. Prove the property the release depends on: nothing in the staged tree
+  // resolves outside it, and every hard external edge resolves from the
+  // importer. The installed v0.3.6 build failed exactly here, at boot.
+  assertSelfContainedStaging(staging)
+  assertRequiredExternalDeps(staging)
 
   const gnkEntry = assertPresent(
     join(staging, 'node_modules', '@greeneek', 'gnk', 'lib', 'bin.js'),
@@ -356,7 +392,7 @@ function copyPrunedModules(src, dest, rootDev, visited, isWorkspacePkg, hoistDes
           if (nestedIsWorkspace && entry.name.startsWith('@') === false) {
             const wsPkgTarget = join(hoistDest, 'node_modules', '@greeneek', entry.name)
             mkdirSync(wsPkgTarget, { recursive: true })
-            copyDirRecursive(from, wsPkgTarget)
+            copyDirRecursive(from, wsPkgTarget, new Set(), true)
           }
           const rel = readlinkSync(from)
           const norm = rel.startsWith('/') ? rel : join(dirname(to), rel)
@@ -407,7 +443,7 @@ function copyPrunedModules(src, dest, rootDev, visited, isWorkspacePkg, hoistDes
                     const wsRoot = resolve(innerTo, '..', '..', '..', '..')
                     const wsTarget = join(wsRoot, inner.name)
                     mkdirSync(wsTarget, { recursive: true })
-                    copyDirRecursive(innerFrom, wsTarget)
+                    copyDirRecursive(innerFrom, wsTarget, new Set(), true)
                   } else {
                     mkdirSync(innerTo, { recursive: true })
                     const nestedIsWorkspace = isWorkspaceTree(innerTargetReal)
@@ -417,7 +453,7 @@ function copyPrunedModules(src, dest, rootDev, visited, isWorkspacePkg, hoistDes
                     try { symlinkSync(norm, innerTo) } catch {}
                     const wsPkgTarget = join(hoistDest, 'node_modules', '@greeneek', inner.name)
                     mkdirSync(wsPkgTarget, { recursive: true })
-                    copyDirRecursive(innerFrom, wsPkgTarget)
+                    copyDirRecursive(innerFrom, wsPkgTarget, new Set(), true)
                   }
                   continue
                 }
@@ -455,30 +491,241 @@ function shouldCopyModule(entry, rootDev) {
   return true
 }
 
-function copyDirRecursive(src, dest) {
-  mkdirSync(dest, { recursive: true })
-  for (const entry of readdirSync(src, { withFileTypes: true })) {
-    const from = join(src, entry.name)
-    const to = join(dest, entry.name)
-    if (entry.isSymbolicLink()) {
-      const target = readlinkSync(from)
-      const absTarget = join(dirname(from), target)
+/**
+ * Copy a directory tree, dereferencing every symlink so the destination holds
+ * real files. `skipNodeModules` keeps a hoisted workspace or external package
+ * from embedding its own dependency tree: the staging top level already carries
+ * every dependency, and following one package's `node_modules` links there
+ * expands the whole workspace graph under each package.
+ * @param src - directory to copy.
+ * @param dest - destination directory.
+ * @param ancestors - real paths on the current descent, used to break cycles.
+ * @param skipNodeModules - omit any `node_modules` entry from the copy.
+ */
+export function copyDirRecursive(src, dest, ancestors = new Set(), skipNodeModules = false) {
+  let real
+  try {
+    real = realpathSync(src)
+  } catch {
+    return
+  }
+  // A workspace graph links back to directories already on this descent. The
+  // guard is what makes that graph terminate even when node_modules is kept.
+  if (ancestors.has(real)) return
+  ancestors.add(real)
+  try {
+    mkdirSync(dest, { recursive: true })
+    for (const entry of readdirSync(src, { withFileTypes: true })) {
+      if (skipNodeModules && entry.name === 'node_modules') continue
+      const from = join(src, entry.name)
+      const to = join(dest, entry.name)
       try {
-        const isDir = statSync(absTarget).isDirectory()
-        if (isDir) {
-          copyDirRecursive(absTarget, to)
+        if (entry.isSymbolicLink()) {
+          let absTarget
+          try {
+            absTarget = realpathSync(from)
+          } catch {
+            continue
+          }
+          if (statSync(absTarget).isDirectory()) {
+            copyDirRecursive(absTarget, to, ancestors, skipNodeModules)
+          } else {
+            copyFileSync(absTarget, to)
+          }
+        } else if (entry.isDirectory()) {
+          copyDirRecursive(from, to, ancestors, skipNodeModules)
         } else {
-          copyFileSync(absTarget, to)
+          copyFileSync(from, to)
         }
-      } catch {
-        // broken symlink, skip
+      } catch (error) {
+        if (error.code !== 'ENOENT') throw error
       }
-    } else if (entry.isDirectory()) {
-      copyDirRecursive(from, to)
-    } else {
-      copyFileSync(from, to)
+    }
+  } finally {
+    ancestors.delete(real)
+  }
+}
+
+/** Remove a symlink or junction itself, never the tree it points at. */
+function removeLink(full) {
+  try {
+    unlinkSync(full)
+    return
+  } catch {
+    // Directory junctions on Windows reject unlink; rmdir removes the link.
+  }
+  try {
+    rmdirSync(full)
+    return
+  } catch {
+    rmSync(full, { force: true })
+  }
+}
+
+/** Whether an entry is a link, including a Windows directory junction Dirent may report as a plain directory. */
+function isLinkEntry(entry, full) {
+  if (entry.isSymbolicLink()) return true
+  if (!entry.isDirectory()) return false
+  try {
+    return lstatSync(full).isSymbolicLink()
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Replace every staged link whose target escapes the staging root with a real
+ * copy, and rewrite absolute in-root links to relative ones so the tree still
+ * works after the app is installed elsewhere. Dangling links are removed: they
+ * cannot resolve on any machine, and they are the residue of a pruned tree.
+ * @param root - staging root to rewrite in place.
+ * @returns how many links were rewritten or removed.
+ */
+export function dereferenceEscapingSymlinks(root) {
+  let changed = 0
+  const walk = (dir) => {
+    let entries
+    try {
+      entries = readdirSync(dir, { withFileTypes: true })
+    } catch {
+      return
+    }
+    for (const entry of entries) {
+      const full = join(dir, entry.name)
+      if (isLinkEntry(entry, full)) {
+        let target
+        try {
+          target = readlinkSync(full)
+        } catch {
+          continue
+        }
+        let real
+        try {
+          real = realpathSync(full)
+        } catch {
+          removeLink(full)
+          changed++
+          console.log(`stage: removed dangling link ${relative(root, full)}`)
+          continue
+        }
+        if (!isPathInside(root, real)) {
+          removeLink(full)
+          if (statSync(real).isDirectory()) {
+            // The dependency tree is hoisted separately; copying it here would
+            // re-expand the workspace graph under this one link.
+            copyDirRecursive(real, full, new Set(), true)
+            walk(full)
+          } else {
+            copyFileSync(real, full)
+          }
+          changed++
+          console.log(`stage: materialized escaping link ${relative(root, full)} -> ${real}`)
+          continue
+        }
+        if (isAbsolute(target)) {
+          const isDirectory = statSync(real).isDirectory()
+          const relativeTarget = relative(dirname(full), real)
+          removeLink(full)
+          try {
+            symlinkSync(relativeTarget, full, isDirectory ? 'dir' : 'file')
+            console.log(`stage: rewrote absolute link ${relative(root, full)} -> ${relativeTarget}`)
+          } catch {
+            if (isDirectory) {
+              copyDirRecursive(real, full, new Set(), true)
+              walk(full)
+            } else {
+              copyFileSync(real, full)
+            }
+            console.log(`stage: materialized absolute link ${relative(root, full)}`)
+          }
+          changed++
+        }
+        continue
+      }
+      if (entry.isDirectory()) walk(full)
     }
   }
+  walk(root)
+  return changed
+}
+
+/**
+ * Fail unless every link in the staged tree resolves to a real path inside it
+ * and is expressible relative to its own directory. This is the last line of
+ * defence before electron-builder turns the tree into an artifact.
+ * @param root - staging root to inspect.
+ * @returns true when the tree is self-contained.
+ * @throws when a link escapes, dangles, or keeps an absolute target.
+ */
+export function assertSelfContainedStaging(root) {
+  const problems = []
+  const walk = (dir) => {
+    let entries
+    try {
+      entries = readdirSync(dir, { withFileTypes: true })
+    } catch {
+      return
+    }
+    for (const entry of entries) {
+      const full = join(dir, entry.name)
+      const rel = relative(root, full)
+      if (isLinkEntry(entry, full)) {
+        let target
+        try {
+          target = readlinkSync(full)
+        } catch {
+          problems.push(`${rel} (unreadable link)`)
+          continue
+        }
+        let real
+        try {
+          real = realpathSync(full)
+        } catch {
+          problems.push(`${rel} -> ${target} (dangling)`)
+          continue
+        }
+        if (!isPathInside(root, real)) problems.push(`${rel} -> ${real} (escapes staging)`)
+        else if (isAbsolute(target)) problems.push(`${rel} -> ${target} (absolute target)`)
+        continue
+      }
+      if (entry.isDirectory()) walk(full)
+    }
+  }
+  walk(root)
+  if (problems.length > 0) {
+    const shown = problems.slice(0, 20).join('\n')
+    const more = problems.length > 20 ? `\n… ${problems.length - 20} more` : ''
+    throw new Error(`staging is not self-contained (${problems.length} links):\n${shown}${more}`)
+  }
+  return true
+}
+
+/**
+ * Fail when a staged package declares a hard external dependency that Node
+ * cannot resolve from that package inside staging. Optional and peer-only
+ * edges are deliberately excluded: they are allowed to be absent when the
+ * platform or the consumer does not install them.
+ * @param root - staging root to inspect.
+ * @returns true when every hard external edge resolves.
+ * @throws naming each importer and missing dependency.
+ */
+export function assertRequiredExternalDeps(root) {
+  const problems = []
+  for (const { dir, manifest, symlinked } of collectAllStagedManifests(root)) {
+    if (symlinked) continue
+    for (const dep of Object.keys(manifest.dependencies ?? {})) {
+      if (dep.startsWith('@greeneek/') || dep.startsWith('node:') || BUILTIN_DEP_NAMES.has(dep)) continue
+      if (!resolvesInStaging(root, dir, dep)) {
+        problems.push(`${manifest.name ?? relative(root, dir)} requires ${dep}`)
+      }
+    }
+  }
+  if (problems.length > 0) {
+    const shown = problems.slice(0, 20).join('\n')
+    const more = problems.length > 20 ? `\n… ${problems.length - 20} more` : ''
+    throw new Error(`staging dropped required external dependencies (${problems.length}):\n${shown}${more}`)
+  }
+  return true
 }
 
 function workspaceSourceIndex(repoRoot) {
@@ -614,15 +861,27 @@ function externalDeps(manifest) {
   return { required, optionalOnly, peerOnly }
 }
 
-/** Whether Node's walk-up from `importerDir` finds `depName` inside staging. */
-function resolvesInStaging(staging, importerDir, depName) {
+/** Whether Node's walk-up from `importerDir` finds `depName` as a real package inside staging. A link that resolves back into the checkout is not a hit: it disappears when the artifact is installed elsewhere. */
+export function resolvesInStaging(staging, importerDir, depName) {
   const parts = depName.split('/')
   let dir = importerDir
   for (;;) {
-    if (existsSync(join(dir, 'node_modules', ...parts, 'package.json'))) return true
+    // Node does not append `node_modules` when the ancestor already is one:
+    // from `.../node_modules` it looks for `.../node_modules/<dep>` directly.
+    // Without this branch a package is invisible to its siblings in the same
+    // hoisted `node_modules`, which is how staging lost the OTel transformer.
+    const modules = basename(dir) === 'node_modules' ? dir : join(dir, 'node_modules')
+    const manifest = join(modules, ...parts, 'package.json')
+    if (existsSync(manifest)) {
+      try {
+        if (isPathInside(staging, realpathSync(manifest))) return true
+      } catch {
+        // Unreadable or dangling: keep walking; the assertion names it if nothing else resolves.
+      }
+    }
     if (dir === staging) return false
     const parent = dirname(dir)
-    if (parent === dir || relative(staging, parent).startsWith('..')) return false
+    if (parent === dir || !isPathInside(staging, parent)) return false
     dir = parent
   }
 }
@@ -680,15 +939,24 @@ function collectAllStagedManifests(staging) {
   return found
 }
 
-/** Exact store copy of an installed external: `<store>/<escaped-name>@<version>/node_modules/<name>`. Falls back to a sorted prefix hit when peers suffix the directory. */
-function storeDirFor(stores, depName, version) {
-  const escaped = depName.replace('/', '+')
-  const exact = `${escaped}@${version}`
-  for (const store of stores) {
-    if (existsSync(join(store, exact, 'node_modules', ...depName.split('/'), 'package.json'))) {
-      return join(store, exact, 'node_modules', ...depName.split('/'))
-    }
-  }
+/**
+ * Every store copy of `depName`, matched through the package manifest rather
+ * than the directory name. pnpm shortens long names and appends a content
+ * hash (`@opentelemetry+otlp-transfo_<hash>`), so a name prefix alone misses
+ * exactly the packages with the longest names. Results are cached for the
+ * process because each lookup walks the store root.
+ * @param stores - `.pnpm` roots to search.
+ * @param depName - package name to find.
+ * @returns store copies with their directory, manifest version, and entry name.
+ */
+const storeEntryCache = new Map()
+function storePackageEntries(stores, depName) {
+  const key = `${stores.join('\0')}\0${depName}`
+  const cached = storeEntryCache.get(key)
+  if (cached !== undefined) return cached
+  const parts = depName.split('/')
+  const scopePrefix = depName.startsWith('@') ? `${parts[0]}+` : ''
+  const found = []
   for (const store of stores) {
     let entries
     try {
@@ -696,34 +964,47 @@ function storeDirFor(stores, depName, version) {
     } catch {
       continue
     }
-    const hit = entries.filter((name) => name === exact || name.startsWith(`${exact}_`)).sort()[0]
-    if (hit !== undefined && existsSync(join(store, hit, 'node_modules', ...depName.split('/'), 'package.json'))) {
-      console.log(`stage: store fallback ${depName}@${version} → ${hit}`)
-      return join(store, hit, 'node_modules', ...depName.split('/'))
+    for (const entryName of entries) {
+      if (scopePrefix !== '' && !entryName.startsWith(scopePrefix)) continue
+      const dir = join(store, entryName, 'node_modules', ...parts)
+      const manifestPath = join(dir, 'package.json')
+      if (!existsSync(manifestPath)) continue
+      let manifest
+      try {
+        manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+      } catch {
+        continue
+      }
+      if (manifest.name !== depName) continue
+      let version = typeof manifest.version === 'string' ? manifest.version : undefined
+      if (version === undefined) {
+        const escaped = depName.replace(/\//g, '+')
+        const at = entryName.indexOf('@', escaped.length)
+        if (at > 0) version = entryName.slice(at + 1).split('_')[0]
+      }
+      found.push({ dir, version, entryName })
     }
   }
-  return undefined
+  storeEntryCache.set(key, found)
+  return found
 }
 
-/** All store copies of `depName` grouped by version core (peer-suffixed variants grouped; unsuffixed preferred). */
+/** Exact store copy of an installed external, preferring the unsuffixed directory. */
+function storeDirFor(stores, depName, version) {
+  const entries = storePackageEntries(stores, depName)
+  const exactName = `${depName.replace(/\//g, '+')}@${version}`
+  const hit = entries.find((entry) => entry.entryName === exactName) ?? entries.find((entry) => entry.version === version)
+  if (hit === undefined) return undefined
+  if (hit.entryName !== exactName) console.log(`stage: store fallback ${depName}@${version} → ${hit.entryName}`)
+  return hit.dir
+}
+
+/** All store copies of `depName` grouped by version core (peer-suffixed and hashed variants grouped; unsuffixed preferred). */
 function storeVersionDirs(stores, depName) {
-  const escaped = depName.replace('/', '+')
-  const prefix = `${escaped}@`
   const versions = new Map()
-  for (const store of stores) {
-    let entries
-    try {
-      entries = readdirSync(store)
-    } catch {
-      continue
-    }
-    for (const name of entries) {
-      if (!name.startsWith(prefix)) continue
-      const version = name.slice(prefix.length).split('_')[0]
-      const dir = join(store, name, 'node_modules', ...depName.split('/'))
-      if (!existsSync(join(dir, 'package.json'))) continue
-      if (!versions.has(version) || !name.includes('_')) versions.set(version, dir)
-    }
+  for (const { dir, version, entryName } of storePackageEntries(stores, depName)) {
+    if (version === undefined) continue
+    if (!versions.has(version) || !entryName.includes('_')) versions.set(version, dir)
   }
   return versions
 }
@@ -771,17 +1052,7 @@ function rangedStoreSource(stores, depName, wanted) {
 
 /** Whether any workspace store carries `depName` at any version: absent everywhere means an unmet peer the source tree itself cannot resolve. */
 function installedInStores(stores, depName) {
-  const escaped = depName.replace('/', '+')
-  for (const store of stores) {
-    let entries
-    try {
-      entries = readdirSync(store)
-    } catch {
-      continue
-    }
-    if (entries.some((name) => name.startsWith(`${escaped}@`))) return true
-  }
-  return false
+  return storePackageEntries(stores, depName).length > 0
 }
 
 function materializeExternalClosure(staging, repoRoot, workspaceIndex) {
@@ -870,7 +1141,7 @@ function materializeExternalClosure(staging, repoRoot, workspaceIndex) {
           ? join(dir, 'node_modules', ...dep.split('/'))
           : topDest
         if (existsSync(join(dest, 'package.json'))) continue
-        copyDirRecursive(source, dest)
+        copyDirRecursive(source, dest, new Set(), true)
         console.log(`stage: closure materialized external ${dep}@${sourceManifest?.version ?? '?'} (required by ${manifest.name ?? dir})`)
         progressed = true
       }
@@ -1017,4 +1288,11 @@ const isMainModule = process.argv[1] !== undefined
   && resolve(process.argv[1]) === fileURLToPath(import.meta.url)
 if (isMainModule) main()
 
-export { externalDeps, pathContainsSegment, rangedStoreSource, satisfiesWanted, soleStoreSource, staging }
+export {
+  externalDeps,
+  pathContainsSegment,
+  rangedStoreSource,
+  satisfiesWanted,
+  soleStoreSource,
+  staging,
+}

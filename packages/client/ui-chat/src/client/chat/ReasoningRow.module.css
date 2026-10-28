@@ -17,7 +17,7 @@
   content: '';
   position: absolute;
   inset-block: 0;
-  left: 0;
+  inset-inline-start: 0;
   width: 300px;
   background: linear-gradient(
     90deg,
@@ -30,8 +30,8 @@
 }
 
 @keyframes gnk-reasoning-row-sweep {
-  0% { left: -300px; }
-  90%, 100% { left: 100%; }
+  0% { inset-inline-start: -300px; }
+  90%, 100% { inset-inline-start: 100%; }
 }
 
 .leading {
@@ -90,7 +90,8 @@
 
 .thinkBody {
   /* Indent under the title, which starts at leading (16 + delta) + gap 6. */
-  padding: 4px 0 4px calc(22px + var(--gnk-content-font-delta, 0px));
+  padding-block: 4px;
+  padding-inline: calc(22px + var(--gnk-content-font-delta, 0px)) 0;
   color: var(--dsw-alias-label-tertiary);
   font-size: var(--gnk-content-font-size-secondary, 13px);
   line-height: calc(20px + var(--gnk-content-font-delta-secondary, 0px));

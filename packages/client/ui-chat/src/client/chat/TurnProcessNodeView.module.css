@@ -11,7 +11,7 @@
   background: none;
   color: var(--dsw-alias-label-secondary);
   cursor: pointer;
-  text-align: left;
+  text-align: start;
 }
 
 .root:not([data-open]) {
@@ -22,7 +22,7 @@
   flex: none;
   width: 16px;
   height: 16px;
-  margin-left: 6px;
+  margin-inline-start: 6px;
   color: var(--dsw-alias-label-tertiary);
   transform: rotate(-90deg);
   transition: transform 100ms ease;

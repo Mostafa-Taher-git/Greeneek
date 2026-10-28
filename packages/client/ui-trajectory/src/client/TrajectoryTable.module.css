@@ -154,15 +154,15 @@
   background: var(--dsw-specific-sidebar-fill);
   font: var(--dsw-font-xxs-12);
   font-weight: 500;
-  text-align: left;
+  text-align: start;
   text-overflow: ellipsis;
   user-select: none;
   white-space: nowrap;
 }
 
 .eventHeader {
-  padding-right: 4px !important;
-  text-align: right !important;
+  padding-inline-end: 4px !important;
+  text-align: end !important;
 }
 
 .table td {
@@ -231,12 +231,12 @@
 }
 
 .requestBoundaryControl {
-  --request-boundary-base-left: 12px;
+  --request-boundary-base-start: 12px;
 
   position: absolute;
   z-index: 6;
   top: -8px;
-  left: calc(var(--request-boundary-base-left) + var(--request-boundary-offset, 0px));
+  inset-inline-start: calc(var(--request-boundary-base-start) + var(--request-boundary-offset, 0px));
   width: 16px;
   height: 16px;
   padding: 0;
@@ -248,7 +248,7 @@
 .requestBoundaryControl::before {
   position: absolute;
   top: 5.5px;
-  left: 5.5px;
+  inset-inline-start: 5.5px;
   width: 5px;
   height: 5px;
   border-radius: 50%;
@@ -266,7 +266,7 @@
 .requestBoundaryControl::after {
   position: absolute;
   top: 2px;
-  left: 17px;
+  inset-inline-start: 17px;
   width: max-content;
   padding: 0 4px;
   border: 0.5px solid var(--dsw-alias-border-l1);
@@ -314,6 +314,12 @@
   transform: translateX(0);
 }
 
+/* The tooltip sits at the control's inline end and its hover nudge points
+   back at the control; transform has no logical axis, so flip the offset. */
+[dir='rtl'] .requestBoundaryControl::after {
+  transform: translateX(2px);
+}
+
 .requestBoundaryControl:focus-visible {
   outline: none;
 }
@@ -329,7 +335,7 @@
 .turnRail,
 .selectionRail {
   position: absolute;
-  left: 0;
+  inset-inline-start: 0;
   background: var(--dsw-alias-brand-primary-new-colorprimary-new-color);
   pointer-events: none;
 }
@@ -374,8 +380,7 @@
   position: absolute;
   z-index: 1;
   top: 0;
-  right: 0;
-  left: 0;
+  inset-inline: 0;
   height: 2px;
   background: var(--dsw-alias-border-l1);
   content: '';
@@ -385,15 +390,15 @@
 
 .event {
   overflow: visible !important;
-  padding-right: 4px !important;
-  padding-left: 36px !important;
+  padding-inline-end: 4px !important;
+  padding-inline-start: 36px !important;
 }
 
 .turnLabel {
   position: absolute;
   z-index: 3;
   top: 0;
-  left: 0;
+  inset-inline-start: 0;
   display: inline-grid;
   flex: none;
   align-items: center;
@@ -456,7 +461,7 @@
 }
 
 .content {
-  padding-left: 4px !important;
+  padding-inline-start: 4px !important;
   color: var(--dsw-alias-label-primary);
 }
 
@@ -507,8 +512,8 @@
   }
 
   .event {
-    padding-right: 3px !important;
-    padding-left: 28px !important;
+    padding-inline-end: 3px !important;
+    padding-inline-start: 28px !important;
   }
 
   .requestBoundaryControl {
@@ -523,8 +528,8 @@
   .table .kindSlot .message {
     justify-content: center;
     width: 19px;
-    padding-right: 0;
-    padding-left: 0;
+    padding-inline-end: 0;
+    padding-inline-start: 0;
   }
 
   .kindTagIcon {
@@ -569,15 +574,15 @@
   }
 
   .event {
-    transition-property: padding-right, padding-left;
+    transition-property: padding-inline-end, padding-inline-start;
   }
 
   .requestBoundaryControl {
-    transition-property: left;
+    transition-property: inset-inline-start;
   }
 
   .kindTag {
-    transition-property: padding-right, padding-left;
+    transition-property: padding-inline-end, padding-inline-start;
   }
 
   .kindTagIcon {
@@ -761,7 +766,7 @@
 
 .collapsedTurnEllipsis {
   flex: none;
-  margin-right: 6px;
+  margin-inline-end: 6px;
   color: var(--dsw-alias-label-tertiary);
   font-weight: 600;
   user-select: none;
@@ -803,7 +808,7 @@
 }
 
 .toolCallPayload {
-  margin-left: 7px;
+  margin-inline-start: 7px;
   color: var(--dsw-alias-label-secondary);
   font: 400 12px/18px var(--ds-font-family-code);
 }
@@ -817,7 +822,7 @@
 }
 
 .table tbody tr[data-kind='subtool'] .content {
-  padding-left: 26px;
+  padding-inline-start: 26px;
 }
 
 .inlineResult {
@@ -833,7 +838,7 @@
 
 .arrow {
   flex: none;
-  margin-right: 8px;
+  margin-inline-end: 8px;
   color: var(--dsw-alias-label-caption);
 }
 
@@ -872,7 +877,7 @@
   max-width: calc(100% - 280px);
   min-width: 0;
   min-height: 0;
-  border-left: 0.5px solid var(--dsw-alias-border-l2);
+  border-inline-start: 0.5px solid var(--dsw-alias-border-l2);
   background: var(--dsw-alias-bg-layer-1);
 }
 
@@ -881,7 +886,7 @@
   z-index: 6;
   top: 0;
   bottom: 0;
-  left: -4px;
+  inset-inline-start: -4px;
   width: 8px;
   padding: 0;
   border: 0;
@@ -902,7 +907,8 @@
   justify-content: space-between;
   box-sizing: border-box;
   height: 42px;
-  padding: 0 8px 0 12px;
+  padding-block: 0;
+  padding-inline: 12px 8px;
   border-bottom: 0.5px solid var(--dsw-alias-border-l2);
 }
 
@@ -1003,9 +1009,8 @@
 
 .detailTabActive::after {
   position: absolute;
-  right: 9px;
+  inset-inline: 9px;
   bottom: 0;
-  left: 9px;
   height: 2px;
   border-radius: 1px 1px 0 0;
   background: var(--dsw-alias-state-business-primary);
@@ -1060,7 +1065,7 @@
 }
 
 .compactedSummary .markdownPayload {
-  padding-right: 18px;
+  padding-inline-end: 18px;
 }
 
 .overview {
@@ -1114,7 +1119,7 @@
 }
 
 .overview > .requestTokenDetail dt {
-  padding-left: 12px;
+  padding-inline-start: 12px;
 }
 
 .usagePanel {
@@ -1193,7 +1198,8 @@
   width: 100%;
   height: 28px;
   margin: 0;
-  padding: 0 0 3px 14px;
+  padding-block: 0 3px;
+  padding-inline: 14px 0;
   color: var(--dsw-alias-label-secondary);
   background: var(--dsw-alias-bg-layer-1);
   font: var(--dsw-font-xs-strong-13);
@@ -1343,9 +1349,10 @@
 }
 
 .thinkingQuote {
-  margin: 6px 14px 0 12px;
-  padding-left: 6px;
-  border-left: 2px solid var(--dsw-alias-markdown-citation);
+  margin-block: 6px 0;
+  margin-inline: 12px 14px;
+  padding-inline-start: 6px;
+  border-inline-start: 2px solid var(--dsw-alias-markdown-citation);
   color: var(--dsw-alias-label-secondary);
   background: transparent;
 }
@@ -1464,7 +1471,8 @@
 }
 
 .schemaTree {
-  margin: 0 6px 8px 0;
+  margin-block: 0 8px;
+  margin-inline: 0 6px;
 }
 
 .payload {
@@ -1587,7 +1595,7 @@
   min-width: 0;
   height: 19px;
   align-items: center;
-  margin-left: -4px;
+  margin-inline-start: -4px;
   padding: 0 4px;
   border-radius: 3px;
   cursor: pointer;
@@ -1605,7 +1613,7 @@
 
 .assistantToolCallIcon {
   flex: none;
-  margin-right: 5px;
+  margin-inline-end: 5px;
   color: var(--dsw-alias-label-caption);
 }
 
@@ -1624,7 +1632,7 @@
 
 .assistantToolCallName {
   flex: none;
-  margin-right: 5px;
+  margin-inline-end: 5px;
   color: var(--dsw-alias-label-secondary);
   font-weight: 500;
 }
@@ -1705,21 +1713,23 @@
 }
 
 .toolCatalogDefinition {
-  padding: 0 0 8px 29px;
+  padding-block: 0 8px;
+  padding-inline: 29px 0;
   background: var(--dsw-alias-bg-base);
 }
 
 .toolCatalogFullDescription {
   margin: 0;
-  padding: 7px 14px 4px 0;
+  padding-block: 7px 4px;
+  padding-inline: 0 14px;
   color: var(--dsw-alias-label-secondary);
   font: var(--dsw-font-xs-13);
   white-space: pre-wrap;
 }
 
 .toolCatalogTree {
-  margin-left: -14px;
-  margin-right: 6px;
+  margin-inline-start: -14px;
+  margin-inline-end: 6px;
 }
 
 .resultBlocks {
@@ -1763,11 +1773,17 @@
     position: absolute;
     z-index: 5;
     top: 0;
-    right: 0;
+    inset-inline-end: 0;
     bottom: 0;
     width: min(92%, 420px);
     max-width: 92%;
-    border-left-color: var(--dsw-alias-border-l3);
+    border-inline-start-color: var(--dsw-alias-border-l3);
     box-shadow: -12px 0 32px rgba(0, 0, 0, 0.14);
+  }
+
+  /* The panel mirrors to the inline-start edge under RTL, so its cast shadow
+     must flip with it; box-shadow has no logical axis. */
+  [dir='rtl'] .details {
+    box-shadow: 12px 0 32px rgba(0, 0, 0, 0.14);
   }
 }

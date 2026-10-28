@@ -7,7 +7,7 @@
      edge; entries float themselves above it (same rule as MenuView). */
   position: absolute;
   bottom: calc(100% + 4px);
-  left: 0;
+  inset-inline-start: 0;
   z-index: 100;
   padding: 4px;
   display: flex;

@@ -169,13 +169,13 @@
   flex-direction: column;
   min-width: 0;
   padding: 12px;
-  border-left: 0.5px solid var(--dsw-alias-border-l1);
+  border-inline-start: 0.5px solid var(--dsw-alias-border-l1);
   gap: 8px;
 }
 
 @media (max-width: 560px) {
   .detail {
-    border-left: none;
+    border-inline-start: none;
     border-top: 0.5px solid var(--dsw-alias-border-l1);
   }
 }

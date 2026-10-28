@@ -47,7 +47,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 22px 14px 12px 24px;
+  padding-block: 22px 12px;
+  padding-inline: 24px 14px;
 }
 
 .title {

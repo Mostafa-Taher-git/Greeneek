@@ -30,7 +30,7 @@
 .close {
   position: fixed;
   top: 20px;
-  right: 20px;
+  inset-inline-end: 20px;
   z-index: 1;
   display: grid;
   place-items: center;

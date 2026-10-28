@@ -2,6 +2,11 @@
   --dsl-diff-radius: 12px;
   --dsl-diff-line-height: 22px;
 
+  /* Diff lines are code: the `- `/`+ ` gutter prefixes and the indentation
+     the lines are read by carry their meaning only left-to-right, so the
+     block keeps a left-to-right layout in every locale; physical offsets
+     below are code coordinates. */
+  direction: ltr;
   position: relative;
   margin: 16px 0;
   color: var(--dsw-alias-label-primary);
@@ -47,7 +52,7 @@
 .path {
   color: var(--dsw-alias-label-primary);
   font-weight: 600;
-  padding-right: 56px;
+  padding-inline-end: 56px;
 }
 
 /* A same-file second hunk's separator (a scattered edit), in the dim tone. */
@@ -85,7 +90,7 @@
   color: var(--dsw-alias-label-tertiary);
   cursor: pointer;
   font: inherit;
-  text-align: left;
+  text-align: start;
 }
 
 .expand:hover {

@@ -118,7 +118,7 @@
 .controlThumb {
   position: absolute;
   top: 2px;
-  left: 2px;
+  inset-inline-start: 2px;
   width: 6px;
   height: 6px;
   border-radius: 50%;
@@ -133,6 +133,12 @@
 
 .controlTrack[data-on='true'] .controlThumb {
   transform: translateX(10px);
+}
+
+/* The on-state thumb slides to the track's far edge; transform has no
+   logical axis, so the slide mirrors under RTL. */
+[dir='rtl'] .controlTrack[data-on='true'] .controlThumb {
+  transform: translateX(-10px);
 }
 
 .action {
@@ -171,7 +177,7 @@
   align-items: center;
   min-width: 84px;
   height: 22px;
-  margin-left: auto;
+  margin-inline-start: auto;
   padding: 0 6px;
   gap: 4px;
   border: 0.5px solid var(--dsw-alias-border-l4);

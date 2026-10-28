@@ -16,7 +16,7 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding-right: 48px;
+  padding-inline-end: 48px;
 }
 
 .title {
@@ -43,7 +43,7 @@
 }
 
 .stepper {
-  position: relative; /* the arrow column anchors to the pill's right edge */
+  position: relative; /* the arrow column anchors to the pill's inline-end edge */
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -68,13 +68,13 @@
   color: var(--dsw-alias-label-secondary);
 }
 
-/* Arrow column: anchored right so the value stays pill-centered whether or
-   not the arrows are showing; revealed on hover/focus-within. Hidden with
+/* Arrow column: anchored inline-end so the value stays pill-centered whether
+   or not the arrows are showing; revealed on hover/focus-within. Hidden with
    opacity, not visibility: the buttons stay in tab order and in the
    accessibility tree, so keyboard focus itself triggers the reveal. */
 .arrows {
   position: absolute;
-  right: 8px;
+  inset-inline-end: 8px;
   display: flex;
   flex-direction: column;
   gap: 2px;

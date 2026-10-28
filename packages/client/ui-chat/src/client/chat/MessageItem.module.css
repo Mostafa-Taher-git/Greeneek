@@ -68,7 +68,7 @@
   background: none;
   color: inherit;
   font: inherit;
-  text-align: left;
+  text-align: start;
 }
 
 .compactionButton:not(:disabled) {
@@ -85,7 +85,7 @@
   place-items: center;
   width: calc(16px + var(--gnk-content-font-delta, 0px));
   height: calc(16px + var(--gnk-content-font-delta, 0px));
-  margin-right: 6px;
+  margin-inline-end: 6px;
   color: var(--dsw-alias-label-secondary);
 }
 
@@ -147,7 +147,8 @@
 
 .compactionBody {
   /* Indent under the title, which starts at leading (16 + delta) + gap 6. */
-  padding: 4px 0 4px calc(22px + var(--gnk-content-font-delta, 0px));
+  padding-block: 4px;
+  padding-inline: calc(22px + var(--gnk-content-font-delta, 0px)) 0;
   color: var(--dsw-alias-label-tertiary);
   font-size: var(--gnk-content-font-size-secondary, 13px);
   line-height: calc(24px + var(--gnk-content-font-delta, 0px));
@@ -179,7 +180,7 @@
 .retrySummary::after {
   width: 6px;
   height: 6px;
-  border-right: 1.5px solid currentcolor;
+  border-inline-end: 1.5px solid currentcolor;
   border-bottom: 1.5px solid currentcolor;
   content: '';
   opacity: 0.8;
@@ -225,7 +226,7 @@
   display: grid;
   gap: 2px;
   margin-top: 3px;
-  padding-left: 14px;
+  padding-inline-start: 14px;
   overflow-wrap: anywhere;
   font-size: var(--gnk-content-font-size-secondary, 13px);
   line-height: calc(18px + var(--gnk-content-font-delta-secondary, 0px));
@@ -255,7 +256,7 @@
 }
 
 .turnErrorTitle {
-  margin-right: 6px;
+  margin-inline-end: 6px;
   color: var(--dsw-alias-state-error-primary);
   font-weight: 600;
 }
@@ -270,7 +271,7 @@
 }
 
 .maxTokensTitle {
-  margin-right: 6px;
+  margin-inline-end: 6px;
   color: var(--dsw-alias-state-warn-primary);
   font-weight: 600;
 }

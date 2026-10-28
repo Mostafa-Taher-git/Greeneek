@@ -60,6 +60,12 @@
   transform: translateX(16px);
 }
 
+/* The on-state thumb slides to the switch's far edge; transform has no
+   logical axis, so the slide mirrors under RTL. */
+[dir='rtl'] .switchOn .thumb {
+  transform: translateX(-16px);
+}
+
 .selection {
   display: grid;
   gap: 10px;

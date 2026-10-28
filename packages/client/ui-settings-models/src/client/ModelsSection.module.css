@@ -117,7 +117,7 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  margin-left: auto;
+  margin-inline-start: auto;
 }
 
 /* `box-sizing` on every control here: the app has no global border-box reset,
@@ -358,7 +358,7 @@
   gap: 6px;
   width: fit-content;
   padding: 2px 4px;
-  margin-left: -4px;
+  margin-inline-start: -4px;
   border-radius: 6px;
   cursor: pointer;
   font-size: 12px;
@@ -376,7 +376,7 @@
   content: '';
   width: 5px;
   height: 5px;
-  border-right: 1.5px solid currentcolor;
+  border-inline-end: 1.5px solid currentcolor;
   border-bottom: 1.5px solid currentcolor;
   transform: rotate(-45deg) translate(-1px, -1px);
   transition: transform 120ms ease;
@@ -583,7 +583,7 @@ select.input {
    .select chips; the right pad reserves its cell. */
 .selectInput {
   appearance: none;
-  padding-right: 32px;
+  padding-inline-end: 32px;
   /* Data-URI SVGs cannot resolve CSS variables; #81858C is the caption gray
      shared by both themes. */
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%2381858C' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
@@ -795,4 +795,10 @@ select.input {
 
 .visibilitySwitchOn .visibilityThumb {
   transform: translateX(16px);
+}
+
+/* The on-state thumb slides to the switch's far edge; transform has no
+   logical axis, so the slide mirrors under RTL. */
+[dir='rtl'] .visibilitySwitchOn .visibilityThumb {
+  transform: translateX(-16px);
 }

@@ -1,4 +1,8 @@
 .root {
+  /* JSON keys and values are LTR technical content in every locale (the
+     plan's bidi rule keeps code and paths verbatim), so the tree keeps a
+     left-to-right layout; physical offsets below are code coordinates. */
+  direction: ltr;
   --json-tree-property: #881391;
   --json-tree-string: #c41a16;
   --json-tree-number: #1c00cf;
@@ -40,7 +44,8 @@
   box-sizing: border-box;
   width: max-content;
   min-width: 100%;
-  padding: 6px 8px 8px 14px;
+  padding-block: 6px 8px;
+  padding-inline: 14px 8px;
 }
 
 .expandedTopLevel:has(> .topLevelBracket[data-json-root-row]:hover),
@@ -53,8 +58,8 @@
 }
 
 .row.topLevelBracket {
-  margin-left: 0;
-  padding-left: 0;
+  margin-inline-start: 0;
+  padding-inline-start: 0;
 }
 
 .children {
@@ -69,7 +74,8 @@
   min-width: 100%;
   min-height: 16px;
   margin: 0;
-  padding: 0 0 0 10px;
+  padding-block: 0;
+  padding-inline: 10px 0;
   list-style: none;
 }
 
@@ -79,8 +85,7 @@
   position: absolute;
   z-index: 0;
   top: 0;
-  right: 0;
-  left: 0;
+  inset-inline: 0;
   height: 16px;
   background: var(--json-tree-hover);
   content: '';
@@ -93,7 +98,7 @@
 }
 
 .label {
-  margin-right: 3px;
+  margin-inline-end: 3px;
   color: var(--json-tree-property);
   font-weight: 400;
 }
@@ -193,7 +198,7 @@
   height: 0;
   border-top: 4px solid transparent;
   border-bottom: 4px solid transparent;
-  border-left: 6px solid currentColor;
+  border-inline-start: 6px solid currentColor;
   content: '';
   transform: scale(0.75);
   transform-origin: 33.333% center;

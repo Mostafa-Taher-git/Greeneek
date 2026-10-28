@@ -5,7 +5,8 @@
   align-items: center;
   gap: 4px;
   max-width: 180px;
-  padding: 0 2px 0 0;
+  padding-block: 0;
+  padding-inline: 0 2px;
   height: 22px;
   border-radius: 6px;
   background: var(--dsw-alias-fill-tsp-secondary);

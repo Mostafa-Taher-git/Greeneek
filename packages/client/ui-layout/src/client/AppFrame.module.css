@@ -20,8 +20,7 @@
   content: '';
   position: absolute;
   top: 0;
-  left: 0;
-  right: 0;
+  inset-inline: 0;
   height: 3px;
   z-index: 5;
   pointer-events: none;
@@ -98,13 +97,13 @@
 .detailsCol {
   min-width: 0;
   overflow: hidden;
-  border-left: 0.5px solid var(--dsw-alias-border-l3);
+  border-inline-start: 0.5px solid var(--dsw-alias-border-l3);
 }
 
 /* The details subtree stays mounted at zero width, so its border must not paint
    a 1px seam. The collapsed sidebar instead retains a bordered compact rail. */
 .frame[data-details-collapsed] .detailsCol {
-  border-left: none;
+  border-inline-start: none;
 }
 
 /* Drag handles are frame children (columns clip overflow): an 8px hit strip
@@ -115,7 +114,7 @@
   top: 0;
   bottom: 0;
   width: 8px;
-  margin-left: -4px;
+  margin-inline-start: -4px;
   cursor: col-resize;
   /* The sidebar owns an explicit stacking level above the conversation's
      inner bands (see SidebarRoot.module.css), so the grab strip sits above

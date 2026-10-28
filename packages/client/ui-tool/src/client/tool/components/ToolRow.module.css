@@ -17,15 +17,16 @@
 }
 
 /* Running sweep (deepsuite ShimmerText pattern): a fixed-width glare band —
-   theme background at 60% — glides over the row content from off-left to
-   off-right, washing glyphs and icon toward the background as it passes.
+   theme background at 60% — glides over the row content from off the
+   inline-start edge to past the inline end, washing glyphs and icon toward
+   the background as it passes.
    ease-out with a 10% end hold gives each pass a beat before the next. */
 .root[data-state='running'] .row::after {
   content: '';
   position: absolute;
   top: 0;
   bottom: 0;
-  left: 0;
+  inset-inline-start: 0;
   width: 300px;
   background: linear-gradient(
     90deg,
@@ -38,8 +39,8 @@
 }
 
 @keyframes gnk-tool-row-sweep {
-  0% { left: -300px; }
-  90%, 100% { left: 100%; }
+  0% { inset-inline-start: -300px; }
+  90%, 100% { inset-inline-start: 100%; }
 }
 
 .leading {
@@ -96,7 +97,7 @@
    which would break the one-line row in the narrow case the slot exists for. */
 .summarySuffix {
   flex: none;
-  margin-left: 4px;
+  margin-inline-start: 4px;
   white-space: nowrap;
   font-size: var(--gnk-content-font-size-secondary, 13px);
   line-height: calc(24px + var(--gnk-content-font-delta, 0px));
@@ -111,7 +112,7 @@
    half-pixel nudge closes the baseline gap the size difference leaves under
    the row's box-centering (a transform, so flex layout is untouched). */
 .diffStat {
-  margin-left: 10px;
+  margin-inline-start: 10px;
   font-family: var(--ds-font-family-code);
   font-size: calc(var(--gnk-content-font-size-secondary, 13px) - 2px);
   color: var(--dsw-alias-label-caption);
@@ -134,7 +135,7 @@
   border: none;
   background: none;
   font: inherit;
-  text-align: left;
+  text-align: start;
   font-size: var(--gnk-content-font-size-secondary, 13px);
   line-height: calc(24px + var(--gnk-content-font-delta, 0px));
   color: var(--dsw-alias-label-secondary);
@@ -170,7 +171,8 @@
   align-self: flex-start;
   align-items: center;
   gap: 4px;
-  margin: 4px 0 2px 4px;
+  margin-block: 4px 2px;
+  margin-inline: 4px 0;
   padding: 2px 8px;
   border: 0.5px solid var(--dsw-alias-border-l3);
   border-radius: 999px;
@@ -212,7 +214,8 @@
 .ioCard {
   display: flex;
   flex-direction: column;
-  margin: 4px 0 4px 4px;
+  margin-block: 4px;
+  margin-inline: 4px 0;
   border: 0.5px solid var(--dsw-alias-border-l1);
   border-radius: 12px;
   background: var(--dsw-alias-markdown-code-block);
@@ -292,14 +295,16 @@
 .imageBody,
 .searchBody,
 .webBody {
-  margin: 4px 0 4px 4px;
+  margin-block: 4px;
+  margin-inline: 4px 0;
 }
 
 /* The recovery footer for a capped search: the result text (its `Full … stored
    at …` locator) below the card in the muted tone, since the card holds only the
    retained rows. Same column indent as the card body. */
 .searchRecovery {
-  margin: 4px 0 4px 4px;
+  margin-block: 4px;
+  margin-inline: 4px 0;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   font: var(--dsw-font-xs-13);

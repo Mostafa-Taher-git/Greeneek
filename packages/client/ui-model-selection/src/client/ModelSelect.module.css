@@ -11,7 +11,8 @@
   gap: 6px;
   min-width: 0;
   height: 36px;
-  padding: 0 14px 0 12px;
+  padding-block: 0;
+  padding-inline: 12px 14px;
   border: none;
   border-radius: 999px;
   corner-shape: round;
@@ -71,7 +72,7 @@
 
 .menu {
   position: absolute;
-  right: 0;
+  inset-inline-end: 0;
   bottom: calc(100% + 8px);
   z-index: 20;
   display: flex;
@@ -176,7 +177,7 @@
   outline: none;
   background: transparent;
   color: inherit;
-  text-align: left;
+  text-align: start;
   cursor: pointer;
 }
 
@@ -283,13 +284,14 @@
   gap: 8px;
   width: 100%;
   min-height: 36px;
-  padding: 0 10px 0 12px;
+  padding-block: 0;
+  padding-inline: 12px 10px;
   border: 0;
   border-radius: 10px;
   background: transparent;
   color: var(--dsw-alias-label-primary);
   font: inherit;
-  text-align: left;
+  text-align: start;
   cursor: pointer;
 }
 .menuRow:hover {
@@ -313,7 +315,7 @@
   white-space: nowrap;
   font-size: 14px;
   color: var(--dsw-alias-label-secondary);
-  text-align: right;
+  text-align: end;
 }
 .menuRowChevron {
   flex: none;
@@ -405,6 +407,10 @@
   text-align: center;
 }
 .slider {
+  /* The knob position and ArrowRight both encode the effort fraction on a
+     left-to-right scale, so the geometry stays LTR in every locale (the
+     chart convention); physical left here is a scale coordinate. */
+  direction: ltr;
   position: relative;
   height: 38px;
   margin: 0 12px;
@@ -423,8 +429,7 @@
 }
 .sliderTrack {
   position: absolute;
-  left: 0;
-  right: 0;
+  inset-inline: 0;
   top: 50%;
   translate: 0 -50%;
   height: 28px;
@@ -450,7 +455,7 @@
 }
 .sliderFill {
   position: absolute;
-  left: 0;
+  inset-inline-start: 0;
   top: 0;
   bottom: 0;
   border-radius: 999px;
@@ -474,6 +479,9 @@
   pointer-events: none;
 }
 .sliderCaptions {
+  /* Caption order mirrors the forced-LTR slider geometry: the first stop
+     sits at the same edge the knob starts from. */
+  direction: ltr;
   display: flex;
   justify-content: space-between;
   gap: 8px;

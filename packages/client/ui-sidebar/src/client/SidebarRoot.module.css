@@ -97,9 +97,14 @@
 }
 
 /* The flush expanded column trades the outer ring for the one seam that
-   closes it against the conversation surface. */
+   closes it against the conversation surface. The seam rides the window's
+   inline-end edge, so the inward cast flips with the column under RTL. */
 .root:not(.collapsed)::before {
   box-shadow: inset -1px 0 0 var(--dsw-alias-border-l1);
+}
+
+[dir='rtl'] .root:not(.collapsed)::before {
+  box-shadow: inset 1px 0 0 var(--dsw-alias-border-l1);
 }
 
 /* Scrollbars in the column are a pointer affordance: the shell adds this
@@ -126,6 +131,12 @@
   transition:
     opacity 150ms var(--ds-ease-in-out),
     transform 150ms var(--ds-ease-in-out);
+}
+
+/* The drift melts the content toward the rail; under RTL the rail is the
+   window's other edge, so the drift flips. */
+[dir='rtl'] .fading > * {
+  transform: translateX(6px);
 }
 
 /* Wide-only content fades back in on expand remount. */
@@ -163,6 +174,20 @@
   from {
     opacity: 0;
     transform: translateX(49px);
+  }
+}
+
+/* Rail entrances mirror under RTL: the rail sits at the window's other
+   edge, so the controls enter from the opposite physical side. */
+[dir='rtl'] .railIn .newSession,
+[dir='rtl'] .railIn .regionArea {
+  animation-name: rail-in-rtl;
+}
+
+@keyframes rail-in-rtl {
+  from {
+    opacity: 0;
+    transform: translateX(-49px);
   }
 }
 
@@ -205,6 +230,20 @@
   }
 }
 
+/* Expanding content melts in from the rail side; RTL flips that side. */
+[dir='rtl'] .expanding .regionArea,
+[dir='rtl'] .expanding .logoRow,
+[dir='rtl'] .expanding .footArea {
+  animation-name: neon-expand-in-rtl;
+}
+
+@keyframes neon-expand-in-rtl {
+  from {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+}
+
 /* The attention magnet: one neon band crosses the New Session capsule on
    expand (480ms, peaking at 0.15 opacity), then the class drops and the
    capsule is still. It rides ::before so the JSX stays untouched; the
@@ -225,6 +264,29 @@
   }
 }
 
+/* The band sweeps along the reading direction from the inline-start anchor;
+   RTL flips both the anchor and the travel. */
+[dir='rtl'] .newSession::before {
+  inset-inline-start: auto;
+  inset-inline-end: 0;
+}
+
+[dir='rtl'] .expanding .newSession::before {
+  animation-name: neon-sweep-rtl;
+}
+
+@keyframes neon-sweep-rtl {
+  from {
+    opacity: 0;
+    transform: translateX(120%);
+  }
+  45% { opacity: 0.15; }
+  to {
+    opacity: 0;
+    transform: translateX(-360%);
+  }
+}
+
 /* Logo row (figma pad (4,8,4,8)): the brand wordmark in its bottom seat —
    above the foot stack in both states (the fold toggle lives in the desktop
    titlebar). The rail shows the static mark only. */
@@ -235,7 +297,8 @@
   justify-content: flex-start;
   gap: 8px;
   height: 60px;
-  padding: 8px 0 8px 4px;
+  padding-block: 8px;
+  padding-inline: 4px 0;
   margin-bottom: 8px;
   box-sizing: border-box;
   overflow: hidden;
@@ -386,7 +449,7 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  left: 0;
+  inset-inline-start: 0;
   width: 55%;
   background: linear-gradient(100deg, transparent, var(--gnk-sidebar-neon), transparent);
   opacity: 0;
@@ -450,17 +513,17 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  margin-left: -4px;
-  margin-right: calc(-1 * var(--gnk-sidebar-inline-padding) + var(--gnk-sidebar-glass-inset));
-  padding-left: 4px;
+  margin-inline-start: -4px;
+  margin-inline-end: calc(-1 * var(--gnk-sidebar-inline-padding) + var(--gnk-sidebar-glass-inset));
+  padding-inline-start: 4px;
   overflow: hidden;
-  transition: margin-right 150ms var(--ds-ease-in-out);
+  transition: margin-inline-end 150ms var(--ds-ease-in-out);
 }
 
 .collapsed .regionArea {
-  margin-left: 0;
-  margin-right: 0;
-  padding-left: 0;
+  margin-inline-start: 0;
+  margin-inline-end: 0;
+  padding-inline-start: 0;
 }
 
 /* Footer seats: additive actions stack above Settings. Each occupant owns its

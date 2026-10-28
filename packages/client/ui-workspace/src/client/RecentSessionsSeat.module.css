@@ -10,7 +10,8 @@
 
 /* Small muted section label in the hero's typographic voice (12/18, medium). */
 .heading {
-  margin: 0 0 2px 8px;
+  margin-block: 0 2px;
+  margin-inline: 8px 0;
   font-size: 12px;
   line-height: 18px;
   font-weight: 500;
@@ -34,7 +35,7 @@ button.row {
   border: 0;
   background: transparent;
   font: inherit;
-  text-align: left;
+  text-align: start;
 }
 
 button.row:focus-visible {
@@ -43,7 +44,8 @@ button.row:focus-visible {
 }
 
 .empty {
-  margin: 0 0 0 8px;
+  margin-block: 0;
+  margin-inline: 8px 0;
   font-size: 12px;
   line-height: 18px;
   color: var(--dsw-alias-label-tertiary);

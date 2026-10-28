@@ -38,8 +38,8 @@
   /* The base .tableScroll caps at the column (max-width: 100%); the breakout
      is exactly the case that must exceed it. */
   max-width: none;
-  margin-left: calc(-1 * var(--gnk-table-lead));
-  padding-left: var(--gnk-table-lead);
+  margin-inline-start: calc(-1 * var(--gnk-table-lead));
+  padding-inline-start: var(--gnk-table-lead);
 }
 
 /* hidden="until-found" keeps a zero-height reasoning box in flex layout.
@@ -66,5 +66,5 @@
 .actions {
   margin-top: 16px;
   /* Optical align with 28px icon hit targets that pad 6px past the glyph. */
-  margin-left: -6px;
+  margin-inline-start: -6px;
 }

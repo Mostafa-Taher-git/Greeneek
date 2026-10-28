@@ -64,12 +64,12 @@
   position: relative;
   text-decoration: none;
   /* Transparent hit-area padding; literal zero-alpha only (no painted color). */
-  border-left: 3px solid rgb(255 255 255 / 0);
-  border-right: 3px solid rgb(255 255 255 / 0);
+  border-inline-start: 3px solid rgb(255 255 255 / 0);
+  border-inline-end: 3px solid rgb(255 255 255 / 0);
   border-top: 2px solid rgb(255 255 255 / 0);
   border-bottom: 2px solid rgb(255 255 255 / 0);
-  margin-left: -3px;
-  margin-right: -3px;
+  margin-inline-start: -3px;
+  margin-inline-end: -3px;
 }
 
 .markdown a:hover,
@@ -84,7 +84,7 @@
 
 .markdown :where(ul, ol) {
   margin: 16px 0;
-  padding-left: 18px;
+  padding-inline-start: 18px;
 }
 
 .markdown li:not(:first-child) {
@@ -103,7 +103,7 @@
 /* Nested ol under ul/ol: markers inside (models sometimes emit this shape). */
 .markdown :where(ul, ol) ol {
   list-style-position: inside;
-  padding-left: 0;
+  padding-inline-start: 0;
 }
 
 .markdown :where(ul, ol) ol li p {
@@ -132,9 +132,9 @@
 }
 
 .markdown blockquote {
-  border-left: 2px solid var(--dsw-alias-label-caption);
+  border-inline-start: 2px solid var(--dsw-alias-label-caption);
   margin: 16px 0 0;
-  padding-left: 14px;
+  padding-inline-start: 14px;
 }
 
 .markdown pre {
@@ -167,7 +167,8 @@
 }
 
 .markdown input[type='checkbox'] {
-  margin: 0 8px 0 0;
+  margin-block: 0;
+  margin-inline: 0 8px;
   accent-color: var(--dsw-alias-label-secondary);
 }
 
@@ -244,11 +245,11 @@
 
 .tableScroll th:first-child,
 .tableScroll td:first-child {
-  padding-left: 0;
+  padding-inline-start: 0;
 }
 
 .tableScroll td:last-child {
-  padding-right: 0;
+  padding-inline-end: 0;
 }
 
 .tableScroll table code {

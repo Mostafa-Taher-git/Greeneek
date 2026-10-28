@@ -31,7 +31,7 @@
 }
 
 .status {
-  margin-left: auto;
+  margin-inline-start: auto;
   font-size: 12px;
   line-height: 18px;
   color: var(--dsw-alias-label-tertiary);

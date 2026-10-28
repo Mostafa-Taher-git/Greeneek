@@ -30,20 +30,20 @@ describe('SidebarRoot.module.css', () => {
     const root = declarations('.root')
     expect(root?.get('--gnk-sidebar-inline-padding')).toBe('12px')
     expect(root?.get('padding')).toBe('10px var(--gnk-sidebar-inline-padding)')
-    expect(declarations('.regionArea')?.get('margin-left')).toBe('-4px')
-    expect(declarations('.regionArea')?.get('padding-left')).toBe('4px')
-    expect(declarations('.regionArea')?.get('margin-right')).toBe(
+    expect(declarations('.regionArea')?.get('margin-inline-start')).toBe('-4px')
+    expect(declarations('.regionArea')?.get('padding-inline-start')).toBe('4px')
+    expect(declarations('.regionArea')?.get('margin-inline-end')).toBe(
       'calc(-1 * var(--gnk-sidebar-inline-padding) + var(--gnk-sidebar-glass-inset))',
     )
-    expect(declarations('.collapsed .regionArea')?.get('margin-left')).toBe('0')
-    expect(declarations('.collapsed .regionArea')?.get('padding-left')).toBe('0')
-    expect(declarations('.collapsed .regionArea')?.get('margin-right')).toBe('0')
+    expect(declarations('.collapsed .regionArea')?.get('margin-inline-start')).toBe('0')
+    expect(declarations('.collapsed .regionArea')?.get('padding-inline-start')).toBe('0')
+    expect(declarations('.collapsed .regionArea')?.get('margin-inline-end')).toBe('0')
   })
 
   it('suspends the shell as one flat Edge Frame surface', () => {
     // The material is one decorative layer: solid base token, no veil, mist,
     // or blur. Expanded, it is flush to the column (inset collapses to 0,
-    // radius to 0) and closed by a single 1px right seam; collapsed, it
+    // radius to 0) and closed by a single 1px inline-end seam; collapsed, it
     // floats as a bordered compact rail card. The panel is drawn by ::before
     // at negative z inside .root's own stacking context, so no child layout
     // moves for it, and every edge is box-shadow — never a border-token
@@ -79,7 +79,7 @@ describe('SidebarRoot.module.css', () => {
     expect(panel?.get('transition')).toBe(
       'inset 150ms var(--ds-ease-in-out), border-radius 150ms var(--ds-ease-in-out), box-shadow 150ms var(--ds-ease-in-out)',
     )
-    expect(declarations('.regionArea')?.get('transition')).toBe('margin-right 150ms var(--ds-ease-in-out)')
+    expect(declarations('.regionArea')?.get('transition')).toBe('margin-inline-end 150ms var(--ds-ease-in-out)')
   })
 
   it('stages the rail controls top-to-bottom while the settings seat only fades', () => {

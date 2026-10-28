@@ -28,7 +28,7 @@
 .refIcon {
   width: 1em;
   height: 1em;
-  margin-right: 4px;
+  margin-inline-end: 4px;
   /* Optical centering against the text: drops the glyph below the baseline by
      a font-relative amount, so it holds across the font axis. */
   vertical-align: -0.125em;

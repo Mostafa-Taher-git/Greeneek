@@ -48,9 +48,8 @@
 .tab[data-active='true']::after,
 .tab:focus-visible::after {
   position: absolute;
-  right: 0;
+  inset-inline: 0;
   bottom: -1px;
-  left: 0;
   height: 2px;
   border-radius: 2px 2px 0 0;
   background: var(--dsw-alias-label-primary);

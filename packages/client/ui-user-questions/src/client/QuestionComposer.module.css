@@ -70,7 +70,8 @@
   justify-content: space-between;
   gap: 16px;
   flex-shrink: 0;
-  padding: 20px 16px 0 24px;
+  padding-block: 20px 0;
+  padding-inline: 24px 16px;
 }
 
 .headingBlock {
@@ -177,12 +178,13 @@
      intrinsic height, and centered content then paints outside the row box —
      over the title and the next row. Overflow belongs to .options. */
   flex-shrink: 0;
-  padding: 8px 12px 8px 8px;
+  padding-block: 8px;
+  padding-inline: 8px 12px;
   border: 1px solid transparent;
   border-radius: 12px;
   background: transparent;
   color: inherit;
-  text-align: left;
+  text-align: start;
   cursor: pointer;
   transition: background-color 120ms ease, border-color 120ms ease;
 }
@@ -306,7 +308,8 @@
   /* Same reason as .option: the custom row is scroll content, and shrinking
      it pushes the inline input past the footer. */
   flex-shrink: 0;
-  padding: 8px 12px 8px 8px;
+  padding-block: 8px;
+  padding-inline: 8px 12px;
   border: 1px solid transparent;
   border-radius: 12px;
   transition: background-color 120ms ease, border-color 120ms ease;
@@ -407,7 +410,8 @@
   gap: 12px;
   flex-shrink: 0;
   margin-top: 12px;
-  padding: 0 10px 0 18px;
+  padding-block: 0;
+  padding-inline: 18px 10px;
 }
 
 .feedback {
@@ -416,7 +420,7 @@
   color: var(--dsw-alias-state-error-primary);
   font-size: 11px;
   line-height: 16px;
-  text-align: right;
+  text-align: end;
 }
 
 @media (max-width: 720px) {
@@ -425,7 +429,8 @@
   }
 
   .header {
-    padding: 10px 12px 0 18px;
+    padding-block: 10px 0;
+    padding-inline: 18px 12px;
   }
 
   .options {

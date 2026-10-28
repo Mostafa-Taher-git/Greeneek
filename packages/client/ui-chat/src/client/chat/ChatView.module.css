@@ -112,7 +112,7 @@
 }
 
 .turnStatusClock {
-  margin-left: 8px;
+  margin-inline-start: 8px;
   font: var(--dsw-font-xs-13);
   font-size: var(--gnk-content-font-size-secondary, 13px);
   line-height: calc(20px + var(--gnk-content-font-delta-secondary, 0px));
@@ -182,7 +182,7 @@
   height: 0;
   display: flex;
   justify-content: flex-end;
-  padding-right: max(0px, calc((100% - var(--gnk-chat-content-width)) / 2));
+  padding-inline-end: max(0px, calc((100% - var(--gnk-chat-content-width)) / 2));
   pointer-events: none;
 }
 

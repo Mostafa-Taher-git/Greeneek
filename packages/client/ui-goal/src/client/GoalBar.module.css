@@ -25,7 +25,8 @@
   max-width: calc(var(--gnk-composer-card-max-width) - 4 * var(--gnk-composer-dock-inset));
   height: 36px;
   margin: 0 auto;
-  padding: 4px 5px 4px 12px;
+  padding-block: 4px;
+  padding-inline: 12px 5px;
   border: 0.5px solid var(--dsw-alias-border-l1);
   border-radius: 12px;
   background: var(--dsw-specific-tip);

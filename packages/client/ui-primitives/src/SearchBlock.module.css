@@ -41,7 +41,8 @@
 }
 
 .body {
-  padding: 8px 14px 12px 0;
+  padding-block: 8px 12px;
+  padding-inline: 0 14px;
   font: var(--dsw-font-markdown-code-block);
   overflow-x: auto;
   overflow-y: hidden;
@@ -51,7 +52,7 @@
    sideways instead of folding. */
 .line {
   min-height: var(--dsl-search-line-height);
-  padding-left: 14px;
+  padding-inline-start: 14px;
   white-space: pre;
 }
 
@@ -74,7 +75,7 @@
   background-color: transparent;
   cursor: pointer;
   font: inherit;
-  text-align: left;
+  text-align: start;
 }
 
 .filePath {
@@ -98,7 +99,7 @@
   color: var(--dsw-alias-label-tertiary);
   cursor: pointer;
   font: inherit;
-  text-align: left;
+  text-align: start;
 }
 
 .expand:hover {

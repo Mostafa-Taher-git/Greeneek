@@ -28,7 +28,8 @@
   flex-direction: column;
   gap: 8px;
   flex: none;
-  padding: 16px 14px 8px 24px;
+  padding-block: 16px 8px;
+  padding-inline: 24px 14px;
   border-bottom: 0.5px solid var(--dsw-alias-border-l3);
 }
 
@@ -54,7 +55,7 @@
   gap: 4px;
   box-sizing: border-box;
   min-height: 24px;
-  margin-left: -9px;
+  margin-inline-start: -9px;
   padding: 0 8px;
   border: 1px solid transparent;
   border-radius: 8px;
@@ -191,9 +192,10 @@
   min-height: 0;
   /* Anchors the floating loading pill (.loadingFloat). */
   position: relative;
-  /* Right inset is slimmer than the left: the trailing column's own 8px
-   * scrollbar clearance makes up the optical difference. */
-  padding: 16px 16px 16px 24px;
+  /* The inline-end inset is slimmer than the inline-start: the trailing
+   * column's own 8px scrollbar clearance makes up the optical difference. */
+  padding-block: 16px;
+  padding-inline: 24px 16px;
 }
 
 /* Columns split the row evenly around the divider (a solo column takes the
@@ -210,7 +212,7 @@
   /* The themed scrollbar occupies the column's edge (styled scrollbars are
    * classic, gutter-taking ones); the extra clearance keeps the row pills
    * clear of the thumb. */
-  padding-right: 8px;
+  padding-inline-end: 8px;
 }
 
 .divider {
@@ -235,7 +237,7 @@
   border: none;
   border-radius: 6px;
   background: transparent;
-  text-align: left;
+  text-align: start;
   cursor: pointer;
 }
 
@@ -282,7 +284,7 @@
   /* The loading pill occupies the opposite corner while a stale status stays
    * visible. Reserve its widest localized footprint so wrapped text cannot
    * run underneath it on a narrow card. */
-  padding-right: 120px;
+  padding-inline-end: 120px;
   font-size: 12px;
   line-height: 18px;
 }
@@ -295,18 +297,18 @@
   color: var(--dsw-alias-state-error-primary);
 }
 
-/* The slow-scan indicator floats over the content's bottom-RIGHT corner on
- * the card background instead of occupying a row: a scan must never shift
+/* The slow-scan indicator floats over the content's bottom inline-end corner
+ * on the card background instead of occupying a row: a scan must never shift
  * the columns' height, and the stale view keeps rendering beneath it (it
- * only appears at all once a scan outlives SLOW_SCAN_DELAY_MS). Right,
- * not left: the truncated/error status rows flow at the bottom LEFT and
- * stay on screen through a scan, with their reserved right padding keeping
- * both legible even on a narrow card. After .status in the cascade — the
- * element carries both classes and this padding must win the
- * same-specificity race. */
+ * only appears at all once a scan outlives SLOW_SCAN_DELAY_MS). Inline end,
+ * not inline start: the truncated/error status rows flow at the bottom
+ * inline start and stay on screen through a scan, with their reserved
+ * inline-end padding keeping both legible even on a narrow card. After
+ * .status in the cascade — the element carries both classes and this padding
+ * must win the same-specificity race. */
 .loadingFloat {
   position: absolute;
-  right: 16px;
+  inset-inline-end: 16px;
   bottom: 8px;
   padding: 2px 8px;
   background: var(--dsw-alias-bg-layer-2);

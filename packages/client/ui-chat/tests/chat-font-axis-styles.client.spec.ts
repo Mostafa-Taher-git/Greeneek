@@ -79,11 +79,11 @@ describe('chat flow font-size axis', () => {
     // 22px indent would misalign at every non-default size.
     const indent = 'calc(22px + var(--gnk-content-font-delta, 0px))'
     expect(declarationsFrom(read('ReasoningRow.module.css'), '.thinkBody'))
-      .toEqual(expect.arrayContaining([`padding: 4px 0 4px ${indent}`]))
+      .toEqual(expect.arrayContaining(['padding-block: 4px', `padding-inline: ${indent} 0`]))
     expect(declarationsFrom(read('MessageItem.module.css'), '.compactionBody'))
-      .toEqual(expect.arrayContaining([`padding: 4px 0 4px ${indent}`]))
+      .toEqual(expect.arrayContaining(['padding-block: 4px', `padding-inline: ${indent} 0`]))
     expect(declarationsFrom(read('ContextInjectionRow.module.css'), '.body'))
-      .toEqual(expect.arrayContaining([`margin: 4px 0 0 ${indent}`]))
+      .toEqual(expect.arrayContaining(['margin-block: 4px 0', `margin-inline: ${indent} 0`]))
   })
 
   it('the usage-details trigger reads the secondary tier like its clock label', () => {
@@ -128,7 +128,7 @@ describe('chat flow font-size axis', () => {
     expect(narrow).toMatch(/\.trigger \{[^}]*width: calc\(28px \+ var\(--gnk-content-font-delta, 0px\)\)/)
     expect(narrow).toMatch(/\.trigger \{[^}]*padding: 6px/)
     expect(narrow).toMatch(/\.trigger \.label \{[^}]*display: none/)
-    expect(narrow).toMatch(/\.root \+ \.root \{[^}]*margin-left: 0/)
+    expect(narrow).toMatch(/\.root \+ \.root \{[^}]*margin-inline-start: 0/)
   })
 
   it('non-latest turn tails hide the whole actions row until hover or focus', () => {

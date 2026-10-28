@@ -53,7 +53,7 @@
 
 .search > svg {
   position: absolute;
-  left: 12px;
+  inset-inline-start: 12px;
   pointer-events: none;
 }
 
@@ -62,7 +62,8 @@
   height: 36px;
   border: 0.5px solid var(--dsw-alias-border-l4);
   border-radius: 10px;
-  padding: 0 34px 0 36px;
+  padding-block: 0;
+  padding-inline: 36px 34px;
   outline: none;
   background: var(--dsw-alias-bg-layer-1);
   color: var(--dsw-alias-label-primary);
@@ -136,7 +137,7 @@
   background: transparent;
   color: inherit;
   font: inherit;
-  text-align: left;
+  text-align: start;
   cursor: pointer;
 }
 
@@ -242,7 +243,7 @@
 }
 
 .headerEnd {
-  margin-left: auto;
+  margin-inline-start: auto;
 }
 
 .groupToggle {
@@ -255,7 +256,7 @@
   background: transparent;
   color: inherit;
   font: inherit;
-  text-align: left;
+  text-align: start;
   cursor: pointer;
 }
 
@@ -283,7 +284,8 @@
   display: flex;
   flex-wrap: wrap;
   gap: 4px 8px;
-  margin: -6px 0 0 20px;
+  margin-block: -6px 0;
+  margin-inline: 20px 0;
   color: var(--dsw-alias-label-tertiary);
   font-size: 12px;
   line-height: 18px;

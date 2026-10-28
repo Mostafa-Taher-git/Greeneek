@@ -99,7 +99,7 @@
 }
 
 .waveStop {
-  margin-left: auto;
+  margin-inline-start: auto;
   padding: 1px 8px;
   border: 0.5px solid var(--dsw-alias-border-l2);
   border-radius: 8px;
@@ -181,7 +181,7 @@
 
 .tokens {
   flex: none;
-  margin-left: auto;
+  margin-inline-start: auto;
   color: var(--dsw-alias-label-tertiary);
   font-family: var(--ds-font-family-code);
 }

@@ -141,7 +141,7 @@
 }
 
 .failure {
-  padding-left: 4px;
+  padding-inline-start: 4px;
   color: var(--dsw-alias-label-tertiary);
   font-size: 13px;
   line-height: 20px;

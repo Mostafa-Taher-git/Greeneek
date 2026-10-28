@@ -3,7 +3,8 @@
   flex-direction: column;
   gap: 16px;
   max-height: 360px;
-  margin: 4px 0 4px 4px;
+  margin-block: 4px;
+  margin-inline: 4px 0;
   padding: 16px 20px;
   overflow-y: auto;
   border: 0.5px solid var(--dsw-alias-border-l1);
@@ -55,7 +56,7 @@
   flex-direction: column;
   gap: 8px;
   margin: 0;
-  padding-left: 20px;
+  padding-inline-start: 20px;
 }
 
 .unansweredQuestion {

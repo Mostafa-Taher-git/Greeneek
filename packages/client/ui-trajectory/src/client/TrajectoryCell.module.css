@@ -6,7 +6,8 @@
   align-items: center;
   box-sizing: border-box;
   height: 38px;
-  padding: 0 8px 0 20px;
+  padding-block: 0;
+  padding-inline: 20px 8px;
   gap: 24px;
   border-radius: 8px;
   border: 0.5px solid var(--dsw-alias-border-l4);
@@ -103,7 +104,7 @@
 }
 
 .root[data-kind='subtool'] {
-  padding-left: 28px;
+  padding-inline-start: 28px;
 }
 
 .text {
@@ -131,7 +132,7 @@
 .time {
   flex: none;
   width: 71px;
-  text-align: left;
+  text-align: start;
   font: var(--dsw-font-xs-13);
   color: var(--dsw-alias-label-tertiary);
   white-space: nowrap;

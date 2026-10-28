@@ -3,8 +3,7 @@
   bottom: calc(100% + 4px);
   /* The overlay anchor is exactly the composer card's width; both insets pin
      the menu edge to edge with border and padding kept inside. */
-  left: 0;
-  right: 0;
+  inset-inline: 0;
   z-index: 100;
   /* Height cap: the 320px design maximum, clamped at runtime to the space
    * above the composer (inline max-height set in MenuView.tsx). */
@@ -45,7 +44,7 @@
   font-size: 14px;
   line-height: 22px;
   color: var(--dsw-alias-label-primary);
-  text-align: left;
+  text-align: start;
 }
 
 /* One shared highlight: pointer motion parks it here through the hover event,
@@ -102,7 +101,7 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  margin-left: auto;
+  margin-inline-start: auto;
 }
 
 /* Hint naming the keyboard twin of the chevron — a caption line plus a Tab

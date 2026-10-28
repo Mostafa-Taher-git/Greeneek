@@ -35,14 +35,14 @@
   align-items: center;
   width: 320px;
   gap: 12px;
-  /* Match cell padding-right: 8 so Time lines up with the trailing lane. */
-  margin-right: 8px;
+  /* Match cell padding-inline-end: 8 so Time lines up with the trailing lane. */
+  margin-inline-end: 8px;
 }
 
 .column {
   flex: none;
   width: 71px;
-  text-align: left;
+  text-align: start;
   font: var(--dsw-font-xs-13);
   color: var(--dsw-alias-label-secondary);
 }

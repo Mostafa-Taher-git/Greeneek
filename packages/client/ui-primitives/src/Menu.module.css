@@ -31,7 +31,7 @@
 .list {
   position: absolute;
   top: calc(100% + 4px);
-  left: 0;
+  inset-inline-start: 0;
   z-index: 100;
   min-width: 218px;
   max-width: 360px;
@@ -55,8 +55,8 @@
 }
 
 .alignEnd {
-  left: auto;
-  right: 0;
+  inset-inline-start: auto;
+  inset-inline-end: 0;
 }
 
 /* Viewport fit: the card stops 12px short of the viewport's top/bottom edges
@@ -109,7 +109,7 @@
   font-size: 14px;
   line-height: 22px;
   color: var(--dsw-alias-label-primary);
-  text-align: left;
+  text-align: start;
 }
 
 .item:hover:not(:disabled) {
@@ -218,7 +218,7 @@
   background: var(--dsw-alias-border-l1);
 }
 
-/* Nested card to the right of the parent row (figma 419:16920).
+/* Nested card toward the parent row's inline end (figma 419:16920).
  * Bottom-aligned with the parent menu card (grows upward): itemWrap sits in
  * .list's 4px pad, so bottom: -4px matches the list's outer bottom edge.
  * Horizontal: list pad (4px) + 6px card gap = 10px past itemWrap — plain
@@ -228,7 +228,7 @@
   position: absolute;
   top: auto;
   bottom: -4px;
-  left: calc(100% + 10px);
+  inset-inline-start: calc(100% + 10px);
   z-index: 101;
   min-width: 163px;
 }
@@ -238,6 +238,6 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  left: -10px;
+  inset-inline-start: -10px;
   width: 10px;
 }

@@ -9,6 +9,11 @@
      so it never competes with the commands for horizontal space. */
   --dsl-terminal-gutter: 30px;
 
+  /* Terminal commands and their output are LTR technical content in every
+     locale (alignment is the payload of the output), so the card keeps a
+     left-to-right layout; the run-state dot's physical offset below is a
+     code coordinate. */
+  direction: ltr;
   position: relative;
   margin: 16px 0;
   /* The gutter is the card's OWN padding, not a margin: every consumer rewrites
@@ -16,7 +21,7 @@
      cancelled the reservation and let the dot fall outside the card into a
      container that clips it. Owning the reservation here keeps the invariant
      with the component that depends on it. */
-  padding-left: var(--dsl-terminal-gutter);
+  padding-inline-start: var(--dsl-terminal-gutter);
   color: var(--dsw-alias-label-primary);
   background: var(--dsw-alias-markdown-code-block);
   border-radius: var(--dsl-terminal-radius);
@@ -37,8 +42,9 @@
      surface, then re-inset by the same amount so the prompt text and the dot
      keep their positions. The banner shares the card's own surface (no banner
      token): the l2 divider below is the section boundary. */
-  margin-left: calc(-1 * var(--dsl-terminal-gutter));
-  padding: 9px 14px 9px var(--dsl-terminal-gutter);
+  margin-inline-start: calc(-1 * var(--dsl-terminal-gutter));
+  padding-block: 9px;
+  padding-inline: var(--dsl-terminal-gutter) 14px;
   border-top-left-radius: var(--dsl-terminal-radius);
   border-top-right-radius: var(--dsl-terminal-radius);
   /* A long multi-line command scrolls inside the banner (same cap as the
@@ -155,7 +161,8 @@
    Unset, the max-height is none and the auto overflow never engages. */
 .output {
   max-height: var(--dsl-terminal-output-max-height, none);
-  padding: 12px 14px 12px 0;
+  padding-block: 12px;
+  padding-inline: 0 14px;
   font: var(--dsl-terminal-font);
   overflow-x: auto;
   overflow-y: auto;
@@ -191,7 +198,7 @@
   color: var(--dsw-alias-label-tertiary);
   cursor: pointer;
   font: inherit;
-  text-align: left;
+  text-align: start;
 }
 
 .expand:hover {
@@ -199,7 +206,8 @@
 }
 
 .empty {
-  padding: 12px 14px 12px 0;
+  padding-block: 12px;
+  padding-inline: 0 14px;
   font: var(--dsl-terminal-font);
   color: var(--dsw-alias-label-tertiary);
 }

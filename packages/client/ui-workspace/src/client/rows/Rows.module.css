@@ -40,7 +40,7 @@
   padding: 4px 8px;
   background: transparent;
   cursor: pointer;
-  text-align: left;
+  text-align: start;
   color: var(--dsw-alias-label-primary);
 }
 
@@ -62,7 +62,7 @@
 .searchResultTitle {
   flex: 0 1 auto;
   min-width: 0;
-  margin-left: 4px;
+  margin-inline-start: 4px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -75,7 +75,7 @@
   align-items: center;
   gap: 6px;
   min-width: 0;
-  margin-left: 20px;
+  margin-inline-start: 20px;
 }
 
 .searchResultWorkspace,
@@ -120,11 +120,12 @@
 }
 
 .sessionRow .title {
-  margin: 0 6px 0 4px;
+  margin-block: 0;
+  margin-inline: 4px 6px;
 }
 
 .flatSessionRowWithoutStatus .title {
-  margin-left: 0;
+  margin-inline-start: 0;
 }
 
 @keyframes row-in {
@@ -225,13 +226,13 @@
   height: 20px;
   align-items: center;
   justify-content: center;
-  margin-right: 6px;
+  margin-inline-end: 6px;
   color: var(--dsw-alias-label-tertiary);
 }
 
 .searchScheduleIndicator {
-  margin-right: 0;
-  margin-left: 4px;
+  margin-inline-end: 0;
+  margin-inline-start: 4px;
 }
 
 .dot {
@@ -278,8 +279,7 @@
   content: '';
   position: absolute;
   z-index: 1;
-  left: 0;
-  right: 4px;
+  inset-inline: 0 4px;
   height: 12px;
   background:
     linear-gradient(
@@ -298,6 +298,29 @@
       var(--dsw-alias-state-business-primary) 0 0
     ) 4px 5px / calc(100% - 4px) 2px no-repeat;
   pointer-events: none;
+}
+
+/* The drop marker's chevron points along the reading direction and its rule
+   runs from the chevron toward the row's end edge; background positions and
+   gradient angles have no logical axis, so both mirror under RTL. */
+[dir='rtl'] .sessionRow.dropBefore::before,
+[dir='rtl'] .sessionRow.dropAfter::after {
+  background:
+    linear-gradient(
+      125deg,
+      transparent calc(50% - 1px),
+      var(--dsw-alias-state-business-primary) calc(50% - 1px) calc(50% + 1px),
+      transparent calc(50% + 1px)
+    ) 100% 0 / 5px 7px no-repeat,
+    linear-gradient(
+      55deg,
+      transparent calc(50% - 1px),
+      var(--dsw-alias-state-business-primary) calc(50% - 1px) calc(50% + 1px),
+      transparent calc(50% + 1px)
+    ) 100% 5px / 5px 7px no-repeat,
+    linear-gradient(
+      var(--dsw-alias-state-business-primary) 0 0
+    ) 0 5px / calc(100% - 4px) 2px no-repeat;
 }
 
 .sessionRow.dropBefore::before {

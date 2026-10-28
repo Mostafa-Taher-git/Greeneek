@@ -111,7 +111,7 @@
   align-items: center;
   min-width: 0;
   /* figma 75:8208 workspace row: px 8 above the card. */
-  padding-left: 8px;
+  padding-inline-start: 8px;
 }
 
 /* Folder + label + chevron — transparent at rest; fill only on hover / open. */

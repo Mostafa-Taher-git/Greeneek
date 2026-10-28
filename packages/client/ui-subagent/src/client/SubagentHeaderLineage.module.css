@@ -8,7 +8,7 @@
 
 .switcherRoot {
   min-width: 0;
-  margin-left: 6px;
+  margin-inline-start: 6px;
 }
 
 .trigger,
@@ -116,7 +116,7 @@
   min-width: 0;
 }
 .menu > .node {
-  margin-left: -3px;
+  margin-inline-start: -3px;
 }
 
 .row {
@@ -127,14 +127,15 @@
   box-sizing: border-box;
   width: 100%;
   min-height: 50px;
-  padding: 7px 8px 7px 11px;
+  padding-block: 7px;
+  padding-inline: 11px 8px;
   border: 0;
   border-radius: 8px;
   background: transparent;
   color: var(--dsw-alias-label-primary);
   font-size: 13px;
   line-height: 18px;
-  text-align: left;
+  text-align: start;
   cursor: pointer;
   outline: none;
 }
@@ -237,7 +238,7 @@
   grid-template-rows: 18px 16px;
   flex: none;
   font-variant-numeric: tabular-nums;
-  text-align: right;
+  text-align: end;
   white-space: nowrap;
 }
 
@@ -252,16 +253,16 @@
 
 .children {
   position: relative;
-  margin-left: 18px;
-  padding-left: 4px;
+  margin-inline-start: 18px;
+  padding-inline-start: 4px;
 }
 
 .children::before,
 .children > .node::before {
   content: '';
   position: absolute;
-  left: 0;
-  border-left: 0.5px solid var(--dsw-alias-border-l2);
+  inset-inline-start: 0;
+  border-inline-start: 0.5px solid var(--dsw-alias-border-l2);
 }
 
 .children::before {
@@ -276,7 +277,7 @@
 .children > .node::before {
   top: 0;
   bottom: 0;
-  left: -4px;
+  inset-inline-start: -4px;
 }
 
 .children > .node:last-child::before {
@@ -288,7 +289,7 @@
   content: '';
   position: absolute;
   top: 16px;
-  left: -4px;
+  inset-inline-start: -4px;
   width: 14px;
   border-top: 0.5px solid var(--dsw-alias-border-l2);
 }

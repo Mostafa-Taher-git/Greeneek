@@ -30,7 +30,7 @@
    config field.
 
    `overflow-y` makes this a scroll container, which also clips inline-start
-   overflow: a marker wider than `padding-left` loses its leading digits with no
+   overflow: a marker wider than `padding-inline-start` loses its leading digits with no
    way to scroll them back. Markers are right-aligned to the content edge, so the
    padding must fit the widest one the list can produce. `searchMaxResults` is an
    unbounded positive integer, so the padding is sized in `em` — against this
@@ -39,7 +39,7 @@
    case already had. */
 .sources {
   margin: 0;
-  padding-left: 2.5em;
+  padding-inline-start: 2.5em;
   display: flex;
   flex-direction: column;
   gap: 10px;

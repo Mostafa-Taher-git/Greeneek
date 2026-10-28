@@ -13,7 +13,7 @@
    Both read the secondary tier so the user row's clock matches the assistant
    tail's meta line. */
 .timeStart {
-  padding-right: 12px;
+  padding-inline-end: 12px;
   font-size: var(--gnk-content-font-size-secondary, 13px);
   line-height: calc(24px + var(--gnk-content-font-delta, 0px));
   color: var(--dsw-alias-label-tertiary);

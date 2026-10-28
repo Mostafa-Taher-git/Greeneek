@@ -9,7 +9,7 @@
 
 .methodButton {
   width: 100%;
-  text-align: left;
+  text-align: start;
 }
 
 .notices {
@@ -30,7 +30,7 @@
 
 .noticeCode {
   display: inline-block;
-  margin-left: 8px;
+  margin-inline-start: 8px;
   padding: 1px 8px;
   border-radius: 6px;
   background: var(--dsw-alias-interactive-bg-hover);

@@ -52,9 +52,11 @@
   /* Indent under the title, which starts at leading (16 + delta) + gap 6. */
   width: calc(100% - 22px - var(--gnk-content-font-delta, 0px));
   max-height: 141px;
-  margin: 4px 0 0 calc(22px + var(--gnk-content-font-delta, 0px));
+  margin-block: 4px 0;
+  margin-inline: calc(22px + var(--gnk-content-font-delta, 0px)) 0;
   overflow: auto;
-  padding: 10px 16px 12px 12px;
+  padding-block: 10px 12px;
+  padding-inline: 12px 16px;
   border: none;
   border-radius: 8px;
   background: var(--dsw-alias-markdown-code-block);

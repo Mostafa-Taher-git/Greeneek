@@ -22,7 +22,7 @@ Scope: 260 workspace packages; every package appears under each of its kinds (24
 
 | Package | Role |
 | --- | --- |
-| `@greeneek/gnk-tool-craft` | The model-facing Craft gateway: craft_list_apps and craft_open_app stay mounted while no app is active, opening an app mounts its curated tools and recipe skill, and every reported artifact path is confined to the job root. |
+| `@greeneek/gnk-tool-craft` | The model-facing Craft gateway: opening an app mounts curated tools, mounts its recipe only after registry review, and confines every reported artifact path to the job root. |
 | `@greeneek/gnk-tool-cordis` | Model-facing Cordis runtime tools for agents and maintainers choosing, composing, or debugging dynamic-package workflows. |
 | `@greeneek/gnk-tool-fs` | The model-facing read, read_image, write, and edit tools for users and maintainers composing or debugging filesystem access for agents. |
 | `@greeneek/gnk-tool-fs-search` | The model-facing glob and grep discovery tools for users and maintainers composing or debugging workspace search for agents. |

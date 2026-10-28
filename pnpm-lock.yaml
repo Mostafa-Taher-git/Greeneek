@@ -4760,6 +4760,9 @@ importers:
       '@greeneek/gnk-subprocess':
         specifier: workspace:^
         version: link:../../subprocess/subprocess
+      '@greeneek/gnk-subprocess-local':
+        specifier: workspace:^
+        version: link:../../subprocess/subprocess-local
 
   packages/craft/tool-craft:
     devDependencies:

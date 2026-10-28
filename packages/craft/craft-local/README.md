@@ -41,9 +41,11 @@ Compose this package alongside `@greeneek/gnk-craft` and `@greeneek/gnk-subproce
 
 The provider strictly rejects bare executables on the ambient system `PATH`: only verified absolute paths inside recognized installation roots are accepted.
 
-### Discovery smoke
+### Discovery and serve smoke
 
 `pnpm --filter @greeneek/gnk-craft-local run smoke:discovery` loads the bundled pilot manifests, runs the same installation measurement the local provider serves to `ctx.craft`, prints each app's state and absolute CLI path, and exits non-zero unless at least one pilot app is `ready`. It installs and launches nothing.
+
+`ARTCRAFT_SMOKE=true pnpm --filter @greeneek/gnk-craft-local run smoke:serve` opens every ready pilot app through the real token-gated `serve` entry, verifies the confined-root rejection, reads and hashes the observed command registry when a method is declared, closes the session, and waits for whole-tree exit. It installs nothing and does not invent artifact commands whose wire shape has not been observed.
 
 -----
 
@@ -93,7 +95,7 @@ None of its own; the provider plane is host-only and the tool consumer owns the 
 <a id="known-limitations-and-deferred-work"></a>
 
 - **Connected GUI mode** — Desktop GUI launching with `--control` loopback is marked desktop-only; live attach is gated. `launch.connected` stays display data: the connected argv is fixed in this provider.
-- **Catalog projection** — `JsonRpcCraftTransport.listTools` sends the manifest's `headless.listMethod` and requires an MCP-style `{ tools: [...] }` result, and `callTool` requires a `{ content: [...] }` result. The `serve` server answers method-shaped results (`methods` returns method names, `engine.commands` returns the command registry) and rejects `command_list`, so a session's first catalog call fails until the projection is redone.
+- **Catalog projection** — `JsonRpcCraftTransport.readCommandRegistry` returns the raw observed `engine.commands` payload for drift hashing. Separately, `listTools` sends the manifest's `headless.listMethod` and requires an MCP-style `{ tools: [...] }` result, and `callTool` requires a `{ content: [...] }` result. The `serve` server rejects `command_list`, so a session's catalog call still fails until that projection is redone.
 - **Auto-installation** — Does not invoke external installers automatically; missing applications must be installed by the user via ArtCraft Launcher.
 
 <a id="dev-note"></a>

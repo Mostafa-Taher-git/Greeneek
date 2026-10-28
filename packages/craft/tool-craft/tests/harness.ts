@@ -2,7 +2,7 @@ import { Context } from '@greeneek/cordis'
 import SystemPrompt from '@greeneek/gnk-system-prompt'
 import ToolRuntime from '@greeneek/gnk-tools'
 import SkillRegistry from '@greeneek/gnk-skill'
-import { CraftCatalog, CraftRuntime, loadPilotCatalog } from '@greeneek/gnk-craft'
+import { CraftCatalog, CraftRuntime, hashCommandRegistry, loadPilotCatalog } from '@greeneek/gnk-craft'
 import type {
   CraftAppManifest,
   CraftCallResult,
@@ -16,6 +16,9 @@ import type {
 import { ToolCallId } from '@greeneek/gnk-llm'
 import * as ToolCraft from '../src/index.ts'
 
+/** Stable registry returned by the fake app unless a test changes it. */
+export const DEFAULT_REGISTRY = { commands: [{ id: 'convert', input: { type: 'object' } }] }
+
 /** Fake app wire that records every call. */
 export class FakeTransport implements CraftTransport {
   readonly calls: Array<{ name: string; args: Readonly<Record<string, unknown>>; signal: AbortSignal }> = []
@@ -24,10 +27,15 @@ export class FakeTransport implements CraftTransport {
   constructor(
     private readonly tools: readonly CraftToolDescriptor[],
     private readonly respond: (name: string) => CraftCallResult,
+    private readonly registry: unknown = DEFAULT_REGISTRY,
   ) {}
 
   listTools(): Promise<readonly CraftToolDescriptor[]> {
     return Promise.resolve(this.tools)
+  }
+
+  readCommandRegistry(): Promise<unknown> {
+    return Promise.resolve(this.registry)
   }
 
   callTool(
@@ -61,6 +69,7 @@ export class FakeProvider implements CraftHostProvider {
   discovery: CraftDiscovery
   tools: readonly CraftToolDescriptor[]
   respond: (name: string) => CraftCallResult
+  registry: unknown
   closeError: Error | undefined
   readonly opens: CraftHostOpenRequest[] = []
   readonly transports: FakeTransport[] = []
@@ -69,10 +78,12 @@ export class FakeProvider implements CraftHostProvider {
     readonly discovery?: CraftDiscovery
     readonly tools?: readonly CraftToolDescriptor[]
     readonly respond?: (name: string) => CraftCallResult
+    readonly registry?: unknown
   } = {}) {
     this.discovery = options.discovery ?? { state: 'ready', executable: '/apps/photocraft-cli' }
     this.tools = options.tools ?? defaultTools()
     this.respond = options.respond ?? (name => ({ content: [{ type: 'text', text: `ran ${name}` }] }))
+    this.registry = options.registry ?? DEFAULT_REGISTRY
   }
 
   discover(): Promise<CraftDiscovery> {
@@ -81,7 +92,7 @@ export class FakeProvider implements CraftHostProvider {
 
   open(request: CraftHostOpenRequest): Promise<CraftHostSession> {
     this.opens.push(request)
-    const transport = new FakeTransport(this.tools, name => this.respond(name))
+    const transport = new FakeTransport(this.tools, name => this.respond(name), this.registry)
     this.transports.push(transport)
     return Promise.resolve({
       transport,
@@ -101,6 +112,18 @@ export interface Harness {
   readonly fiber: Awaited<ReturnType<Context['plugin']>>
 }
 
+/** Pilot catalog with a reviewed PhotoCraft baseline for recipe-lifecycle tests. */
+export function reviewedCatalog(): CraftCatalog {
+  const manifests = loadPilotCatalog().apps()
+  const photocraft = manifests.find(manifest => manifest.id === 'photocraft')!
+  return new CraftCatalog(manifests.map(manifest => manifest.id === 'photocraft'
+    ? {
+      ...photocraft,
+      headless: { ...photocraft.headless, trustedRegistryHash: hashCommandRegistry(DEFAULT_REGISTRY) },
+    }
+    : manifest))
+}
+
 /** Mount Craft, tools, skills, and the gateway against one catalog. */
 export async function createHarness(options: {
   readonly provider?: FakeProvider
@@ -110,7 +133,7 @@ export async function createHarness(options: {
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
   await ctx.plugin(SkillRegistry)
-  const catalog = options.catalog ?? loadPilotCatalog()
+  const catalog = options.catalog ?? reviewedCatalog()
   new CraftRuntime(ctx, {}, catalog)
   const provider = options.provider ?? new FakeProvider()
   ctx.craft.registerProvider(provider)
@@ -120,7 +143,7 @@ export async function createHarness(options: {
 
 /** A catalog whose recipe reads fail, for mount-cleanup coverage. */
 export function failingRecipeCatalog(): CraftCatalog {
-  const manifests: readonly CraftAppManifest[] = loadPilotCatalog().apps()
+  const manifests: readonly CraftAppManifest[] = reviewedCatalog().apps()
   return new CraftCatalog(manifests, (path) => {
     if (path.startsWith('recipes/')) throw new Error('recipe read failed')
     return ''

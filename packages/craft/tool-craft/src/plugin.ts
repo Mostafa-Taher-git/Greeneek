@@ -1,7 +1,7 @@
 /**
  * Craft gateway plugin: exactly two model-facing tools stay mounted while no
- * app is active. Opening an app mounts its curated tool bridge and recipe
- * skill; closing it tears both down and releases the child process.
+ * app is active. Opening an app mounts its curated tool bridge and, only when
+ * its registry matches a reviewed hash, its recipe skill; closing releases both.
  * @module @greeneek/gnk-tool-craft/plugin
  */
 
@@ -82,10 +82,11 @@ export function apply(ctx: Context): void {
       signal: exec.signal,
     })
     let bridge: CraftAppBridge | undefined
-    let disposeRecipe: () => void
+    const disposers: Array<() => void> = []
     try {
       bridge = registerAppTools(ctx, session, manifest)
-      disposeRecipe = registerRecipeSkill(ctx, manifest)
+      disposers.push(...bridge.disposers)
+      if (session.registryReviewed) disposers.push(registerRecipeSkill(ctx, manifest))
     } catch (error: unknown) {
       if (bridge !== undefined) {
         for (const dispose of [...bridge.disposers].reverse()) dispose()
@@ -100,7 +101,7 @@ export function apply(ctx: Context): void {
       displayName: manifest.displayName,
       session,
       tools: bridge.names,
-      disposers: [...bridge.disposers, disposeRecipe],
+      disposers,
     }
     active.set(manifest.id, entry)
     return summary(entry)

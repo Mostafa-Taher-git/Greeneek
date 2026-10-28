@@ -22,6 +22,7 @@ function sessionWith(
     mode: 'headless',
     roots: ROOTS,
     tools,
+    registryReviewed: false,
     transport,
     close: async () => { transport.closed = true },
   }

@@ -16,8 +16,8 @@ const config: CraftLocalConfig = { requestTimeoutMs: 15_000, graceMs: 2_000, clo
 
 /**
  * Scripted `serve` peer. It validates the argv it was spawned with, then
- * answers newline-framed JSON exactly as the installed CLI does: `methods`
- * succeeds, every other method answers the app's unknown-method error.
+ * answers newline-framed JSON exactly as the installed CLI does: `methods` and
+ * `engine.commands` succeed, every other method answers an unknown-method error.
  */
 const SERVE_PEER = `import { appendFileSync, readFileSync } from 'node:fs'
 
@@ -49,8 +49,10 @@ process.stdin.on('data', chunk => {
     appendFileSync(log, line + '\\n')
     const request = JSON.parse(line)
     const reply = request.method === 'methods'
-      ? { id: request.id, ok: true, result: ['engine.execute', 'methods'] }
-      : { error: 'unknown method ' + request.method + ' (try methods)', id: request.id, ok: false }
+      ? { id: request.id, ok: true, result: ['engine.commands', 'engine.execute', 'methods'] }
+      : request.method === 'engine.commands'
+        ? { id: request.id, ok: true, result: { commands: [{ id: 'convert', input: { type: 'object' } }] } }
+        : { error: 'unknown method ' + request.method + ' (try methods)', id: request.id, ok: false }
     process.stdout.write(JSON.stringify(reply) + '\\n')
   }
 })
@@ -180,13 +182,16 @@ describe('serve handshake over a real child process', () => {
     expect(spec?.stdio.stdout).toBe('pipe')
     expect(readFileSync(tokenPath, 'utf8')).toBe(TOKEN)
 
-    // The transport frame reaches the scripted peer, whose serve-shaped error
-    // envelope is what the session surfaces; `command_list` is the shipped
-    // list method and the installed CLI rejects it the same way.
+    // The raw registry read matches the observed serve protocol. The separate
+    // MCP catalog projection remains honestly unsupported by this serve peer.
+    await expect(session.transport.readCommandRegistry()).resolves.toEqual({
+      commands: [{ id: 'convert', input: { type: 'object' } }],
+    })
     await expect(session.transport.listTools()).rejects.toThrow('unknown method command_list')
     const frames = readFileSync(join(workspace, 'requests.ndjson'), 'utf8').trim().split('\n')
     expect(frames.map(frame => JSON.parse(frame) as unknown)).toEqual([
-      { jsonrpc: '2.0', id: 1, method: 'command_list', params: {} },
+      { jsonrpc: '2.0', id: 1, method: 'engine.commands', params: {} },
+      { jsonrpc: '2.0', id: 2, method: 'command_list', params: {} },
     ])
     expect(real?.stderr()).toBe('')
 

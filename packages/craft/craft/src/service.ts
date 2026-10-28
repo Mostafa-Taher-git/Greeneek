@@ -14,6 +14,7 @@ import z from '@greeneek/schemastery'
 import { CraftError } from './error.ts'
 import { CraftCatalog, loadPilotCatalog } from './manifest.ts'
 import { craftRoots, resolveWorkspaceRoot } from './paths.ts'
+import { hashCommandRegistry } from './registry.ts'
 import type {
   CraftAppManifest,
   CraftHostProvider,
@@ -48,6 +49,7 @@ export class CraftRuntime extends Service {
   private readonly catalog: CraftCatalog
   private readonly providers = new Map<string, CraftHostProvider>()
   private readonly sessions = new Map<string, CraftSession>()
+  private readonly observedRegistryHashes = new Map<string, string>()
   private readonly maxActiveApps: number
   private readonly pinnedProvider: string
 
@@ -154,6 +156,17 @@ export class CraftRuntime extends Service {
     const provider = this.selectProvider()
     try {
       const discovery = await provider.discover(manifest, { signal })
+      const trustedHash = manifest.headless.trustedRegistryHash
+      const observedHash = this.observedRegistryHashes.get(manifest.id)
+      if (discovery.state === 'ready' && trustedHash !== null && observedHash !== undefined && observedHash !== trustedHash) {
+        return {
+          app: manifest.id,
+          displayName: manifest.displayName,
+          ...discovery,
+          state: 'drifted',
+          detail: registryDriftDetail(manifest, trustedHash, observedHash),
+        }
+      }
       return { app: manifest.id, displayName: manifest.displayName, ...discovery }
     } catch (error: unknown) {
       signal.throwIfAborted()
@@ -210,8 +223,18 @@ export class CraftRuntime extends Service {
     const controlToken = randomUUID()
     const host = await provider.open({ app: manifest, workspaceRoot, roots, controlToken, signal })
     let tools
+    let registryReviewed = false
     try {
       signal.throwIfAborted()
+      if (manifest.headless.registryMethod !== null) {
+        const observedHash = hashCommandRegistry(await host.transport.readCommandRegistry())
+        this.observedRegistryHashes.set(manifest.id, observedHash)
+        const trustedHash = manifest.headless.trustedRegistryHash
+        if (trustedHash !== null && observedHash !== trustedHash) {
+          throw new CraftError(registryDriftDetail(manifest, trustedHash, observedHash), 'CRAFT_APP_NOT_READY')
+        }
+        registryReviewed = observedHash === trustedHash
+      }
       tools = await host.transport.listTools()
     } catch (error: unknown) {
       await host.close()
@@ -231,6 +254,7 @@ export class CraftRuntime extends Service {
       mode: 'headless',
       roots,
       tools,
+      registryReviewed,
       transport: host.transport,
       close,
     }
@@ -296,6 +320,11 @@ export class CraftRuntime extends Service {
     }
     return providers[0] as CraftHostProvider
   }
+}
+
+/** Explain an observed registry mismatch without hiding either digest. */
+function registryDriftDetail(app: CraftAppManifest, expected: string, observed: string): string {
+  return `${app.displayName} command registry drifted (expected ${expected}, observed ${observed}); review it before use`
 }
 
 export default CraftRuntime

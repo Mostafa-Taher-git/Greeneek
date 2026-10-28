@@ -29,6 +29,8 @@ export interface CraftTransportProcess {
 export interface CraftTransportOptions {
   /** App method that lists callable tools (`command_list`). */
   readonly listMethod: string
+  /** App method that returns the raw command registry, or null when unobserved. */
+  readonly registryMethod: string | null
   /** Per-request deadline in milliseconds. */
   readonly requestTimeoutMs: number
   /** Bound on waiting for process settlement during close. */
@@ -106,6 +108,15 @@ export class JsonRpcCraftTransport implements CraftTransport {
       )
     }
     return tools.map((entry, index) => parseToolDescriptor(entry, index))
+  }
+
+  /** {@inheritDoc CraftTransport.readCommandRegistry} */
+  readCommandRegistry(): Promise<unknown> {
+    const method = this.options.registryMethod
+    if (method === null) {
+      return Promise.reject(new CraftError('this Craft app has no observed command-registry method', 'CRAFT_APP_ERROR'))
+    }
+    return this.request(method, {})
   }
 
   /** {@inheritDoc CraftTransport.callTool} */

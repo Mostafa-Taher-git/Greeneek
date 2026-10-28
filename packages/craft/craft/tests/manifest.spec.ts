@@ -32,6 +32,8 @@ function validManifest(): Record<string, unknown> {
     recipe: { name: 'craft-testcraft', description: 'test recipe', file: 'recipes/testcraft.md' },
     headless: {
       listMethod: 'command_list',
+      registryMethod: 'engine.commands',
+      trustedRegistryHash: null,
       toolFilter: ['command_list', 'render_preview'],
       artifactTools: ['render_preview'],
       artifactPatterns: ['rendered/*.png'],
@@ -61,8 +63,12 @@ describe('bundled pilot catalog', () => {
     const photocraft = catalog.require('photocraft')
     expect(photocraft.headless.artifactTools).toEqual(['render_preview', 'screenshot'])
     expect(photocraft.headless.artifactPatterns).toEqual(['*.webp'])
+    expect(photocraft.headless.registryMethod).toBe('engine.commands')
+    expect(photocraft.headless.trustedRegistryHash).toBeNull()
     expect(photocraft.platforms).toEqual(['win32'])
     expect(catalog.require('PDFCRAFT').displayName).toBe('PdfCraft')
+    expect(catalog.require('pdfcraft').headless.registryMethod).toBeNull()
+    expect(catalog.require('pdfcraft').headless.trustedRegistryHash).toBeNull()
   })
 
   it('keeps every pilot row unverified until the real-host smoke proves it', () => {
@@ -208,6 +214,20 @@ describe('strict manifest validation', () => {
     expectInvalid((manifest) => { (manifest.sources as Record<string, unknown>[])[0]!.date = '2026-10' }, 'sources[0].date: must be an ISO calendar date (YYYY-MM-DD)')
   })
 
+  it('accepts a reviewed registry hash only with its method and provenance', () => {
+    const proven = validManifest()
+    proven.sources = [{ label: 'reviewed registry', url: 'urn:greeneek:verified:testcraft-registry', date: '2026-10-28', verified: true }]
+    nested(proven, 'headless').trustedRegistryHash = `sha256:${'a'.repeat(64)}`
+    expect(parseManifest(proven).headless.trustedRegistryHash).toBe(`sha256:${'a'.repeat(64)}`)
+
+    expectInvalid((manifest) => { nested(manifest, 'headless').trustedRegistryHash = `sha256:${'a'.repeat(64)}` }, 'cannot be set without a proven sources entry')
+    const withoutMethod = validManifest()
+    withoutMethod.sources = proven.sources
+    nested(withoutMethod, 'headless').registryMethod = null
+    nested(withoutMethod, 'headless').trustedRegistryHash = `sha256:${'a'.repeat(64)}`
+    expect(() => parseManifest(withoutMethod)).toThrow(expect.objectContaining({ message: expect.stringContaining('requires headless.registryMethod') as unknown as string }))
+  })
+
   it('rejects recipe and headless violations', () => {
     expectInvalid((manifest) => { nested(manifest, 'recipe').name = 'Craft Test' }, 'recipe.name: must be a kebab-case skill name')
     expectInvalid((manifest) => { nested(manifest, 'recipe').file = '../secret.md' }, 'recipe.file: must name a markdown file under recipes/')
@@ -222,6 +242,8 @@ describe('strict manifest validation', () => {
     expectInvalid((manifest) => { nested(manifest, 'headless').artifactPatterns = ['a/../b.png'] }, 'headless.artifactPatterns: pattern "a/../b.png" must be a lowercase relative glob under the job-out root')
     expectInvalid((manifest) => { nested(manifest, 'headless').artifactPatterns = ['*.PNG'] }, 'headless.artifactPatterns: pattern "*.PNG" must be a lowercase relative glob under the job-out root')
     expectInvalid((manifest) => { nested(manifest, 'headless').listMethod = '' }, 'headless.listMethod: must be a non-empty string')
+    expectInvalid((manifest) => { nested(manifest, 'headless').registryMethod = '' }, 'headless.registryMethod: must be a non-empty string')
+    expectInvalid((manifest) => { nested(manifest, 'headless').trustedRegistryHash = `sha256:${'A'.repeat(64)}` }, 'headless.trustedRegistryHash: must be sha256:<64 lowercase hex characters>')
   })
 
   it('admits empty artifact patterns and subdirectory globs', () => {

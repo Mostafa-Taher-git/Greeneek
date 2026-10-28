@@ -3,6 +3,7 @@ import { Context } from '@greeneek/cordis'
 import { describe, expect, it, vi } from 'vitest'
 import { CraftCatalog, loadPilotCatalog, parseManifest } from '../src/manifest.ts'
 import { CraftRuntime } from '../src/service.ts'
+import { hashCommandRegistry } from '../src/registry.ts'
 import type {
   CraftCallResult,
   CraftDiscovery,
@@ -21,21 +22,31 @@ const TOOL: CraftToolDescriptor = {
 }
 
 const RESULT: CraftCallResult = { content: [{ type: 'text', text: 'ok' }] }
+const REGISTRY = { commands: [{ id: 'convert', input: { type: 'object' } }] }
 
 interface FakeProvider {
   provider: CraftHostProvider
   discover: ReturnType<typeof vi.fn>
   open: ReturnType<typeof vi.fn>
-  transport: CraftTransport & { listTools: ReturnType<typeof vi.fn>; close: ReturnType<typeof vi.fn> }
+  transport: CraftTransport & {
+    listTools: ReturnType<typeof vi.fn>
+    readCommandRegistry: ReturnType<typeof vi.fn>
+    close: ReturnType<typeof vi.fn>
+  }
   close: ReturnType<typeof vi.fn>
 }
 
 function fakeProvider(
   discovery: CraftDiscovery = { state: 'ready', executable: join(workspace, 'photocraft-cli') },
-  options: { readonly closeRejects?: boolean; readonly tools?: readonly CraftToolDescriptor[] } = {},
+  options: {
+    readonly closeRejects?: boolean
+    readonly tools?: readonly CraftToolDescriptor[]
+    readonly registry?: unknown
+  } = {},
 ): FakeProvider {
   const transport = {
     listTools: vi.fn(async () => options.tools ?? [TOOL]),
+    readCommandRegistry: vi.fn(async () => options.registry ?? REGISTRY),
     callTool: vi.fn(async () => RESULT),
     close: vi.fn(async () => {}),
   }
@@ -46,6 +57,14 @@ function fakeProvider(
   const open = vi.fn(async () => ({ transport, close }))
   const provider: CraftHostProvider = { id: 'fake', discover, open }
   return { provider, discover, open, transport, close }
+}
+
+function trustedPhotoCatalog(registry: unknown): CraftCatalog {
+  const base = loadPilotCatalog().require('photocraft')
+  return new CraftCatalog([parseManifest({
+    ...base,
+    headless: { ...base.headless, trustedRegistryHash: hashCommandRegistry(registry) },
+  })])
 }
 
 function mount(
@@ -202,9 +221,57 @@ describe('open', () => {
       controlToken: expect.stringMatching(/^[0-9a-f-]{36}$/) as unknown as string,
     }))
     expect(session.transport).toBe(fake.transport)
+    expect(session.registryReviewed).toBe(false)
+    expect(fake.transport.readCommandRegistry).not.toHaveBeenCalled()
     await session.close()
     expect(fake.close).toHaveBeenCalledTimes(1)
     expect(await craft.status('pdfcraft')).toMatchObject({ state: 'ready' })
+  })
+
+  it('marks a matching reviewed registry and recovers to ready after close', async () => {
+    const { craft } = mount({}, trustedPhotoCatalog(REGISTRY))
+    const fake = fakeProvider()
+    craft.registerProvider(fake.provider)
+
+    await expect(craft.status('photocraft')).resolves.toMatchObject({ state: 'ready' })
+    const session = await craft.open({ app: 'photocraft', workspaceRoot: workspace })
+    expect(session.registryReviewed).toBe(true)
+    expect(fake.transport.readCommandRegistry).toHaveBeenCalledTimes(1)
+    await session.close()
+    await expect(craft.status('photocraft')).resolves.toMatchObject({ state: 'ready' })
+  })
+
+  it('rejects a drifted registry, closes the host, and reports the retained observation', async () => {
+    const drifted = { commands: [{ id: 'changed', input: { type: 'object' } }] }
+    const { craft } = mount({}, trustedPhotoCatalog(REGISTRY))
+    const fake = fakeProvider(undefined, { registry: drifted })
+    craft.registerProvider(fake.provider)
+
+    await expect(craft.open({ app: 'photocraft', workspaceRoot: workspace })).rejects.toMatchObject({
+      code: 'CRAFT_APP_NOT_READY',
+      message: expect.stringContaining(hashCommandRegistry(drifted)) as unknown as string,
+    })
+    expect(fake.close).toHaveBeenCalledTimes(1)
+    expect(fake.transport.listTools).not.toHaveBeenCalled()
+    const status = await craft.status('photocraft')
+    expect(status.state).toBe('drifted')
+    expect(status.executable).toBeDefined()
+    expect(status.detail).toContain(hashCommandRegistry(REGISTRY))
+    expect(status.detail).toContain(hashCommandRegistry(drifted))
+    expect(fake.open).toHaveBeenCalledTimes(1)
+  })
+
+  it('allows a later open to prove that a drifted registry was restored', async () => {
+    const { craft } = mount({}, trustedPhotoCatalog(REGISTRY))
+    const fake = fakeProvider(undefined, { registry: REGISTRY })
+    fake.transport.readCommandRegistry.mockResolvedValueOnce({ commands: [{ id: 'changed' }] })
+    craft.registerProvider(fake.provider)
+
+    await expect(craft.open({ app: 'photocraft', workspaceRoot: workspace })).rejects.toMatchObject({ code: 'CRAFT_APP_NOT_READY' })
+    const restored = await craft.open({ app: 'photocraft', workspaceRoot: workspace })
+    expect(restored.registryReviewed).toBe(true)
+    await restored.close()
+    await expect(craft.status('photocraft')).resolves.toMatchObject({ state: 'ready' })
   })
 
   it('is idempotent on close and exposes closeSession', async () => {
@@ -225,22 +292,26 @@ describe('open', () => {
 
   it('gates attach mode twice: disabled manifests and unpublished live attach', async () => {
     const { craft } = mount()
-    craft.registerProvider(fakeProvider().provider)
+    const disabled = fakeProvider()
+    craft.registerProvider(disabled.provider)
     await expect(craft.open({ app: 'photocraft', mode: 'attach', workspaceRoot: workspace }))
       .rejects.toThrow(expect.objectContaining({
         code: 'CRAFT_ATTACH_DISABLED',
         message: expect.stringContaining('Live attach has no authenticated channel') as unknown as string,
       }))
+    expect(disabled.open).not.toHaveBeenCalled()
 
     const base = loadPilotCatalog().require('photocraft')
     const enabled = parseManifest({ ...base, attach: { supported: true, enabled: true, reason: 'test' } })
     const attachable = mount({}, new CraftCatalog([enabled]))
-    attachable.craft.registerProvider(fakeProvider().provider)
+    const unpublished = fakeProvider()
+    attachable.craft.registerProvider(unpublished.provider)
     await expect(attachable.craft.open({ app: 'photocraft', mode: 'attach', workspaceRoot: workspace }))
       .rejects.toThrow(expect.objectContaining({
         code: 'CRAFT_ATTACH_DISABLED',
         message: expect.stringContaining('not implemented') as unknown as string,
       }))
+    expect(unpublished.open).not.toHaveBeenCalled()
   })
 
   it('rejects headless-unsupported apps and relative workspace roots', async () => {

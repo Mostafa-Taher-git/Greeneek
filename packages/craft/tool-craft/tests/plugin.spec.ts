@@ -1,6 +1,6 @@
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { CraftError } from '@greeneek/gnk-craft'
+import { CraftError, loadPilotCatalog } from '@greeneek/gnk-craft'
 import type { CraftStatus } from '@greeneek/gnk-craft'
 import {
   CRAFT_LIST_APPS,
@@ -9,7 +9,7 @@ import {
   renderAppList,
   renderOpenSummary,
 } from '../src/plugin.ts'
-import { createHarness, execution, failingRecipeCatalog, FakeProvider, textOf } from './harness.ts'
+import { createHarness, execution, failingRecipeCatalog, FakeProvider, reviewedCatalog, textOf } from './harness.ts'
 
 const WORKSPACE = join(process.cwd(), 'craft-plugin-ws')
 const ARTIFACTS = join(WORKSPACE, 'out')
@@ -70,6 +70,30 @@ describe('craft_open_app', () => {
 
     const listed = textOf(await ctx.tools.execute(execution(CRAFT_LIST_APPS, {})))
     expect(listed).toContain('PhotoCraft (photocraft): running')
+  })
+
+  it('mounts tools without a recipe when no registry baseline was reviewed', async () => {
+    const { ctx } = await createHarness({ catalog: loadPilotCatalog() })
+
+    const result = await ctx.tools.execute(execution(CRAFT_OPEN_APP, { app: 'photocraft' }, WORKSPACE))
+
+    expect(result.isError).not.toBe(true)
+    expect(ctx.tools.get('mcp__photocraft__command_run')).toBeDefined()
+    expect((await ctx.skills.list()).find(skill => skill.name === 'craft-photocraft')).toBeUndefined()
+  })
+
+  it('rejects registry drift without mounting tools or a recipe and reports the retained state', async () => {
+    const provider = new FakeProvider({ registry: { commands: [{ id: 'changed' }] } })
+    const { ctx } = await createHarness({ provider, catalog: reviewedCatalog() })
+
+    const result = await ctx.tools.execute(execution(CRAFT_OPEN_APP, { app: 'photocraft' }, WORKSPACE))
+
+    expect(result.isError).toBe(true)
+    expect(textOf(result)).toContain('command registry drifted')
+    expect(provider.transports[0]?.closed).toBe(true)
+    expect(ctx.tools.get('mcp__photocraft__command_run')).toBeUndefined()
+    expect((await ctx.skills.list()).find(skill => skill.name === 'craft-photocraft')).toBeUndefined()
+    expect(textOf(await ctx.tools.execute(execution(CRAFT_LIST_APPS, {})))).toContain('PhotoCraft (photocraft): drifted')
   })
 
   it('falls back to the process workspace when the caller has no agent', async () => {

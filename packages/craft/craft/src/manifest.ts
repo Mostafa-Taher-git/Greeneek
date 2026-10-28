@@ -56,6 +56,8 @@ const PLATFORMS: readonly CraftPlatform[] = ['win32', 'darwin', 'linux']
 const DATE = /^\d{4}-\d{2}-\d{2}$/
 /** One job-out-root-relative artifact-glob segment; no dot-leading, absolute, or `..` segments. */
 const ARTIFACT_SEGMENT = /^[a-z0-9_*][a-z0-9_.\-]*$/
+/** Reviewed command-registry digest grammar. */
+const REGISTRY_HASH = /^sha256:[0-9a-f]{64}$/
 
 /** Throw one manifest failure with a path-qualified detail. */
 function invalid(path: string, detail: string): never {
@@ -157,7 +159,23 @@ function parseRecipeRef(value: unknown): CraftRecipeRef {
 
 /** Parse headless protocol metadata. */
 function parseHeadless(value: unknown): CraftHeadlessSpec {
-  const record = strictRecord(value, 'headless', ['listMethod', 'toolFilter', 'artifactTools', 'artifactPatterns'])
+  const record = strictRecord(value, 'headless', [
+    'listMethod',
+    'registryMethod',
+    'trustedRegistryHash',
+    'toolFilter',
+    'artifactTools',
+    'artifactPatterns',
+  ])
+  const registryMethod = record.registryMethod === null
+    ? null
+    : stringField(record.registryMethod, 'headless.registryMethod')
+  const trustedRegistryHash = record.trustedRegistryHash === null
+    ? null
+    : patternField(record.trustedRegistryHash, 'headless.trustedRegistryHash', REGISTRY_HASH, 'be sha256:<64 lowercase hex characters>')
+  if (trustedRegistryHash !== null && registryMethod === null) {
+    invalid('headless.trustedRegistryHash', 'requires headless.registryMethod')
+  }
   const toolFilter = stringArray(record.toolFilter, 'headless.toolFilter', { unique: true, nonEmpty: true })
   const artifactTools = stringArray(record.artifactTools, 'headless.artifactTools', {
     unique: true,
@@ -181,6 +199,8 @@ function parseHeadless(value: unknown): CraftHeadlessSpec {
   }
   return {
     listMethod: stringField(record.listMethod, 'headless.listMethod'),
+    registryMethod,
+    trustedRegistryHash,
     toolFilter,
     artifactTools,
     artifactPatterns,
@@ -248,6 +268,10 @@ export function parseManifest(value: unknown): CraftAppManifest {
   if (verified && !sources.some(source => source.verified)) {
     invalid('verified', 'cannot be true without a proven sources entry recording the run')
   }
+  const headless = parseHeadless(record.headless)
+  if (headless.trustedRegistryHash !== null && !sources.some(source => source.verified)) {
+    invalid('headless.trustedRegistryHash', 'cannot be set without a proven sources entry recording registry review')
+  }
   return {
     schemaVersion: 1,
     id,
@@ -274,7 +298,7 @@ export function parseManifest(value: unknown): CraftAppManifest {
     }),
     sources,
     recipe: parseRecipeRef(record.recipe),
-    headless: parseHeadless(record.headless),
+    headless,
   }
 }
 

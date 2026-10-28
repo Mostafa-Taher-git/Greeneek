@@ -4035,7 +4035,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'CraftHeadlessSpec',
-    declaration: 'export interface CraftHeadlessSpec {\n    readonly listMethod: string;\n    readonly toolFilter: readonly string[];\n    readonly artifactTools: readonly string[];\n    readonly artifactPatterns: readonly string[];\n}',
+    declaration: 'export interface CraftHeadlessSpec {\n    readonly listMethod: string;\n    readonly registryMethod: string | null;\n    readonly trustedRegistryHash: string | null;\n    readonly toolFilter: readonly string[];\n    readonly artifactTools: readonly string[];\n    readonly artifactPatterns: readonly string[];\n}',
   },
   {
     name: 'CraftHostOpenRequest',
@@ -4083,7 +4083,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'CraftSession',
-    declaration: 'export interface CraftSession {\n    readonly id: string;\n    readonly app: string;\n    readonly mode: \'headless\';\n    readonly roots: CraftRoots;\n    readonly tools: readonly CraftToolDescriptor[];\n    readonly transport: CraftTransport;\n    close(): Promise<void>;\n}',
+    declaration: 'export interface CraftSession {\n    readonly id: string;\n    readonly app: string;\n    readonly mode: \'headless\';\n    readonly roots: CraftRoots;\n    readonly tools: readonly CraftToolDescriptor[];\n    readonly registryReviewed: boolean;\n    readonly transport: CraftTransport;\n    close(): Promise<void>;\n}',
   },
   {
     name: 'CraftStatus',
@@ -4095,7 +4095,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'CraftTransport',
-    declaration: 'export interface CraftTransport {\n    listTools(): Promise<readonly CraftToolDescriptor[]>;\n    callTool(name: string, args: Readonly<Record<string, unknown>>, options: {\n        readonly signal: AbortSignal;\n    }): Promise<CraftCallResult>;\n    close(): Promise<void>;\n}',
+    declaration: 'export interface CraftTransport {\n    listTools(): Promise<readonly CraftToolDescriptor[]>;\n    readCommandRegistry(): Promise<unknown>;\n    callTool(name: string, args: Readonly<Record<string, unknown>>, options: {\n        readonly signal: AbortSignal;\n    }): Promise<CraftCallResult>;\n    close(): Promise<void>;\n}',
   },
   {
     name: 'CreateAgentOptions',

@@ -1,5 +1,5 @@
 /**
- * Craft bridge service definition (`ctx.craft`): manifest catalog, four-state
+ * Craft bridge service definition (`ctx.craft`): manifest catalog, seven-state
  * health, headless session lifecycle, root confinement, and the attach gate.
  * @module @greeneek/gnk-craft
  */
@@ -18,6 +18,7 @@ export {
 } from './manifest.ts'
 export type { ManifestReader } from './manifest.ts'
 export { confineArtifact, controlTokenPath, CONTROL_TOKEN_FILE, craftRoots, resolveWorkspaceRoot } from './paths.ts'
+export { hashCommandRegistry } from './registry.ts'
 export { Config, CraftRuntime, DEFAULT_MAX_ACTIVE_APPS } from './service.ts'
 export type {
   CraftAppManifest,

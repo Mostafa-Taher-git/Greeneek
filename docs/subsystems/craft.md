@@ -51,7 +51,7 @@ interface CraftAppManifest {
 }
 ```
 
-Every per-app behavior the bridge needs — launch commands, the attach gate, the curated headless tool filter, artifact tool names and output patterns, confined roots, documented platforms — lives in a manifest file, never in code. The loader validates the headless launch grammar at load: `{cli}` must open the template and the two roots plus the control-token file must appear, so a stale template fails before any spawn. The `sources` list records provenance per manifest entry, not per fact: the loader validates each entry's `label`, `url`, ISO `date`, and `verified` fields, and no other code reads them. A manifest may claim row-level `verified: true` only alongside at least one proven source entry; unverified entries are pilot placeholders, not release guarantees. The nested vocabulary (`CraftAttachPolicy`, `CraftLaunchTemplates`, `CraftManifestRoots`, `CraftManifestSource`, `CraftPlatform`, `CraftRecipeRef`, `CraftHeadlessSpec`) is declared in the same module.
+Every per-app behavior the bridge needs — launch commands, the attach gate, the observed command-registry method and reviewed hash, the curated headless tool filter, artifact tool names and output patterns, confined roots, documented platforms — lives in a manifest file, never in code. The loader validates the headless launch grammar at load: `{cli}` must open the template and the two roots plus the control-token file must appear, so a stale template fails before any spawn. The `sources` list records provenance per manifest entry, not per fact: the loader validates each entry's `label`, `url`, ISO `date`, and `verified` fields, and no other code reads them. A manifest may claim row-level `verified: true` only alongside at least one proven source entry; unverified entries are pilot placeholders, not release guarantees. The nested vocabulary (`CraftAttachPolicy`, `CraftLaunchTemplates`, `CraftManifestRoots`, `CraftManifestSource`, `CraftPlatform`, `CraftRecipeRef`, `CraftHeadlessSpec`) is declared in the same module.
 
 ## `CraftHostProvider`
 
@@ -108,6 +108,8 @@ interface CraftSession {
   readonly roots: CraftRoots
   /** Tool catalog captured at open. */
   readonly tools: readonly CraftToolDescriptor[]
+  /** Whether the registry captured at open matched a reviewed trusted hash. */
+  readonly registryReviewed: boolean
   /** App wire transport. */
   readonly transport: CraftTransport
   /** Release the session. Idempotent. */
@@ -115,7 +117,7 @@ interface CraftSession {
 }
 ```
 
-The tool catalog is captured once at open, so a mid-session `tools/list` change cannot rename a registered tool underneath the consumer. `transport` is the only app-wire surface consumers see; sessions are disposed with the owning context fiber and the concurrency cap (`maxActiveApps`, default 2) bounds live children.
+The tool catalog is captured once at open, so a mid-session `tools/list` change cannot rename a registered tool underneath the consumer. When the manifest declares `headless.registryMethod`, open also hashes the raw command registry before listing tools. A non-null `headless.trustedRegistryHash` mismatch rejects the open and produces a later `drifted` status from the process-local observation; only a reviewed match sets `registryReviewed` and permits recipe registration. `transport` is the only app-wire surface consumers see; sessions are disposed with the owning context fiber and the concurrency cap (`maxActiveApps`, default 2) bounds live children.
 
 ## `CraftStatus`
 

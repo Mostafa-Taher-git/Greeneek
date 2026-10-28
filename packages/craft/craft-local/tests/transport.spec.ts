@@ -6,6 +6,7 @@ import type { CraftTransportOptions } from '../src/transport.ts'
 
 const baseOptions: CraftTransportOptions = {
   listMethod: 'command_list',
+  registryMethod: 'engine.commands',
   requestTimeoutMs: 200,
   closeGraceMs: 5,
 }
@@ -124,6 +125,24 @@ describe('JsonRpcCraftTransport', () => {
       { name: 'screenshot', description: '', inputSchema: { type: 'object' } },
     ])
     expect(JSON.parse(app.writes[0] as string)).toMatchObject({ method: 'command_list', params: {} })
+  })
+
+  it('reads the raw serve-shaped command registry without an MCP tools envelope', async () => {
+    const registry = { commands: [{ id: 'convert', schema: { type: 'object' } }] }
+    const app = createProcess((request, respond) => {
+      respond({ id: request.id, ok: true, result: registry })
+    })
+    const transport = new JsonRpcCraftTransport(app.process, baseOptions)
+
+    await expect(transport.readCommandRegistry()).resolves.toEqual(registry)
+    expect(JSON.parse(app.writes[0] as string)).toMatchObject({ method: 'engine.commands', params: {} })
+  })
+
+  it('rejects a registry read when no method was observed', async () => {
+    const app = createProcess()
+    const transport = new JsonRpcCraftTransport(app.process, { ...baseOptions, registryMethod: null })
+    await expect(transport.readCommandRegistry()).rejects.toThrow('no observed command-registry method')
+    expect(app.writes).toEqual([])
   })
 
   it('rejects a catalog response without a tools array', async () => {

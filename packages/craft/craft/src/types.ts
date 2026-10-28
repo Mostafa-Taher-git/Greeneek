@@ -82,6 +82,10 @@ export interface CraftRecipeRef {
 export interface CraftHeadlessSpec {
   /** JSON-RPC method (and app meta-tool) that lists callable tools. */
   readonly listMethod: string
+  /** Method returning the raw command registry, or null when unobserved. */
+  readonly registryMethod: string | null
+  /** Reviewed canonical-registry SHA-256, or null when no baseline was reviewed. */
+  readonly trustedRegistryHash: string | null
   /** Tool names allowed to register from the advertised catalog. */
   readonly toolFilter: readonly string[]
   /** Tool names whose results carry artifact paths. */
@@ -180,6 +184,8 @@ export interface CraftCallResult {
 export interface CraftTransport {
   /** Discover the app's callable tool catalog. */
   listTools(): Promise<readonly CraftToolDescriptor[]>
+  /** Return the raw command-registry result without projecting it as MCP tools. */
+  readCommandRegistry(): Promise<unknown>
   /** Call one advertised tool. */
   callTool(
     name: string,
@@ -252,6 +258,8 @@ export interface CraftSession {
   readonly roots: CraftRoots
   /** Tool catalog captured at open. */
   readonly tools: readonly CraftToolDescriptor[]
+  /** Whether the registry captured at open matched a reviewed trusted hash. */
+  readonly registryReviewed: boolean
   /** App wire transport. */
   readonly transport: CraftTransport
   /** Release the session. Idempotent. */

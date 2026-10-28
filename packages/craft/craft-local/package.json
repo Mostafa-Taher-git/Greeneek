@@ -12,7 +12,8 @@
   },
   "type": "module",
   "scripts": {
-    "smoke:discovery": "node --import tsx/esm scripts/check-discovery.ts"
+    "smoke:discovery": "node --import tsx/esm scripts/check-discovery.ts",
+    "smoke:serve": "node --import tsx/esm scripts/check-serve.mjs"
   },
   "main": "lib/index.js",
   "types": "lib/types/index.d.ts",
@@ -40,6 +41,7 @@
   "devDependencies": {
     "@greeneek/cordis": "workspace:^",
     "@greeneek/gnk-craft": "workspace:^",
-    "@greeneek/gnk-subprocess": "workspace:^"
+    "@greeneek/gnk-subprocess": "workspace:^",
+    "@greeneek/gnk-subprocess-local": "workspace:^"
   }
 }

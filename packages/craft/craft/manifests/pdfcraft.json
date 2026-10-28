@@ -38,6 +38,8 @@
   },
   "headless": {
     "listMethod": "command_list",
+    "registryMethod": null,
+    "trustedRegistryHash": null,
     "toolFilter": ["command_list", "command_run", "command_batch", "render_preview"],
     "artifactTools": ["render_preview"],
     "artifactPatterns": []

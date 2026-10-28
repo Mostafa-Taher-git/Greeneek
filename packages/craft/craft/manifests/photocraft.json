@@ -50,6 +50,8 @@
   },
   "headless": {
     "listMethod": "command_list",
+    "registryMethod": "engine.commands",
+    "trustedRegistryHash": null,
     "toolFilter": ["command_list", "command_run", "command_batch", "render_preview", "screenshot"],
     "artifactTools": ["render_preview", "screenshot"],
     "artifactPatterns": ["*.webp"]

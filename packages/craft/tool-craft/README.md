@@ -1,5 +1,5 @@
 ---
-description: "The model-facing Craft gateway: craft_list_apps and craft_open_app stay mounted while no app is active, opening an app mounts its curated tools and recipe skill, and every reported artifact path is confined to the job root."
+description: "The model-facing Craft gateway: opening an app mounts curated tools, mounts its recipe only after registry review, and confines every reported artifact path to the job root."
 kind: "package-reference"
 ---
 
@@ -7,7 +7,7 @@ kind: "package-reference"
 
 ## Summary
 
-`gnk-tool-craft` is the Consumer half of the Craft capability seam. It registers exactly two model-facing gateway tools — `craft_list_apps` and `craft_open_app` — so an idle session pays two tool schemas and zero app processes. Opening an app mounts that app's curated meta-tools under the shared `mcp__<app>__<tool>` naming contract and loads its recipe as a runtime skill; closing disposes both and releases the child process. Results carrying artifact paths are confined against the job write root before the model ever sees them.
+`gnk-tool-craft` is the Consumer half of the Craft capability seam. It registers exactly two model-facing gateway tools — `craft_list_apps` and `craft_open_app` — so an idle session pays two tool schemas and zero app processes. Opening an app mounts that app's curated meta-tools under the shared `mcp__<app>__<tool>` naming contract and loads its recipe as a runtime skill only when the observed registry matches a reviewed hash; closing disposes both and releases the child process. Results carrying artifact paths are confined against the job write root before the model ever sees them.
 
 ## Table of Contents
 
@@ -41,7 +41,7 @@ No configuration. The tool surface, app roster, and concurrency limit come from 
 <details>
 <summary>Implementation internals - click to expand</summary>
 
-`apply()` registers the two gateway tools as one effect and owns the active-app map. `craft_open_app` resolves the manifest, delegates to `ctx.craft.open`, then registers the manifest-filtered bridge (`registerAppTools`, reusing `matchesToolFilter`/`publicToolName` from `gnk-mcp-client`) and the recipe skill (`registerRecipeSkill`); a mount failure after open closes the session before the error escapes. Session teardown is registered before the gateway effect so disposers run in the safe order (tools unregister, then children release). Every app-reported path goes through `confineArtifact`; an escape fails the call. The [Craft bridge pilot Agent Note](../../../.agents/notes/implemented/feature/2026-10-24-v0.3.4-craft-bridge-pilot.md) records the lazy-gateway decision and its alternatives.
+`apply()` registers the two gateway tools as one effect and owns the active-app map. `craft_open_app` resolves the manifest, delegates to `ctx.craft.open`, then registers the manifest-filtered bridge (`registerAppTools`, reusing `matchesToolFilter`/`publicToolName` from `gnk-mcp-client`) and, only for a reviewed session, the recipe skill (`registerRecipeSkill`); a mount failure after open closes the session before the error escapes. Session teardown is registered before the gateway effect so disposers run in the safe order (tools unregister, then children release). Every app-reported path goes through `confineArtifact`; an escape fails the call. The [Craft bridge pilot Agent Note](../../../.agents/notes/implemented/feature/2026-10-24-v0.3.4-craft-bridge-pilot.md) records the lazy-gateway decision and its alternatives.
 
 | File | Role |
 |---|---|
@@ -102,6 +102,7 @@ Append-only; newly visible content follows the reusable request prefix.
 <a id="known-limitations-and-deferred-work"></a>
 
 - **Attach mode refuses in the pilot** - `craft_open_app` with `mode: 'attach'` throws even for an attach-enabled manifest until the upstream authenticated control channel ships.
+- **Recipes require registry review** - manifests without a reviewed matching registry hash still permit curated tool sessions, but their recipe skill remains disabled; drift rejects the open before either registration.
 - **Pilot roster only** - only the apps present in `@greeneek/gnk-craft`'s bundled manifests (PhotoCraft, PdfCraft) are addressable.
 - **Workspace roots from the calling agent** - the job roots derive from the agent session's `cwd`; a tool call outside an agent session falls back to the process directory.
 

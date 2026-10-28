@@ -45,7 +45,9 @@ Mount this package along with a host provider (`@greeneek/gnk-craft-local`) and 
 | `drifted` | The advertised command registry changed after verification and requires review |
 | `failed` | Installation measurement failed; the detail contains the diagnostic |
 
-### Concurrency and root confinement
+### Registry review and root confinement
+
+A manifest may declare an observed `headless.registryMethod` and a reviewed `headless.trustedRegistryHash`. Open hashes the raw registry with recursively sorted object keys and significant array order; a mismatch closes the host and later status reads report `drifted` from the process-local observation. Recipes require a reviewed match, so a missing baseline never becomes trusted by first use. A later open may re-measure and recover.
 
 The service bounds concurrent active headless applications (default: 2, configurable via `maxActiveApps`). Every open session receives isolated job directories under the workspace root (`craft/io` and `craft/out`), and writes a one-time control token file verified by the headless process.
 

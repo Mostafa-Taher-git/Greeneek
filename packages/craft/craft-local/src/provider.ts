@@ -114,6 +114,7 @@ export class CraftLocalProvider implements CraftHostProvider {
       },
       {
         listMethod: request.app.headless.listMethod,
+        registryMethod: request.app.headless.registryMethod,
         requestTimeoutMs: this.config.requestTimeoutMs,
         closeGraceMs: this.config.closeGraceMs,
         warn: message => this.io.warn?.(message),

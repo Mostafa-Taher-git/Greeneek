@@ -512,19 +512,25 @@ Source: [`packages/extensions/cordis-host-runner/src/index.ts:88`](../packages/e
 
 ## `@greeneek/gnk-craft-local`
 
+Requires: `craft` · `subprocess`
+
 ```ts config-catalog
-/** Resolved local provider configuration. */
-export interface CraftLocalConfig {
-  /** Per JSON-RPC request deadline in milliseconds. */
-  readonly requestTimeoutMs: number
-  /** Terminate escalation grace for a spawned app process tree. */
-  readonly graceMs: number
-  /** Bound on waiting for a terminated process to settle during close. */
-  readonly closeGraceMs: number
+/**
+ * Configuration a composition may hand {@link apply}: every field optional,
+ * resolved against the documented defaults. Distinct from the resolved
+ * {@link CraftLocalConfig} the schema materializes and the provider carries.
+ */
+export interface Config {
+  /** Per JSON-RPC request deadline in milliseconds. @default 30000 */
+  readonly requestTimeoutMs?: number
+  /** Terminate escalation grace for a spawned app process tree. @default 2000 */
+  readonly graceMs?: number
+  /** Bound on waiting for a terminated process to settle during close. @default 2000 */
+  readonly closeGraceMs?: number
 }
 ```
 
-Source: [`packages/craft/craft-local/src/types.ts:83`](../packages/craft/craft-local/src/types.ts)
+Source: [`packages/craft/craft-local/src/index.ts:40`](../packages/craft/craft-local/src/index.ts)
 
 <a id="greeneekgnk-credentials-local"></a>
 

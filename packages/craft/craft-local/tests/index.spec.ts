@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { Context } from '@greeneek/cordis'
 import type { SubprocessHandle, SubprocessSpawnSpec } from '@greeneek/gnk-subprocess'
-import { apply, Config, createLocalIo, DEFAULT_CLOSE_GRACE_MS, DEFAULT_GRACE_MS, DEFAULT_REQUEST_TIMEOUT_MS } from '../src/index.ts'
+import { apply, Config, createLocalIo, DEFAULT_CLOSE_GRACE_MS, DEFAULT_GRACE_MS, DEFAULT_REQUEST_TIMEOUT_MS, inject } from '../src/index.ts'
 import { CraftLocalProvider } from '../src/provider.ts'
 
 /** Minimal context surface the plugin touches. */
@@ -24,6 +24,12 @@ function fakeContext() {
 }
 
 const resolvedConfig = { requestTimeoutMs: 100, graceMs: 50, closeGraceMs: 25 }
+
+describe('dependencies', () => {
+  it('waits for the Craft seam and subprocess boundary', () => {
+    expect(inject).toEqual(['craft', 'subprocess'])
+  })
+})
 
 describe('Config', () => {
   it('fills every default', () => {
@@ -50,6 +56,14 @@ describe('apply', () => {
     const provider = fake.registerProvider.mock.calls[0]?.[0]
     expect(provider).toBeInstanceOf(CraftLocalProvider)
     expect((provider as CraftLocalProvider).id).toBe('craft-local')
+  })
+
+  it('uses the documented defaults when a composition supplies no config', () => {
+    const fake = fakeContext()
+
+    expect(() => { apply(fake.ctx) }).not.toThrow()
+
+    expect(fake.registerProvider).toHaveBeenCalledOnce()
   })
 
   it('rejects a non-positive, fractional, or out-of-range timer', () => {

@@ -15,6 +15,9 @@ import type { CraftLocalConfig, CraftLocalIo } from './types.ts'
 /** Plugin name used by loader diagnostics. */
 export const name = 'craft-local'
 
+/** Services the provider registers against: the Craft seam and its process boundary. */
+export const inject = ['craft', 'subprocess']
+
 /** Default per-request JSON-RPC deadline. */
 export const DEFAULT_REQUEST_TIMEOUT_MS = 30_000
 /** Default terminate-escalation grace for one app process tree. */
@@ -28,6 +31,20 @@ export const Config: z<CraftLocalConfig> = z.object({
   graceMs: z.number().default(DEFAULT_GRACE_MS),
   closeGraceMs: z.number().default(DEFAULT_CLOSE_GRACE_MS),
 })
+
+/**
+ * Configuration a composition may hand {@link apply}: every field optional,
+ * resolved against the documented defaults. Distinct from the resolved
+ * {@link CraftLocalConfig} the schema materializes and the provider carries.
+ */
+export interface Config {
+  /** Per JSON-RPC request deadline in milliseconds. @default 30000 */
+  readonly requestTimeoutMs?: number
+  /** Terminate escalation grace for a spawned app process tree. @default 2000 */
+  readonly graceMs?: number
+  /** Bound on waiting for a terminated process to settle during close. @default 2000 */
+  readonly closeGraceMs?: number
+}
 
 /**
  * Build the provider's Node boundary from the owning context.
@@ -44,13 +61,18 @@ export function createLocalIo(ctx: Context): CraftLocalIo {
 /**
  * Register the local host provider.
  * @param ctx - context carrying `craft` and `subprocess`.
- * @param config - resolved deadlines and termination grace.
+ * @param config - optional deadlines and termination grace; omitted fields use the documented defaults.
  */
-export function apply(ctx: Context, config: CraftLocalConfig): void {
-  assertTimer('requestTimeoutMs', config.requestTimeoutMs)
-  assertTimer('graceMs', config.graceMs)
-  assertTimer('closeGraceMs', config.closeGraceMs)
-  const provider = new CraftLocalProvider(createLocalIo(ctx), config)
+export function apply(ctx: Context, config: Config = {}): void {
+  const resolved: CraftLocalConfig = {
+    requestTimeoutMs: config.requestTimeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS,
+    graceMs: config.graceMs ?? DEFAULT_GRACE_MS,
+    closeGraceMs: config.closeGraceMs ?? DEFAULT_CLOSE_GRACE_MS,
+  }
+  assertTimer('requestTimeoutMs', resolved.requestTimeoutMs)
+  assertTimer('graceMs', resolved.graceMs)
+  assertTimer('closeGraceMs', resolved.closeGraceMs)
+  const provider = new CraftLocalProvider(createLocalIo(ctx), resolved)
   ctx.effect(() => ctx.craft.registerProvider(provider), 'craft-local.registerProvider')
 }
 

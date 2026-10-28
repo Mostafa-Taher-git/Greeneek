@@ -37,7 +37,7 @@ Mount this package along with a host provider (`@greeneek/gnk-craft-local`) and 
 
 | State | Meaning |
 |---|---|
-| `not-installed` | The application was not found in the launcher manifest or Windows registry |
+| `not-installed` | The app documents no support for this host platform, or no supported install was found in the launcher manifest, portable markers, or Windows registry |
 | `app-installed-cli-missing` | The application GUI is present, but its command-line interface executable is missing |
 | `ready` | Both application and CLI are verified with absolute paths and ready for headless sessions |
 | `running` | An active headless automation session is currently open |
@@ -93,9 +93,10 @@ None of its own; only the tool consumer's mount and dispose of bridge tools chan
 <a id="known-limitations-and-deferred-work"></a>
 
 - **Live GUI attach gated** — Live attach mode is disabled by default in pilot manifests until upstream authenticated control channel protocols are hardened.
-- **Pilot applications** — Bundles manifests for PhotoCraft and PdfCraft; remaining ArtCraft suite applications are added in follow-on milestones.
-- **Unverified manifest facts** — PdfCraft's manifest is entirely unproven, and PhotoCraft's `launch.connected`, `headless.listMethod`, `headless.toolFilter`, `headless.artifactTools`, `riskyCommandClasses`, and attach facts remain unproven against an installed app. `verified: false` is provenance documentation only: the loader validates the flag's type and no runtime decision reads it.
+- **Pilot applications** — Bundles manifests for PhotoCraft and PdfCraft; remaining ArtCraft suite applications are added in follow-on milestones once their facts are observed rather than inferred.
+- **Unverified manifest facts** — Both rows keep the row-level `verified: false` claim, which the loader allows only alongside a proven `sources` entry; the real-host smoke flips it with recorded runs. PdfCraft's manifest is entirely unproven (its serve template states the bridge launch contract proven on PhotoCraft's CLI). PhotoCraft's `launch.connected`, `headless.listMethod`, `headless.toolFilter`, `headless.artifactTools`, `riskyCommandClasses`, and attach facts remain unproven against an installed app; only the serve handshake, the `convert` run, and the `*.webp` artifact pattern it produced are proven.
 - **PhotoCraft headless entry and catalog** — `launch.headless` is `{cli} serve --automation-read-root {readRoot} --automation-write-root {writeRoot} --control-token-file {controlTokenFile}`, proven against `photocraft-cli.exe` 0.15.1 (build 60c87b988): one `{"id":1,"method":"methods","params":{}}` line answered `{"id":1,"ok":true,"result":[18 methods]}`, `engine.commands` answered with its command registry, and closing stdin exited 0 with no surviving process. The same build refuses `photocraft-cli --headless` with exit 2, and `serve` knows no `command_list` method, so the first catalog call cannot list tools yet (mechanism: [local provider](../craft-local/README.md)).
+- **Windows-only pilot** — Both manifests document `win32` only; discovery on any other host reports `not-installed` with a platform detail before probing launcher state or the registry.
 - **Unversioned discovery records bypass the version floor** — `minVersion` is 0.15.1, the ProductVersion whose `serve` entry was proven, but discovery compares only a version the installation source reported; the Windows registry `InstallDir` value carries none, so that path accepts any build.
 
 <a id="dev-note"></a>

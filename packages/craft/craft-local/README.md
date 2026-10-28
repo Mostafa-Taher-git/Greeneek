@@ -53,13 +53,13 @@ The provider strictly rejects bare executables on the ambient system `PATH`: onl
 <details>
 <summary>Implementation internals — click to expand</summary>
 
-The provider implements `CraftHostProvider` and registers on `ctx.craft`. During `discover(app)`, it checks launcher JSON manifests and Windows registry entries, mapping historical application aliases (`printcraft` -> `pdfcraft`). During `open(request)`, it verifies the control token, expands the manifest's `launch.headless` template into argv — `{cli}`, `{readRoot}`, `{writeRoot}`, and `{controlTokenFile}` are the only placeholders, `{cli}` must open the template, and a template that omits a root or the token file is refused before the token file is written — then creates the confined job root and launches the CLI with piped stdio. The returned session wraps a `JsonRpcCraftTransport` that speaks newline-framed JSON to the headless application process.
+The provider implements `CraftHostProvider` and registers on `ctx.craft`. During `discover(app)`, it first refuses an app whose manifest does not document the host platform, then checks launcher JSON manifests and Windows registry entries, mapping historical application aliases (`printcraft` -> `pdfcraft`). During `open(request)`, it verifies the control token, expands the manifest's `launch.headless` template into argv — the placeholder grammar (`{cli}` opens the template, the two roots and the token file appear) is enforced when the manifest loads and re-checked before expansion, so a stale template is refused before the token file is written — then creates the confined job root and launches the CLI with piped stdio. The returned session wraps a `JsonRpcCraftTransport` that speaks newline-framed JSON to the headless application process.
 
 | File | Role |
 |---|---|
 | [`src/provider.ts`](src/provider.ts) | `CraftLocalProvider` implementation |
-| [`src/launch.ts`](src/launch.ts) | Headless launch-template expansion and refusal |
-| [`src/discovery.ts`](src/discovery.ts) | Cross-platform manifest and registry discovery |
+| [`src/launch.ts`](src/launch.ts) | Headless launch-template expansion over the shared grammar |
+| [`src/discovery.ts`](src/discovery.ts) | Platform guard, cross-platform manifest and registry discovery |
 | [`src/transport.ts`](src/transport.ts) | JSON-RPC 2.0 frame transport over piped stdio |
 | [`src/platform.ts`](src/platform.ts) | Platform executable naming and path resolution |
 | [`src/node-io.ts`](src/node-io.ts) | Node.js filesystem and subprocess adapter |

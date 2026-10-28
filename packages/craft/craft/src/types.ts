@@ -8,12 +8,17 @@
 /** Published health of one Craft app installation. */
 export type CraftAppState = 'not-installed' | 'app-installed-cli-missing' | 'ready' | 'running'
 
+/** Platform surface one Craft app documents. */
+export type CraftPlatform = 'win32' | 'darwin' | 'linux'
+
 /** Provenance of one manifest fact. Unverified facts are not release guarantees. */
 export interface CraftManifestSource {
   /** Human-readable source name. */
   readonly label: string
   /** Source URL. */
   readonly url: string
+  /** ISO calendar date (`YYYY-MM-DD`) the fact was recorded or last checked. */
+  readonly date: string
   /** Whether the pilot proved this fact against a real installation. */
   readonly verified: boolean
 }
@@ -23,8 +28,9 @@ export interface CraftLaunchTemplates {
   /**
    * Headless invocation template. `{cli}`, `{readRoot}`, `{writeRoot}`, and
    * `{controlTokenFile}` are the only placeholders, `{cli}` must open the
-   * template, and the local provider refuses a template that omits a root or
-   * the token file.
+   * template, and the two roots plus the token file must all appear. Manifest
+   * loading refuses any other shape; the local provider re-checks before
+   * expanding.
    */
   readonly headless: string
   /** GUI invocation template used by "Launch Connected". */
@@ -67,6 +73,8 @@ export interface CraftHeadlessSpec {
   readonly toolFilter: readonly string[]
   /** Tool names whose results carry artifact paths. */
   readonly artifactTools: readonly string[]
+  /** Job-out-root-relative glob patterns for the files artifact tools write; empty while nothing is proven. */
+  readonly artifactPatterns: readonly string[]
 }
 
 /**
@@ -85,6 +93,8 @@ export interface CraftAppManifest {
   readonly aliases: readonly string[]
   /** CLI executable stem; the platform suffix is added by the local provider. */
   readonly cliStem: string
+  /** Platforms the app documents; discovery on any other host reports not-installed. */
+  readonly platforms: readonly CraftPlatform[]
   /** Whether this app can run a headless job. */
   readonly headlessSupported: boolean
   /** Minimum supported app version (semantic `x.y.z`). */
@@ -99,6 +109,8 @@ export interface CraftAppManifest {
   readonly cancellation: 'child-process-kill'
   /** Command classes that need an approval card before execution. */
   readonly riskyCommandClasses: readonly string[]
+  /** Whether recorded runs proved this app's capability matrix on the test host. */
+  readonly verified: boolean
   /** Manifest fact provenance. */
   readonly sources: readonly CraftManifestSource[]
   /** Recipe skill shipped with the app. */

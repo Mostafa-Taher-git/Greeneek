@@ -5,7 +5,7 @@
  * @module @greeneek/gnk-craft-local/discovery
  */
 
-import type { CraftAppManifest, CraftDiscovery } from '@greeneek/gnk-craft'
+import type { CraftAppManifest, CraftDiscovery, CraftPlatform } from '@greeneek/gnk-craft'
 import { cliExecutableName, launcherRoots, meetsVersionFloor, parseInstalledJson, platformPath } from './platform.ts'
 import type { CraftDiscoveryIo, CraftInstallRecord } from './types.ts'
 
@@ -28,6 +28,12 @@ export function portableFileName(app: string): string {
  * @returns one of `not-installed`, `app-installed-cli-missing`, or `ready`.
  */
 export function discoverApp(app: CraftAppManifest, io: CraftDiscoveryIo): CraftDiscovery {
+  if (!app.platforms.includes(io.platform as CraftPlatform)) {
+    return {
+      state: 'not-installed',
+      detail: `${app.displayName} documents ${app.platforms.join(' and ')} support; this host is ${io.platform}`,
+    }
+  }
   const candidates = readCandidates(app, io)
   if (candidates.length === 0) {
     return {

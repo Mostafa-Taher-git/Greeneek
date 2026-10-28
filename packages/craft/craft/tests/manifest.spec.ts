@@ -16,19 +16,25 @@ function validManifest(): Record<string, unknown> {
     displayName: 'TestCraft',
     aliases: ['testy'],
     cliStem: 'testcraft',
+    platforms: ['win32'],
     headlessSupported: true,
     minVersion: '1.2.3',
+    verified: false,
     attach: { supported: true, enabled: false, reason: 'gated' },
-    launch: { headless: 'testcraft-cli --headless', connected: 'testcraft --control {jobRoot}' },
+    launch: {
+      headless: '{cli} serve --automation-read-root {readRoot} --automation-write-root {writeRoot} --control-token-file {controlTokenFile}',
+      connected: 'testcraft --control {jobRoot}',
+    },
     roots: { read: 'workspace', write: 'job-out' },
     cancellation: 'child-process-kill',
     riskyCommandClasses: ['overwrite'],
-    sources: [{ label: 'docs', url: 'https://example.test/docs', verified: false }],
+    sources: [{ label: 'docs', url: 'https://example.test/docs', date: '2026-10-26', verified: false }],
     recipe: { name: 'craft-testcraft', description: 'test recipe', file: 'recipes/testcraft.md' },
     headless: {
       listMethod: 'command_list',
       toolFilter: ['command_list', 'render_preview'],
       artifactTools: ['render_preview'],
+      artifactPatterns: ['rendered/*.png'],
     },
   }
 }
@@ -52,8 +58,20 @@ describe('bundled pilot catalog', () => {
     expect(PILOT_APP_IDS).toEqual(['photocraft', 'pdfcraft'])
     const catalog = loadPilotCatalog()
     expect(catalog.apps().map(app => app.id)).toEqual(['photocraft', 'pdfcraft'])
-    expect(catalog.require('photocraft').headless.artifactTools).toEqual(['render_preview', 'screenshot'])
+    const photocraft = catalog.require('photocraft')
+    expect(photocraft.headless.artifactTools).toEqual(['render_preview', 'screenshot'])
+    expect(photocraft.headless.artifactPatterns).toEqual(['*.webp'])
+    expect(photocraft.platforms).toEqual(['win32'])
     expect(catalog.require('PDFCRAFT').displayName).toBe('PdfCraft')
+  })
+
+  it('keeps every pilot row unverified until the real-host smoke proves it', () => {
+    for (const manifest of loadPilotCatalog().apps()) {
+      expect(manifest.verified).toBe(false)
+      for (const source of manifest.sources) {
+        expect(source.date).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+      }
+    }
   })
 
   it('publishes declared provenance without a placeholder host', () => {
@@ -138,10 +156,22 @@ describe('strict manifest validation', () => {
     expectInvalid((manifest) => { manifest.id = 'Bad Id' }, 'id: must be a lowercase kebab-case id')
     expectInvalid((manifest) => { manifest.displayName = '  ' }, 'displayName: must be a non-empty string')
     expectInvalid((manifest) => { manifest.cliStem = 'Bad_Stem' }, 'cliStem: must be a lowercase executable stem')
+    expectInvalid((manifest) => { manifest.platforms = [] }, 'platforms: must not be empty')
+    expectInvalid((manifest) => { manifest.platforms = ['win32', 'win32'] }, 'platforms[1]: must be unique')
+    expectInvalid((manifest) => { manifest.platforms = ['android'] }, 'platforms[0]: must be one of win32, darwin, linux')
     expectInvalid((manifest) => { manifest.headlessSupported = 'yes' }, 'headlessSupported: must be a boolean')
     expectInvalid((manifest) => { manifest.minVersion = '1.2' }, 'minVersion: must be a semantic version')
+    expectInvalid((manifest) => { manifest.verified = 'yes' }, 'verified: must be a boolean')
     expectInvalid((manifest) => { manifest.cancellation = 'graceful' }, 'cancellation: must be "child-process-kill"')
     expectInvalid((manifest) => { manifest.displayName = 7 }, 'displayName: must be a non-empty string')
+  })
+
+  it('rejects a verified claim with no proven source recording the run', () => {
+    expectInvalid((manifest) => { manifest.verified = true }, 'verified: cannot be true without a proven sources entry recording the run')
+    const proven = validManifest()
+    proven.verified = true
+    proven.sources = [{ label: 'recorded run', url: 'urn:greeneek:verified:testcraft', date: '2026-10-28', verified: true }]
+    expect(parseManifest(proven).verified).toBe(true)
   })
 
   it('rejects alias and string-array violations', () => {
@@ -159,12 +189,23 @@ describe('strict manifest validation', () => {
     expectInvalid((manifest) => { nested(manifest, 'attach').supported = false; nested(manifest, 'attach').enabled = true }, 'attach.enabled: cannot be true when attach is unsupported')
     expectInvalid((manifest) => { nested(manifest, 'attach').reason = '' }, 'attach.reason: must be a non-empty string')
     expectInvalid((manifest) => { nested(manifest, 'launch').headless = '' }, 'launch.headless: must be a non-empty string')
+    expectInvalid((manifest) => { nested(manifest, 'launch').headless = 'testcraft-cli --headless' }, 'launch.headless: must open with {cli}')
+    expectInvalid((manifest) => {
+      nested(manifest, 'launch').headless = '{cli} serve --automation-write-root {writeRoot} --control-token-file {controlTokenFile}'
+    }, 'launch.headless: must reference {readRoot}')
+    expectInvalid((manifest) => {
+      nested(manifest, 'launch').headless = '{cli} serve --automation-read-root {readRoot} --automation-write-root {writeRoot}'
+    }, 'launch.headless: must reference {controlTokenFile}')
+    expectInvalid((manifest) => {
+      nested(manifest, 'launch').headless = '{cli} serve --port {port} --automation-read-root {readRoot} --automation-write-root {writeRoot} --control-token-file {controlTokenFile}'
+    }, 'launch.headless: has the unknown placeholder {port}')
     expectInvalid((manifest) => { nested(manifest, 'launch').connected = 4 }, 'launch.connected: must be a non-empty string')
     expectInvalid((manifest) => { manifest.sources = [] }, 'sources: must not be empty')
     expectInvalid((manifest) => { manifest.sources = 'docs' }, 'sources: must be an array')
     expectInvalid((manifest) => { manifest.sources = [null] }, 'sources[0]: must be an object')
     expectInvalid((manifest) => { (manifest.sources as Record<string, unknown>[])[0]!.extra = true }, 'sources[0].extra: is not a recognized field')
     expectInvalid((manifest) => { (manifest.sources as Record<string, unknown>[])[0]!.verified = 'no' }, 'sources[0].verified: must be a boolean')
+    expectInvalid((manifest) => { (manifest.sources as Record<string, unknown>[])[0]!.date = '2026-10' }, 'sources[0].date: must be an ISO calendar date (YYYY-MM-DD)')
   })
 
   it('rejects recipe and headless violations', () => {
@@ -176,7 +217,20 @@ describe('strict manifest validation', () => {
     expectInvalid((manifest) => { nested(manifest, 'headless').toolFilter = [1] }, 'headless.toolFilter[0]: must be a non-empty string')
     expectInvalid((manifest) => { nested(manifest, 'headless').artifactTools = ['other'] }, 'headless.artifactTools: tool "other" must also appear in headless.toolFilter')
     expectInvalid((manifest) => { nested(manifest, 'headless').artifactTools = 'render_preview' }, 'headless.artifactTools: must be an array')
+    expectInvalid((manifest) => { nested(manifest, 'headless').artifactPatterns = ['a', 'a'] }, 'headless.artifactPatterns[1]: must be unique')
+    expectInvalid((manifest) => { nested(manifest, 'headless').artifactPatterns = ['/abs/x.png'] }, 'headless.artifactPatterns: pattern "/abs/x.png" must be a lowercase relative glob under the job-out root')
+    expectInvalid((manifest) => { nested(manifest, 'headless').artifactPatterns = ['a/../b.png'] }, 'headless.artifactPatterns: pattern "a/../b.png" must be a lowercase relative glob under the job-out root')
+    expectInvalid((manifest) => { nested(manifest, 'headless').artifactPatterns = ['*.PNG'] }, 'headless.artifactPatterns: pattern "*.PNG" must be a lowercase relative glob under the job-out root')
     expectInvalid((manifest) => { nested(manifest, 'headless').listMethod = '' }, 'headless.listMethod: must be a non-empty string')
+  })
+
+  it('admits empty artifact patterns and subdirectory globs', () => {
+    const manifest = validManifest()
+    nested(manifest, 'headless').artifactPatterns = []
+    expect(parseManifest(manifest).headless.artifactPatterns).toEqual([])
+    const deep = validManifest()
+    nested(deep, 'headless').artifactPatterns = ['pages/*.png', '*.webp']
+    expect(parseManifest(deep).headless.artifactPatterns).toEqual(['pages/*.png', '*.webp'])
   })
 })
 

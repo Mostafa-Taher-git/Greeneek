@@ -24,6 +24,8 @@ interface CraftAppManifest {
   readonly aliases: readonly string[]
   /** CLI executable stem; the platform suffix is added by the local provider. */
   readonly cliStem: string
+  /** Platforms the app documents; discovery on any other host reports not-installed. */
+  readonly platforms: readonly CraftPlatform[]
   /** Whether this app can run a headless job. */
   readonly headlessSupported: boolean
   /** Minimum supported app version (semantic `x.y.z`). */
@@ -38,6 +40,8 @@ interface CraftAppManifest {
   readonly cancellation: 'child-process-kill'
   /** Command classes that need an approval card before execution. */
   readonly riskyCommandClasses: readonly string[]
+  /** Whether recorded runs proved this app's capability matrix on the test host. */
+  readonly verified: boolean
   /** Manifest fact provenance. */
   readonly sources: readonly CraftManifestSource[]
   /** Recipe skill shipped with the app. */
@@ -47,7 +51,7 @@ interface CraftAppManifest {
 }
 ```
 
-Every per-app behavior the bridge needs — launch commands, the attach gate, the curated headless tool filter, artifact tool names, confined roots — lives in a manifest file, never in code. The `sources` list records provenance per manifest entry, not per fact: the loader validates each entry's `label`, `url`, and `verified` fields, and no other code reads them. Unverified entries are pilot placeholders, not release guarantees. The nested vocabulary (`CraftAttachPolicy`, `CraftLaunchTemplates`, `CraftManifestRoots`, `CraftManifestSource`, `CraftRecipeRef`, `CraftHeadlessSpec`) is declared in the same module.
+Every per-app behavior the bridge needs — launch commands, the attach gate, the curated headless tool filter, artifact tool names and output patterns, confined roots, documented platforms — lives in a manifest file, never in code. The loader validates the headless launch grammar at load: `{cli}` must open the template and the two roots plus the control-token file must appear, so a stale template fails before any spawn. The `sources` list records provenance per manifest entry, not per fact: the loader validates each entry's `label`, `url`, ISO `date`, and `verified` fields, and no other code reads them. A manifest may claim row-level `verified: true` only alongside at least one proven source entry; unverified entries are pilot placeholders, not release guarantees. The nested vocabulary (`CraftAttachPolicy`, `CraftLaunchTemplates`, `CraftManifestRoots`, `CraftManifestSource`, `CraftPlatform`, `CraftRecipeRef`, `CraftHeadlessSpec`) is declared in the same module.
 
 ## `CraftHostProvider`
 

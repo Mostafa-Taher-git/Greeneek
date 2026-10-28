@@ -4,15 +4,17 @@
   "displayName": "PdfCraft",
   "aliases": ["printcraft"],
   "cliStem": "pdfcraft",
+  "platforms": ["win32"],
   "headlessSupported": true,
   "minVersion": "1.0.0",
+  "verified": false,
   "attach": {
     "supported": false,
     "enabled": false,
     "reason": "Live attach has no authenticated channel in the v0.3.4 pilot; headless jobs only."
   },
   "launch": {
-    "headless": "pdfcraft-cli --headless",
+    "headless": "{cli} serve --automation-read-root {readRoot} --automation-write-root {writeRoot} --control-token-file {controlTokenFile}",
     "connected": "pdfcraft --control {jobRoot}"
   },
   "roots": {
@@ -23,8 +25,9 @@
   "riskyCommandClasses": ["overwrite", "save-over", "print"],
   "sources": [
     {
-      "label": "Unverified provenance marker: this manifest's ArtCraft facts are not proven against an installed app",
+      "label": "Unverified provenance marker: this manifest's ArtCraft facts are not proven against an installed app. The headless serve template states the bridge launch contract proven on PhotoCraft's CLI; a real PdfCraft CLI run must confirm the app honors it.",
       "url": "urn:greeneek:unverified:pdfcraft-headless",
+      "date": "2026-10-26",
       "verified": false
     }
   ],
@@ -36,6 +39,7 @@
   "headless": {
     "listMethod": "command_list",
     "toolFilter": ["command_list", "command_run", "command_batch", "render_preview"],
-    "artifactTools": ["render_preview"]
+    "artifactTools": ["render_preview"],
+    "artifactPatterns": []
   }
 }

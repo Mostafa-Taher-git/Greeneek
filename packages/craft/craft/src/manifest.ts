@@ -9,12 +9,14 @@
 
 import { readFileSync } from 'node:fs'
 import { CraftError } from './error.ts'
+import { headlessTemplateViolations } from './launch-template.ts'
 import type {
   CraftAppManifest,
   CraftHeadlessSpec,
   CraftLaunchTemplates,
   CraftManifestRoots,
   CraftManifestSource,
+  CraftPlatform,
   CraftRecipe,
   CraftRecipeRef,
 } from './types.ts'
@@ -48,6 +50,12 @@ const VERSION = /^\d+\.\d+\.\d+$/
 const RECIPE_FILE = /^recipes\/[a-z0-9-]+\.md$/
 /** Skill name grammar, mirrored from `gnk-skill`. */
 const SKILL_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+/** Platform surface grammar for `platforms`. */
+const PLATFORMS: readonly CraftPlatform[] = ['win32', 'darwin', 'linux']
+/** ISO calendar-date grammar used by `sources[].date`. */
+const DATE = /^\d{4}-\d{2}-\d{2}$/
+/** One job-out-root-relative artifact-glob segment; no dot-leading, absolute, or `..` segments. */
+const ARTIFACT_SEGMENT = /^[a-z0-9_*][a-z0-9_.\-]*$/
 
 /** Throw one manifest failure with a path-qualified detail. */
 function invalid(path: string, detail: string): never {
@@ -128,10 +136,11 @@ function parseRoots(value: unknown): CraftManifestRoots {
 /** Parse one provenance entry. */
 function parseSource(value: unknown, index: number): CraftManifestSource {
   const path = `sources[${String(index)}]`
-  const record = strictRecord(value, path, ['label', 'url', 'verified'])
+  const record = strictRecord(value, path, ['label', 'url', 'date', 'verified'])
   return {
     label: stringField(record.label, `${path}.label`),
     url: stringField(record.url, `${path}.url`),
+    date: patternField(record.date, `${path}.date`, DATE, 'be an ISO calendar date (YYYY-MM-DD)'),
     verified: booleanField(record.verified, `${path}.verified`),
   }
 }
@@ -148,7 +157,7 @@ function parseRecipeRef(value: unknown): CraftRecipeRef {
 
 /** Parse headless protocol metadata. */
 function parseHeadless(value: unknown): CraftHeadlessSpec {
-  const record = strictRecord(value, 'headless', ['listMethod', 'toolFilter', 'artifactTools'])
+  const record = strictRecord(value, 'headless', ['listMethod', 'toolFilter', 'artifactTools', 'artifactPatterns'])
   const toolFilter = stringArray(record.toolFilter, 'headless.toolFilter', { unique: true, nonEmpty: true })
   const artifactTools = stringArray(record.artifactTools, 'headless.artifactTools', {
     unique: true,
@@ -159,18 +168,33 @@ function parseHeadless(value: unknown): CraftHeadlessSpec {
       invalid('headless.artifactTools', `tool "${tool}" must also appear in headless.toolFilter`)
     }
   }
+  const artifactPatterns = stringArray(record.artifactPatterns, 'headless.artifactPatterns', {
+    unique: true,
+    nonEmpty: false,
+  })
+  for (const pattern of artifactPatterns) {
+    for (const segment of pattern.split('/')) {
+      if (!ARTIFACT_SEGMENT.test(segment)) {
+        invalid('headless.artifactPatterns', `pattern "${pattern}" must be a lowercase relative glob under the job-out root`)
+      }
+    }
+  }
   return {
     listMethod: stringField(record.listMethod, 'headless.listMethod'),
     toolFilter,
     artifactTools,
+    artifactPatterns,
   }
 }
 
-/** Parse launch templates. */
+/** Parse launch templates, enforcing the headless placeholder grammar at load. */
 function parseLaunch(value: unknown): CraftLaunchTemplates {
   const record = strictRecord(value, 'launch', ['headless', 'connected'])
+  const headless = stringField(record.headless, 'launch.headless')
+  const violations = headlessTemplateViolations(headless)
+  if (violations.length > 0) invalid('launch.headless', violations.join('; '))
   return {
-    headless: stringField(record.headless, 'launch.headless'),
+    headless,
     connected: stringField(record.connected, 'launch.connected'),
   }
 }
@@ -197,8 +221,10 @@ export function parseManifest(value: unknown): CraftAppManifest {
     'displayName',
     'aliases',
     'cliStem',
+    'platforms',
     'headlessSupported',
     'minVersion',
+    'verified',
     'attach',
     'launch',
     'roots',
@@ -218,14 +244,26 @@ export function parseManifest(value: unknown): CraftAppManifest {
   if (sources.length === 0) invalid('sources', 'must not be empty')
   const cancellation = stringField(record.cancellation, 'cancellation')
   if (cancellation !== 'child-process-kill') invalid('cancellation', 'must be "child-process-kill"')
+  const verified = booleanField(record.verified, 'verified')
+  if (verified && !sources.some(source => source.verified)) {
+    invalid('verified', 'cannot be true without a proven sources entry recording the run')
+  }
   return {
     schemaVersion: 1,
     id,
     displayName: stringField(record.displayName, 'displayName'),
     aliases,
     cliStem: patternField(record.cliStem, 'cliStem', CLI_STEM, 'be a lowercase executable stem'),
+    platforms: stringArray(record.platforms, 'platforms', { unique: true, nonEmpty: true })
+      .map((platform, index) => {
+        if (!PLATFORMS.includes(platform as CraftPlatform)) {
+          invalid(`platforms[${String(index)}]`, 'must be one of win32, darwin, linux')
+        }
+        return platform as CraftPlatform
+      }),
     headlessSupported: booleanField(record.headlessSupported, 'headlessSupported'),
     minVersion: patternField(record.minVersion, 'minVersion', VERSION, 'be a semantic version'),
+    verified,
     attach: parseAttach(record.attach),
     launch: parseLaunch(record.launch),
     roots: parseRoots(record.roots),

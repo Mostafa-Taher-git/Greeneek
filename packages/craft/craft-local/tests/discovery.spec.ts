@@ -45,6 +45,20 @@ describe('portableFileName', () => {
 })
 
 describe('discoverApp', () => {
+  it('reports not-installed without probing when the app does not document this host', () => {
+    let probed = false
+    const io = createIo({
+      platform: 'darwin',
+      readText: () => { probed = true; return undefined },
+      registryInstallDir: () => { probed = true; return undefined },
+    })
+    const discovery = discoverApp(photocraft, io)
+    expect(discovery.state).toBe('not-installed')
+    expect(discovery.detail).toContain('documents win32 support')
+    expect(discovery.detail).toContain('darwin')
+    expect(probed).toBe(false)
+  })
+
   it('reports not-installed when no source names an install directory', () => {
     const discovery = discoverApp(photocraft, createIo())
     expect(discovery.state).toBe('not-installed')

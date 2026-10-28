@@ -6,6 +6,8 @@
 
 export { CraftError } from './error.ts'
 export type { CraftErrorCode } from './error.ts'
+export { HEADLESS_LAUNCH_PLACEHOLDERS, headlessTemplateViolations } from './launch-template.ts'
+export type { HeadlessLaunchTemplatePlaceholder } from './launch-template.ts'
 export {
   assertPilotManifest,
   CraftCatalog,
@@ -31,6 +33,7 @@ export type {
   CraftManifestRoots,
   CraftManifestSource,
   CraftOpenRequest,
+  CraftPlatform,
   CraftRecipe,
   CraftRecipeRef,
   CraftRoots,

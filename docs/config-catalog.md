@@ -1258,6 +1258,8 @@ export interface PiAiCompatProfile {
   chatTemplateArgs?: NonNullable<OpenAICompletionsCompat['chatTemplateArgs']>
   /** Whether the endpoint accepts `thinking_token_budget` to cap vLLM reasoning; `openai-completions`. */
   supportsThinkingTokenBudget?: boolean
+  /** Which request field caps reasoning from `thinkingBudgets` (the general form of the boolean above); `openai-completions`. */
+  thinkingTokenBudgetField?: NonNullable<OpenAICompletionsCompat['thinkingTokenBudgetField']>
   /**
    * Whether the endpoint accepts `strict` in tool definitions;
    * `openai-completions`, the three Responses protocols, `bedrock-converse-stream`.
@@ -1282,6 +1284,33 @@ export interface PiAiCompatProfile {
   allowEmptySignature?: boolean
   /** Whether the endpoint accepts Anthropic strict tool schemas; `anthropic-messages`. */
   supportsStrictTools?: boolean
+  /**
+   * Whether the exact model accepts system-role messages after the
+   * conversation has started; `false` folds later system messages into the
+   * leading system prompt; `openai-completions`, the three Responses
+   * protocols, `anthropic-messages`, `mistral-conversations`.
+   */
+  supportsMidConvoSystemMessages?: boolean
+  /**
+   * Whether system messages may introduce additional tools mid-conversation
+   * (requires the system-message switch above); `openai-completions`.
+   */
+  supportsMidConvoToolAdditions?: boolean
+  /**
+   * Whether the endpoint accepts effort-only system messages and thinking
+   * binding controls mid-conversation; `anthropic-messages`.
+   */
+  supportsMidConvoEffort?: boolean
+  /**
+   * Whether the model accepts mid-conversation `tool_addition` and
+   * `tool_removal` blocks (requires the system-message switch above);
+   * `anthropic-messages`.
+   */
+  supportsMidConvoToolChanges?: boolean
+  /** vLLM scheduler priority sent as the top-level `priority` request field; `openai-completions`. */
+  vllmPriority?: number
+  /** Whether the endpoint accepts `max_output_tokens`; the three Responses protocols. */
+  supportsMaxOutputTokens?: boolean
 }
 
 /** One request modality a pi-ai model may accept. */
@@ -1303,7 +1332,7 @@ export type PiAiThinkingFormat = NonNullable<OpenAICompletionsCompat['thinkingFo
 
 Depends on: `Api` (`@earendil-works/pi-ai`) · `CacheRetention` (`@earendil-works/pi-ai`) · `Model` (`@earendil-works/pi-ai`) · `ModelThinkingLevel` (`@earendil-works/pi-ai`) · `OpenAICompletionsCompat` (`@earendil-works/pi-ai`) · [`RetryPolicyConfig`](../packages/llm/llm/src/index.ts) · `ThinkingBudgets` (`@earendil-works/pi-ai`) · `Transport` (`@earendil-works/pi-ai`)
 
-Source: [`packages/llm/llm-pi-ai/src/config.ts:224`](../packages/llm/llm-pi-ai/src/config.ts)
+Source: [`packages/llm/llm-pi-ai/src/config.ts:225`](../packages/llm/llm-pi-ai/src/config.ts)
 
 <a id="greeneekgnk-llm-replay"></a>
 

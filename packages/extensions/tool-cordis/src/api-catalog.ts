@@ -4015,7 +4015,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'CraftAppManifest',
-    declaration: 'export interface CraftAppManifest {\n    readonly schemaVersion: 1;\n    readonly id: string;\n    readonly displayName: string;\n    readonly aliases: readonly string[];\n    readonly cliStem: string;\n    readonly headlessSupported: boolean;\n    readonly minVersion: string;\n    readonly attach: CraftAttachPolicy;\n    readonly launch: CraftLaunchTemplates;\n    readonly roots: CraftManifestRoots;\n    readonly cancellation: \'child-process-kill\';\n    readonly riskyCommandClasses: readonly string[];\n    readonly sources: readonly CraftManifestSource[];\n    readonly recipe: CraftRecipeRef;\n    readonly headless: CraftHeadlessSpec;\n}',
+    declaration: 'export interface CraftAppManifest {\n    readonly schemaVersion: 1;\n    readonly id: string;\n    readonly displayName: string;\n    readonly aliases: readonly string[];\n    readonly cliStem: string;\n    readonly platforms: readonly CraftPlatform[];\n    readonly headlessSupported: boolean;\n    readonly minVersion: string;\n    readonly attach: CraftAttachPolicy;\n    readonly launch: CraftLaunchTemplates;\n    readonly roots: CraftManifestRoots;\n    readonly cancellation: \'child-process-kill\';\n    readonly riskyCommandClasses: readonly string[];\n    readonly verified: boolean;\n    readonly sources: readonly CraftManifestSource[];\n    readonly recipe: CraftRecipeRef;\n    readonly headless: CraftHeadlessSpec;\n}',
   },
   {
     name: 'CraftAppState',
@@ -4035,7 +4035,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'CraftHeadlessSpec',
-    declaration: 'export interface CraftHeadlessSpec {\n    readonly listMethod: string;\n    readonly toolFilter: readonly string[];\n    readonly artifactTools: readonly string[];\n}',
+    declaration: 'export interface CraftHeadlessSpec {\n    readonly listMethod: string;\n    readonly toolFilter: readonly string[];\n    readonly artifactTools: readonly string[];\n    readonly artifactPatterns: readonly string[];\n}',
   },
   {
     name: 'CraftHostOpenRequest',
@@ -4059,11 +4059,15 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'CraftManifestSource',
-    declaration: 'export interface CraftManifestSource {\n    readonly label: string;\n    readonly url: string;\n    readonly verified: boolean;\n}',
+    declaration: 'export interface CraftManifestSource {\n    readonly label: string;\n    readonly url: string;\n    readonly date: string;\n    readonly verified: boolean;\n}',
   },
   {
     name: 'CraftOpenRequest',
     declaration: 'export interface CraftOpenRequest {\n    readonly app: string;\n    readonly mode?: \'headless\' | \'attach\';\n    readonly workspaceRoot: string;\n    readonly signal?: AbortSignal;\n}',
+  },
+  {
+    name: 'CraftPlatform',
+    declaration: 'export type CraftPlatform = \'win32\' | \'darwin\' | \'linux\';',
   },
   {
     name: 'CraftRecipe',

@@ -4,8 +4,10 @@
   "displayName": "PhotoCraft",
   "aliases": [],
   "cliStem": "photocraft",
+  "platforms": ["win32"],
   "headlessSupported": true,
   "minVersion": "0.15.1",
+  "verified": false,
   "attach": {
     "supported": false,
     "enabled": false,
@@ -25,16 +27,19 @@
     {
       "label": "Unverified provenance marker: PhotoCraft's connected launch template, headless list method, tool filter, artifact tools, risky command classes, and attach facts are not proven against an installed app",
       "url": "urn:greeneek:unverified:photocraft-metadata",
+      "date": "2026-10-26",
       "verified": false
     },
     {
       "label": "Verified headless serve handshake: photocraft-cli.exe 0.15.1 (60c87b988) ran `serve --automation-read-root <tmp> --automation-write-root <tmp> --control-token-file <tmp>/.craft-control-token` from a scratch directory, with a 36-character UUID token in that file; one line {\"id\":1,\"method\":\"methods\",\"params\":{}} answered {\"id\":1,\"ok\":true,\"result\":[18 methods]}, engine.commands answered with its command registry, and closing stdin exited 0 with no surviving process",
       "url": "urn:greeneek:verified:photocraft-serve",
+      "date": "2026-10-26",
       "verified": true
     },
     {
       "label": "Verified headless conversion only: photocraft-cli.exe (ProductVersion 0.15.1) ran info tiny.png and convert tiny.png tiny.webp on a generated 4x4 PNG, both exit 0; tiny.webp is 168 bytes, RIFF/WEBP/VP8L 4x4, sha256 4966b5bff904504c6bbfaf8e1771c80271a543bda9bfcb40811ced9326b21eeb",
       "url": "urn:greeneek:verified:photocraft-convert:sha256:4966b5bff904504c6bbfaf8e1771c80271a543bda9bfcb40811ced9326b21eeb",
+      "date": "2026-10-26",
       "verified": true
     }
   ],
@@ -46,6 +51,7 @@
   "headless": {
     "listMethod": "command_list",
     "toolFilter": ["command_list", "command_run", "command_batch", "render_preview", "screenshot"],
-    "artifactTools": ["render_preview", "screenshot"]
+    "artifactTools": ["render_preview", "screenshot"],
+    "artifactPatterns": ["*.webp"]
   }
 }

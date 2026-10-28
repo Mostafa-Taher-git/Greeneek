@@ -261,7 +261,7 @@ describe('Settings page', () => {
     const empty = mount({ rows: [] })
     openPanel()
     expect(screen.getByRole('main')).toBeTruthy()
-    expect(empty.renderSlot.mock.calls.filter(call => String(call[0]) === 'settings.section')).toHaveLength(0)
+    expect(empty.renderSlot.mock.calls.filter(call => call[0] === 'settings.section')).toHaveLength(0)
   })
 
   it('subscribes to the section ledger only while the page is open', () => {

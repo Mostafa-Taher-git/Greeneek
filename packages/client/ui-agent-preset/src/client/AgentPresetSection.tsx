@@ -13,7 +13,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import {
-  Button, IconAgentPresetOutline16, IconBrowseOutline16, IconCopyOutline16, IconFolderOpenOutline16, IconPlusOutline16, IconTrashOutline16, Modal, Tooltip,
+  Button, IconAgentPresetOutline16, IconBrowseOutline16, IconCopyOutline16, IconFolderOpenOutline16,
+  IconPlusOutline16, IconTrashOutline16, Modal, Tooltip,
 } from '@greeneek/gnk-client-ui-primitives'
 import type { SnapshotStore } from '@greeneek/gnk-client-store'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@greeneek/gnk-client-ui-slots'

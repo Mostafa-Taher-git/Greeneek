@@ -67,34 +67,34 @@ function SettingsPanel({ rows, renderSlot, section, onSelect, onClose }: PanelPr
   return (
     <main className={css.panel} aria-labelledby={titleId}>
       <nav className={css.nav} aria-labelledby={titleId}>
-          <div className={css.navTitle} id={titleId}>{renderSlot('settings.header', {})}</div>
-          <div className={css.navList}>
-            {rows.map(row => (
-              <button
-                key={row.id}
-                type="button"
-                className={clsx(css.navCell, row.id === active && css.active)}
-                aria-current={row.id === active ? 'true' : undefined}
-                onClick={() => { onSelect(row.id) }}
-              >
-                {navIcon(row.id)}
-                <span className={css.navLabel}>{row.label}</span>
-              </button>
-            ))}
-          </div>
-        </nav>
-        <div className={css.content}>
-          <div className={css.header}>
-            <div className={css.actions}>{renderSlot('settings.action', {})}</div>
-            <button ref={closeButton} type="button" className={css.close} onClick={onClose}>
-              <IconCloseOutline16 size={14} />
-              <span className={css.hiddenLabel}>{renderSlot('settings.close', {})}</span>
+        <div className={css.navTitle} id={titleId}>{renderSlot('settings.header', {})}</div>
+        <div className={css.navList}>
+          {rows.map(row => (
+            <button
+              key={row.id}
+              type="button"
+              className={clsx(css.navCell, row.id === active && css.active)}
+              aria-current={row.id === active ? 'true' : undefined}
+              onClick={() => { onSelect(row.id) }}
+            >
+              {navIcon(row.id)}
+              <span className={css.navLabel}>{row.label}</span>
             </button>
-          </div>
-          <div className={css.options}>
-            {active !== undefined && renderSlot('settings.section', { close: onClose }, { only: active })}
-          </div>
+          ))}
         </div>
+      </nav>
+      <div className={css.content}>
+        <div className={css.header}>
+          <div className={css.actions}>{renderSlot('settings.action', {})}</div>
+          <button ref={closeButton} type="button" className={css.close} onClick={onClose}>
+            <IconCloseOutline16 size={14} />
+            <span className={css.hiddenLabel}>{renderSlot('settings.close', {})}</span>
+          </button>
+        </div>
+        <div className={css.options}>
+          {active !== undefined && renderSlot('settings.section', { close: onClose }, { only: active })}
+        </div>
+      </div>
     </main>
   )
 }

@@ -17,6 +17,7 @@ import type {
   ApprovalRequestId, CordisDynamicPackageId, CordisDynamicPluginId,
 } from './events.ts'
 import { cordisVisibleStatus, packageOf, type CordisVisibleStatus } from './status.ts'
+import { panelAnchor } from './panel-anchor.ts'
 import css from './CordisPanel.module.css'
 
 /** Full panel props composed by the sidebar footer-action slot. */
@@ -120,16 +121,23 @@ export function CordisPanel({
   const [actionErrors, setActionErrors] = useState<ReadonlyMap<CordisDynamicPluginId, string>>(new Map())
   const visibleRequests = useRef<Set<ApprovalRequestId>>(new Set())
   const rootRef = useRef<HTMLDivElement>(null)
-  const [anchor, setAnchor] = useState<{ left: number; bottom: number }>()
+  const [anchor, setAnchor] = useState<{ insetInlineStart: number; bottom: number }>()
 
   // The panel is position: fixed (the sidebar clips overflow), so it hugs the
-  // trigger through a measured offset instead of document flow.
+  // trigger through a measured offset instead of document flow. The inline
+  // edge follows the reading direction so an RTL sidebar opens the panel
+  // inboard instead of past the viewport edge.
   useLayoutEffect(() => {
     if (!open) return
     const place = (): void => {
       const rect = rootRef.current?.getBoundingClientRect()
       if (rect !== undefined) {
-        setAnchor({ left: rect.left, bottom: window.innerHeight - rect.top + 8 })
+        const rtl = getComputedStyle(document.documentElement).direction === 'rtl'
+        setAnchor(panelAnchor({
+          rect,
+          viewport: { width: window.innerWidth, height: window.innerHeight },
+          rtl,
+        }))
       }
     }
     place()

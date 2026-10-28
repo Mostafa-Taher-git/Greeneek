@@ -14,7 +14,7 @@ Physical axes without a logical form stay physical with an explicit mirror: `[di
 
 Scale, time-axis, and code domains — TrajectoryTimeline's time axis, EffortSlider's fraction knob, JsonTree, DiffBlock, TerminalBlock — force `direction: ltr` on their root with a comment: their positions encode a value, not a reading direction.
 
-`scripts/verify-logical-css.ts` enforces the rule over `packages/client/**/*.css` (built output excluded). It rejects the renamed directional properties, `text-align: left`/`right`, asymmetric four-value `margin`/`padding`/`inset` shorthands (a paren-aware tokenizer keeps `calc(...)` one token), physical `left`/`right` declarations outside a `[dir='rtl']` block (blocks carry their selector chain, so at-rule preludes do not inherit an inner override), and transition lists naming a renamed property — a stale name stops the animation silently. A per-file allowlist with recorded reasons admits direction-neutral centering, script-computed offsets, and forced-LTR scopes, and excuses only physical offsets and the transition lists that animate them. The gate runs in the client surface gates aggregate. Style-pin specs read the logical names; pinned values are unchanged.
+`scripts/verify-logical-css.ts` enforces the rule over the client stylesheets — `packages/client/**/*.css` plus every package's `src/client/**/*.css`, so browser packages outside the client group are covered (built output excluded). It rejects the renamed directional properties, `text-align: left`/`right`, asymmetric four-value `margin`/`padding`/`inset` shorthands (a paren-aware tokenizer keeps `calc(...)` one token), physical `left`/`right` declarations outside a `[dir='rtl']` block (blocks carry their selector chain, so at-rule preludes do not inherit an inner override), and transition lists naming a renamed property — a stale name stops the animation silently. A per-declaration allowlist admits direction-neutral centering, script-computed offsets, and forced-LTR scopes only where the owning selector and property are named with a recorded reason; a new physical offset in an admitted file fails until it gets its own entry, and an entry that matches nothing fails as stale. The gate runs in the client surface gates aggregate. Style-pin specs read the logical names; pinned values are unchanged.
 
 ## Alternatives considered
 
@@ -27,11 +27,12 @@ Scale, time-axis, and code domains — TrajectoryTimeline's time axis, EffortSli
 - Left-to-right rendering is identical by construction: every conversion changes only axis naming, never values.
 - New client CSS fails the gate until it uses logical forms or a reasoned allowlist entry.
 - A transition animating a directional property must name the logical property; the gate rejects the stale name.
-- Allowlisted files keep their physical declarations; a new physical inset in a forced-LTR or script-driven component needs an allowlist reason.
+- Allowlisted files keep only their recorded physical declarations; a new physical inset in a forced-LTR or script-driven component fails until its selector and property are admitted with a reason, and an entry that stops matching the CSS fails as stale.
+- Plugin browser packages outside `packages/client` follow the same rule: the Cordis definition card, inventory panel, and run row, plus the session-log export header, use logical geometry, and the inventory panel's measured anchor follows the reading direction.
 
 ## Verification
 
-- The 27-test spec exercises every admitted and excluded form; the repository corpus (131 files) passes.
+- The 32-test spec exercises every admitted and excluded form, the plugin-package corpus, declaration-scoped admissions, and stale entries; the repository corpus (135 files) passes.
 - `pnpm run test:gui` 4178 passed / 1 skipped, including the three style-pin specs re-pinned to the logical names with identical values.
 - Theme contrast, duplication (0 clones), full typecheck, `lint:contracts-ready`, and `test:docs` green.
 - Right-to-left browser coverage, bidi isolation, and the native Arabic review stay with the web RTL lane and the owner review, recorded in the release plan's verification matrix.

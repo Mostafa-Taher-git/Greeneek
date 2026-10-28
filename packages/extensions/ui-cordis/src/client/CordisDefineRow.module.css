@@ -51,7 +51,7 @@
 .purpose {
   flex: 1 1 auto;
   min-width: 0;
-  margin-left: 8px;
+  margin-inline-start: 8px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -75,7 +75,7 @@
   flex: none;
   max-width: 40%;
   overflow: hidden;
-  margin-left: 8px;
+  margin-inline-start: 8px;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 12px;
@@ -87,12 +87,13 @@
   display: inline-flex;
   flex: none;
   align-items: center;
-  margin-left: 8px;
+  margin-inline-start: 8px;
 }
 
 /* Said once in the expanded body: this card records, the panel operates. */
 .panelHint {
-  margin: 4px 0 2px 4px;
+  margin-block: 4px 2px;
+  margin-inline: 4px 0;
   font-size: 11px;
   line-height: 16px;
   color: var(--dsw-alias-label-caption);
@@ -109,7 +110,7 @@
   flex: none;
   max-width: 40%;
   overflow: hidden;
-  margin-left: 8px;
+  margin-inline-start: 8px;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 12px;
@@ -124,7 +125,7 @@
   flex: none;
   max-width: 40%;
   overflow: hidden;
-  margin-left: 8px;
+  margin-inline-start: 8px;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 12px;
@@ -160,7 +161,8 @@
 .sourceCard {
   display: flex;
   flex-direction: column;
-  margin: 4px 0 4px 4px;
+  margin-block: 4px;
+  margin-inline: 4px 0;
 }
 
 .sourceTabs {
@@ -195,9 +197,8 @@
 
 .sourceTabActive::after {
   position: absolute;
-  right: 10px;
+  inset-inline: 10px;
   bottom: 0;
-  left: 10px;
   height: 2px;
   border-radius: 1px 1px 0 0;
   background: var(--dsw-alias-state-business-primary);
@@ -222,7 +223,8 @@
   display: flex;
   flex-direction: column;
   max-height: 260px;
-  margin: 4px 0 4px 4px;
+  margin-block: 4px;
+  margin-inline: 4px 0;
   overflow: auto;
 }
 
@@ -258,7 +260,8 @@
   align-self: flex-start;
   align-items: center;
   gap: 4px;
-  margin: 4px 0 2px 4px;
+  margin-block: 4px 2px;
+  margin-inline: 4px 0;
   padding: 2px 8px;
   border: 0.5px solid var(--dsw-alias-border-l4);
   border-radius: 999px;

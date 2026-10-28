@@ -4,7 +4,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { logicalCssViolations } from './verify-logical-css.ts'
+import { logicalCssViolations, type PhysicalAllowance } from './verify-logical-css.ts'
 
 describe('logical CSS', () => {
   let root = ''
@@ -25,7 +25,7 @@ describe('logical CSS', () => {
 
   function css(content: string): string[] {
     write('packages/client/ui-example/src/client/Example.module.css', content)
-    return logicalCssViolations(root)
+    return logicalCssViolations(root, new Map())
   }
 
   it('accepts the repository client stylesheet inventory', () => {
@@ -85,8 +85,15 @@ describe('logical CSS', () => {
 
   it('rejects a physical inline offset outside an override', () => {
     expect(css('.a { left: 0; }\n.b .c { right: 8px; }\n')).toEqual([
-      'packages/client/ui-example/src/client/Example.module.css:1: .a: left: use inset-inline-start, or the per-file allowlist for direction-neutral geometry',
-      'packages/client/ui-example/src/client/Example.module.css:2: .b .c: right: use inset-inline-end, or the per-file allowlist for direction-neutral geometry',
+      'packages/client/ui-example/src/client/Example.module.css:1: .a: left: use inset-inline-start, or record this declaration in the gate allowlist',
+      'packages/client/ui-example/src/client/Example.module.css:2: .b .c: right: use inset-inline-end, or record this declaration in the gate allowlist',
+    ])
+  })
+
+  it('finds a client stylesheet outside the client package group', () => {
+    write('packages/extensions/ui-example/src/client/Example.module.css', '.a { padding-left: 4px; }\n')
+    expect(logicalCssViolations(root, new Map())).toEqual([
+      'packages/extensions/ui-example/src/client/Example.module.css:1: padding-left: rename to the logical padding-inline-start property',
     ])
   })
 
@@ -94,13 +101,57 @@ describe('logical CSS', () => {
     expect(css("[dir='rtl'] .a { transform: translateX(2px); left: auto; right: 0; }\n@media (min-width: 40rem) {\n  [dir='rtl'] .b { right: 4px; }\n}\n")).toEqual([])
   })
 
-  it('admits an allowlisted file and only its excusable classes', () => {
-    const allowlist = new Map([['packages/client/ui-allowlisted/src/client/Kept.module.css', 'centering fallback']])
-    write('packages/client/ui-allowlisted/src/client/Kept.module.css', '.a { left: 50%; right: 4px; transition: left 140ms ease-out; }\n')
+  it('admits only the recorded declarations of an allowlisted file', () => {
+    const path = 'packages/client/ui-allowlisted/src/client/Kept.module.css'
+    const allowlist: ReadonlyMap<string, PhysicalAllowance> = new Map([[
+      path,
+      {
+        reason: 'centering fallback animates its physical offsets',
+        declarations: [
+          { selector: '.a', property: 'left' },
+          { selector: '.a', property: 'right' },
+          { selector: '.a', property: 'transition' },
+        ],
+      },
+    ]])
+    write(path, '.a { left: 50%; right: 4px; transition: left 140ms ease-out; }\n.b { left: 8px; }\n')
     write('packages/client/ui-allowlisted/src/client/Kept-other.module.css', '.a { padding-left: 4px; }\n')
     expect(logicalCssViolations(root, allowlist)).toEqual([
       'packages/client/ui-allowlisted/src/client/Kept-other.module.css:1: padding-left: rename to the logical padding-inline-start property',
+      'packages/client/ui-allowlisted/src/client/Kept.module.css:2: .b: left: use inset-inline-start, or record this declaration in the gate allowlist',
     ])
+  })
+
+  it.each([
+    ['packages/client/ui-stale/src/client/Gone.module.css', { selector: '.a', property: 'right' }],
+    ['packages/client/ui-example/src/client/Example.module.css', { selector: '.b', property: 'left' }],
+  ] as const)('rejects the stale allowlist entry %s %o', (path, admission) => {
+    const allowlist: ReadonlyMap<string, PhysicalAllowance> = new Map([[path, {
+      reason: 'removed with the rule',
+      declarations: [admission],
+    }]])
+    write('packages/client/ui-example/src/client/Example.module.css', '.a { margin: 0; }\n')
+    expect(() => logicalCssViolations(root, allowlist)).toThrow('matched no physical declaration')
+  })
+
+  it('rejects an allowlist entry with no recorded reason', () => {
+    const path = 'packages/client/ui-example/src/client/Example.module.css'
+    const allowlist: ReadonlyMap<string, PhysicalAllowance> = new Map([[path, {
+      reason: ' ',
+      declarations: [{ selector: '.a', property: 'left' }],
+    }]])
+    write(path, '.a { left: 50%; }\n')
+    expect(() => logicalCssViolations(root, allowlist)).toThrow('has no reason')
+  })
+
+  it('rejects an allowlist entry that admits no declaration', () => {
+    const path = 'packages/client/ui-example/src/client/Example.module.css'
+    const allowlist: ReadonlyMap<string, PhysicalAllowance> = new Map([[path, {
+      reason: 'empty after a rule removed its offset',
+      declarations: [],
+    }]])
+    write(path, '.a { margin: 0; }\n')
+    expect(() => logicalCssViolations(root, allowlist)).toThrow('admits no declaration')
   })
 
   it.each([
@@ -119,19 +170,19 @@ describe('logical CSS', () => {
 
   it('flags a physical offset inside keyframes, whose prelude carries no override', () => {
     expect(css('@keyframes slide {\n  from { left: -300px; }\n  to { inset-inline-start: 100%; }\n}\n')).toEqual([
-      'packages/client/ui-example/src/client/Example.module.css:2: from: left: use inset-inline-start, or the per-file allowlist for direction-neutral geometry',
+      'packages/client/ui-example/src/client/Example.module.css:2: from: left: use inset-inline-start, or record this declaration in the gate allowlist',
     ])
   })
 
   it('attributes a multiline declaration to its first line and ignores commented-out declarations', () => {
     expect(css('/* .z { left: 4px; } */\n.a {\n  left: clamp(\n    0px,\n    100%,\n    420px\n  );\n}\n')).toEqual([
-      'packages/client/ui-example/src/client/Example.module.css:3: .a: left: use inset-inline-start, or the per-file allowlist for direction-neutral geometry',
+      'packages/client/ui-example/src/client/Example.module.css:3: .a: left: use inset-inline-start, or record this declaration in the gate allowlist',
     ])
   })
 
   it('rejects a physical offset under an at-rule prelude the chain keeps out of the override check', () => {
     expect(css('@media (max-width: 760px) {\n  .a { right: 0; }\n}\n')).toEqual([
-      'packages/client/ui-example/src/client/Example.module.css:2: .a: right: use inset-inline-end, or the per-file allowlist for direction-neutral geometry',
+      'packages/client/ui-example/src/client/Example.module.css:2: .a: right: use inset-inline-end, or record this declaration in the gate allowlist',
     ])
   })
 })

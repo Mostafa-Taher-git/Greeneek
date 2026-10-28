@@ -11,30 +11,98 @@
  * renamed property all reintroduce LTR-only geometry and fail here.
  * Scale, time-axis, and code domains (charts, sliders, terminals, JSON, diffs)
  * keep physical geometry behind a forced `direction: ltr` scope, admitted by
- * the per-file allowlist.
+ * a per-declaration allowlist entry.
  */
 
 import { globSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
+/** One exact declaration a stylesheet may keep on a physical axis. */
+export interface PhysicalAdmission {
+  /** Whitespace-normalized selector chain of the rule that owns the declaration. */
+  readonly selector: string
+  /** The physical declaration the rule may keep. */
+  readonly property: 'left' | 'right' | 'transition' | 'transition-property'
+}
+
+/** The declarations one stylesheet admits, and why none is a reading edge. */
+export interface PhysicalAllowance {
+  readonly reason: string
+  readonly declarations: readonly PhysicalAdmission[]
+}
+
 /**
  * Physical declarations that stay because their position is not a reading
  * edge: a reading-direction-independent center, a coordinate a script
  * computes from pointer or layout measurements, or geometry inside a
- * component whose root forces `direction: ltr`.
+ * component whose root forces `direction: ltr`. Each entry admits one
+ * declaration; a new physical offset in an admitted file fails until it gets
+ * its own entry, and an entry that matches nothing fails as stale.
  */
-const PHYSICAL_OFFSET_ALLOWLIST = new Map<string, string>([
-  ['packages/client/ui-agent-preset/src/client/AgentPresetSection.module.css', 'tooltip centering: left 50% is direction-neutral'],
-  ['packages/client/ui-conversation/src/client/skeleton/ConversationRoot.module.css', 'chat width handles track the pointer side of a centered column; the side is physical by contract'],
-  ['packages/client/ui-layout/src/client/AppFrame.module.css', 'splitter handles center on their strip; the offset rides a TSX inline left computed from layout'],
-  ['packages/client/ui-model-selection/src/client/ModelSelect.module.css', 'effort slider forces direction ltr: the knob encodes a scale fraction, not reading direction'],
-  ['packages/client/ui-primitives/src/DiffBlock.module.css', 'diffs are code: the block forces direction ltr and keeps physical geometry'],
-  ['packages/client/ui-primitives/src/JsonTree.module.css', 'JSON keys and values are LTR technical content: the tree forces direction ltr'],
-  ['packages/client/ui-primitives/src/Menu.module.css', 'portal menus receive viewport coordinates from Menu.tsx, so the base rule only neutralizes left'],
-  ['packages/client/ui-primitives/src/TerminalBlock.module.css', 'terminal output is LTR technical content: the block forces direction ltr'],
-  ['packages/client/ui-primitives/src/Toast.module.css', 'anchorless fallback centers the toast; an anchored toast is positioned by TSX inline left'],
-  ['packages/client/ui-trajectory/src/client/TrajectoryTimeline.module.css', 'the timeline encodes time on a left-to-right axis and forces direction ltr; physical offsets are time coordinates'],
+const PHYSICAL_OFFSET_ALLOWLIST = new Map<string, PhysicalAllowance>([
+  ['packages/client/ui-agent-preset/src/client/AgentPresetSection.module.css', {
+    reason: 'tooltip centering: left 50% is direction-neutral',
+    declarations: [{ selector: '.iconButton::after', property: 'left' }],
+  }],
+  ['packages/client/ui-conversation/src/client/skeleton/ConversationRoot.module.css', {
+    reason: 'chat width handles track the pointer side of a centered column; the side is physical by contract',
+    declarations: [
+      { selector: ".widthHandle[data-side='left']", property: 'right' },
+      { selector: ".widthHandle[data-side='right']", property: 'left' },
+      { selector: ".widthHandle[data-side='left']::after", property: 'right' },
+      { selector: ".widthHandle[data-side='right']::after", property: 'left' },
+    ],
+  }],
+  ['packages/client/ui-layout/src/client/AppFrame.module.css', {
+    reason: 'splitter handles center on their strip; the offset rides a TSX inline left computed from layout',
+    declarations: [
+      { selector: '.handle', property: 'transition' },
+      { selector: ".handle[data-side='details']::after", property: 'left' },
+    ],
+  }],
+  ['packages/client/ui-model-selection/src/client/ModelSelect.module.css', {
+    reason: 'effort slider forces direction ltr: the knob encodes a scale fraction, not reading direction',
+    declarations: [{ selector: '.sliderKnob', property: 'transition' }],
+  }],
+  ['packages/client/ui-primitives/src/DiffBlock.module.css', {
+    reason: 'diffs are code: the block forces direction ltr and keeps physical geometry',
+    declarations: [{ selector: '.copyButton', property: 'right' }],
+  }],
+  ['packages/client/ui-primitives/src/JsonTree.module.css', {
+    reason: 'JSON keys and values are LTR technical content: the tree forces direction ltr',
+    declarations: [{ selector: '.expander', property: 'left' }],
+  }],
+  ['packages/client/ui-primitives/src/Menu.module.css', {
+    reason: 'portal menus receive viewport coordinates from Menu.tsx, so the base rule only neutralizes left',
+    declarations: [{ selector: '.portal', property: 'left' }],
+  }],
+  ['packages/client/ui-primitives/src/TerminalBlock.module.css', {
+    reason: 'terminal output is LTR technical content: the block forces direction ltr',
+    declarations: [{ selector: '.runState', property: 'left' }],
+  }],
+  ['packages/client/ui-primitives/src/Toast.module.css', {
+    reason: 'anchorless fallback centers the toast; an anchored toast is positioned by TSX inline left',
+    declarations: [{ selector: '.toast', property: 'left' }],
+  }],
+  ['packages/client/ui-trajectory/src/client/TrajectoryTimeline.module.css', {
+    reason: 'the timeline encodes time on a left-to-right axis and forces direction ltr; physical offsets are time coordinates',
+    declarations: [
+      { selector: '.labels span', property: 'right' },
+      { selector: '.earlierHistory', property: 'left' },
+      { selector: '.empty', property: 'left' },
+      { selector: '.lanes', property: 'left' },
+      { selector: '.turnBoundaries', property: 'left' },
+      { selector: ".lanes[data-animate-viewport='true'], .turnBoundaries[data-animate-viewport='true']", property: 'transition' },
+      { selector: '.turnBoundary', property: 'left' },
+      { selector: '.span', property: 'left' },
+      { selector: '.selection', property: 'left' },
+      { selector: '.selectionEdges', property: 'left' },
+      { selector: '.hoverLine', property: 'left' },
+      { selector: '.selectionEdges::before', property: 'left' },
+      { selector: '.selectionEdges::after', property: 'right' },
+    ],
+  }],
 ])
 
 /** Directional margin/padding/border properties with a logical successor. */
@@ -59,7 +127,7 @@ const DIRECTIONAL_SHORTHANDS = new Set(['margin', 'padding', 'inset'])
 /** Transition-list items naming a property the migration renamed. */
 const DIRECTED_TRANSITION_NAME = /^(left|right|(margin|padding|border)-(left|right)(-(width|color|style))?)$/
 
-const CSS_PATTERNS = ['packages/client/**/*.css']
+const CSS_PATTERNS = ['packages/client/**/*.css', 'packages/*/*/src/client/**/*.css']
 
 const CSS_EXCLUDES = ['**/node_modules/**', '**/lib/**', '**/dist/**', '**/coverage/**']
 
@@ -166,6 +234,10 @@ function lineOf(source: string, offset: number): number {
   return line
 }
 
+function normalizeSelector(selector: string): string {
+  return selector.replace(/\s+/g, ' ').trim()
+}
+
 /** Declarations a block owns directly, excluding nested blocks. */
 function ownedDeclarations(source: string, block: CssBlock): Array<{ offset: number; text: string }> {
   const nested: Array<{ open: number; close: number }> = []
@@ -237,7 +309,7 @@ function declarationViolations(
     return [{
       path,
       line,
-      message: `${prefix}${property}: use ${logical}, or the per-file allowlist for direction-neutral geometry`,
+      message: `${prefix}${property}: use ${logical}, or record this declaration in the gate allowlist`,
     }]
   }
   if (property === 'transition' || property === 'transition-property') {
@@ -266,24 +338,27 @@ function declarationViolations(
 /**
  * Find directional physical CSS below a repository root.
  * @param root - repository or test-fixture root.
- * @param allowlist - per-file reasons admitting physical offsets and the
- *   transition lists that animate them; tests inject a fixture allowlist.
+ * @param allowlist - per-file admissions naming the selector and property each
+ *   entry excuses; every entry must match a declaration in the corpus. Tests
+ *   inject a fixture allowlist.
  * @returns deterministic path-qualified violations.
  */
 export function logicalCssViolations(
   root: string,
-  allowlist: ReadonlyMap<string, string> = PHYSICAL_OFFSET_ALLOWLIST,
+  allowlist: ReadonlyMap<string, PhysicalAllowance> = PHYSICAL_OFFSET_ALLOWLIST,
 ): string[] {
   const files = globSync(CSS_PATTERNS, { cwd: root, exclude: CSS_EXCLUDES }).sort()
   if (files.length === 0) throw new Error('verify-logical-css: the client CSS corpus is empty')
   const violations: Violation[] = []
+  const admitted = new Set<string>()
+  const admissionKey = (path: string, selector: string, property: string): string => `${path}\u0000${selector}\u0000${property}`
   for (const rawPath of files) {
     const path = rawPath.replaceAll('\\', '/')
     const source = stripComments(readFileSync(resolve(root, path), 'utf8'))
-    const fileAllowlisted = allowlist.has(path)
+    const admissions = allowlist.get(path)?.declarations ?? []
     for (const block of parseBlocks(source)) {
       const rtlOverride = block.selectorChain.some(selector => /\[\s*dir\s*=\s*(['"])rtl\1\s*\]/i.test(selector))
-      const selector = block.selectorChain.join(' ')
+      const selector = normalizeSelector(block.selectorChain.join(' '))
       for (const { offset, text } of ownedDeclarations(source, block)) {
         const colon = text.indexOf(':')
         if (colon <= 0) continue
@@ -291,11 +366,28 @@ export function logicalCssViolations(
         const value = text.slice(colon + 1).trim()
         const found = declarationViolations(path, lineOf(source, offset), selector, property, value)
         if (found.length === 0) continue
-        const physicalOffset = property === 'left' || property === 'right'
-        const excusable = physicalOffset || property === 'transition' || property === 'transition-property'
-        if (physicalOffset && rtlOverride) continue
-        if (excusable && fileAllowlisted) continue
+        if (property === 'left' || property === 'right') {
+          if (rtlOverride) continue
+          if (admissions.some(admission => admission.selector === selector && admission.property === property)) {
+            admitted.add(admissionKey(path, selector, property))
+            continue
+          }
+        } else if (property === 'transition' || property === 'transition-property') {
+          if (admissions.some(admission => admission.selector === selector && admission.property === property)) {
+            admitted.add(admissionKey(path, selector, property))
+            continue
+          }
+        }
         violations.push(...found)
+      }
+    }
+  }
+  for (const [path, allowance] of allowlist) {
+    if (allowance.reason.trim() === '') throw new Error(`verify-logical-css: allowlist entry ${path} has no reason`)
+    if (allowance.declarations.length === 0) throw new Error(`verify-logical-css: allowlist entry ${path} admits no declaration`)
+    for (const admission of allowance.declarations) {
+      if (!admitted.has(admissionKey(path, admission.selector, admission.property))) {
+        throw new Error(`verify-logical-css: allowlist entry ${path} ${admission.selector} ${admission.property} matched no physical declaration`)
       }
     }
   }

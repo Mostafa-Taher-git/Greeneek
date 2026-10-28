@@ -23,7 +23,8 @@
   width: calc(100% + 4px);
   height: 42px;
   margin: 0 -2px;
-  padding: 0 10px 0 8px;
+  padding: 0;
+  padding-inline: 8px 10px;
   border: none;
   border-radius: 12px;
   background: transparent;
@@ -51,7 +52,7 @@
 
 .badgeCount {
   flex: none;
-  margin-left: auto;
+  margin-inline-start: auto;
   color: var(--dsw-alias-label-tertiary);
   font-size: 12px;
   line-height: 16px;
@@ -80,7 +81,7 @@
 }
 
 /* Fixed so the sidebar's overflow clip cannot cut the 420px surface; the
-   left/bottom offsets are measured from the trigger before paint. */
+   inline-start/bottom offsets are measured from the trigger before paint. */
 .panel {
   position: fixed;
   z-index: 30;
@@ -294,7 +295,7 @@
 .transitionActions {
   display: flex;
   gap: 6px;
-  margin-left: auto;
+  margin-inline-start: auto;
 }
 
 .transitionActions button {
@@ -363,10 +364,10 @@
 }
 
 .doubleCheck svg:first-child {
-  left: 0;
+  inset-inline-start: 0;
   opacity: 0.7;
 }
 
 .doubleCheck svg:last-child {
-  left: 5px;
+  inset-inline-start: 5px;
 }

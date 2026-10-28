@@ -81,9 +81,7 @@
 
 .pillLabel {
   display: inline-block;
-  max-width: 132px;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .description {
@@ -105,10 +103,6 @@
 
   .pill {
     padding: 0 8px;
-  }
-
-  .pillLabel {
-    max-width: 88px;
   }
 }
 

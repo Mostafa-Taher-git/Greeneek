@@ -22,15 +22,16 @@ const pathsPlugin = (): ReturnType<typeof tsconfigPaths> => tsconfigPaths({ proj
 const windowsUnsupportedPackages = process.platform === 'win32'
   ? [
       // Bash-requiring suites (a real POSIX shell is unavailable on Windows).
-      // The pwsh-requiring suites (pwsh-local, tool-pwsh) deliberately stay
-      // INCLUDED: PowerShell ships with Windows, so they run natively here.
-      // This explicit list (not a 'packages/shell/*' glob) keeps
-      // packages/shell/shell — the Service Definition package — running on Windows.
+      // The pwsh-requiring suites (pwsh-local, tool-pwsh, terminal-bash's pwsh
+      // dialect) deliberately stay INCLUDED: PowerShell ships with Windows, so
+      // they run natively here — terminal-bash's bash describe self-skips on
+      // win32 while its pwsh describe runs for real. This explicit list (not a
+      // 'packages/shell/*' glob) keeps packages/shell/shell — the Service
+      // Definition package — running on Windows.
       'packages/shell/bash-local',
       'packages/shell/bash-sandbox',
       'packages/shell/tool-bash',
       'packages/hooks/*',
-      'packages/terminal/terminal-bash',
       'packages/experimental/code-runtime-python',
       'packages/sandbox/sandbox-local',
     ]
@@ -70,7 +71,10 @@ const nonLinuxWebWorkerTests = process.platform === 'linux'
 const platformUnsupportedTests = [...windowsUnsupportedTests, ...nonLinuxWebWorkerTests]
 
 const windowsUnsupportedCoveragePackages = process.platform === 'win32'
-  ? [...windowsUnsupportedPackages, 'packages/subprocess/*']
+  // terminal-bash stays measured on the Linux coverage lane, which runs its
+  // bash and pwsh describes both; the Windows lane runs only the pwsh dialect,
+  // so its bash-only branches would break the per-file bar here.
+  ? [...windowsUnsupportedPackages, 'packages/subprocess/*', 'packages/terminal/terminal-bash']
   : []
 
 // Windows-only packages: their sources execute exclusively on win32 (koffi

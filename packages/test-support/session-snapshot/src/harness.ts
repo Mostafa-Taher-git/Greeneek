@@ -544,25 +544,16 @@ async function waitForPersistedTurnStart(
   timeoutMs = DEFAULT_WAIT_TIMEOUT_MS,
   minimumTurn?: number,
 ): Promise<void> {
-  let invalidRecord: { error: unknown } | undefined
-  await vi.waitFor(async () => {
-    const log = (await harvestSessionLogs(root)).find(candidate => candidate.id === sessionId)
-    let openTurn: number | undefined
-    try {
-      openTurn = log === undefined ? undefined : latestOpenTurn(log.content)
-    } catch (error) {
-      // A malformed persisted record is a scenario bug, not a not-yet state:
-      // vi.waitFor retries every callback throw, so capture the validation
-      // failure, resolve the wait, and rethrow immediately below.
-      invalidRecord = { error }
-      return
-    }
-    if (openTurn === undefined || (minimumTurn !== undefined && openTurn < minimumTurn)) {
-      const detail = minimumTurn === undefined ? 'turn/start' : `turn/start at or beyond turn ${minimumTurn}`
-      throw new Error(`snapshot-harness: session "${sessionId}" did not persist ${detail} within ${timeoutMs}ms`)
-    }
-  }, { interval: WAIT_POLL_INTERVAL_MS, timeout: timeoutMs })
-  if (invalidRecord !== undefined) throw invalidRecord.error
+  const detail = minimumTurn === undefined ? 'turn/start' : `turn/start at or beyond turn ${minimumTurn}`
+  await waitForPersistedRecord(
+    async () => {
+      const log = (await harvestSessionLogs(root)).find(candidate => candidate.id === sessionId)
+      const openTurn = log === undefined ? undefined : latestOpenTurn(log.content)
+      return openTurn !== undefined && (minimumTurn === undefined || openTurn >= minimumTurn)
+    },
+    `snapshot-harness: session "${sessionId}" did not persist ${detail} within ${timeoutMs}ms`,
+    timeoutMs,
+  )
 }
 
 /**
@@ -576,21 +567,14 @@ async function waitForPersistedTurnEnd(
   sessionId: string,
   timeoutMs = DEFAULT_WAIT_TIMEOUT_MS,
 ): Promise<void> {
-  // The budget error is the assertion, so it must survive a load-slowed
-  // harvest: vi.waitFor reports its own timeout text when a poll round
-  // outlives the whole window (CI run 40254789718 lost the exact message that
-  // way), so the rejection rethrows the harness's own error instead.
-  const budgetError = new Error(
+  await waitForPersistedRecord(
+    async () => {
+      const log = (await harvestSessionLogs(root)).find(candidate => candidate.id === sessionId)
+      return log !== undefined && latestTurnIsClosed(log.content)
+    },
     `snapshot-harness: session "${sessionId}" did not persist turn/end within ${timeoutMs}ms`,
+    timeoutMs,
   )
-  await vi.waitFor(async () => {
-    const log = (await harvestSessionLogs(root)).find(candidate => candidate.id === sessionId)
-    if (log === undefined || !latestTurnIsClosed(log.content)) {
-      throw budgetError
-    }
-  }, { interval: WAIT_POLL_INTERVAL_MS, timeout: timeoutMs }).catch(() => {
-    throw budgetError
-  })
 }
 
 /**

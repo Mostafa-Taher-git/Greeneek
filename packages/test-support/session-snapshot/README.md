@@ -87,6 +87,7 @@ A scenario requiring a non-Windows host declares `posixOnly`, which skips its ru
 
 - **A fixture guard rejects the committed files** — orphan scenario dirs, missing files, multiple pins for one header class, duplicate sidecar content, unscrubbed JSONL headers, and malformed pinning headers all fail the suite before comparisons run.
 - **The session harvest needs raw JSONL mode** — snapshot configs set the JSONL backend's `compression: 'none'`; compressed JSONL has no snapshot-harvest path.
+- **Log-harvesting waits never use raw `vi.waitFor`** — every persisted-record wait runs `waitForPersistedRecord`, its own deadline loop that rejects with a message naming the missing record and the budget; `vi.waitFor` reports its generic timeout text when a poll round outlives the window, which drops exactly that diagnosis. Raw `vi.waitFor` is reserved for cheap readiness polls (the workspace-file existence check) whose synchronous poll round cannot outlive the window.
 - **Built mode needs current artifacts** — run `pnpm run build` before selecting `GNK_EXAMPLE_MODE=lib`; source mode remains the zero-build path.
 
 -----

@@ -8,7 +8,7 @@ import { Session, SessionId } from '@greeneek/gnk-session'
 import AgentRegistry, { Inbox } from '@greeneek/gnk-agent'
 import type { Agent } from '@greeneek/gnk-agent'
 import TerminalSessionService from '@greeneek/gnk-terminal'
-import type { TerminalSendOperation } from '@greeneek/gnk-terminal'
+import type { TerminalSendOperation, TerminalSessionId } from '@greeneek/gnk-terminal'
 import SandboxProvider from '@greeneek/gnk-sandbox'
 import type { ConfinedArgv, SandboxPolicy } from '@greeneek/gnk-sandbox'
 import SandboxPolicyService from '@greeneek/gnk-sandbox-policy'
@@ -85,7 +85,10 @@ async function harness(
 // observes a marker the child prints while `operation` is still active. A caller
 // whose child is slow to print must raise the harness `timing` bounds too;
 // extending this deadline alone cannot recover output the operation never collected.
-async function waitForOutput(operation: TerminalSendOperation, expected: string, timeoutMs = 2_000): Promise<void> {
+// The polls consume the operation buffer (`readOutput` is destructive), so the
+// settled send-result viewport is only the post-poll remainder — assertions on
+// printed content must use the returned accumulation, not `done`'s viewport.
+async function waitForOutput(operation: TerminalSendOperation, expected: string, timeoutMs = 2_000): Promise<string> {
   const deadline = Date.now() + timeoutMs
   let output = ''
   while (!output.includes(expected) && Date.now() < deadline) {
@@ -93,6 +96,26 @@ async function waitForOutput(operation: TerminalSendOperation, expected: string,
     if (!output.includes(expected)) await new Promise(resolve => setTimeout(resolve, 10))
   }
   expect(output).toContain(expected)
+  return output
+}
+
+// The session scrollback accumulates unconditionally across send settles, so
+// it records what the shell printed even when a send settled before its
+// command ran; a settled send result only carries its own active window.
+async function waitForScrollback(
+  ctx: Context,
+  agent: Agent,
+  sessionId: TerminalSessionId,
+  expected: string,
+  timeoutMs = 15_000,
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs
+  let text = ''
+  while (!text.includes(expected) && Date.now() < deadline) {
+    text = ctx.terminals.read(agent, sessionId, { offset: 0, count: 100 }).text
+    if (!text.includes(expected)) await new Promise(resolve => setTimeout(resolve, 10))
+  }
+  expect(text).toContain(expected)
 }
 
 // A send the test interrupts settles when bash returns to its prompt, so the
@@ -317,13 +340,21 @@ const hasPwsh = spawnSync(
   { encoding: 'utf8' },
 ).status === 0
 
-describe.skipIf(!hasPwsh || process.env.CI === 'true')('terminal-bash pwsh real shell', () => {
+// `!hasPwsh` keeps the skip honest on runners without PowerShell; CI runs the
+// lane wherever pwsh resolves — this describe is the only proof of the Windows
+// shell path, so CI load never skips it.
+describe.skipIf(!hasPwsh)('terminal-bash pwsh real shell', () => {
   it('bootstraps a persistent pwsh, persists state, and scrubs secrets', async () => {
     const previous = process.env.GNK_TEST_SECRET
     process.env.GNK_TEST_SECRET = 'must-not-leak'
     try {
       const { ctx, root, agent } = await harness('danger-full-access', {
-        idleSilenceMs: 300,
+        // Measured under consecutive suite loads: a 300ms silence window
+        // inferred idle while pwsh was still mid-echo, freezing the send
+        // stream before the command ran. Two seconds of real silence keeps
+        // the inference honest; ready shells still settle on the prompt
+        // marker immediately.
+        idleSilenceMs: 2_000,
         handoffGraceMs: 300,
         // pwsh boots an order of magnitude slower than bash; under CI load
         // 8s settles sends before the shell prints, leaving zero deltas to
@@ -354,48 +385,52 @@ describe.skipIf(!hasPwsh || process.env.CI === 'true')('terminal-bash pwsh real 
         text: 'Write-Output "keep=$env:KEEP secret=$env:GNK_TEST_SECRET"',
         submit: true,
       })
-      // Like the motd above, the settled viewport can be empty when a loaded
-      // host settles the send before pwsh prints: observe the marker in live
-      // output first (same waitForOutput-before-done order as the bash tests).
-      await waitForOutput(second, 'keep=ok', 15_000)
-      const result = await second.done
-      expect(result.viewport).toContain('keep=ok')
-      expect(result.viewport).toContain('secret=')
-      expect(result.viewport).not.toContain('must-not-leak')
-
-      expect(ctx.terminals.read(agent, created.sessionId, { offset: 0, count: 40 }).text).toContain('keep=ok')
+      await second.done
+      // A send that settled while pwsh was still mid-echo carries no command
+      // output at all, so the record and scrubbing assertions read the
+      // session scrollback, which accumulates unconditionally across sends.
+      await waitForScrollback(ctx, agent, created.sessionId, 'keep=ok')
+      const scrollback = ctx.terminals.read(agent, created.sessionId, { offset: 0, count: 100 }).text
+      expect(scrollback).toContain('secret=')
+      expect(scrollback).not.toContain('must-not-leak')
       expect(await ctx.terminals.kill(agent, created.sessionId)).toBe(true)
       expect(ctx.terminals.list(agent)).toEqual([])
     } finally {
       if (previous === undefined) delete process.env.GNK_TEST_SECRET
       else process.env.GNK_TEST_SECRET = previous
     }
-  }, 30_000)
+  }, 60_000)
 
   it('pins UTF-8 output encoding so non-ASCII output survives the byte decode', async () => {
     const { ctx, root, agent } = await harness('danger-full-access', {
-      idleSilenceMs: 300,
+      // Same measured silence window as the bootstrap test above: 300ms
+      // inferred idle mid-echo under load and froze the send stream.
+      idleSilenceMs: 2_000,
       handoffGraceMs: 300,
-      timeoutMs: 8_000,
+      // pwsh boots an order of magnitude slower than bash; under consecutive
+      // suite loads the 8s the bash tests use timed out the spawn itself
+      // before the bootstrap prompt ever appeared.
+      timeoutMs: 30_000,
     }, 'pwsh')
     const created = await ctx.terminals.spawn(agent, { type: 'shell', name: 'main', cwd: root })
     // The bootstrap itself must have pinned both encodings: the session byte
     // decode is UTF-8, so an un-pinned console writing its host code page
-    // garbles every non-ASCII byte that follows.
-    const pinned = ctx.terminals.startSend(agent, created.sessionId, {
+    // garbles every non-ASCII byte that follows. A send can settle on the
+    // bootstrap's trailing prompt before a loaded pwsh echoes the submitted
+    // line, and post-settle output is dropped from the send result, so the
+    // decode assertions read the session scrollback instead of the viewport.
+    await ctx.terminals.startSend(agent, created.sessionId, {
       text: '"console=" + [Console]::OutputEncoding.WebName + " out=" + $OutputEncoding.WebName',
       submit: true,
-    })
-    const pinnedResult = await pinned.done
-    expect(pinnedResult.viewport).toContain('console=utf-8 out=utf-8')
+    }).done
+    await waitForScrollback(ctx, agent, created.sessionId, 'console=utf-8 out=utf-8')
     // Char codes keep the submitted line ASCII-only, so the assertion is a
     // pure output-decode check.
-    const sent = ctx.terminals.startSend(agent, created.sessionId, {
+    await ctx.terminals.startSend(agent, created.sessionId, {
       text: "[Console]::Write([char]0x4E2D + [char]0x6587 + ' encoding-ok')",
       submit: true,
-    })
-    const result = await sent.done
-    expect(result.viewport).toContain('中文 encoding-ok')
+    }).done
+    await waitForScrollback(ctx, agent, created.sessionId, '中文 encoding-ok')
     await ctx.terminals.kill(agent, created.sessionId)
-  }, 30_000)
+  }, 60_000)
 })

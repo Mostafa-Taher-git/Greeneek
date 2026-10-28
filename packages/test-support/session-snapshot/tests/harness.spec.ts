@@ -66,7 +66,8 @@ async function scenario(behavior: object): Promise<{ dir: string; fixtureFile: s
 }
 
 const boot: InputStep[] = [{ op: 'initialize' }, { op: 'newSession' }]
-// A Windows coverage shard can spend more than 20ms harvesting logs before vi.waitFor records the diagnostic error.
+// A Windows coverage shard can spend more than 20ms harvesting logs, so the
+// diagnostic-budget wait needs a Windows-sized window to reach its rejection.
 const titleDiagnosticTimeoutMs = process.platform === 'win32' ? 5_000 : 20
 
 it('keeps scenario-owned snapshot spill root length stable across platforms', () => {
@@ -923,10 +924,9 @@ describe('runScenario', () => {
   })
 
   it('keeps the budget message when the harvest outlives the window', { timeout: 20_000 }, async () => {
-    // A gathered log read slower than the whole window makes vi.waitFor
-    // time out mid-callback and surface its own timeout text instead of the
-    // callback's assertion; the harness must still reject with the budget
-    // message (one-millisecond window always loses to the first harvest).
+    // One millisecond always loses to the first harvest, so the rejection
+    // fires with the harness budget message, which must still name the
+    // missing turn/end record.
     const missing = await scenario({})
     await expect(runScenario(
       { steps: [...boot, { op: 'waitForTurnEnd', timeoutMs: 1 }] },
@@ -935,10 +935,9 @@ describe('runScenario', () => {
   })
 
   it('keeps every migrated budget message in a one-millisecond window', { timeout: 30_000 }, async () => {
-    // The subagent, goal, and inbox waits used vi.waitFor too, so a slow first
-    // harvest replaced "which record is missing" with Vitest's generic
-    // "Timed out in waitFor!" text. One millisecond loses to the first harvest
-    // on every platform, so the assertion must still name the record.
+    // A slow first harvest must not replace "which record is missing" with a
+    // generic timeout text: one millisecond loses to the first harvest on
+    // every platform, so the rejection must still name the record.
     const cases: Array<{ step: InputStep; message: RegExp }> = [
       {
         step: { op: 'waitForSubagentTurnEnd', timeoutMs: 1 },

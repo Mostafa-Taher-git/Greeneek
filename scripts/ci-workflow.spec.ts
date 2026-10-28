@@ -59,6 +59,16 @@ describe('CI workflow', () => {
     expect(config).not.toContain("pool: process.platform === 'win32' ? 'threads' : 'forks'")
     expect(config.match(/pool: 'forks'/g)).toHaveLength(2)
   })
+
+  it('runs the pwsh terminal lane on a native Windows runner', () => {
+    const lane = jobNamed(workflow, 'windows-shell')
+
+    expect(lane['runs-on']).toBe('windows-latest')
+    const runs = jobSteps(workflow, 'windows-shell')
+      .map(step => (typeof step.run === 'string' ? step.run : ''))
+      .filter(run => run.length > 0)
+    expect(runs.some(run => run.includes('pnpm exec vitest run packages/terminal/terminal-bash'))).toBe(true)
+  })
 })
 
 describe('Desktop release workflow', () => {

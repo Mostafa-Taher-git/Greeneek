@@ -47,8 +47,8 @@
      its own layer and the pointer brings the brand hue to the edge. */
   border: 0;
   --dsw-elevation-stroke-color: color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);
-  border-radius: 22px;
-  background: color-mix(in srgb, var(--dsw-alias-label-primary) 3%, transparent);
+  border-radius: 24px;
+  background: var(--dsw-alias-bg-layer-1);
   box-shadow: var(--dsw-elevation-soft);
   transition: box-shadow 180ms var(--ds-ease-in-out);
   /* The draft text follows the Settings font-size preference (the textarea,

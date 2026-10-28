@@ -84,6 +84,17 @@
   overflow: hidden;
 }
 
+.mainPage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.mainPage[hidden] {
+  display: none;
+}
+
 .detailsCol {
   min-width: 0;
   overflow: hidden;

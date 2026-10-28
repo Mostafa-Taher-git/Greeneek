@@ -59,7 +59,7 @@ describe('web e2e: Models settings page configures a dormant provider', () => {
   it('opens the add card over the dormant directory vocabulary', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-models-empty'))
     await page.getByRole('button', { name: '设置', exact: true }).click()
-    const dialog = page.getByRole('dialog', { name: '设置' })
+    const dialog = page.getByRole('main', { name: '设置' })
     await dialog.waitFor({ timeout: 10_000 })
     await dialog.getByRole('button', { name: '模型' }).click()
     await dialog.getByText('填入各提供方的 API 密钥即可使用其模型。').waitFor({ timeout: 10_000 })
@@ -84,7 +84,7 @@ describe('web e2e: Models settings page configures a dormant provider', () => {
 
   it('refuses a key no HTTP header can carry before anything is written', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-models-illegal-key'))
-    const dialog = page.getByRole('dialog', { name: '设置' })
+    const dialog = page.getByRole('main', { name: '设置' })
     const key = dialog.getByLabel('API 密钥')
     const save = dialog.getByRole('button', { name: '保存', exact: true })
 
@@ -104,7 +104,7 @@ describe('web e2e: Models settings page configures a dormant provider', () => {
 
   it('saves a blank key as a reference-free provider-native profile', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-models-native-auth'))
-    const dialog = page.getByRole('dialog', { name: '设置' })
+    const dialog = page.getByRole('main', { name: '设置' })
     await dialog.getByRole('button', { name: '保存', exact: true }).click()
     const row = dialog.getByText('MiniMax CN', { exact: true }).first()
     await row.waitFor({ timeout: 10_000 })
@@ -118,7 +118,7 @@ describe('web e2e: Models settings page configures a dormant provider', () => {
 
   it('describes reference-free deletion without claiming a credential exists', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-models-native-delete'))
-    const settingsDialog = page.getByRole('dialog', { name: '设置' })
+    const settingsDialog = page.getByRole('main', { name: '设置' })
     await settingsDialog.getByRole('button', { name: '删除 MiniMax CN (minimax-cn)', exact: true }).click()
     const deleteDialog = page.getByRole('dialog', { name: '删除 MiniMax CN (minimax-cn)？' })
     await deleteDialog.waitFor({ timeout: 10_000 })
@@ -133,7 +133,7 @@ describe('web e2e: Models settings page configures a dormant provider', () => {
 
   it('stores the key under the derived reference and keeps the route live', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-models-add'))
-    const dialog = page.getByRole('dialog', { name: '设置' })
+    const dialog = page.getByRole('main', { name: '设置' })
     await dialog.getByRole('button', { name: '编辑 MiniMax CN (minimax-cn)', exact: true }).click()
     await dialog.getByRole('textbox', { name: 'API 密钥', exact: true }).fill('sk-e2e-minimax')
     await dialog.getByRole('button', { name: '保存', exact: true }).click()
@@ -160,7 +160,7 @@ describe('web e2e: Models settings page configures a dormant provider', () => {
 
   it('applies a customized-settings field as a merge patch', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-models-customized'))
-    const dialog = page.getByRole('dialog', { name: '设置' })
+    const dialog = page.getByRole('main', { name: '设置' })
     await dialog.getByRole('button', { name: '编辑 MiniMax CN (minimax-cn)', exact: true }).click()
     await dialog.getByText('自定义设置').click()
     const url = dialog.getByLabel('API 地址')
@@ -181,7 +181,7 @@ describe('web e2e: Models settings page configures a dormant provider', () => {
 
   it('filters the discovered model catalog and preserves hidden selections', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-models-picker'))
-    const settingsDialog = page.getByRole('dialog', { name: '设置' })
+    const settingsDialog = page.getByRole('main', { name: '设置' })
     await settingsDialog.getByRole('button', { name: '编辑 MiniMax CN (minimax-cn)', exact: true }).click()
     await settingsDialog.getByText('自定义设置').click()
     await settingsDialog.getByRole('button', { name: '获取可用模型' }).click()
@@ -226,7 +226,7 @@ describe('web e2e: Models settings page configures a dormant provider', () => {
 
   it('declares a route the adapter does not ship', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-models-declare'))
-    const dialog = page.getByRole('dialog', { name: '设置' })
+    const dialog = page.getByRole('main', { name: '设置' })
     const declare = dialog.getByRole('button', { name: '添加自定义提供方' })
     await expect.poll(async () => declare.isEnabled(), { timeout: 10_000 }).toBe(true)
     await declare.click()
@@ -259,7 +259,7 @@ describe('web e2e: Models settings page configures a dormant provider', () => {
 
   it('reopens the name and protocol a declared route was created with', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-models-declared-identity'))
-    const dialog = page.getByRole('dialog', { name: '设置' })
+    const dialog = page.getByRole('main', { name: '设置' })
     await dialog.getByRole('button', { name: '编辑 Acme Gateway (acme-gateway)', exact: true }).click()
     await dialog.getByText('自定义设置').click()
     // The create card asked this route for a name and a protocol because
@@ -293,7 +293,7 @@ describe('web e2e: Models settings page configures a dormant provider', () => {
 
   it('confirms an identified provider deletion before removing its profile and key', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-models-delete'))
-    const settingsDialog = page.getByRole('dialog', { name: '设置' })
+    const settingsDialog = page.getByRole('main', { name: '设置' })
     await settingsDialog.getByRole('button', { name: '删除 MiniMax CN (minimax-cn)', exact: true }).click()
     const deleteDialog = page.getByRole('dialog', { name: '删除 MiniMax CN (minimax-cn)？' })
     await deleteDialog.waitFor({ timeout: 10_000 })

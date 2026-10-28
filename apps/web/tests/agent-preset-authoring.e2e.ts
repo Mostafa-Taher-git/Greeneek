@@ -41,7 +41,7 @@ describe('web e2e: agent-preset authoring is a host-side copy', () => {
 
   /** The settings dialog, opened on the Agent-presets section. */
   function settingsDialog(): Locator {
-    return page.getByRole('dialog', { name: '设置' })
+    return page.getByRole('main', { name: '设置' })
   }
 
   /** Tokenize the lane-owned preset root after general aria normalization. */

@@ -14,6 +14,7 @@ import type {
 // into every program that sees this contract.
 import type {} from '@greeneek/gnk-client-ui-sidebar/client'
 // Type-only: pulls the settings slot declarations the shell renders into.
+import type {} from '@greeneek/gnk-client-ui-layout/client'
 import type {} from '@greeneek/gnk-client-ui-settings/client'
 
 /** One nav row projected from a settings.section registration's options. */
@@ -37,6 +38,12 @@ export interface SettingsOnboardingStep {
 export type SettingsRootInjected = {
   /** Request a fresh logical generation and physical WebSocket immediately. */
   reconnect: () => void
+  /** Open the main Settings page, optionally at one section. */
+  openSettings: (section?: string) => void
+  /** Select a section on the main Settings page. */
+  selectSettingsSection: (section: string) => void
+  /** Return to the conversation without unmounting it. */
+  showConversation: () => void
   hooks: {
     /** Connection-owned state for the current Host connection. */
     connectionState: HostObservable<ConnectionState | undefined>
@@ -55,13 +62,13 @@ export type SettingsRootInjected = {
  */
 export type SettingsRootComponentProps =
   PropsRuntime<'sidebar.settings'>
-  & PropsRenderSlots<
-    | 'settings.trigger'
-    | 'settings.header'
-    | 'settings.action'
-    | 'settings.close'
-    | 'settings.section'
-    | 'settings.onboarding'
-  >
+  & PropsRenderSlots<'settings.trigger' | 'settings.onboarding'>
+  & InjectFace<SettingsRootInjected>
+  & PropsLocale<'settings'>
+
+/** Full component props of the center-column Settings page. */
+export type SettingsPageComponentProps =
+  PropsRuntime<'settings'>
+  & PropsRenderSlots<'settings.header' | 'settings.action' | 'settings.close' | 'settings.section'>
   & InjectFace<SettingsRootInjected>
   & PropsLocale<'settings'>

@@ -50,7 +50,7 @@ describe.skipIf(MODE === 'record')('web e2e: another usable provider ends first-
     await credentialStep.waitFor({ state: 'detached', timeout: 15_000 })
 
     await page.getByRole('button', { name: '设置', exact: true }).click()
-    const settings = page.getByRole('dialog', { name: '设置' })
+    const settings = page.getByRole('main', { name: '设置' })
     await settings.waitFor({ timeout: 10_000 })
     // Dismissing the onboarding step leaves Settings closed, so enter the
     // Models section explicitly before exercising its normal cards.
@@ -80,7 +80,7 @@ describe.skipIf(MODE === 'record')('web e2e: another usable provider ends first-
 
   it('stops prompting once another provider can serve requests', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-onboarding-other-provider'))
-    const settings = page.getByRole('dialog', { name: '设置' })
+    const settings = page.getByRole('main', { name: '设置' })
     // The previous test left the dormant catalog; configure minimax-cn now.
     await settings.getByRole('button', { name: '添加提供方' }).click()
     const pick = settings.getByLabel('提供方')

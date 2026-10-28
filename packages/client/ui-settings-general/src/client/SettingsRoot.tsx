@@ -18,7 +18,7 @@ import {
   IconInfoOutline16, IconPersonalizationOutline16, IconSettingsOutline16,
 } from '@greeneek/gnk-client-ui-primitives'
 import type { ConnectionIndicatorState } from '@greeneek/gnk-client-ui-primitives'
-import type { SettingsRootComponentProps, SettingsSectionRow } from './shell-contract.ts'
+import type { SettingsPageComponentProps, SettingsRootComponentProps, SettingsSectionRow } from './shell-contract.ts'
 import css from './SettingsRoot.module.css'
 
 const RECOVERY_CONFIRMATION_MS = 2_000
@@ -35,8 +35,8 @@ function navIcon(id: string) {
 
 type PanelProps = {
   rows: readonly SettingsSectionRow[]
-  renderSlot: SettingsRootComponentProps['renderSlot']
-  activeId: string | undefined
+  renderSlot: SettingsPageComponentProps['renderSlot']
+  section: string | undefined
   onSelect: (id: string) => void
   onClose: () => void
 }
@@ -46,10 +46,10 @@ type PanelProps = {
  * header button, a mask click, and document-level Escape (mounted only while
  * open, so the listener lifetime is the panel's).
  */
-function SettingsPanel({ rows, renderSlot, activeId, onSelect, onClose }: PanelProps) {
+function SettingsPanel({ rows, renderSlot, section, onSelect, onClose }: PanelProps) {
   // Entries can unmount underneath the requested id, so the render-time
   // projection falls back to the first row when the id is gone.
-  const active = rows.find(r => r.id === activeId)?.id ?? rows[0]?.id
+  const active = rows.find(r => r.id === section)?.id ?? rows[0]?.id
   const titleId = useId()
 
   useEffect(() => {
@@ -65,10 +65,8 @@ function SettingsPanel({ rows, renderSlot, activeId, onSelect, onClose }: PanelP
   useEffect(() => { closeButton.current?.focus() }, [])
 
   return (
-    <div className={css.overlay} role="presentation">
-      <div className={css.mask} aria-hidden="true" onClick={onClose} />
-      <div className={css.panel} role="dialog" aria-modal="true" aria-labelledby={titleId}>
-        <nav className={css.nav}>
+    <main className={css.panel} aria-labelledby={titleId}>
+      <nav className={css.nav} aria-labelledby={titleId}>
           <div className={css.navTitle} id={titleId}>{renderSlot('settings.header', {})}</div>
           <div className={css.navList}>
             {rows.map(row => (
@@ -97,8 +95,21 @@ function SettingsPanel({ rows, renderSlot, activeId, onSelect, onClose }: PanelP
             {active !== undefined && renderSlot('settings.section', { close: onClose }, { only: active })}
           </div>
         </div>
-      </div>
-    </div>
+    </main>
+  )
+}
+
+/** Full-page Settings destination hosted by the layout's center column. */
+export function SettingsPage(props: SettingsPageComponentProps) {
+  const rows = props.useSections(s => s)
+  return (
+    <SettingsPanel
+      rows={rows}
+      renderSlot={props.renderSlot}
+      section={props.section}
+      onSelect={props.selectSettingsSection}
+      onClose={props.showConversation}
+    />
   )
 }
 
@@ -109,32 +120,15 @@ function SettingsPanel({ rows, renderSlot, activeId, onSelect, onClose }: PanelP
  */
 export function SettingsRoot(props: SettingsRootComponentProps) {
   const {
-    wide, reconnect, useConnectionState, useSections, useOnboardingSteps, useSessions, renderSlot, t,
+    wide, reconnect, useConnectionState, useOnboardingSteps, useSessions, renderSlot, t,
   } = props
-  const [open, setOpen] = useState(false)
-  const [activeId, setActiveId] = useState<string | undefined>(undefined)
   const [completedOnboarding, setCompletedOnboarding] = useState<ReadonlySet<string>>(() => new Set())
   const [showRecovery, setShowRecovery] = useState(false)
-  const triggerButton = useRef<HTMLButtonElement | null>(null)
-  const wasOpen = useRef(open)
-  const close = useCallback(() => {
-    setOpen(false)
-    setActiveId(undefined)
-  }, [])
-  // Restore after the close commit, when the dialog can no longer own focus.
-  useEffect(() => {
-    if (wasOpen.current && !open) triggerButton.current?.focus()
-    wasOpen.current = open
-  }, [open])
-  const openSection = useCallback((id: string) => {
-    setActiveId(id)
-    setOpen(true)
-  }, [])
+  const openSection = props.openSettings
 
   // The ledger tick keeps the nav rows fresh: registrants re-register with
   // freshly localized text on locale change, and the trigger/header/close
   // seats re-render through their own outlets' subscriptions.
-  const rows = useSections(s => s)
   const connectionState = useConnectionState(state => state)
   const previousConnectionState = useRef(connectionState)
   const onboardingSteps = useOnboardingSteps(s => s)
@@ -183,12 +177,9 @@ export function SettingsRoot(props: SettingsRootComponentProps) {
     <>
       <div className={clsx(css.triggerRow, !wide && css.railRow)}>
         <button
-          ref={triggerButton}
           type="button"
           className={clsx(css.trigger, !wide && css.rail)}
-          aria-haspopup="dialog"
-          aria-expanded={open}
-          onClick={() => { setOpen(true) }}
+          onClick={() => { props.openSettings() }}
         >
           {renderSlot('settings.trigger', { wide })}
         </button>
@@ -203,15 +194,6 @@ export function SettingsRoot(props: SettingsRootComponentProps) {
           onReconnect={reconnect}
         />
       </div>
-      {open && (
-        <SettingsPanel
-          rows={rows}
-          renderSlot={renderSlot}
-          activeId={activeId}
-          onSelect={setActiveId}
-          onClose={close}
-        />
-      )}
       {/* Dialog chrome and `#root` inert ownership live inside each step's
           visible branch. A step still deciding (private facts loading)
           renders null, so nothing paints or blocks while it decides. */}

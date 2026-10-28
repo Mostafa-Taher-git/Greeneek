@@ -30,6 +30,9 @@ async function bench() {
     subscribe: () => () => {},
   }
   ctx.provide('connection', { state: connectionState, reconnect } as never)
+  ctx.provide('layout', {
+    openSettings: vi.fn(), selectSettingsSection: vi.fn(), showConversation: vi.fn(),
+  } as never)
   ctx.provide('remote', {
     $on: () => () => {},
     $host: { home: undefined, isLoopback: false },
@@ -42,7 +45,10 @@ async function bench() {
 
 function declare(slots: SlotRegistry): () => void {
   return slots.register(
-    { name: 'root', children: { 'sidebar.settings': { kind: 'single', scope: 'root' } } } as never,
+    { name: 'root', children: {
+      'sidebar.settings': { kind: 'single', scope: 'root' },
+      'settings': { kind: 'single', scope: 'root' },
+    } } as never,
     () => null,
   )
 }
@@ -65,7 +71,7 @@ const CHILD_SPECS = {
 describe('ui-settings apply', () => {
   it('declares only the slot registry (a pure composition face, no locale)', () => {
     expect(inject).toEqual([
-      'slots', 'locale', 'connection', 'remote', 'remote.settings', 'settingsScope',
+      'slots', 'locale', 'layout', 'connection', 'remote', 'remote.settings', 'settingsScope',
     ])
   })
 

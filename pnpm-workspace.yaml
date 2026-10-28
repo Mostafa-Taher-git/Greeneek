@@ -16,6 +16,11 @@ packages:
 # builds must resolve those matching names to this workspace's pinned sources.
 linkWorkspacePackages: true
 
+# The checkout's node_modules is a local build artifact. `pnpm run` must not
+# purge and reinstall the whole workspace merely because its module-state
+# stamp is stale after moving or repairing links.
+verifyDepsBeforeRun: false
+
 overrides:
   '@greeneek/cosmokit': 'link:vendor/cosmokit'
   '@greeneek/schemastery': 'link:vendor/schemastery'

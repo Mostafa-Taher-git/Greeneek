@@ -46,7 +46,7 @@
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(268px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   /* Every row the same height, so a short description does not make its card
      shorter than the one beside it. */
   grid-auto-rows: 1fr;
@@ -55,7 +55,7 @@
 
 .card {
   border: 0.5px solid var(--dsw-alias-border-l4);
-  border-radius: 20px;
+  border-radius: 16px;
   display: flex;
   flex-direction: column;
   background: transparent;
@@ -167,8 +167,8 @@
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 14px 16px 12px;
+  gap: 6px;
+  padding: 12px 14px 10px;
   border-radius: 12px 12px 0 0;
 }
 
@@ -184,16 +184,29 @@
 .cardHead {
   display: flex;
   align-items: center;
-  gap: 8px;
-  /* Anchors the broken badge's tooltip: the badge itself stays unpositioned so
+  gap: 6px;
+  flex-wrap: wrap;
+  /* The badge stays unpositioned so
      its `::after` resolves against the card's own width instead of against a
      badge that sits partway across it. A tooltip grown from the badge would
      run past the card, and past the section for a card in the last column. */
   position: relative;
 }
 
+.cardAvatar {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  background: var(--dsw-alias-bg-layer-2);
+  color: var(--dsw-alias-brand-primary);
+}
+
 .cardName {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   line-height: 1.4;
 }
@@ -231,10 +244,10 @@
   font-size: 13px;
   line-height: 1.55;
   color: var(--dsw-alias-label-secondary);
-  min-height: 42px;
+  min-height: 38px;
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 4;
+  -webkit-line-clamp: 2;
   overflow: hidden;
   /* A user-authored description may carry an unbreakable path or URL. */
   overflow-wrap: anywhere;

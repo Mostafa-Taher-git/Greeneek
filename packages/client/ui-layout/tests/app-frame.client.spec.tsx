@@ -190,6 +190,17 @@ describe('AppFrame', () => {
     expect(slotCalls.find(c => c.key === 'details')!.props).toEqual({})
   })
 
+  it('keeps conversation mounted while Settings occupies the center page', () => {
+    const { instance, getByTestId, slotCalls } = mountFrame()
+    const conversation = getByTestId('center-content')
+    act(() => { instance.actions.openSettings('models') })
+    expect(conversation.isConnected).toBe(true)
+    expect(conversation.parentElement?.hidden).toBe(true)
+    expect([...slotCalls].reverse().find(call => call.key === 'settings')).toEqual({ key: 'settings', props: { section: 'models' } })
+    act(() => { instance.actions.showConversation() })
+    expect(conversation.parentElement?.hidden).toBe(false)
+  })
+
   it('keeps the conversation slot mounted while no session is current', () => {
     // No current session: the session-maybe conversation shell owns the New
     // Session view itself — the center column renders it unconditionally.

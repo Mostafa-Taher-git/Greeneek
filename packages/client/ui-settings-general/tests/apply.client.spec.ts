@@ -48,6 +48,9 @@ async function bench(isLoopback = true) {
   })
   // The fixed Host facts the shell reads its loopback-only action from.
   remote.$host = { home: undefined, isLoopback }
+  ctx.provide('layout', {
+    openSettings: () => {}, selectSettingsSection: () => {}, showConversation: () => {},
+  } as never)
   ctx.provide('connection', {
     state: { getSnapshot: () => 'connected', subscribe: () => () => {} },
     reconnect: () => {},
@@ -62,11 +65,8 @@ function declare(slots: SlotRegistry): () => void {
     {
       name: 'root',
       children: {
+        'settings': { kind: 'single', scope: 'root' },
         'settings.trigger': { kind: 'single', scope: 'root' },
-        'settings.header': { kind: 'single', scope: 'root' },
-        'settings.action': { kind: 'list', scope: 'root' },
-        'settings.close': { kind: 'single', scope: 'root' },
-        'settings.section': { kind: 'list', scope: 'root' },
         'settings.onboarding': { kind: 'list', scope: 'root' },
       },
     } as never,
@@ -74,17 +74,21 @@ function declare(slots: SlotRegistry): () => void {
   )
 }
 
+function componentName(component: unknown): string {
+  return (component as { name?: string }).name ?? ''
+}
+
 function generalEntry(slots: SlotRegistry) {
-  return slots.entries('settings.section').find(e => e.component === GeneralSection)
+  return slots.entries('settings.section').find(e => componentName(e.component) === GeneralSection.name)
 }
 
 function aboutEntry(slots: SlotRegistry) {
-  return slots.entries('settings.section').find(e => e.component === AboutSection)
+  return slots.entries('settings.section').find(e => componentName(e.component) === AboutSection.name)
 }
 
 describe('ui-settings-general apply', () => {
   it('declares the services it uses', () => {
-    expect(inject).toEqual(['slots', 'locale', 'connection', 'remote', 'remote.settings', 'settingsScope'])
+    expect(inject).toEqual(['slots', 'locale', 'layout', 'connection', 'remote', 'remote.settings', 'settingsScope'])
   })
 
   it('fills all five seats for declarations before or after apply', async () => {
@@ -92,7 +96,7 @@ describe('ui-settings-general apply', () => {
     declare(before.slots)
     await before.ctx.plugin({ inject: [...inject], apply }).await()
     for (const [name, component] of SEATS) {
-      expect(before.slots.entries(name)[0]!.component).toBe(component)
+      expect(componentName(before.slots.entries(name)[0]!.component)).toBe(component.name)
     }
     const entry = generalEntry(before.slots)!
     expect(entry.options).toMatchObject({ id: 'general', order: 0 })
@@ -120,7 +124,7 @@ describe('ui-settings-general apply', () => {
     declare(after.slots)
     await Promise.resolve()
     for (const [name, component, count] of SEATS) {
-      expect(after.slots.entries(name)[0]!.component).toBe(component)
+      expect(componentName(after.slots.entries(name)[0]!.component)).toBe(component.name)
       // The self-inflicted ledger notifications hit the duplicate guard.
       expect(after.slots.entries(name)).toHaveLength(count)
     }
@@ -205,7 +209,7 @@ describe('ui-settings-general apply', () => {
     declare(b.slots)
     await Promise.resolve()
     for (const [name, component] of SEATS) {
-      expect(b.slots.entries(name)[0]!.component).toBe(component)
+      expect(componentName(b.slots.entries(name)[0]!.component)).toBe(component.name)
     }
     expect(b.slots.entries('settings.general.item')).toEqual([])
     expect(b.slots.spec('settings.general.item')).toEqual({ kind: 'list', scope: 'root' })

@@ -13,7 +13,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import {
-  Button, IconBrowseOutline16, IconCopyOutline16, IconFolderOpenOutline16, IconPlusOutline16, IconTrashOutline16, Modal, Tooltip,
+  Button, IconAgentPresetOutline16, IconBrowseOutline16, IconCopyOutline16, IconFolderOpenOutline16, IconPlusOutline16, IconTrashOutline16, Modal, Tooltip,
 } from '@greeneek/gnk-client-ui-primitives'
 import type { SnapshotStore } from '@greeneek/gnk-client-store'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@greeneek/gnk-client-ui-slots'
@@ -283,6 +283,7 @@ export function AgentPresetSection(props: AgentPresetSectionProps): ReactNode {
                       }}
                     >
                       <span className={css.cardHead}>
+                        <span className={css.cardAvatar} aria-hidden="true"><IconAgentPresetOutline16 size={16} /></span>
                         <span className={css.cardName}>{text.name}</span>
                         {row.broken !== undefined
                           ? (

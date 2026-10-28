@@ -10,6 +10,9 @@ function fakePanels(): PanelActions {
     setNarrow: vi.fn(),
     openDetails: vi.fn(),
     closeDetails: vi.fn(),
+    openSettings: vi.fn(),
+    selectSettingsSection: vi.fn(),
+    showConversation: vi.fn(),
   }
 }
 
@@ -22,8 +25,14 @@ describe('LayoutController', () => {
     service.toggleSidebar()
     service.openDetails()
     service.closeDetails()
+    service.openSettings('models')
+    service.selectSettingsSection('general')
+    service.showConversation()
 
+    expect(panels.openSettings).toHaveBeenCalledWith('models')
+    expect(panels.selectSettingsSection).toHaveBeenCalledWith('general')
     expect(panels.toggleSidebar).toHaveBeenCalledTimes(1)
+    expect(panels.showConversation).toHaveBeenCalledTimes(1)
     expect(panels.openDetails).toHaveBeenCalledTimes(1)
     expect(panels.closeDetails).toHaveBeenCalledTimes(1)
     expect(panels.setSidebar).not.toHaveBeenCalled()
@@ -35,6 +44,9 @@ describe('LayoutController', () => {
     expect(() => { service.toggleSidebar() }).toThrow(/panel actions not wired/)
     expect(() => { service.openDetails() }).toThrow(/panel actions not wired/)
     expect(() => { service.closeDetails() }).toThrow(/panel actions not wired/)
+    expect(() => { service.openSettings() }).toThrow(/panel actions not wired/)
+    expect(() => { service.selectSettingsSection('general') }).toThrow(/panel actions not wired/)
+    expect(() => { service.showConversation() }).toThrow(/panel actions not wired/)
   })
 
   it('re-attach overwrites the stale action set (entry re-register)', () => {

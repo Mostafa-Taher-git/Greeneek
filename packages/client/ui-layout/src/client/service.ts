@@ -27,6 +27,12 @@ export interface ILayout {
   openDetails(): void
   /** Close the details panel. */
   closeDetails(): void
+  /** Open Settings in the main column, optionally selecting a section. */
+  openSettings(section?: string): void
+  /** Select a Settings section without leaving the page. */
+  selectSettingsSection(section: string): void
+  /** Return to the mounted conversation. */
+  showConversation(): void
 }
 
 /** Cross-plugin panel-action face (ctx.layout). */
@@ -57,6 +63,18 @@ export class LayoutController implements ILayout {
   /** Close the details panel. */
   closeDetails(): void {
     this.#require().closeDetails()
+  }
+
+  openSettings(section?: string): void {
+    this.#require().openSettings(section)
+  }
+
+  selectSettingsSection(section: string): void {
+    this.#require().selectSettingsSection(section)
+  }
+
+  showConversation(): void {
+    this.#require().showConversation()
   }
 
   #require(): PanelActions {

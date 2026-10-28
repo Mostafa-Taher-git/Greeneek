@@ -276,7 +276,7 @@ describe('web e2e: composer shortcut follows the swapped busy behavior', () => {
   it.skipIf(MODE === 'record')('queues Cmd+Enter when plain Enter is configured to Steer', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-composer-swapped-shortcut'))
     await page.getByRole('button', { name: 'Settings', exact: true }).click()
-    const dialog = page.getByRole('dialog', { name: 'Settings' })
+    const dialog = page.getByRole('main', { name: 'Settings' })
     await dialog.getByRole('button', { name: 'Queue' }).click()
     await page.getByRole('menuitem', { name: 'Steer' }).click()
     await dialog.getByRole('button', { name: 'Steer' }).waitFor({ timeout: 10_000 })

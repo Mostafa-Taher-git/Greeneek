@@ -10,7 +10,7 @@ import FileSettingsProvider from '@greeneek/gnk-settings-file'
 import * as LlmPiAi from '@greeneek/gnk-llm-pi-ai'
 import { PiAiAdapter } from '@greeneek/gnk-llm-pi-ai'
 import { getBuiltinModels } from '@earendil-works/pi-ai/providers/all'
-import { createModels, getSupportedThinkingLevels } from '@earendil-works/pi-ai'
+import { createModels, getSupportedThinkingLevels, normalizeContext } from '@earendil-works/pi-ai'
 import type { Api, Model, OpenAICompletionsCompat, Provider } from '@earendil-works/pi-ai'
 import { resolveProfiles } from '../src/config.ts'
 import { buildProvider, supportedProtocols } from '../src/provider.ts'
@@ -507,10 +507,9 @@ describe('catalog routes with per-model configuration', () => {
     if (built === undefined) throw new Error('the deepseek route built no provider')
     const [model] = built.getModels()
     if (model === undefined) throw new Error('the deepseek route resolved no models')
-    const context = { messages: [{ role: 'user' as const, content: 'hi', timestamp: 0 }] }
-
     // `stream` is interface-required and unused by the harness adapter, which
     // only calls `streamSimple`; both must still reach the catalog provider.
+    const context = normalizeContext({ messages: [{ role: 'user' as const, content: 'hi', timestamp: 0 }] })
     for await (const _event of built.stream(model, context, { apiKey: 'k' })) { /* drain */ }
     for await (const _event of built.streamSimple(model, context, { apiKey: 'k' })) { /* drain */ }
 
@@ -797,19 +796,19 @@ describe('compat switches', () => {
   })
 
   it('skips models of other protocols on a mixed route instead of failing them', () => {
-    // xai ships both completions and responses models, so a route-level switch
-    // must land on the former without invalidating the latter.
-    const catalog = getBuiltinModels('xai') as readonly Model<Api>[]
+    // cloudflare-ai-gateway ships completions and responses models, so a
+    // route-level switch must land on the former without invalidating the latter.
+    const catalog = getBuiltinModels('cloudflare-ai-gateway') as readonly Model<Api>[]
     const completions = catalog.find(model => model.api === 'openai-completions')
     const responses = catalog.find(model => model.api === 'openai-responses')
-    if (completions === undefined || responses === undefined) throw new Error('xai no longer ships a mixed catalog')
+    if (completions === undefined || responses === undefined) throw new Error('cloudflare-ai-gateway no longer ships a mixed catalog')
 
     const models = modelsOf({
-      xai: {
+      'cloudflare-ai-gateway': {
         compat: { supportsReasoningEffort: false },
         models: [{ id: completions.id }, { id: responses.id }],
       },
-    }, 'xai')
+    }, 'cloudflare-ai-gateway')
 
     expect((models.get(completions.id)?.compat as OpenAICompletionsCompat).supportsReasoningEffort).toBe(false)
     expect(models.get(responses.id)?.compat).toEqual(responses.compat)
@@ -861,6 +860,22 @@ describe('compat switches', () => {
     expect(models.get('acme-r')?.compat).toEqual({ supportsDeveloperRole: false })
   })
 
+  it('carries responses-only switches onto an openai-responses route', () => {
+    const models = modelsOf({
+      'acme-responses': {
+        api: 'openai-responses',
+        baseURL: 'https://acme.test',
+        compat: { supportsMidConvoSystemMessages: false, supportsMaxOutputTokens: false },
+        models: [{ id: 'acme-gpt' }],
+      },
+    }, 'acme-responses')
+
+    expect(models.get('acme-gpt')?.compat).toEqual({
+      supportsMidConvoSystemMessages: false,
+      supportsMaxOutputTokens: false,
+    })
+  })
+
   it('carries an anthropic-only switch onto an anthropic-messages route', () => {
     const models = modelsOf({
       'acme-claude': {
@@ -877,19 +892,32 @@ describe('compat switches', () => {
     })
   })
 
-  it('lands each route switch only on the models whose protocol declares it', () => {
-    const catalog = getBuiltinModels('xai') as readonly Model<Api>[]
-    const completions = catalog.find(model => model.api === 'openai-completions')
-    const responses = catalog.find(model => model.api === 'openai-responses')
-    if (completions === undefined || responses === undefined) throw new Error('xai no longer ships a mixed catalog')
+  it('carries a mistral-only switch onto the installed mistral-conversations catalog', () => {
+    const model = (getBuiltinModels('mistral') as readonly Model<Api>[]).find(entry => entry.api === 'mistral-conversations')
+    if (model === undefined) throw new Error('mistral no longer ships a mistral-conversations catalog')
 
     const models = modelsOf({
-      xai: {
+      mistral: {
+        compat: { supportsMidConvoSystemMessages: false },
+      },
+    }, 'mistral')
+
+    expect(models.get(model.id)?.compat).toEqual({ supportsMidConvoSystemMessages: false })
+  })
+
+  it('lands each route switch only on the models whose protocol declares it', () => {
+    const catalog = getBuiltinModels('cloudflare-ai-gateway') as readonly Model<Api>[]
+    const completions = catalog.find(model => model.api === 'openai-completions')
+    const responses = catalog.find(model => model.api === 'openai-responses')
+    if (completions === undefined || responses === undefined) throw new Error('cloudflare-ai-gateway no longer ships a mixed catalog')
+
+    const models = modelsOf({
+      'cloudflare-ai-gateway': {
         // Both protocols take the first switch; only completions takes the second.
         compat: { supportsDeveloperRole: false, thinkingFormat: 'openai' },
         models: [{ id: completions.id }, { id: responses.id }],
       },
-    }, 'xai')
+    }, 'cloudflare-ai-gateway')
 
     const onCompletions = models.get(completions.id)?.compat as OpenAICompletionsCompat
     expect(onCompletions.supportsDeveloperRole).toBe(false)
@@ -909,7 +937,10 @@ describe('compat switches', () => {
           reasoningEfforts: { off: null, medium: 'medium' },
           compat: {
             thinkingFormat: 'qwen-chat-template',
-            chatTemplateKwargs: { enable_thinking: { $var: 'thinking.enabled' } },
+            chatTemplateKwargs: {
+              enable_thinking: { $var: 'thinking.enabled' },
+              thinking_budget: { $var: 'thinking.budget' },
+            },
           },
         }],
       },
@@ -917,7 +948,10 @@ describe('compat switches', () => {
 
     expect(models.get('qwen-local')?.compat).toEqual({
       thinkingFormat: 'qwen-chat-template',
-      chatTemplateKwargs: { enable_thinking: { $var: 'thinking.enabled' } },
+      chatTemplateKwargs: {
+        enable_thinking: { $var: 'thinking.enabled' },
+        thinking_budget: { $var: 'thinking.budget' },
+      },
     })
   })
 
@@ -1036,9 +1070,9 @@ describe('compat switches', () => {
   it('refuses a valueless compat key on a model entry too', () => {
     expect(() => resolveProfiles({
       deepseek: {
-        modelOverrides: { 'deepseek-v4-flash': { compat: { requiresReasoningContentOnAssistantMessages: null } } as never },
+        modelOverrides: { 'deepseek-flash': { compat: { requiresReasoningContentOnAssistantMessages: null } } as never },
       },
-    })).toThrow(/model "deepseek-v4-flash" sets compat "requiresReasoningContentOnAssistantMessages" with no value/)
+    })).toThrow(/model "deepseek-flash" sets compat "requiresReasoningContentOnAssistantMessages" with no value/)
   })
 
   it('serves the Responses compat type on every protocol pi-ai gives it to', () => {
@@ -1101,7 +1135,7 @@ describe('resolution snapshots', () => {
     const inFlight = (async () => {
       for await (const chunk of adapter.stream({
         provider: 'deepseek',
-        model: 'deepseek-v4-flash',
+        model: 'deepseek-flash',
         messages: [],
       })) chunks.push(chunk)
     })()
@@ -1130,7 +1164,7 @@ describe('resolution snapshots', () => {
     })
     const drain = async (): Promise<void> => {
       for await (const _chunk of adapter.stream({
-        provider: 'deepseek', model: 'deepseek-v4-flash', messages: [],
+        provider: 'deepseek', model: 'deepseek-flash', messages: [],
       })) { /* drain */ }
     }
 

@@ -10,7 +10,7 @@
 
 import { LlmError } from '@greeneek/gnk-llm'
 import type { Message, ModelMessageSource, ReplayEnvelope } from '@greeneek/gnk-llm'
-import type { Api, AssistantMessage, Usage as PiUsage } from '@earendil-works/pi-ai'
+import type { Api, AssistantMessage, JsonObject, Usage as PiUsage } from '@earendil-works/pi-ai'
 
 /** Per-block half of the pi-ai replay envelope, one entry per content block. */
 export type PiAiReplayBlock =
@@ -36,17 +36,31 @@ interface PiAiReplayState {
   blocks: PiAiReplayBlock[]
 }
 
-/** Parse tool-call argument JSON; tolerate model malformations with {}. */
-function parseArguments(raw: string): Record<string, unknown> {
+/** Canonical code for durable tool-call arguments pi-ai cannot represent. */
+export const INVALID_TOOL_ARGUMENTS_CODE = 'INVALID_TOOL_ARGUMENTS'
+
+/**
+ * Parse tool-call argument JSON into pi-ai's `JsonObject` contract. Argument
+ * text that is not JSON at all is a tolerated model malformation and becomes
+ * `{}`, as before; a top-level array or `null` is valid JSON that pi-ai's
+ * `arguments` cannot represent, so it fails the request instead of silently
+ * rewriting the model's tool call to empty arguments. The `JsonObject` cast is
+ * sound because `JSON.parse` produces only JSON values, which is exactly
+ * `JsonValue`'s extent.
+ * @param raw - the durable JSON text of one tool call's arguments.
+ * @returns the parsed arguments as a pi-ai `JsonObject`.
+ */
+function parseArguments(raw: string): JsonObject {
+  let parsed: unknown
   try {
-    const parsed: unknown = JSON.parse(raw)
-    if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
-      return parsed as Record<string, unknown>
-    }
+    parsed = JSON.parse(raw)
   } catch {
-    // fall through
+    return {}
   }
-  return {}
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    throw new LlmError(`tool-call arguments must be a JSON object, got ${Array.isArray(parsed) ? 'an array' : String(parsed)}`, INVALID_TOOL_ARGUMENTS_CODE)
+  }
+  return parsed as JsonObject
 }
 
 /** Construct the zero usage value required by historical pi-ai messages. */

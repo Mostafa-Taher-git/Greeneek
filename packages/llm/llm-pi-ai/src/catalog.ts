@@ -23,6 +23,7 @@ import type {
   BedrockCompat,
   ChatTemplateKwargValue,
   KnownApi,
+  MistralConversationsCompat,
   Model,
   ModelCost,
   ModelThinkingLevel,
@@ -141,6 +142,19 @@ const MAX_TOKENS_FIELD_GATE: Record<PiAiMaxTokensField, true> = {
 /** The output-cap field spellings a profile may name. */
 export const MAX_TOKENS_FIELDS = Object.keys(MAX_TOKENS_FIELD_GATE) as readonly PiAiMaxTokensField[]
 
+/** The request-field spellings that cap reasoning from `thinkingBudgets`. */
+export type PiAiThinkingTokenBudgetField = NonNullable<OpenAICompletionsCompat['thinkingTokenBudgetField']>
+
+/** Drift gate over {@link PiAiThinkingTokenBudgetField}; an upstream spelling added here fails compilation until named. */
+const THINKING_TOKEN_BUDGET_FIELD_GATE: Record<PiAiThinkingTokenBudgetField, true> = {
+  thinking_token_budget: true,
+  thinking_budget: true,
+  thinking_budget_tokens: true,
+}
+
+/** The request-field spellings that cap reasoning from `thinkingBudgets`. */
+export const THINKING_TOKEN_BUDGET_FIELDS = Object.keys(THINKING_TOKEN_BUDGET_FIELD_GATE) as readonly PiAiThinkingTokenBudgetField[]
+
 /** The prompt-cache marker conventions pi-ai accepts. */
 export type PiAiCacheControlFormat = NonNullable<OpenAICompletionsCompat['cacheControlFormat']>
 
@@ -159,6 +173,7 @@ export type PiAiChatTemplateVar = Extract<ChatTemplateKwargValue, { $var: string
 const CHAT_TEMPLATE_VAR_GATE: Record<PiAiChatTemplateVar, true> = {
   'thinking.enabled': true,
   'thinking.effort': true,
+  'thinking.budget': true,
 }
 
 /** The request-state placeholders a profile may name. */
@@ -252,15 +267,18 @@ const COMPLETIONS_COMPAT_GATE = {
   chatTemplateKwargs: 'offer',
   chatTemplateArgs: 'offer',
   supportsThinkingTokenBudget: 'offer',
+  thinkingTokenBudgetField: 'offer',
   supportsStrictMode: 'offer',
   cacheControlFormat: 'offer',
   supportsLongCacheRetention: 'offer',
+  supportsMidConvoSystemMessages: 'offer',
+  supportsMidConvoToolAdditions: 'offer',
+  vllmPriority: 'offer',
   openRouterRouting: 'withhold',
   vercelGatewayRouting: 'withhold',
   zaiToolStream: 'withhold',
   supportsOpenAIGrammarTools: 'withhold',
   sendSessionAffinityHeaders: 'withhold',
-  deferredToolsMode: 'withhold',
   sessionAffinityFormat: 'withhold',
 } as const satisfies Record<keyof OpenAICompletionsCompat, CompatDisposition>
 
@@ -269,6 +287,8 @@ const RESPONSES_COMPAT_GATE = {
   supportsDeveloperRole: 'offer',
   supportsStrictMode: 'offer',
   supportsLongCacheRetention: 'offer',
+  supportsMidConvoSystemMessages: 'offer',
+  supportsMaxOutputTokens: 'offer',
   sessionAffinityFormat: 'withhold',
   supportsOpenAIGrammarTools: 'withhold',
   supportsAdditionalTools: 'withhold',
@@ -285,14 +305,23 @@ const ANTHROPIC_COMPAT_GATE = {
   forceAdaptiveThinking: 'offer',
   allowEmptySignature: 'offer',
   supportsStrictTools: 'offer',
+  supportsMidConvoSystemMessages: 'offer',
+  supportsMidConvoEffort: 'offer',
+  supportsMidConvoToolChanges: 'offer',
   sendSessionAffinityHeaders: 'withhold',
-  supportsToolReferences: 'withhold',
+  sessionAffinityFormat: 'withhold',
+  allowedFallbackModels: 'withhold',
 } as const satisfies Record<keyof AnthropicMessagesCompat, CompatDisposition>
 
 /** Disposition of every `BedrockCompat` field; a drift gate like the one above. */
 const BEDROCK_COMPAT_GATE = {
   supportsStrictMode: 'offer',
 } as const satisfies Record<keyof BedrockCompat, CompatDisposition>
+
+/** Disposition of every `MistralConversationsCompat` field; a drift gate like the one above. */
+const MISTRAL_COMPAT_GATE = {
+  supportsMidConvoSystemMessages: 'offer',
+} as const satisfies Record<keyof MistralConversationsCompat, CompatDisposition>
 
 /**
  * Every wire protocol pi-ai gives a compat type. Derived from `Model.compat`'s
@@ -319,6 +348,7 @@ const COMPAT_GATES: Readonly<Record<ApiWithCompat, Readonly<Record<string, Compa
   'openai-codex-responses': RESPONSES_COMPAT_GATE,
   'anthropic-messages': ANTHROPIC_COMPAT_GATE,
   'bedrock-converse-stream': BEDROCK_COMPAT_GATE,
+  'mistral-conversations': MISTRAL_COMPAT_GATE,
 }
 
 /**
@@ -341,6 +371,7 @@ type OfferedCompatField =
   | OfferedIn<typeof RESPONSES_COMPAT_GATE>
   | OfferedIn<typeof ANTHROPIC_COMPAT_GATE>
   | OfferedIn<typeof BEDROCK_COMPAT_GATE>
+  | OfferedIn<typeof MISTRAL_COMPAT_GATE>
 
 /**
  * pi-ai wire-compatibility switches, set on the route (its models' default) or
@@ -402,6 +433,8 @@ export interface PiAiCompatProfile {
   chatTemplateArgs?: NonNullable<OpenAICompletionsCompat['chatTemplateArgs']>
   /** Whether the endpoint accepts `thinking_token_budget` to cap vLLM reasoning; `openai-completions`. */
   supportsThinkingTokenBudget?: boolean
+  /** Which request field caps reasoning from `thinkingBudgets` (the general form of the boolean above); `openai-completions`. */
+  thinkingTokenBudgetField?: NonNullable<OpenAICompletionsCompat['thinkingTokenBudgetField']>
   /**
    * Whether the endpoint accepts `strict` in tool definitions;
    * `openai-completions`, the three Responses protocols, `bedrock-converse-stream`.
@@ -426,6 +459,33 @@ export interface PiAiCompatProfile {
   allowEmptySignature?: boolean
   /** Whether the endpoint accepts Anthropic strict tool schemas; `anthropic-messages`. */
   supportsStrictTools?: boolean
+  /**
+   * Whether the exact model accepts system-role messages after the
+   * conversation has started; `false` folds later system messages into the
+   * leading system prompt; `openai-completions`, the three Responses
+   * protocols, `anthropic-messages`, `mistral-conversations`.
+   */
+  supportsMidConvoSystemMessages?: boolean
+  /**
+   * Whether system messages may introduce additional tools mid-conversation
+   * (requires the system-message switch above); `openai-completions`.
+   */
+  supportsMidConvoToolAdditions?: boolean
+  /**
+   * Whether the endpoint accepts effort-only system messages and thinking
+   * binding controls mid-conversation; `anthropic-messages`.
+   */
+  supportsMidConvoEffort?: boolean
+  /**
+   * Whether the model accepts mid-conversation `tool_addition` and
+   * `tool_removal` blocks (requires the system-message switch above);
+   * `anthropic-messages`.
+   */
+  supportsMidConvoToolChanges?: boolean
+  /** vLLM scheduler priority sent as the top-level `priority` request field; `openai-completions`. */
+  vllmPriority?: number
+  /** Whether the endpoint accepts `max_output_tokens`; the three Responses protocols. */
+  supportsMaxOutputTokens?: boolean
 }
 
 /** Compile-time constraint that `T` is `never`. */
@@ -448,7 +508,7 @@ export type EveryOfferedFieldIsDocumented = AssertNever<Exclude<OfferedCompatFie
 type AssertTrue<T extends true> = T
 
 /** Every compat type a gate classifies, merged so one `Pick` reaches all offered fields. */
-type UpstreamCompat = OpenAICompletionsCompat & OpenAIResponsesCompat & AnthropicMessagesCompat & BedrockCompat
+type UpstreamCompat = OpenAICompletionsCompat & OpenAIResponsesCompat & AnthropicMessagesCompat & BedrockCompat & MistralConversationsCompat
 
 /**
  * Proof that each documented field carries its upstream type, not a hand-copied

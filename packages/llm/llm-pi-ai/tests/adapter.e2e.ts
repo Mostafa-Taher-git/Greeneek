@@ -14,7 +14,7 @@ import { assemble, type AssembledResult } from './assemble.ts'
  * and exercises a replayed tool follow-up. Key-gated.
  */
 
-const FLASH = 'deepseek-v4-flash' // pi-ai catalog route ids stay upstream spellings (B4, D16)
+const FLASH = 'deepseek-flash' // pi-ai catalog route ids stay upstream spellings (B4, D16)
 const GATEWAY_FLASH = 'greeneek-v4-flash'
 const contexts: Context[] = []
 

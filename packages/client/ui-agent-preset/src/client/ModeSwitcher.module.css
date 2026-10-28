@@ -19,6 +19,8 @@
   max-width: 100%;
   overflow-x: auto;
   scrollbar-width: none;
+  --gnk-scrollbar-thumb: var(--dsw-alias-scrollbar-bg-l2);
+  --gnk-scrollbar-thumb-hover: var(--dsw-alias-scrollbar-hover-l2);
 }
 
 .row::-webkit-scrollbar {

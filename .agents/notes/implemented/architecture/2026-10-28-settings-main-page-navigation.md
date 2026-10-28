@@ -16,6 +16,12 @@ The root frame always keeps the conversation page mounted. It hides that page wi
 
 The page keeps document-level Escape, entry focus on the close control, section fallback when a registration disappears, locale-reactive labels, and every existing settings section contract. It removes the mask, modal role, `aria-modal`, and `aria-expanded` trigger state because the surface is navigation, not a dialog.
 
+## Alternatives considered
+
+- **Keep the modal.** Preserves every existing mount path, but keeps the mask and dialog semantics the page exists to remove: a multi-section management surface is not a dialog over the conversation.
+- **Unmount the conversation while Settings is open.** Simpler than the hidden-page swap, but it destroys drafts, scroll state, and the active session — the preservation the full-page contract requires.
+- **Move the page shell into `ui-layout`.** Would split Settings chrome across two owners; feature packages contribute sections through one host, so `ui-settings-general` keeps the shell and `ui-layout` keeps only the destination state.
+
 ## Consequences
 
 - A Settings visit never destroys conversation component state.

@@ -4,12 +4,16 @@ This fork carries two workflows, and they are the whole check surface until
 another is added here.
 
 `ci.yml` runs on every push to `main`/`master` and every pull request against
-them, on one Ubuntu runner with Node 22: `pnpm lint`, `pnpm typecheck`, the
-generated-catalog freshness check, `pnpm test -- --coverage --reporter=verbose`,
-`pnpm build`, the landing build, a gitleaks secret scan over the push range, a
-non-blocking `pnpm audit --audit-level=high`, and the brand sweep. Its job id is
-`ci`, which is what the release gate looks for. Every action is on a Node 24
-major.
+them. Its `ci` job is one Ubuntu runner with Node 22: `pnpm lint`,
+`pnpm typecheck`, the generated-catalog freshness check,
+`pnpm test -- --coverage --reporter=verbose`, `pnpm build`, the landing build,
+a gitleaks secret scan over the push range, a non-blocking
+`pnpm audit --audit-level=high`, and the brand sweep. Its `repository` job is a
+parallel Ubuntu runner carrying the release-verification layers `ci` never ran:
+`pnpm run duplication`, read-only `pnpm run test:snapshot`, and — after its own
+`pnpm build`, so the built-invariants gate sees artifacts — `pnpm run hygiene`.
+The release gate looks for the whole workflow run, so both jobs must be green.
+Every action is on a Node 24 major.
 
 `release-desktop.yml` builds both desktop platforms on a `desktop-*` tag or a
 manual dispatch that names one, then publishes a single GitHub Release. Its

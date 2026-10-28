@@ -13,11 +13,16 @@ import { describe, expect, it } from 'vitest'
 
 const root = resolve(import.meta.dirname, '..')
 
+/** Every action pin in one workflow file carries the current major. */
+function assertWorkflowActionsPinned(path: string): void {
+  for (const use of rawActionUses(path)) assertCurrentActionMajor(use)
+}
+
 describe('CI workflow', () => {
   const workflow = loadWorkflow('.github/workflows/ci.yml')
 
   it('pins every action to a full commit SHA on a Node 24 major', () => {
-    for (const use of rawActionUses('.github/workflows/ci.yml')) assertCurrentActionMajor(use)
+    assertWorkflowActionsPinned('.github/workflows/ci.yml')
   })
 
   it('does not pin pnpm twice', () => {
@@ -69,6 +74,26 @@ describe('CI workflow', () => {
       .filter(run => run.length > 0)
     expect(runs.some(run => run.includes('pnpm exec vitest run packages/terminal/terminal-bash'))).toBe(true)
   })
+
+  it('runs the release-verification layers in a parallel repository job', () => {
+    const lane = jobNamed(workflow, 'repository')
+
+    expect(lane['runs-on']).toBe('ubuntu-latest')
+    // The gate waits 1800s for the whole workflow run, so the job bounds
+    // itself at the same ceiling: a hang surfaces as a failed run inside the
+    // wait instead of the gate expiring first.
+    expect(lane['timeout-minutes']).toBe(30)
+    const steps = jobSteps(workflow, 'repository')
+    const runs = steps.map(step => (typeof step.run === 'string' ? step.run : ''))
+    expect(runs.some(run => run.includes('pnpm run duplication'))).toBe(true)
+    // Replay stays read-only: CI never writes committed snapshot outputs.
+    const snapshot = steps.find(step => typeof step.run === 'string' && step.run.includes('pnpm run test:snapshot'))
+    expect(snapshot?.env).toMatchObject({ GNK_SNAPSHOT: 'replay' })
+    // Hygiene runs after the build so the built-invariants gate sees artifacts.
+    const build = runs.findIndex(run => run.trim() === 'pnpm build')
+    expect(runs.findIndex(run => run.includes('pnpm run test:snapshot'))).toBeLessThan(build)
+    expect(runs.findIndex(run => run.includes('pnpm run hygiene'))).toBeGreaterThan(build)
+  })
 })
 
 describe('Desktop release workflow', () => {
@@ -97,7 +122,7 @@ describe('Desktop release workflow', () => {
   })
 
   it('pins every action to a full commit SHA on a Node 24 major', () => {
-    for (const use of rawActionUses('.github/workflows/release-desktop.yml')) assertCurrentActionMajor(use)
+    assertWorkflowActionsPinned('.github/workflows/release-desktop.yml')
   })
 
   it('does not pin pnpm twice', () => {

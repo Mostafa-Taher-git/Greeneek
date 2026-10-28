@@ -48,6 +48,30 @@ jobs:
       - name: Brand sweep
         run: node scripts/verify-brand-sweep.mjs
 
+  repository:
+    # The release-verification layers the `ci` job never ran: clone detection,
+    # keyless recorded-session replay, and the hygiene aggregate. A parallel
+    # job keeps the push wall clock inside the release gate's 1800s
+    # CI-completion wait instead of extending the `ci` job.
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run duplication
+      # Replay is the read-only tier: CI never writes committed outputs.
+      - run: pnpm run test:snapshot
+        env:
+          GNK_SNAPSHOT: replay
+      - run: pnpm build
+      # After the build so the built-invariants gate sees real artifacts.
+      - run: pnpm run hygiene
+
   windows-shell:
     # The pwsh terminal lane is the only proof of the Windows shell path, so CI
     # load never skips it (the Linux job runs it too wherever pwsh resolves).

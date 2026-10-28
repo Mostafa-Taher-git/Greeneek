@@ -1,5 +1,5 @@
 ---
-description: "The Craft capability seam (ctx.craft): manifest catalog, four-state health, headless session lifecycle, root confinement, and the attach gate."
+description: "The Craft capability seam (ctx.craft): manifest catalog, seven-state health, headless session lifecycle, root confinement, and the attach gate."
 kind: "package-reference"
 ---
 
@@ -7,7 +7,7 @@ kind: "package-reference"
 
 ## Summary
 
-`gnk-craft` defines the Craft capability seam (`ctx.craft`) for the Greeneek Harness: it validates application manifests, manages the four-state lifecycle of ArtCraft creative applications (`not-installed`, `app-installed-cli-missing`, `ready`, `running`), enforces workspace root confinement, and maintains the per-launch control token required for headless automation. It provides no OS discovery or subprocess execution of its own — a provider such as `@greeneek/gnk-craft-local` registers to own the host platform. Choose it when composing the Craft capability seam into an agent profile.
+`gnk-craft` defines the Craft capability seam (`ctx.craft`) for the Greeneek Harness: it validates application manifests, manages the seven-state lifecycle of ArtCraft creative applications (`not-installed`, `app-installed-cli-missing`, `unsupported-version`, `ready`, `running`, `drifted`, `failed`), enforces workspace root confinement, and maintains the per-launch control token required for headless automation. It provides no OS discovery or subprocess execution of its own — a provider such as `@greeneek/gnk-craft-local` registers to own the host platform. Choose it when composing the Craft capability seam into an agent profile.
 
 ## Table of Contents
 
@@ -33,14 +33,17 @@ Mount this package along with a host provider (`@greeneek/gnk-craft-local`) and 
 - name: '@greeneek/gnk-tool-craft'
 ```
 
-### The four application states
+### The seven application states
 
 | State | Meaning |
 |---|---|
 | `not-installed` | The app documents no support for this host platform, or no supported install was found in the launcher manifest, portable markers, or Windows registry |
 | `app-installed-cli-missing` | The application GUI is present, but its command-line interface executable is missing |
+| `unsupported-version` | The installed version is below the manifest's minimum verified version |
 | `ready` | Both application and CLI are verified with absolute paths and ready for headless sessions |
 | `running` | An active headless automation session is currently open |
+| `drifted` | The advertised command registry changed after verification and requires review |
+| `failed` | Installation measurement failed; the detail contains the diagnostic |
 
 ### Concurrency and root confinement
 
@@ -66,7 +69,7 @@ The service mounts onto the root context as `ctx.craft`. Providers register via 
 
 </details>
 
-**Runtime invariant:** No companion is published. Manifest validation, the four-state lifecycle, and root confinement are enforced at `CraftRuntime` admission itself, so a guard face would only restate checks the service already owns.
+**Runtime invariant:** No companion is published. Manifest validation, the seven-state lifecycle, and root confinement are enforced at `CraftRuntime` admission itself, so a guard face would only restate checks the service already owns.
 
 -----
 

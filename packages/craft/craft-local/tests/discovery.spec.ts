@@ -93,14 +93,14 @@ describe('discoverApp', () => {
     expect(discovery.detail).toContain(executable)
   })
 
-  it('reports app-installed-cli-missing when the installed version is below the manifest floor', () => {
+  it('reports unsupported-version when the installed version is below the manifest floor', () => {
     const installDir = win32.join('C:\\Apps', 'PhotoCraft')
     const executable = cliPath(photocraft, installDir)
     const discovery = discoverApp(photocraft, withInstalled(
       { installDir, version: '0.9.0' },
       { isFile: path => path === executable },
     ))
-    expect(discovery.state).toBe('app-installed-cli-missing')
+    expect(discovery.state).toBe('unsupported-version')
     expect(discovery.executable).toBe(executable)
     expect(discovery.version).toBe('0.9.0')
     expect(discovery.detail).toContain(`older than the required ${photocraft.minVersion}`)

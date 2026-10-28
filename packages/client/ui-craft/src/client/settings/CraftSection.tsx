@@ -45,18 +45,24 @@ interface BusyAction {
 const STATE_KEY: Record<CraftUiState, CraftKey> = {
   'not-installed': 'state.not-installed',
   'app-installed-cli-missing': 'state.app-installed-cli-missing',
+  'unsupported-version': 'state.unsupported-version',
   ready: 'state.ready',
   running: 'state.running',
+  drifted: 'state.drifted',
+  failed: 'state.failed',
   unavailable: 'state.unavailable',
 }
 
-/** Shared state-dot vocabulary: amber for a gap, red for a broken install. */
+/** Shared state-dot vocabulary: amber for a missing install, red for an install that cannot be trusted yet. */
 function dotState(state: CraftUiState): 'warning' | 'error' | 'done' | 'ongoing' {
   switch (state) {
     case 'not-installed': return 'warning'
     case 'app-installed-cli-missing': return 'error'
+    case 'unsupported-version': return 'error'
     case 'ready': return 'done'
     case 'running': return 'ongoing'
+    case 'drifted': return 'error'
+    case 'failed': return 'error'
     default: return 'warning'
   }
 }
@@ -160,7 +166,7 @@ export function CraftSection({ source, t }: CraftSectionProps) {
                       {t('action.launcher')}
                     </a>
                   )}
-                  {(row.state === 'not-installed' || row.state === 'app-installed-cli-missing') && (
+                  {(row.state === 'not-installed' || row.state === 'app-installed-cli-missing' || row.state === 'unsupported-version') && (
                     <a className={css.action} href={row.downloadUrl} target="_blank" rel="noreferrer">
                       {t('action.download')}
                     </a>

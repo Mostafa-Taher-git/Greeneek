@@ -747,7 +747,7 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
       },
       {
         signature: 'async status(app: string, signal: AbortSignal = new AbortController().signal): Promise<CraftStatus>',
-        description: 'Measure one app installation. An active session always reports `running`.',
+        description: 'Measure one app installation. An active session always reports `running`, and a discovery error reports `failed` with its message instead of failing the whole roster read. Caller cancellation still rejects.',
         parameters: [{ name: 'app', description: 'id or alias.' }, { name: 'signal', description: 'cancellation for discovery.' }],
         returns: 'the published status.',
       },
@@ -4019,7 +4019,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'CraftAppState',
-    declaration: 'export type CraftAppState = \'not-installed\' | \'app-installed-cli-missing\' | \'ready\' | \'running\';',
+    declaration: 'export type CraftAppState = \'not-installed\' | \'app-installed-cli-missing\' | \'unsupported-version\' | \'ready\' | \'running\' | \'drifted\' | \'failed\';',
   },
   {
     name: 'CraftAttachPolicy',

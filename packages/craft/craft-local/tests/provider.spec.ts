@@ -65,13 +65,13 @@ function createHandle(options: { readonly settleOnTerminate?: boolean } = {}): F
 }
 
 /** Discovery fake for one installed app. */
-function installedIo(): CraftDiscoveryIo {
+function installedIo(version = '1.2.0'): CraftDiscoveryIo {
   return {
     platform: 'win32',
     env: { LOCALAPPDATA: 'C:\\Launcher' },
     home: 'C:\\Users\\u',
     readText: path => path === win32.join(LAUNCHER_ROOT, INSTALLED_FILE)
-      ? JSON.stringify({ apps: { photocraft: { installDir: INSTALL_DIR, version: '1.2.0' } } })
+      ? JSON.stringify({ apps: { photocraft: { installDir: INSTALL_DIR, version } } })
       : undefined,
     isFile: path => path === CLI,
     registryInstallDir: () => undefined,
@@ -150,6 +150,11 @@ describe('requireExecutable', () => {
     expect(() => requireExecutable(photocraft, { state: 'app-installed-cli-missing', detail: 'CLI missing' }))
       .toThrow(/not ready: CLI missing/)
   })
+
+  it.each(['unsupported-version', 'drifted', 'failed'] as const)('rejects %s even when an executable remains', (state) => {
+    expect(() => requireExecutable(photocraft, { state, executable: CLI }))
+      .toThrow(new RegExp(`not ready: ${state}`))
+  })
 })
 
 describe('CraftLocalProvider', () => {
@@ -183,6 +188,17 @@ describe('CraftLocalProvider', () => {
     const provider = new CraftLocalProvider(fixture.io, config)
 
     await expect(provider.open(openRequest())).rejects.toMatchObject({ code: 'CRAFT_APP_NOT_READY' })
+    expect(fixture.writeFile).not.toHaveBeenCalled()
+    expect(fixture.spawn).not.toHaveBeenCalled()
+  })
+
+  it('refuses headless and connected launches for an unsupported version', async () => {
+    const fixture = localIo(installedIo('0.9.0'))
+    const provider = new CraftLocalProvider(fixture.io, config)
+
+    await expect(provider.open(openRequest())).rejects.toMatchObject({ code: 'CRAFT_APP_NOT_READY' })
+    await expect(provider.launchConnected({ app: photocraft, workspaceRoot: WORKSPACE, roots: ROOTS }))
+      .rejects.toMatchObject({ code: 'CRAFT_APP_NOT_READY' })
     expect(fixture.writeFile).not.toHaveBeenCalled()
     expect(fixture.spawn).not.toHaveBeenCalled()
   })

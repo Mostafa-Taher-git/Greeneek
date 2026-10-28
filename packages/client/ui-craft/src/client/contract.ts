@@ -11,14 +11,18 @@
 
 /**
  * One app's measured state, mirroring the host service's status vocabulary.
- * `unavailable` is client-only: it means this browser session has no bridge
- * source, not that the app is absent.
+ * `drifted` marks an installation whose advertised surface changed after
+ * verification, `failed` a measurement error. `unavailable` is client-only: it
+ * means this browser session has no bridge source, not that the app is absent.
  */
 export type CraftUiState =
   | 'not-installed'
   | 'app-installed-cli-missing'
+  | 'unsupported-version'
   | 'ready'
   | 'running'
+  | 'drifted'
+  | 'failed'
   | 'unavailable'
 
 /** One pilot app as the settings section presents it. */

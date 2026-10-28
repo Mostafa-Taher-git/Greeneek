@@ -137,7 +137,7 @@ interface CraftStatus {
 }
 ```
 
-`state` is one of `not-installed`, `app-installed-cli-missing`, `ready`, or `running`; an active session always reports `running` without re-measuring. Discovery detail strings are machine-readable diagnostics that the browser settings section renders verbatim.
+`state` is one of `not-installed`, `app-installed-cli-missing`, `unsupported-version`, `ready`, `running`, `drifted`, or `failed`; an active session always reports `running` without re-measuring. Discovery failures report `failed`, while caller cancellation still rejects. Discovery detail strings are machine-readable diagnostics that the browser settings section renders verbatim.
 
 ## `CraftRecipe`
 
@@ -205,7 +205,9 @@ attachEnabled(app: string | CraftAppManifest): boolean
 recipe(app: string): CraftRecipe
 
 /**
- * Measure one app installation. An active session always reports `running`.
+ * Measure one app installation. An active session always reports `running`,
+ * and a discovery error reports `failed` with its message instead of failing
+ * the whole roster read. Caller cancellation still rejects.
  * @param app - id or alias.
  * @param signal - cancellation for discovery.
  * @returns the published status.

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /**
- * CraftSection state spec: the four measured app states render their own
- * label and the action that fits (download, launch connected, open), the
+ * CraftSection state spec: every measured app state renders its own label
+ * and the action that fits (download, launch connected, open), the
  * no-bridge fallback reports `unavailable` with actions disabled, and
  * loading / failure+retry / empty / unmounted reads each stay explicit.
  */
@@ -48,25 +48,33 @@ function bench(source: CraftSettingsSource) {
 }
 
 describe('CraftSection', () => {
-  it('renders the four measured states with their own label and action', async () => {
+  it('renders every measured state with its own label and action', async () => {
     const rows = [
       row('photocraft', 'not-installed', 'no install record'),
-      row('pdfcraft', 'app-installed-cli-missing', 'cli below 1.0.0'),
+      row('pdfcraft', 'app-installed-cli-missing', 'CLI missing'),
+      row('photocraft-old', 'unsupported-version', 'cli below 1.0.0'),
       row('photocraft-ready', 'ready'),
       row('photocraft-running', 'running'),
+      row('photocraft-drifted', 'drifted', 'registry changed'),
+      row('photocraft-failed', 'failed', 'registry unreadable'),
     ]
     bench({ ...fallbackSource(), available: async () => rows })
     expect(await screen.findByText('未安装')).toBeTruthy()
     expect(screen.getByText('已安装应用，缺少命令行工具')).toBeTruthy()
+    expect(screen.getByText('版本过低')).toBeTruthy()
     expect(screen.getByText('就绪')).toBeTruthy()
     expect(screen.getByText('运行中')).toBeTruthy()
+    expect(screen.getByText('安装已变更，待重新验证')).toBeTruthy()
+    expect(screen.getByText('状态读取失败')).toBeTruthy()
     expect(screen.getByText('no install record')).toBeTruthy()
     expect(screen.getByText('cli below 1.0.0')).toBeTruthy()
-    // Download is offered exactly for the two install-gap states.
+    expect(screen.getByText('registry changed')).toBeTruthy()
+    expect(screen.getByText('registry unreadable')).toBeTruthy()
+    // Download is offered exactly for the three install-gap states.
     const downloads = screen.getAllByText('下载')
-    expect(downloads).toHaveLength(2)
+    expect(downloads).toHaveLength(3)
     expect(downloads[0]!.closest('a')?.getAttribute('href')).toBe('https://craft.example/download/photocraft')
-    // Ready offers the connected launch, running offers the app launcher.
+    // Ready alone offers connected launch; running alone offers the app launcher.
     expect(screen.getByText('连接并打开')).toBeTruthy()
     expect(screen.getByText('打开应用').closest('a')?.getAttribute('href'))
       .toBe('https://craft.example/open/photocraft-running')

@@ -139,7 +139,9 @@ export class CraftRuntime extends Service {
   }
 
   /**
-   * Measure one app installation. An active session always reports `running`.
+   * Measure one app installation. An active session always reports `running`,
+   * and a discovery error reports `failed` with its message instead of failing
+   * the whole roster read. Caller cancellation still rejects.
    * @param app - id or alias.
    * @param signal - cancellation for discovery.
    * @returns the published status.
@@ -150,8 +152,18 @@ export class CraftRuntime extends Service {
       return { app: manifest.id, displayName: manifest.displayName, state: 'running' }
     }
     const provider = this.selectProvider()
-    const discovery = await provider.discover(manifest, { signal })
-    return { app: manifest.id, displayName: manifest.displayName, ...discovery }
+    try {
+      const discovery = await provider.discover(manifest, { signal })
+      return { app: manifest.id, displayName: manifest.displayName, ...discovery }
+    } catch (error: unknown) {
+      signal.throwIfAborted()
+      return {
+        app: manifest.id,
+        displayName: manifest.displayName,
+        state: 'failed',
+        detail: error instanceof Error ? error.message : String(error),
+      }
+    }
   }
 
   /**

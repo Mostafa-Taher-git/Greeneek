@@ -135,7 +135,9 @@ describe('status', () => {
   it.each([
     'not-installed',
     'app-installed-cli-missing',
+    'unsupported-version',
     'ready',
+    'drifted',
   ] as const)('publishes %s from discovery', async (state) => {
     const { craft } = mount()
     craft.registerProvider(fakeProvider({ state, detail: `detail:${state}` }).provider)
@@ -155,13 +157,28 @@ describe('status', () => {
     expect(fake.discover).toHaveBeenCalledTimes(1)
   })
 
-  it('propagates discovery failures and forwards the caller signal', async () => {
+  it.each([
+    { thrown: new Error('registry exploded'), detail: 'registry exploded' },
+    { thrown: 'registry exploded', detail: 'registry exploded' },
+  ])('reports discovery failures as failed and forwards the caller signal', async ({ thrown, detail }) => {
     const { craft } = mount()
     const fake = fakeProvider()
-    fake.discover.mockRejectedValue(new Error('registry exploded'))
+    fake.discover.mockRejectedValue(thrown)
     craft.registerProvider(fake.provider)
     const controller = new AbortController()
-    await expect(craft.status('photocraft', controller.signal)).rejects.toThrow('registry exploded')
+    await expect(craft.status('photocraft', controller.signal)).resolves.toMatchObject({ state: 'failed', detail })
+    expect(fake.discover).toHaveBeenCalledWith(expect.anything(), { signal: controller.signal })
+  })
+
+  it('preserves cancellation instead of publishing a failed status', async () => {
+    const { craft } = mount()
+    const fake = fakeProvider()
+    const controller = new AbortController()
+    const reason = new Error('cancelled')
+    controller.abort(reason)
+    fake.discover.mockRejectedValue(reason)
+    craft.registerProvider(fake.provider)
+    await expect(craft.status('photocraft', controller.signal)).rejects.toBe(reason)
     expect(fake.discover).toHaveBeenCalledWith(expect.anything(), { signal: controller.signal })
   })
 })

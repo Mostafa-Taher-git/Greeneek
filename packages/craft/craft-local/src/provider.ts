@@ -37,7 +37,7 @@ const STDERR_TAIL_BYTES = 16 * 1024
  * @returns the absolute CLI path.
  */
 export function requireExecutable(app: CraftAppManifest, discovery: CraftDiscovery): string {
-  if (discovery.executable === undefined) {
+  if (discovery.state !== 'ready' || discovery.executable === undefined) {
     throw new CraftError(
       `${app.displayName} is not ready: ${discovery.detail ?? discovery.state}`,
       'CRAFT_APP_NOT_READY',

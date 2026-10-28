@@ -22,7 +22,7 @@ The `craft/` group connects Greeneek to the ArtCraft creative and document appli
 
 | Package | Role | ctx key |
 |---|---|---|
-| [`craft/`](craft/README.md) | Defines the Craft application catalog, manifests, four-state health, and headless session lifecycle | `ctx.craft` |
+| [`craft/`](craft/README.md) | Defines the Craft application catalog, manifests, seven-state health, and headless session lifecycle | `ctx.craft` |
 | [`craft-local/`](craft-local/README.md) | Local host provider: OS launcher and Windows MSI registry discovery, CLI path verification, and token-gated headless spawns | registers on `ctx.craft` |
 | [`tool-craft/`](tool-craft/README.md) | Gateway model tools (`craft_list_apps`, `craft_open_app`), app meta-tool bridging, and artifact path collection | registers on `ctx.tools` |
 

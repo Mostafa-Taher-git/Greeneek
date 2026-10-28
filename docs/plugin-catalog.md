@@ -227,7 +227,7 @@ Scope: 260 workspace packages; every package appears under each of its kinds (24
 
 | Package | Role |
 | --- | --- |
-| `@greeneek/gnk-craft` | The Craft capability seam (ctx.craft): manifest catalog, four-state health, headless session lifecycle, root confinement, and the attach gate. |
+| `@greeneek/gnk-craft` | The Craft capability seam (ctx.craft): manifest catalog, seven-state health, headless session lifecycle, root confinement, and the attach gate. |
 | `@greeneek/gnk-craft-local` | Local host provider for the Craft bridge: launcher manifest and registry discovery, absolute CLI resolution, and token-gated headless sessions. |
 
 ### `credentials/`

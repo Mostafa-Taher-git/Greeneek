@@ -1,12 +1,25 @@
 /**
  * Public vocabulary of the Craft bridge seam. Every state the bridge publishes
- * is one of the four values below; app-specific behavior lives in manifests,
- * not in code.
+ * is one of the values below; app-specific behavior lives in manifests, not in
+ * code.
  * @module @greeneek/gnk-craft/types
  */
 
-/** Published health of one Craft app installation. */
-export type CraftAppState = 'not-installed' | 'app-installed-cli-missing' | 'ready' | 'running'
+/**
+ * Published health of one Craft app installation. `not-installed` and
+ * `app-installed-cli-missing` are measured install gaps, `unsupported-version`
+ * is a measured install below the manifest floor, `drifted` marks an
+ * installation whose advertised surface changed after verification, `failed`
+ * reports a measurement error, and `ready`/`running` are usable states.
+ */
+export type CraftAppState =
+  | 'not-installed'
+  | 'app-installed-cli-missing'
+  | 'unsupported-version'
+  | 'ready'
+  | 'running'
+  | 'drifted'
+  | 'failed'
 
 /** Platform surface one Craft app documents. */
 export type CraftPlatform = 'win32' | 'darwin' | 'linux'

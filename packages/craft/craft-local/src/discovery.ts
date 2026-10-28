@@ -25,7 +25,8 @@ export function portableFileName(app: string): string {
  * Measure one installation without spawning it.
  * @param app - validated manifest.
  * @param io - discovery seam.
- * @returns one of `not-installed`, `app-installed-cli-missing`, or `ready`.
+ * @returns one of `not-installed`, `app-installed-cli-missing`,
+ * `unsupported-version`, or `ready`.
  */
 export function discoverApp(app: CraftAppManifest, io: CraftDiscoveryIo): CraftDiscovery {
   if (!app.platforms.includes(io.platform as CraftPlatform)) {
@@ -63,7 +64,7 @@ export function discoverApp(app: CraftAppManifest, io: CraftDiscoveryIo): CraftD
   }
   if (outdated !== undefined) {
     return {
-      state: 'app-installed-cli-missing',
+      state: 'unsupported-version',
       executable: outdated.executable,
       version: outdated.version,
       detail: `${app.displayName} ${outdated.version} is older than the required ${app.minVersion}`,

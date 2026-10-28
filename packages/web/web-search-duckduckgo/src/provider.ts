@@ -195,6 +195,10 @@ export class DuckDuckGoSearchProvider implements WebSearchProvider {
       no_html: '1',
       skip_disambig: '1',
     })
+    // The GET request shape is intentionally per-provider: each endpoint owns
+    // its URL and params, and a shared request helper on the public web seam
+    // would add more API than one call site per provider needs.
+    /* jscpd:ignore-start */
     let response: Response
     try {
       response = await fetch(`${this.options.baseURL}/?${params.toString()}`, {
@@ -210,6 +214,7 @@ export class DuckDuckGoSearchProvider implements WebSearchProvider {
       if (isAbortError(error)) throw new WebError('DuckDuckGo search aborted', 'WEB_ABORTED', { cause: error })
       throw new WebError(`DuckDuckGo search request failed: ${String(error)}`, 'WEB_PROVIDER_ERROR', { cause: error })
     }
+    /* jscpd:ignore-end */
 
     if (!response.ok) {
       const status = response.status

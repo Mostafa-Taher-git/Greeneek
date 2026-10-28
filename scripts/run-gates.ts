@@ -290,6 +290,19 @@ export function gatesForMode(selected: Mode): Gate[] {
   }
 }
 
+/** Client-surface gates every aggregate runs after the package checks, in their fixed order. */
+function clientSurfaceGates(): Gate[] {
+  return [
+    pnpmScript('optional-dependency-imports', 'verify-optional-dependency-imports', {
+      label: 'optional dependency imports',
+    }),
+    pnpmScript('client-packages', 'verify-client-packages', { label: 'client packages' }),
+    pnpmScript('client-ui-i18n', 'verify-client-ui-i18n', { label: 'client UI i18n' }),
+    pnpmScript('theme-contrast', 'verify-theme-contrast', { label: 'theme contrast' }),
+    pnpmScript('source-plane', 'verify-source-plane', { label: 'source plane' }),
+  ]
+}
+
 function ciSharedStaticGates(): Gate[] {
   return [
     pnpmScript('runtime-closure', 'verify-runtime-closure', { label: 'runtime closure' }),
@@ -299,13 +312,7 @@ function ciSharedStaticGates(): Gate[] {
     pnpmScript('gnk-package-licenses', 'verify-gnk-package-licenses', { label: 'GNK package licenses' }),
     pnpmScript('package-invariants', 'verify-package-invariants', { label: 'package invariants' }),
     pnpmScript('cordis-config', 'verify-cordis-config', { label: 'Cordis config' }),
-    pnpmScript('optional-dependency-imports', 'verify-optional-dependency-imports', {
-      label: 'optional dependency imports',
-    }),
-    pnpmScript('client-packages', 'verify-client-packages', { label: 'client packages' }),
-    pnpmScript('client-ui-i18n', 'verify-client-ui-i18n', { label: 'client UI i18n' }),
-    pnpmScript('theme-contrast', 'verify-theme-contrast', { label: 'theme contrast' }),
-    pnpmScript('source-plane', 'verify-source-plane', { label: 'source plane' }),
+    ...clientSurfaceGates(),
     pnpmScript('issue-management', 'test:issue-management', { label: 'Issue management policy' }),
   ]
 }
@@ -696,13 +703,7 @@ function hygieneLeafGates(options: { artifactNeeds?: string[] } = {}): Gate[] {
       label: 'node-next types',
       ...artifactOptions,
     }),
-    pnpmScript('optional-dependency-imports', 'verify-optional-dependency-imports', {
-      label: 'optional dependency imports',
-    }),
-    pnpmScript('client-packages', 'verify-client-packages', { label: 'client packages' }),
-    pnpmScript('client-ui-i18n', 'verify-client-ui-i18n', { label: 'client UI i18n' }),
-    pnpmScript('theme-contrast', 'verify-theme-contrast', { label: 'theme contrast' }),
-    pnpmScript('source-plane', 'verify-source-plane', { label: 'source plane' }),
+    ...clientSurfaceGates(),
   ]
 }
 

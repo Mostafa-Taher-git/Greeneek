@@ -16,17 +16,17 @@ const root = resolve(import.meta.dirname, '..')
 describe('CI workflow', () => {
   const workflow = loadWorkflow('.github/workflows/ci.yml')
 
-  it('uses only Node 24 action majors', () => {
-    for (const use of collectUses(workflow)) assertCurrentActionMajor(use)
+  it('pins every action to a full commit SHA on a Node 24 major', () => {
+    for (const use of rawActionUses('.github/workflows/ci.yml')) assertCurrentActionMajor(use)
   })
 
   it('does not pin pnpm twice', () => {
     for (const step of allSteps(workflow)) {
-      if (step.uses === 'pnpm/action-setup@v6') expect(step.with).toBeUndefined()
+      if (typeof step.uses === 'string' && step.uses.startsWith('pnpm/action-setup@')) expect(step.with).toBeUndefined()
     }
   })
 
-  it('verifies generated catalogs and the landing build', () => {
+  it('verifies generated artifacts and the landing build', () => {
     const runs = allSteps(workflow)
       .map(step => step.run)
       .filter((run): run is string => typeof run === 'string')
@@ -86,13 +86,13 @@ describe('Desktop release workflow', () => {
     expect(gate).toContain('no successful push CI workflow run')
   })
 
-  it('uses only Node 24 action majors', () => {
-    for (const use of collectUses(workflow)) assertCurrentActionMajor(use)
+  it('pins every action to a full commit SHA on a Node 24 major', () => {
+    for (const use of rawActionUses('.github/workflows/release-desktop.yml')) assertCurrentActionMajor(use)
   })
 
   it('does not pin pnpm twice', () => {
     for (const step of allSteps(workflow)) {
-      if (step.uses === 'pnpm/action-setup@v6') expect(step.with).toBeUndefined()
+      if (typeof step.uses === 'string' && step.uses.startsWith('pnpm/action-setup@')) expect(step.with).toBeUndefined()
     }
   })
 
@@ -239,14 +239,28 @@ const CURRENT_ACTION_MAJORS: Record<string, string> = {
 
 function assertCurrentActionMajor(use: string): void {
   if (use.startsWith('./') || use.startsWith('docker://')) return
-  const at = use.lastIndexOf('@')
-  if (at === -1) throw new Error(`${use} has no action major`)
-  const action = use.slice(0, at)
-  const version = use.slice(at + 1)
-  const expected = CURRENT_ACTION_MAJORS[action]
-  if (expected !== undefined && version !== expected) {
-    throw new Error(`${action} must use ${expected}, found ${version === '' ? 'no major' : version}`)
+  const pin = use.match(/^(\S+)@([0-9a-f]{40})\s*#\s*(v\S+)$/)
+  if (pin === null) {
+    throw new Error(`"${use}" must pin a full commit SHA with a "# vN" version comment`)
   }
+  const expected = CURRENT_ACTION_MAJORS[pin[1] ?? '']
+  if (expected !== undefined && pin[3] !== expected) {
+    throw new Error(`${pin[1]} must use ${expected}, found ${pin[3]}`)
+  }
+}
+
+/**
+ * Every `uses:` line of one workflow, as raw file text. The pinned SHA check
+ * reads this form because YAML strips a trailing `# vN` comment from the
+ * parsed value while Dependabot and reviewers need the comment in the file.
+ * @param path - workflow file path relative to the repository root.
+ * @returns each `uses:` value as written, trimmed.
+ */
+function rawActionUses(path: string): readonly string[] {
+  return readFileSync(resolve(root, path), 'utf8').split('\n').flatMap((line) => {
+    const match = line.match(/^\s*-?\s*uses:\s*(\S.*)$/)
+    return match === null ? [] : [match[1].trim()]
+  })
 }
 
 function workflowJobs(workflow: Record<string, unknown>): Record<string, unknown> {
@@ -282,18 +296,6 @@ function runText(job: Record<string, unknown>): string {
     .filter(isRecord)
     .map(step => (typeof step.run === 'string' ? step.run : ''))
     .join('\n')
-}
-
-function collectUses(value: unknown, found: string[] = []): string[] {
-  if (Array.isArray(value)) {
-    for (const item of value) collectUses(item, found)
-  } else if (isRecord(value)) {
-    if (typeof value.uses === 'string') found.push(value.uses)
-    for (const [key, child] of Object.entries(value)) {
-      if (key !== 'uses') collectUses(child, found)
-    }
-  }
-  return found
 }
 
 function loadWorkflow(path: string): Record<string, unknown> {

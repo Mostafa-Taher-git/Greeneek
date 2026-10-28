@@ -35,6 +35,8 @@ jobs:
         env:
           CI: true
       - run: pnpm build
+      - name: Typecheck the landing app
+        run: pnpm --filter @greeneek/landing run typecheck
       - name: Build the landing app
         run: pnpm --filter @greeneek/landing run build
       - name: Secret scan (gitleaks)

@@ -29,7 +29,11 @@ Output Directory: dist
 ```
 
 Every push to the production branch redeploys automatically; branches and PRs
-get preview deployments.
+get preview deployments. `vercel.json` routes the deployment decision through
+`vercel-ignore.mjs`: a push that touches no landing file and no root workspace
+or dependency input skips the build, while a missing previous SHA or git
+failure always builds. The project Root Directory must stay `apps/landing`,
+which the helper's repo-relative path matching assumes.
 
 ## Download links
 

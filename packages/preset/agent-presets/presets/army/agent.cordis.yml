@@ -55,6 +55,8 @@
 
 - id: tool-fs-search
   name: '@greeneek/gnk-tool-fs-search'
+  config:
+    sampleOverCapGlobResults: false
 
 # ── fleet ───────────────────────────────────────────────────────────────────
 

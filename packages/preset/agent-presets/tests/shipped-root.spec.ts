@@ -220,6 +220,16 @@ describe('the shipped preset root', () => {
     }
   })
 
+  it('supplies the required fs-search sampling choice in every preset that mounts it', async () => {
+    for (const id of ['army', 'cordis', 'instructor', 'maestro', 'pixels-designer', 'ptc', 'standard']) {
+      const entry = findEntry(await shippedEntries(id), 'tool-fs-search')
+      if (entry === undefined) continue
+      expect(entry.config, `${id} must configure tool-fs-search`).toMatchObject({
+        sampleOverCapGlobResults: expect.any(Boolean),
+      })
+    }
+  })
+
   it('omits the general workflow tool only from PTC while retaining Ralph infrastructure', async () => {
     const ptc = await shippedEntries('ptc')
     expect(findEntry(ptc, 'tool-workflow')?.disabled).toBe(true)

@@ -135,7 +135,9 @@ describe('client build environment', () => {
     expect(repositoryCommitHash('/unused', { GNK_CLIENT_COMMIT_HASH: COMMIT_HASH })).toBe(COMMIT_HASH.slice(0, 7))
   })
 
-  it('owns repository version, commit, and dirty metadata for complete builds', () => {
+  // ~20 sequential git process spawns; Windows per-spawn overhead puts the
+  // run above the 5s default on some hosts.
+  it('owns repository version, commit, and dirty metadata for complete builds', { timeout: 20_000 }, () => {
     const fixtureRoot = repositoryFixture()
     const commit = git(fixtureRoot, ['rev-parse', '--short=7', 'HEAD'])
 

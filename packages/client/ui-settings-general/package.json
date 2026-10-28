@@ -55,6 +55,7 @@
     "@greeneek/gnk-client-locale": "workspace:^",
     "@greeneek/gnk-client-store": "workspace:^",
     "@greeneek/gnk-client-test-runtime": "workspace:^",
+    "@greeneek/gnk-client-ui-layout": "workspace:^",
     "@greeneek/gnk-client-ui-primitives": "workspace:^",
     "@greeneek/gnk-client-ui-settings": "workspace:^",
     "@greeneek/gnk-client-ui-sidebar": "workspace:^",

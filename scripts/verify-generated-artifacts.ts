@@ -78,13 +78,13 @@ const TSX_CLI = createRequire(import.meta.filename).resolve('tsx/cli')
  * @param check - the check whose generator to run.
  * @returns the exit status plus stdout and stderr of the check run.
  */
-function runCheck(root: string, check: GeneratedCheck): { status: number | null, stdout: string, stderr: string } {
+function runCheck(root: string, check: GeneratedCheck): { status: number | null; stdout: string; stderr: string } {
   const result = spawnSync(process.execPath, [TSX_CLI, resolve(root, check.script), '--check'], {
     cwd: root,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
   })
-  return { status: result.status, stdout: result.stdout ?? '', stderr: result.stderr ?? '' }
+  return { status: result.status, stdout: result.stdout, stderr: result.stderr }
 }
 
 /**

@@ -102,6 +102,10 @@ export class ReferenceChipNode extends DecoratorNode<JSX.Element> {
     return {
       ...super.exportJSON(),
       type: 'reference-chip',
+      // Lexical 0.51 deprecated the numeric schema version; the explicit
+      // legacy write stays so the serialized form keeps carrying the field
+      // it promises. Nothing reads it back.
+      // oxlint-disable-next-line typescript/no-deprecated
       version: 1,
       source: this.__source,
       ref: this.__ref,

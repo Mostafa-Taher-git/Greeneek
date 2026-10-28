@@ -225,7 +225,7 @@ describe('the shipped preset root', () => {
       const entry = findEntry(await shippedEntries(id), 'tool-fs-search')
       if (entry === undefined) continue
       expect(entry.config, `${id} must configure tool-fs-search`).toMatchObject({
-        sampleOverCapGlobResults: expect.any(Boolean),
+        sampleOverCapGlobResults: expect.any(Boolean) as boolean,
       })
     }
   })

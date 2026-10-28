@@ -259,7 +259,7 @@ function assertCurrentActionMajor(use: string): void {
 function rawActionUses(path: string): readonly string[] {
   return readFileSync(resolve(root, path), 'utf8').split('\n').flatMap((line) => {
     const match = line.match(/^\s*-?\s*uses:\s*(\S.*)$/)
-    return match === null ? [] : [match[1].trim()]
+    return match === null || match[1] === undefined ? [] : [match[1].trim()]
   })
 }
 

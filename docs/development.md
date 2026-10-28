@@ -101,8 +101,13 @@ GREENEEK_BASE_URL=https://... # optional
 
 lefthook is configured in `lefthook.yml` as a fast local checkpoint:
 
-- `pre-commit` validates staged files with the project-free `.oxlintrc.staged.json` profile and applies Oxlint fixes with one bounded retry, regenerates `THIRD_PARTY_NOTICES.md` when a staged file is one of its inputs, checks the staged diff for whitespace errors, and runs the vendor manifest guard.
-- `pre-push` runs `pnpm run typecheck`, which completes the Host lib phase, including generated Typert contracts, before the Client TypeScript check.
+- `pre-commit` validates staged files with the project-free `.oxlintrc.staged.json` profile and applies Oxlint fixes with one bounded retry, regenerates `THIRD_PARTY_NOTICES.md` when a staged file is one of its inputs, checks the staged diff for whitespace errors, runs the staged-mode secret scan (`node scripts/verify-secrets.mjs`), and runs the vendor manifest guard.
+- `pre-push` runs `pnpm run typecheck`, which completes the Host lib phase, including generated Typert contracts, before the Client TypeScript check, then full-repository lint, the brand sweep, and the generated-artifact freshness check.
+- Every job runs the same scripts CI runs, and every script is invoked through a portable Node entry (`node scripts/...`), so native Windows hooks behave like POSIX ones; shebang scripts such as `scripts/brand-sweep.sh` stay human conveniences, not hook or CI targets.
+
+The staged secret scan needs the gitleaks binary (`GITLEAKS_BIN` can point at one). When it is absent the scan prints the installation instruction and skips, because CI's push-range gitleaks run stays the enforcement lane; the scan refuses `.gitleaksignore` outright, since a developer-owned suppression file could hide a real secret before CI sees it.
+
+Bypassing the hooks (`git commit --no-verify` or `LEFTHOOK=0`) is an emergency measure: it needs a stated reason in the PR or commit, and it must never be used on a release commit, where every local gate the hooks run is part of the release evidence.
 
 The vendor manifest guard checks that changes under `vendor/*/src` are staged with the matching `vendor/README.md` manifest update. See `vendor/README.md` before editing vendored code.
 

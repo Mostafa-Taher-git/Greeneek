@@ -44,4 +44,4 @@ jobs:
       - run: pnpm audit --audit-level=high
         continue-on-error: true
       - name: Brand sweep
-        run: ./scripts/brand-sweep.sh
+        run: node scripts/verify-brand-sweep.mjs

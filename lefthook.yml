@@ -24,6 +24,11 @@ pre-commit:
     - name: whitespace (staged)
       run: git diff --cached --check
 
+    # Staged-mode secret scan; CI's push-range gitleaks run stays the
+    # enforcement lane. Skips with a visible notice when the binary is absent.
+    - name: secrets (staged)
+      run: node scripts/verify-secrets.mjs
+
     - name: vendor manifest guard
       run: scripts/check-vendor-manifest.sh
 
@@ -47,9 +52,10 @@ pre-push:
       run: pnpm run lint
 
     # The same brand contract CI runs, so a residue/egress regression cannot
-    # land on main and break every concurrent pull request.
+    # land on main and break every concurrent pull request. The Node entry
+    # point runs on native Windows too; the .sh wrapper does not.
     - name: brand sweep
-      run: ./scripts/brand-sweep.sh
+      run: node scripts/verify-brand-sweep.mjs
 
     # Generated artifacts are checked in; a surface edit that forgot to
     # regenerate them fails here instead of poisoning a later dependency PR.

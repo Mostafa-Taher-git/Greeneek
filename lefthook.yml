@@ -51,7 +51,7 @@ pre-push:
     - name: brand sweep
       run: ./scripts/brand-sweep.sh
 
-    # Generated catalogs are checked in; a surface edit that forgot to
+    # Generated artifacts are checked in; a surface edit that forgot to
     # regenerate them fails here instead of poisoning a later dependency PR.
-    - name: generated catalogs
-      run: pnpm run verify-generated-catalogs
+    - name: generated artifacts
+      run: pnpm run verify-generated-artifacts

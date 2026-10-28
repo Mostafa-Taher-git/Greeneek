@@ -32,7 +32,7 @@ describe('CI workflow', () => {
       .filter((run): run is string => typeof run === 'string')
       .join('\n')
 
-    expect(runs).toContain('pnpm run verify-generated-catalogs')
+    expect(runs).toContain('pnpm run verify-generated-artifacts')
     expect(runs).toContain('pnpm --filter @greeneek/landing run build')
   })
 

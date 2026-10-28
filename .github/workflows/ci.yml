@@ -29,8 +29,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm typecheck
-      - name: Generated catalogs are current
-        run: pnpm run verify-generated-catalogs
+      - name: Generated artifacts are current
+        run: pnpm run verify-generated-artifacts
       - run: pnpm test -- --coverage --reporter=verbose
         env:
           CI: true

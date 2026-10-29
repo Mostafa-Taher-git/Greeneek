@@ -178,6 +178,12 @@ export function SidebarRoot({
         </Tooltip>
       )}
 
+      {/* Primary actions sit directly under New Session in the expanded
+          column and render their own icon form on the rail. */}
+      <div className={css.primaryActions}>
+        {renderSlot('sidebar.primary.action', { wide })}
+      </div>
+
       {/* The browsing region fills the column between the controls and the
           brand row in both states; its rail icon column rides the same slot. */}
       <div className={css.regionArea}>

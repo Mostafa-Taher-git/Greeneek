@@ -24,12 +24,16 @@ import type {} from '@greeneek/gnk-client-locale/client'
 import type {} from '@greeneek/gnk-client-ui-renderer/client'
 // Type-only: pulls the Session root standard-hook merge.
 import type {} from '@greeneek/gnk-client-ui-session/client'
+// Type-only: pulls the layout service merge (ctx.layout) and slot declarations.
+import type { ILayout } from '@greeneek/gnk-client-ui-layout/client'
 import type { WorkspaceBrowserInjected, WorkspacePickerInjected } from './contract/slots.ts'
 import type { RecentSessionsInjected } from './RecentSessionsSeat.tsx'
 import { UiWorkspaceService } from './navigation.ts'
 import { createWorkspaceViewStore } from './stores.ts'
 import { WorkspaceBrowser } from './rows/WorkspaceBrowser.tsx'
 import { RecentSessionsSeat } from './RecentSessionsSeat.tsx'
+import { DashboardAction } from './DashboardAction.tsx'
+import { DashboardPage } from './DashboardPage.tsx'
 import { WorkspacePicker } from './WorkspacePicker.tsx'
 import { ar, en, zh, type WorkspaceKey } from './locales.ts'
 
@@ -76,6 +80,8 @@ export const inject = [
 export function apply(ctx: Context): void {
   const sessions = ctx.get('sessions') as ISessions
   const workspaces = ctx.get('workspaces') as IWorkspaces
+  // Dashboard is optional: a composition without ui-layout still owns browsing.
+  const layout = (): ILayout | undefined => ctx.get('layout')
   const uiWorkspace = new UiWorkspaceService(
     ctx, ctx.remote.directoryPicker, workspaces, sessions)
   ctx.slots.provideRoot({ hooks: { workspaces: workspaces.list } })
@@ -170,5 +176,22 @@ export function apply(ctx: Context): void {
       locale: NS,
     },
     RecentSessionsSeat,
+  ))
+  ctx.slots.inject('sidebar.primary.action', () => ctx.slots.register(
+    {
+      name: 'sidebar.primary.action',
+      id: 'dashboard',
+      inject: () => ({ openDashboard: () => { layout()?.openDashboard() } }),
+      locale: NS,
+    },
+    DashboardAction,
+  ))
+  ctx.slots.inject('dashboard', () => ctx.slots.register(
+    {
+      name: 'dashboard',
+      inject: () => ({ close: () => { layout()?.showConversation() } }),
+      locale: NS,
+    },
+    DashboardPage,
   ))
 }

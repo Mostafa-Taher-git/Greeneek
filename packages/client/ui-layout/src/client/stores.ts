@@ -20,7 +20,7 @@ import {
  * `narrowExpanded` is the manual override that re-expands the auto-collapsed
  * sidebar over the squeezed center without rewriting the width preference.
  */
-type LayoutState = { sidebar: number; details: number; narrow: boolean; narrowExpanded: boolean; mainPage: 'conversation' | 'settings'; settingsSection: string | undefined }
+type LayoutState = { sidebar: number; details: number; narrow: boolean; narrowExpanded: boolean; mainPage: 'conversation' | 'settings' | 'dashboard'; settingsSection: string | undefined }
 
 /**
  * Annotation twin of the actions literal below (the export needs a declared
@@ -34,6 +34,7 @@ type LayoutActions = {
   openDetails: (draft: LayoutState) => void
   closeDetails: (draft: LayoutState) => void
   openSettings: (draft: LayoutState, section?: string) => void
+  openDashboard: (draft: LayoutState) => void
   selectSettingsSection: (draft: LayoutState, section: string) => void
   showConversation: (draft: LayoutState) => void
 }
@@ -72,6 +73,10 @@ export function createLayoutStore(): EngineStoreHandle<LayoutState, LayoutAction
       openSettings: (d, section?: string) => {
         d.mainPage = 'settings'
         d.settingsSection = section
+      },
+      openDashboard: (d) => {
+        d.mainPage = 'dashboard'
+        d.settingsSection = undefined
       },
       selectSettingsSection: (d, section: string) => { d.settingsSection = section },
       showConversation: (d) => {

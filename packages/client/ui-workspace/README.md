@@ -8,7 +8,7 @@ kind: "package-reference"
 
 ## Summary
 
-`gnk-client-ui-workspace` is the shared Workspace browser and picker of the gnk web client: users browse grouped or flat Session rows in the sidebar, pick a Workspace for a new session from the Session Intent hero, and manage Workspaces and Sessions with add, rename, reorder, search, fork, and archive actions; the same Workspace menu and add flow serve both surfaces. Pending user interactions surface as amber warning dots, active Schedule projections surface as non-interactive alarm markers in ordinary and search rows, and the shared sidebar projection hides subagent-origin sessions. Distinct canonical paths remain separate id-keyed Workspaces, and adding a folder goes through a directory-flow child hole that a composed picker package's client half fills.
+`gnk-client-ui-workspace` is the shared Workspace browser and picker of the gnk web client: users browse grouped or flat Session rows in the sidebar, pick a Workspace for a new session from the Session Intent hero, and manage Workspaces and Sessions with add, rename, reorder, search, fork, and archive actions; the same Workspace menu and add flow serve both surfaces. Pending user interactions surface as amber warning dots, active Schedule projections surface as non-interactive alarm markers in ordinary and search rows, and the shared sidebar projection hides subagent-origin sessions. A Dashboard entry under New Session opens a full-page local summary folded from the session projections the browser already holds. Distinct canonical paths remain separate id-keyed Workspaces, and adding a folder goes through a directory-flow child hole that a composed picker package's client half fills.
 
 ## Table of Contents
 
@@ -37,6 +37,10 @@ Collapsed search is one header action beside the view and add actions: activatin
 ### Managing sessions
 
 The Session row's Rename action opens a dialog prefilled with the row's display title; confirming an unchanged title is deliberately allowed — it pins the current automatic title against regeneration. Archive commits without a confirmation dialog and the row disappears from every grouping surface when the archive-set echo lands. Fork forks at the source's last completed turn, increments the inherited persisted title on the client, and then opens the child. Workspace Delete opens a confirmation that states the retention boundary; success removes the group while its Sessions remain under Ungrouped.
+
+### Dashboard
+
+The entry directly under **New Session** opens a full-page summary: session, workspace, and running counts; whole-session turns, steps, and recorded output tokens; model usage grouped by provider/model; and the newest sessions with their workspace and model. Every figure comes from the `sessionStats`/`modelSelection` projections or a list fact. Input tokens and cost are not recorded locally, so they are shown as unknown rather than estimated, and no prompt, raw output, path, or key material is displayed.
 
 ### Pending interactions
 

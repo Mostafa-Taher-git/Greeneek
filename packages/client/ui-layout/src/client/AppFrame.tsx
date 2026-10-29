@@ -23,7 +23,7 @@ import css from './AppFrame.module.css'
 /** Full composed props: runtime share + child-slot render share + store share. */
 export type AppFrameProps =
   & PropsRuntime<'root'>
-  & PropsRenderSlots<'sidebar' | 'titlebar' | 'conversation' | 'settings' | 'details' | 'shell.overlay'>
+  & PropsRenderSlots<'sidebar' | 'titlebar' | 'conversation' | 'settings' | 'dashboard' | 'details' | 'shell.overlay'>
   & PropsStore<ReturnType<typeof createLayoutStore>>
   & PropsLocale<'common'>
 
@@ -193,9 +193,10 @@ export function AppFrame({
         productTitle={productTitle}
         {...documentTitle === undefined ? {} : { title: documentTitle }}
       />
-      {/* Frameless-desktop titlebar (Claude-style): sidebar toggle left,
-          window controls right, spanning all columns. Browser builds keep
-          the native chrome and never render this row. */}
+      {/* Frameless-desktop titlebar (Claude-style): sidebar toggle at the
+          inline start, window controls at the reading end (right in LTR, far
+          left in RTL), spanning all columns. Browser builds keep the native
+          chrome and never render this row. */}
       {desktopHost && (
         <div className={css.titlebarRow}>
           {renderSlot('titlebar', { collapsed: sidebarCollapsed })}
@@ -225,6 +226,11 @@ export function AppFrame({
           {panels.mainPage === 'settings' && (
             <div className={css.mainPage}>
               {renderSlot('settings', { section: panels.settingsSection })}
+            </div>
+          )}
+          {panels.mainPage === 'dashboard' && (
+            <div className={css.mainPage}>
+              {renderSlot('dashboard', {})}
             </div>
           )}
         </CenterColumn>

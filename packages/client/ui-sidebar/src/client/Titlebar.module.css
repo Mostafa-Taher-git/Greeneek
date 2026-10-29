@@ -1,8 +1,9 @@
 /* Desktop titlebar row (40px, mirrors FRAMELESS_TITLEBAR_HEIGHT): the bar
-   itself drags the window; only the toggle opts out. The right reserve
-   matches the desktop-injected window controls (3 x 46px) so no titlebar
-   content ever slides under them. Transparent over the frame base — the
-   Greeneek ink (tokens, panel glyph) carries the brand, no extra chrome. */
+   itself drags the window; only the toggle opts out. The inline-end reserve
+   matches the desktop-injected window controls (3 x 46px) on the right in
+   LTR and the far left in RTL, so no titlebar content slides under them.
+   Transparent over the frame base — the Greeneek ink (tokens, panel glyph)
+   carries the brand, no extra chrome. */
 
 .bar {
   display: flex;

@@ -5,7 +5,8 @@
  * everything between the section header and the list bottom is the
  * `sidebar.workspaces` registrant's (ui-workspace), and the foot is the
  * `sidebar.settings` registrant's (ui-settings), followed by optional footer
- * actions in `sidebar.footer.action`.
+ * actions in `sidebar.footer.action`; primary actions sit directly under the
+ * New Session control in `sidebar.primary.action`.
  */
 import type { PropsLocale, PropsRenderSlots, PropsRuntime } from '@greeneek/gnk-client-ui-slots'
 import type { WorkspaceId } from '@greeneek/gnk-api-workspace-controller/client'
@@ -40,11 +41,23 @@ declare module '@greeneek/gnk-client-ui-slots' {
      */
     'sidebar.settings': { kind: 'single'; scope: 'root'; owner: SidebarSettingsOwnerProps }
     /**
+     * Optional actions directly under New Session, above the browsing region.
+     * Declared by this package's 'sidebar' entry; each action receives the
+     * column display state and renders its own wide/rail form.
+     */
+    'sidebar.primary.action': { kind: 'list'; scope: 'root'; owner: SidebarPrimaryActionOwnerProps }
+    /**
      * Optional actions beside Settings at the sidebar foot. Declared by this
      * package's 'sidebar' entry; each action receives only the column state.
      */
     'sidebar.footer.action': { kind: 'list'; scope: 'root'; owner: SidebarFooterActionOwnerProps }
   }
+}
+
+/** Owner share of a primary action under New Session. */
+export interface SidebarPrimaryActionOwnerProps {
+  /** Shell fold-state output: wide renders the labelled row, rail the icon control. */
+  wide: boolean
 }
 
 /** Geometry supplied to the sidebar brand-mark occupant. */
@@ -119,6 +132,7 @@ export type SidebarRootComponentProps =
     | 'sidebar.brand.name'
     | 'sidebar.workspaces'
     | 'sidebar.settings'
+    | 'sidebar.primary.action'
     | 'sidebar.footer.action'
   >
   & SidebarRootInjected & PropsLocale<'sidebar'>

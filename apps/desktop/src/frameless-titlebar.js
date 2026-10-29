@@ -1,11 +1,11 @@
 /**
  * Frameless-window chrome for Greeneek Desktop (Windows and Linux): small
- * custom window controls pinned to the top-right (minimize,
- * maximize/restore, close), built by an injected script so every page the
- * window shows carries identical chrome without forking the UI. The web UI
- * owns the 40px titlebar row itself (drag region plus sidebar toggle, with
- * room reserved for these controls) and marks documentElement with
- * `data-desktop-titlebar`; pages without one — the splash — get a pure
+ * custom window controls pinned to the titlebar's reading-end (the far right
+ * in an LTR document, the far left in RTL), built by an injected script so
+ * every page the window shows carries identical chrome without forking the
+ * UI. The web UI owns the 40px titlebar row itself (drag region plus sidebar
+ * toggle, with room reserved for these controls) and marks documentElement
+ * with `data-desktop-titlebar`; pages without one — the splash — get a pure
  * overlay drag strip instead, so they stay draggable. Buttons resolve the
  * `greeneekDesktop` preload bridge at click time and warn once when it is
  * absent; the main process pushes maximize-state changes back into
@@ -33,11 +33,19 @@ export const FRAMELESS_TITLEBAR_CSS = `
     position: fixed;
     z-index: 2147483647;
     top: 0;
-    right: 0;
+    inset-inline-end: 0;
     display: flex;
     height: ${FRAMELESS_TITLEBAR_HEIGHT}px;
     -webkit-app-region: no-drag;
     app-region: no-drag;
+  }
+
+  /* Mirrored controls keep Close outermost on the left. With the inherited
+     RTL direction the default row lays the DOM order (minimize, maximize,
+     close) right-to-left, so the visual order becomes close, maximize,
+     minimize while assistive technology keeps the declared order. */
+  html[dir='rtl'] #gnk-titlebar-controls {
+    flex-direction: row;
   }
 
   #gnk-titlebar-controls button {

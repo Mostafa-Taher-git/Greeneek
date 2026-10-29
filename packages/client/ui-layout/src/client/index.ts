@@ -51,8 +51,8 @@ declare module '@greeneek/gnk-client-ui-slots' {
      */
     'sidebar': { kind: 'single'; scope: 'root'; owner: SidebarOwnerProps }
     /**
-     * The frameless-desktop titlebar row (40px, toggle left, window
-     * controls right). OCCUPIED by ui-sidebar's Titlebar; rendered only on
+     * The frameless-desktop titlebar row (40px, toggle at the inline start,
+     * window controls at the reading end). OCCUPIED by ui-sidebar's Titlebar; rendered only on
      * the desktop host, spanning all columns above the content grid.
      * Registering here replaces the desktop titlebar outright.
      */
@@ -72,6 +72,8 @@ declare module '@greeneek/gnk-client-ui-slots' {
     'conversation': { kind: 'single'; scope: 'session-maybe'; owner: ConvOwnerProps }
     /** Full-height Settings destination in the center column. */
     'settings': { kind: 'single'; scope: 'root'; owner: SettingsOwnerProps }
+    /** Full-height local Dashboard destination in the center column. */
+    'dashboard': { kind: 'single'; scope: 'root'; owner: DashboardOwnerProps }
     /**
      * The right details column, shown when the layout opens it. OCCUPIED by
      * ui-conversation's DetailsPanel, which declares the tool-details seat
@@ -124,6 +126,9 @@ export interface SettingsOwnerProps {
   section: string | undefined
 }
 
+/** Dashboard owner share: empty — the page reads the global session/workspace hooks. */
+export interface DashboardOwnerProps {}
+
 /** Details owner share: empty — sessionId arrives as a framework-standard prop. */
 export interface DetailsOwnerProps {}
 
@@ -148,6 +153,7 @@ export function apply(ctx: ClientContext): void {
         'titlebar': { kind: 'single', scope: 'root' },
         'conversation': { kind: 'single', scope: 'session-maybe' },
         'settings': { kind: 'single', scope: 'root' },
+        'dashboard': { kind: 'single', scope: 'root' },
         'details': { kind: 'single', scope: 'session' },
         'shell.overlay': { kind: 'list', scope: 'root' },
       },

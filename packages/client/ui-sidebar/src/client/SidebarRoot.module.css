@@ -412,6 +412,20 @@
    corners); collapsed it renders as the rail's plain icon control. The
    expanded capsule is the Edge Frame material: a translucent green wash
    bounded by a 1px neon ring — never a solid border fill, never glass. */
+.primaryActions {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  gap: 4px;
+  padding-inline: 2px;
+  margin-bottom: 8px;
+}
+
+.collapsed .primaryActions {
+  align-items: flex-start;
+  padding-inline: 0;
+}
+
 .newSession {
   position: relative;
   flex: none;

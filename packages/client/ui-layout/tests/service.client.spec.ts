@@ -13,6 +13,7 @@ function fakePanels(): PanelActions {
     openSettings: vi.fn(),
     selectSettingsSection: vi.fn(),
     showConversation: vi.fn(),
+    openDashboard: vi.fn(),
   }
 }
 

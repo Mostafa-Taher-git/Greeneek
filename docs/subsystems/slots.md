@@ -111,6 +111,7 @@ root
 ├─ sidebar
 │  ├─ sidebar.brand.mark
 │  ├─ sidebar.brand.name
+│  ├─ sidebar.primary.action
 │  ├─ sidebar.footer.action
 │  ├─ sidebar.workspaces
 │  │  └─ sidebar.workspaces.directoryFlow
@@ -126,6 +127,7 @@ root
 │        ├─ settings.models.footer
 │        └─ settings.plugins.tab
 │           └─ settings.plugin.item
+├─ dashboard
 ├─ conversation
 │  ├─ conversation.session
 │  │  └─ conversation.view

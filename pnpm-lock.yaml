@@ -4045,6 +4045,9 @@ importers:
       '@greeneek/gnk-client-ui-conversation':
         specifier: workspace:^
         version: link:../ui-conversation
+      '@greeneek/gnk-client-ui-layout':
+        specifier: workspace:^
+        version: link:../ui-layout
       '@greeneek/gnk-client-ui-primitives':
         specifier: workspace:^
         version: link:../ui-primitives
@@ -4066,6 +4069,9 @@ importers:
       '@greeneek/gnk-session':
         specifier: workspace:^
         version: link:../../core/session
+      '@greeneek/gnk-session-stats':
+        specifier: workspace:^
+        version: link:../../session/session-stats
       '@greeneek/gnk-typert-protocol':
         specifier: workspace:^
         version: link:../../typert/protocol

@@ -29,6 +29,8 @@ export interface ILayout {
   closeDetails(): void
   /** Open Settings in the main column, optionally selecting a section. */
   openSettings(section?: string): void
+  /** Open the local Dashboard in the main column. */
+  openDashboard(): void
   /** Select a Settings section without leaving the page. */
   selectSettingsSection(section: string): void
   /** Return to the mounted conversation. */
@@ -71,6 +73,10 @@ export class LayoutController implements ILayout {
 
   selectSettingsSection(section: string): void {
     this.#require().selectSettingsSection(section)
+  }
+
+  openDashboard(): void {
+    this.#require().openDashboard()
   }
 
   showConversation(): void {

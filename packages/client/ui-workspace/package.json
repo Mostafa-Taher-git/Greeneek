@@ -34,6 +34,7 @@
         "@greeneek/gnk-client-connection",
         "@greeneek/gnk-client-locale",
         "@greeneek/gnk-client-ui-conversation",
+   "@greeneek/gnk-client-ui-layout",
         "@greeneek/gnk-client-ui-renderer",
         "@greeneek/gnk-client-ui-session",
         "@greeneek/gnk-client-ui-sidebar"
@@ -61,6 +62,7 @@
     "@greeneek/gnk-client-store": "workspace:^",
     "@greeneek/gnk-client-test-runtime": "workspace:^",
     "@greeneek/gnk-client-ui-conversation": "workspace:^",
+    "@greeneek/gnk-client-ui-layout": "workspace:^",
     "@greeneek/gnk-client-ui-primitives": "workspace:^",
     "@greeneek/gnk-client-ui-renderer": "workspace:^",
     "@greeneek/gnk-client-ui-session": "workspace:^",
@@ -69,6 +71,7 @@
     "@greeneek/gnk-schedule": "workspace:^",
     "@greeneek/gnk-typert-protocol": "workspace:^",
     "@greeneek/gnk-session": "workspace:^",
+    "@greeneek/gnk-session-stats": "workspace:^",
     "@greeneek/gnk-util-workspace-path": "workspace:^",
     "@types/react": "~18.3.1",
     "@greeneek/cordis": "workspace:^",

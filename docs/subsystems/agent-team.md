@@ -84,6 +84,8 @@ A write-scoped teammate starts in a lane worktree at `<gnkHome>/worktrees/<LeadS
 
 Lane records are durable JSON validated at the file boundary. `preparing` and `closing` records are the only stages startup recovery mutates; `ready` lanes keep unmerged work across idle, cold resume, and Team disposal. Disposal checkpoints ready lanes without deleting them.
 
+Named fleet favorites live in the `fleet` settings namespace. A favorite holds an id, a display name, and members with provider, context, preset, model, reasoning effort, read-only flag, write scopes, and token ceiling. The settings owner fences writes by revision; a launch revalidates every provider and never substitutes one. Availability is derived from the live provider registry: `ready` only for a provider that can hold a durable lane, `unsupported-version` for a registered provider without that capability, and `not-installed` for a configured provider that is absent. No probe launches a paid or state-changing run.
+
 A repository may declare `.gnk/fleet.json` with a strict `version` and `fleet.members` array. Parsing is size-capped and provider-limited to the deployment's in-process fleet providers. Launching requires a one-time approval keyed by the canonical repository path and the SHA-256 of the exact file bytes; changed bytes require fresh approval, and an admitted approval is removed.
 
 ## Replay
@@ -271,6 +273,49 @@ async approveRepoFleet(caller: Agent, signal: AbortSignal): Promise<RepoFleetSna
 async admitRepoFleet(caller: Agent, signal: AbortSignal): Promise<RepoFleetSnapshot>
 
 /**
+ * Report honest availability for every configured or registered fleet
+ * provider without launching a paid or state-changing probe.
+ * @param caller - exact live Team member.
+ * @returns one row per provider, with ready only for continuable providers.
+ */
+fleetAvailability(caller: Agent): FleetProviderAvailability[]
+
+/**
+ * Read the fleet favorites section and current settings revision.
+ * @param caller - exact live Team Lead.
+ * @returns providers, favorites, and the revision for the next fenced write.
+ */
+fleetFavorites(caller: Agent): FleetFavoritesView
+
+/**
+ * Save one favorite by id, replacing a same-id favorite.
+ * @param caller - exact live Team Lead.
+ * @param favorite - complete favorite value.
+ * @param expectedRevision - settings revision the editor read.
+ * @returns the committed favorites view or a typed conflict.
+ */
+async saveFleetFavorite( caller: Agent, favorite: FleetFavorite, expectedRevision: number, ): Promise<FleetFavoriteResult>
+
+/**
+ * Delete one favorite by id.
+ * @param caller - exact live Team Lead.
+ * @param id - favorite identity.
+ * @param expectedRevision - settings revision the editor read.
+ * @returns the committed favorites view or a typed conflict.
+ */
+async deleteFleetFavorite( caller: Agent, id: string, expectedRevision: number, ): Promise<FleetFavoriteResult>
+
+/**
+ * Launch one saved favorite after an explicit confirmation, revalidating
+ * every provider at use time and never substituting a different one.
+ * @param caller - exact live Team Lead.
+ * @param id - favorite identity.
+ * @param confirmed - the UI's explicit confirmation; false starts nothing.
+ * @returns created members or a typed refusal.
+ */
+async launchFleetFavorite(caller: Agent, id: string, confirmed: boolean): Promise<FleetLaunchResult>
+
+/**
  * Read the current roster and non-deleted task board through the generated Remote API.
  * @param agent - exact live Team member used as the authority credential.
  * @returns detached current roster and task views.
@@ -292,6 +337,21 @@ async admitRepoFleet(caller: Agent, signal: AbortSignal): Promise<RepoFleetSnaps
  * @returns the committed task or a typed Team rejection.
  */
 @Remote('updateTask') remoteUpdateTask(agent: Agent, request: UpdateTeamTaskRequest): Promise<TeamTaskMutationResult>
+
+/**
+ * Read provider availability through the generated Remote API.
+ * @returns honest provider availability rows.
+ */
+@Remote('fleetAvailability') remoteFleetAvailability(): FleetProviderAvailability[]
+
+/**
+ * Launch one favorite through the generated Remote API.
+ * @param agent - exact live Team Lead.
+ * @param id - favorite identity.
+ * @param confirmed - explicit UI confirmation.
+ * @returns created members or a typed refusal.
+ */
+@Remote('launchFleetFavorite') remoteLaunchFleetFavorite(agent: Agent, id: string, confirmed: boolean): Promise<FleetLaunchResult>
 ```
 
 Types: [Agent](core.md)

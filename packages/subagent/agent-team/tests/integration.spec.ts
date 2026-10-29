@@ -440,6 +440,27 @@ describe('reviewed lane integration', { timeout: 30_000 }, () => {
     expect(merge.haltReason(SESSION)).toBeUndefined()
   })
 
+  it('refuses a gate command with no executable', async () => {
+    const repo = repository()
+    const base = git(repo, 'rev-parse', 'HEAD')
+    const { lanes, merge } = harness()
+    const { patchHash } = await preparedLane(lanes, repo, 'alpha', 'README.md', 'alpha\n')
+
+    const error = await rejection(merge.integrate({
+      sessionId: SESSION,
+      lane: 'alpha',
+      expectedPrimaryHead: base,
+      patchHash,
+      gateCommands: [{ argv: [] }],
+      commitMessage: 'merge alpha',
+      signal: SIGNAL,
+    }))
+
+    expect(error.code).toBe('TEAM_LANE_GATE_FAILED')
+    expect(error.message).toContain('no executable')
+    expect(git(repo, 'status', '--porcelain')).toBe('')
+  })
+
   it('quarantines a lane that committed after its base', async () => {
     const repo = repository()
     const base = git(repo, 'rev-parse', 'HEAD')

@@ -3,11 +3,12 @@ import { describe, expect, it, vi } from 'vitest'
 import type { SessionId } from '@greeneek/gnk-session/types'
 import { LocaleRuntime } from '@greeneek/gnk-client-locale/client'
 import { SlotRegistry } from '@greeneek/gnk-client-ui-renderer/client'
-import type { TeamMemberView as TeamRosterMember, TeamTaskId } from '@greeneek/gnk-agent-team/client'
+import type { FleetFavorite, FleetProviderAvailability, FleetSettings, TeamMemberView as TeamRosterMember, TeamTaskId } from '@greeneek/gnk-agent-team/client'
 import type {} from '@greeneek/gnk-agent-team/remote'
 import { RemoteError } from '@greeneek/gnk-client-test-runtime'
 import type { TypertRemoteContribution } from '@greeneek/gnk-typert-protocol'
 import { TeamAction, type TeamActionInjected } from '../src/client/TeamAction.tsx'
+import { FleetSettingsSection, type FleetSettingsInjected } from '../src/client/FleetSettingsSection.tsx'
 import { inject, mountAgentTeamUi } from '../src/client/mount.ts'
 import { apply as nodeApply } from '../src/index.ts'
 
@@ -66,6 +67,13 @@ async function bench(options: {
         ? failure
         : { ok: true as const, value: view })
     },
+    fleetAvailability: answer('agentTeams/fleetAvailability', [
+      { name: 'spawn', state: 'ready', continuable: true },
+    ] satisfies FleetProviderAvailability[]),
+    launchFleetFavorite: answer('agentTeams/launchFleetFavorite', {
+      ok: true,
+      value: { members: [] },
+    }),
     createTask: answer('agentTeams/createTask', task),
     updateTask: (...args: unknown[]) => {
       calls.push({ method: 'agentTeams/updateTask', args })
@@ -105,12 +113,40 @@ async function bench(options: {
     },
     openSubagent: (address: unknown) => { navigation.push(['open', address]) },
   })
+  let fleetValue: FleetSettings = { favorites: [] }
+  const fleetListeners = new Set<() => void>()
+  ctx.provide('settingsScope', {
+    bind: () => ({
+      getSnapshot: () => ({
+        status: 'ready' as const,
+        value: fleetValue,
+        base: undefined,
+        user: undefined,
+        revision: 1,
+        writable: true,
+        mode: 'host' as const,
+      }),
+      subscribe: (listener: () => void) => {
+        fleetListeners.add(listener)
+        return () => { fleetListeners.delete(listener) }
+      },
+      set: async (field: string, value: unknown) => {
+        fleetValue = { ...fleetValue, [field]: value as FleetFavorite[] }
+        for (const listener of fleetListeners) listener()
+      },
+      unset: async () => undefined,
+      mutate: async () => undefined,
+    }),
+  })
   ctx.provide('conversation', {})
   ctx.provide('locale', new LocaleRuntime(ctx))
   await ctx.plugin(SlotRegistry).await()
   const collapseHeader = ctx.slots.register({
     name: 'root',
-    children: { 'conversation.session.header.actions': { kind: 'list', scope: 'session' } },
+    children: {
+      'conversation.session.header.actions': { kind: 'list', scope: 'session' },
+      'settings.section': { kind: 'list', scope: 'root' },
+    },
   } as never, () => null)
   if (options.registrationFailure === true) {
     vi.spyOn(ctx.slots, 'inject').mockImplementationOnce(() => { throw new Error('slot registration failed') })
@@ -128,6 +164,8 @@ async function bench(options: {
   }
   const entry = () => ctx.slots.entries('conversation.session.header.actions')
     .find(candidate => candidate.component === TeamAction)
+  const fleetEntry = () => ctx.slots.entries('settings.section')
+    .find(candidate => candidate.component === FleetSettingsSection)
   return {
     ctx,
     fiber,
@@ -136,15 +174,48 @@ async function bench(options: {
     navigation,
     remote,
     entry,
+    fleetEntry,
     collapseHeader,
     select: (sessionId: SessionId) => { current = sessionId },
   }
 }
 
 describe('ui-team browser plugin', () => {
+  it('bridges fleet availability, favorites, and launch through the settings section', async () => {
+    const b = await bench({ addressed: true })
+    const fleet = b.fleetEntry()!.inject!() as unknown as FleetSettingsInjected
+    expect((b.fleetEntry()!.options as { label?: () => string }).label?.()).toBe('Fleet settings')
+
+    expect(fleet.getSnapshot()).toMatchObject({ status: 'ready', writable: true })
+    expect((await fleet.loadAvailability()).ok).toBe(true)
+    expect(b.calls).toContainEqual({ method: 'agentTeams/fleetAvailability', args: [] })
+    const favorite = {
+      id: 'review', name: 'Review', members: [{ name: 'worker', description: 'w', prompt: 'go', provider: 'spawn' }],
+    }
+    await fleet.save([favorite])
+    expect(fleet.getSnapshot().value?.favorites).toEqual([favorite])
+    const listeners: number[] = []
+    const unsubscribe = fleet.subscribe(() => listeners.push(1))
+    await fleet.save([])
+    unsubscribe()
+    expect(listeners).toHaveLength(1)
+
+    b.select(CHILD)
+    expect(fleet.canLaunch()).toBe(true)
+    expect((await fleet.launch('review')).ok).toBe(true)
+    expect(b.calls).toContainEqual({
+      method: 'agentTeams/launchFleetFavorite',
+      args: [SESSION, 'review', true],
+    })
+
+    b.select(undefined as never)
+    expect(fleet.canLaunch()).toBe(false)
+    await expect(fleet.launch('review')).rejects.toThrow('Open a session before launching a fleet.')
+  })
+
   it('registers one disposable header action with RPC-backed task operations', async () => {
     const b = await bench()
-    expect(inject).toEqual(['sessions', 'remote', 'slots', 'locale'])
+    expect(inject).toEqual(['sessions', 'remote', 'slots', 'locale', 'settingsScope'])
     expect(b.entry()).toMatchObject({
       options: { id: 'agent-team', order: 20 },
       locale: 'agent-team',
@@ -288,7 +359,10 @@ describe('ui-team browser plugin', () => {
     expect(b.entry()).toBeUndefined()
     b.ctx.slots.register({
       name: 'root',
-      children: { 'conversation.session.header.actions': { kind: 'list', scope: 'session' } },
+      children: {
+        'conversation.session.header.actions': { kind: 'list', scope: 'session' },
+        'settings.section': { kind: 'list', scope: 'root' },
+      },
     } as never, () => null)
     await Promise.resolve()
     expect(b.entry()).toBeDefined()

@@ -8,7 +8,7 @@ kind: "package-reference"
 
 ## Summary
 
-This package adds an Agent Teams action to the Web conversation header, where a user can inspect the current roster, manage the shared task board, and navigate into a teammate's conversation. It reads authoritative Team state through the generated `ctx.remote.agentTeams` contribution and keeps ordinary child-history navigation on the stable addressed-subagent path. Choose it for the experimental source-checkout Web profile; official releases exclude it. The browser projection does not extend the stable API Proxy, store Team state, or register model-facing input.
+This package adds an Agent Teams action to the Web conversation header, where a user can inspect the current roster, manage the shared task board, and navigate into a teammate's conversation. It also contributes a Fleet settings page that saves named fleets, shows each provider's honest availability, and launches a confirmed favorite. It reads authoritative Team state through the generated `ctx.remote.agentTeams` contribution, keeps ordinary child-history navigation on the stable addressed-subagent path, and stores favorites through the `fleet` settings namespace. Choose it for the experimental source-checkout Web profile; official releases exclude it. The browser projection does not extend the stable API Proxy, store Team state, or register model-facing input.
 
 ## Table of Contents
 
@@ -34,6 +34,12 @@ Opening the panel calls `agentTeams/view`. Roster rows show durable names, runti
 
 The task board shows task identity, owner, blockers, readiness, advisory write scopes, and overlap warnings. A user can create, edit, assign or unassign, complete, reopen, and delete tasks through `agentTeams/createTask` and `agentTeams/updateTask`. Every update sends the displayed revision, and create or update rejections remain explicit business results.
 
+### Save and launch fleets
+
+The Fleet settings section lists every configured or registered provider with one honest state: ready, not installed, unsupported version, unauthenticated, or temporarily unavailable. Only a continuable in-process provider is ready; a provider that cannot hold a durable lane stays disabled, and the page never launches a probe run to guess. Favorites carry a name, an id, and members with provider, context, preset, model, reasoning effort, read-only flag, write scopes, and token ceiling.
+
+Saving a favorite writes the `fleet` settings namespace through the shared settings scope; revision fencing and cross-field validation live on the Host. Launching requires a current session and an inline confirmation card that echoes every member's provider, preset, model, effort, budget, and write capability before any child or worktree exists. Cancelling the card launches nothing. A provider that became unavailable is refused rather than replaced by another provider.
+
 -----
 
 <a id="understand-the-implementation"></a>
@@ -50,7 +56,8 @@ Starting a create or update invalidates older refreshes. Success reloads the com
 |---|---|
 | [`src/client/mount.ts`](src/client/mount.ts) | Generated Remote, locale, navigation, and slot registrations |
 | [`src/client/TeamAction.tsx`](src/client/TeamAction.tsx) | Roster and task-board interaction state |
-| [`src/client/locales.ts`](src/client/locales.ts) | English and Chinese panel copy |
+| [`src/client/FleetSettingsSection.tsx`](src/client/FleetSettingsSection.tsx) | Fleet availability, favorite editor, and launch confirmation |
+| [`src/client/locales.ts`](src/client/locales.ts) | Chinese, English, and Arabic panel copy |
 | [`src/index.ts`](src/index.ts) | Inert Host entry |
 
 </details>

@@ -66,6 +66,7 @@
     "@greeneek/gnk-session": "workspace:^",
     "@greeneek/gnk-session-persistence": "workspace:^",
     "@greeneek/gnk-session-projection": "workspace:^",
+    "@greeneek/gnk-settings": "workspace:^",
     "@greeneek/gnk-subagent": "workspace:^",
     "@greeneek/gnk-token-meter": "workspace:^",
     "@greeneek/gnk-typert-protocol": "workspace:^"
@@ -82,6 +83,8 @@
     "@greeneek/gnk-session-persistence-jsonl": "workspace:^",
     "@greeneek/gnk-session-projection": "workspace:^",
     "@greeneek/gnk-session-query": "workspace:^",
+    "@greeneek/gnk-settings": "workspace:^",
+    "@greeneek/gnk-settings-file": "workspace:^",
     "@greeneek/gnk-subagent": "workspace:^",
     "@greeneek/gnk-subagent-fork-in-process": "workspace:^",
     "@greeneek/gnk-subagent-spawn-in-process": "workspace:^",

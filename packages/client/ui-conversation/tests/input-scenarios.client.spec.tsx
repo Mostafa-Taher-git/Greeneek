@@ -27,8 +27,8 @@ import type { SessionId } from '@greeneek/gnk-session/types'
 import { zh as commonZh } from '@greeneek/gnk-client-locale/src/locales/zh.ts'
 import type { DraftAttachmentId } from '../src/client/contract/input.ts'
 import { SessionInputShell } from '../src/client/input/facade.ts'
-import { InputBar } from '../src/client/skeleton/InputBar.tsx'
-import type { InputBarProps } from '../src/client/skeleton/InputBar.tsx'
+import { InputBar } from '../src/client/input/InputBar.tsx'
+import type { InputBarProps } from '../src/client/input/InputBar.tsx'
 import { zh } from '../src/client/locales.ts'
 
 // jsdom implements no Range geometry (Lexical's scroll-into-view measures the

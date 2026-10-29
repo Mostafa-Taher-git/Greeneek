@@ -1927,6 +1927,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     declaredBy: 'an entry in \'settings\' (client-ui-settings-general), so it exists while that entry is mounted',
     occupants: [
       'client-ui-agent-preset AgentPresetSection id \'agent-presets\'',
+      'client-ui-agent-team FleetSettingsSection id \'fleet\'',
       'client-ui-commands CommandsSection id \'commands\'',
       'client-ui-craft CraftSection id \'craft-suite\'',
       'client-ui-settings-general GeneralSection id \'general\'',

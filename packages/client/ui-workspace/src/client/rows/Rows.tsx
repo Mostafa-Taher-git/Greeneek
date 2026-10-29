@@ -17,6 +17,7 @@ import type { StateDotState } from '@greeneek/gnk-client-ui-primitives'
 import { abbreviateHomePath } from '@greeneek/gnk-util-workspace-path'
 import type { WorkspaceBrowserProps } from '../contract/slots.ts'
 import type { GroupNode, SearchResultNode, SessionNode } from '../tree.ts'
+import { timeLabel } from '../time.ts'
 import css from './Rows.module.css'
 
 /** The standard locale seat, prop-passed from the browser root. */
@@ -25,12 +26,6 @@ type RowTranslate = WorkspaceBrowserProps['t']
 /** Row display title: blank rows show the localized New Session label. */
 function displayTitle(node: SessionNode, t: RowTranslate): string {
   return node.blank ? t('session.new') : node.title
-}
-
-/** Localized compact relative time ("刚刚"/"5分钟" in zh, "now"/"5min" in en). */
-export function timeLabel(updatedAt: number, now: number, t: WorkspaceBrowserProps['t']): string {
-  const { unit, n } = relativeTime(updatedAt, now)
-  return unit === 'now' ? t('time.now') : t(`time.${unit}`, { n })
 }
 
 /** Hover-card variant: distances wrap in the ago template; the now bucket stays bare (no "now ago"). */

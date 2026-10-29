@@ -93,6 +93,10 @@ Checkpointing happens before any explicit discard or merge, and disposal checkpo
 
 A repository may declare a fleet in `.gnk/fleet.json`: a `version` and a `fleet.members` array with each member's name, description, prompt, and optional context, provider, preset, model, reasoning effort, read-only flag, write scopes, and token ceiling. The file is untrusted repository content: it is size-capped, parsed as strict JSON, limited to the configured in-process `fleetProviders`, and validated against the lane policy before use. Launch requires a one-time approval keyed by the exact file bytes and the canonical repository path. Changing the bytes, or admitting once, invalidates the approval; approvals persist atomically under `<gnkHome>/fleet-approvals` and are consumed by `admitRepoFleet()`.
 
+### Fleet favorites and availability
+
+A `fleet` settings namespace stores named favorites: each favorite has an id, a name, and members with provider, context, preset, model, reasoning effort, read-only flag, write scopes, and token ceiling. Saving validates ids, unique member names, lane policy, and positive budgets through the settings owner; the settings revision fences concurrent writes. Provider availability is derived without launching a paid or state-changing run: a configured provider missing from the registry is `not-installed`, a registered provider that cannot hold a durable lane is `unsupported-version`, and a continuable in-process provider is `ready`. Launching a favorite revalidates every provider first, refuses a missing provider without substituting another, and spawns only the exact members the favorite names. The Web Fleet settings page owns the editor and the per-launch confirmation card; `launchFleetFavorite` requires the explicit confirmation flag.
+
 ### Token budgets
 
 `spawnTeammate` accepts a per-member `maxTokens` cumulative ceiling. It requires the `tokenUsage` session projection at admission, is recorded on the durable member snapshot, and is checked at each step boundary. A member that exceeds its ceiling is aborted and its roster row reports `member token budget exceeded`. Without the projection, a budgeted spawn fails with `TEAM_BUDGET_METER_UNAVAILABLE`; it never runs unbounded under a ceiling the deployment cannot measure.
@@ -141,6 +145,7 @@ The [Agent Teams Agent Note](../../../.agents/notes/implemented/feature/2026-08-
 | [`src/lane-lifecycle.ts`](src/lane-lifecycle.ts) | Durable lane records, checkpoints, quarantine, discard, and startup recovery |
 | [`src/integration.ts`](src/integration.ts) | Serialized reviewed patch application, gates, rollback, and queue halt |
 | [`src/fleet-config.ts`](src/fleet-config.ts) | Strict repository fleet parsing and one-time byte-keyed approvals |
+| [`src/fleet-settings.ts`](src/fleet-settings.ts) | Fleet favorite schema, validation, and provider availability vocabulary |
 | [`src/journal.ts`](src/journal.ts) | Serialized Lead-log transactions and commit notification |
 | [`src/projection.ts`](src/projection.ts) | Strict replay projection that decodes and validates Team events |
 | [`src/activity.ts`](src/activity.ts) | One-shot change waiters and disposal release |

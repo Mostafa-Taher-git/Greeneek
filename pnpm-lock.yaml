@@ -2075,6 +2075,9 @@ importers:
       '@greeneek/gnk-client-ui-session':
         specifier: workspace:^
         version: link:../ui-session
+      '@greeneek/gnk-client-ui-settings':
+        specifier: workspace:^
+        version: link:../ui-settings
       '@greeneek/gnk-client-ui-slots':
         specifier: workspace:^
         version: link:../ui-slots
@@ -8331,6 +8334,12 @@ importers:
       '@greeneek/gnk-session-query':
         specifier: workspace:^
         version: link:../../session-query/session-query
+      '@greeneek/gnk-settings':
+        specifier: workspace:^
+        version: link:../../settings/settings
+      '@greeneek/gnk-settings-file':
+        specifier: workspace:^
+        version: link:../../settings/settings-file
       '@greeneek/gnk-subagent':
         specifier: workspace:^
         version: link:../subagent

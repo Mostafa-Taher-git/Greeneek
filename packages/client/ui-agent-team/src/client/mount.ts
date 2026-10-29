@@ -1,6 +1,7 @@
 /** Source-safe Agent Teams browser registration and Remote mount lifecycle. */
 
 import type {
+  FleetSettings,
   TeamMemberView as TeamRosterMember,
   TeamView,
 } from '@greeneek/gnk-agent-team/client'
@@ -10,12 +11,16 @@ import type {} from '@greeneek/gnk-api-remotes/client'
 import type {} from '@greeneek/gnk-api-session-controller/client'
 import type { SessionId } from '@greeneek/gnk-session/types'
 import type {} from '@greeneek/gnk-client-ui-conversation/client'
+import type {} from '@greeneek/gnk-client-ui-settings/client'
 import type {} from '@greeneek/gnk-client-locale/client'
 import type {} from '@greeneek/gnk-client-ui-renderer/client'
 import type { TypertRemoteContribution } from '@greeneek/gnk-typert-protocol'
 import {
   TeamAction, type TeamActionInjected, type TeamActionResult, type TeamTaskActionResult,
 } from './TeamAction.tsx'
+import {
+  decodeFleetSettings, FleetSettingsSection, type FleetSettingsInjected, type FleetSnapshot,
+} from './FleetSettingsSection.tsx'
 import { ar, en, NS, zh, type TeamKey } from './locales.ts'
 
 declare module '@greeneek/gnk-client-ui-slots' {
@@ -26,10 +31,11 @@ declare module '@greeneek/gnk-client-ui-slots' {
 }
 
 /** Required browser services for RPC, navigation, slots, and localized copy. */
-export const inject = ['sessions', 'remote', 'slots', 'locale']
+export const inject = ['sessions', 'remote', 'slots', 'locale', 'settingsScope']
 
 function registerUi(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register(NS, { zh, en, ar }), 'client-ui-agent-team: dictionaries')
+  const t = ctx.locale.bind(NS)
   const sessions = ctx.sessions
   const leadSessionId = (sessionId: SessionId): SessionId => {
     const address = sessions.binding(sessionId)?.session.getSnapshot().subagent?.address
@@ -62,6 +68,44 @@ function registerUi(ctx: ClientContext): void {
       })
     },
   }
+
+  const fleetScope = ctx.settingsScope.bind<FleetSettings>({
+    namespace: 'fleet',
+    decode: decodeFleetSettings,
+  })
+  const fleetSnapshot = (): FleetSnapshot => {
+    const snapshot = fleetScope.getSnapshot()
+    return {
+      status: snapshot.status,
+      value: snapshot.value,
+      revision: snapshot.revision,
+      writable: snapshot.writable,
+    }
+  }
+  const fleet: FleetSettingsInjected = {
+    subscribe: listener => fleetScope.subscribe(listener),
+    getSnapshot: fleetSnapshot,
+    async loadAvailability() {
+      return await ctx.remote.agentTeams.fleetAvailability()
+    },
+    async save(favorites) {
+      await fleetScope.set('favorites', [...favorites])
+    },
+    async launch(favoriteId) {
+      const current = sessions.list.getSnapshot().current
+      if (current === undefined) throw new Error('Open a session before launching a fleet.')
+      return await ctx.remote.agentTeams.launchFleetFavorite(leadSessionId(current), favoriteId, true)
+    },
+    canLaunch: () => sessions.list.getSnapshot().current !== undefined,
+  }
+  ctx.slots.inject('settings.section', () => ctx.slots.register({
+    name: 'settings.section',
+    id: 'fleet',
+    order: 25,
+    label: () => t('fleet.title'),
+    locale: NS,
+    inject: () => fleet,
+  }, FleetSettingsSection))
 
   ctx.slots.inject(
     'conversation.session.header.actions',

@@ -11,6 +11,7 @@ import { createUserMessage } from '@greeneek/gnk-llm'
 import { SessionLogOffset, SessionId, type Session, type SessionEvent } from '@greeneek/gnk-session'
 import SessionProjectionRegistry from '@greeneek/gnk-session-projection'
 import JsonlSessionPersistence from '@greeneek/gnk-session-persistence-jsonl'
+import FileSettingsProvider from '@greeneek/gnk-settings-file'
 import SubagentService from '@greeneek/gnk-subagent'
 import { deliverSubagentPrompt, type HostPromptDeliverer } from '@greeneek/gnk-subagent/internal'
 import * as SubagentFork from '@greeneek/gnk-subagent-fork-in-process'
@@ -64,6 +65,7 @@ async function setup(
   config: ConstructorParameters<typeof TeamService>[1] = {},
   leadMeta: { cwd?: string } = {},
   mountTokenMeter = false,
+  settingsPath?: string,
 ) {
   const ctx = new Context()
   await mountAgentLoopTestDependencies(ctx)
@@ -77,6 +79,7 @@ async function setup(
   await ctx.plugin(SubagentSpawn, { providerName: 'spawn' })
   await ctx.plugin(SubagentFork, { providerName: 'fork' })
   if (mountTokenMeter) await ctx.plugin(TokenMeter)
+  if (settingsPath !== undefined) await ctx.plugin(FileSettingsProvider, { path: settingsPath, watch: false })
   const teamFiber = await ctx.plugin(TeamService, config)
   const adapter = new MockAdapter(script)
   ctx.llm.registerAdapter(['mock'], adapter)
@@ -1890,6 +1893,124 @@ function repository(): string {
   return root
 }
 
+describe('Fleet favorites', () => {
+  it('reports provider availability and fences favorite writes by revision', async () => {
+    const settingsRoot = mkdtempSync(join(tmpdir(), 'gnk-team-fleet-settings-'))
+    roots.push(settingsRoot)
+    const settingsPath = join(settingsRoot, 'settings.json')
+    const { ctx, lead, teamFiber } = await setup([], {}, {}, false, settingsPath)
+
+    expect(ctx.agentTeams.fleetAvailability(lead)).toEqual([
+      expect.objectContaining({ name: 'fork', state: 'ready', continuable: true }),
+      expect.objectContaining({ name: 'spawn', state: 'ready', continuable: true }),
+    ])
+
+    const favorite = {
+      id: 'review-fleet',
+      name: 'Review fleet',
+      members: [{ name: 'reviewer', description: 'review', prompt: 'review it', provider: 'spawn' }],
+    }
+    const saved = await ctx.agentTeams.saveFleetFavorite(lead, favorite, 0)
+    expect(saved.ok).toBe(true)
+    if (!saved.ok) throw new Error('expected save')
+    expect(saved.value.favorites).toMatchObject([{
+      ...favorite,
+      members: [expect.objectContaining(favorite.members[0])],
+    }])
+    expect(saved.value.revision).toBeGreaterThan(0)
+
+    const stale = await ctx.agentTeams.saveFleetFavorite(lead, { ...favorite, name: 'Changed' }, 0)
+    expect(stale).toMatchObject({ ok: false, error: { code: 'fleet-conflict' } })
+    const second = await ctx.agentTeams.saveFleetFavorite(lead, {
+      id: 'other-fleet', name: 'Other fleet', members: favorite.members,
+    }, saved.value.revision)
+    expect(second.ok).toBe(true)
+    const replaced = await ctx.agentTeams.saveFleetFavorite(lead, {
+      ...favorite, name: 'Review fleet v2',
+    }, second.ok ? second.value.revision : 0)
+    expect(replaced.ok).toBe(true)
+    const revision = replaced.ok ? replaced.value.revision : 0
+    const invalid = await ctx.agentTeams.saveFleetFavorite(lead, {
+      ...favorite,
+      members: [{ ...favorite.members[0]!, readOnly: true, writeScopes: ['src'] }],
+    }, revision)
+    expect(invalid).toMatchObject({ ok: false, error: { code: 'TEAM_FLEET_FAVORITE_INVALID' } })
+
+    const deleted = await ctx.agentTeams.deleteFleetFavorite(lead, 'review-fleet', revision)
+    expect(deleted.ok).toBe(true)
+    if (deleted.ok) expect(deleted.value.favorites.map(candidate => candidate.id)).toEqual(['other-fleet'])
+    expect(await ctx.agentTeams.deleteFleetFavorite(lead, 'absent', 0))
+      .toMatchObject({ ok: false, error: { code: 'TEAM_FLEET_FAVORITE_NOT_FOUND' } })
+    expect(await ctx.agentTeams.launchFleetFavorite(lead, 'absent', true))
+      .toMatchObject({ ok: false, error: { code: 'TEAM_FLEET_FAVORITE_NOT_FOUND' } })
+    expect(ctx.agentTeams.remoteFleetAvailability()).toEqual(ctx.agentTeams.fleetAvailability(lead))
+    expect(await ctx.agentTeams.remoteLaunchFleetFavorite(lead, 'absent', true))
+      .toMatchObject({ ok: false, error: { code: 'TEAM_FLEET_FAVORITE_NOT_FOUND' } })
+
+    const write = vi.spyOn(
+      ctx.agentTeams as unknown as { writeFleetFavorites: (favorites: unknown, revision: number) => Promise<void> },
+      'writeFleetFavorites',
+    ).mockRejectedValueOnce(new Error('unexpected store failure'))
+    await expect(ctx.agentTeams.saveFleetFavorite(lead, favorite, deleted.ok ? deleted.value.revision : 0))
+      .rejects.toThrow('unexpected store failure')
+    write.mockRestore()
+    await teamFiber.dispose()
+  }, 10_000)
+
+  it('requires explicit confirmation and refuses an unavailable provider before spend', async () => {
+    const settingsRoot = mkdtempSync(join(tmpdir(), 'gnk-team-fleet-settings-'))
+    roots.push(settingsRoot)
+    const settingsPath = join(settingsRoot, 'settings.json')
+    const { ctx, lead } = await setup(
+      [textResponse('fleet member')],
+      { fleetProviders: ['spawn', 'fork', 'missing'] },
+      {},
+      false,
+      settingsPath,
+    )
+    const favorite = {
+      id: 'mixed',
+      name: 'Mixed fleet',
+      members: [
+        { name: 'ready-member', description: 'ready', prompt: 'run', provider: 'spawn' },
+        { name: 'missing-member', description: 'missing', prompt: 'run', provider: 'missing' },
+      ],
+    }
+    const saved = await ctx.agentTeams.saveFleetFavorite(lead, favorite, 0)
+    if (!saved.ok) throw new Error(saved.error.message)
+
+    expect(await ctx.agentTeams.launchFleetFavorite(lead, 'mixed', false))
+      .toMatchObject({ ok: false, error: { code: 'fleet-confirmation-required' } })
+    const refused = await ctx.agentTeams.launchFleetFavorite(lead, 'mixed', true)
+    expect(refused).toMatchObject({ ok: false, error: { code: 'TEAM_FLEET_PROVIDER_UNAVAILABLE' } })
+    expect(ctx.agentTeams.listMembers(lead)).toHaveLength(1)
+
+    const single = {
+      id: 'single',
+      name: 'Single member',
+      members: [{ name: 'solo', description: 'solo', prompt: 'run', provider: 'spawn' }],
+    }
+    const savedSingle = await ctx.agentTeams.saveFleetFavorite(lead, single, saved.value.revision)
+    if (!savedSingle.ok) throw new Error(savedSingle.error.message)
+    const launched = await ctx.agentTeams.launchFleetFavorite(lead, 'single', true)
+    expect(launched.ok).toBe(true)
+    if (launched.ok) {
+      expect(launched.value.members).toHaveLength(1)
+      await waitNoAgent(ctx, launched.value.members[0]!.id)
+    }
+    expect(ctx.agentTeams.listMembers(lead).some(member => member.name === 'solo')).toBe(true)
+  }, 20_000)
+
+  it('fails closed when the fleet settings namespace is not mounted', async () => {
+    const { ctx, lead } = await setup([])
+    expect(() => ctx.agentTeams.fleetFavorites(lead))
+      .toThrow('fleet settings namespace is not mounted')
+    expect(await ctx.agentTeams.saveFleetFavorite(lead, {
+      id: 'x', name: 'X', members: [{ name: 'x', description: 'x', prompt: 'x', provider: 'spawn' }],
+    }, 0)).toMatchObject({ ok: false, error: { code: 'TEAM_FLEET_SETTINGS_UNAVAILABLE' } })
+  })
+})
+
 describe('Team lane isolation', () => {
   it('starts a write-scoped teammate in its own worktree lane', async () => {
     const repo = repository()
@@ -2217,6 +2338,13 @@ describe('Team lane isolation', () => {
       expect(() => { ctx.agentTeams.resumeLaneQueue(reader) }).toThrow('only the Team Lead')
       expect(ctx.agentTeams.laneQueueHaltReason(reader)).toBeUndefined()
       await expect(ctx.agentTeams.readRepoFleet(reader, SIGNAL))
+        .rejects.toMatchObject({ code: 'TEAM_LEAD_REQUIRED' })
+      await expect(ctx.agentTeams.saveFleetFavorite(reader, {
+        id: 'x', name: 'X', members: [{ name: 'x', description: 'x', prompt: 'x', provider: 'spawn' }],
+      }, 0)).rejects.toMatchObject({ code: 'TEAM_LEAD_REQUIRED' })
+      await expect(ctx.agentTeams.deleteFleetFavorite(reader, 'x', 0))
+        .rejects.toMatchObject({ code: 'TEAM_LEAD_REQUIRED' })
+      await expect(ctx.agentTeams.launchFleetFavorite(reader, 'x', true))
         .rejects.toMatchObject({ code: 'TEAM_LEAD_REQUIRED' })
     }
     const shared = ctx.agents.get(plain.member.id)

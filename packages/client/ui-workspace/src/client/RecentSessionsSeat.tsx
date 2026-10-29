@@ -15,10 +15,9 @@ import type { WorkspaceId, WorkspaceSnapshot, WorkspaceView } from '@greeneek/gn
 import type { SessionId } from '@greeneek/gnk-session/types'
 // Type-only: pulls the ui-conversation SlotMap merge (the hero seat).
 import type {} from '@greeneek/gnk-client-ui-conversation/client'
-import { timeLabel } from './rows/Rows.tsx'
+import { timeLabel } from './time.ts'
 import { sessionVisible } from './tree.ts'
 import css from './RecentSessionsSeat.module.css'
-import rowCss from './rows/Rows.module.css'
 
 /** Registration-side business face for the hero recent-sessions seat. */
 export interface RecentSessionsInjected {
@@ -125,13 +124,13 @@ export function RecentSessionsSeat({ workspaceId, open, useSessions, useWorkspac
               <li key={session.id}>
                 <button
                   type="button"
-                  className={clsx(rowCss.sessionRow, css.row)}
+                  className={clsx(css.sessionRow, css.row)}
                   onClick={() => { open(session.id) }}
                 >
-                  <span className={rowCss.title} dir="auto">
+                  <span className={css.title} dir="auto">
                     {session.blank ? t('session.new') : session.displayTitle}
                   </span>
-                  <span className={rowCss.time}>{timeLabel(session.updatedAt, now, t)}</span>
+                  <span className={css.time}>{timeLabel(session.updatedAt, now, t)}</span>
                 </button>
               </li>
             ))}

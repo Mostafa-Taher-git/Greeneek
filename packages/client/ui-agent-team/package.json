@@ -32,7 +32,8 @@
         "@greeneek/gnk-api-session-controller",
         "@greeneek/gnk-client-locale",
         "@greeneek/gnk-client-ui-conversation",
-        "@greeneek/gnk-client-ui-primitives"
+        "@greeneek/gnk-client-ui-primitives",
+        "@greeneek/gnk-client-ui-settings"
       ],
       "platform": "web"
     }
@@ -64,7 +65,8 @@
     "@testing-library/react": "^16.1.0",
     "@types/react": "~18.3.1",
     "@greeneek/cordis": "workspace:^",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "@greeneek/gnk-client-ui-settings": "workspace:^"
   },
   "files": [
     "lib/index.js",

@@ -18,6 +18,8 @@
     { "path": "../../subagent/subagent" },
     { "path": "../../session/session-persistence" },
     { "path": "../../session/session-projection" },
+    { "path": "../../settings/settings" },
+    { "path": "../../settings/settings-file" },
     { "path": "../../runtime-diagnostics/invariants" }
   ]
 }

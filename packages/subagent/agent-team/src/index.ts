@@ -5,11 +5,29 @@ import z from '@greeneek/schemastery'
 import type { Agent } from '@greeneek/gnk-agent'
 import { resolveGnkHome } from '@greeneek/gnk-home-paths'
 import type {} from '@greeneek/gnk-session-persistence'
+import type { SettingsProvider, SettingsScope } from '@greeneek/gnk-settings'
 import { Remote, TypertRemoteService } from '@greeneek/gnk-typert-protocol'
 import { TeamActivity } from './activity.ts'
 import { errorMessage, TeamError } from './error.ts'
 import { RepoFleetConfigStore } from './fleet-config.ts'
 import type { RepoFleetSnapshot } from './fleet-config.ts'
+import {
+  assertFavoriteProviderReady,
+  favoriteMemberRequest,
+  FLEET_SETTINGS_NAMESPACE,
+  FleetSettingsSchema,
+  fleetProviderAvailability,
+  validateFleetFavorite,
+  validateFleetSettings,
+} from './fleet-settings.ts'
+import type {
+  FleetFavorite,
+  FleetFavoriteResult,
+  FleetFavoritesView,
+  FleetLaunchResult,
+  FleetProviderAvailability,
+  FleetSettings,
+} from './fleet-settings.ts'
 import { LaneIntegration } from './integration.ts'
 import type { LaneGateCommand, LaneMergeResult } from './integration.ts'
 import { TeamJournal } from './journal.ts'
@@ -44,6 +62,24 @@ export { TeamId, TeamMessageId, TeamTaskId } from './types.ts'
 export { TeamError } from './error.ts'
 export { RepoFleetConfigStore } from './fleet-config.ts'
 export type { RepoFleetConfig, RepoFleetConfigOptions, RepoFleetMember, RepoFleetSnapshot } from './fleet-config.ts'
+export {
+  assertFavoriteProviderReady,
+  FLEET_SETTINGS_NAMESPACE,
+  FleetSettingsSchema,
+  fleetProviderAvailability,
+  validateFleetFavorite,
+  validateFleetSettings,
+} from './fleet-settings.ts'
+export type {
+  FleetFavorite,
+  FleetFavoriteMember,
+  FleetFavoriteResult,
+  FleetFavoritesView,
+  FleetLaunchResult,
+  FleetProviderAvailability,
+  FleetProviderState,
+  FleetSettings,
+} from './fleet-settings.ts'
 export { LaneIntegration } from './integration.ts'
 export type {
   LaneGateCommand,
@@ -116,6 +152,8 @@ export class TeamService extends TypertRemoteService {
   private readonly lanes: LaneLifecycleManager
   private readonly integration: LaneIntegration
   private readonly fleet: RepoFleetConfigStore
+  private fleetSettings: SettingsScope<FleetSettings> | undefined
+  private settingsProvider: SettingsProvider | undefined
   private readonly roster: TeamRoster
   private readonly mailbox: TeamMailbox
   private readonly tasks: TeamTaskBoard
@@ -163,6 +201,18 @@ export class TeamService extends TypertRemoteService {
       gnkHome: this.config.gnkHome,
       maxBytes: this.config.maxFleetConfigBytes,
       allowedProviders: this.config.fleetProviders,
+    })
+    ctx.inject(['settings'], (settingsCtx) => {
+      this.settingsProvider = settingsCtx.settings
+      this.fleetSettings = settingsCtx.settings.register(
+        FLEET_SETTINGS_NAMESPACE,
+        FleetSettingsSchema,
+        { validate: validateFleetSettings },
+      )
+      settingsCtx.effect(() => () => {
+        this.fleetSettings = undefined
+        this.settingsProvider = undefined
+      }, 'agentTeams.fleetSettings()')
     })
     this.roster = new TeamRoster(ctx, this.journal, this.lifecycle, this.lanes, this.config.maxMembers)
     this.mailbox = new TeamMailbox(
@@ -435,6 +485,185 @@ export class TeamService extends TypertRemoteService {
     return await this.fleet.admit(this.leadRepository(caller), signal)
   }
 
+  /**
+   * Report honest availability for every configured or registered fleet
+   * provider without launching a paid or state-changing probe.
+   * @param caller - exact live Team member.
+   * @returns one row per provider, with ready only for continuable providers.
+   */
+  fleetAvailability(caller: Agent): FleetProviderAvailability[] {
+    this.roster.membership(caller)
+    return this.providerAvailability()
+  }
+
+  /** Build provider availability from the live registry and configured names. */
+  private providerAvailability(): FleetProviderAvailability[] {
+    const providers = this.ctx.subagents.list()
+    const continuable = new Set(providers.filter(name => (
+      this.ctx.subagents.getProvider(name)?.prepareContinuable !== undefined
+    )))
+    return fleetProviderAvailability(this.config.fleetProviders, providers, continuable)
+  }
+
+  /**
+   * Read the fleet favorites section and current settings revision.
+   * @param caller - exact live Team Lead.
+   * @returns providers, favorites, and the revision for the next fenced write.
+   */
+  fleetFavorites(caller: Agent): FleetFavoritesView {
+    this.roster.membership(caller)
+    return this.favoritesView()
+  }
+
+  /**
+   * Save one favorite by id, replacing a same-id favorite.
+   * @param caller - exact live Team Lead.
+   * @param favorite - complete favorite value.
+   * @param expectedRevision - settings revision the editor read.
+   * @returns the committed favorites view or a typed conflict.
+   */
+  async saveFleetFavorite(
+    caller: Agent,
+    favorite: FleetFavorite,
+    expectedRevision: number,
+  ): Promise<FleetFavoriteResult> {
+    const membership = this.roster.membership(caller)
+    if (membership.role !== 'lead') {
+      throw new TeamError('only the Team Lead can change fleet favorites', 'TEAM_LEAD_REQUIRED')
+    }
+    try {
+      validateFleetFavorite(favorite)
+      const current = this.favoritesView().favorites
+      const next = current.some(candidate => candidate.id === favorite.id)
+        ? current.map(candidate => candidate.id === favorite.id ? favorite : candidate)
+        : [...current, favorite]
+      validateFleetSettings({ favorites: next })
+      await this.writeFleetFavorites(next, expectedRevision)
+      return { ok: true, value: this.favoritesView() }
+    } catch (error: unknown) {
+      return this.fleetFailure(error)
+    }
+  }
+
+  /**
+   * Delete one favorite by id.
+   * @param caller - exact live Team Lead.
+   * @param id - favorite identity.
+   * @param expectedRevision - settings revision the editor read.
+   * @returns the committed favorites view or a typed conflict.
+   */
+  async deleteFleetFavorite(
+    caller: Agent,
+    id: string,
+    expectedRevision: number,
+  ): Promise<FleetFavoriteResult> {
+    const membership = this.roster.membership(caller)
+    if (membership.role !== 'lead') {
+      throw new TeamError('only the Team Lead can change fleet favorites', 'TEAM_LEAD_REQUIRED')
+    }
+    try {
+      const current = this.favoritesView().favorites
+      if (!current.some(candidate => candidate.id === id)) {
+        throw new TeamError(`fleet favorite "${id}" not found`, 'TEAM_FLEET_FAVORITE_NOT_FOUND')
+      }
+      await this.writeFleetFavorites(
+        current.filter(candidate => candidate.id !== id),
+        expectedRevision,
+      )
+      return { ok: true, value: this.favoritesView() }
+    } catch (error: unknown) {
+      return this.fleetFailure(error)
+    }
+  }
+
+  /**
+   * Launch one saved favorite after an explicit confirmation, revalidating
+   * every provider at use time and never substituting a different one.
+   * @param caller - exact live Team Lead.
+   * @param id - favorite identity.
+   * @param confirmed - the UI's explicit confirmation; false starts nothing.
+   * @returns created members or a typed refusal.
+   */
+  async launchFleetFavorite(caller: Agent, id: string, confirmed: boolean): Promise<FleetLaunchResult> {
+    const membership = this.roster.membership(caller)
+    if (membership.role !== 'lead') {
+      throw new TeamError('only the Team Lead can launch a fleet', 'TEAM_LEAD_REQUIRED')
+    }
+    if (!confirmed) {
+      return {
+        ok: false,
+        error: { code: 'fleet-confirmation-required', message: 'fleet launch was not confirmed' },
+      }
+    }
+    try {
+      const favorite = this.favoritesView().favorites.find(candidate => candidate.id === id)
+      if (favorite === undefined) {
+        throw new TeamError(`fleet favorite "${id}" not found`, 'TEAM_FLEET_FAVORITE_NOT_FOUND')
+      }
+      const providers = this.fleetAvailability(caller)
+      // Validate every provider before the first child exists, so an
+      // unavailable later member cannot leave a partially launched fleet.
+      for (const member of favorite.members) assertFavoriteProviderReady(member, providers)
+      const members: TeamMemberView[] = []
+      for (const member of favorite.members) {
+        const spawned = await this.spawnTeammate(caller, {
+          ...favoriteMemberRequest(member),
+          signal: this.lifecycle.signal,
+        })
+        members.push(spawned.member)
+      }
+      return { ok: true, value: { members } }
+    } catch (error: unknown) {
+      return this.fleetFailure(error)
+    }
+  }
+
+  /** Map a favorites/launch failure onto a business result without a wire rejection. */
+  private fleetFailure(error: unknown): { ok: false; error: { code: string; message: string } } {
+    const code = typeof error === 'object' && error !== null && 'code' in error
+      ? (error as { readonly code?: unknown }).code
+      : undefined
+    if (code === 'SETTINGS_CONFLICT') {
+      return {
+        ok: false,
+        error: { code: 'fleet-conflict', message: errorMessage(error) },
+      }
+    }
+    if (!(error instanceof TeamError)) throw error
+    return {
+      ok: false,
+      error: { code: error.code, message: error.message },
+    }
+  }
+
+  /** Require the registered fleet settings owner. */
+  private fleetOwner(): { readonly provider: SettingsProvider; readonly scope: SettingsScope<FleetSettings> } {
+    const provider = this.settingsProvider
+    const scope = this.fleetSettings
+    if (provider === undefined || scope === undefined) {
+      throw new TeamError('the fleet settings namespace is not mounted', 'TEAM_FLEET_SETTINGS_UNAVAILABLE')
+    }
+    return { provider, scope }
+  }
+
+  /** Persist one complete favorites list under an explicit revision fence. */
+  private async writeFleetFavorites(favorites: readonly FleetFavorite[], expectedRevision: number): Promise<void> {
+    const { provider } = this.fleetOwner()
+    await provider.update(FLEET_SETTINGS_NAMESPACE, { favorites: [...favorites] }, expectedRevision)
+  }
+
+  /** Build the current favorites view from the registered settings owner. */
+  private favoritesView(): FleetFavoritesView {
+    const { provider, scope } = this.fleetOwner()
+    const descriptor = provider.describe().find(candidate => candidate.ns === FLEET_SETTINGS_NAMESPACE)
+    return {
+      providers: this.providerAvailability(),
+      favorites: scope.get().favorites,
+      /* v8 ignore next -- a registered fleet owner always appears in its own describe snapshot. */
+      revision: descriptor?.revision ?? 0,
+    }
+  }
+
   /** Resolve the Lead's repository checkout for one fleet operation. */
   private leadRepository(caller: Agent): string {
     const membership = this.roster.membership(caller)
@@ -488,6 +717,27 @@ export class TeamService extends TypertRemoteService {
   @Remote('updateTask')
   remoteUpdateTask(agent: Agent, request: UpdateTeamTaskRequest): Promise<TeamTaskMutationResult> {
     return this.taskMutationResult(this.updateTask(agent, request))
+  }
+
+  /**
+   * Read provider availability through the generated Remote API.
+   * @returns honest provider availability rows.
+   */
+  @Remote('fleetAvailability')
+  remoteFleetAvailability(): FleetProviderAvailability[] {
+    return this.providerAvailability()
+  }
+
+  /**
+   * Launch one favorite through the generated Remote API.
+   * @param agent - exact live Team Lead.
+   * @param id - favorite identity.
+   * @param confirmed - explicit UI confirmation.
+   * @returns created members or a typed refusal.
+   */
+  @Remote('launchFleetFavorite')
+  remoteLaunchFleetFavorite(agent: Agent, id: string, confirmed: boolean): Promise<FleetLaunchResult> {
+    return this.launchFleetFavorite(agent, id, confirmed)
   }
 
   /** Preserve Team task rejections while allowing unexpected failures to reject the Remote call. */

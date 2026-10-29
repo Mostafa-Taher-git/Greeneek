@@ -481,6 +481,36 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'the admitted configuration snapshot.',
       },
       {
+        signature: 'fleetAvailability(caller: Agent): FleetProviderAvailability[]',
+        description: 'Report honest availability for every configured or registered fleet provider without launching a paid or state-changing probe.',
+        parameters: [{ name: 'caller', description: 'exact live Team member.' }],
+        returns: 'one row per provider, with ready only for continuable providers.',
+      },
+      {
+        signature: 'fleetFavorites(caller: Agent): FleetFavoritesView',
+        description: 'Read the fleet favorites section and current settings revision.',
+        parameters: [{ name: 'caller', description: 'exact live Team Lead.' }],
+        returns: 'providers, favorites, and the revision for the next fenced write.',
+      },
+      {
+        signature: 'async saveFleetFavorite( caller: Agent, favorite: FleetFavorite, expectedRevision: number, ): Promise<FleetFavoriteResult>',
+        description: 'Save one favorite by id, replacing a same-id favorite.',
+        parameters: [{ name: 'caller', description: 'exact live Team Lead.' }, { name: 'favorite', description: 'complete favorite value.' }, { name: 'expectedRevision', description: 'settings revision the editor read.' }],
+        returns: 'the committed favorites view or a typed conflict.',
+      },
+      {
+        signature: 'async deleteFleetFavorite( caller: Agent, id: string, expectedRevision: number, ): Promise<FleetFavoriteResult>',
+        description: 'Delete one favorite by id.',
+        parameters: [{ name: 'caller', description: 'exact live Team Lead.' }, { name: 'id', description: 'favorite identity.' }, { name: 'expectedRevision', description: 'settings revision the editor read.' }],
+        returns: 'the committed favorites view or a typed conflict.',
+      },
+      {
+        signature: 'async launchFleetFavorite(caller: Agent, id: string, confirmed: boolean): Promise<FleetLaunchResult>',
+        description: 'Launch one saved favorite after an explicit confirmation, revalidating every provider at use time and never substituting a different one.',
+        parameters: [{ name: 'caller', description: 'exact live Team Lead.' }, { name: 'id', description: 'favorite identity.' }, { name: 'confirmed', description: 'the UI\'s explicit confirmation; false starts nothing.' }],
+        returns: 'created members or a typed refusal.',
+      },
+      {
         signature: '@Remote(\'view\') remoteView(agent: Agent): TeamView',
         description: 'Read the current roster and non-deleted task board through the generated Remote API.',
         parameters: [{ name: 'agent', description: 'exact live Team member used as the authority credential.' }],
@@ -497,6 +527,18 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Apply one task mutation and preserve Team rejections as business results.',
         parameters: [{ name: 'agent', description: 'exact live Team member authorizing the mutation.' }, { name: 'request', description: 'task identity, expected revision, action, and action fields.' }],
         returns: 'the committed task or a typed Team rejection.',
+      },
+      {
+        signature: '@Remote(\'fleetAvailability\') remoteFleetAvailability(): FleetProviderAvailability[]',
+        description: 'Read provider availability through the generated Remote API.',
+        parameters: [],
+        returns: 'honest provider availability rows.',
+      },
+      {
+        signature: '@Remote(\'launchFleetFavorite\') remoteLaunchFleetFavorite(agent: Agent, id: string, confirmed: boolean): Promise<FleetLaunchResult>',
+        description: 'Launch one favorite through the generated Remote API.',
+        parameters: [{ name: 'agent', description: 'exact live Team Lead.' }, { name: 'id', description: 'favorite identity.' }, { name: 'confirmed', description: 'explicit UI confirmation.' }],
+        returns: 'created members or a typed refusal.',
       },
     ],
   },
@@ -4344,6 +4386,34 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'FinishReasonMap',
     declaration: 'export interface FinishReasonMap {\n    \'stop\': {\n        kind: \'stop\';\n    };\n    \'tool-calls\': {\n        kind: \'tool-calls\';\n    };\n    \'max-tokens\': {\n        kind: \'max-tokens\';\n    };\n    \'aborted\': {\n        kind: \'aborted\';\n        failure: LlmFailure;\n    };\n    \'error\': {\n        kind: \'error\';\n        failure: LlmFailure;\n    };\n}',
+  },
+  {
+    name: 'FleetFavorite',
+    declaration: 'export interface FleetFavorite {\n    readonly id: string;\n    readonly name: string;\n    readonly members: FleetFavoriteMember[];\n}',
+  },
+  {
+    name: 'FleetFavoriteMember',
+    declaration: 'export interface FleetFavoriteMember {\n    readonly name: string;\n    readonly description: string;\n    readonly prompt: string;\n    readonly provider: string;\n    readonly context?: \'fresh\' | \'fork\';\n    readonly preset?: string;\n    readonly model?: string;\n    readonly reasoningEffort?: string;\n    readonly readOnly?: boolean;\n    readonly writeScopes?: string[];\n    readonly maxTokens?: number;\n}',
+  },
+  {
+    name: 'FleetFavoriteResult',
+    declaration: 'export type FleetFavoriteResult = {\n    readonly ok: true;\n    readonly value: FleetFavoritesView;\n} | {\n    readonly ok: false;\n    readonly error: {\n        readonly code: string;\n        readonly message: string;\n    };\n};',
+  },
+  {
+    name: 'FleetFavoritesView',
+    declaration: 'export interface FleetFavoritesView {\n    readonly providers: FleetProviderAvailability[];\n    readonly favorites: FleetFavorite[];\n    readonly revision: number;\n}',
+  },
+  {
+    name: 'FleetLaunchResult',
+    declaration: 'export type FleetLaunchResult = {\n    readonly ok: true;\n    readonly value: {\n        readonly members: TeamMemberView[];\n    };\n} | {\n    readonly ok: false;\n    readonly error: {\n        readonly code: string;\n        readonly message: string;\n    };\n};',
+  },
+  {
+    name: 'FleetProviderAvailability',
+    declaration: 'export interface FleetProviderAvailability {\n    readonly name: string;\n    readonly state: FleetProviderState;\n    readonly continuable: boolean;\n    readonly detail?: string;\n}',
+  },
+  {
+    name: 'FleetProviderState',
+    declaration: 'export type FleetProviderState = \'not-installed\' | \'unauthenticated\' | \'unsupported-version\' | \'ready\' | \'temporarily-unavailable\';',
   },
   {
     name: 'FsDirEntry',

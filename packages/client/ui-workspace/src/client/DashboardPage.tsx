@@ -10,7 +10,7 @@ import type { WorkspaceSnapshot } from '@greeneek/gnk-api-workspace-controller/c
 import type {} from '@greeneek/gnk-session-stats/client'
 import { IconCloseOutline16 } from '@greeneek/gnk-client-ui-primitives'
 import { dashboardFacts, type DashboardSession } from './dashboard-model.ts'
-import { timeLabel } from './rows/Rows.tsx'
+import { timeLabel } from './time.ts'
 import css from './DashboardPage.module.css'
 
 /** Registration-side face: return to the mounted conversation. */

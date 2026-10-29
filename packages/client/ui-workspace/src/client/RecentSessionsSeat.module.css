@@ -50,3 +50,40 @@ button.row:focus-visible {
   line-height: 18px;
   color: var(--dsw-alias-label-tertiary);
 }
+
+/* Session row chrome mirrored from the workspace tree so the hero list keeps
+   the same height, radius, hover, and truncation without importing a domain
+   stylesheet. */
+.sessionRow {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  height: 32px;
+  border-radius: 10px;
+  padding: 0 8px;
+  cursor: pointer;
+  user-select: none;
+  color: var(--dsw-alias-label-primary);
+}
+
+.sessionRow:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.title {
+  min-width: 0;
+  margin-block: 0;
+  margin-inline: 4px 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.time {
+  flex: none;
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--dsw-alias-label-tertiary);
+}

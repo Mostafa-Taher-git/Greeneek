@@ -182,6 +182,7 @@ export const RESIDUE_ALLOWLIST = [
   { file: /^(\.\/)?README\.md$/, why: 'retained upstream attribution section (fork origin and licensing); the notice text behind rebrand:ignore-start/end is the legal obligation' },
   { file: /^(\.\/)?THIRD_PARTY_NOTICES\.md$/, why: 'upstream fork provenance table (deepseek-harness org ids)' },
   { file: /^(\.\/)?\.agents\/notes\/[\w.\-/]*2026-10-23-executed-upstream-attribution-gates\.md$/, why: 'the process note records every surface the attribution gate pins by quoting them verbatim (LICENSE and the notices text), the same content the LICENSE/README allowlist entries exist for' },
+  { file: /^(\.\/)?\.agents\/notes\/[\w.\-/]*2026-10-27-v0\.3\.7-completion-and-release-plan\.md$/, why: 'the execution ledger records the upstream pi-ai catalog rename deepseek-v4-flash -> deepseek-flash as a model id, not a brand claim (same rationale as the D16 snapshot entries); verify-egress still refuses the hosts' },
   { file: /^(\.\/)?scripts\/gen-third-party-notices\.ts$/, why: 'the generator renders the upstream-harness section into THIRD_PARTY_NOTICES.md; the tokens it embeds land in the allowlisted output file' },
   { file: /^(\.\/)?docs\/migration-from-deepseek\.(zh\.)?md$/, why: 'intentional migration guide (both locales)' },
   { file: /^(\.\/)?scripts\/rebrand\//, why: 'the codemod itself' },

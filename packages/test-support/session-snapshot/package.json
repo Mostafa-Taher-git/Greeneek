@@ -31,7 +31,7 @@
     "@greeneek/cordis-plugin-include": "workspace:*",
     "@greeneek/gnk-loader-smoke": "workspace:*",
     "js-yaml": "^4.2.0",
-    "vitest": "^4.1.8"
+    "vitest": "^5.0.2"
   },
   "peerDependencies": {
     "@greeneek/cordis": "workspace:^",

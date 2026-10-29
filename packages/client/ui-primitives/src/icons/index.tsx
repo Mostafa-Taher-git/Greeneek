@@ -761,6 +761,16 @@ export const IconDataOutline16 = ({ size = 16, className }: IconProps) => (
   </svg>
 )
 
+/** A 2×2 dashboard pane grid: the sidebar's Dashboard entry. */
+export const IconDashboardOutline16 = ({ size = 16, className }: IconProps) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="1.25" y="1.25" width="5.6" height="5.6" rx="1.4" stroke="currentColor" strokeWidth="1.25" />
+    <rect x="9.15" y="1.25" width="5.6" height="5.6" rx="1.4" stroke="currentColor" strokeWidth="1.25" />
+    <rect x="1.25" y="9.15" width="5.6" height="5.6" rx="1.4" stroke="currentColor" strokeWidth="1.25" />
+    <rect x="9.15" y="9.15" width="5.6" height="5.6" rx="1.4" stroke="currentColor" strokeWidth="1.25" />
+  </svg>
+)
+
 /** IconDataOutline16 without its gear: a three-tier database cylinder. */
 export const IconDatabaseOutline16 = ({ size = 16, className }: IconProps) => (
   <svg width={size} height={size} className={className} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">

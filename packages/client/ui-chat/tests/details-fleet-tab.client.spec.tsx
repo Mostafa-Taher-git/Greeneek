@@ -8,6 +8,7 @@ import { createSnapshotStore } from '@greeneek/gnk-client-store'
 import type { SessionListState } from '@greeneek/gnk-api-session-controller/client'
 import type { SessionId } from '@greeneek/gnk-session/types'
 import type { DetailsSlotProps, SelectionTarget } from '@greeneek/gnk-client-ui-chat/client'
+import type { ChatSnapshot, RunningToolCall, ToolResultNode } from '../src/client/contract/snapshot.ts'
 import { zh as commonZh } from '@greeneek/gnk-client-locale/src/locales/zh.ts'
 import { createChatStore } from '../src/client/stores.ts'
 import type { ChatStore } from '../src/client/contract/slots.ts'
@@ -36,6 +37,58 @@ function occupancySource(initial: boolean): HostObservable<boolean> & { set: (ne
   }
 }
 
+/** A source a spec moves by hand, standing in for the live Chat snapshot. */
+function mutableChat(initial: ChatSnapshot): HostObservable<ChatSnapshot> & { set: (next: ChatSnapshot) => void } {
+  let snapshot = initial
+  const listeners = new Set<() => void>()
+  return {
+    getSnapshot: () => snapshot,
+    subscribe: (listener: () => void) => {
+      listeners.add(listener)
+      return () => { listeners.delete(listener) }
+    },
+    set: (next: ChatSnapshot) => {
+      snapshot = next
+      for (const listener of [...listeners]) listener()
+    },
+  }
+}
+
+/** One settled tool result, projected as the transcript leaves it. */
+function settledResult(callId: string, name: string): ToolResultNode {
+  return {
+    kind: 'tool-result',
+    seq: 10,
+    time: 0,
+    callId,
+    call: { name, argsRaw: '{}' },
+    callTime: 0,
+    content: [],
+    isError: false,
+    subCalls: [],
+  }
+}
+
+/** A chat snapshot whose loaded window carries (or lacks) the dispatch call. */
+function waveChat(withCall: boolean): ChatSnapshot {
+  const call: RunningToolCall = {
+    callId: 'w1', name: 'wave_dispatch', argsRaw: '{}', turn: 1, step: 1, time: 0, subCalls: [],
+  }
+  return chatSnapshotFixture(withCall ? { runningCalls: [call] } : {})
+}
+
+/** A busy window: streaming noise, settled calls, and one nested live dispatch. */
+function busyWaveChat(): ChatSnapshot {
+  return chatSnapshotFixture({
+    partial: { turn: 1, step: 1, blocks: [] },
+    nodes: [settledResult('g1', 'grep'), settledResult('w0', 'wave_dispatch')],
+    runningCalls: [{
+      callId: 'bash-root', name: 'bash', argsRaw: '{}', turn: 1, step: 2, time: 0,
+      subCalls: [{ callId: 'w1', name: 'wave_dispatch', argsRaw: '{}', turn: 1, step: 2, time: 0, subCalls: [] }],
+    }],
+  })
+}
+
 /** A child dispatcher that records each key the panel dispatches. */
 function probe(): { renderSlot: DetailsSlotProps['renderSlot']; keys: string[] } {
   const keys: string[] = []
@@ -51,12 +104,14 @@ function probe(): { renderSlot: DetailsSlotProps['renderSlot']; keys: string[] }
  * @param fleet - the occupancy source the panel reads.
  * @param chat - the shared Chat store, already holding the desired selection.
  * @param renderSlot - the child dispatcher probe.
+ * @param chatSource - the live Chat snapshot the panel follows.
  * @returns the rendered view.
  */
 function mountPanel(
   fleet: HostObservable<boolean>,
   chat: ReturnType<ChatStore['create']>,
   renderSlot: DetailsSlotProps['renderSlot'],
+  chatSource: HostObservable<ChatSnapshot> = createSnapshotStore(chatSnapshotFixture()),
 ) {
   const emptyList = createSnapshotStore<SessionListState>({
     ids: [], byId: {}, current: undefined, phase: 'ready', subagentsByParent: {},
@@ -69,7 +124,7 @@ function mountPanel(
     renderSlot,
     sessionId: SID,
     useSession: unused,
-    useChat: bindSnapshotSelector(createSnapshotStore(chatSnapshotFixture())),
+    useChat: bindSnapshotSelector(chatSource),
     useConversation: unused,
     useTrajectory: unused,
     useSessions: bindSnapshotSelector(emptyList),
@@ -154,6 +209,81 @@ describe('DetailsPanel tabs', () => {
     act(() => { fleet.set(false) })
     expect(screen.queryByRole('tab')).toBeNull()
     expect(screen.getByText('点击消息流中的工具行查看详情')).toBeTruthy()
+  })
+})
+
+describe('DetailsPanel fleet auto-pick', () => {
+  it('picks the Fleet tab when the session dispatches its first wave', () => {
+    const { renderSlot } = probe()
+    const chat = mutableChat(chatSnapshotFixture())
+    const store = storeWith(null)
+    mountPanel(occupancySource(true), store, renderSlot, chat)
+    expect(store.getSnapshot().detailsTab).toBeNull()
+
+    // A busy window finds the dispatch nested, settled, and running alike.
+    act(() => { chat.set(busyWaveChat()) })
+    expect(store.getSnapshot().detailsTab).toBe('fleet')
+    expect(screen.getByText('fleet-body')).toBeTruthy()
+  })
+
+  it('does not steal the panel from an explicit Tool selection', () => {
+    const { renderSlot } = probe()
+    const chat = mutableChat(chatSnapshotFixture())
+    const store = storeWith({ turnSeq: 4, callId: 'c9', toolName: 'grep' } satisfies SelectionTarget)
+    mountPanel(occupancySource(true), store, renderSlot, chat)
+    act(() => { chat.set(waveChat(true)) })
+    expect(store.getSnapshot().detailsTab).toBeNull()
+    expect(screen.queryByText('fleet-body')).toBeNull()
+  })
+
+  it('does not steal the panel back after a transcript Tool click', () => {
+    const { renderSlot } = probe()
+    const chat = mutableChat(chatSnapshotFixture())
+    const store = storeWith(null)
+    mountPanel(occupancySource(true), store, renderSlot, chat)
+    act(() => { chat.set(waveChat(true)) })
+    expect(store.getSnapshot().detailsTab).toBe('fleet')
+
+    // The transcript click is stronger intent: it retires the pick, and the
+    // still-running wave never pulls the panel back.
+    act(() => { store.actions.select({ turnSeq: 4, callId: 'c9', toolName: 'grep' }) })
+    expect(store.getSnapshot().detailsTab).toBeNull()
+    act(() => { chat.set(waveChat(true)) })
+    expect(store.getSnapshot().detailsTab).toBeNull()
+  })
+
+  it('picks once: a second wave does not pull the panel back', () => {
+    const { renderSlot } = probe()
+    const chat = mutableChat(chatSnapshotFixture())
+    const store = storeWith(null)
+    mountPanel(occupancySource(true), store, renderSlot, chat)
+    act(() => { chat.set(waveChat(true)) })
+    expect(store.getSnapshot().detailsTab).toBe('fleet')
+
+    // The reader returns to the Tool body by hand; a fresh wave, even on an
+    // unowned panel, stays unannounced.
+    act(() => { store.actions.setDetailsTab('tool') })
+    act(() => { chat.set(chatSnapshotFixture()) })
+    act(() => { chat.set(waveChat(true)) })
+    expect(store.getSnapshot().detailsTab).toBe('tool')
+    expect(screen.queryByText('fleet-body')).toBeNull()
+  })
+
+  it('needs the Fleet tab to exist, and a wave that started without it never picks', () => {
+    const { renderSlot } = probe()
+    const chat = mutableChat(chatSnapshotFixture())
+    const store = storeWith(null)
+    const fleet = occupancySource(false)
+    mountPanel(fleet, store, renderSlot, chat)
+    act(() => { chat.set(waveChat(true)) })
+    expect(store.getSnapshot().detailsTab).toBeNull()
+
+    // The pick rides the dispatch call's own edge, so a tab arriving later
+    // does not replay it.
+    act(() => { fleet.set(true) })
+    expect(screen.queryByRole('tab', { name: '舰队' })).not.toBeNull()
+    expect(store.getSnapshot().detailsTab).toBeNull()
+    expect(screen.queryByText('fleet-body')).toBeNull()
   })
 })
 

@@ -1,6 +1,7 @@
 /* Fleet body: a toolbar holding the emergency stop over one compact section per
-   wave, each wave a header line over its member rows. Rhythm and type carry the
-   grouping; the only container is the diagnostic line. */
+   wave, each wave a header line over its member rows. A row's main span is the
+   drawer toggle; the drawer and the polite announcement region carry what the
+   compact row dropped. Rhythm and type carry the grouping. */
 
 .root {
   display: flex;
@@ -146,13 +147,31 @@
 }
 
 /* Everything the row reports, kept apart from its actions so an accessible name
-   is built from the row itself rather than from the button's label. */
+   is built from the row itself rather than from the button's label. The main
+   span is the drawer's disclosure trigger. */
 .rowMain {
   display: flex;
   flex: 1;
   min-width: 0;
   align-items: center;
   gap: 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.chevron {
+  flex: none;
+  color: var(--dsw-alias-label-tertiary);
+  transition: transform 120ms ease;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
 }
 
 .role {
@@ -162,25 +181,16 @@
   white-space: nowrap;
 }
 
-.model,
 .status {
   flex: none;
   color: var(--dsw-alias-label-secondary);
 }
 
 .lastTool,
-.duration,
-.artifacts {
+.duration {
   flex: none;
   color: var(--dsw-alias-label-tertiary);
   font-family: var(--ds-font-family-code);
-}
-
-.artifacts {
-  max-width: 12rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .duration {
@@ -210,13 +220,59 @@
   text-decoration: underline;
 }
 
-.diagnostic {
+/* One member's drawer: nested under the row's identity column, carrying the
+   provenance and long-form facts the compact row dropped. */
+.drawer {
+  display: flex;
   flex: 1 1 100%;
-  padding: 4px 6px;
+  flex-direction: column;
+  gap: 4px;
+  margin-inline-start: 14px;
+  padding: 6px 8px;
   border-radius: 6px;
   background: var(--dsw-alias-bg-layer-1);
-  color: var(--dsw-alias-label-secondary);
+}
+
+.drawerField {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.drawerLabel {
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.drawerValue {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--dsw-alias-label-primary);
   overflow-wrap: anywhere;
+}
+
+.drawerList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--ds-font-family-code);
+}
+
+/* The announcement region: always present, visually hidden, and polite. */
+.live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 /* Resume card of one closed budget-interrupted wave: the remaining members, the

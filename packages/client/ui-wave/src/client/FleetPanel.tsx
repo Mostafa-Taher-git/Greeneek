@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
-import { StateDot } from '@greeneek/gnk-client-ui-primitives'
-import type { WaveArtifactPointer, WaveView } from '@greeneek/gnk-subagent-wave/client'
+import { IconChevronDownOutline14, StateDot } from '@greeneek/gnk-client-ui-primitives'
+import type {
+  WaveArtifactPointer, WaveMemberId, WaveMemberView, WaveView,
+} from '@greeneek/gnk-subagent-wave/client'
 import type { RemoteResult } from '@greeneek/gnk-typert-protocol'
 import type { FleetInjected, FleetPanelProps } from './contract.ts'
 import { isCancellable, MEMBER_STATE } from './member-state.ts'
 import css from './FleetPanel.module.css'
+import { useAnnouncements } from './use-announcements.ts'
 import { useEmergencyStop } from './use-stop.ts'
 
 /**
@@ -117,9 +120,64 @@ function ResumeCard({ wave, t, resume }: {
 }
 
 /**
+ * One member's drawer: the provenance, the full artifact list, the full
+ * diagnostic, and the child-transcript action the compact row no longer
+ * carries. Its visibility is the row toggle's `aria-expanded`, not its own.
+ * @param props - the member, the fleet copy, and the open-child verb.
+ * @returns the drawer body.
+ */
+function MemberDrawer({ member, t, openChild }: {
+  member: WaveMemberView
+  t: FleetPanelProps['t']
+  openChild: FleetInjected['openChild']
+}): ReactNode {
+  const childSessionId = member.childSessionId
+  return (
+    <div className={css.drawer}>
+      <div className={css.drawerField}>
+        <span className={css.drawerLabel}>{t('drawer.provider')}</span>
+        <span className={css.drawerValue}>{member.provider}</span>
+      </div>
+      {member.model !== undefined && (
+        <div className={css.drawerField}>
+          <span className={css.drawerLabel}>{t('drawer.model')}</span>
+          <span className={css.drawerValue}>{member.model}</span>
+        </div>
+      )}
+      {member.artifacts !== undefined && member.artifacts.length > 0 && (
+        <div className={css.drawerField}>
+          <span className={css.drawerLabel}>{t('drawer.artifacts')}</span>
+          <ul className={css.drawerList}>
+            {member.artifacts.map((pointer, index) => (
+              <li key={index} className={css.drawerValue}>{pointerLabel(pointer)}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {member.diagnostic !== undefined && (
+        <div className={css.drawerField}>
+          <span className={css.drawerLabel}>{t('drawer.diagnostic')}</span>
+          <span className={css.drawerValue}>{member.diagnostic}</span>
+        </div>
+      )}
+      {childSessionId !== undefined && (
+        <button
+          type="button"
+          className={css.rowAction}
+          onClick={() => { openChild(childSessionId) }}
+        >
+          {t('open.child')}
+        </button>
+      )}
+    </div>
+  )
+}
+
+/**
  * Fleet rows for one Lead session: the wave headers with their live members, one
- * stop affordance per level, and the emergency stop that stays reachable while
- * any wave is open.
+ * stop affordance per level, the emergency stop that stays reachable while any
+ * wave is open, and one member drawer at a time over a polite announcement
+ * region.
  * @param props - the live mirror, the stop verbs, and the fleet copy.
  * @returns the details-panel Fleet body.
  */
@@ -128,18 +186,28 @@ export function FleetPanel({
 }: FleetPanelProps) {
   const snapshot = useFleet(view => view)
   const stop = useEmergencyStop(t, stopAll)
+  const announcement = useAnnouncements(snapshot, t)
+  // One drawer at a time across the whole panel: the reader compares members by
+  // switching, not by sprawling rows.
+  const [openMember, setOpenMember] = useState<WaveMemberId | undefined>(undefined)
 
   // The mirror already samples on its own cadence; this only shortens the wait
   // for a surface the reader has just opened.
   useEffect(() => { refresh() }, [refresh])
 
-  if (snapshot.loading) return <div className={css.notice}>{t('panel.loading')}</div>
+  // Always mounted so a transition the panel was open for — an empty fleet
+  // gaining its first wave — still reaches the reader.
+  const live = (
+    <div className={css.live} role="status" aria-live="polite">{announcement}</div>
+  )
+  if (snapshot.loading) return <>{live}<div className={css.notice}>{t('panel.loading')}</div></>
   if (snapshot.waveViews.length === 0) {
-    return <div className={css.notice}>{snapshot.degraded ? t('panel.degraded') : t('panel.empty')}</div>
+    return <>{live}<div className={css.notice}>{snapshot.degraded ? t('panel.degraded') : t('panel.empty')}</div></>
   }
 
   return (
     <div className={css.root}>
+      {live}
       <div className={css.toolbar}>
         <button
           type="button"
@@ -171,7 +239,6 @@ export function FleetPanel({
           </div>
           <ul className={css.rows}>
             {wave.members.map((member) => {
-              const childSessionId = member.childSessionId
               const state = MEMBER_STATE[member.status]
               // Spend reads against the wave's member ceiling when one exists;
               // an unmetered or uncapped member reports its plain token count.
@@ -179,12 +246,17 @@ export function FleetPanel({
                 ? t('budget', { used: member.budgetUsed, cap: member.budgetLimit })
                 : t('tokens', { tokens: member.tokensUsed })
               const rowName = `${member.role ?? member.provider} · ${t(state.label)} · ${spend}`
+              const open = openMember === member.memberId
               return (
                 <li key={member.memberId} className={css.row}>
-                  <span className={css.rowMain}>
+                  <button
+                    type="button"
+                    className={css.rowMain}
+                    aria-expanded={open}
+                    onClick={() => { setOpenMember(current => (current === member.memberId ? undefined : member.memberId)) }}
+                  >
                     <StateDot state={state.dot} className={css.rowDot} />
                     <span className={css.role} title={member.role ?? member.provider}>{member.role ?? member.provider}</span>
-                    {member.model !== undefined && <span className={css.model} title={member.model}>{member.model}</span>}
                     <span className={css.status}>{t(state.label)}</span>
                     {member.lastTool !== undefined && (
                       <span className={css.lastTool} title={t('lastTool', { tool: member.lastTool })}>
@@ -194,16 +266,9 @@ export function FleetPanel({
                     {member.durationMs !== undefined && (
                       <span className={css.duration}>{formatDuration(member.durationMs, t)}</span>
                     )}
-                    {member.artifacts !== undefined && member.artifacts.length > 0 && (
-                      <span
-                        className={css.artifacts}
-                        title={member.artifacts.map(pointerLabel).join('\n')}
-                      >
-                        {t('artifacts.count', { count: member.artifacts.length })}
-                      </span>
-                    )}
                     <span className={css.tokens}>{spend}</span>
-                  </span>
+                    <IconChevronDownOutline14 className={open ? `${css.chevron} ${css.chevronOpen}` : css.chevron} />
+                  </button>
                   {isCancellable(member.status) && (
                     <button
                       type="button"
@@ -214,18 +279,7 @@ export function FleetPanel({
                       {t('stop.member')}
                     </button>
                   )}
-                  {childSessionId !== undefined && (
-                    <button
-                      type="button"
-                      className={css.rowAction}
-                      onClick={() => { openChild(childSessionId) }}
-                    >
-                      {t('open.child')}
-                    </button>
-                  )}
-                  {member.diagnostic !== undefined && (
-                    <div className={css.diagnostic} title={member.diagnostic}>{member.diagnostic}</div>
-                  )}
+                  {open && <MemberDrawer member={member} t={t} openChild={openChild} />}
                 </li>
               )
             })}

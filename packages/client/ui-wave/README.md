@@ -26,12 +26,12 @@ This package renders the Army fleet of the Web GUI: one body in the details pane
 
 Mount this plugin with the host `waves` service ([`gnk-subagent-wave`](../../subagent/wave/README.md)) and the Army preset. A Lead session then shows its fleet wherever the reader looks:
 
-- **Fleet tab** — while this surface is mounted, the details column grows a `Tool | Fleet` tab row. A Tool-row click returns the panel to the Tool body; the Fleet tab is one click back, and it says so when the session has no wave.
+- **Fleet tab** — while this surface is mounted, the details column grows a `Tool | Fleet` tab row. The first `wave_dispatch` in the loaded conversation flips it to Fleet once; a Tool-row click returns the panel to the Tool body, and a later wave never steals that choice back. The tab is one click away at any time, and it says so when the session has no wave.
 - **Composer pill** — below the width where the details column collapses, the pill names the newest open wave, counts cancellable members, and opens the same rows in an overlay above the composer. Escape, the close control, and a pointer outside all dismiss it.
 - **Stops** — one button per member while it is queued or running, one per open wave, and an emergency stop that aborts every unsettled member of every wave this session owns. The mass cancel needs two clicks and disarms after five seconds.
 - **Resume** — a closed wave that lost a member to a budget kill shows a resume card naming the exact remaining members, with per-member and wave budget fields; the action stays disabled until at least one positive budget is entered, and the card disappears once the wave carries its resumed-to mark. The card rides the shared panel body, so the pill's overlay offers it too.
-- **Rows** — one line per member: role, model, status, the last tool it dispatched, its settled duration, its artifact count when the member's settled result named validated pointers (each address in the hover title), and its spend — read against the wave's member ceiling when the engine admitted one, else the plain token count. A member that did not complete keeps its diagnostic on the row.
-- **Transcripts** — a member that published a child session opens it read-only through the subagent transport.
+- **Rows and drawer** — one compact line per member: role, status, the last tool it dispatched, its settled duration, and its spend — read against the wave's member ceiling when the engine admitted one, else the plain token count. The row is a disclosure button; opening it shows one member drawer at a time with the provider, model, every validated artifact pointer, the full diagnostic, and the child-transcript action. Stop controls stay on the row, outside the drawer.
+- **Announcements** — a visually hidden polite region announces a started wave, a closed wave, and a member that reaches a terminal status; the first sample after mount is folded in silently, and token/tool polling stays silent.
 
 A stopped or failed member keeps its row with its status and diagnostic; a fleet whose samples stopped arriving keeps its last rows and says the view is stale instead of emptying.
 
@@ -86,7 +86,7 @@ These limits define the current fleet surfaces. They are current package constra
 
 - **Rows are as fresh as the last sample** — member status, last tool, and token spend move between samples, up to one second plus the coalescing window behind while a wave runs. The engine publishes no Remote event for member progress, so a pushed fleet view waits on that seam.
 - **Lead activity is not listed** — the Fleet tab shows the waves this session started, not what the Lead itself is doing; that stays in the conversation.
-- **Artifact pointers render as a count** — a settled member's row shows how many validated pointers its structured result named, with each address in the hover title; the row carries no per-artifact listing or open action.
+- **One member drawer at a time** — opening another row closes the first; the drawer is a reading surface, not a comparison table. Each artifact pointer has no independent open action.
 - **Rows are not virtualized** — a wave's members are bounded by the engine's roster, so the list is short by construction; a fleet that outgrows that assumption needs windowing here.
 - **No member reordering or grouping** — waves render in acceptance order and members in dispatch order, which is the order the Lead's result reports.
 

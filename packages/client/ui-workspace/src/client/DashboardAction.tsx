@@ -1,7 +1,7 @@
 /** Dashboard trigger in the sidebar, directly under New Session. */
 import clsx from 'clsx'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@greeneek/gnk-client-ui-slots'
-import { IconDataOutline16, Tooltip } from '@greeneek/gnk-client-ui-primitives'
+import { IconDashboardOutline16, Tooltip } from '@greeneek/gnk-client-ui-primitives'
 // Type-only: pulls the sidebar primary-action slot declaration.
 import type {} from '@greeneek/gnk-client-ui-sidebar/client'
 import css from './DashboardAction.module.css'
@@ -32,7 +32,7 @@ export function DashboardAction({ wide, t, openDashboard }: DashboardActionProps
         aria-label={t('dashboard.open')}
         onClick={openDashboard}
       >
-        <IconDataOutline16 size={14} />
+        <IconDashboardOutline16 size={14} />
         {wide && <span className={css.label}>{t('dashboard.open')}</span>}
       </button>
     </Tooltip>

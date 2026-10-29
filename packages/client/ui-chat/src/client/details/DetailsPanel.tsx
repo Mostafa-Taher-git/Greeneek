@@ -1,9 +1,9 @@
-import { Fragment } from 'react'
+import { Fragment, useEffect, useRef } from 'react'
 import { CodeBlock } from '@greeneek/gnk-client-ui-primitives'
 import { shallowEqual } from '@greeneek/gnk-client-store'
 import type { DetailsSlotProps } from '../contract/slots.ts'
 import type { ChatSnapshot, RunningToolCall, ToolCallBlock, ToolResultNode } from '../contract/snapshot.ts'
-import { findToolCall } from './tool-node-reader.ts'
+import { findToolCall, hasToolCall, WAVE_DISPATCH_TOOL } from './tool-node-reader.ts'
 import css from './DetailsPanel.module.css'
 
 export type DetailsPanelProps = DetailsSlotProps
@@ -51,6 +51,11 @@ export function DetailsPanel({
   const selection = useStore(s => s.selection)
   const tabPick = useStore(s => s.detailsTab)
   const fleetOccupied = useFleet(occupied => occupied)
+  // The panel follows the session's wave activity, not the slot's occupancy:
+  // the first wave_dispatch call in the loaded window flips the body to the
+  // Fleet tab. The subscription carries the boolean, so re-renders only follow
+  // the flip itself.
+  const waveActive = useChat(s => hasToolCall(s, WAVE_DISPATCH_TOOL))
   // Session workspace root: a card model resolves omitted or relative
   // tool paths against it without reading Session services.
   const sessionCwd = useSessions(list => list.byId[sessionId]?.cwd)
@@ -64,6 +69,16 @@ export function DetailsPanel({
   // tab, and a transcript Tool-row click retires that pick. Occupancy of the
   // Fleet slot decides whether the choice exists at all.
   const showFleet = fleetOccupied && tabPick === 'fleet'
+  // The auto-pick fires once per panel life: the latch is set on the first
+  // observation of an active wave and never resets, and the pick itself yields
+  // to explicit reader intent — a selected Tool call, a chosen tab, or a panel
+  // whose Fleet seat does not exist.
+  const waveSeen = useRef(false)
+  useEffect(() => {
+    if (!waveActive || waveSeen.current) return
+    waveSeen.current = true
+    if (fleetOccupied && selection === null && tabPick === null) actions.setDetailsTab('fleet')
+  }, [waveActive, fleetOccupied, selection, tabPick, actions])
   const callName = selection === null ? t('details.title') : material?.name ?? selection.toolName ?? t('details.title')
   return (
     <div className={css.root}>

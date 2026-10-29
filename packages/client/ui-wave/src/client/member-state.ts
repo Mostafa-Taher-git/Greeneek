@@ -30,6 +30,16 @@ export function isCancellable(status: WaveMemberStatus): boolean {
 }
 
 /**
+ * Whether this status ends a member's work. Settling is the state change the
+ * announcements tell: the moment a watched member stops changing.
+ * @param status - the member's current lifecycle state.
+ * @returns true once the member has reached a terminal status.
+ */
+export function isTerminal(status: WaveMemberStatus): boolean {
+  return status !== 'queued' && status !== 'running'
+}
+
+/**
  * Count the members a stop could still reach across every listed wave.
  * @param views - the polled wave views.
  * @returns the number of queued or running members.

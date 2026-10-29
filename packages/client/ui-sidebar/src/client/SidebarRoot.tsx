@@ -164,19 +164,17 @@ export function SidebarRoot({
       {/* Expanded, the button carries its own label — tooltip only on the
           rail. The one collapse control lives in the desktop titlebar, so the
           rail renders no duplicate toggle. */}
-      {wide && (
-        <Tooltip label={t('session.new.label')} delayMs={500} disabled={wide}>
-          <button
-            type="button"
-            className={css.newSession}
-            aria-label={t('session.new.label')}
-            onClick={() => { startSession() }}
-          >
-            <IconNewChatOutline16 size={14} />
-            <span className={clsx(css.newSessionLabel, css.wide)}>{t('session.new')}</span>
-          </button>
-        </Tooltip>
-      )}
+      <Tooltip label={t('session.new.label')} delayMs={500} disabled={wide}>
+        <button
+          type="button"
+          className={css.newSession}
+          aria-label={t('session.new.label')}
+          onClick={() => { startSession() }}
+        >
+          <IconNewChatOutline16 size={14} />
+          {wide && <span className={clsx(css.newSessionLabel, css.wide)}>{t('session.new')}</span>}
+        </button>
+      </Tooltip>
 
       {/* Primary actions sit directly under New Session in the expanded
           column and render their own icon form on the rail. */}

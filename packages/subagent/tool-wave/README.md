@@ -7,7 +7,7 @@ kind: "package-reference"
 
 ## Summary
 
-`gnk-tool-wave` is the model-facing Army Lead tool: it mounts two tools over the wave engine (`ctx.waves`) so the calling agent can dispatch a labeled fleet of one-shot subagents — each member its own standalone prompt with an optional role, provider, model, and reasoning effort — under the engine's shared concurrency cap and token budgets, wait for the whole wave to settle, and cancel what it has running. `wave_dispatch` blocks until every member settles and returns one capped report row per member; `wave_cancel` cancels one retained wave by id or emergency-stops every unsettled fleet of the calling session, reporting already settled waves instead of touching them. One instance binds one configured default member provider and mounts both tools inside a single effect, so a partial teardown can never leave the cancel button registered without its dispatcher.
+`gnk-tool-wave` is the model-facing Army Lead tool: it mounts two tools over the wave engine (`ctx.waves`) so the calling agent can dispatch a labeled fleet of one-shot subagents — each member its own standalone prompt with an optional role, provider, model, reasoning effort, and object-rooted output schema — under the engine's shared concurrency cap and token budgets, wait for the whole wave to settle, and cancel what it has running. `wave_dispatch` blocks until every member settles and returns one capped report row per member, each row carrying the member's structured value and the engine-validated artifact pointers its result named; `wave_cancel` cancels one retained wave by id or emergency-stops every unsettled fleet of the calling session, reporting already settled waves instead of touching them. One instance binds one configured default member provider and mounts both tools inside a single effect, so a partial teardown can never leave the cancel button registered without its dispatcher.
 
 ## Table of Contents
 
@@ -47,7 +47,9 @@ The generated [configuration catalog](../../../docs/config-catalog.md#greeneekgn
 
 ### What the model's calls mean
 
-Every member of a dispatch is a one-shot subagent that does not see this conversation: the required `prompt` must be complete and standalone, and the optional `role`, `provider`, `model`, and `reasoning_effort` shape that member's engine request. The engine's configuration owns a fleet's launch concurrency and per-member output byte cap, so those remain deployment choices rather than call arguments.
+Every member of a dispatch is a one-shot subagent that does not see this conversation: the required `prompt` must be complete and standalone, and the optional `role`, `provider`, `model`, `reasoning_effort`, and `output_schema` shape that member's engine request. The engine's configuration owns a fleet's launch concurrency and per-member output byte cap, so those remain deployment choices rather than call arguments.
+
+A member that must return structured data declares `output_schema`, an object-rooted JSON Schema in the enforced subset. Its validated answer returns as the row's `structured` value, and any `artifacts` array it declares — `{"kind":"file","path":"…"}` or `{"kind":"uri","uri":"https://…"}` entries — is promoted to engine-validated pointers on the row; malformed claims are dropped, and the member's prose is never read for pointers.
 
 `wave_dispatch` blocks until every member settles and returns `{ wave_id, outcome, rows }`, with `outcome` one of `completed`, `partial`, or `cancelled`; a failed or budget-killed member still settles as its own row, and `on_complete: 'fail-fast'` cancels the surviving active members after the first failed or budget-killed launched one.
 
@@ -69,11 +71,11 @@ One plugin instance is one default member provider plus both tools, mounted insi
 
 ### Argument contracts
 
-The registry's parameter root stays open, so undeclared top-level keys cannot be rejected by the schema alone: each tool checks its own accepted keys and reports every violation in one `ToolArgsError` before the engine is touched. Member objects are closed (`additionalProperties: false`), so a missing member `prompt` already surfaces as a registry argument error without tool work. `parseDispatchArguments` then collects the checks the DSL cannot express — a member count between one and sixteen, and positive safe-integer budgets — into that one errored result, so the model can fix the whole call at once.
+The registry's parameter root stays open, so undeclared top-level keys cannot be rejected by the schema alone: each tool checks its own accepted keys and reports every violation in one `ToolArgsError` before the engine is touched. Member objects are closed (`additionalProperties: false`), so a missing member `prompt` already surfaces as a registry argument error without tool work. `parseDispatchArguments` then collects the checks the DSL cannot express — a member count between one and sixteen, positive safe-integer budgets, and each member's `output_schema` asserted against the enforced JSON-Schema subset — into that one errored result, so the model can fix the whole call at once.
 
 ### Report settlement
 
-A dispatch rejects non-agent callers (`exec.agent` is the wave parent), then awaits one `ctx.waves.startWave` and renders the settled result: per-member rows in spec order, byte-capped output flattened to text, structured values sanitized through a lossless JSON round-trip, and the wave outcome kept beside the rows. `wave_cancel` validates arguments, scopes its action through `ctx.waves.listWaves(parent.session.id)` — cancelling only waves the calling session still retains — and reports one row per addressed wave.
+A dispatch rejects non-agent callers (`exec.agent` is the wave parent), then awaits one `ctx.waves.startWave` and renders the settled result: per-member rows in spec order, byte-capped output flattened to text, structured values sanitized through a lossless JSON round-trip, the engine-validated artifact pointers copied onto their row, and the wave outcome kept beside the rows. `wave_cancel` validates arguments, scopes its action through `ctx.waves.listWaves(parent.session.id)` — cancelling only waves the calling session still retains — and reports one row per addressed wave.
 
 ### Source map
 
@@ -107,7 +109,7 @@ Read these pages when the package-level contract is not enough; they move from t
 
 #### What the model sees
 
-The generated [`wave_dispatch` and `wave_cancel` schemas](../../../docs/tool-catalog.md#greeneekgnk-tool-wave) exist while the plugin is loaded. `wave_dispatch` takes a required `label`, a required `members` array whose closed member objects carry a required standalone `prompt` plus optional `role`, `provider`, `model`, and `reasoning_effort`, the optional `on_complete` sibling policy (`continue-others` default, `fail-fast`), and optional `max_tokens_per_member`/`max_wave_tokens` integer ceilings; `wave_cancel` takes only an optional `wave_id`. Undeclared top-level arguments are rejected as an errored result before the engine is touched, and dispatch bounds its own fleet — at least one, at most sixteen members, positive safe-integer budgets.
+The generated [`wave_dispatch` and `wave_cancel` schemas](../../../docs/tool-catalog.md#greeneekgnk-tool-wave) exist while the plugin is loaded. `wave_dispatch` takes a required `label`, a required `members` array whose closed member objects carry a required standalone `prompt` plus optional `role`, `provider`, `model`, `reasoning_effort`, and `output_schema`, the optional `on_complete` sibling policy (`continue-others` default, `fail-fast`), and optional `max_tokens_per_member`/`max_wave_tokens` integer ceilings; `wave_cancel` takes only an optional `wave_id`. Undeclared top-level arguments are rejected as an errored result before the engine is touched, and dispatch bounds its own fleet — at least one, at most sixteen members, positive safe-integer budgets.
 
 #### Token effect
 

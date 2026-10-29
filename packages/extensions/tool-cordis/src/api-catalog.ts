@@ -6258,6 +6258,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface VerifiedWebhookDelivery<K extends string = string> {\n    readonly kind: K;\n    readonly source: WebhookSourceId;\n    readonly deliveryId: WebhookDeliveryId;\n    readonly event: WebhookEventOf<K>;\n    readonly receivedAt: number;\n}',
   },
   {
+    name: 'WaveArtifactPointer',
+    declaration: 'export interface WaveArtifactPointer {\n    readonly kind: \'file\' | \'uri\';\n    readonly path?: string;\n    readonly uri?: string;\n}',
+  },
+  {
     name: 'WaveId',
     declaration: 'export type WaveId = Branded<\'WaveId\'>;',
   },
@@ -6271,7 +6275,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'WaveMemberResult',
-    declaration: 'export interface WaveMemberResult extends WaveMemberView {\n    readonly output: readonly ContentBlock[];\n    readonly truncated: boolean;\n    readonly structured?: unknown;\n    readonly stopReason?: SubagentStopReason;\n}',
+    declaration: 'export interface WaveMemberResult extends WaveMemberView {\n    readonly output: readonly ContentBlock[];\n    readonly envelope: WaveResultEnvelope;\n    readonly structured?: unknown;\n}',
   },
   {
     name: 'WaveMemberSpec',
@@ -6283,7 +6287,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'WaveMemberView',
-    declaration: 'export interface WaveMemberView {\n    readonly memberId: WaveMemberId;\n    readonly role?: string;\n    readonly provider: string;\n    readonly status: WaveMemberStatus;\n    readonly childSessionId?: SessionId;\n    readonly tokensUsed: number;\n    readonly model?: string;\n    readonly diagnostic?: string;\n    readonly lastTool?: string;\n    readonly durationMs?: number;\n    readonly artifacts?: readonly string[];\n    readonly budgetUsed?: number;\n    readonly budgetLimit?: number;\n}',
+    declaration: 'export interface WaveMemberView {\n    readonly memberId: WaveMemberId;\n    readonly role?: string;\n    readonly provider: string;\n    readonly status: WaveMemberStatus;\n    readonly childSessionId?: SessionId;\n    readonly tokensUsed: number;\n    readonly model?: string;\n    readonly diagnostic?: string;\n    readonly lastTool?: string;\n    readonly durationMs?: number;\n    readonly artifacts?: readonly WaveArtifactPointer[];\n    readonly budgetUsed?: number;\n    readonly budgetLimit?: number;\n}',
   },
   {
     name: 'WaveRequest',
@@ -6292,6 +6296,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'WaveResult',
     declaration: 'export interface WaveResult {\n    readonly waveId: WaveId;\n    readonly outcome: \'completed\' | \'partial\' | \'cancelled\';\n    readonly members: readonly WaveMemberResult[];\n}',
+  },
+  {
+    name: 'WaveResultEnvelope',
+    declaration: 'export interface WaveResultEnvelope {\n    readonly schemaVersion: 1;\n    readonly heartbeatAt: number;\n    readonly truncated: boolean;\n    readonly stopReason?: SubagentStopReason;\n    readonly externalSessionId?: string;\n    readonly artifacts?: readonly WaveArtifactPointer[];\n}',
   },
   {
     name: 'WaveView',

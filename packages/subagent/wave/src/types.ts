@@ -10,10 +10,10 @@ import type { Agent } from '@greeneek/gnk-agent'
 import type { ContentBlock } from '@greeneek/gnk-llm'
 import type { SubagentStartRequest, SubagentStopReason } from '@greeneek/gnk-subagent'
 
-import type { WaveId, WaveMemberView } from './views.ts'
+import type { WaveArtifactPointer, WaveId, WaveMemberView } from './views.ts'
 
 export { WaveId, WaveMemberId } from './views.ts'
-export type { WaveMemberStatus, WaveMemberView, WaveView } from './views.ts'
+export type { WaveArtifactPointer, WaveMemberStatus, WaveMemberView, WaveView } from './views.ts'
 
 /** One member's start-time ask; the engine supplies `parent` and `signal`. */
 export type WaveMemberRequest = Omit<SubagentStartRequest, 'parent' | 'signal'>
@@ -47,16 +47,42 @@ export interface WaveRequest {
   readonly maxWaveTokens?: number
 }
 
-/** One fleet row plus a capped preview of the member's terminal output. */
+/**
+ * Versioned engine seal over one member's settled result. Every field is
+ * engine-owned — computed at the settlement funnel, never read from or
+ * written by the member's model output — so a reader can tell the engine's
+ * account of the settlement apart from the child's payload beside it.
+ */
+export interface WaveResultEnvelope {
+  /** Contract version of this envelope's shape; bumps whenever it changes. */
+  readonly schemaVersion: 1
+  /** Engine wall-clock milliseconds when the member's result was sealed. */
+  readonly heartbeatAt: number
+  /** True when the engine capped output text or dropped an over-cap structured value. */
+  readonly truncated: boolean
+  /** Terminal stop reason; absent when the child never resolved a result. */
+  readonly stopReason?: SubagentStopReason
+  /**
+   * Reserved for a future cross-process child identity. This engine version
+   * never writes it; the named slot keeps that addition from being a format
+   * change.
+   */
+  readonly externalSessionId?: string
+  /**
+   * Validated artifact pointers promoted from the member's own structured
+   * result, in the child's order; absent when the member named none.
+   */
+  readonly artifacts?: readonly WaveArtifactPointer[]
+}
+
+/** One fleet row plus its capped payload and the engine's versioned seal. */
 export interface WaveMemberResult extends WaveMemberView {
   /** The child's final assistant output, truncated to the configured byte cap. */
   readonly output: readonly ContentBlock[]
-  /** True when the engine trimmed text or dropped an over-cap structured value. */
-  readonly truncated: boolean
+  /** The engine's settled-result seal; the member's budget spend stays on the inherited engine-owned `tokensUsed`/`budgetUsed` fields. */
+  readonly envelope: WaveResultEnvelope
   /** The structured result when it satisfied the request schema and fit the cap. */
   readonly structured?: unknown
-  /** Terminal stop reason; absent while the member has not settled. */
-  readonly stopReason?: SubagentStopReason
 }
 
 /** The settled outcome of one wave. */
@@ -157,6 +183,13 @@ declare module '@greeneek/gnk-session/types' {
       durationMs?: number
       /** Terminal detail when the settlement recorded one; absent otherwise. */
       diagnostic?: string
+      /**
+       * Validated artifact pointers the member's settled structured result
+       * named; absent when it named none. Log-only mirror of the envelope's
+       * `artifacts`, so a replayed log reconstructs what the Lead's report
+       * carried.
+       */
+      artifacts?: readonly WaveArtifactPointer[]
     }
     /**
      * Durable record that one wave closed: it follows every member's
@@ -186,6 +219,12 @@ declare module '@greeneek/gnk-session/types' {
         durationMs?: number
         /** Terminal detail when the member's settlement recorded one; absent otherwise. */
         diagnostic?: string
+        /**
+         * Validated artifact pointers the member's settled structured result
+         * named; absent when it named none. Same shape as the member's own
+         * settlement record.
+         */
+        artifacts?: readonly WaveArtifactPointer[]
       }[]
     }
   }

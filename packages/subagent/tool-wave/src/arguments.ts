@@ -12,7 +12,8 @@
  */
 
 import { ToolArgsError } from '@greeneek/gnk-tools'
-import type { InferArgs, ParameterSchemaSpec } from '@greeneek/gnk-tools'
+import { assertObjectJsonSchema, JsonSchemaError } from '@greeneek/gnk-tools'
+import type { InferArgs, ObjectJsonSchema, ParameterSchemaSpec } from '@greeneek/gnk-tools'
 import type { AgentOptions } from '@greeneek/gnk-agent'
 import { ReasoningEffortId } from '@greeneek/gnk-llm'
 import type { WaveMemberSpec, WaveRequest } from '@greeneek/gnk-subagent-wave'
@@ -55,6 +56,13 @@ export const dispatchParameters = {
         reasoning_effort: {
           type: 'string',
           description: 'Reasoning effort for this member when the effective provider route supports one.',
+        },
+        output_schema: {
+          type: 'json',
+          description: 'Object-rooted JSON Schema this member\'s final answer must satisfy; a valid answer '
+            + 'returns as the row\'s `structured` value. Declare an `artifacts` array of '
+            + '`{"kind":"file","path":"…"}` or `{"kind":"uri","uri":"https://…"}` entries to have the '
+            + 'engine promote validated artifact pointers onto the row.',
         },
       },
     },
@@ -115,9 +123,16 @@ function unknownKeyViolations(args: Record<string, unknown>, accepted: readonly 
  * (`parent`, signal, admission) stays with the wave engine.
  * @param member - the validated member entry.
  * @param defaultProvider - the plugin config's provider name.
+ * @param outputSchema - the member's output schema after
+ *   {@link parseDispatchArguments} asserted it against the enforced subset;
+ *   `undefined` when the entry carried none.
  * @returns the engine member spec.
  */
-export function memberSpec(member: DispatchMember, defaultProvider: string): WaveMemberSpec {
+export function memberSpec(
+  member: DispatchMember,
+  defaultProvider: string,
+  outputSchema?: ObjectJsonSchema,
+): WaveMemberSpec {
   const agentOptions = memberAgentOptions(member)
   return {
     provider: member.provider ?? defaultProvider,
@@ -125,6 +140,7 @@ export function memberSpec(member: DispatchMember, defaultProvider: string): Wav
     request: {
       prompt: [{ type: 'text', text: member.prompt }],
       ...(agentOptions === undefined ? {} : { agentOptions }),
+      ...(outputSchema === undefined ? {} : { outputSchema }),
     },
   }
 }
@@ -162,6 +178,19 @@ export function parseDispatchArguments(args: DispatchArguments, defaultProvider:
   )
   if (args.members.length === 0) violations.push('a wave requires at least one member')
   if (args.members.length > MAX_MEMBERS) violations.push(`a wave carries at most ${MAX_MEMBERS} members`)
+  for (const [index, member] of args.members.entries()) {
+    if (member.output_schema === undefined) continue
+    try {
+      assertObjectJsonSchema(member.output_schema)
+    } catch (error: unknown) {
+      // The schema error's own violation list is the diagnostic a model can
+      // act on; its wrapper prefix would only restate it.
+      const detail = error instanceof JsonSchemaError
+        ? error.violations.join('; ')
+        : error instanceof Error ? error.message : String(error)
+      violations.push(`members[${index}].output_schema: ${detail}`)
+    }
+  }
   for (const [key, value] of [
     ['max_tokens_per_member', args.max_tokens_per_member],
     ['max_wave_tokens', args.max_wave_tokens],
@@ -173,7 +202,14 @@ export function parseDispatchArguments(args: DispatchArguments, defaultProvider:
   if (violations.length > 0) throw new ToolArgsError(violations)
   return {
     label: args.label,
-    members: args.members.map(member => memberSpec(member, defaultProvider)),
+    members: args.members.map(entry => memberSpec(
+      entry,
+      defaultProvider,
+      // Every entry's schema was asserted above, so a surviving value is a
+      // schema the subagent seam accepts; the raw JSON value type just has no
+      // overlapping structural face with the schema type.
+      entry.output_schema === undefined ? undefined : entry.output_schema as unknown as ObjectJsonSchema,
+    )),
     ...(args.on_complete === undefined ? {} : { onComplete: args.on_complete }),
     ...(args.max_tokens_per_member === undefined ? {} : { maxTokensPerMember: args.max_tokens_per_member }),
     ...(args.max_wave_tokens === undefined ? {} : { maxWaveTokens: args.max_wave_tokens }),

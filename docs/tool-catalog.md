@@ -1742,7 +1742,7 @@ Source: [`packages/subagent/tool-wave/src/index.ts`](../packages/subagent/tool-w
 
 ### `wave_dispatch`
 
-Dispatch a wave: a fleet of one-shot subagents that runs concurrently until every member settles, and returns one report row per member — final output, status, tokens, and child session id. Each member does not see this conversation, so give every member a complete, standalone prompt. Use it to fan out independent work (research across several questions, parallel implementation, multi-reviewer checks) in one call instead of one delegation per subtask. A member that fails or exceeds its budget settles as a failed or budget-killed row; the wave still returns, with any token ceilings enforced by the engine.
+Dispatch a wave: a fleet of one-shot subagents that runs concurrently until every member settles, and returns one report row per member — final output, status, tokens, child session id, and the engine-validated artifact pointers its structured result named. Each member does not see this conversation, so give every member a complete, standalone prompt, and give a member whose payload you need structured an `output_schema` (declare an `artifacts` array on it to have file paths and HTTP(S) URIs promoted to validated pointers). Use it to fan out independent work (research across several questions, parallel implementation, multi-reviewer checks) in one call instead of one delegation per subtask. A member that fails or exceeds its budget settles as a failed or budget-killed row; the wave still returns, with any token ceilings enforced by the engine.
 
 ```json
 {
@@ -1778,6 +1778,9 @@ Dispatch a wave: a fleet of one-shot subagents that runs concurrently until ever
           "reasoning_effort": {
             "type": "string",
             "description": "Reasoning effort for this member when the effective provider route supports one."
+          },
+          "output_schema": {
+            "description": "Object-rooted JSON Schema this member's final answer must satisfy; a valid answer returns as the row's `structured` value. Declare an `artifacts` array of `{\"kind\":\"file\",\"path\":\"…\"}` or `{\"kind\":\"uri\",\"uri\":\"https://…\"}` entries to have the engine promote validated artifact pointers onto the row."
           }
         },
         "required": [

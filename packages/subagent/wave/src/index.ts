@@ -24,6 +24,7 @@ export {
 } from './service.ts'
 export type {
   ResolvedWaveConfig,
+  WaveArtifactPointer,
   WaveMemberRequest,
   WaveMemberResult,
   WaveMemberSpec,
@@ -31,6 +32,7 @@ export type {
   WaveMemberView,
   WaveRequest,
   WaveResult,
+  WaveResultEnvelope,
   WaveRuntimeConfig,
   WaveView,
 } from './types.ts'

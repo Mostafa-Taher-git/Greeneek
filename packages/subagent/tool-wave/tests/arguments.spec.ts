@@ -62,6 +62,32 @@ describe('parseDispatchArguments', () => {
     expect(request.maxWaveTokens).toBe(40)
   })
 
+  it('passes a member output schema through as the request outputSchema', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        verdict: { type: 'string' },
+        artifacts: { type: 'array', items: { type: 'object', properties: { kind: { type: 'string' } } } },
+      },
+      additionalProperties: false,
+    }
+    const request = parseDispatchArguments({
+      label: 'structured',
+      members: [{ prompt: 'task', output_schema: schema }],
+    }, 'configured')
+    expect(request.members[0]?.request.outputSchema).toEqual(schema)
+  })
+
+  it('rejects a member output schema outside the enforced subset', () => {
+    const error = throwOf(() => parseDispatchArguments({
+      label: 'bad schema',
+      members: [{ prompt: 'task' }, { prompt: 'other', output_schema: { type: 'string' } }],
+    }, 'configured'))
+    expect(error?.violations).toEqual([
+      'members[1].output_schema: schema.type must be "object" (structured output is object-rooted)',
+    ])
+  })
+
   it('rejects a member list entry count outside the fleet bounds', () => {
     const empty = throwOf(() => parseDispatchArguments({ label: 'x', members: [] }, 'configured'))
     expect(empty?.violations).toEqual(['a wave requires at least one member'])

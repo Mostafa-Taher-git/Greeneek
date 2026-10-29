@@ -7,6 +7,7 @@ import type { ContentBlock } from '@greeneek/gnk-llm'
 import type { SessionEventMap } from '@greeneek/gnk-session'
 import type { ResolvedSubagentStartRequest, SubagentResult, SubagentRun } from '@greeneek/gnk-subagent'
 import { truncateUtf8 } from '../src/service.ts'
+import { MAX_WAVE_ARTIFACTS } from '../src/artifacts.ts'
 import WaveRuntime, {
   MAX_CONCURRENT_CEILING,
   MAX_RESULT_BYTES_CEILING,
@@ -161,7 +162,7 @@ describe('WaveRuntime dispatch and settlement', () => {
       { type: 'text', text: 'second' },
       { type: 'text', text: 'third' },
     ])
-    expect(result.members[2]).toMatchObject({ structured: { verdict: 'ok' }, truncated: false })
+    expect(result.members[2]).toMatchObject({ structured: { verdict: 'ok' }, envelope: { truncated: false } })
     expect(provider.runs.every(run => run.dispose.mock.calls.length === 1)).toBe(true)
     expect(waves.listWaves(parent.id)[0]?.closed).toBe(true)
 
@@ -640,7 +641,7 @@ describe('WaveRuntime result limits', () => {
     const exactWave = exact.waves.startWave(waveRequest(exact.parent, [member()]))
     await vi.waitFor(() => { expect(exact.provider.runs).toHaveLength(1) })
     exact.provider.runs[0]!.deferred.resolve(completed('x'.repeat(1024)))
-    await expect(exactWave).resolves.toMatchObject({ members: [{ truncated: false }] })
+    await expect(exactWave).resolves.toMatchObject({ members: [{ envelope: { truncated: false } }] })
 
     const oversized = await setupWave({ maxResultBytes: 1024 })
     const pending = oversized.waves.startWave(waveRequest(oversized.parent, [member()]))
@@ -655,7 +656,7 @@ describe('WaveRuntime result limits', () => {
     })
     const result = await pending
     const row = result.members[0]!
-    expect(row.truncated).toBe(true)
+    expect(row.envelope.truncated).toBe(true)
     expect(textBytes(row)).toBeLessThanOrEqual(1024)
     expect(row.output.some(block => block.type === 'reasoning')).toBe(true)
     expect(JSON.stringify(row.output)).not.toContain('\uFFFD')
@@ -671,11 +672,11 @@ describe('WaveRuntime result limits', () => {
     provider.runs[1]!.deferred.resolve(completed('second', circular))
     provider.runs[2]!.deferred.resolve(completed('third', { verdict: 'ok' }))
     const result = await pending
-    expect(result.members[0]).toMatchObject({ truncated: true })
+    expect(result.members[0]).toMatchObject({ envelope: { truncated: true } })
     expect(result.members[0]).not.toHaveProperty('structured')
-    expect(result.members[1]).toMatchObject({ truncated: true })
+    expect(result.members[1]).toMatchObject({ envelope: { truncated: true } })
     expect(result.members[1]).not.toHaveProperty('structured')
-    expect(result.members[2]).toMatchObject({ truncated: false, structured: { verdict: 'ok' } })
+    expect(result.members[2]).toMatchObject({ structured: { verdict: 'ok' }, envelope: { truncated: false } })
   })
 
   it('caps mixed output where early text blocks fit fully before a cut', async () => {
@@ -694,10 +695,122 @@ describe('WaveRuntime result limits', () => {
     })
     const result = await pending
     const row = result.members[0]!
-    expect(row.truncated).toBe(true)
+    expect(row.envelope.truncated).toBe(true)
     expect(textBytes(row)).toBe(1024)
     const texts = row.output.map(block => block.type === 'text' ? block.text : `reasoning:${block.type}`)
     expect(texts).toEqual(['a'.repeat(700), 'reasoning:reasoning', 'b'.repeat(300), 'c'.repeat(24), ''])
+  })
+})
+
+describe('WaveRuntime artifact pointers and result envelopes', () => {
+  const ARTIFACT_SCHEMA = {
+    type: 'object',
+    properties: {
+      verdict: { type: 'string' },
+      artifacts: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: { kind: { type: 'string' }, path: { type: 'string' }, uri: { type: 'string' } },
+        },
+      },
+    },
+  } as const
+
+  it('forwards the member request outputSchema to the subagent seam', async () => {
+    const { waves, provider, parent } = await setupWave()
+    const pending = waves.startWave(waveRequest(parent, [member({ outputSchema: ARTIFACT_SCHEMA })]))
+    await vi.waitFor(() => { expect(provider.runs).toHaveLength(1) })
+    provider.runs[0]!.deferred.resolve(completed('done'))
+    await pending
+    expect(provider.requests[0]?.outputSchema).toEqual(ARTIFACT_SCHEMA)
+  })
+
+  it('promotes validated pointers onto the envelope, live view, and both durable rows', async () => {
+    const { waves, provider, parent } = await setupWave()
+    const pointers = [
+      { kind: 'file', path: 'src/answer.ts' },
+      { kind: 'uri', uri: 'https://example.com/report' },
+    ]
+    const pending = waves.startWave(waveRequest(parent, [member()]))
+    await vi.waitFor(() => { expect(provider.runs).toHaveLength(1) })
+    // A running member has no settled result yet, so its live row carries none.
+    expect(waves.listWaves(parent.id)[0]?.members[0]).not.toHaveProperty('artifacts')
+    provider.runs[0]!.deferred.resolve(completed('done', { verdict: 'ok', artifacts: pointers }))
+    const result = await pending
+    expect(result.members[0]?.envelope).toMatchObject({
+      schemaVersion: 1,
+      truncated: false,
+      stopReason: 'completed',
+      artifacts: pointers,
+    })
+    expect(typeof result.members[0]?.envelope.heartbeatAt).toBe('number')
+    expect(waves.listWaves(parent.id)[0]?.members[0]?.artifacts).toEqual(pointers)
+    expect(memberSettledData(parent)[0]?.artifacts).toEqual(pointers)
+    expect(waveSettledData(parent)[0]?.members[0]?.artifacts).toEqual(pointers)
+  })
+
+  it('drops malformed claims, keeps the valid rest in order, and never reads prose', async () => {
+    const { waves, provider, parent } = await setupWave()
+    const pending = waves.startWave(waveRequest(parent, [member()]))
+    await vi.waitFor(() => { expect(provider.runs).toHaveLength(1) })
+    provider.runs[0]!.deferred.resolve(completed('wrote src/leak.ts and https://example.com/leak', {
+      verdict: 'ok',
+      artifacts: [
+        { kind: 'file', path: '' },
+        { kind: 'uri', uri: 'javascript:alert(1)' },
+        { kind: 'file', path: 'keep/me.txt', uri: 'https://extra.example/x' },
+        { kind: 'file', path: 'good.txt' },
+      ],
+    }))
+    const result = await pending
+    // Only the valid `good.txt` claim survives; the prose path and URL in the
+    // output text promote nothing.
+    expect(result.members[0]?.envelope.artifacts).toEqual([{ kind: 'file', path: 'good.txt' }])
+    expect(memberSettledData(parent)[0]?.artifacts).toEqual([{ kind: 'file', path: 'good.txt' }])
+  })
+
+  it('caps the promoted pointers at the documented bound', async () => {
+    const { waves, provider, parent } = await setupWave()
+    const pending = waves.startWave(waveRequest(parent, [member()]))
+    await vi.waitFor(() => { expect(provider.runs).toHaveLength(1) })
+    const claims = Array.from({ length: MAX_WAVE_ARTIFACTS + 4 }, (_, index) => ({
+      kind: 'file',
+      path: `out-${index}.txt`,
+    }))
+    provider.runs[0]!.deferred.resolve(completed('done', { artifacts: claims }))
+    const result = await pending
+    expect(result.members[0]?.envelope.artifacts).toHaveLength(MAX_WAVE_ARTIFACTS)
+    expect(result.members[0]?.envelope.artifacts?.at(-1)).toEqual({
+      kind: 'file',
+      path: `out-${MAX_WAVE_ARTIFACTS - 1}.txt`,
+    })
+  })
+
+  it('carries no envelope artifacts when a member settles from prose alone', async () => {
+    const { waves, provider, parent } = await setupWave()
+    const pending = waves.startWave(waveRequest(parent, [member()]))
+    await vi.waitFor(() => { expect(provider.runs).toHaveLength(1) })
+    provider.runs[0]!.deferred.resolve(completed('see /tmp/report.json and https://example.com/x'))
+    const result = await pending
+    expect(result.members[0]?.envelope).not.toHaveProperty('artifacts')
+    expect(result.members[0]?.envelope).toMatchObject({ schemaVersion: 1, truncated: false, stopReason: 'completed' })
+    expect(waves.listWaves(parent.id)[0]?.members[0]).not.toHaveProperty('artifacts')
+    expect(memberSettledData(parent)[0]).not.toHaveProperty('artifacts')
+  })
+
+  it('seals a failed member with its terminal reason and no artifacts', async () => {
+    const { waves, provider, parent } = await setupWave()
+    const pending = waves.startWave(waveRequest(parent, [member()]))
+    await vi.waitFor(() => { expect(provider.runs).toHaveLength(1) })
+    provider.runs[0]!.deferred.resolve({ output: [], diagnostic: 'provider failed', stopReason: 'error' })
+    const result = await pending
+    expect(result.members[0]?.envelope).toMatchObject({
+      schemaVersion: 1,
+      truncated: false,
+      stopReason: 'error',
+    })
+    expect(result.members[0]?.envelope).not.toHaveProperty('artifacts')
   })
 })
 

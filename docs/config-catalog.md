@@ -3092,7 +3092,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/subagent/tool-wave/src/index.ts:30`](../packages/subagent/tool-wave/src/index.ts)
+Source: [`packages/subagent/tool-wave/src/index.ts:31`](../packages/subagent/tool-wave/src/index.ts)
 
 <a id="greeneekgnk-tool-web"></a>
 

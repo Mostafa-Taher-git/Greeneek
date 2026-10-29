@@ -102,6 +102,29 @@ describe('FleetPanel rows', () => {
     expect(screen.getByText(en['duration.seconds'].replace('{seconds}', '2'))).toBeDefined()
   })
 
+  it('shows a settled member artifact count with the pointer addresses as its title', () => {
+    const { source } = setup()
+    act(() => {
+      source.set({
+        waveViews: [wave({
+          members: [member({
+            status: 'completed',
+            artifacts: [
+              { kind: 'file', path: 'src/answer.ts' },
+              { kind: 'uri', uri: 'https://example.com/report' },
+            ],
+          })],
+        })],
+        stoppable: true,
+        degraded: false,
+        loading: false,
+      })
+    })
+    expect(screen.getByText(en['artifacts.count'].replace('{count}', '2'))).toBeDefined()
+    // The title carries one address per line; the query normalizes the newline.
+    expect(screen.getByTitle('src/answer.ts https://example.com/report')).toBeDefined()
+  })
+
   it('reads a metered spend against the wave ceiling in place of the plain token count', () => {
     const { source } = setup()
     act(() => {

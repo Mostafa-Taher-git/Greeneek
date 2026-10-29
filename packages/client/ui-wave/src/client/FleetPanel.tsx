@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { StateDot } from '@greeneek/gnk-client-ui-primitives'
+import type { WaveArtifactPointer } from '@greeneek/gnk-subagent-wave/client'
 import type { FleetPanelProps } from './contract.ts'
 import { isCancellable, MEMBER_STATE } from './member-state.ts'
 import css from './FleetPanel.module.css'
@@ -17,6 +18,16 @@ function formatDuration(durationMs: number, t: FleetPanelProps['t']): string {
   return elapsed < 1_000
     ? t('duration.milliseconds', { milliseconds: Math.round(elapsed) })
     : t('duration.seconds', { seconds: Math.round(elapsed / 1_000) })
+}
+
+/**
+ * Render one validated artifact pointer as its address. The kind is the
+ * pointer's own vocabulary, so the label is the raw address.
+ * @param pointer - the engine-validated pointer.
+ * @returns the pointer's address text.
+ */
+function pointerLabel(pointer: WaveArtifactPointer): string {
+  return pointer.kind === 'file' ? pointer.path ?? '' : pointer.uri ?? ''
 }
 
 /**
@@ -96,6 +107,14 @@ export function FleetPanel({
                     )}
                     {member.durationMs !== undefined && (
                       <span className={css.duration}>{formatDuration(member.durationMs, t)}</span>
+                    )}
+                    {member.artifacts !== undefined && member.artifacts.length > 0 && (
+                      <span
+                        className={css.artifacts}
+                        title={member.artifacts.map(pointerLabel).join('\n')}
+                      >
+                        {t('artifacts.count', { count: member.artifacts.length })}
+                      </span>
                     )}
                     <span className={css.tokens}>{spend}</span>
                   </span>

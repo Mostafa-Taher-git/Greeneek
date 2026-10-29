@@ -169,10 +169,18 @@
 }
 
 .lastTool,
-.duration {
+.duration,
+.artifacts {
   flex: none;
   color: var(--dsw-alias-label-tertiary);
   font-family: var(--ds-font-family-code);
+}
+
+.artifacts {
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .duration {

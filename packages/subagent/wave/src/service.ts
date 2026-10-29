@@ -23,11 +23,13 @@ import { SessionLogOffset } from '@greeneek/gnk-session'
 import type { SessionId } from '@greeneek/gnk-session'
 import { Remote, RemoteError, TypertRemoteService } from '@greeneek/gnk-typert-protocol'
 import { z as zod } from 'zod'
+import { validateArtifacts } from './artifacts.ts'
 import { WaveError } from './error.ts'
 import { Semaphore } from './semaphore.ts'
 import type { SubagentResult, SubagentRun } from '@greeneek/gnk-subagent'
 import type {
   ResolvedWaveConfig,
+  WaveArtifactPointer,
   WaveId,
   WaveMemberId,
   WaveMemberResult,
@@ -36,6 +38,7 @@ import type {
   WaveMemberView,
   WaveRequest,
   WaveResult,
+  WaveResultEnvelope,
   WaveRuntimeConfig,
   WaveView,
 } from './types.ts'
@@ -104,6 +107,21 @@ function durationOf(member: MemberState): number | undefined {
   return member.startedAtMs === undefined || member.endedAtMs === undefined
     ? undefined
     : member.endedAtMs - member.startedAtMs
+}
+
+/**
+ * Validated artifact pointers of one member's settled structured result. The
+ * structured value is the only pointer origin — prose output is never read —
+ * and the engine validates every claim before publishing it, so a member
+ * still running (no result yet) contributes none.
+ * @param member - the member whose settled result to read.
+ * @returns the validated pointers; empty before settlement or when the
+ *   structured result names none.
+ */
+function memberArtifacts(member: MemberState): readonly WaveArtifactPointer[] {
+  const structured = member.result?.structured
+  if (structured === null || typeof structured !== 'object' || Array.isArray(structured)) return []
+  return validateArtifacts((structured as Record<string, unknown>).artifacts)
 }
 
 interface MemberState {
@@ -571,8 +589,10 @@ export class WaveRuntime extends TypertRemoteService {
     tokensUsed: number
     durationMs?: number
     diagnostic?: string
+    artifacts?: readonly WaveArtifactPointer[]
   } {
     const durationMs = durationOf(member)
+    const artifacts = memberArtifacts(member)
     return {
       memberId: String(member.memberId),
       memberIndex: member.index,
@@ -582,6 +602,7 @@ export class WaveRuntime extends TypertRemoteService {
       tokensUsed: member.tokensUsed,
       ...(durationMs === undefined ? {} : { durationMs }),
       ...(member.diagnostic === undefined ? {} : { diagnostic: member.diagnostic }),
+      ...(artifacts.length === 0 ? {} : { artifacts }),
     }
   }
 
@@ -693,6 +714,7 @@ export class WaveRuntime extends TypertRemoteService {
   private viewMember(wave: WaveState, member: MemberState): WaveMemberView {
     const durationMs = durationOf(member)
     const budgetLimit = wave.request.maxTokensPerMember
+    const artifacts = memberArtifacts(member)
     return {
       memberId: member.memberId,
       provider: member.spec.provider,
@@ -708,10 +730,11 @@ export class WaveRuntime extends TypertRemoteService {
       ...(durationMs === undefined ? {} : { durationMs }),
       ...(member.budgetUsed === undefined ? {} : { budgetUsed: member.budgetUsed }),
       ...(budgetLimit === undefined ? {} : { budgetLimit }),
+      ...(artifacts.length === 0 ? {} : { artifacts }),
     }
   }
 
-  /** Terminal record with the configured byte cap applied to output and structured. */
+  /** Terminal record: capped payload beside the engine's versioned seal. */
   private resultOf(wave: WaveState, member: MemberState): WaveMemberResult {
     const base = this.viewMember(wave, member)
     const cap = this.config.maxResultBytes
@@ -749,12 +772,20 @@ export class WaveRuntime extends TypertRemoteService {
         truncated = true
       }
     }
+    const artifacts = base.artifacts
+    const envelope: WaveResultEnvelope = {
+      schemaVersion: 1,
+      // resultOf is the seal operation itself; the stamp is the seal's clock.
+      heartbeatAt: Date.now(),
+      truncated,
+      ...(member.result?.stopReason === undefined ? {} : { stopReason: member.result.stopReason }),
+      ...(artifacts === undefined ? {} : { artifacts }),
+    }
     return {
       ...base,
       output,
-      truncated,
+      envelope,
       ...(keptStructured && structured !== undefined ? { structured } : {}),
-      ...(member.result?.stopReason === undefined ? {} : { stopReason: member.result.stopReason }),
     }
   }
 }

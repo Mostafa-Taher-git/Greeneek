@@ -8,6 +8,7 @@
  */
 
 export type {
+  WaveArtifactPointer,
   WaveId,
   WaveMemberId,
   WaveMemberStatus,

@@ -1118,7 +1118,7 @@ Source: [`packages/core/session/src/types.ts:289`](../packages/core/session/src/
 }
 ```
 
-Source: [`packages/subagent/wave/src/types.ts:107`](../packages/subagent/wave/src/types.ts)
+Source: [`packages/subagent/wave/src/types.ts:133`](../packages/subagent/wave/src/types.ts)
 
 <a id="wavemember-settled--log-only"></a>
 
@@ -1153,10 +1153,17 @@ Source: [`packages/subagent/wave/src/types.ts:107`](../packages/subagent/wave/sr
   durationMs?: number
   /** Terminal detail when the settlement recorded one; absent otherwise. */
   diagnostic?: string
+  /**
+   * Validated artifact pointers the member's settled structured result
+   * named; absent when it named none. Log-only mirror of the envelope's
+   * `artifacts`, so a replayed log reconstructs what the Lead's report
+   * carried.
+   */
+  artifacts?: readonly WaveArtifactPointer[]
 }
 ```
 
-Source: [`packages/subagent/wave/src/types.ts:138`](../packages/subagent/wave/src/types.ts)
+Source: [`packages/subagent/wave/src/types.ts:164`](../packages/subagent/wave/src/types.ts)
 
 <a id="wavesettled--log-only"></a>
 
@@ -1191,11 +1198,17 @@ Source: [`packages/subagent/wave/src/types.ts:138`](../packages/subagent/wave/sr
     durationMs?: number
     /** Terminal detail when the member's settlement recorded one; absent otherwise. */
     diagnostic?: string
+    /**
+     * Validated artifact pointers the member's settled structured result
+     * named; absent when it named none. Same shape as the member's own
+     * settlement record.
+     */
+    artifacts?: readonly WaveArtifactPointer[]
   }[]
 }
 ```
 
-Source: [`packages/subagent/wave/src/types.ts:167`](../packages/subagent/wave/src/types.ts)
+Source: [`packages/subagent/wave/src/types.ts:200`](../packages/subagent/wave/src/types.ts)
 
 ### `web/*`
 

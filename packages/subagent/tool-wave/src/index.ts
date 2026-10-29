@@ -3,9 +3,10 @@
  * as two tools. `wave_dispatch` fans out a one-shot fleet of one-shot
  * subagent members, waits for the whole wave to settle, and renders the
  * settled result — per-member status, token, and output rows plus diagnostics
- * — in the model-facing payload. `wave_cancel` cancels one retained wave by
- * id, or every unsettled fleet of the calling session, by way of the
- * engine's parent-scoped views so no foreign wave is ever addressed.
+ * and validated artifact pointers — in the model-facing payload. `wave_cancel`
+ * cancels one retained wave by id, or every unsettled fleet of the calling
+ * session, by way of the engine's parent-scoped views so no foreign wave is
+ * ever addressed.
  *
  * Both tools mount inside one effect: a partial teardown can never leave the
  * cancel button registered without its dispatcher.
@@ -59,12 +60,14 @@ function dispatchTool(ctx: Context, defaultProvider: string): ToolDefinition {
   return defineTool({
     name: 'wave_dispatch',
     description: 'Dispatch a wave: a fleet of one-shot subagents that runs concurrently until every member '
-      + 'settles, and returns one report row per member — final output, status, tokens, and child session id. '
-      + 'Each member does not see this conversation, so give every member a complete, standalone prompt. '
-      + 'Use it to fan out independent work (research across several questions, parallel implementation, '
-      + 'multi-reviewer checks) in one call instead of one delegation per subtask. A member that fails or '
-      + 'exceeds its budget settles as a failed or budget-killed row; the wave still returns, with any token '
-      + 'ceilings enforced by the engine.',
+      + 'settles, and returns one report row per member — final output, status, tokens, child session id, and '
+      + 'the engine-validated artifact pointers its structured result named. Each member does not see this '
+      + 'conversation, so give every member a complete, standalone prompt, and give a member whose payload '
+      + 'you need structured an `output_schema` (declare an `artifacts` array on it to have file paths and '
+      + 'HTTP(S) URIs promoted to validated pointers). Use it to fan out independent work (research across '
+      + 'several questions, parallel implementation, multi-reviewer checks) in one call instead of one '
+      + 'delegation per subtask. A member that fails or exceeds its budget settles as a failed or '
+      + 'budget-killed row; the wave still returns, with any token ceilings enforced by the engine.',
     parameters: dispatchParameters,
     output: {
       schema: {
@@ -93,6 +96,7 @@ function dispatchTool(ctx: Context, defaultProvider: string): ToolDefinition {
                 truncated: { type: 'boolean', required: true },
                 output: { type: 'array', required: true, items: { type: 'json' } },
                 structured: { type: 'json' },
+                artifacts: { type: 'array', items: { type: 'json' } },
               },
             },
           },

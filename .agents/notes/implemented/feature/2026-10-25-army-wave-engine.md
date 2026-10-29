@@ -31,7 +31,7 @@ The engine ships as `packages/subagent/wave` (`@greeneek/gnk-subagent-wave`), mo
 
 - Nothing mounts `ctx.waves` yet: no preset, profile, or model-facing tool, so Army mode stays invisible to sessions until the Lead tool Consumer and fleet view land next; an idle context pays zero.
 - Budget enforcement is honest only with a token usage projection mounted: with budgets configured but no meter, kills read zero (documented in the package README's Known Limitations).
-- There is no durable wave record — a restart mid-wave cancels by teardown; the fleet Session events (plus the persistence catalog regen they require) belong to the Army UI wave.
+- There is no durable wave record owned by this note's decision — the three log-only `wave/*` Session events and their reader guarantees landed separately under [Army wave lifecycle lands as three log-only wave/* Session events](2026-10-25-army-wave-session-events.md); a restart mid-wave still cancels members by teardown.
 - The subagent group table, tsconfig path aliases, host project reference, workspace lockfile, and the cordis catalog (service rendered on `docs/subsystems/subagent.md`, wave contract types classified to the package's own `src/types.ts`) all register the new package.
 
 ## Verification

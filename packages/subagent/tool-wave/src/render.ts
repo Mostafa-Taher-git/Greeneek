@@ -26,6 +26,27 @@ import type { JsonValue } from '@greeneek/gnk-util-values'
  */
 export type WaveMemberStatusReport = Exclude<WaveMemberStatus, 'queued' | 'running'>
 
+/**
+ * Sanitize the validated artifact pointers of one member envelope into lossless
+ * JSON rows. The engine already validated shape and bounds, so the only
+ * transformation here is the JSON boundary itself.
+ * @param member - the settled member record.
+ * @returns the pointer rows, or an empty spread when the member named none.
+ */
+function artifactsRow(member: WaveMemberResult): { artifacts?: JsonValue[] } {
+  const artifacts = member.envelope.artifacts
+  if (artifacts === undefined) return {}
+  const sanitized: JsonValue[] = []
+  for (const pointer of artifacts) {
+    try {
+      sanitized.push(JSON.parse(JSON.stringify(pointer)) as JsonValue)
+    } catch {
+      // An unrepresentable pointer cannot render; skip it and keep the rest.
+    }
+  }
+  return sanitized.length === 0 ? {} : { artifacts: sanitized }
+}
+
 /** One member row of the settled-wave report. */
 export interface WaveMemberReportRow {
   /** Dispatch position within the wave. */
@@ -54,6 +75,8 @@ export interface WaveMemberReportRow {
   readonly output: JsonValue[]
   /** The engine-capped structured result, JSON-sanitized. */
   readonly structured?: JsonValue
+  /** The engine-validated artifact pointers the member's structured result named. */
+  readonly artifacts?: JsonValue[]
 }
 
 /** Canonical value of `wave_dispatch`. */
@@ -127,17 +150,18 @@ export function memberReportRow(member: WaveMemberResult, index: number): WaveMe
     // own `memberRow`: settled members are always terminal.
     status: member.status as WaveMemberStatusReport,
     tokens_used: member.tokensUsed,
-    truncated: member.truncated,
+    truncated: member.envelope.truncated,
     // Content blocks cross durable JSON boundaries elsewhere in the repo;
     // the registry performs the authoritative lossless snapshot when the
     // tool result is logged.
     output: member.output as unknown as JsonValue[],
     ...(member.role === undefined ? {} : { role: member.role }),
     ...(member.model === undefined ? {} : { model: member.model }),
-    ...(member.stopReason === undefined ? {} : { stop_reason: member.stopReason }),
+    ...(member.envelope.stopReason === undefined ? {} : { stop_reason: member.envelope.stopReason }),
     ...(member.childSessionId === undefined ? {} : { child_session_id: String(member.childSessionId) }),
     ...(member.diagnostic === undefined ? {} : { diagnostic: member.diagnostic }),
     ...structuredRow(member),
+    ...artifactsRow(member),
   }
 }
 
@@ -199,6 +223,24 @@ function renderFacts(row: WaveMemberReportRow): string {
 }
 
 /**
+ * One member row's artifacts line: the validated pointers as `kind value`
+ * fragments, joined for a single detail line.
+ * @param row - the report row.
+ * @returns the joined artifacts line, or `undefined` when the member named none.
+ */
+function renderArtifacts(row: WaveMemberReportRow): string | undefined {
+  const artifacts = row.artifacts
+  if (artifacts === undefined) return undefined
+  const fragments: string[] = []
+  for (const pointer of artifacts) {
+    if (typeof pointer !== 'object' || pointer === null || Array.isArray(pointer)) continue
+    if (pointer.kind === 'file' && typeof pointer.path === 'string') fragments.push(`file ${pointer.path}`)
+    else if (pointer.kind === 'uri' && typeof pointer.uri === 'string') fragments.push(`uri ${pointer.uri}`)
+  }
+  return fragments.length === 0 ? undefined : `artifacts: ${fragments.join(', ')}`
+}
+
+/**
  * Flatten the text blocks of one member's capped output. Non-text blocks are
  * report-only data: their kind is not addressable prose, so they are skipped
  * instead of stringified.
@@ -231,6 +273,8 @@ export function renderWaveReport(report: WaveReport): ContentBlock[] {
     if (facts.length > 0) lines.push(`  ${facts}`)
     if (row.diagnostic !== undefined) lines.push(`  diagnostic: ${row.diagnostic}`)
     if (row.structured !== undefined) lines.push(`  structured: ${JSON.stringify(row.structured)}`)
+    const artifacts = renderArtifacts(row)
+    if (artifacts !== undefined) lines.push(`  ${artifacts}`)
     lines.push(`  output: ${outputText(row.output)}`)
   }
   return [{ type: 'text', text: lines.join('\n') }]

@@ -61,6 +61,9 @@ function signature(views: readonly WaveView[]): string {
       member.memberId, member.status, member.tokensUsed, member.budgetUsed ?? '',
       member.budgetLimit ?? '', member.lastTool ?? '', member.durationMs ?? '',
       member.childSessionId ?? '', member.diagnostic ?? '',
+      member.artifacts === undefined
+        ? ''
+        : member.artifacts.map(pointer => `${pointer.kind}:${pointer.path ?? pointer.uri ?? ''}`).join(','),
     ].join('|')).join(';'),
   ].join(':')).join(',')
 }

@@ -10,7 +10,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { SessionId } from '@greeneek/gnk-session'
 import type { ContentBlock } from '@greeneek/gnk-llm'
 import { WaveId, WaveMemberId } from '@greeneek/gnk-subagent-wave'
-import type { WaveMemberResult, WaveView } from '@greeneek/gnk-subagent-wave'
+import type { WaveMemberResult, WaveResultEnvelope, WaveView } from '@greeneek/gnk-subagent-wave'
 import {
   cancelWaveValue,
   memberReportRow,
@@ -32,18 +32,19 @@ function view(waveId: string, closed: boolean): WaveView {
 }
 
 /** One settled engine member record with every optional field overridable. */
-function settledMember(over: Partial<WaveMemberResult> = {}): WaveMemberResult {
-  const base: WaveMemberResult = {
+function settledMember(
+  over: Partial<Omit<WaveMemberResult, 'envelope'>> & { readonly envelope?: Partial<WaveResultEnvelope> } = {},
+): WaveMemberResult {
+  const { envelope, ...rest } = over
+  return {
     memberId: WaveMemberId('w1:2'),
     provider: 'constant',
     status: 'completed',
     tokensUsed: 5,
-    truncated: false,
     output: [{ type: 'text', text: 'member answer' }],
-    stopReason: 'completed',
-    ...over,
+    envelope: { schemaVersion: 1, heartbeatAt: 0, truncated: false, stopReason: 'completed', ...envelope },
+    ...rest,
   }
-  return base
 }
 
 /** The flattened text of one model-facing report block; any other block kind fails loud. */
@@ -59,7 +60,7 @@ describe('waveReportValue', () => {
       model: 'fast-model',
       diagnostic: 'n/a detail',
       childSessionId: SessionId('child-2'),
-      truncated: true,
+      envelope: { truncated: true, artifacts: [{ kind: 'file', path: 'src/a.ts' }, { kind: 'uri', uri: 'https://e.com/b' }] },
       structured: { keep: [1, 2] },
     }), 2)
     expect(row).toEqual({
@@ -76,6 +77,7 @@ describe('waveReportValue', () => {
       truncated: true,
       output: [{ type: 'text', text: 'member answer' }],
       structured: { keep: [1, 2] },
+      artifacts: [{ kind: 'file', path: 'src/a.ts' }, { kind: 'uri', uri: 'https://e.com/b' }],
     })
   })
 
@@ -172,6 +174,7 @@ describe('renderWaveReport', () => {
         truncated: true,
         output: [{ type: 'text', text: 'alpha part' }, { type: 'image', url: 'safe' }, { type: 'text', text: 'beta part' }],
         structured: { ok: 1 },
+        artifacts: [{ kind: 'file', path: 'src/patch.ts' }, { kind: 'uri', uri: 'https://e.com/notes' }],
       }],
     })
     expect(textOf(block)).toEqual([
@@ -180,6 +183,7 @@ describe('renderWaveReport', () => {
       '  child session child-2, stop reason error, truncated',
       '  diagnostic: route failed',
       '  structured: {"ok":1}',
+      '  artifacts: file src/patch.ts, uri https://e.com/notes',
       '  output: alpha partbeta part',
     ].join('\n'))
   })

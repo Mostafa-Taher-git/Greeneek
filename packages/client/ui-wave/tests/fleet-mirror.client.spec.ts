@@ -227,6 +227,23 @@ describe('FleetMirror sampling', () => {
     await vi.advanceTimersByTimeAsync(1_000)
     await flushWindow()
     expect(mirror.getSnapshot().waveViews[0]?.members[0]?.durationMs).toBe(250)
+
+    // A settled member's artifacts arrive with its result; the same row
+    // republishes once the pointers land.
+    remote.list.mockResolvedValue({
+      ok: true,
+      value: [wave({
+        members: [member({
+          lastTool: 'bash', budgetUsed: 40, budgetLimit: 100,
+          status: 'completed', durationMs: 250,
+          artifacts: [{ kind: 'file', path: 'src/answer.ts' }],
+        })],
+      })],
+    })
+    await vi.advanceTimersByTimeAsync(1_000)
+    await flushWindow()
+    expect(mirror.getSnapshot().waveViews[0]?.members[0]?.artifacts)
+      .toEqual([{ kind: 'file', path: 'src/answer.ts' }])
     mirror.dispose()
   })
 

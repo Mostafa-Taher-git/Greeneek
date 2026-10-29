@@ -38,6 +38,20 @@ export function WaveMemberId(id: string): WaveMemberId {
 /** Lifecycle state of one wave member. */
 export type WaveMemberStatus = 'queued' | 'running' | 'completed' | 'failed' | 'cancelled' | 'budget-killed'
 
+/**
+ * One artifact a settled member named inside its own structured result. The
+ * engine validates the pointer's shape and bounds before publishing it; a
+ * member's prose output is never a pointer source.
+ */
+export interface WaveArtifactPointer {
+  /** What the pointer addresses: a workspace file path or an HTTP(S) URI. */
+  readonly kind: 'file' | 'uri'
+  /** The path of a `file` pointer; absent on a `uri` pointer. */
+  readonly path?: string
+  /** The absolute HTTP(S) URI of a `uri` pointer; absent on a `file` pointer. */
+  readonly uri?: string
+}
+
 /** Live fleet row for one member, safe to render while the wave runs. */
 export interface WaveMemberView {
   /** Stable member identity within the wave. */
@@ -72,11 +86,13 @@ export interface WaveMemberView {
    */
   readonly durationMs?: number
   /**
-   * Pointer strings to artifacts the member's settled result named. The
-   * subagent result carries no artifact vocabulary, so no source fills this and
-   * a row must render it only when present.
+   * Validated artifact pointers the member's settled structured result named
+   * under its reserved `artifacts` property, in the child's order. Populated
+   * only from that structured value — never from the member's prose output —
+   * and only after the engine validated every pointer's shape and bounds;
+   * absent until the member settles.
    */
-  readonly artifacts?: readonly string[]
+  readonly artifacts?: readonly WaveArtifactPointer[]
   /**
    * Tokens charged against the member budget by the `tokenUsage` projection.
    * Absent until the projection has metered at least one step, and reached

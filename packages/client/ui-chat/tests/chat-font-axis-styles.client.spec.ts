@@ -162,3 +162,10 @@ describe('chat flow font-size axis', () => {
     ]))
   })
 })
+
+describe('user bubble bidi isolation', () => {
+  it('derives each paragraph direction from its first strong character', () => {
+    expect(declarationsFrom(read('MessageItem.module.css'), '.bubble'))
+      .toContain('unicode-bidi: plaintext')
+  })
+})

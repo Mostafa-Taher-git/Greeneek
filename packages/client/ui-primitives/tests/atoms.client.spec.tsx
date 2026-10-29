@@ -312,6 +312,48 @@ describe('Menu', () => {
     expect(screen.queryByRole('menu')).toBeNull()
   })
 
+  it('portal mode hangs a start-aligned menu from the anchor’s right edge under RTL', () => {
+    const rect = { left: 40, right: 72, top: 100, bottom: 128, width: 32, height: 28, x: 40, y: 100, toJSON: () => ({}) } as DOMRect
+    document.documentElement.style.direction = 'rtl'
+    try {
+      render(
+        <Menu
+          portal
+          open
+          getAnchorRect={() => rect}
+          anchor={null}
+          items={items}
+          onSelect={() => {}}
+          onClose={() => {}}
+        />)
+      // jsdom reports no layout width, so the start edge is the anchor's right edge.
+      expect(screen.getByRole('menu').style.left).toBe('72px')
+    } finally {
+      document.documentElement.style.direction = ''
+    }
+  })
+
+  it('portal mode hangs an end-aligned menu from the anchor’s left edge under RTL', () => {
+    const rect = { left: 40, right: 72, top: 100, bottom: 128, width: 32, height: 28, x: 40, y: 100, toJSON: () => ({}) } as DOMRect
+    document.documentElement.style.direction = 'rtl'
+    try {
+      render(
+        <Menu
+          portal
+          open
+          align="end"
+          getAnchorRect={() => rect}
+          anchor={null}
+          items={items}
+          onSelect={() => {}}
+          onClose={() => {}}
+        />)
+      expect(screen.getByRole('menu').style.left).toBe('40px')
+    } finally {
+      document.documentElement.style.direction = ''
+    }
+  })
+
   it('portal mode renders the list under body, positions it fixed, and still closes on outside pointerdown', () => {
     const onSelect = vi.fn()
     const onClose = vi.fn()

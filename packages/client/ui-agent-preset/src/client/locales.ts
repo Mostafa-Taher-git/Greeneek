@@ -14,7 +14,7 @@ export type AgentPresetSettingsKey =
   | 'switcherLabel' | 'switcherComingSoon'
   | 'duplicate' | 'duplicateUnavailable' | 'delete' | 'presetId' | 'presetIdPlaceholder' | 'copyOf'
   | 'displayName' | 'displayNamePlaceholder'
-  | 'inUse' | 'noDescription' | 'builtInGroup' | 'customGroup'
+  | 'defaultBadge' | 'noDescription' | 'builtInGroup' | 'customGroup'
   | 'brokenBadge' | 'brokenNoCopy' | 'switchRefused'
   | 'composition' | 'cancel' | 'close' | 'retry'
   | 'copyTitle' | 'copyIntro' | 'create' | 'creating' | 'creatorDraft'
@@ -65,7 +65,7 @@ export const en: Record<AgentPresetSettingsKey, string> = {
   presetIdPlaceholder: 'my-agent',
   displayName: 'Name',
   displayNamePlaceholder: 'Shown in the picker; defaults to the identifier',
-  inUse: 'In use',
+  defaultBadge: 'Default',
   builtInGroup: 'Built-in',
   customGroup: 'Custom',
   noDescription: 'No description.',
@@ -131,7 +131,7 @@ export const zh: Record<AgentPresetSettingsKey, string> = {
   presetIdPlaceholder: 'my-agent',
   displayName: '名称',
   displayNamePlaceholder: '选择器中显示的名字，缺省用标识符',
-  inUse: '当前使用',
+  defaultBadge: '默认',
   builtInGroup: '内置',
   customGroup: '自定义',
   noDescription: '暂无描述。',
@@ -165,7 +165,7 @@ export const ar = {
   error: 'تعذّر تحميل الإعدادات المسبقة للوكيل.',
   userTrust: 'مخصّص',
   headerHint: 'الإعداد المسبق الذي تشغّله هذه الجلسة، ويُثبَّت عند بدئها',
-  nav: 'الإعدادات المسبقة للوكيل',
+  nav: 'الإعدادات المسبقة',
   sectionIntro: 'الإعداد المسبق هو تركيب الإضافات الذي يشغّله وكيل الجلسة: أدواتها وموجّهها وقدراتها. انسخ أحد الإعدادات الموجودة وعدّلها كما تريد، أو دَع الوكيل يصوغ واحدًا لك في وضع الإنشاء.',
   builtIn: 'مدمج',
   setDefault: 'تعيين كافتراضي',
@@ -194,7 +194,7 @@ export const ar = {
   presetIdPlaceholder: 'my-agent',
   displayName: 'الاسم',
   displayNamePlaceholder: 'يظهر في قائمة الاختيار؛ ويأخذ المعرّف افتراضيًا',
-  inUse: 'قيد الاستخدام',
+  defaultBadge: 'افتراضي',
   builtInGroup: 'مدمج',
   customGroup: 'مخصّص',
   noDescription: 'لا يوجد وصف.',

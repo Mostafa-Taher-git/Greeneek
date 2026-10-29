@@ -90,6 +90,7 @@ export function ConversationSessionHeader({
                   const title = (
                     <button
                       type="button"
+                      dir="auto"
                       className={clsx(
                         css.crumb,
                         summary.subagent && css.crumbSubagent,

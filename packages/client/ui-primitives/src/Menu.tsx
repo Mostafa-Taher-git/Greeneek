@@ -126,14 +126,17 @@ export function Menu({ open, anchor, items, selectedId, selectedIds, onSelect, o
 
       let x: number
       let y: number
+      // `start`/`end` name the reading edge, not the physical side: under RTL
+      // a start-aligned card hangs from the anchor's right edge.
+      const rtl = getComputedStyle(document.documentElement).direction === 'rtl'
       if (side === 'right') {
-        x = r.right + 4
+        x = rtl ? r.left - lw - 4 : r.right + 4
         y = r.top
       } else if (align === 'start') {
-        x = r.left
+        x = rtl ? r.right - lw : r.left
         y = side === 'bottom' ? r.bottom + 4 : r.top - lh - 4
       } else {
-        x = r.right - lw
+        x = rtl ? r.left : r.right - lw
         y = side === 'bottom' ? r.bottom + 4 : r.top - lh - 4
       }
 

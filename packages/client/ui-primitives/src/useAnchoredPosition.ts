@@ -52,7 +52,13 @@ export function useAnchoredPosition(options: AnchoredPositionOptions): CSSProper
       const height = panel?.offsetHeight ?? 0
       let left = rect.left
       let top = side === 'top' ? rect.top - gap - height : rect.bottom + gap
-      if (width > 0) left = Math.min(Math.max(left, margin), window.innerWidth - width - margin)
+      if (width > 0) {
+        // Align the panel's reading-start edge with the anchor's: under RTL
+        // that is the right edge, so a wide panel grows left instead of
+        // covering the inline-end side of the column.
+        if (getComputedStyle(document.documentElement).direction === 'rtl') left = rect.right - width
+        left = Math.min(Math.max(left, margin), window.innerWidth - width - margin)
+      }
       if (height > 0) top = Math.min(Math.max(top, margin), window.innerHeight - height - margin)
       /* v8 ignore stop */
       setPosition({ left, top })

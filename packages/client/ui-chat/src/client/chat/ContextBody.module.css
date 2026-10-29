@@ -6,6 +6,7 @@
   color: var(--dsw-alias-label-secondary);
   font: inherit;
   white-space: pre-wrap;
+  unicode-bidi: plaintext;
   overflow-wrap: anywhere;
 }
 
@@ -124,6 +125,7 @@
   margin: 0;
   color: var(--dsw-alias-label-secondary);
   white-space: pre-wrap;
+  unicode-bidi: plaintext;
   overflow-wrap: anywhere;
 }
 
@@ -158,4 +160,11 @@
 .recallCounts {
   flex: none;
   color: var(--dsw-alias-label-caption);
+}
+
+/* Plaintext context text keeps its own direction; the body stays on the
+   shell's start edge under RTL. */
+:global([dir='rtl']) .text,
+:global([dir='rtl']) .sectionText {
+  text-align: right;
 }

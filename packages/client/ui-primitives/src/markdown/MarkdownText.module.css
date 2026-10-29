@@ -7,6 +7,14 @@
   overflow-wrap: anywhere;
   font: var(--dsw-font-markdown-base);
   color: var(--dsw-alias-label-primary);
+  /* Paragraph direction follows the first strong character: an English
+     answer renders left-to-right inside the RTL shell while Arabic prose
+     stays right-to-left, and neither flips the surrounding layout. */
+  unicode-bidi: plaintext;
+}
+
+.markdown :where(p, li, h1, h2, h3, h4, h5, h6, td, th, blockquote, dt, dd) {
+  unicode-bidi: plaintext;
 }
 
 .markdown strong {
@@ -141,6 +149,8 @@
   margin: 16px 0;
   font-family: var(--ds-font-family-code);
   overflow: auto;
+  direction: ltr;
+  unicode-bidi: isolate;
 }
 
 .markdown :not(pre) > code {
@@ -153,6 +163,8 @@
   background-color: var(--dsw-alias-markdown-inline-code);
   border-radius: 6px;
   padding: 0 5px;
+  direction: ltr;
+  unicode-bidi: isolate;
 }
 
 .markdown :where(h1, h2, h3, h4, h5, h6) code {

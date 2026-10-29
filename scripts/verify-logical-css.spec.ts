@@ -101,6 +101,10 @@ describe('logical CSS', () => {
     expect(css("[dir='rtl'] .a { transform: translateX(2px); left: auto; right: 0; }\n@media (min-width: 40rem) {\n  [dir='rtl'] .b { right: 4px; }\n}\n")).toEqual([])
   })
 
+  it('admits a physical text alignment inside a dir=rtl override', () => {
+    expect(css("[dir='rtl'] .message { text-align: right; }\n")).toEqual([])
+  })
+
   it('admits only the recorded declarations of an allowlisted file', () => {
     const path = 'packages/client/ui-allowlisted/src/client/Kept.module.css'
     const allowlist: ReadonlyMap<string, PhysicalAllowance> = new Map([[

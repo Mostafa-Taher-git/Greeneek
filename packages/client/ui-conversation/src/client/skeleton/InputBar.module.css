@@ -177,6 +177,9 @@
   white-space: pre-wrap;
   word-break: break-word;
   overflow-wrap: anywhere;
+  /* Each draft paragraph follows its first strong character, so an English
+     command typed into the Arabic shell keeps left-to-right punctuation. */
+  unicode-bidi: plaintext;
   outline: none;
   color: var(--dsw-alias-label-primary);
   /* Business blue, not brand-primary: that token resolves to ink in this sheet. */
@@ -187,6 +190,7 @@
    keeps the textarea's line rhythm. */
 .input p {
   margin: 0;
+  unicode-bidi: plaintext;
 }
 
 /* Claim ghost hint as generated content after the last paragraph: the bar

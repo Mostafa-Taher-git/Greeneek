@@ -273,11 +273,11 @@ export function AgentPresetSection(props: AgentPresetSectionProps): ReactNode {
                       aria-disabled={row.broken !== undefined}
                       // Without this the name is the whole card read aloud —
                       // title, badge, description, id.
-                      aria-label={`${row.broken !== undefined ? t('brokenBadge') : row.isDefault ? t('inUse') : t('setDefault')}: ${text.name}`}
+                      aria-label={`${row.broken !== undefined ? t('brokenBadge') : row.isDefault ? t('defaultBadge') : t('setDefault')}: ${text.name}`}
                       // The reason rides the badge, not the whole card: two
                       // tooltips over one target would race, and the card's
                       // own label answers what clicking it would do.
-                      title={row.broken !== undefined ? t('brokenBadge') : row.isDefault ? t('inUse') : t('setDefault')}
+                      title={row.broken !== undefined ? t('brokenBadge') : row.isDefault ? t('defaultBadge') : t('setDefault')}
                       onClick={() => {
                         if (row.broken !== undefined) return
                         void props.makeDefault(row.id)
@@ -301,7 +301,7 @@ export function AgentPresetSection(props: AgentPresetSectionProps): ReactNode {
                         <span className={css.badge}>
                           {row.trust === 'user' ? t('userTrust') : t('builtIn')}
                         </span>
-                        {row.isDefault ? <span className={css.inUse}>{t('inUse')}</span> : null}
+                        {row.isDefault ? <span className={css.inUse}>{t('defaultBadge')}</span> : null}
                       </span>
                       <CardDescription text={text.description ?? t('noDescription')} />
                       {/* Visually hidden, deliberately: the pointer path is the

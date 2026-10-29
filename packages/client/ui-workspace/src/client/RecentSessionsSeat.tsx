@@ -128,7 +128,7 @@ export function RecentSessionsSeat({ workspaceId, open, useSessions, useWorkspac
                   className={clsx(rowCss.sessionRow, css.row)}
                   onClick={() => { open(session.id) }}
                 >
-                  <span className={rowCss.title}>
+                  <span className={rowCss.title} dir="auto">
                     {session.blank ? t('session.new') : session.displayTitle}
                   </span>
                   <span className={rowCss.time}>{timeLabel(session.updatedAt, now, t)}</span>

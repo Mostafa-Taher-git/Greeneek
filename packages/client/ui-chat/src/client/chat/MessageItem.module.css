@@ -37,7 +37,14 @@
   /* The projected user text is inline runs; the bubble owns wrapping so a
      decorated single-line message stays one line. */
   white-space: pre-wrap;
+  unicode-bidi: plaintext;
   word-break: break-word;
+}
+
+/* Keep a multi-line bubble on the shell's start edge even when its text is
+   English and the paragraph direction flips to left-to-right. */
+:global([dir='rtl']) .bubble {
+  text-align: right;
 }
 
 .referenceSummary {

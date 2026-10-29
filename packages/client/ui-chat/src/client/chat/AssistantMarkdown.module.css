@@ -20,6 +20,13 @@
   gap: 16px;
 }
 
+/* The shell's start edge is the right one under RTL. A plaintext English
+   paragraph keeps its own left-to-right word order, but the message must stay
+   on the shell's start edge instead of collecting at the left. */
+:global([dir='rtl']) .body {
+  text-align: right;
+}
+
 /* Wide markdown tables (the renderer's ≥4-column md-table-wide hook) span
    the whole transcript width instead of clipping at the 748px message
    column, while the table content keeps starting at its normal x (the lead

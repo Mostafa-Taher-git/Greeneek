@@ -102,7 +102,7 @@ describe('the preset list', () => {
 
     const standard = rowFor('standard')
     expect(within(standard).getByText(en.builtIn)).toBeTruthy()
-    expect(within(standard).getByText(en.inUse)).toBeTruthy()
+    expect(within(standard).getByText(en.defaultBadge)).toBeTruthy()
     expect(within(standard).queryByText(en.setDefault)).toBeNull()
     expect(within(rowFor('mine')).getByText(en.userTrust)).toBeTruthy()
   })
@@ -134,9 +134,9 @@ describe('the preset list', () => {
   it('picks a preset by clicking its card, and the one in use is inert', () => {
     const actions = renderSection()
 
-    const inUse = within(rowFor('standard')).getByRole('button', { name: `${en.inUse}: ${en.presetStandardName}` })
-    expect(inUse).toHaveProperty('disabled', true)
-    fireEvent.click(inUse)
+    const defaultBadge = within(rowFor('standard')).getByRole('button', { name: `${en.defaultBadge}: ${en.presetStandardName}` })
+    expect(defaultBadge).toHaveProperty('disabled', true)
+    fireEvent.click(defaultBadge)
 
     // Clicking the card IS the choice; the preset already in use cannot be
     // re-picked, so the click reaches nothing.

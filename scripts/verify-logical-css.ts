@@ -366,17 +366,14 @@ export function logicalCssViolations(
         const value = text.slice(colon + 1).trim()
         const found = declarationViolations(path, lineOf(source, offset), selector, property, value)
         if (found.length === 0) continue
-        if (property === 'left' || property === 'right') {
-          if (rtlOverride) continue
-          if (admissions.some(admission => admission.selector === selector && admission.property === property)) {
-            admitted.add(admissionKey(path, selector, property))
-            continue
-          }
-        } else if (property === 'transition' || property === 'transition-property') {
-          if (admissions.some(admission => admission.selector === selector && admission.property === property)) {
-            admitted.add(admissionKey(path, selector, property))
-            continue
-          }
+        // A `[dir='rtl']` block is the documented place for a physical value
+        // CSS cannot express logically: an explicit override may set an inset
+        // or keep message text on the shell's start edge when its paragraph
+        // direction flips.
+        if (rtlOverride && (property === 'left' || property === 'right' || property === 'text-align')) continue
+        if (admissions.some(admission => admission.selector === selector && admission.property === property)) {
+          admitted.add(admissionKey(path, selector, property))
+          continue
         }
         violations.push(...found)
       }

@@ -45,6 +45,11 @@
   position: fixed;
   top: auto;
   left: auto;
+  /* The base rule aligns via the logical inline-start edge; portal placement
+     owns the physical left coordinate, and leaving the logical inset at 0
+     would resolve to right: 0 under RTL and override it. */
+  inset-inline-start: auto;
+  inset-inline-end: auto;
   z-index: 1100;
 }
 

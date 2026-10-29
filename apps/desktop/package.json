@@ -29,14 +29,14 @@
     "@greeneek/gnk": "workspace:^",
     "@greeneek/gnk-web-frontend": "workspace:^",
     "electron-log": "^5.4.0",
-    "electron-updater": "^6.6.2",
+    "electron-updater": "^6.8.10",
     "koffi": "^3.1.0",
     "node": "24.9.0",
     "pnpm": "11.7.0"
   },
   "devDependencies": {
-    "electron": "43.4.0",
-    "electron-builder": "26.0.12"
+    "electron": "44.5.0",
+    "electron-builder": "26.17.0"
   },
   "files": [
     "src/**",

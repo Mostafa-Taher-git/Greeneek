@@ -108,6 +108,7 @@
     "@greeneek/gnk-session-stats": "workspace:^",
     "@greeneek/gnk-session-turn-outline": "workspace:^",
     "@greeneek/gnk-subprocess": "workspace:^",
+    "@greeneek/gnk-tool-agent-team": "workspace:^",
     "@greeneek/gnk-tool-subagent": "workspace:^",
     "@greeneek/gnk-tool-wave": "workspace:^",
     "@greeneek/gnk-web-frontend": "workspace:^",

@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { Context } from '@greeneek/cordis'
+import { Context } from '@greeneek/cordis'
+import Loader from '@greeneek/cordis-plugin-loader'
 import type { SubprocessHandle, SubprocessSpawnSpec } from '@greeneek/gnk-subprocess'
+import * as craftLocal from '../src/index.ts'
 import { apply, Config, createLocalIo, DEFAULT_CLOSE_GRACE_MS, DEFAULT_GRACE_MS, DEFAULT_REQUEST_TIMEOUT_MS, inject } from '../src/index.ts'
 import { CraftLocalProvider } from '../src/provider.ts'
 
@@ -91,9 +93,26 @@ describe('createLocalIo', () => {
   })
 })
 
-describe('default export', () => {
-  it('is the apply function', async () => {
-    const module = await import('../src/index.ts')
-    expect(module.default).toBe(apply)
+describe('loader export shape', () => {
+  it('has no default export, so unwrapExports keeps name/inject/Config', () => {
+    expect('default' in craftLocal).toBe(false)
+    const loader = Object.create(Loader.prototype) as Loader
+    const unwrapped = loader.unwrapExports(craftLocal) as Record<string, unknown>
+    expect(unwrapped).toBe(craftLocal)
+    expect(unwrapped.name).toBe('craft-local')
+    expect(unwrapped.inject).toEqual(['craft', 'subprocess'])
+    expect(typeof unwrapped.apply).toBe('function')
+  })
+
+  it('mounts through the unwrapped namespace without an inject error', async () => {
+    const ctx = new Context()
+    const registerProvider = vi.fn(() => () => {})
+    ctx.reflect.provide('craft', { registerProvider })
+    ctx.reflect.provide('subprocess', { spawn: () => ({ pid: 7 }) })
+    const loader = Object.create(Loader.prototype) as Loader
+    const unwrapped = loader.unwrapExports(craftLocal) as Parameters<Context['plugin']>[0]
+    const fiber = await ctx.plugin(unwrapped, resolvedConfig)
+    expect(registerProvider).toHaveBeenCalledOnce()
+    await fiber.dispose()
   })
 })

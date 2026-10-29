@@ -83,6 +83,4 @@ function assertTimer(name: string, value: number): void {
   }
 }
 
-export default apply
-
 export type { CraftLocalConfig } from './types.ts'

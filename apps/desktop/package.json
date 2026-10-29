@@ -1,6 +1,6 @@
 {
   "name": "@greeneek/desktop",
-  "version": "0.2.0",
+  "version": "0.3.7",
   "private": true,
   "description": "Greeneek Desktop: installable Electron shell that boots gnk web locally.",
   "type": "module",

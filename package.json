@@ -116,6 +116,7 @@
     "verify-client-ui-i18n": "tsx scripts/verify-client-ui-i18n.ts",
     "verify-theme-contrast": "tsx scripts/verify-theme-contrast.ts",
     "verify-logical-css": "tsx scripts/verify-logical-css.ts",
+    "verify-desktop-version": "tsx scripts/verify-desktop-version.ts",
     "verify-source-plane": "tsx scripts/verify-source-plane.ts",
     "verify-vendored-links": "tsx scripts/verify-vendored-links.ts",
     "verify-cordis-config": "tsx scripts/verify-cordis-config.ts",

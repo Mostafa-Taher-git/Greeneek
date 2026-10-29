@@ -1,4 +1,4 @@
-import { bundledHarnessVersion } from './versions.js'
+import { bundledHarnessVersion, displayDesktopVersion } from './versions.js'
 
 /**
  * Renderer bridge wiring: version facts plus the consent-based update flow.
@@ -40,11 +40,15 @@ export function registerDesktopBridge({
   updateManager,
   getUpdateManager,
   readHarnessVersion = bundledHarnessVersion,
+  readDesktopVersion = electronApp => displayDesktopVersion({
+    appVersion: electronApp.getVersion(),
+    isPackaged: electronApp.isPackaged === true,
+  }),
   getWindow = () => undefined,
 }) {
   const manager = () => getUpdateManager?.() ?? updateManager
   ipcMain.handle('greeneek-desktop:versions', () => ({
-    desktop: app.getVersion(),
+    desktop: readDesktopVersion(app),
     harness: readHarnessVersion(appDir),
   }))
   ipcMain.handle('greeneek-desktop:update-status', () => ({

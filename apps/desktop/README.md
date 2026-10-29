@@ -39,6 +39,10 @@ pnpm --filter @greeneek/desktop run test
 
 `run start` spawns the installed Electron binary with `ELECTRON_RUN_AS_NODE` removed. VS Code-derived editors export that variable to every child process, and while it is set the binary runs as bare Node, where `src/main.js` imports the `electron` npm stub instead of the Electron API.
 
+## Versions
+
+The About page reports the packaged desktop version stamped from the release tag, or `<manifest>-dev` for an unpackaged source build. `apps/desktop/package.json` is the next release line and must stay at or ahead of the newest `desktop-v*` tag; `pnpm run verify-desktop-version` fails when it falls behind, including in CI.
+
 ## Release
 
 Tag format: `desktop-v0.1.0`. The `release-desktop.yml` workflow builds Linux `.deb` + `AppImage` and Windows NSIS + ZIP, then publishes one GitHub Release with `-latest-` aliases.

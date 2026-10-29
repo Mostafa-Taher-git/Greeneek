@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { describe, it } from 'node:test'
 import { BRIDGE_CHANNELS, registerDesktopBridge } from '../src/desktop-bridge.js'
 import { resolveAutoUpdater } from '../src/updater.js'
-import { bundledHarnessVersion, packageVersion } from '../src/versions.js'
+import { bundledHarnessVersion, displayDesktopVersion, packageVersion } from '../src/versions.js'
 
 function stageManifest(dir, manifest) {
   mkdirSync(dir, { recursive: true })
@@ -34,6 +34,12 @@ describe('versions', () => {
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }
+  })
+
+  it('marks an unpackaged source build as a development version', () => {
+    assert.equal(displayDesktopVersion({ appVersion: '0.3.7', isPackaged: true }), '0.3.7')
+    assert.equal(displayDesktopVersion({ appVersion: '0.3.7', isPackaged: false }), '0.3.7-dev')
+    assert.equal(displayDesktopVersion({ appVersion: '', isPackaged: true }), 'unknown')
   })
 
   it('resolves the staged harness version under node_modules/@greeneek/gnk', () => {
@@ -72,7 +78,7 @@ function fakeBridge() {
   }
   registerDesktopBridge({
     ipcMain: { handle: (channel, handler) => { handlers.set(channel, handler) } },
-    app: { getVersion: () => '0.1.0' },
+    app: { getVersion: () => '0.1.0', isPackaged: true },
     appDir: '/app',
     updateManager,
     readHarnessVersion: () => '1.1.0-alpha.0',
@@ -100,6 +106,21 @@ describe('desktop bridge', () => {
     assert.equal(updateManager.installed, 1)
   })
 
+  it('marks an unpackaged About version as a development build', async () => {
+    const handlers = new Map()
+    registerDesktopBridge({
+      ipcMain: { handle: (channel, handler) => { handlers.set(channel, handler) } },
+      app: { getVersion: () => '0.3.7', isPackaged: false },
+      appDir: '/app',
+      updateManager: undefined,
+      readHarnessVersion: () => '1.1.0-alpha.0',
+    })
+    assert.deepEqual(await handlers.get('greeneek-desktop:versions')(), {
+      desktop: '0.3.7-dev',
+      harness: '1.1.0-alpha.0',
+    })
+  })
+
   it('drives the frameless window controls through the window accessor', async () => {
     const { handlers, calls, fakeWindow } = fakeBridge()
     await handlers.get('greeneek-desktop:window-minimize')()
@@ -120,7 +141,7 @@ describe('desktop bridge', () => {
     const calls = []
     registerDesktopBridge({
       ipcMain: { handle: (channel, handler) => { handlers.set(channel, handler) } },
-      app: { getVersion: () => '0.1.0' },
+      app: { getVersion: () => '0.1.0', isPackaged: true },
       appDir: '/app',
       updateManager: undefined,
       readHarnessVersion: () => '1.1.0-alpha.0',
@@ -142,7 +163,7 @@ describe('desktop bridge', () => {
     let updateManager
     registerDesktopBridge({
       ipcMain: { handle: (channel, handler) => { handlers.set(channel, handler) } },
-      app: { getVersion: () => '0.1.0' },
+      app: { getVersion: () => '0.1.0', isPackaged: true },
       appDir: '/app',
       getUpdateManager: () => updateManager,
       readHarnessVersion: () => '1.1.0-alpha.0',

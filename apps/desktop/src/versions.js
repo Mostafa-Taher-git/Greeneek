@@ -32,3 +32,15 @@ export function packageVersion(dir, readFileImpl = readFileSync) {
 export function bundledHarnessVersion(appDir, readFileImpl = readFileSync) {
   return packageVersion(join(appDir, 'node_modules', '@greeneek', 'gnk'), readFileImpl)
 }
+
+/**
+ * Desktop version the About section reports. Packaged builds carry the version
+ * stamped from the release tag; an unpackaged source build is a development
+ * build and says so instead of presenting the checked-in manifest as a release.
+ * @param options - the Electron manifest version and packaged state.
+ * @returns the display version, or `unknown` when the manifest value is empty.
+ */
+export function displayDesktopVersion({ appVersion, isPackaged }) {
+  if (typeof appVersion !== 'string' || appVersion === '') return 'unknown'
+  return isPackaged ? appVersion : `${appVersion}-dev`
+}

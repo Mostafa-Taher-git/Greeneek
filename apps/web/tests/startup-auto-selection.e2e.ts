@@ -43,9 +43,9 @@ describe('web e2e: startup auto-selection', () => {
     await page.locator(`${ROOT_PHASE}[data-phase="hero"]`).waitFor({ timeout: 15_000 })
     const headline = page.getByText('Into the Unknown', { exact: true })
     const fishHitbox = headline.locator('xpath=preceding-sibling::span[1]')
-    const fish = fishHitbox.locator('svg')
-    expect(await fish.evaluate(node => getComputedStyle(node).color))
-      .toBe(await headline.evaluate(node => getComputedStyle(node).color))
+    // The mark is the shared brand image (svg or img); hover drives its swim.
+    const fish = fishHitbox.locator('img, svg').first()
+    await expect.poll(() => fish.count()).toBe(1)
     await fishHitbox.hover()
     expect(await fish.evaluate(node => getComputedStyle(node).animationName)).not.toBe('none')
     await page.evaluate(() => {

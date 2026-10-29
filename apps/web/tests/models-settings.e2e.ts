@@ -78,7 +78,7 @@ describe('web e2e: Models settings page configures a dormant provider', () => {
     expect(options).toContain('MiniMax CN')
     await pick.selectOption('minimax-cn')
     await dialog.getByRole('textbox', { name: 'API 密钥', exact: true }).waitFor({ timeout: 10_000 })
-    const snapshot = await captureStableAria(page, '[role="dialog"]', scaffold.workspaceCwd)
+    const snapshot = await captureStableAria(page, 'main:not([hidden])', scaffold.workspaceCwd)
     await compareOrRefreshGolden(EMPTY_EXPECTED, snapshot, MODE)
   }, 60_000)
 
@@ -174,7 +174,7 @@ describe('web e2e: Models settings page configures a dormant provider', () => {
     const document = await readFile(join(scaffold.harnessHome, 'settings.yaml'), 'utf8')
     expect(document).toContain('baseURL: https://gateway.minimax.example/v1')
     expect(document).toContain('apiKeyEnv: MINIMAX_CN_API_KEY')
-    const snapshot = await captureStableAria(page, '[role="dialog"]', scaffold.workspaceCwd)
+    const snapshot = await captureStableAria(page, 'main:not([hidden])', scaffold.workspaceCwd)
     await compareOrRefreshGolden(CONFIGURED_EXPECTED, snapshot, MODE)
     expect(tripwire.pageErrors).toEqual([])
   }, 60_000)
@@ -252,7 +252,7 @@ describe('web e2e: Models settings page configures a dormant provider', () => {
     await expect.poll(async () => rowCard('Acme Gateway').getByText('自定义').count(), { timeout: 10_000 }).toBe(1)
     expect(await rowCard('MiniMax CN').getByText('自定义').count()).toBe(0)
 
-    const snapshot = await captureStableAria(page, '[role="dialog"]', scaffold.workspaceCwd)
+    const snapshot = await captureStableAria(page, 'main:not([hidden])', scaffold.workspaceCwd)
     await compareOrRefreshGolden(DECLARED_EXPECTED, snapshot, MODE)
     expect(tripwire.pageErrors).toEqual([])
   }, 60_000)
@@ -270,7 +270,7 @@ describe('web e2e: Models settings page configures a dormant provider', () => {
     expect(await protocol.inputValue()).toBe('openai-completions')
     const name = dialog.getByLabel('显示名称', { exact: true })
     expect(await name.inputValue()).toBe('Acme Gateway')
-    const snapshot = await captureStableAria(page, '[role="dialog"]', scaffold.workspaceCwd)
+    const snapshot = await captureStableAria(page, 'main:not([hidden])', scaffold.workspaceCwd)
     await compareOrRefreshGolden(DECLARED_EDIT_EXPECTED, snapshot, MODE)
 
     await protocol.selectOption('anthropic-messages')

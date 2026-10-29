@@ -51,7 +51,7 @@ describe('web e2e: settings modal and General preferences', () => {
     await scaffold?.close()
   })
 
-  it('opens the settings dialog, switches sections, and closes by every path', async () => {
+  it('opens the settings page, switches sections, and closes by every path', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-settings-shell'))
     const trigger = page.getByRole('button', { name: '设置', exact: true })
     expect(await trigger.getAttribute('aria-haspopup')).toBeNull()
@@ -87,8 +87,8 @@ describe('web e2e: settings modal and General preferences', () => {
     await expect.poll(() => openRequests, { timeout: 5_000 }).toBe(1)
     await expect.poll(() => openDocument.isEnabled(), { timeout: 5_000 }).toBe(true)
     await page.unroute('**/api/settings/openSettingsDocument')
-    // Golden of the freshly opened dialog (default zh, General active).
-    const snapshot = await captureStableAria(page, '[role="main"]', scaffold.workspaceCwd)
+    // Golden of the freshly opened page (default zh, General active).
+    const snapshot = await captureStableAria(page, 'main:not([hidden])', scaffold.workspaceCwd)
     await compareOrRefreshGolden(DIALOG_EXPECTED, snapshot, MODE)
     // Section switch: aria-current moves (the Models page itself has its own scenario file).
     await dialog.getByRole('button', { name: '模型' }).click()
@@ -620,7 +620,7 @@ describe('web e2e: settings modal and General preferences', () => {
       // Golden of the English fallback dialog — the visible output this change
       // produces. The zh golden above covers the detected-locale surface, so
       // the pair pins both directions of the resolution.
-      const snapshot = await captureStableAria(frPage, '[role="dialog"]', fresh.workspaceCwd)
+      const snapshot = await captureStableAria(frPage, 'main:not([hidden])', fresh.workspaceCwd)
       await compareOrRefreshGolden(DIALOG_EN_EXPECTED, snapshot, MODE)
       expect(frTripwire.pageErrors).toEqual([])
       expect(frTripwire.warnings).toEqual([])

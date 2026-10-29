@@ -1,5 +1,5 @@
-- dialog "Settings":
-  - navigation:
+- main "Settings":
+  - navigation "Settings":
     - text: Settings
     - button "General":
       - img

@@ -74,11 +74,11 @@ describe('web e2e: blank New Session folding quota', () => {
     expect(await sidebar.getByText(basename(scaffold.workspaceCwd), { exact: true }).count()).toBe(6)
     const showMore = sidebar.getByRole('button', { name: 'Show 1 more sessions' })
     await showMore.waitFor({ timeout: 15_000 })
-    await compareOrRefreshGolden(
-      SIDEBAR_EXPECTED,
-      await captureStableAria(page, '[role="tree"][aria-label="Sessions"]', scaffold.workspaceCwd),
-      MODE,
-    )
+    // The scaffold workspace carries a random temp suffix; the title is its
+    // basename, which path normalization cannot reach. Fold it to a stable token.
+    const snapshot = (await captureStableAria(page, '[role="tree"][aria-label="Sessions"]', scaffold.workspaceCwd))
+      .replaceAll(basename(scaffold.workspaceCwd), '<workspace>')
+    await compareOrRefreshGolden(SIDEBAR_EXPECTED, snapshot, MODE)
 
     await showMore.click()
     await expect.poll(() => sidebar.getByRole('treeitem').count(), { timeout: 10_000 }).toBe(8)

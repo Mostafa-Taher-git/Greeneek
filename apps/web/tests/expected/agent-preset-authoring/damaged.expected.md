@@ -1,5 +1,5 @@
-- dialog "设置":
-  - navigation:
+- main "设置":
+  - navigation "设置":
     - text: 设置
     - button "通用设置":
       - img
@@ -75,6 +75,26 @@
         - img
         - text: 查看
       - 'button "复制: 导师（预览）"':
+        - img
+        - text: 复制
+    - listitem:
+      - 'button "设为默认: Army 模式"':
+        - text: Army 模式 内置 群控编码 Agent：把可并行的工作交给并发的一次性子代理，只保留它们返回的结构化结果，并把部分完成的波次如实报告。
+        - code: army
+      - 'button "查看: Army 模式"':
+        - img
+        - text: 查看
+      - 'button "复制: Army 模式"':
+        - img
+        - text: 复制
+    - listitem:
+      - 'button "设为默认: Maestro 模式"':
+        - text: Maestro 模式 内置 同一协调者下的持久车道：把代码、文档与设计任务并行委派给来自标准、导师与像素设计预设的进程内成员。
+        - code: maestro
+      - 'button "查看: Maestro 模式"':
+        - img
+        - text: 查看
+      - 'button "复制: Maestro 模式"':
         - img
         - text: 复制
   - heading "自定义" [level=3]

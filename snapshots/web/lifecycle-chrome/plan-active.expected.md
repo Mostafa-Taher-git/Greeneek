@@ -1,9 +1,9 @@
-- button "New session"
-- button "Collapse sidebar":
-  - img
 - button "New session":
   - img
   - text: New Session
+- button "Dashboard":
+  - img
+  - text: Dashboard
 - text: Workspaces
 - button "Search sessions":
   - img
@@ -17,6 +17,7 @@
     - img
     - text: workspace
   - treeitem "New Session" [selected]
+- button "Go to home"
 - button "Settings":
   - img
   - text: Settings
@@ -25,19 +26,28 @@
   - img
   - text: workspace
   - img
-- button "Standard mode":
-  - img
-  - text: Standard mode
-  - img
 - textbox "Describe what you want to build... / commands, @ files or sessions"
-- button "Commands":
-  - img
 - 'button "Access mode, current: Workspace Write"': Workspace Write
+- button "Code tools"
 - button "Plan mode on, press to turn off": Plan
 - button "Select model, current Greeneek-V4-Flash":
   - text: Greeneek-V4-Flash
   - img
 - button "Send message" [disabled]
-- text: Details
+- radiogroup "Agent mode":
+  - radio "Standard mode" [checked]
+  - radio "Army mode"
+  - radio "Maestro mode"
+  - radio "Pixels Designer (preview)"
+  - radio "Instructor (preview)"
+  - radio "Creator mode"
+- paragraph: Full coding agent with file editing, shell, file and web search, skills, planning, goals, subagents, and workflows.
+- heading "Recent in workspace" [level=2]
+- list:
+  - listitem:
+    - button "New Session now"
+- tablist "Details view":
+  - tab "Tool" [selected]
+  - tab "Fleet"
 - button "Close details"
-- text: Click a tool row in the message flow to view its details
+- tabpanel "Tool": Click a tool row in the message flow to view its details

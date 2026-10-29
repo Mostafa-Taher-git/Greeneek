@@ -270,11 +270,9 @@ describe('web e2e: agent-preset selection', () => {
     expect(order.slice(6).sort()).toEqual(['Narrow mode', 'Refusing mode'])
     expect(await group.getByRole('radio', { name: 'Army mode', exact: true }).isDisabled()).toBe(false)
     expect(await group.getByRole('radio', { name: 'Maestro mode', exact: true }).isDisabled()).toBe(false)
-    // Idle shows the staged label alone; hovering the row reveals every label.
+    // Labels are persistent at practical widths (owner-requested mode clarity).
     const pixelsLabel = group.getByRole('radio', { name: 'Pixels Designer (preview)', exact: true })
       .getByText('Pixels Designer (preview)', { exact: true })
-    await expect.poll(() => pixelsLabel.isHidden()).toBe(true)
-    await group.hover()
     await expect.poll(() => pixelsLabel.isVisible()).toBe(true)
     const creatorLabel = group.getByRole('radio', { name: 'Creator mode', exact: true })
       .getByText('Creator mode', { exact: true })

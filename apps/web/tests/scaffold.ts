@@ -826,11 +826,20 @@ function rawSessionLog(session: Session): string {
 function normalizeWebSessionVolatiles(log: string): string {
   const normalizeValue = (value: unknown): unknown => {
     if (typeof value === 'string') {
-      return value.replace(/Anonymous user: [^.]+(?=\. Session sharing)/g, 'Anonymous user: {{anonymousUserId}}')
+      return value
+        .replace(/Anonymous user: [^.]+(?=\. Session sharing)/g, 'Anonymous user: {{anonymousUserId}}')
+        // The system-prompt runtime context quotes the session workspace; a
+        // temp host path (and its platform separators) must not enter goldens.
+        .replace(/session workspace: \"[^\"]*\"/g, 'session workspace: "{{cwd}}"')
     }
     if (Array.isArray(value)) return value.map(normalizeValue)
     if (value !== null && typeof value === 'object') {
-      return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, normalizeValue(item)]))
+      return Object.fromEntries(Object.entries(value).map(([key, item]) => [
+        key,
+        // The host timezone is ambient, not session content; a fixture moved
+        // between machines must not diff on it.
+        key === 'clientTimeZone' ? '{{timeZone}}' : normalizeValue(item),
+      ]))
     }
     return value
   }
@@ -845,8 +854,12 @@ function normalizeWebSessionVolatiles(log: string): string {
 }
 
 function stableSessionFixture(session: Session, existing: string, workspaceCwd: string): string {
+  // JSON string values carry escaped separators; fold both spellings so a
+  // Windows temp path never freezes into the fixture.
+  const escapedCwd = JSON.stringify(workspaceCwd).slice(1, -1)
   const fresh = scrubSessionSnapshot(normalizeWebSessionVolatiles(rawSessionLog(session)))
     .split(session.id).join('{{sessionId}}')
+    .split(escapedCwd).join('{{cwd}}')
     .split(workspaceCwd).join('{{cwd}}')
   const stable = redactSessionSnapshotIds(stabilizeFixtureMessageIds([fresh], [existing]))[0]
   if (stable === undefined) throw new Error('session harvest produced no stabilized fixture')
@@ -875,6 +888,7 @@ async function assertReplaySession(
   const sessionCwd = session.header.cwd
   if (sessionCwd === undefined) throw new Error(`${fixturePath}: replayed session has no cwd`)
   const actual = rawSessionLog(session)
+  const escapedSessionCwd = JSON.stringify(sessionCwd).slice(1, -1)
   if (mode === 'refresh') {
     expected = stableSessionFixture(session, expected, sessionCwd)
     await writeFile(fixturePath, expected)
@@ -888,8 +902,11 @@ async function assertReplaySession(
     sessionIds: typeof expectedHeader.id === 'string' ? [expectedHeader.id] : [],
     cwd: typeof expectedHeader.cwd === 'string' ? expectedHeader.cwd : '\0no-cwd\0',
   }
-  expect(normalizeSessionSnapshots([normalizeWebSessionVolatiles(actual)], actualContext)[0], `${fixturePath}: persisted replay`)
-    .toBe(normalizeSessionSnapshots([normalizeWebSessionVolatiles(expected)], expectedContext)[0])
+  const normalizeCwd = (log: string): string => normalizeWebSessionVolatiles(log)
+    .split(escapedSessionCwd).join('{{cwd}}')
+    .split(sessionCwd).join('{{cwd}}')
+  expect(normalizeSessionSnapshots([normalizeCwd(actual)], { ...actualContext, cwd: '{{cwd}}' })[0], `${fixturePath}: persisted replay`)
+    .toBe(normalizeSessionSnapshots([normalizeCwd(expected)], { ...expectedContext, cwd: '{{cwd}}' })[0])
 
   const fixtureDir = dirname(fixturePath)
   const manifestPath = join(fixtureDir, 'snapshot.yml')
@@ -981,13 +998,16 @@ export function fixtureIdentity(
  * @returns the realized fixture text.
  */
 export function realizeSeedFixture(scaffold: WebScaffold, fixtureText: string, id: string): string {
+  // The token sits inside JSON strings: escape the platform path so Windows
+  // backslashes parse as characters rather than invalid JSON escapes.
+  const jsonCwd = JSON.stringify(scaffold.workspaceCwd).slice(1, -1)
   const realized = fixtureText
     .split('{{sessionId}}').join(id)
     .split('{{session:1}}').join(id)
     .replace(/\{\{session:([2-9]\d*)\}\}/g, (_token, ordinal: string) => `${id}-child-${ordinal}`)
     .replace(/\{\{(message|approval|workflow|command|rpc|retry|id):([1-9]\d*)\}\}/g, (_token, kind: string, ordinal: string) =>
       fixtureIdentity(kind as 'message' | 'approval' | 'workflow' | 'command' | 'rpc' | 'retry' | 'id', Number(ordinal)))
-    .split('{{cwd}}').join(scaffold.workspaceCwd)
+    .split('{{cwd}}').join(jsonCwd)
   const fixtureCwd = (JSON.parse(realized.split('\n', 1)[0]!) as { cwd?: string }).cwd
   return fixtureCwd === undefined
     ? realized

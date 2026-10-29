@@ -6,5 +6,8 @@
     - img
 - img
 - text: Narrow mode
+- button "Agent Team":
+  - img
+  - text: Agent Team
 - button "Session options":
   - img

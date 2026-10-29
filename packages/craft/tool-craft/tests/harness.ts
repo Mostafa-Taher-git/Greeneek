@@ -92,6 +92,9 @@ export class FakeProvider implements CraftHostProvider {
 
   open(request: CraftHostOpenRequest): Promise<CraftHostSession> {
     this.opens.push(request)
+    if (this.discovery.state !== 'ready' || this.discovery.executable === undefined) {
+      return Promise.reject(new Error(`${request.app.displayName} is not ready: ${this.discovery.detail ?? this.discovery.state}`))
+    }
     const transport = new FakeTransport(this.tools, name => this.respond(name), this.registry)
     this.transports.push(transport)
     return Promise.resolve({

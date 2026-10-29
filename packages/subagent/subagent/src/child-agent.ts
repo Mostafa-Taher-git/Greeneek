@@ -134,6 +134,7 @@ export function resolveChildAgentOptions(
  * @param childDepth - the resolved delegation depth to persist.
  * @param isSeeded - whether this child inherits a parent-log prefix, including an explicitly empty one.
  * @param agentPreset - the lane preset the child composes from, when one was requested.
+ * @param cwd - the lane checkout the child runs in, when the caller owns one.
  * @returns the `meta` for `ctx.agents.create()`.
  */
 export function childSessionMeta(
@@ -141,11 +142,12 @@ export function childSessionMeta(
   childDepth: number,
   isSeeded: boolean,
   agentPreset?: string,
+  cwd?: string,
 ): NonNullable<CreateAgentOptions['meta']> {
   const parentHeader = parent.session.header
   const composedPreset = agentPreset ?? parent.ctx.get('agentPresets')?.composedPreset(parent.ctx)
   return {
-    ...parentHeader.cwd !== undefined ? { cwd: parentHeader.cwd } : {},
+    ...(cwd ?? parentHeader.cwd) !== undefined ? { cwd: cwd ?? parentHeader.cwd } : {},
     ...composedPreset === undefined ? {} : { agentPreset: composedPreset },
     parentSession: parentHeader.id,
     isSeeded,

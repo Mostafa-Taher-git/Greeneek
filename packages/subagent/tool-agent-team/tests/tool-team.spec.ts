@@ -165,6 +165,27 @@ describe('gnk-tool-team', () => {
     await vi.waitFor(() => { expect(ctx.agents.get(childId)).toBeUndefined() }, { timeout: 5_000 })
   })
 
+  it('forwards a lane preset and cwd onto the Team spawn request', async () => {
+    const { ctx, lead } = await setup([textResponse('unused')])
+    const lane = mkdtempSync(join(tmpdir(), 'gnk-team-lane-'))
+    roots.push(lane)
+    const spawn = vi.spyOn(ctx.agentTeams, 'spawnTeammate').mockResolvedValue({
+      member: { id: 'lane-child', name: 'lane-worker', role: 'teammate', status: 'running', diagnostics: [] },
+    } as never)
+    const result = await execute(ctx, lead, 'spawn_teammate', {
+      name: 'lane-worker',
+      description: 'run in an isolated lane',
+      prompt: 'finish in the lane',
+      preset: 'reviewing',
+      cwd: lane,
+    })
+    expect(result.isError, text(result)).toBe(false)
+    expect(spawn).toHaveBeenCalledWith(lead, expect.objectContaining({
+      agentPreset: 'reviewing',
+      cwd: lane,
+    }))
+  })
+
   it('returns actionable no-progress output and renders structured wait cancellation', async () => {
     const inactiveSetup = await setup([textResponse('worker done')])
     const inactiveSpawn = await execute(inactiveSetup.ctx, inactiveSetup.lead, 'spawn_teammate', {

@@ -39,6 +39,7 @@ import type { SessionObservation, SessionQueryEngine } from '@greeneek/gnk-sessi
 import type { ToolRestriction } from '@greeneek/gnk-tools'
 import { foldSubagentDescriptor, snapshotSubagentDescriptor } from './descriptor.ts'
 import type { SubagentDescriptorData } from './descriptor.ts'
+import { assertUsableCwd } from './out-of-process.ts'
 import {
   appendDelegatedPolicyOverrides,
   applyChildComposition,
@@ -440,20 +441,12 @@ export class SubagentContinuationManager {
     this.assertAdmitting(parent)
     const persistence = this.requirePersistence()
     assertSubagentMaxDepth(request.maxDepth)
-    // A lane preset cannot survive this child. Cold resume rebuilds composition
-    // from the version-pinned `subagent/descriptor`, which records persona and
-    // tool filter only, so accepting the field would run the first activation on
-    // the lane preset and every later activation on the parent's. Reject while
-    // the request is still the only fact, before any child resource exists.
-    if (request.agentPreset !== undefined) {
-      throw new SubagentError(
-        'continuable children compose from their parent; agentPreset is a one-shot start field',
-        'UNSUPPORTED_CAPABILITY',
-      )
-    }
     const childId = spec.childId ?? brandString<SessionId>(randomUUID())
     this.assertChildIdAvailable(childId)
     const childDepth = resolveChildDepth(parent, request.maxDepth)
+    const laneCwd = request.cwd === undefined
+      ? undefined
+      : assertUsableCwd('subagent', 'lane cwd', request.cwd)
     // Snapshot before any await: invalid descriptor JSON rejects the call
     // before a child exists, and the detached value is what reaches the log.
     const agentOptions = resolveChildAgentOptions(parent, request.agentOptions, childDepth)
@@ -469,6 +462,8 @@ export class SubagentContinuationManager {
       ...agentReasoningEffort !== undefined ? { agentReasoningEffort } : {},
       ...request.persona !== undefined ? { persona: request.persona } : {},
       ...request.toolFilter !== undefined ? { toolFilter: request.toolFilter } : {},
+      ...request.agentPreset !== undefined ? { agentPreset: request.agentPreset } : {},
+      ...laneCwd !== undefined ? { cwd: laneCwd } : {},
     })
     // Capture before the first await: a later parent switch belongs to the
     // parent's future, not to this child.
@@ -508,9 +503,18 @@ export class SubagentContinuationManager {
           childId,
           provider: spec.provider,
           parent,
-          create: { seed, meta: childSessionMeta(parent, childDepth, prepared.seed !== undefined), inheritedEventCount, delegatedPolicies },
+          create: {
+            seed,
+            meta: childSessionMeta(parent, childDepth, prepared.seed !== undefined, request.agentPreset, laneCwd),
+            inheritedEventCount,
+            delegatedPolicies,
+          },
           agentOptions,
-          composition: { persona: request.persona, toolFilter: request.toolFilter },
+          composition: {
+            ...request.agentPreset !== undefined ? { agentPreset: request.agentPreset } : {},
+            persona: request.persona,
+            toolFilter: request.toolFilter,
+          },
           signal: spec.signal,
         })
         return this.submitMaterialized(
@@ -1101,6 +1105,12 @@ export class SubagentContinuationManager {
         'NOT_RESUMABLE',
       )
     }
+    if (descriptor.cwd !== undefined && descriptor.cwd !== source.header.cwd) {
+      throw new SubagentError(
+        `subagent "${childId}" was created in ${descriptor.cwd} but its persisted header names ${source.header.cwd ?? 'no cwd'}; refusing to resume outside its lane`,
+        'NOT_RESUMABLE',
+      )
+    }
     let activation: Activation
     try {
       activation = await this.materialize({
@@ -1114,7 +1124,11 @@ export class SubagentContinuationManager {
             ? { reasoningEffort: ReasoningEffortId(descriptor.agentReasoningEffort) }
             : {},
         },
-        composition: { persona: descriptor.persona, toolFilter: descriptor.toolFilter },
+        composition: {
+          ...descriptor.agentPreset !== undefined ? { agentPreset: descriptor.agentPreset } : {},
+          persona: descriptor.persona,
+          toolFilter: descriptor.toolFilter,
+        },
         signal: options.signal,
       })
     } catch (error: unknown) {

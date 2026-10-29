@@ -1980,6 +1980,14 @@ Create one named, durable teammate. Only the Team Lead may call this tool.
         "fresh",
         "fork"
       ]
+    },
+    "preset": {
+      "type": "string",
+      "description": "Agent preset the lane composes from (for example standard or instructor); omitted inherits the Lead composition."
+    },
+    "cwd": {
+      "type": "string",
+      "description": "Absolute lane checkout the teammate runs in; omitted inherits the Lead working directory."
     }
   },
   "required": [

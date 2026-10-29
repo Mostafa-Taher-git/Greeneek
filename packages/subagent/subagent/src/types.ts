@@ -168,6 +168,11 @@ export interface SubagentStartRequest {
    * not partial tool lists: a child either runs a preset or inherits its parent.
    */
   readonly agentPreset?: string
+  /**
+   * Absolute working directory for the child session, when the caller owns a
+   * lane checkout. Omitted children inherit the delegating session's cwd.
+   */
+  readonly cwd?: string
 }
 
 /**

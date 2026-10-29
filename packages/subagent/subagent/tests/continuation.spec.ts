@@ -273,22 +273,37 @@ describe('SubagentRuntime.startContinuable', () => {
     expect(ctx.agents.list().map(agent => agent.id)).toEqual([SessionId('parent')])
   })
 
-  it('refuses a lane preset on a continuable child before reserving an id', async () => {
+  it('records a lane preset and cwd on a continuable child', async () => {
     const { ctx, parent } = await setup([])
+    const mount = vi.fn(async () => {})
+    ctx.provide('agentPresets', {
+      mount,
+      composedPreset: () => 'standard',
+    } as never)
+    const lane = mkdtempSync(join(tmpdir(), 'gnk-lane-'))
+    cleanups.push(async () => { rmSync(lane, { recursive: true, force: true }) })
 
-    await expect(ctx.subagents.startContinuable({
+    const started = await ctx.subagents.startContinuable({
       ...startSpec(parent),
       request: {
         prompt: [{ type: 'text' as const, text: 'child task' }],
         parent,
         agentPreset: 'reviewing',
+        cwd: lane,
       },
-    })).rejects.toMatchObject({ code: 'UNSUPPORTED_CAPABILITY' })
-
-    // Cold resume rebuilds composition from the version-pinned descriptor, which
-    // records persona and tool filter only, so a lane child would change
-    // identity on resume. Refusal beats a child that works once.
-    expect(ctx.agents.list().map(agent => agent.id)).toEqual([SessionId('parent')])
+    })
+    await waitNoActivation(ctx, started.childId)
+    const loaded = await loadStoredSession(ctx.sessionPersistence, started.childId)
+    const descriptor = loaded.events.find(event => event.type === 'subagent/descriptor')
+    expect(descriptor?.data).toMatchObject({
+      version: SUBAGENT_DESCRIPTOR_VERSION,
+      mode: 'continuable',
+      agentPreset: 'reviewing',
+      cwd: lane,
+    })
+    expect(loaded.meta.cwd).toBe(lane)
+    expect(loaded.meta.agentPreset).toBe('reviewing')
+    expect(mount).toHaveBeenCalledOnce()
   })
 
   it('rejects synchronously when persistence is not configured', async () => {

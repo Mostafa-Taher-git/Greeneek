@@ -147,6 +147,10 @@ export interface SpawnTeammateRequest {
   readonly prompt: ContentBlock[]
   readonly context: 'fresh' | 'fork'
   readonly provider: string
+  /** Lane preset the child composes from; omitted inherits the Lead's composition. */
+  readonly agentPreset?: string
+  /** Absolute lane checkout the child runs in; omitted inherits the Lead's cwd. */
+  readonly cwd?: string
   readonly signal: AbortSignal
 }
 

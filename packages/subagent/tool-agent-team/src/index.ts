@@ -182,6 +182,14 @@ function install(agent: Agent, ctx: Context, config: Required<Config>): () => vo
           enum: ['fresh', 'fork'],
           description: 'fresh starts without Lead history; fork inherits completed Lead turns. Defaults to fresh.',
         },
+        preset: {
+          type: 'string',
+          description: 'Agent preset the lane composes from (for example standard or instructor); omitted inherits the Lead composition.',
+        },
+        cwd: {
+          type: 'string',
+          description: 'Absolute lane checkout the teammate runs in; omitted inherits the Lead working directory.',
+        },
       },
       output: jsonOutput(SPAWN_VALUE_SCHEMA),
       async execute(args, exec) {
@@ -193,6 +201,8 @@ function install(agent: Agent, ctx: Context, config: Required<Config>): () => vo
           prompt: [{ type: 'text', text: args.prompt }],
           context,
           provider: context === 'fork' ? config.forkProvider : config.freshProvider,
+          ...args.preset !== undefined ? { agentPreset: args.preset } : {},
+          ...args.cwd !== undefined ? { cwd: args.cwd } : {},
           signal: exec.signal,
         })
       },

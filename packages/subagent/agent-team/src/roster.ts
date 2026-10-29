@@ -286,6 +286,8 @@ export class TeamRoster {
         request: {
           prompt: request.prompt,
           parent: root,
+          ...request.agentPreset !== undefined ? { agentPreset: request.agentPreset } : {},
+          ...request.cwd !== undefined ? { cwd: request.cwd } : {},
         },
         signal,
       })

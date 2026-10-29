@@ -36,6 +36,11 @@ export interface PresetMetadata {
    * can read in capability order while authored ones stay alphabetical.
    */
   readonly order?: number
+  /**
+   * Whether the preset is retired from creation and settings surfaces. Its
+   * composition stays resolvable by explicit id for recorded sessions.
+   */
+  readonly retired?: boolean
 }
 
 /** A non-empty trimmed string, or undefined for anything else. */
@@ -81,6 +86,7 @@ export async function readPresetMetadata(directory: string): Promise<PresetMetad
     ...name === undefined ? {} : { name },
     ...description === undefined ? {} : { description },
     ...order === undefined ? {} : { order },
+    ...record.retired === true ? { retired: true } : {},
   }
 }
 
@@ -96,10 +102,13 @@ export function renderPresetMetadata(metadata: PresetMetadata): string | undefin
   const name = text(metadata.name)
   const description = text(metadata.description)
   const { order } = metadata
-  if (name === undefined && description === undefined && order === undefined) return undefined
+  if (name === undefined && description === undefined && order === undefined && metadata.retired !== true) {
+    return undefined
+  }
   return yaml.dump({
     ...name === undefined ? {} : { name },
     ...description === undefined ? {} : { description },
     ...order === undefined ? {} : { order },
+    ...metadata.retired === true ? { retired: true } : {},
   }, { lineWidth: -1 })
 }

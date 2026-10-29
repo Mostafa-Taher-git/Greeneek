@@ -38,6 +38,12 @@ export interface AgentPreset {
    * up front with this reason instead of failing deep inside the loader.
    */
   readonly broken?: string
+  /**
+   * Whether this preset is retired from creation and settings surfaces. A
+   * retired preset stays resolvable by explicit id so recorded sessions keep
+   * replaying their composition; it never becomes a new-session choice.
+   */
+  readonly retired?: boolean
 }
 
 /** One directory scanned for preset subdirectories. */

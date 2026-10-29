@@ -10,9 +10,10 @@ import { describe, expect, it } from 'vitest'
 import type { Context as ClientContext } from '@greeneek/cordis'
 import { RemoteError } from '@greeneek/gnk-client-test-runtime'
 import { AgentPresetSectionController, draftBlocker } from '../src/client/section-store.ts'
+import { presetOptions } from '../src/client/settings-store.ts'
 import type { CopyDraft, PresetRow } from '../src/client/section-store.ts'
 
-interface FakePreset { trust: 'system' | 'user'; content: string; name?: string }
+interface FakePreset { trust: 'system' | 'user'; content: string; name?: string; retired?: boolean }
 interface Recorded { method: string; payload: unknown }
 
 interface FakeOptions {
@@ -68,6 +69,7 @@ function fakeCtx(
             presets: [...presets].map(([id, preset]) => ({
               id, trust: preset.trust, isDefault: id === defaultId.id,
               ...preset.name === undefined ? {} : { name: preset.name },
+              ...preset.retired === true ? { retired: true } : {},
             })),
             authorable: options.authorable ?? true,
           })
@@ -166,6 +168,25 @@ function copyOf(controller: AgentPresetSectionController): CopyDraft {
 }
 
 describe('loading the roster', () => {
+  it('carries the retired marker into selectable options', () => {
+    expect(presetOptions([
+      { id: 'ptc', trust: 'system', retired: true },
+      { id: 'standard', trust: 'system' },
+    ])).toEqual([
+      { id: 'ptc', trust: 'system', retired: true },
+      { id: 'standard', trust: 'system' },
+    ])
+  })
+
+  it('hides retired presets from the settings rows', async () => {
+    const { controller, presets } = harness()
+    presets.set('ptc', { trust: 'system', content: '- id: tool-bash\n', retired: true })
+
+    await controller.load()
+
+    expect(controller.store.getSnapshot().rows.map(row => row.id)).toEqual(['standard', 'mine'])
+  })
+
   it('still lists the roster when the opener capability is refused', async () => {
     const { controller } = harness({ failCapability: 'no opener here' })
 

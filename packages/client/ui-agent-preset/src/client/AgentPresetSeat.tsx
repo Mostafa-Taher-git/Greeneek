@@ -86,8 +86,6 @@ const MODE_ICONS: Readonly<Record<(typeof MODE_ORDER)[number], ReactNode>> = {
  * PTC remains a legal preset: Settings and custom presets still start it, and
  * sessions recorded under it keep replaying their composition.
  */
-const HIDDEN_FROM_ROW: ReadonlySet<string> = new Set(['ptc'])
-
 /** Full component props. */
 export type AgentPresetSeatProps =
   PropsRuntime<'conversation.hero.agentPreset'>
@@ -139,7 +137,7 @@ export function AgentPresetSeat({ load, select, introduced, useAgentPresetSeat, 
     // shipped preset is the one exception — its row lives in Settings now.
     ...state.options
       .filter(option =>
-        !(MODE_ORDER as readonly string[]).includes(option.id) && !HIDDEN_FROM_ROW.has(option.id))
+        !(MODE_ORDER as readonly string[]).includes(option.id) && option.retired !== true)
       .map((option) => {
         const text = presetDisplayText(option, t)
         return {

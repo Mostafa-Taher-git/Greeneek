@@ -121,7 +121,7 @@ describe('the new-session mode switcher', () => {
     const options = [
       { id: 'mine', trust: 'user' as const },
       { id: 'cordis', trust: 'system' as const },
-      { id: 'ptc', trust: 'system' as const },
+      { id: 'ptc', trust: 'system' as const, retired: true },
       { id: 'standard', trust: 'system' as const },
       { id: 'army', trust: 'system' as const },
       { id: 'maestro', trust: 'system' as const },

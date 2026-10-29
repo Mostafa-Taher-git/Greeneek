@@ -111,4 +111,12 @@ describe('rendering display metadata', () => {
     expect(renderPresetMetadata({})).toBeUndefined()
     expect(renderPresetMetadata({ name: '  ', description: '' })).toBeUndefined()
   })
+
+  it('reads and writes the retired marker', async () => {
+    const dir = await presetDir('name: PTC 模式\nretired: true\n')
+    expect(await readPresetMetadata(dir)).toEqual({ name: 'PTC 模式', retired: true })
+    expect(renderPresetMetadata({ name: 'PTC 模式', retired: true }))
+      .toBe('name: PTC 模式\nretired: true\n')
+    expect(renderPresetMetadata({ retired: false })).toBeUndefined()
+  })
 })

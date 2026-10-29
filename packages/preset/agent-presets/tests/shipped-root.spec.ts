@@ -95,6 +95,10 @@ describe('the shipped preset root', () => {
     expect(listed.map(preset => preset.id).sort())
       .toEqual(['army', 'cordis', 'instructor', 'maestro', 'pixels-designer', 'ptc', 'standard'])
     expect(listed.every(preset => preset.trust === 'system')).toBe(true)
+    expect(listed.find(preset => preset.id === 'ptc')?.retired).toBe(true)
+    expect(listed.filter(preset => preset.retired === true).map(preset => preset.id)).toEqual(['ptc'])
+    const rows = await ctx.agentPresets.remoteExportList()
+    expect(rows.presets.find(preset => preset.id === 'ptc')?.retired).toBe(true)
     // Not `broken === undefined`: health asks whether each row's package is
     // installed above the base, and the shipped rows name packages the
     // deployment installs beside the roster. This fixture base is not that
@@ -123,8 +127,8 @@ describe('the shipped preset root', () => {
     const sanitized: Array<{ from: string; to: string }> = []
     ctx.on('agent-preset/default-sanitized', (payload) => { sanitized.push(payload) })
 
-    // Only the unnamed-default path substitutes. Settings can still read and
-    // mount PTC by id, and a session that explicitly picks it composes it.
+    // Only the unnamed-default path substitutes. An explicit id still reads
+    // and mounts PTC, and a session that recorded it composes it.
     expect((await ctx.agentPresets.resolve('ptc')).id).toBe('ptc')
     expect((await ctx.agentPresets.resolve('ptc')).trust).toBe('system')
     expect((await ctx.agentPresets.readDocument('ptc')).agentPreset).toBe('ptc')

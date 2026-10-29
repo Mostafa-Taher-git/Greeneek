@@ -47,6 +47,8 @@ export interface AgentPresetOption {
   name?: string
   /** One sentence on what the preset is for. */
   description?: string
+  /** Whether the preset is retired from creation and settings surfaces. */
+  retired?: boolean
 }
 
 /** One roster entry exactly as the host reports it. */
@@ -112,13 +114,14 @@ export async function beginRosterRead<S extends { status: string; error: string 
  * @returns one option per selectable preset, in roster order.
  */
 export function presetOptions(
-  presets: readonly { id: string; trust: 'system' | 'user'; name?: string; description?: string; broken?: string }[],
+  presets: readonly { id: string; trust: 'system' | 'user'; name?: string; description?: string; broken?: string; retired?: boolean }[],
 ): AgentPresetOption[] {
   return presets.filter(preset => preset.broken === undefined).map(preset => ({
     id: preset.id,
     trust: preset.trust,
     ...preset.name === undefined ? {} : { name: preset.name },
     ...preset.description === undefined ? {} : { description: preset.description },
+    ...preset.retired === true ? { retired: true } : {},
   }))
 }
 

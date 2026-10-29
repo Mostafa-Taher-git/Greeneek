@@ -39,23 +39,17 @@ import type {
   WaveRequest,
   WaveResult,
   WaveResultEnvelope,
+  WaveResumeBudgets,
   WaveRuntimeConfig,
   WaveView,
 } from './types.ts'
 import { WaveId as WaveIdBrand, WaveMemberId as WaveMemberIdBrand } from './types.ts'
+// Loads the Remote-face failure codes this service throws.
+import type {} from './remote-codes.ts'
 
 declare module '@greeneek/cordis' {
   interface Context {
     waves: WaveRuntime
-  }
-}
-
-declare module '@greeneek/gnk-typert-protocol' {
-  interface RemoteErrorDetailsMap {
-    /** No retained wave carries the addressed id. */
-    'wave/not-found': { readonly waveId: string }
-    /** The addressed wave retains no member with that id. */
-    'wave/member-not-found': { readonly waveId: string; readonly memberId: string }
   }
 }
 
@@ -80,6 +74,11 @@ const CONTROL_SCHEMAS = {
   'wave.cancelMember': zod.object({ waveId: ID_SCHEMA, memberId: ID_SCHEMA }),
   'wave.cancelWave': zod.object({ waveId: ID_SCHEMA }),
   'wave.cancelAll': zod.object({ parentSessionId: ID_SCHEMA }),
+  'wave.resume': zod.object({
+    waveId: ID_SCHEMA,
+    maxTokensPerMember: zod.number().int().positive().optional(),
+    maxWaveTokens: zod.number().int().positive().optional(),
+  }),
 } as const
 
 type ControlMethod = keyof typeof CONTROL_SCHEMAS
@@ -159,6 +158,8 @@ interface WaveState {
   readonly request: WaveRequest
   readonly members: MemberState[]
   closed: boolean
+  /** The wave this one started for its unfinished members; set once at that resume's admission. */
+  resumedToWaveId: WaveId | undefined
   resolveDone: (result: WaveResult) => void
 }
 
@@ -266,6 +267,89 @@ export class WaveRuntime extends TypertRemoteService {
    *   a provider the subagent registry does not resolve.
    */
   async startWave(request: WaveRequest): Promise<WaveResult> {
+    this.validateAdmission(request)
+    const { done } = this.admitWave(request)
+    return done
+  }
+
+  /**
+   * Resume one closed budget-interrupted wave: admit a new wave carrying only
+   * the members that did not complete, with their original specs and dispatch
+   * order, under the caller's new explicit token budgets. Completed members
+   * never rerun, and one wave resumes at most once — the resumed-from mark is
+   * published at the new wave's admission, so a repeated call while the new
+   * wave runs rejects instead of starting a second one.
+   * @param waveId - the interrupted wave to resume.
+   * @param budgets - the new explicit token ceilings; at least one is required.
+   * @returns the resumed wave's settlement, like {@link startWave}.
+   * @throws {@link WaveError} `WAVE_NOT_FOUND` for an unretained id and
+   *   `WAVE_NOT_RESUMABLE` when the wave is not closed, never lost a member
+   *   to a budget kill, was already resumed, or carries no explicit budget;
+   *   provider and meter checks ride {@link startWave}.
+   */
+  async resumeWave(waveId: WaveId, budgets: WaveResumeBudgets): Promise<WaveResult> {
+    const { done } = this.resumeAdmission(waveId, budgets)
+    return done
+  }
+
+  /**
+   * Validate one resume, admit the linked wave, and publish the source's
+   * resumed-from mark. Entirely synchronous, so two concurrent resumes of one
+   * wave cannot interleave: the second sees the mark the first set.
+   * @param waveId - the interrupted wave to resume.
+   * @param budgets - the new explicit token ceilings; at least one is required.
+   * @returns the new wave's id and its settlement promise.
+   * @throws {@link WaveError} `WAVE_NOT_FOUND` for an unretained id,
+   *   `WAVE_NOT_RESUMABLE` when the wave is not closed, never lost a member
+   *   to a budget kill, was already resumed, or carries no explicit budget.
+   */
+  private resumeAdmission(waveId: WaveId, budgets: WaveResumeBudgets): { resumedId: WaveId; done: Promise<WaveResult> } {
+    const source = this.waves.get(waveId)
+    if (source === undefined) throw new WaveError(`no wave "${String(waveId)}" is retained`, 'WAVE_NOT_FOUND')
+    if (!source.closed || source.resumedToWaveId !== undefined) {
+      throw new WaveError(
+        source.resumedToWaveId !== undefined
+          ? `wave "${String(waveId)}" was already resumed`
+          : `wave "${String(waveId)}" is not closed`,
+        'WAVE_NOT_RESUMABLE',
+      )
+    }
+    if (!source.members.some(member => member.budgetKilled)) {
+      throw new WaveError(`wave "${String(waveId)}" lost no member to a budget kill`, 'WAVE_NOT_RESUMABLE')
+    }
+    if (budgets.maxTokensPerMember === undefined && budgets.maxWaveTokens === undefined) {
+      throw new WaveError('resuming requires an explicit token budget', 'WAVE_NOT_RESUMABLE')
+    }
+    const pending = source.members.filter(member => member.status !== 'completed')
+    // The resumed wave's budgets are exactly the caller's: an unset ceiling is
+    // omitted, never inherited from the source, so a resume cannot re-kill
+    // members under the ceiling that interrupted them.
+    const request: WaveRequest = {
+      parent: source.request.parent,
+      label: source.request.label,
+      members: pending.map(member => member.spec),
+      ...(source.request.onComplete === undefined ? {} : { onComplete: source.request.onComplete }),
+      ...(budgets.maxTokensPerMember === undefined ? {} : { maxTokensPerMember: budgets.maxTokensPerMember }),
+      ...(budgets.maxWaveTokens === undefined ? {} : { maxWaveTokens: budgets.maxWaveTokens }),
+      resumedFromWaveId: waveId,
+    }
+    this.validateAdmission(request)
+    const { waveId: resumedId, done } = this.admitWave(request)
+    // Admission is the commit point: the source's resumable mark publishes
+    // only after the new wave's admission record is written and its members
+    // launched.
+    source.resumedToWaveId = resumedId
+    return { resumedId, done }
+  }
+
+  /**
+   * Check one request against the live registry and budget meter before any
+   * state is built.
+   * @param request - the request to admit.
+   * @throws {@link WaveError} `EMPTY_WAVE`, `NO_PROVIDER`, or
+   *   `BUDGET_METER_UNAVAILABLE`.
+   */
+  private validateAdmission(request: WaveRequest): void {
     if (request.members.length === 0) {
       throw new WaveError('a wave requires at least one member', 'EMPTY_WAVE')
     }
@@ -280,6 +364,16 @@ export class WaveRuntime extends TypertRemoteService {
     ) {
       throw new WaveError('wave token budgets require the tokenUsage session projection', 'BUDGET_METER_UNAVAILABLE')
     }
+  }
+
+  /**
+   * Build the wave's state, write its durable admission record, and launch
+   * every member. Purely synchronous, so an admission is never interleaved
+   * with another.
+   * @param request - a request {@link validateAdmission} already accepted.
+   * @returns the minted wave id and the wave's settlement promise.
+   */
+  private admitWave(request: WaveRequest): { waveId: WaveId; done: Promise<WaveResult> } {
     const waveId = WaveIdBrand(randomUUID())
     let resolveDone!: (result: WaveResult) => void
     const done = new Promise<WaveResult>((resolve) => {
@@ -311,6 +405,7 @@ export class WaveRuntime extends TypertRemoteService {
       request,
       members,
       closed: false,
+      resumedToWaveId: undefined,
       resolveDone,
     }
     // Durable admission precedes membership, so a failed append rejects
@@ -324,7 +419,7 @@ export class WaveRuntime extends TypertRemoteService {
         this.tasks.delete(task)
       })
     }
-    return done
+    return { waveId, done }
   }
 
   /**
@@ -443,10 +538,37 @@ export class WaveRuntime extends TypertRemoteService {
     return { waveIds: this.cancelAllForParent(parentSessionId) }
   }
 
+  /**
+   * Remote face of {@link resumeWave}: admit a new wave for the addressed
+   * wave's unfinished members under fresh explicit budgets. Ineligible waves
+   * surface as the typed `wave/not-resumable` code instead of host throws.
+   * @param waveId - the interrupted wave to resume.
+   * @param maxTokensPerMember - the resumed wave's per-member ceiling.
+   * @param maxWaveTokens - the resumed wave's aggregate ceiling.
+   * @returns the resumed wave's id.
+   */
+  @Remote('resume')
+  remoteResumeWave(waveId: WaveId, maxTokensPerMember?: number, maxWaveTokens?: number): { waveId: string } {
+    validateControlRequest('wave.resume', { waveId, maxTokensPerMember, maxWaveTokens })
+    try {
+      // The answer is the admission, not the settlement: the resumed wave's
+      // progress reaches the browser through the list face the mirror polls.
+      return {
+        waveId: String(this.resumeAdmission(waveId, {
+          ...(maxTokensPerMember === undefined ? {} : { maxTokensPerMember }),
+          ...(maxWaveTokens === undefined ? {} : { maxWaveTokens }),
+        }).resumedId),
+      }
+    } catch (error: unknown) {
+      throw new RemoteError(this.remoteErrorCode(error), 'wave resume failed', { waveId }, { cause: error })
+    }
+  }
+
   /** Map a host WaveError onto a stable browser code. */
-  private remoteErrorCode(error: unknown): 'wave/not-found' | 'wave/member-not-found' | 'gateway/internal' {
+  private remoteErrorCode(error: unknown): 'wave/not-found' | 'wave/member-not-found' | 'wave/not-resumable' | 'gateway/internal' {
     if (error instanceof WaveError && error.code === 'WAVE_NOT_FOUND') return 'wave/not-found'
     if (error instanceof WaveError && error.code === 'MEMBER_NOT_FOUND') return 'wave/member-not-found'
+    if (error instanceof WaveError && error.code === 'WAVE_NOT_RESUMABLE') return 'wave/not-resumable'
     return 'gateway/internal'
   }
 
@@ -618,6 +740,9 @@ export class WaveRuntime extends TypertRemoteService {
       onComplete: wave.request.onComplete ?? 'continue-others',
       ...(wave.request.maxTokensPerMember === undefined ? {} : { maxTokensPerMember: wave.request.maxTokensPerMember }),
       ...(wave.request.maxWaveTokens === undefined ? {} : { maxWaveTokens: wave.request.maxWaveTokens }),
+      ...(wave.request.resumedFromWaveId === undefined
+        ? {}
+        : { resumedFromWaveId: String(wave.request.resumedFromWaveId) }),
       memberCount: wave.members.length,
       members: wave.members.map(member => ({
         memberId: String(member.memberId),
@@ -698,6 +823,7 @@ export class WaveRuntime extends TypertRemoteService {
       label: wave.label,
       parentSessionId: wave.parentSessionId,
       closed: wave.closed,
+      ...(wave.resumedToWaveId === undefined ? {} : { resumedToWaveId: wave.resumedToWaveId }),
       members: wave.members.map((member) => {
         this.refreshLastTool(member)
         return this.viewMember(wave, member)

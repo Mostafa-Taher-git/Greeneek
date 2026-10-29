@@ -9,7 +9,7 @@ import { bindSnapshotSelector, makeTranslate } from '@greeneek/gnk-client-test-r
 import type { WaveId, WaveMemberId, WaveMemberView, WaveView } from '@greeneek/gnk-subagent-wave/client'
 import type { SessionId } from '@greeneek/gnk-session/types'
 import type {
-  FleetInjected, FleetPanelProps, FleetSnapshot, StopAllOutcome, StopOutcome,
+  FleetInjected, FleetPanelProps, FleetSnapshot, ResumeOutcome, StopAllOutcome, StopOutcome,
 } from '../src/client/contract.ts'
 import { en } from '../src/client/locales.ts'
 
@@ -97,6 +97,7 @@ export interface FleetVerbSpies {
   stopAll: Mock<() => Promise<StopAllOutcome>>
   stopWave: Mock<(waveId: WaveId) => Promise<StopOutcome>>
   stopMember: Mock<(waveId: WaveId, memberId: WaveMemberId) => Promise<StopOutcome>>
+  resume: Mock<(waveId: WaveId, maxTokensPerMember?: number, maxWaveTokens?: number) => Promise<ResumeOutcome>>
   openChild: Mock<(childSessionId: SessionId) => void>
 }
 
@@ -110,6 +111,8 @@ export function fleetVerbs(): FleetVerbSpies {
       .mockResolvedValue({ ok: true, value: { cancelled: true } }),
     stopMember: vi.fn<(waveId: WaveId, memberId: WaveMemberId) => Promise<StopOutcome>>()
       .mockResolvedValue({ ok: true, value: { cancelled: true } }),
+    resume: vi.fn<(waveId: WaveId, maxTokensPerMember?: number, maxWaveTokens?: number) => Promise<ResumeOutcome>>()
+      .mockResolvedValue({ ok: true, value: { waveId: WAVE_TWO } }),
     openChild: vi.fn<(childSessionId: SessionId) => void>(),
   }
 }

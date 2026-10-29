@@ -478,7 +478,7 @@ The Army wave engine keeps a durable record of every wave on the `WaveRequest.pa
 
 A durable reader can rely on three ordering facts. The admission record precedes every member and closing record of its `waveId`, because it is appended before the wave enters the runtime's retained map. Member settlement records join the log in settlement-completion order — not dispatch order — with the payload's `memberIndex` as the stable join key back to the dispatch order, while the closing record's member rows keep dispatch order. The closing record is written after every member settlement record of the same `waveId`, and a member funnel that arrives after the close writes nothing: a member still awaiting its child's disposal at close time receives its settlement record from the closing wave instead, so `wave/settled` is always the last `wave/*` record its `waveId` ever receives.
 
-The engine never reads these records back: membership, budget enforcement, and the fleet views stay process-local, and the only write coupling is admission ordering — `startWave` rejects when the admission record cannot be written, so a wave is never admitted without its record. Same-repo readers accept the vocabulary through the regenerated `KNOWN_SESSION_EVENT_TYPES` in the persistence event catalog (`pnpm run gen-persistence-catalog`), since first-party writers do not set the envelope's `ignorable` skip marker — it is reserved for out-of-repo session events. A restart mid-wave still cancels the running members by teardown; the durability serves the log replay, not wave resumption, and the fleet UI keeps polling the remote faces rather than deriving its display from the log.
+The engine never reads these records back: membership, budget enforcement, and the fleet views stay process-local, and the only write coupling is admission ordering — `startWave` rejects when the admission record cannot be written, so a wave is never admitted without its record. Same-repo readers accept the vocabulary through the regenerated `KNOWN_SESSION_EVENT_TYPES` in the persistence event catalog (`pnpm run gen-persistence-catalog`), since first-party writers do not set the envelope's `ignorable` skip marker — it is reserved for out-of-repo session events. A resume of a closed budget-interrupted wave admits a linked wave carrying its own three records, joined to the interrupted run by the new admission record's `resumedFromWaveId`; the link is a same-process admission from the retained map, so a restart mid-wave still cancels the running members by teardown, and the fleet UI keeps polling the remote faces rather than deriving its display from the log.
 
 Army composition splits the same way the subagent seam does. [`packages/bundle/base/cordis.patch.yml`](../../packages/bundle/base/cordis.patch.yml) mounts the engine beside `subagents` in the host plane, because Typert Gateway discovers `@Remote` bindings from the root context and the browser control face is addressed by Lead session id; an `isolate` realm would hide it from the gateway. The `army` preset contributes the model-facing pair through [`@greeneek/gnk-tool-wave`](../../packages/subagent/tool-wave/README.md) with `provider: spawn`, and the browser side reads the same service through [`@greeneek/gnk-client-ui-wave`](../../packages/client/ui-wave/README.md) — its `conversation.details.fleet` body and composer pill poll `waves/list` rather than subscribing, since member progress has no Remote event.
 
@@ -725,6 +725,23 @@ Wave engine over the subagent seam. One instance per context; every wave is boun
 async startWave(request: WaveRequest): Promise<WaveResult>
 
 /**
+ * Resume one closed budget-interrupted wave: admit a new wave carrying only
+ * the members that did not complete, with their original specs and dispatch
+ * order, under the caller's new explicit token budgets. Completed members
+ * never rerun, and one wave resumes at most once — the resumed-from mark is
+ * published at the new wave's admission, so a repeated call while the new
+ * wave runs rejects instead of starting a second one.
+ * @param waveId - the interrupted wave to resume.
+ * @param budgets - the new explicit token ceilings; at least one is required.
+ * @returns the resumed wave's settlement, like {@link startWave}.
+ * @throws {@link WaveError} `WAVE_NOT_FOUND` for an unretained id and
+ *   `WAVE_NOT_RESUMABLE` when the wave is not closed, never lost a member
+ *   to a budget kill, was already resumed, or carries no explicit budget;
+ *   provider and meter checks ride {@link startWave}.
+ */
+async resumeWave(waveId: WaveId, budgets: WaveResumeBudgets): Promise<WaveResult>
+
+/**
  * Live snapshots for one Lead session, in acceptance order; closed waves
  * remain listed until their Lead agent disposes.
  * @param parentSessionId - the Lead session address.
@@ -787,6 +804,17 @@ cancelAllForParent(parentSessionId: SessionId): readonly WaveId[]
  * @returns the ids of the waves that received the abort.
  */
 @Remote('cancelAll') remoteCancelAll(parentSessionId: SessionId): { waveIds: readonly WaveId[] }
+
+/**
+ * Remote face of {@link resumeWave}: admit a new wave for the addressed
+ * wave's unfinished members under fresh explicit budgets. Ineligible waves
+ * surface as the typed `wave/not-resumable` code instead of host throws.
+ * @param waveId - the interrupted wave to resume.
+ * @param maxTokensPerMember - the resumed wave's per-member ceiling.
+ * @param maxWaveTokens - the resumed wave's aggregate ceiling.
+ * @returns the resumed wave's id.
+ */
+@Remote('resume') remoteResumeWave(waveId: WaveId, maxTokensPerMember?: number, maxWaveTokens?: number): { waveId: string }
 ```
 
 Types: [SessionId](core.md)

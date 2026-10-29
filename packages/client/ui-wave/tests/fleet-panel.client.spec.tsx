@@ -2,11 +2,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { RemoteError } from '@greeneek/gnk-client-test-runtime'
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
+import type { FleetSnapshot, ResumeOutcome } from '../src/client/contract.ts'
 import type {} from '../src/client/index.ts'
 import { FleetPanel } from '../src/client/FleetPanel.tsx'
 import { en } from '../src/client/locales.ts'
 import {
-  CHILD, MEMBER, MEMBER_TWO, WAVE, WAVE_TWO, emptySnapshot, fleetProps, fleetSource, fleetVerbs,
+  CHILD, MEMBER, MEMBER_TWO, SESSION, WAVE, WAVE_TWO, emptySnapshot, fleetProps, fleetSource, fleetVerbs,
   liveSnapshot, loadingSnapshot, member, settledSnapshot, wave,
 } from './fleet-surface-fixture.client.ts'
 
@@ -224,5 +225,130 @@ describe('FleetPanel multi-wave', () => {
     expect(screen.getByText('second')).toBeDefined()
     expect(screen.getByText(en['status.failed'])).toBeDefined()
     expect(screen.getAllByText(en['wave.members'].replace('{count}', '1'))).toHaveLength(2)
+  })
+})
+
+describe('FleetPanel resume card', () => {
+  /** A closed wave whose reviewer lost its member budget, writer completed. */
+  function budgetKillSnapshot(): FleetSnapshot {
+    return {
+      waveViews: [wave({
+        closed: true,
+        members: [
+          member({ status: 'completed', tokensUsed: 400 }),
+          member({ memberId: MEMBER_TWO, role: 'reviewer', status: 'budget-killed', diagnostic: 'member token budget exceeded' }),
+        ],
+      })],
+      stoppable: false,
+      degraded: false,
+      loading: false,
+    }
+  }
+
+  it('offers a resume card only for a closed budget-interrupted wave', () => {
+    const { source } = setup(budgetKillSnapshot())
+    expect(screen.getByText(en['resume.remaining'].replace('{members}', 'reviewer'))).toBeDefined()
+    expect(screen.getByText(en['resume.budget.member'])).toBeDefined()
+    expect(screen.getByText(en['resume.budget.wave'])).toBeDefined()
+
+    // The action waits for at least one budget.
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: en['resume.action'] }).disabled).toBe(true)
+
+    // An open wave, an all-completed wave, and an already-resumed wave get no card.
+    act(() => {
+      source.set({
+        waveViews: [
+          wave({ label: 'open with kill', members: [member({ status: 'budget-killed' })] }),
+          wave({ waveId: WAVE_TWO, label: 'all completed', closed: true, members: [member({ status: 'completed' })] }),
+          wave({
+            label: 'already resumed',
+            closed: true,
+            resumedToWaveId: WAVE_TWO,
+            members: [member({ status: 'budget-killed' })],
+          }),
+        ],
+        stoppable: false,
+        degraded: false,
+        loading: false,
+      })
+    })
+    expect(screen.queryByText(en['resume.action'])).toBeNull()
+  })
+
+  it('resumes with the entered budgets and announces the admission', async () => {
+    const { verbs } = setup(budgetKillSnapshot())
+    fireEvent.change(screen.getByLabelText(en['resume.budget.member']), { target: { value: '40' } })
+    fireEvent.change(screen.getByLabelText(en['resume.budget.wave']), { target: { value: '500' } })
+    await act(async () => {
+      fireEvent.click(screen.getByText(en['resume.action']))
+    })
+    expect(verbs.resume).toHaveBeenCalledWith(WAVE, 40, 500)
+    expect(screen.getByRole('status').textContent).toBe(en['resume.started'])
+  })
+
+  it('keeps the action disabled while the admission is in flight', async () => {
+    const { verbs } = setup(budgetKillSnapshot())
+    let settle: ((outcome: ResumeOutcome) => void) | undefined
+    verbs.resume.mockImplementation(() => new Promise((resolve) => { settle = resolve }))
+    fireEvent.change(screen.getByLabelText(en['resume.budget.member']), { target: { value: '40' } })
+    await act(async () => {
+      fireEvent.click(screen.getByText(en['resume.action']))
+    })
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: en['resume.action'] }).disabled).toBe(true)
+    settle?.({ ok: true, value: { waveId: WAVE_TWO } })
+    await act(async () => {})
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: en['resume.action'] }).disabled).toBe(false)
+  })
+
+  it('reports a refused resume with its code', async () => {
+    const { verbs } = setup(budgetKillSnapshot())
+    verbs.resume.mockResolvedValue({
+      ok: false,
+      error: new RemoteError('wave/not-resumable', 'not resumable', { waveId: WAVE }),
+    })
+    fireEvent.change(screen.getByLabelText(en['resume.budget.wave']), { target: { value: '500' } })
+    await act(async () => {
+      fireEvent.click(screen.getByText(en['resume.action']))
+    })
+    expect(verbs.resume).toHaveBeenCalledWith(WAVE, undefined, 500)
+    expect(screen.getByRole('status').textContent).toBe(
+      en['resume.failed'].replace('{message}', 'not resumable').replace('{code}', 'wave/not-resumable'),
+    )
+  })
+
+  it('hides the card once the poll carries the resumed-to mark', async () => {
+    const { source } = setup(budgetKillSnapshot())
+    fireEvent.change(screen.getByLabelText(en['resume.budget.member']), { target: { value: '40' } })
+    await act(async () => {
+      fireEvent.click(screen.getByText(en['resume.action']))
+    })
+    expect(screen.getByText(en['resume.started'])).toBeDefined()
+
+    act(() => {
+      source.set({
+        waveViews: [
+          wave({
+            closed: true,
+            resumedToWaveId: WAVE_TWO,
+            members: [
+              member({ status: 'completed', tokensUsed: 400 }),
+              member({ memberId: MEMBER_TWO, role: 'reviewer', status: 'budget-killed', diagnostic: 'member token budget exceeded' }),
+            ],
+          }),
+          wave({
+            waveId: WAVE_TWO,
+            label: 'docs pass',
+            parentSessionId: SESSION,
+            closed: false,
+            members: [member({ memberId: MEMBER_TWO, role: 'reviewer', status: 'running' })],
+          }),
+        ],
+        stoppable: true,
+        degraded: false,
+        loading: false,
+      })
+    })
+    expect(screen.queryByText(en['resume.action'])).toBeNull()
+    expect(screen.getByText(en['status.running'])).toBeDefined()
   })
 })

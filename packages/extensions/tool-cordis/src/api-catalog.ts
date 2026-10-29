@@ -2746,6 +2746,13 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         throws: ['{@link WaveError} `EMPTY_WAVE` for no members or `NO_PROVIDER` for a provider the subagent registry does not resolve.'],
       },
       {
+        signature: 'async resumeWave(waveId: WaveId, budgets: WaveResumeBudgets): Promise<WaveResult>',
+        description: 'Resume one closed budget-interrupted wave: admit a new wave carrying only the members that did not complete, with their original specs and dispatch order, under the caller\'s new explicit token budgets. Completed members never rerun, and one wave resumes at most once — the resumed-from mark is published at the new wave\'s admission, so a repeated call while the new wave runs rejects instead of starting a second one.',
+        parameters: [{ name: 'waveId', description: 'the interrupted wave to resume.' }, { name: 'budgets', description: 'the new explicit token ceilings; at least one is required.' }],
+        returns: 'the resumed wave\'s settlement, like {@link startWave}.',
+        throws: ['{@link WaveError} `WAVE_NOT_FOUND` for an unretained id and `WAVE_NOT_RESUMABLE` when the wave is not closed, never lost a member to a budget kill, was already resumed, or carries no explicit budget; provider and meter checks ride {@link startWave}.'],
+      },
+      {
         signature: 'listWaves(parentSessionId: SessionId): readonly WaveView[]',
         description: 'Live snapshots for one Lead session, in acceptance order; closed waves remain listed until their Lead agent disposes.',
         parameters: [{ name: 'parentSessionId', description: 'the Lead session address.' }],
@@ -2792,6 +2799,12 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Remote face of cancelAllForParent, the emergency stop.',
         parameters: [{ name: 'parentSessionId', description: 'the Lead session address.' }],
         returns: 'the ids of the waves that received the abort.',
+      },
+      {
+        signature: '@Remote(\'resume\') remoteResumeWave(waveId: WaveId, maxTokensPerMember?: number, maxWaveTokens?: number): { waveId: string }',
+        description: 'Remote face of resumeWave: admit a new wave for the addressed wave\'s unfinished members under fresh explicit budgets. Ineligible waves surface as the typed `wave/not-resumable` code instead of host throws.',
+        parameters: [{ name: 'waveId', description: 'the interrupted wave to resume.' }, { name: 'maxTokensPerMember', description: 'the resumed wave\'s per-member ceiling.' }, { name: 'maxWaveTokens', description: 'the resumed wave\'s aggregate ceiling.' }],
+        returns: 'the resumed wave\'s id.',
       },
     ],
   },
@@ -6291,7 +6304,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'WaveRequest',
-    declaration: 'export interface WaveRequest {\n    readonly parent: Agent;\n    readonly label: string;\n    readonly members: readonly WaveMemberSpec[];\n    readonly onComplete?: \'continue-others\' | \'fail-fast\';\n    readonly maxTokensPerMember?: number;\n    readonly maxWaveTokens?: number;\n}',
+    declaration: 'export interface WaveRequest {\n    readonly parent: Agent;\n    readonly label: string;\n    readonly members: readonly WaveMemberSpec[];\n    readonly onComplete?: \'continue-others\' | \'fail-fast\';\n    readonly maxTokensPerMember?: number;\n    readonly maxWaveTokens?: number;\n    readonly resumedFromWaveId?: WaveId;\n}',
   },
   {
     name: 'WaveResult',
@@ -6302,8 +6315,12 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface WaveResultEnvelope {\n    readonly schemaVersion: 1;\n    readonly heartbeatAt: number;\n    readonly truncated: boolean;\n    readonly stopReason?: SubagentStopReason;\n    readonly externalSessionId?: string;\n    readonly artifacts?: readonly WaveArtifactPointer[];\n}',
   },
   {
+    name: 'WaveResumeBudgets',
+    declaration: 'export interface WaveResumeBudgets {\n    readonly maxTokensPerMember?: number;\n    readonly maxWaveTokens?: number;\n}',
+  },
+  {
     name: 'WaveView',
-    declaration: 'export interface WaveView {\n    readonly waveId: WaveId;\n    readonly label: string;\n    readonly parentSessionId: SessionId;\n    readonly closed: boolean;\n    readonly members: readonly WaveMemberView[];\n}',
+    declaration: 'export interface WaveView {\n    readonly waveId: WaveId;\n    readonly label: string;\n    readonly parentSessionId: SessionId;\n    readonly closed: boolean;\n    readonly resumedToWaveId?: WaveId;\n    readonly members: readonly WaveMemberView[];\n}',
   },
   {
     name: 'WebBootBatch',

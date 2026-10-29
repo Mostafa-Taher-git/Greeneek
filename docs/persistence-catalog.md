@@ -1104,6 +1104,8 @@ Source: [`packages/core/session/src/types.ts:289`](../packages/core/session/src/
   maxTokensPerMember?: number
   /** Wave-aggregate token ceiling of the request; absent when unset. */
   maxWaveTokens?: number
+  /** The interrupted wave this one resumes; absent for a fresh wave. */
+  resumedFromWaveId?: string
   /** How many members the wave admitted. */
   memberCount: number
   /** One row per member in dispatch order. */
@@ -1118,7 +1120,7 @@ Source: [`packages/core/session/src/types.ts:289`](../packages/core/session/src/
 }
 ```
 
-Source: [`packages/subagent/wave/src/types.ts:133`](../packages/subagent/wave/src/types.ts)
+Source: [`packages/subagent/wave/src/types.ts:147`](../packages/subagent/wave/src/types.ts)
 
 <a id="wavemember-settled--log-only"></a>
 
@@ -1163,7 +1165,7 @@ Source: [`packages/subagent/wave/src/types.ts:133`](../packages/subagent/wave/sr
 }
 ```
 
-Source: [`packages/subagent/wave/src/types.ts:164`](../packages/subagent/wave/src/types.ts)
+Source: [`packages/subagent/wave/src/types.ts:180`](../packages/subagent/wave/src/types.ts)
 
 <a id="wavesettled--log-only"></a>
 
@@ -1208,7 +1210,7 @@ Source: [`packages/subagent/wave/src/types.ts:164`](../packages/subagent/wave/sr
 }
 ```
 
-Source: [`packages/subagent/wave/src/types.ts:200`](../packages/subagent/wave/src/types.ts)
+Source: [`packages/subagent/wave/src/types.ts:216`](../packages/subagent/wave/src/types.ts)
 
 ### `web/*`
 

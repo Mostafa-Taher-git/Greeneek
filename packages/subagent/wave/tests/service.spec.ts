@@ -537,6 +537,179 @@ describe('WaveRuntime budget enforcement', () => {
   })
 })
 
+describe('WaveRuntime resume', () => {
+  it('admits a linked wave for only the unfinished members in dispatch order', async () => {
+    const { ctx, waves, provider, parent } = await setupWave()
+    const pending = waves.startWave(waveRequest(parent, [
+      member({ prompt: [{ type: 'text', text: 'task alpha' }] }, { role: 'alpha' }),
+      member({ prompt: [{ type: 'text', text: 'task beta' }] }, { role: 'beta' }),
+      member({ prompt: [{ type: 'text', text: 'task gamma' }] }, { role: 'gamma' }),
+    ], { maxTokensPerMember: 10 }))
+    await vi.waitFor(() => { expect(provider.runs).toHaveLength(3) })
+    provider.runs[0]!.deferred.resolve(completed('alpha'))
+    vi.spyOn(ctx.sessionProjections, 'stateOf').mockReturnValue(usage(11))
+    await expect(preStep(ctx, childAgent(provider.runs[1]!))).resolves.toEqual({ kind: 'reject' })
+    const source = waves.listWaves(parent.id)[0]!
+    waves.cancelMember(source.waveId, source.members[2]!.memberId)
+    await expect(pending).resolves.toMatchObject({
+      outcome: 'partial',
+      members: [{ status: 'completed' }, { status: 'budget-killed' }, { status: 'cancelled' }],
+    })
+    const settled = waves.listWaves(parent.id)[0]!
+    expect(settled.closed).toBe(true)
+    expect(settled.waveId).toEqual(source.waveId)
+
+    // No explicit budget: resuming is refused before anything is admitted.
+    await expect(waves.resumeWave(source.waveId, {})).rejects.toMatchObject({ code: 'WAVE_NOT_RESUMABLE' })
+    expect(waves.listWaves(parent.id)).toHaveLength(1)
+
+    const resumedDone = waves.resumeWave(source.waveId, { maxWaveTokens: 40 })
+    // Admission is synchronous: the linked rows and the resumed-from mark
+    // publish before the settlement promise settles.
+    const views = waves.listWaves(parent.id)
+    expect(views).toHaveLength(2)
+    const resumed = views[1]!
+    expect(views[0]!.resumedToWaveId).toEqual(resumed.waveId)
+    expect(resumed.members.map(row => row.role)).toEqual(['beta', 'gamma'])
+    expect(resumed.closed).toBe(false)
+    // A repeated click mid-flight sees the mark and refuses.
+    await expect(waves.resumeWave(source.waveId, { maxTokensPerMember: 5 }))
+      .rejects.toMatchObject({ code: 'WAVE_NOT_RESUMABLE' })
+
+    // Completed members never rerun; the resumed members carry their original specs.
+    await vi.waitFor(() => { expect(provider.runs).toHaveLength(5) })
+    expect(provider.requests).toHaveLength(5)
+    expect(provider.requests[3]!.prompt).toEqual([{ type: 'text', text: 'task beta' }])
+    expect(provider.requests[4]!.prompt).toEqual([{ type: 'text', text: 'task gamma' }])
+    provider.runs[3]!.deferred.resolve(completed('beta'))
+    provider.runs[4]!.deferred.resolve(completed('gamma'))
+    await expect(resumedDone).resolves.toMatchObject({
+      outcome: 'completed',
+      members: [{ status: 'completed' }, { status: 'completed' }],
+    })
+
+    // The source's rows keep their terminal statuses and its mark is final.
+    const settledViews = waves.listWaves(parent.id)
+    expect(settledViews[0]!.members.map(row => row.status)).toEqual(['completed', 'budget-killed', 'cancelled'])
+    await expect(waves.resumeWave(source.waveId, { maxWaveTokens: 40 })).rejects.toMatchObject({ code: 'WAVE_NOT_RESUMABLE' })
+
+    // The resumed wave's admission record links it to its source.
+    const records = initiatedData(parent)
+    expect(records[0]!.resumedFromWaveId).toBeUndefined()
+    const resumedRecord = records[1]!
+    expect(resumedRecord.resumedFromWaveId).toBe(String(source.waveId))
+    expect(resumedRecord.label).toBe('test fleet')
+    expect(resumedRecord.maxWaveTokens).toBe(40)
+    expect(resumedRecord.maxTokensPerMember).toBeUndefined()
+    expect(resumedRecord.members.map(row => row.memberId)).toEqual([
+      `${String(resumed.waveId)}:0`,
+      `${String(resumed.waveId)}:1`,
+    ])
+  })
+
+  it('rejects resuming a wave that is open or never lost a member to a budget kill', async () => {
+    const { waves, provider, parent } = await setupWave()
+    await expect(waves.resumeWave(WaveId('absent-wave'), { maxTokensPerMember: 5 }))
+      .rejects.toMatchObject({ code: 'WAVE_NOT_FOUND' })
+
+    const open = waves.startWave(waveRequest(parent, [member()], { maxTokensPerMember: 10 }))
+    await vi.waitFor(() => { expect(provider.runs).toHaveLength(1) })
+    const openId = waves.listWaves(parent.id)[0]!.waveId
+    await expect(waves.resumeWave(openId, { maxWaveTokens: 5 })).rejects.toMatchObject({ code: 'WAVE_NOT_RESUMABLE' })
+    provider.runs[0]!.deferred.resolve(completed())
+    await expect(open).resolves.toMatchObject({ outcome: 'completed' })
+
+    // Closed, but every member completed: nothing to resume.
+    await expect(waves.resumeWave(openId, { maxTokensPerMember: 5 })).rejects.toMatchObject({ code: 'WAVE_NOT_RESUMABLE' })
+    expect(waves.listWaves(parent.id)).toHaveLength(1)
+  })
+
+  it('meters resumed members under the caller’s new budgets', async () => {
+    const { ctx, waves, provider, parent } = await setupWave()
+    const pending = waves.startWave(waveRequest(parent, [member()], { maxTokensPerMember: 10 }))
+    await vi.waitFor(() => { expect(provider.runs).toHaveLength(1) })
+    const stateOf = vi.spyOn(ctx.sessionProjections, 'stateOf')
+    stateOf.mockReturnValue(usage(11))
+    await expect(preStep(ctx, childAgent(provider.runs[0]!))).resolves.toEqual({ kind: 'reject' })
+    await pending
+    const source = waves.listWaves(parent.id)[0]!
+
+    const resumedDone = waves.resumeWave(source.waveId, { maxTokensPerMember: 5 })
+    await vi.waitFor(() => { expect(provider.runs).toHaveLength(2) })
+    stateOf.mockReturnValue(usage(6))
+    await expect(preStep(ctx, childAgent(provider.runs[1]!))).resolves.toEqual({ kind: 'reject' })
+    await expect(resumedDone).resolves.toMatchObject({
+      outcome: 'partial',
+      members: [{ status: 'budget-killed', budgetLimit: 5, tokensUsed: 6, diagnostic: 'member token budget exceeded' }],
+    })
+    expect(provider.requests[1]!.signal.aborted).toBe(true)
+  })
+
+  it('requires the budget meter at resume admission like a fresh start', async () => {
+    const { ctx, waves, provider, parent, tokenMeterFiber } = await setupWave()
+    const pending = waves.startWave(waveRequest(parent, [member()], { maxTokensPerMember: 10 }))
+    await vi.waitFor(() => { expect(provider.runs).toHaveLength(1) })
+    const stateOf = vi.spyOn(ctx.sessionProjections, 'stateOf')
+    stateOf.mockReturnValue(usage(11))
+    await expect(preStep(ctx, childAgent(provider.runs[0]!))).resolves.toEqual({ kind: 'reject' })
+    const source = waves.listWaves(parent.id)[0]!
+    await pending
+    stateOf.mockRestore()
+    await tokenMeterFiber!.dispose()
+
+    await expect(waves.resumeWave(source.waveId, { maxWaveTokens: 40 }))
+      .rejects.toMatchObject({ code: 'BUDGET_METER_UNAVAILABLE' })
+    // The refusal admits nothing and leaves the source unmarked.
+    expect(waves.listWaves(parent.id)).toHaveLength(1)
+    expect(waves.listWaves(parent.id)[0]!.resumedToWaveId).toBeUndefined()
+  })
+
+  it('exposes resume over the remote face with typed failures and an immediate admission id', async () => {
+    const { ctx, waves, provider, parent } = await setupWave()
+    expect(() => waves.remoteResumeWave(WaveId(''))).toThrow(expect.objectContaining({ code: 'gateway/bad-request' }))
+    expect(() => waves.remoteResumeWave(WaveId('absent-wave'), 0)).toThrow(expect.objectContaining({ code: 'gateway/bad-request' }))
+    expect(() => waves.remoteResumeWave(WaveId('absent-wave'), 5)).toThrow(expect.objectContaining({
+      code: 'wave/not-found',
+      details: { waveId: 'absent-wave' },
+    }))
+
+    const pending = waves.startWave(waveRequest(parent, [member()], { maxTokensPerMember: 10 }))
+    await vi.waitFor(() => { expect(provider.runs).toHaveLength(1) })
+    const openId = waves.listWaves(parent.id)[0]!.waveId
+    // An open wave maps to the stable not-resumable code, not a host throw.
+    expect(() => waves.remoteResumeWave(openId, 5)).toThrow(expect.objectContaining({
+      code: 'wave/not-resumable',
+      details: { waveId: String(openId) },
+    }))
+
+    const stateOf = vi.spyOn(ctx.sessionProjections, 'stateOf')
+    stateOf.mockReturnValue(usage(11))
+    await expect(preStep(ctx, childAgent(provider.runs[0]!))).resolves.toEqual({ kind: 'reject' })
+    await pending
+    const source = waves.listWaves(parent.id)[0]!
+    // No budgets supplied: the same not-resumable code.
+    expect(() => waves.remoteResumeWave(source.waveId)).toThrow(expect.objectContaining({ code: 'wave/not-resumable' }))
+
+    const failing = vi.spyOn(
+      waves as unknown as Record<string, (...args: unknown[]) => unknown>,
+      'resumeAdmission',
+    ).mockImplementation(() => { throw new Error('control failed') })
+    expect(() => waves.remoteResumeWave(source.waveId, 5)).toThrow(expect.objectContaining({ code: 'gateway/internal' }))
+    failing.mockRestore()
+
+    // The answer is the admission, not the settlement: the id returns while
+    // the resumed wave is still open.
+    const answer = waves.remoteResumeWave(source.waveId, 40)
+    const resumed = waves.listWaves(parent.id)[1]!
+    expect(answer).toEqual({ waveId: String(resumed.waveId) })
+    expect(waves.listWaves(parent.id)[0]!.resumedToWaveId).toEqual(resumed.waveId)
+    expect(resumed.closed).toBe(false)
+    await vi.waitFor(() => { expect(provider.runs).toHaveLength(2) })
+    provider.runs[1]!.deferred.resolve(completed('resumed'))
+    await vi.waitFor(() => { expect(waves.listWaves(parent.id)[1]!.closed).toBe(true) })
+  })
+})
+
 describe('WaveRuntime durable wave records', () => {
   it('writes one admission record, one record per member, and a closing record', async () => {
     const { waves, provider, parent } = await setupWave({ maxConcurrent: 2 })

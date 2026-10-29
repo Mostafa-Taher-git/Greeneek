@@ -19,7 +19,7 @@ import type { WaveId, WaveMemberId, WaveView } from '@greeneek/gnk-subagent-wave
 import type { SessionId } from '@greeneek/gnk-session/types'
 // Type-only: pulls the context with the `waves` Remote namespace through the Client assembly.
 import type {} from '@greeneek/gnk-api-remotes/client'
-import type { FleetSnapshot, StopAllOutcome, StopOutcome } from './contract.ts'
+import type { FleetSnapshot, ResumeOutcome, StopAllOutcome, StopOutcome } from './contract.ts'
 
 /** Cadence while at least one wave is unclosed. */
 const LIVE_POLL_MS = 1_000
@@ -56,7 +56,7 @@ const INITIAL: FleetSnapshot = Object.freeze({
  */
 function signature(views: readonly WaveView[]): string {
   return views.map(wave => [
-    wave.waveId, wave.label, wave.closed ? 1 : 0,
+    wave.waveId, wave.label, wave.closed ? 1 : 0, wave.resumedToWaveId ?? '',
     wave.members.map(member => [
       member.memberId, member.status, member.tokensUsed, member.budgetUsed ?? '',
       member.budgetLimit ?? '', member.lastTool ?? '', member.durationMs ?? '',
@@ -138,6 +138,19 @@ export class FleetMirror implements HostObservable<FleetSnapshot> {
    */
   async stopMember(waveId: WaveId, memberId: WaveMemberId): Promise<StopOutcome> {
     return await this.control(() => this.ctx.remote.waves.cancelMember(waveId, memberId))
+  }
+
+  /**
+   * Resume one closed budget-interrupted wave under fresh explicit budgets.
+   * The answer is the admission; the resumed wave's rows reach the surfaces
+   * through the immediate sample this verb schedules.
+   * @param waveId - the interrupted wave to resume.
+   * @param maxTokensPerMember - the resumed wave's per-member ceiling.
+   * @param maxWaveTokens - the resumed wave's aggregate ceiling.
+   * @returns the Remote outcome carrying the resumed wave's id.
+   */
+  async resume(waveId: WaveId, maxTokensPerMember?: number, maxWaveTokens?: number): Promise<ResumeOutcome> {
+    return await this.control(() => this.ctx.remote.waves.resume(waveId, maxTokensPerMember, maxWaveTokens))
   }
 
   /** Stop sampling and refuse further work when the owning fiber unloads. */

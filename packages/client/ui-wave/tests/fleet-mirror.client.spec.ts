@@ -9,6 +9,7 @@ import type { FleetSnapshot } from '../src/client/contract.ts'
 
 const SESSION = 'lead-1' as SessionId
 const WAVE = 'wave-1' as WaveId
+const WAVE_TWO = 'wave-2' as WaveId
 const MEMBER = 'member-1' as WaveMemberId
 
 /** One member row, varied only where a spec needs a different rendered field. */
@@ -41,6 +42,7 @@ function wavesRemote(): {
   cancelAll: Mock<() => Promise<RemoteResult<{ waveIds: readonly WaveId[] }>>>
   cancelWave: Mock<(waveId: WaveId) => Promise<RemoteResult<{ cancelled: true }>>>
   cancelMember: Mock<(waveId: WaveId, memberId: WaveMemberId) => Promise<RemoteResult<{ cancelled: true }>>>
+  resume: Mock<(waveId: WaveId, maxTokensPerMember?: number, maxWaveTokens?: number) => Promise<RemoteResult<{ waveId: string }>>>
 } {
   return {
     list: vi.fn<() => Promise<RemoteResult<readonly WaveView[]>>>()
@@ -51,6 +53,8 @@ function wavesRemote(): {
       .mockResolvedValue({ ok: true, value: { cancelled: true } }),
     cancelMember: vi.fn<(waveId: WaveId, memberId: WaveMemberId) => Promise<RemoteResult<{ cancelled: true }>>>()
       .mockResolvedValue({ ok: true, value: { cancelled: true } }),
+    resume: vi.fn<(waveId: WaveId, maxTokensPerMember?: number, maxWaveTokens?: number) => Promise<RemoteResult<{ waveId: string }>>>()
+      .mockResolvedValue({ ok: true, value: { waveId: WAVE_TWO } }),
   }
 }
 
@@ -247,6 +251,25 @@ describe('FleetMirror sampling', () => {
     mirror.dispose()
   })
 
+  it('republishes when a wave gains its resumed-to mark', async () => {
+    const { mirror, remote } = bench()
+    const listener = vi.fn()
+    mirror.subscribe(listener)
+    await vi.advanceTimersByTimeAsync(0)
+    await flushWindow()
+    listener.mockClear()
+
+    remote.list.mockResolvedValue({
+      ok: true,
+      value: [wave({ closed: true, resumedToWaveId: WAVE_TWO })],
+    })
+    await vi.advanceTimersByTimeAsync(1_000)
+    await flushWindow()
+    expect(listener).toHaveBeenCalled()
+    expect(mirror.getSnapshot().waveViews[0]?.resumedToWaveId).toBe(WAVE_TWO)
+    mirror.dispose()
+  })
+
   it('collapses a second attention poll onto the sample already in flight', async () => {
     const { mirror, remote } = bench()
     let resolveList: ((value: { ok: true; value: readonly WaveView[] }) => void) | undefined
@@ -386,6 +409,18 @@ describe('FleetMirror control verbs', () => {
     expect(remote.cancelWave).toHaveBeenCalledWith(WAVE)
     expect(remote.cancelAll).toHaveBeenCalledWith(SESSION)
     await vi.advanceTimersByTimeAsync(0)
+    mirror.dispose()
+  })
+
+  it('resumes a wave and samples immediately after the admission answers', async () => {
+    const { mirror, remote } = bench()
+    mirror.subscribe(() => {})
+    await vi.advanceTimersByTimeAsync(0)
+
+    await expect(mirror.resume(WAVE, 40, 500)).resolves.toEqual({ ok: true, value: { waveId: WAVE_TWO } })
+    await vi.advanceTimersByTimeAsync(0)
+    expect(remote.resume).toHaveBeenCalledWith(WAVE, 40, 500)
+    expect(remote.list).toHaveBeenCalledTimes(2)
     mirror.dispose()
   })
 

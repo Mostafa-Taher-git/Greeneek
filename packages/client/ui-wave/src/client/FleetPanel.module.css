@@ -218,3 +218,75 @@
   color: var(--dsw-alias-label-secondary);
   overflow-wrap: anywhere;
 }
+
+/* Resume card of one closed budget-interrupted wave: the remaining members, the
+   two budget fields, and the admission answer. It sits under its wave's rows
+   with the diagnostic's container treatment. */
+.resume {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: var(--dsw-alias-bg-layer-1);
+}
+
+.resumeRemaining {
+  flex: 1 1 100%;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--dsw-alias-label-secondary);
+  overflow-wrap: anywhere;
+}
+
+.resumeField {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.resumeField input {
+  width: 9rem;
+  padding: 3px 8px;
+  border: 0.5px solid var(--dsw-alias-border-l2);
+  border-radius: 6px;
+  background: var(--dsw-alias-bg-canvas);
+  color: var(--dsw-alias-label-primary);
+  font-size: 12px;
+  line-height: 18px;
+  font-family: var(--ds-font-family-code);
+}
+
+.resumeAction {
+  flex: none;
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--dsw-alias-button-primary-fill);
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--dsw-alias-label-primary-foreground);
+  cursor: pointer;
+}
+
+.resumeAction:hover:not(:disabled) {
+  background: var(--dsw-alias-button-primary-hover);
+}
+
+.resumeAction:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.resumeNotice {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--dsw-alias-label-secondary);
+  overflow-wrap: anywhere;
+}

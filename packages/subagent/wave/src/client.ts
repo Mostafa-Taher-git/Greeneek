@@ -7,6 +7,9 @@
  * @module @greeneek/gnk-subagent-wave/client
  */
 
+/** Loads the wave views and the Remote-face failure codes for browser consumers. */
+export type {} from './remote-codes.ts'
+
 export type {
   WaveArtifactPointer,
   WaveId,

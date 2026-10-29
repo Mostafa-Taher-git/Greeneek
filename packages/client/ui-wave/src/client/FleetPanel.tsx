@@ -1,7 +1,9 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import type { ReactNode } from 'react'
 import { StateDot } from '@greeneek/gnk-client-ui-primitives'
-import type { WaveArtifactPointer } from '@greeneek/gnk-subagent-wave/client'
-import type { FleetPanelProps } from './contract.ts'
+import type { WaveArtifactPointer, WaveView } from '@greeneek/gnk-subagent-wave/client'
+import type { RemoteResult } from '@greeneek/gnk-typert-protocol'
+import type { FleetInjected, FleetPanelProps } from './contract.ts'
 import { isCancellable, MEMBER_STATE } from './member-state.ts'
 import css from './FleetPanel.module.css'
 import { useEmergencyStop } from './use-stop.ts'
@@ -31,6 +33,90 @@ function pointerLabel(pointer: WaveArtifactPointer): string {
 }
 
 /**
+ * Parse one budget field: a positive safe integer, or nothing. An empty or
+ * malformed field means "unset", and the action stays disabled until at least
+ * one field parses.
+ * @param value - the field's raw text.
+ * @returns the parsed ceiling, or undefined.
+ */
+function budgetOf(value: string): number | undefined {
+  const parsed = Number.parseInt(value, 10)
+  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : undefined
+}
+
+/**
+ * One closed budget-interrupted wave's resume card: the exact remaining
+ * members, two budget inputs, and the admission answer as a notice line. The
+ * card disappears once the view carries `resumedToWaveId` — admission is the
+ * commit point, and the resumed wave's own section shows its progress.
+ * @param props - the interrupted wave, the fleet copy, and the resume verb.
+ * @returns the card, or nothing for a wave that is not resumable.
+ */
+function ResumeCard({ wave, t, resume }: {
+  wave: WaveView
+  t: FleetPanelProps['t']
+  resume: FleetInjected['resume']
+}): ReactNode {
+  const [perMember, setPerMember] = useState('')
+  const [waveBudget, setWaveBudget] = useState('')
+  const [pending, setPending] = useState(false)
+  const [notice, setNotice] = useState<string | null>(null)
+  const perMemberBudget = budgetOf(perMember)
+  const waveTokens = budgetOf(waveBudget)
+  const record = (outcome: RemoteResult<unknown>): void => {
+    setPending(false)
+    setNotice(outcome.ok
+      ? t('resume.started')
+      : t('resume.failed', { message: outcome.error.message, code: outcome.error.code }))
+  }
+  return (
+    <div className={css.resume}>
+      <div className={css.resumeRemaining}>
+        {t('resume.remaining', {
+          members: wave.members
+            .filter(member => member.status !== 'completed')
+            .map(member => member.role ?? member.provider)
+            .join(', '),
+        })}
+      </div>
+      <label className={css.resumeField}>
+        <span>{t('resume.budget.member')}</span>
+        <input
+          type="number"
+          min={1}
+          step={1}
+          value={perMember}
+          onChange={(event) => { setPerMember(event.target.value) }}
+        />
+      </label>
+      <label className={css.resumeField}>
+        <span>{t('resume.budget.wave')}</span>
+        <input
+          type="number"
+          min={1}
+          step={1}
+          value={waveBudget}
+          onChange={(event) => { setWaveBudget(event.target.value) }}
+        />
+      </label>
+      <button
+        type="button"
+        className={css.resumeAction}
+        disabled={pending || (perMemberBudget === undefined && waveTokens === undefined)}
+        onClick={() => {
+          setPending(true)
+          setNotice(null)
+          void resume(wave.waveId, perMemberBudget, waveTokens).then(record)
+        }}
+      >
+        {t('resume.action')}
+      </button>
+      {notice !== null && <span className={css.resumeNotice} role="status">{notice}</span>}
+    </div>
+  )
+}
+
+/**
  * Fleet rows for one Lead session: the wave headers with their live members, one
  * stop affordance per level, and the emergency stop that stays reachable while
  * any wave is open.
@@ -38,7 +124,7 @@ function pointerLabel(pointer: WaveArtifactPointer): string {
  * @returns the details-panel Fleet body.
  */
 export function FleetPanel({
-  t, useFleet, refresh, stopAll, stopWave, stopMember, openChild,
+  t, useFleet, refresh, stopAll, stopWave, stopMember, resume, openChild,
 }: FleetPanelProps) {
   const snapshot = useFleet(view => view)
   const stop = useEmergencyStop(t, stopAll)
@@ -144,6 +230,10 @@ export function FleetPanel({
               )
             })}
           </ul>
+          {wave.closed && wave.resumedToWaveId === undefined
+            && wave.members.some(member => member.status === 'budget-killed') && (
+            <ResumeCard wave={wave} t={t} resume={resume} />
+          )}
         </section>
       ))}
     </div>

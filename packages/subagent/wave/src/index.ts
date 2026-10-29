@@ -31,6 +31,7 @@ export type {
   WaveMemberStatus,
   WaveMemberView,
   WaveRequest,
+  WaveResumeBudgets,
   WaveResult,
   WaveResultEnvelope,
   WaveRuntimeConfig,

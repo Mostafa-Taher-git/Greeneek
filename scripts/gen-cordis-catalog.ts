@@ -739,6 +739,7 @@ export const TYPE_LINK_EXEMPTIONS: Readonly<Record<string, string>> = {
   WaveId: 'wave identity contract is owned by packages/subagent/wave/src/types.ts',
   WaveMemberId: 'wave member identity contract is owned by packages/subagent/wave/src/types.ts',
   WaveRequest: 'wave admission contract is owned by packages/subagent/wave/src/types.ts',
+  WaveResumeBudgets: 'wave resume budget contract is owned by packages/subagent/wave/src/types.ts',
   WaveResult: 'wave settlement record is owned by packages/subagent/wave/src/types.ts',
   WaveView: 'live wave fleet view is owned by packages/subagent/wave/src/types.ts',
   WorkflowAgentEndInfo: 'event-local snapshot is owned by packages/workflow/workflow/src/index.ts',

@@ -45,6 +45,20 @@ export interface WaveRequest {
   readonly maxTokensPerMember?: number
   /** Wave-aggregate token ceiling; breaching it kills every active member. */
   readonly maxWaveTokens?: number
+  /**
+   * The wave this one resumes; set only by {@link WaveRuntime.resumeWave}. The
+   * admission record persists it, so a replayed log shows the two waves as one
+   * interrupted run.
+   */
+  readonly resumedFromWaveId?: WaveId
+}
+
+/** The explicit token ceilings a resume must carry. */
+export interface WaveResumeBudgets {
+  /** Per-member token ceiling of the resumed wave; absent when unset. */
+  readonly maxTokensPerMember?: number
+  /** Wave-aggregate token ceiling of the resumed wave; absent when unset. */
+  readonly maxWaveTokens?: number
 }
 
 /**
@@ -143,6 +157,8 @@ declare module '@greeneek/gnk-session/types' {
       maxTokensPerMember?: number
       /** Wave-aggregate token ceiling of the request; absent when unset. */
       maxWaveTokens?: number
+      /** The interrupted wave this one resumes; absent for a fresh wave. */
+      resumedFromWaveId?: string
       /** How many members the wave admitted. */
       memberCount: number
       /** One row per member in dispatch order. */

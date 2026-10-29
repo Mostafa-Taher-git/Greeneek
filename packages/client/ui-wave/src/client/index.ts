@@ -32,7 +32,7 @@ declare module '@greeneek/gnk-client-ui-slots' {
 }
 
 export type {
-  FleetInjected, FleetPillProps, FleetPanelProps, FleetSnapshot, StopAllOutcome, StopOutcome,
+  FleetInjected, FleetPillProps, FleetPanelProps, FleetSnapshot, ResumeOutcome, StopAllOutcome, StopOutcome,
 } from './contract.ts'
 export type { FleetKey } from './locales.ts'
 
@@ -67,6 +67,8 @@ export function apply(ctx: ClientContext): void {
       stopAll: () => mirror.stopAll(),
       stopWave: waveId => mirror.stopWave(waveId),
       stopMember: (waveId, memberId) => mirror.stopMember(waveId, memberId),
+      resume: (waveId, maxTokensPerMember, maxWaveTokens) =>
+        mirror.resume(waveId, maxTokensPerMember, maxWaveTokens),
       // A wave member is a one-shot child: its transcript opens read-only, which
       // is the transport the subagent surface already owns.
       openChild: (childSessionId) => {

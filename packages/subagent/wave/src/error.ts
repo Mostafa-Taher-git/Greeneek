@@ -14,6 +14,7 @@ export type WaveErrorCode =
   | 'BUDGET_METER_UNAVAILABLE'
   | 'WAVE_NOT_FOUND'
   | 'MEMBER_NOT_FOUND'
+  | 'WAVE_NOT_RESUMABLE'
 
 /** Typed failure for a wave operation. */
 export class WaveError extends HarnessError {

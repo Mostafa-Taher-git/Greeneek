@@ -37,6 +37,9 @@ export type StopOutcome = RemoteResult<{ cancelled: true }>
 /** Emergency-stop outcome; the host answers with every wave id it owns. */
 export type StopAllOutcome = RemoteResult<{ waveIds: readonly WaveId[] }>
 
+/** Resume outcome; the host answers the admission with the resumed wave's id. */
+export type ResumeOutcome = RemoteResult<{ waveId: string }>
+
 /**
  * Fleet verbs and the live mirror, shared by the Fleet tab body and the
  * fallback pill (which renders the same body inside its overlay). All data is
@@ -59,6 +62,12 @@ export interface FleetInjected {
   stopWave: (waveId: WaveId) => Promise<StopOutcome>
   /** Cancel one member (its row affordance, while queued or running). */
   stopMember: (waveId: WaveId, memberId: WaveMemberId) => Promise<StopOutcome>
+  /**
+   * Resume one closed budget-interrupted wave under fresh explicit budgets.
+   * The answer is the admission (the resumed wave's id); its progress reaches
+   * the surfaces through the polled mirror, not this call.
+   */
+  resume: (waveId: WaveId, maxTokensPerMember?: number, maxWaveTokens?: number) => Promise<ResumeOutcome>
   /** Open a member's child transcript through the current Session graph. */
   openChild: (childSessionId: SessionId) => void
 }

@@ -118,6 +118,12 @@ export interface WaveView {
   readonly parentSessionId: SessionId
   /** Whether every member has settled. */
   readonly closed: boolean
+  /**
+   * The wave this one started for its unfinished members; absent until a
+   * resume was admitted from this wave, and final once set — a wave resumes
+   * at most once.
+   */
+  readonly resumedToWaveId?: WaveId
   /** Live member rows in dispatch order. */
   readonly members: readonly WaveMemberView[]
 }

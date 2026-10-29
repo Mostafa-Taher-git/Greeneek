@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Context } from '@greeneek/cordis'
@@ -25,6 +26,10 @@ import * as toolTeam from '../src/index.ts'
 const SIGNAL = new AbortController().signal
 const TOOL_NAMES = [
   'spawn_teammate',
+  'spawn_fleet',
+  'checkpoint_lane',
+  'discard_lane',
+  'integrate_lane',
   'send_message',
   'list_agents',
   'wait_agent',
@@ -53,7 +58,11 @@ afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true })
 })
 
-async function setup(script: ConstructorParameters<typeof MockAdapter>[0], legacyControl = false) {
+async function setup(
+  script: ConstructorParameters<typeof MockAdapter>[0],
+  legacyControl = false,
+  options: { readonly cwd?: string; readonly gnkHome?: string } = {},
+) {
   const ctx = new Context()
   await mountAgentLoopTestDependencies(ctx)
   await ctx.plugin(SessionProjectionRegistry)
@@ -66,11 +75,15 @@ async function setup(script: ConstructorParameters<typeof MockAdapter>[0], legac
   if (legacyControl) await ctx.plugin(ToolSubagentControl)
   await ctx.plugin(SubagentSpawn, { providerName: 'spawn' })
   await ctx.plugin(SubagentFork, { providerName: 'fork' })
-  await ctx.plugin(TeamService)
+  await ctx.plugin(TeamService, options.gnkHome === undefined ? {} : { gnkHome: options.gnkHome })
   const fiber = await ctx.plugin(toolTeam)
   const adapter = new MockAdapter(script)
   ctx.llm.registerAdapter(['mock'], adapter)
-  const lead = await ctx.agentLoop.create(SessionId('tool-team-lead'), { provider: 'mock', model: 'mock' })
+  const lead = await ctx.agentLoop.create(
+    SessionId('tool-team-lead'),
+    { provider: 'mock', model: 'mock' },
+    options.cwd === undefined ? {} : { cwd: options.cwd },
+  )
   return { ctx, lead, fiber }
 }
 
@@ -178,12 +191,36 @@ describe('gnk-tool-team', () => {
       prompt: 'finish in the lane',
       preset: 'reviewing',
       cwd: lane,
+      model: 'lane-model',
     })
     expect(result.isError, text(result)).toBe(false)
     expect(spawn).toHaveBeenCalledWith(lead, expect.objectContaining({
       agentPreset: 'reviewing',
       cwd: lane,
+      agentOptions: { model: 'lane-model' },
     }))
+    const effortOnly = await execute(ctx, lead, 'spawn_teammate', {
+      name: 'effort-worker',
+      description: 'effort only',
+      prompt: 'finish',
+      reasoning_effort: 'high',
+      max_tokens: 12,
+    })
+    expect(effortOnly.isError, text(effortOnly)).toBe(false)
+    expect(spawn).toHaveBeenCalledWith(lead, expect.objectContaining({
+      agentOptions: { reasoningEffort: 'high' },
+      maxTokens: 12,
+    }))
+    const readOnly = await execute(ctx, lead, 'spawn_teammate', {
+      name: 'read-only-worker', description: 'read only', prompt: 'inspect', read_only: true,
+    })
+    expect(readOnly.isError, text(readOnly)).toBe(false)
+    expect(spawn).toHaveBeenCalledWith(lead, expect.objectContaining({ readOnly: true }))
+    const scoped = await execute(ctx, lead, 'spawn_teammate', {
+      name: 'scoped-worker', description: 'scoped', prompt: 'write', write_scopes: ['src'],
+    })
+    expect(scoped.isError, text(scoped)).toBe(false)
+    expect(spawn).toHaveBeenCalledWith(lead, expect.objectContaining({ writeScopes: ['src'] }))
   })
 
   it('returns actionable no-progress output and renders structured wait cancellation', async () => {
@@ -477,5 +514,219 @@ describe('gnk-tool-team', () => {
     const childId = spawnedChildId(result)
     await vi.waitFor(() => { expect(ctx.agents.get(childId)).toBeUndefined() }, { timeout: 5_000 })
     expect(ctx.agentTeams.listMembers(lead)[1]).toMatchObject({ provider: 'team-fresh' })
+  })
+})
+
+/** Run git in one directory without a shell. */
+function git(cwd: string, ...args: string[]): string {
+  return execFileSync('git', ['-C', cwd, ...args], {
+    encoding: 'utf8',
+    env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
+  }).trim()
+}
+
+/** One committed repository usable as the Lead checkout. */
+function repository(): string {
+  const root = mkdtempSync(join(tmpdir(), 'gnk-tool-team-repo-'))
+  roots.push(root)
+  git(root, 'init', '-q')
+  git(root, 'config', 'user.email', 'tool-team@example.com')
+  git(root, 'config', 'user.name', 'Tool Team')
+  git(root, 'config', 'commit.gpgsign', 'false')
+  git(root, 'config', 'core.autocrlf', 'false')
+  git(root, 'config', 'gc.auto', '0')
+  git(root, 'config', 'maintenance.auto', 'false')
+  writeFileSync(join(root, 'README.md'), 'base\n')
+  git(root, 'add', 'README.md')
+  git(root, 'commit', '-qm', 'base')
+  return root
+}
+
+/** Install a scripted approval service and return the requests it received. */
+function approvalStub(ctx: Context, outcome: 'allowed-once' | 'rejected' | 'cancelled' | 'unavailable') {
+  const requests: Array<{ readonly reason?: string }> = []
+  ctx.provide('approval', {
+    request: vi.fn(async (request: { readonly reason?: string }) => {
+      requests.push(request)
+      return outcome
+    }),
+  } as never)
+  return requests
+}
+
+describe('gnk-tool-team fleet confirmation', () => {
+  it('shows every member field and creates nothing when the confirmation is declined', async () => {
+    const { ctx, lead } = await setup([textResponse('unused')])
+    const requests = approvalStub(ctx, 'rejected')
+
+    const result = await execute(ctx, lead, 'spawn_fleet', {
+      label: 'review fleet',
+      members: [
+        {
+          name: 'lane-alpha',
+          description: 'review the lane',
+          prompt: 'review',
+          preset: 'standard',
+          model: 'mock',
+          reasoning_effort: 'high',
+          max_tokens: 4_000,
+          write_scopes: ['src'],
+        },
+        { name: 'reader', description: 'read only', prompt: 'read', read_only: true },
+        { name: 'shared', description: 'shared', prompt: 'share' },
+        { name: 'forked', description: 'forked', prompt: 'fork', context: 'fork' },
+      ],
+    })
+
+    expect(result.isError).toBe(true)
+    expect(text(result)).toContain('no teammate or lane was created')
+    expect(requests).toHaveLength(1)
+    expect(requests[0]?.reason).toContain('review fleet')
+    expect(requests[0]?.reason).toContain('lane-alpha')
+    expect(requests[0]?.reason).toContain('provider=spawn')
+    expect(requests[0]?.reason).toContain('preset=standard')
+    expect(requests[0]?.reason).toContain('model=mock')
+    expect(requests[0]?.reason).toContain('effort=high')
+    expect(requests[0]?.reason).toContain('budget=4000 tokens')
+    expect(requests[0]?.reason).toContain('write scopes src')
+    expect(requests[0]?.reason).toContain('read-only')
+    expect(requests[0]?.reason).toContain('shared checkout, no declared write scope')
+    expect(requests[0]?.reason).toContain('forked — provider=fork')
+    expect(requests[0]?.reason).toContain('creates no children and no worktrees')
+    expect(ctx.agentTeams.listMembers(lead)).toHaveLength(1)
+    expect(await ctx.agentTeams.listLanes(lead)).toEqual([])
+  })
+
+  it('launches the fleet after approval and creates only the declared lane', async () => {
+    const repo = repository()
+    const gnkHome = mkdtempSync(join(tmpdir(), 'gnk-tool-team-home-'))
+    roots.push(gnkHome)
+    const { ctx, lead } = await setup([textResponse('fleet child answer')], false, { cwd: repo, gnkHome })
+    const requests = approvalStub(ctx, 'allowed-once')
+
+    const result = await execute(ctx, lead, 'spawn_fleet', {
+      members: [{
+        name: 'lane-alpha',
+        description: 'one lane',
+        prompt: 'do the lane work',
+        write_scopes: ['src'],
+      }],
+    })
+
+    expect(result.isError).toBe(false)
+    expect(requests[0]?.reason).toContain('budget=unbounded')
+    const members = ctx.agentTeams.listMembers(lead)
+    expect(members).toHaveLength(2)
+    expect(members[1]).toMatchObject({ name: 'lane-alpha', provider: 'spawn' })
+    const lanes = await ctx.agentTeams.listLanes(lead)
+    expect(lanes).toHaveLength(1)
+    expect(lanes[0]).toMatchObject({ lane: 'lane-alpha', stage: 'ready', writeScopes: ['src'] })
+
+    const childId = members[1]!.id
+    await waitNoAgent(ctx, childId)
+    await ctx.agentTeams.discardLane(lead, 'lane-alpha', SIGNAL)
+  }, 20_000)
+
+  it('fails closed before any child when the approval capability is absent', async () => {
+    const { ctx, lead } = await setup([textResponse('unused')])
+
+    const result = await execute(ctx, lead, 'spawn_fleet', {
+      members: [{ name: 'no-approval', description: 'never starts', prompt: 'never' }],
+    })
+
+    expect(result.isError).toBe(true)
+    expect(text(result)).toContain('approval capability')
+    expect(ctx.agentTeams.listMembers(lead)).toHaveLength(1)
+    expect(await ctx.agentTeams.listLanes(lead)).toEqual([])
+  })
+
+  it('validates every fleet member before showing the confirmation card', async () => {
+    const { ctx, lead } = await setup([textResponse('unused')])
+    const approval = approvalStub(ctx, 'allowed-once')
+    const member = { name: 'valid', description: 'valid', prompt: 'work' }
+
+    for (const [members, message] of [
+      [[], 'at least one member'],
+      [[{ ...member, name: 'Lead' }], 'lower-kebab-case'],
+      [[{ ...member, name: 'a'.repeat(65) }], 'lower-kebab-case'],
+      [[member, { ...member, description: 'second' }], 'duplicate'],
+      [[{ ...member, max_tokens: 0 }], 'positive safe integer'],
+      [[{ ...member, read_only: true, write_scopes: ['src'] }], 'mutually exclusive'],
+    ] as const) {
+      const result = await execute(ctx, lead, 'spawn_fleet', { members })
+      expect(result.isError, message).toBe(true)
+      expect(text(result), message).toContain(message)
+    }
+    expect(approval).toHaveLength(0)
+    expect(ctx.agentTeams.listMembers(lead)).toHaveLength(1)
+  })
+
+  it('reports a fleet that fails after approval and stops launching later members', async () => {
+    const { ctx, lead } = await setup([textResponse('unused')])
+    approvalStub(ctx, 'allowed-once')
+    const spawn = vi.spyOn(ctx.agentTeams, 'spawnTeammate').mockRejectedValueOnce(new Error('provider refused'))
+
+    const result = await execute(ctx, lead, 'spawn_fleet', {
+      members: [
+        { name: 'first', description: 'first', prompt: 'one' },
+        { name: 'second', description: 'second', prompt: 'two' },
+      ],
+    })
+
+    expect(result.isError).toBe(true)
+    expect(text(result)).toContain('fleet stopped after 0 of 2 members: provider refused')
+    spawn.mockRejectedValueOnce('string failure')
+    const stringFailure = await execute(ctx, lead, 'spawn_fleet', {
+      members: [{ name: 'third', description: 'third', prompt: 'three' }],
+    })
+    expect(stringFailure.isError).toBe(true)
+    expect(text(stringFailure)).toContain('fleet stopped after 0 of 1 members: string failure')
+  })
+
+  it('bridges lane checkpoint, discard, and integration requests and results', async () => {
+    const { ctx, lead } = await setup([textResponse('unused')])
+    const checkpoint = { hash: 'hash', path: 'patch', bytes: 1, at: 2 }
+    const checkpointLane = vi.spyOn(ctx.agentTeams, 'checkpointLane').mockResolvedValue(checkpoint)
+    const discardLane = vi.spyOn(ctx.agentTeams, 'discardLane').mockResolvedValue(checkpoint)
+    const integrateLane = vi.spyOn(ctx.agentTeams, 'integrateLane').mockResolvedValue({
+      lane: 'alpha',
+      patchHash: 'hash',
+      primaryHead: 'head' as never,
+      gates: [{ argv: ['gate'], output: 'ok' }],
+    })
+
+    expect(JSON.parse(text(await execute(ctx, lead, 'checkpoint_lane', { lane: 'alpha' })))).toEqual(checkpoint)
+    expect(checkpointLane).toHaveBeenCalledWith(lead, 'alpha', SIGNAL)
+    expect(JSON.parse(text(await execute(ctx, lead, 'discard_lane', { lane: 'alpha' })))).toEqual(checkpoint)
+    expect(discardLane).toHaveBeenCalledWith(lead, 'alpha', SIGNAL)
+
+    const integrated = await execute(ctx, lead, 'integrate_lane', {
+      lane: 'alpha',
+      expected_primary_head: 'head',
+      patch_hash: 'hash',
+      gate_commands: [['gate']],
+      commit_message: 'merge alpha',
+    })
+    expect(JSON.parse(text(integrated))).toEqual({
+      lane: 'alpha',
+      patchHash: 'hash',
+      primaryHead: 'head',
+      gates: [{ argv: ['gate'], output: 'ok' }],
+    })
+    expect(integrateLane).toHaveBeenCalledWith(lead, expect.objectContaining({
+      lane: 'alpha',
+      expectedPrimaryHead: 'head',
+      patchHash: 'hash',
+      gateCommands: [{ argv: ['gate'] }],
+      commitMessage: 'merge alpha',
+    }))
+
+    await execute(ctx, lead, 'integrate_lane', {
+      lane: 'alpha',
+      expected_primary_head: 'head',
+      patch_hash: 'hash',
+      commit_message: 'merge alpha',
+    })
+    expect(integrateLane).toHaveBeenLastCalledWith(lead, expect.objectContaining({ gateCommands: [] }))
   })
 })

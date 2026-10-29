@@ -185,10 +185,18 @@ export interface Config {
   readonly maxMessageBytes?: number
   /** Maximum milliseconds allowed for Team-owned runtime disposal. */
   readonly disposalTimeoutMs?: number
+  /** Harness home owning lane records, checkpoints, and worktrees; defaults to `$GNK_HOME` or `~/.gnk`. */
+  readonly gnkHome?: string
+  /** Maximum bytes in one checkpointed lane patch. */
+  readonly maxLanePatchBytes?: number
+  /** Maximum bytes in one repository fleet config. */
+  readonly maxFleetConfigBytes?: number
+  /** Provider names a repository fleet config may launch in-process. */
+  readonly fleetProviders?: string[]
 }
 ```
 
-Source: [`packages/subagent/agent-team/src/types.ts:130`](../packages/subagent/agent-team/src/types.ts)
+Source: [`packages/subagent/agent-team/src/types.ts:137`](../packages/subagent/agent-team/src/types.ts)
 
 <a id="greeneekgnk-agent-tool-presentation"></a>
 
@@ -2680,7 +2688,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/subagent/tool-agent-team/src/index.ts:17`](../packages/subagent/tool-agent-team/src/index.ts)
+Source: [`packages/subagent/tool-agent-team/src/index.ts:20`](../packages/subagent/tool-agent-team/src/index.ts)
 
 <a id="greeneekgnk-tool-bash"></a>
 

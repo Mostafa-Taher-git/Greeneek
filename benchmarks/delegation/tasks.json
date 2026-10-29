@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "tasks": [
+    {
+      "id": "rename-config-key",
+      "description": "Rename one configuration key across a small TypeScript fixture.",
+      "prompt": "In this fixture workspace, rename the configuration key `retryCount` to `maxRetries` in every source and test file. Keep behavior identical and run the fixture's unit tests.",
+      "evaluation": {
+        "kind": "file-contains",
+        "path": "src/config.ts",
+        "text": "maxRetries"
+      }
+    },
+    {
+      "id": "add-failing-test",
+      "description": "Add one regression test for a described bug.",
+      "prompt": "Add a regression test that fails before the fix and passes after it: parsing an empty timeout string must fall back to the documented default.",
+      "evaluation": {
+        "kind": "file-exists",
+        "path": "tests/empty-timeout.spec.ts"
+      }
+    },
+    {
+      "id": "diagnose-build-failure",
+      "description": "Diagnose a fixture build failure without changing files.",
+      "prompt": "Inspect the fixture build failure and explain the root cause and the smallest safe fix. Do not change files.",
+      "evaluation": {
+        "kind": "answer-contains",
+        "text": "root cause"
+      }
+    }
+  ]
+}

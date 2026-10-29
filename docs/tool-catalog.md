@@ -38,7 +38,7 @@ This table connects model-visible tool names to the plugin package and service s
 | `@greeneek/gnk-tool-subagent-control` | `interrupt_agent`, `list_agents`, `send_message` | `ctx.tools`, `ctx.subagents`, `ctx.agents and ctx.sessionProjections (list_agents only)` | `tool/call`, `tool/result`, `child session events through ctx.subagents` | - | The globally named control tools over continuable background subagents: provider-bound `tool-subagent` instances register distinct delegation tools, while this package registers `send_message` and `interrupt_agent` once, plus `list_agents` from its separately loaded `/list-agents` plugin (whose catalog rows use the sessionProjections and live Agent registries). |
 | `@greeneek/gnk-tool-wave` | `wave_cancel`, `wave_dispatch` | `ctx.tools`, `ctx.waves`, `a calling Agent at execution time` | `tool/call`, `tool/result`, `the wave/* durable records of its fleets` | - | Both fleet tools always mount together. `wave_dispatch` waits for the whole wave and owns no parent conversation of the members; a member `provider` names a `ctx.subagents` provider instead of the configured default. The member byte cap (`WaveRuntimeConfig.maxResultBytes`) is runtime config, not an argument. |
 | `@greeneek/gnk-tool-jobs` | `job_kill`, `job_list`, `job_output` | `ctx.tools`, `ctx.jobs`, `ctx.systemPrompt` | `tool/call`, `tool/result`, `user/message via agent.inject() for background completion notices` | - | The kind-agnostic background-job controller: background bash commands, PTY sends, and subagents are read, listed, and killed through the same three tools. Loading the plugin attaches the controller that arms producers' `ctx.jobs.start()`. |
-| `@greeneek/gnk-tool-agent-team` | `interrupt_agent`, `list_agents`, `send_message`, `spawn_teammate`, `team_task_create`, `team_task_get`, `team_task_list`, `team_task_update`, `wait_agent` | `ctx.tools`, `ctx.systemPrompt`, `ctx.agentTeams`, `an exact live Team member Agent` | `tool/call`, `team/member`, `team/message/queued`, `team/message/delivered`, `team/task`, `tool/result` | - | All nine tools are scoped to implicit Team Leads and durable teammates. The shipped gnk-base bundle keeps the package disabled; the documented Agent Teams profile patch enables it while disabling the legacy continuable-child control names. |
+| `@greeneek/gnk-tool-agent-team` | `checkpoint_lane`, `discard_lane`, `integrate_lane`, `interrupt_agent`, `list_agents`, `send_message`, `spawn_fleet`, `spawn_teammate`, `team_task_create`, `team_task_get`, `team_task_list`, `team_task_update`, `wait_agent` | `ctx.tools`, `ctx.systemPrompt`, `ctx.agentTeams`, `an exact live Team member Agent` | `tool/call`, `team/member`, `team/message/queued`, `team/message/delivered`, `team/task`, `tool/result` | - | All nine tools are scoped to implicit Team Leads and durable teammates. The shipped gnk-base bundle keeps the package disabled; the documented Agent Teams profile patch enables it while disabling the legacy continuable-child control names. |
 | `@greeneek/gnk-tool-todo` | `todo_write` | `ctx.tools`, `owning Agent session` | `tool/call`, `todo/write`, `tool/result` | - | todo_write is session-owned state; UIs render the latest todo/write event as a checklist. `allowParallelInProgress` is required with no default, so the catalog states its choice: `true`, whose description invites several `in_progress` items. A deployment choosing `false` receives the same tool with a description asking for exactly one active task. |
 | `@greeneek/gnk-tool-workflow` | `workflow` | `ctx.tools`, `ctx.workflowEngine`, `ctx.systemPrompt`, `a calling Agent (exec.agent parents the script children)` | `tool/call`, `tool/result` | - | - |
 | `@greeneek/gnk-tool-web` | `web_fetch`, `web_search` | `ctx.tools`, `ctx.web`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | web_search and web_fetch keep provider selection behind ctx.web so model-visible schemas stay stable across backend swaps. |
@@ -1893,6 +1893,94 @@ The kind-agnostic background-job controller: background bash commands, PTY sends
 
 ## `@greeneek/gnk-tool-agent-team`
 
+### `checkpoint_lane`
+
+Stage and store the exact patch of one isolated lane. Only the Team Lead may call this tool. The hash is the reviewed patch identity integrate_lane requires.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "lane": {
+      "type": "string",
+      "description": "Lane name, which is also the teammate name."
+    }
+  },
+  "required": [
+    "lane"
+  ]
+}
+```
+
+Source: [`packages/subagent/tool-agent-team/src/index.ts`](../packages/subagent/tool-agent-team/src/index.ts)
+
+### `discard_lane`
+
+Checkpoint then remove one isolated lane checkout and branch. Only the Team Lead may call this tool; the checkpointed patch stays as evidence.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "lane": {
+      "type": "string",
+      "description": "Lane name, which is also the teammate name."
+    }
+  },
+  "required": [
+    "lane"
+  ]
+}
+```
+
+Source: [`packages/subagent/tool-agent-team/src/index.ts`](../packages/subagent/tool-agent-team/src/index.ts)
+
+### `integrate_lane`
+
+Apply one reviewed lane patch to a clean primary checkout, run the supplied gates, commit, and remove the merged checkout. Only the Team Lead may call this tool. The queue stops after the first conflict or gate failure.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "lane": {
+      "type": "string",
+      "description": "Lane name."
+    },
+    "expected_primary_head": {
+      "type": "string",
+      "description": "Primary HEAD commit the reviewers approved."
+    },
+    "patch_hash": {
+      "type": "string",
+      "description": "Exact hash returned by checkpoint_lane after review."
+    },
+    "gate_commands": {
+      "type": "array",
+      "description": "Gate argv arrays, each run in the primary checkout after the patch applies.",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      }
+    },
+    "commit_message": {
+      "type": "string",
+      "description": "Commit message for the integration commit."
+    }
+  },
+  "required": [
+    "lane",
+    "expected_primary_head",
+    "patch_hash",
+    "commit_message"
+  ]
+}
+```
+
+Source: [`packages/subagent/tool-agent-team/src/index.ts`](../packages/subagent/tool-agent-team/src/index.ts)
+
 ### `interrupt_agent`
 
 Interrupt one teammate's current turn while preserving its pending inbox. Team Lead only.
@@ -1953,6 +2041,78 @@ Send one durable message to another Team member. A running target receives it at
 
 Source: [`packages/subagent/tool-agent-team/src/index.ts`](../packages/subagent/tool-agent-team/src/index.ts)
 
+### `spawn_fleet`
+
+Create several teammates after one explicit user approval card. The card lists every member, preset, model, reasoning effort, token budget, provider, and write capability; a rejection, cancellation, or timeout creates no child and no worktree.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "label": {
+      "type": "string",
+      "description": "Short display label for the fleet."
+    },
+    "members": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "prompt": {
+            "type": "string"
+          },
+          "context": {
+            "type": "string",
+            "enum": [
+              "fresh",
+              "fork"
+            ]
+          },
+          "preset": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "reasoning_effort": {
+            "type": "string"
+          },
+          "read_only": {
+            "type": "boolean"
+          },
+          "write_scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "max_tokens": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "description",
+          "prompt"
+        ]
+      }
+    }
+  },
+  "required": [
+    "members"
+  ]
+}
+```
+
+Source: [`packages/subagent/tool-agent-team/src/index.ts`](../packages/subagent/tool-agent-team/src/index.ts)
+
 ### `spawn_teammate`
 
 Create one named, durable teammate. Only the Team Lead may call this tool.
@@ -1988,6 +2148,29 @@ Create one named, durable teammate. Only the Team Lead may call this tool.
     "cwd": {
       "type": "string",
       "description": "Absolute lane checkout the teammate runs in; omitted inherits the Lead working directory."
+    },
+    "read_only": {
+      "type": "boolean",
+      "description": "Run the teammate without file-mutating or Git-mutating tools. Cannot be combined with write_scopes."
+    },
+    "write_scopes": {
+      "type": "array",
+      "description": "Workspace-relative paths the teammate may change. Creates an isolated worktree lane with a disjoint scope set; the Lead integrates its patch.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "model": {
+      "type": "string",
+      "description": "Model id override; omitted inherits the Lead request route."
+    },
+    "reasoning_effort": {
+      "type": "string",
+      "description": "Adapter-owned reasoning effort override."
+    },
+    "max_tokens": {
+      "type": "integer",
+      "description": "Cumulative token ceiling checked at each step boundary; requires the tokenUsage projection."
     }
   },
   "required": [

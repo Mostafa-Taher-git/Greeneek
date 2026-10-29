@@ -2,11 +2,14 @@
 
 import type { Context } from '@greeneek/cordis'
 import z from '@greeneek/schemastery'
-import type { Agent } from '@greeneek/gnk-agent'
-import { TeamTaskId } from '@greeneek/gnk-agent-team'
-import type { TeamMemberView } from '@greeneek/gnk-agent-team'
+import type { Agent, AgentOptions } from '@greeneek/gnk-agent'
+import { TeamError, TeamTaskId } from '@greeneek/gnk-agent-team'
+import type { SpawnTeammateRequest, TeamMemberView } from '@greeneek/gnk-agent-team'
+import { resolveLanePolicy } from '@greeneek/gnk-agent-team'
 import { defineTool } from '@greeneek/gnk-tools'
 import type { InferValue, ValueSchemaSpec } from '@greeneek/gnk-tools'
+import type {} from '@greeneek/gnk-user-approval'
+import { installLaneGuard } from './lane-guard.ts'
 
 /** Cordis plugin name. */
 export const name = 'tool-agent-team'
@@ -30,7 +33,7 @@ export const Config: z<Config> = z.object({
 /** Model-facing collaboration guidance shared by Lead and teammates. */
 const POLICY = `Agent Teams is available in this session, but create teammates only when the user explicitly asks to use Agent Teams or teammates.
 
-The Team Lead and all teammates share the same working directory and filesystem. Edits are immediately visible to every member. Split write work into disjoint scopes, record expected write scopes on shared tasks, and use task dependencies when work must be ordered. Write-scope overlap is advisory, not a lock.
+Teammates share the Lead checkout unless spawn_teammate declares write_scopes, which creates an isolated worktree lane. Write scopes of active isolated lanes must be disjoint; a read-only lane denies file and Git mutations. Teammates cannot commit, merge, push, tag, or move refs. The Lead checkpoints a lane, reviews its patch hash, then calls integrate_lane against a clean primary checkout; that runs the gates, commits, and removes the merged checkout. A conflict or gate failure halts the queue until the Lead investigates and resumes it. Ordinary shared edits are immediately visible to every member, so split shared write work into disjoint scopes and use task dependencies when work must be ordered.
 
 Prefer read/edit/write for file changes. If a file operation returns FS_STALE_VERSION, read the current file, rebase your intended change onto the new content, and retry. Bash, formatters, code generators, and scripts are not fully protected by the filesystem version guard; coordinate them explicitly and have the Lead review the final diff and run tests.
 
@@ -88,6 +91,31 @@ const SPAWN_VALUE_SCHEMA = {
 
 const MEMBER_LIST_VALUE_SCHEMA = { type: 'array', items: MEMBER_VIEW_SCHEMA } as const
 
+const FLEET_MEMBER_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    name: { type: 'string', required: true },
+    description: { type: 'string', required: true },
+    prompt: { type: 'string', required: true },
+    context: { type: 'string', enum: ['fresh', 'fork'] },
+    preset: { type: 'string' },
+    model: { type: 'string' },
+    reasoning_effort: { type: 'string' },
+    read_only: { type: 'boolean' },
+    write_scopes: { type: 'array', items: { type: 'string' } },
+    max_tokens: { type: 'integer' },
+  },
+} as const
+
+const FLEET_VALUE_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    members: { type: 'array', required: true, items: MEMBER_VIEW_SCHEMA },
+  },
+} as const
+
 const SEND_VALUE_SCHEMA = {
   type: 'object',
   additionalProperties: false,
@@ -109,6 +137,39 @@ const WAIT_VALUE_SCHEMA = {
       properties: {
         reason: { type: 'string', required: true, const: 'no-active-peer' },
         message: { type: 'string', required: true },
+      },
+    },
+  },
+} as const
+
+const LANE_CHECKPOINT_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    hash: { type: 'string', required: true },
+    path: { type: 'string', required: true },
+    bytes: { type: 'integer', required: true },
+    at: { type: 'integer', required: true },
+  },
+} as const
+
+const LANE_MERGE_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    lane: { type: 'string', required: true },
+    patchHash: { type: 'string', required: true },
+    primaryHead: { type: 'string', required: true },
+    gates: {
+      type: 'array',
+      required: true,
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          argv: { type: 'array', required: true, items: { type: 'string' } },
+          output: { type: 'string', required: true },
+        },
       },
     },
   },
@@ -148,6 +209,113 @@ function jsonOutput<const S extends ValueSchemaSpec>(schema: S): {
   }
 }
 
+/**
+ * Build the optional child route override from one spawn request.
+ * @param args - model and reasoning-effort fields from the tool call.
+ * @returns child agent options, or undefined when both are omitted.
+ */
+function agentOptionsOf(args: { readonly model?: string; readonly reasoning_effort?: string }): AgentOptions | undefined {
+  if (args.model === undefined && args.reasoning_effort === undefined) return undefined
+  return {
+    ...args.model === undefined ? {} : { model: args.model },
+    ...args.reasoning_effort === undefined
+      ? {}
+      : { reasoningEffort: args.reasoning_effort as NonNullable<AgentOptions['reasoningEffort']> },
+  }
+}
+
+/** One member field set accepted by the fleet tool. */
+interface FleetMemberArgs {
+  readonly name: string
+  readonly description: string
+  readonly prompt: string
+  readonly context?: 'fresh' | 'fork'
+  readonly preset?: string
+  readonly model?: string
+  readonly reasoning_effort?: string
+  readonly read_only?: boolean
+  readonly write_scopes?: readonly string[]
+  readonly max_tokens?: number
+}
+
+/** One admitted fleet proposal; the loop adds the caller cancellation. */
+type FleetProposal = Omit<SpawnTeammateRequest, 'signal'>
+
+const MEMBER_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u
+
+/**
+ * Validate and normalize every member before the approval card is shown, so a
+ * rejection never happens after the user already consented to a partial fleet.
+ * @param members - member field sets from the tool call.
+ * @param config - configured in-process provider names.
+ * @returns admitted proposals in request order.
+ */
+function fleetProposals(members: readonly FleetMemberArgs[], config: Required<Config>): FleetProposal[] {
+  if (members.length === 0) {
+    throw new TeamError('a fleet needs at least one member', 'TEAM_INVALID_ARGUMENT')
+  }
+  const names = new Set<string>()
+  return members.map((member) => {
+    if (!MEMBER_NAME.test(member.name) || member.name.length > 64 || member.name === 'lead') {
+      throw new TeamError(
+        `fleet member name ${JSON.stringify(member.name)} must be lower-kebab-case, at most 64 characters, and not "lead"`,
+        'TEAM_INVALID_ARGUMENT',
+      )
+    }
+    if (names.has(member.name)) {
+      throw new TeamError(`duplicate fleet member name "${member.name}"`, 'TEAM_INVALID_ARGUMENT')
+    }
+    names.add(member.name)
+    if (member.max_tokens !== undefined && (!Number.isSafeInteger(member.max_tokens) || member.max_tokens < 1)) {
+      throw new TeamError(`fleet member "${member.name}" max_tokens must be a positive safe integer`, 'TEAM_INVALID_ARGUMENT')
+    }
+    resolveLanePolicy({
+      ...member.read_only === undefined ? {} : { readOnly: member.read_only },
+      ...member.write_scopes === undefined ? {} : { writeScopes: member.write_scopes },
+    })
+    const context = member.context ?? 'fresh'
+    const agentOptions = agentOptionsOf(member)
+    return {
+      name: member.name,
+      description: member.description,
+      prompt: [{ type: 'text' as const, text: member.prompt }],
+      context,
+      provider: context === 'fork' ? config.forkProvider : config.freshProvider,
+      ...member.preset === undefined ? {} : { agentPreset: member.preset },
+      ...agentOptions === undefined ? {} : { agentOptions },
+      ...member.read_only === undefined ? {} : { readOnly: member.read_only },
+      ...member.write_scopes === undefined ? {} : { writeScopes: member.write_scopes },
+      ...member.max_tokens === undefined ? {} : { maxTokens: member.max_tokens },
+    }
+  })
+}
+
+/**
+ * Build the confirmation-card text: every member's provider, composition,
+ * effort, token budget, and write capability, plus the zero-spend outcome of
+ * declining.
+ * @param label - optional fleet label.
+ * @param proposals - normalized member proposals.
+ * @returns one multi-line approval reason.
+ */
+function fleetApprovalReason(label: string | undefined, proposals: readonly FleetProposal[]): string {
+  const heading = label === undefined || label.trim().length === 0
+    ? 'Fleet launch confirmation'
+    : `Fleet "${label.trim()}" launch confirmation`
+  const rows = proposals.map((proposal, index) => {
+    const lane = proposal.readOnly === true
+      ? 'read-only'
+      : proposal.writeScopes === undefined
+        ? 'shared checkout, no declared write scope'
+        : `isolated worktree, write scopes ${proposal.writeScopes.join(', ')}`
+    return `${String(index + 1)}. ${proposal.name} — provider=${proposal.provider}, context=${proposal.context},`
+      + ` preset=${proposal.agentPreset ?? 'inherited'}, model=${proposal.agentOptions?.model ?? 'inherited'},`
+      + ` effort=${proposal.agentOptions?.reasoningEffort ?? 'inherited'},`
+      + ` budget=${proposal.maxTokens === undefined ? 'unbounded' : `${proposal.maxTokens} tokens`}; ${lane}`
+  })
+  return `${heading}\n\n${rows.join('\n')}\n\nApproving launches ${proposals.length} teammate(s) and creates only the isolated worktrees listed above. Rejecting, cancelling, or timing out creates no children and no worktrees.`
+}
+
 /** Recover the exact caller guaranteed by Agent-scoped tool discovery. */
 function callingAgent(agent: Agent | undefined, toolName: string): Agent {
   /* v8 ignore next 2 -- Team tools are registered only in an exact Agent scope, so discovery supplies this carrier. */
@@ -170,6 +338,11 @@ function install(agent: Agent, ctx: Context, config: Required<Config>): () => vo
       },
     }))
 
+    const membership = ctx.agentTeams.membership(agent)
+    if (membership.role === 'teammate') {
+      register(installLaneGuard(agent, () => ctx.agentTeams.lanePolicyFor(agent)))
+    }
+
     register(scoped.tools.register(defineTool({
       name: 'spawn_teammate',
       description: 'Create one named, durable teammate. Only the Team Lead may call this tool.',
@@ -190,11 +363,24 @@ function install(agent: Agent, ctx: Context, config: Required<Config>): () => vo
           type: 'string',
           description: 'Absolute lane checkout the teammate runs in; omitted inherits the Lead working directory.',
         },
+        read_only: {
+          type: 'boolean',
+          description: 'Run the teammate without file-mutating or Git-mutating tools. Cannot be combined with write_scopes.',
+        },
+        write_scopes: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Workspace-relative paths the teammate may change. Creates an isolated worktree lane with a disjoint scope set; the Lead integrates its patch.',
+        },
+        model: { type: 'string', description: 'Model id override; omitted inherits the Lead request route.' },
+        reasoning_effort: { type: 'string', description: 'Adapter-owned reasoning effort override.' },
+        max_tokens: { type: 'integer', description: 'Cumulative token ceiling checked at each step boundary; requires the tokenUsage projection.' },
       },
       output: jsonOutput(SPAWN_VALUE_SCHEMA),
       async execute(args, exec) {
         const agent = callingAgent(exec.agent, 'spawn_teammate')
         const context = args.context ?? 'fresh'
+        const agentOptions = agentOptionsOf(args)
         return await ctx.agentTeams.spawnTeammate(agent, {
           name: args.name,
           description: args.description,
@@ -202,9 +388,123 @@ function install(agent: Agent, ctx: Context, config: Required<Config>): () => vo
           context,
           provider: context === 'fork' ? config.forkProvider : config.freshProvider,
           ...args.preset !== undefined ? { agentPreset: args.preset } : {},
+          ...agentOptions === undefined ? {} : { agentOptions },
           ...args.cwd !== undefined ? { cwd: args.cwd } : {},
+          ...args.read_only !== undefined ? { readOnly: args.read_only } : {},
+          ...args.write_scopes !== undefined ? { writeScopes: args.write_scopes } : {},
+          ...args.max_tokens !== undefined ? { maxTokens: args.max_tokens } : {},
           signal: exec.signal,
         })
+      },
+    })))
+
+    register(scoped.tools.register(defineTool({
+      name: 'spawn_fleet',
+      description: 'Create several teammates after one explicit user approval card. The card lists every member, preset, model, reasoning effort, token budget, provider, and write capability; a rejection, cancellation, or timeout creates no child and no worktree.',
+      parameters: {
+        label: { type: 'string', description: 'Short display label for the fleet.' },
+        members: { type: 'array', required: true, items: FLEET_MEMBER_SCHEMA },
+      },
+      output: jsonOutput(FLEET_VALUE_SCHEMA),
+      async execute(args, exec) {
+        const agent = callingAgent(exec.agent, 'spawn_fleet')
+        const proposals = fleetProposals(args.members, config)
+        const approval = ctx.get('approval')
+        if (approval === undefined) {
+          throw new TeamError(
+            'fleet launch needs the approval capability to show its confirmation card',
+            'FLEET_APPROVAL_UNAVAILABLE',
+          )
+        }
+        const outcome = await approval.request({
+          agent,
+          toolName: 'spawn_fleet',
+          callId: exec.callId,
+          reason: fleetApprovalReason(args.label, proposals),
+          signal: exec.signal,
+        })
+        if (outcome !== 'allowed-once') {
+          throw new TeamError(
+            `fleet launch ${outcome}; no teammate or lane was created`,
+            'FLEET_NOT_APPROVED',
+          )
+        }
+        const created: TeamMemberView[] = []
+        for (const proposal of proposals) {
+          try {
+            created.push((await ctx.agentTeams.spawnTeammate(agent, { ...proposal, signal: exec.signal })).member)
+          } catch (error: unknown) {
+            throw new TeamError(
+              `fleet stopped after ${created.length} of ${proposals.length} members: ${error instanceof Error ? error.message : String(error)}`,
+              'FLEET_LAUNCH_FAILED',
+              { cause: error },
+            )
+          }
+        }
+        return { members: created }
+      },
+    })))
+
+    register(scoped.tools.register(defineTool({
+      name: 'checkpoint_lane',
+      description: 'Stage and store the exact patch of one isolated lane. Only the Team Lead may call this tool. The hash is the reviewed patch identity integrate_lane requires.',
+      parameters: {
+        lane: { type: 'string', required: true, description: 'Lane name, which is also the teammate name.' },
+      },
+      output: jsonOutput(LANE_CHECKPOINT_SCHEMA),
+      async execute(args, exec) {
+        return await ctx.agentTeams.checkpointLane(
+          callingAgent(exec.agent, 'checkpoint_lane'),
+          args.lane,
+          exec.signal,
+        )
+      },
+    })))
+
+    register(scoped.tools.register(defineTool({
+      name: 'discard_lane',
+      description: 'Checkpoint then remove one isolated lane checkout and branch. Only the Team Lead may call this tool; the checkpointed patch stays as evidence.',
+      parameters: {
+        lane: { type: 'string', required: true, description: 'Lane name, which is also the teammate name.' },
+      },
+      output: jsonOutput(LANE_CHECKPOINT_SCHEMA),
+      async execute(args, exec) {
+        return await ctx.agentTeams.discardLane(
+          callingAgent(exec.agent, 'discard_lane'),
+          args.lane,
+          exec.signal,
+        )
+      },
+    })))
+
+    register(scoped.tools.register(defineTool({
+      name: 'integrate_lane',
+      description: 'Apply one reviewed lane patch to a clean primary checkout, run the supplied gates, commit, and remove the merged checkout. Only the Team Lead may call this tool. The queue stops after the first conflict or gate failure.',
+      parameters: {
+        lane: { type: 'string', required: true, description: 'Lane name.' },
+        expected_primary_head: { type: 'string', required: true, description: 'Primary HEAD commit the reviewers approved.' },
+        patch_hash: { type: 'string', required: true, description: 'Exact hash returned by checkpoint_lane after review.' },
+        gate_commands: {
+          type: 'array',
+          items: { type: 'array', items: { type: 'string' } },
+          description: 'Gate argv arrays, each run in the primary checkout after the patch applies.',
+        },
+        commit_message: { type: 'string', required: true, description: 'Commit message for the integration commit.' },
+      },
+      output: jsonOutput(LANE_MERGE_SCHEMA),
+      async execute(args, exec) {
+        const merged = await ctx.agentTeams.integrateLane(callingAgent(exec.agent, 'integrate_lane'), {
+          lane: args.lane,
+          expectedPrimaryHead: args.expected_primary_head,
+          patchHash: args.patch_hash,
+          gateCommands: (args.gate_commands ?? []).map(argv => ({ argv })),
+          commitMessage: args.commit_message,
+          signal: exec.signal,
+        })
+        return {
+          ...merged,
+          gates: merged.gates.map(gate => ({ argv: [...gate.argv], output: gate.output })),
+        }
       },
     })))
 

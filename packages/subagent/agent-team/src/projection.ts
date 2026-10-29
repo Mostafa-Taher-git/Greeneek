@@ -72,6 +72,9 @@ const teamMemberSnapshotSchema = z.object({
   context: z.enum(['fresh', 'fork']),
   phase: z.enum(['provisioning', 'active', 'failed']),
   error: z.string().optional(),
+  readOnly: z.boolean().optional(),
+  writeScopes: z.array(z.string()).optional(),
+  maxTokens: positiveSafeInteger.optional(),
 }).strict() as z.ZodType<TeamMemberSnapshot>
 
 const teamTaskSnapshotSchema = z.object({

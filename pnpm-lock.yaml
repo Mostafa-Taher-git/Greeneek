@@ -8288,6 +8288,9 @@ importers:
       '@greeneek/gnk-brand':
         specifier: workspace:^
         version: link:../../util/brand
+      '@greeneek/gnk-home-paths':
+        specifier: workspace:^
+        version: link:../../util/home-paths
       '@greeneek/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
@@ -8337,6 +8340,9 @@ importers:
       '@greeneek/gnk-subagent-spawn-in-process':
         specifier: workspace:^
         version: link:../subagent-spawn-in-process
+      '@greeneek/gnk-token-meter':
+        specifier: workspace:^
+        version: link:../../llm/token-meter
       '@greeneek/gnk-typert-protocol':
         specifier: workspace:^
         version: link:../../typert/protocol
@@ -8901,6 +8907,9 @@ importers:
       '@greeneek/gnk-tools':
         specifier: workspace:^
         version: link:../../core/tools
+      '@greeneek/gnk-user-approval':
+        specifier: workspace:^
+        version: link:../../interaction/user-approval
 
   packages/subagent/tool-subagent:
     dependencies:

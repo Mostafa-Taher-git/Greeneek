@@ -422,6 +422,65 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'Team membership, or undefined for non-Team subagents and stale identities.',
       },
       {
+        signature: 'lanePolicyFor(agent: Agent): LanePolicy',
+        description: 'Resolve one live teammate\'s durable lane policy for scoped tool guards.',
+        parameters: [{ name: 'agent', description: 'exact live Team member.' }],
+        returns: 'the durable lane policy, or `shared` outside a teammate lane.',
+      },
+      {
+        signature: 'async listLanes(caller: Agent): Promise<LaneRecord[]>',
+        description: 'List every durable lane record of one Team, including terminal lanes.',
+        parameters: [{ name: 'caller', description: 'exact live Team member.' }],
+        returns: 'lane records ordered by lane name.',
+      },
+      {
+        signature: 'async checkpointLane(caller: Agent, lane: string, signal: AbortSignal): Promise<LaneCheckpoint>',
+        description: 'Checkpoint one ready lane so its exact patch becomes integrable evidence. Only the Team Lead may checkpoint.',
+        parameters: [{ name: 'caller', description: 'exact live Team member.' }, { name: 'lane', description: 'durable lane name.' }, { name: 'signal', description: 'cancellation for the patch copy.' }],
+        returns: 'the checkpoint hash, path, and byte length.',
+      },
+      {
+        signature: 'async discardLane(caller: Agent, lane: string, signal: AbortSignal): Promise<LaneCheckpoint>',
+        description: 'Explicitly discard one ready lane after preserving its checkpointed patch. Only the Team Lead may discard.',
+        parameters: [{ name: 'caller', description: 'exact live Team member.' }, { name: 'lane', description: 'durable lane name.' }, { name: 'signal', description: 'cancellation for checkpoint and removal.' }],
+        returns: 'the preserved checkpoint.',
+      },
+      {
+        signature: 'async integrateLane( caller: Agent, request: { readonly lane: string readonly expectedPrimaryHead: string readonly patchHash: string readonly gateCommands: readonly LaneGateCommand[] readonly commitMessage: string readonly signal: AbortSignal }, ): Promise<LaneMergeResult>',
+        description: 'Apply one reviewed lane patch, run its gates, commit it, and remove the merged checkout. Only the Team Lead may integrate.',
+        parameters: [{ name: 'caller', description: 'exact live Team member.' }, { name: 'request', description: 'lane, expected primary HEAD, reviewed hash, gates, and commit text.' }],
+        returns: 'the primary commit and gate evidence.',
+      },
+      {
+        signature: 'resumeLaneQueue(caller: Agent): void',
+        description: 'Resume a Lead\'s halted merge queue after investigating the stopped lane.',
+        parameters: [{ name: 'caller', description: 'exact live Team member.' }],
+      },
+      {
+        signature: 'laneQueueHaltReason(caller: Agent): string | undefined',
+        description: 'Report why one Team\'s merge queue stopped.',
+        parameters: [{ name: 'caller', description: 'exact live Team member.' }],
+        returns: 'the halting diagnostic, or undefined while the queue accepts lanes.',
+      },
+      {
+        signature: 'async readRepoFleet(caller: Agent, signal: AbortSignal): Promise<RepoFleetSnapshot>',
+        description: 'Read one repository fleet config without granting spend.',
+        parameters: [{ name: 'caller', description: 'exact live Team Lead.' }, { name: 'signal', description: 'cancellation for path and file reads.' }],
+        returns: 'the parsed config, exact bytes hash, and approval state.',
+      },
+      {
+        signature: 'async approveRepoFleet(caller: Agent, signal: AbortSignal): Promise<RepoFleetSnapshot>',
+        description: 'Approve the exact fleet bytes currently in the Lead repository.',
+        parameters: [{ name: 'caller', description: 'exact live Team Lead.' }, { name: 'signal', description: 'cancellation for the read and approval write.' }],
+        returns: 'the approved snapshot.',
+      },
+      {
+        signature: 'async admitRepoFleet(caller: Agent, signal: AbortSignal): Promise<RepoFleetSnapshot>',
+        description: 'Consume one fleet approval and return the config it covers.',
+        parameters: [{ name: 'caller', description: 'exact live Team Lead.' }, { name: 'signal', description: 'cancellation for the read and approval removal.' }],
+        returns: 'the admitted configuration snapshot.',
+      },
+      {
         signature: '@Remote(\'view\') remoteView(agent: Agent): TeamView',
         description: 'Read the current roster and non-deleted task board through the generated Remote API.',
         parameters: [{ name: 'agent', description: 'exact live Team member used as the authority credential.' }],
@@ -4559,6 +4618,38 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface KvUnitDescriptor {\n    readonly name: string;\n    readonly version: number;\n    readonly tables: readonly string[];\n    readonly hasGlobal: boolean;\n    readonly layout?: \'single\' | \'per-record\';\n    readonly compatibleVersions?: readonly number[];\n}',
   },
   {
+    name: 'LaneCheckpoint',
+    declaration: 'export interface LaneCheckpoint {\n    readonly hash: string;\n    readonly path: string;\n    readonly bytes: number;\n    readonly at: number;\n}',
+  },
+  {
+    name: 'LaneGateCommand',
+    declaration: 'export interface LaneGateCommand {\n    readonly argv: readonly string[];\n}',
+  },
+  {
+    name: 'LaneGateEvidence',
+    declaration: 'export interface LaneGateEvidence {\n    readonly argv: readonly string[];\n    readonly output: string;\n}',
+  },
+  {
+    name: 'LaneMergeResult',
+    declaration: 'export interface LaneMergeResult {\n    readonly lane: string;\n    readonly patchHash: string;\n    readonly primaryHead: GitRevisionType;\n    readonly gates: readonly LaneGateEvidence[];\n}',
+  },
+  {
+    name: 'LaneName',
+    declaration: 'export type LaneName = Branded<\'LaneName\'>;',
+  },
+  {
+    name: 'LanePolicy',
+    declaration: 'export type LanePolicy = {\n    readonly kind: \'shared\';\n} | {\n    readonly kind: \'read-only\';\n} | {\n    readonly kind: \'isolated\';\n    readonly writeScopes: readonly string[];\n};',
+  },
+  {
+    name: 'LaneRecord',
+    declaration: 'export interface LaneRecord {\n    readonly version: 1;\n    readonly sessionId: SessionId;\n    readonly lane: LaneName;\n    readonly childSessionId: SessionId;\n    readonly repositoryRoot: string;\n    readonly path: string;\n    readonly branch: string;\n    readonly baseRevision: GitRevisionType;\n    readonly writeScopes: readonly string[];\n    readonly stage: LaneStage;\n    readonly createdAt: number;\n    readonly checkpoint?: LaneCheckpoint;\n    readonly diagnostic?: string;\n}',
+  },
+  {
+    name: 'LaneStage',
+    declaration: 'export type LaneStage = \'preparing\' | \'ready\' | \'closing\' | \'merged\' | \'discarded\' | \'quarantined\' | \'failed\';',
+  },
+  {
     name: 'LlmAdapter',
     declaration: 'export abstract class LlmAdapter {\n    providerInfo(provider: string): LlmProviderInfo;\n    providerRetryPolicy(_provider: string): ResolvedRetryPolicy | undefined;\n    hiddenModels(_provider: string): readonly string[];\n    imageRequestPricing(_provider: string, _model: string): LlmImageRequestPricing | undefined;\n    listModels(_provider: string): Promise<readonly LlmModelInfo[]>;\n    resolveModel(provider: string, model: string, _signal?: AbortSignal): Promise<LlmResolvedModelInfo>;\n    async prepareCall(provider: string, model: string, signal?: AbortSignal): Promise<PreparedAdapterCall>;\n    abstract stream(options: GenerateOptions): AsyncIterable<StreamChunk>;\n}',
   },
@@ -4953,6 +5044,14 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'ReplayEnvelope',
     declaration: 'export interface ReplayEnvelope {\n    response: unknown;\n    blocks?: readonly unknown[];\n}',
+  },
+  {
+    name: 'RepoFleetConfig',
+    declaration: 'export type RepoFleetConfig = z.infer<typeof fleetConfigSchema>;',
+  },
+  {
+    name: 'RepoFleetSnapshot',
+    declaration: 'export interface RepoFleetSnapshot {\n    readonly repositoryRoot: string;\n    readonly path: string;\n    readonly bytesHash: string;\n    readonly config: RepoFleetConfig;\n    readonly approved: boolean;\n}',
   },
   {
     name: 'RequestContext',
@@ -5695,8 +5794,12 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface SkillViewOptions extends SkillLookupOptions {\n    readonly scope?: ScopeKey | undefined;\n}',
   },
   {
+    name: 'SpawnAgentOptions',
+    declaration: 'export interface SpawnAgentOptions {\n    readonly provider?: string;\n    readonly model?: string;\n    readonly reasoningEffort?: ReasoningEffortId;\n    readonly maxTokens?: number;\n}',
+  },
+  {
     name: 'SpawnTeammateRequest',
-    declaration: 'export interface SpawnTeammateRequest {\n    readonly name: string;\n    readonly description: string;\n    readonly prompt: ContentBlock[];\n    readonly context: \'fresh\' | \'fork\';\n    readonly provider: string;\n    readonly agentPreset?: string;\n    readonly cwd?: string;\n    readonly signal: AbortSignal;\n}',
+    declaration: 'export interface SpawnTeammateRequest {\n    readonly name: string;\n    readonly description: string;\n    readonly prompt: ContentBlock[];\n    readonly context: \'fresh\' | \'fork\';\n    readonly provider: string;\n    readonly agentPreset?: string;\n    readonly agentOptions?: SpawnAgentOptions;\n    readonly cwd?: string;\n    readonly readOnly?: boolean;\n    readonly writeScopes?: readonly string[];\n    readonly maxTokens?: number;\n    readonly signal: AbortSignal;\n}',
   },
   {
     name: 'SpawnTeammateResult',

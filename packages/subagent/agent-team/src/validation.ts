@@ -19,6 +19,16 @@ export function requiredText(value: string, field: string, maxLength: number): s
 }
 
 /**
+ * Whether two normalized file or directory prefixes overlap on path components.
+ * @param left - first normalized workspace-relative prefix.
+ * @param right - second normalized workspace-relative prefix.
+ * @returns true when either prefix contains the other.
+ */
+export function scopesOverlap(left: string, right: string): boolean {
+  return left === right || left.startsWith(`${right}/`) || right.startsWith(`${left}/`)
+}
+
+/**
  * Normalize one workspace-relative path prefix without treating it as a lock.
  * @param value - user-authored path prefix.
  * @returns normalized slash-separated prefix.

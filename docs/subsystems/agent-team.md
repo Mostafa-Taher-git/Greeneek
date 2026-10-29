@@ -17,10 +17,16 @@ interface TeamMemberSnapshot {
   readonly context: 'fresh' | 'fork'
   readonly phase: TeamMemberPhase
   readonly error?: string
+  /** The teammate runs without file-mutating or Git-mutating tools. */
+  readonly readOnly?: boolean
+  /** Workspace-relative prefixes of the teammate's isolated lane; absent for shared lanes. */
+  readonly writeScopes?: readonly string[]
+  /** Cumulative token ceiling checked at each step boundary; absent when unbudgeted. */
+  readonly maxTokens?: number
 }
 ```
 
-Every member starts in `provisioning` and reaches exactly one terminal roster phase, `active` or `failed`. Runtime `running`/`idle`/`inactive` status is derived separately and never rewrites this record.
+Every member starts in `provisioning` and reaches exactly one terminal roster phase, `active` or `failed`. Runtime `running`/`idle`/`inactive` status is derived separately and never rewrites this record. `readOnly` marks a shared-checkout teammate whose file and Git mutation tools are denied; `writeScopes` marks an isolated worktree lane; `maxTokens` is a cumulative ceiling checked at each step boundary.
 
 ## Durable mailbox
 
@@ -71,6 +77,14 @@ interface TeamTaskSnapshot {
 ```
 
 `pending` is unstarted or released, `in_progress` carries an owner, `completed` satisfies blockers, and `deleted` is a retained tombstone. Views add owner name, readiness, and write-scope overlap warnings without changing the durable snapshot.
+
+## Lanes and integration
+
+A write-scoped teammate starts in a lane worktree at `<gnkHome>/worktrees/<LeadSessionId>/<lane>`; its durable record, checkpoints, and approvals live under `<gnkHome>/lanes`. Active lanes must declare disjoint workspace-relative scopes. A teammate tool guard denies Git mutations, while integration independently verifies the lane `HEAD` still equals its recorded base. A checkpoint stages tracked and untracked changes into one patch and records its SHA-256 hash; integration applies only a checkpoint whose hash still matches the reviewed hash, to a clean primary checkout at the expected `HEAD`, then runs gates, commits, and removes the lane. A conflict, gate failure, or commit failure halts that Lead's queue and leaves the lane and checkpoint intact.
+
+Lane records are durable JSON validated at the file boundary. `preparing` and `closing` records are the only stages startup recovery mutates; `ready` lanes keep unmerged work across idle, cold resume, and Team disposal. Disposal checkpoints ready lanes without deleting them.
+
+A repository may declare `.gnk/fleet.json` with a strict `version` and `fleet.members` array. Parsing is size-capped and provider-limited to the deployment's in-process fleet providers. Launching requires a one-time approval keyed by the canonical repository path and the SHA-256 of the exact file bytes; changed bytes require fresh approval, and an admitted approval is removed.
 
 ## Replay
 
@@ -175,6 +189,86 @@ interrupt(caller: Agent, targetName: string): { previousStatus: 'running' | 'idl
  * @returns Team membership, or undefined for non-Team subagents and stale identities.
  */
 tryMembership(agent: Agent): TeamMembership | undefined
+
+/**
+ * Resolve one live teammate's durable lane policy for scoped tool guards.
+ * @param agent - exact live Team member.
+ * @returns the durable lane policy, or `shared` outside a teammate lane.
+ */
+lanePolicyFor(agent: Agent): LanePolicy
+
+/**
+ * List every durable lane record of one Team, including terminal lanes.
+ * @param caller - exact live Team member.
+ * @returns lane records ordered by lane name.
+ */
+async listLanes(caller: Agent): Promise<LaneRecord[]>
+
+/**
+ * Checkpoint one ready lane so its exact patch becomes integrable evidence.
+ * Only the Team Lead may checkpoint.
+ * @param caller - exact live Team member.
+ * @param lane - durable lane name.
+ * @param signal - cancellation for the patch copy.
+ * @returns the checkpoint hash, path, and byte length.
+ */
+async checkpointLane(caller: Agent, lane: string, signal: AbortSignal): Promise<LaneCheckpoint>
+
+/**
+ * Explicitly discard one ready lane after preserving its checkpointed patch.
+ * Only the Team Lead may discard.
+ * @param caller - exact live Team member.
+ * @param lane - durable lane name.
+ * @param signal - cancellation for checkpoint and removal.
+ * @returns the preserved checkpoint.
+ */
+async discardLane(caller: Agent, lane: string, signal: AbortSignal): Promise<LaneCheckpoint>
+
+/**
+ * Apply one reviewed lane patch, run its gates, commit it, and remove the
+ * merged checkout. Only the Team Lead may integrate.
+ * @param caller - exact live Team member.
+ * @param request - lane, expected primary HEAD, reviewed hash, gates, and commit text.
+ * @returns the primary commit and gate evidence.
+ */
+async integrateLane( caller: Agent, request: { readonly lane: string readonly expectedPrimaryHead: string readonly patchHash: string readonly gateCommands: readonly LaneGateCommand[] readonly commitMessage: string readonly signal: AbortSignal }, ): Promise<LaneMergeResult>
+
+/**
+ * Resume a Lead's halted merge queue after investigating the stopped lane.
+ * @param caller - exact live Team member.
+ */
+resumeLaneQueue(caller: Agent): void
+
+/**
+ * Report why one Team's merge queue stopped.
+ * @param caller - exact live Team member.
+ * @returns the halting diagnostic, or undefined while the queue accepts lanes.
+ */
+laneQueueHaltReason(caller: Agent): string | undefined
+
+/**
+ * Read one repository fleet config without granting spend.
+ * @param caller - exact live Team Lead.
+ * @param signal - cancellation for path and file reads.
+ * @returns the parsed config, exact bytes hash, and approval state.
+ */
+async readRepoFleet(caller: Agent, signal: AbortSignal): Promise<RepoFleetSnapshot>
+
+/**
+ * Approve the exact fleet bytes currently in the Lead repository.
+ * @param caller - exact live Team Lead.
+ * @param signal - cancellation for the read and approval write.
+ * @returns the approved snapshot.
+ */
+async approveRepoFleet(caller: Agent, signal: AbortSignal): Promise<RepoFleetSnapshot>
+
+/**
+ * Consume one fleet approval and return the config it covers.
+ * @param caller - exact live Team Lead.
+ * @param signal - cancellation for the read and approval removal.
+ * @returns the admitted configuration snapshot.
+ */
+async admitRepoFleet(caller: Agent, signal: AbortSignal): Promise<RepoFleetSnapshot>
 
 /**
  * Read the current roster and non-deleted task board through the generated Remote API.

@@ -33,6 +33,7 @@
     "@greeneek/gnk-agent": "workspace:^",
     "@greeneek/gnk-session": "workspace:^",
     "@greeneek/gnk-system-prompt": "workspace:^",
+    "@greeneek/gnk-user-approval": "workspace:^",
     "@greeneek/gnk-agent-team": "workspace:^",
     "@greeneek/gnk-tools": "workspace:^",
     "@greeneek/cordis": "workspace:^"
@@ -51,6 +52,7 @@
     "@greeneek/gnk-subagent-spawn-in-process": "workspace:^",
     "@greeneek/gnk-tool-subagent-control": "workspace:^",
     "@greeneek/gnk-system-prompt": "workspace:^",
+    "@greeneek/gnk-user-approval": "workspace:^",
     "@greeneek/gnk-agent-team": "workspace:^",
     "@greeneek/gnk-tools": "workspace:^",
     "@greeneek/cordis": "workspace:^"

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Context } from '@greeneek/cordis'
@@ -14,8 +15,10 @@ import SubagentService from '@greeneek/gnk-subagent'
 import { deliverSubagentPrompt, type HostPromptDeliverer } from '@greeneek/gnk-subagent/internal'
 import * as SubagentFork from '@greeneek/gnk-subagent-fork-in-process'
 import * as SubagentSpawn from '@greeneek/gnk-subagent-spawn-in-process'
-import { MockAdapter, textResponse } from '../../../core/agent-loop/tests/mock-adapter.ts'
-import TeamService, { TeamError, TeamId, TeamMessageId, TeamTaskId } from '../src/index.ts'
+import TokenMeter from '@greeneek/gnk-token-meter'
+import { defineContentToolFixture } from '@greeneek/gnk-tools'
+import { MockAdapter, textResponse, toolCallResponse } from '../../../core/agent-loop/tests/mock-adapter.ts'
+import TeamService, { LaneLifecycleManager, TeamError, TeamId, TeamMessageId, TeamTaskId } from '../src/index.ts'
 import { TeamRuntimeLifecycle } from '../src/lifecycle.ts'
 import { teamProjectionDefinition } from '../src/projection.ts'
 import type { TeamMemberSnapshot, TeamMessageSnapshot, TeamTaskSnapshot } from '../src/index.ts'
@@ -59,6 +62,8 @@ async function storedEvents(ctx: Context, id: SessionId): Promise<readonly Sessi
 async function setup(
   script: ConstructorParameters<typeof MockAdapter>[0],
   config: ConstructorParameters<typeof TeamService>[1] = {},
+  leadMeta: { cwd?: string } = {},
+  mountTokenMeter = false,
 ) {
   const ctx = new Context()
   await mountAgentLoopTestDependencies(ctx)
@@ -71,10 +76,11 @@ async function setup(
   await ctx.plugin(SubagentService)
   await ctx.plugin(SubagentSpawn, { providerName: 'spawn' })
   await ctx.plugin(SubagentFork, { providerName: 'fork' })
+  if (mountTokenMeter) await ctx.plugin(TokenMeter)
   const teamFiber = await ctx.plugin(TeamService, config)
   const adapter = new MockAdapter(script)
   ctx.llm.registerAdapter(['mock'], adapter)
-  const lead = await ctx.agentLoop.create(SessionId('lead'), { provider: 'mock', model: 'mock' })
+  const lead = await ctx.agentLoop.create(SessionId('lead'), { provider: 'mock', model: 'mock' }, leadMeta)
   return { ctx, lead, adapter, storageRoot, teamFiber }
 }
 
@@ -88,6 +94,8 @@ interface TeamServiceInternals {
     checkpointInitialPrompt(childId: SessionId, messageId: string, signal: AbortSignal): Promise<void>
     reconcileProvisioning(root: Agent, signal: AbortSignal): Promise<void>
     liveChildrenByRoot(): Map<Agent, SessionId[]>
+    enforceTokenBudget(agent: Agent): boolean
+    checkpointLanes(root: Agent, signal: AbortSignal): Promise<void>
   }
   readonly mailbox: {
     tryDispatch(root: Agent, message: TeamMessageSnapshot, signal: AbortSignal): Promise<boolean>
@@ -165,6 +173,8 @@ describe('Team identity and provisioning', () => {
         await expect(setup([], { [field]: value })).rejects.toThrow()
       }
     }
+    await expect(setup([], { fleetProviders: [] })).rejects.toThrow('fleetProviders')
+    await expect(setup([], { fleetProviders: ['spawn', ' '] })).rejects.toThrow('fleetProviders')
   })
 
   it('supports direct-constructor defaults and recovers roots that already exist', async () => {
@@ -1852,5 +1862,450 @@ describe('Team mailbox and waiting', () => {
     expect(durable(second.lead).members[0]).toMatchObject({
       phase: 'failed', error: 'settled elsewhere',
     })
+  })
+})
+
+/** Run git in one directory without a shell. */
+function git(cwd: string, ...args: string[]): string {
+  return execFileSync('git', ['-C', cwd, ...args], {
+    encoding: 'utf8',
+    env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
+  }).trim()
+}
+
+/** One committed repository whose HEAD is a valid lane base. */
+function repository(): string {
+  const root = mkdtempSync(join(tmpdir(), 'gnk-team-lane-repo-'))
+  roots.push(root)
+  git(root, 'init', '-q')
+  git(root, 'config', 'user.email', 'team-lane@example.com')
+  git(root, 'config', 'user.name', 'Team Lane')
+  git(root, 'config', 'commit.gpgsign', 'false')
+  git(root, 'config', 'core.autocrlf', 'false')
+  git(root, 'config', 'gc.auto', '0')
+  git(root, 'config', 'maintenance.auto', 'false')
+  writeFileSync(join(root, 'README.md'), 'base\n')
+  git(root, 'add', 'README.md')
+  git(root, 'commit', '-qm', 'base')
+  return root
+}
+
+describe('Team lane isolation', () => {
+  it('starts a write-scoped teammate in its own worktree lane', async () => {
+    const repo = repository()
+    const gnkHome = mkdtempSync(join(tmpdir(), 'gnk-team-lane-home-'))
+    roots.push(gnkHome)
+    const { ctx, lead, teamFiber } = await setup(['hang'], { gnkHome }, { cwd: repo })
+    const base = git(repo, 'rev-parse', 'HEAD')
+
+    const { member } = await ctx.agentTeams.spawnTeammate(lead, {
+      name: 'lane-worker',
+      description: 'lane worker',
+      prompt: content('do lane work'),
+      context: 'fresh',
+      provider: 'spawn',
+      writeScopes: ['src', 'docs'],
+      signal: SIGNAL,
+    })
+
+    const lane = (await ctx.agentTeams.listLanes(lead))[0]
+    expect(lane).toMatchObject({
+      lane: 'lane-worker',
+      childSessionId: member.id,
+      stage: 'ready',
+      baseRevision: base,
+      writeScopes: ['src', 'docs'],
+    })
+    expect((await ctx.sessionPersistence.stat(member.id))?.header.cwd).toBe(lane?.path)
+    expect(existsSync(join(lane!.path, 'README.md'))).toBe(true)
+    expect(durable(lead).members[0]).toMatchObject({ phase: 'active', writeScopes: ['src', 'docs'] })
+    const live = ctx.agents.get(member.id)
+    if (live !== undefined) {
+      expect(ctx.agentTeams.lanePolicyFor(live)).toEqual({ kind: 'isolated', writeScopes: ['src', 'docs'] })
+    }
+    expect(ctx.agentTeams.lanePolicyFor(lead)).toEqual({ kind: 'shared' })
+    ctx.agentTeams.interrupt(lead, 'lane-worker')
+    await waitNoAgent(ctx, member.id)
+    const checkpoint = await ctx.agentTeams.checkpointLane(lead, 'lane-worker', SIGNAL)
+    expect(checkpoint.hash).toHaveLength(64)
+    await ctx.agentTeams.discardLane(lead, 'lane-worker', SIGNAL)
+    expect(existsSync(lane!.path)).toBe(false)
+    expect((await ctx.agentTeams.listLanes(lead))[0]?.stage).toBe('discarded')
+    await teamFiber.dispose()
+  }, 20_000)
+
+  it('refuses overlapping lane scopes and writable lanes outside a Git work tree', async () => {
+    const outsideCwd = mkdtempSync(join(tmpdir(), 'gnk-team-no-repo-'))
+    roots.push(outsideCwd)
+    const repo = repository()
+    const gnkHome = mkdtempSync(join(tmpdir(), 'gnk-team-lane-home-'))
+    roots.push(gnkHome)
+    const { ctx, lead } = await setup(
+      [textResponse('first lane'), textResponse('second lane')],
+      { gnkHome },
+      { cwd: repo },
+    )
+    await ctx.agentTeams.spawnTeammate(lead, {
+      name: 'first-lane',
+      description: 'first lane',
+      prompt: content('first'),
+      context: 'fresh',
+      provider: 'spawn',
+      writeScopes: ['src'],
+      signal: SIGNAL,
+    })
+
+    await expect(ctx.agentTeams.spawnTeammate(lead, {
+      name: 'second-lane',
+      description: 'second lane',
+      prompt: content('second'),
+      context: 'fresh',
+      provider: 'spawn',
+      writeScopes: ['src/nested'],
+      signal: SIGNAL,
+    })).rejects.toMatchObject({ code: 'TEAM_LANE_SCOPE_OVERLAP' })
+    expect(durable(lead).members.map(member => member.name)).toEqual(['first-lane'])
+
+    const outsideHome = mkdtempSync(join(tmpdir(), 'gnk-team-lane-home-'))
+    roots.push(outsideHome)
+    const outside = await setup([textResponse('no repo lane')], { gnkHome: outsideHome }, { cwd: outsideCwd })
+    await expect(outside.ctx.agentTeams.spawnTeammate(outside.lead, {
+      name: 'no-repo-lane',
+      description: 'no repo lane',
+      prompt: content('no repo'),
+      context: 'fresh',
+      provider: 'spawn',
+      writeScopes: ['src'],
+      signal: SIGNAL,
+    })).rejects.toMatchObject({ code: 'TEAM_LANE_NO_REPOSITORY' })
+    expect(durable(outside.lead).members[0]).toMatchObject({ phase: 'failed' })
+  }, 20_000)
+
+  it('merges three heterogeneous lane presets serially onto one relative path', async () => {
+    const repo = repository()
+    const gnkHome = mkdtempSync(join(tmpdir(), 'gnk-team-lane-home-'))
+    roots.push(gnkHome)
+    const lines = Array.from({ length: 20 }, (_, index) => `line ${String(index + 1)}\n`).join('')
+    writeFileSync(join(repo, 'notes.md'), lines)
+    git(repo, 'add', 'notes.md')
+    git(repo, 'commit', '-qm', 'notes')
+    const { ctx, lead } = await setup(
+      [textResponse('one'), textResponse('two'), textResponse('three')],
+      { gnkHome },
+      { cwd: repo },
+    )
+    ctx.provide('agentPresets', { mount: vi.fn(async () => {}), composedPreset: () => 'standard' } as never)
+    const lanes = [
+      { name: 'alpha', preset: 'standard', scope: 'one', line: 1 },
+      { name: 'beta', preset: 'reviewing', scope: 'two', line: 7 },
+      { name: 'gamma', preset: 'docs', scope: 'three', line: 14 },
+    ] as const
+
+    for (const lane of lanes) {
+      const { member } = await ctx.agentTeams.spawnTeammate(lead, {
+        name: lane.name,
+        description: `${lane.name} lane`,
+        prompt: content(`work in ${lane.name}`),
+        context: 'fresh',
+        provider: 'spawn',
+        agentPreset: lane.preset,
+        writeScopes: [lane.scope],
+        signal: SIGNAL,
+      })
+      await waitNoAgent(ctx, member.id)
+      const record = (await ctx.agentTeams.listLanes(lead)).find(candidate => candidate.lane === lane.name)!
+      const stored = await ctx.sessionPersistence.open(member.id, 'read')
+      try {
+        expect(stored.header.agentPreset).toBe(lane.preset)
+        expect(stored.header.cwd).toBe(record.path)
+      } finally {
+        await stored.close()
+      }
+      writeFileSync(join(record.path, 'notes.md'), lines.split('\n').map((text, index) => (
+        index + 1 === lane.line ? `${lane.name} changed this line` : text
+      )).join('\n'))
+    }
+
+    await expect(ctx.agentTeams.checkpointLane(lead, 'missing', SIGNAL))
+      .rejects.toMatchObject({ code: 'TEAM_LANE_NOT_FOUND' })
+    expect(ctx.agentTeams.laneQueueHaltReason(lead)).toBeUndefined()
+    expect(() => { ctx.agentTeams.resumeLaneQueue(lead) }).not.toThrow()
+
+    let primaryHead = git(repo, 'rev-parse', 'HEAD')
+    for (const lane of lanes) {
+      const checkpoint = await ctx.agentTeams.checkpointLane(lead, lane.name, SIGNAL)
+      const merged = await ctx.agentTeams.integrateLane(lead, {
+        lane: lane.name,
+        expectedPrimaryHead: primaryHead,
+        patchHash: checkpoint.hash,
+        gateCommands: [],
+        commitMessage: `merge ${lane.name}`,
+        signal: SIGNAL,
+      })
+      primaryHead = merged.primaryHead
+    }
+
+    const mergedText = readFileSync(join(repo, 'notes.md'), 'utf8').split('\n')
+    for (const lane of lanes) expect(mergedText[lane.line - 1]).toBe(`${lane.name} changed this line`)
+    expect(git(repo, 'status', '--porcelain')).toBe('')
+    expect((await ctx.agentTeams.listLanes(lead)).map(record => record.stage)).toEqual([
+      'merged', 'merged', 'merged',
+    ])
+    for (const lane of lanes) {
+      expect(existsSync(join(realpathSync(gnkHome), 'worktrees', 'lead', lane.name))).toBe(false)
+    }
+  }, 40_000)
+
+  it('checkpoints but keeps unmerged lane work when the Team service disposes', async () => {
+    const repo = repository()
+    const gnkHome = mkdtempSync(join(tmpdir(), 'gnk-team-lane-home-'))
+    roots.push(gnkHome)
+    const { ctx, lead, teamFiber } = await setup([textResponse('dispose lane')], { gnkHome }, { cwd: repo })
+    const { member } = await ctx.agentTeams.spawnTeammate(lead, {
+      name: 'survivor',
+      description: 'surviving lane',
+      prompt: content('edit the lane'),
+      context: 'fresh',
+      provider: 'spawn',
+      writeScopes: ['src'],
+      signal: SIGNAL,
+    })
+    const lane = (await ctx.agentTeams.listLanes(lead))[0]!
+    await waitNoAgent(ctx, member.id)
+    writeFileSync(join(lane.path, 'kept.txt'), 'unmerged\n')
+
+    await teamFiber.dispose()
+
+    const record = JSON.parse(readFileSync(join(gnkHome, 'lanes', 'lead', 'survivor', 'lane.json'), 'utf8')) as {
+      readonly stage: string
+      readonly checkpoint?: { readonly hash: string; readonly path: string }
+    }
+    expect(record.stage).toBe('ready')
+    expect(record.checkpoint?.hash).toHaveLength(64)
+    expect(existsSync(lane.path)).toBe(true)
+    expect(readFileSync(record.checkpoint!.path, 'utf8')).toContain('kept.txt')
+  }, 20_000)
+
+  it('stops a teammate at its next step boundary after its token budget', async () => {
+    const { ctx, lead, adapter } = await setup(
+      [toolCallResponse('pause-call', 'pause', {}), textResponse('must not run')],
+      {},
+      {},
+      true,
+    )
+    ctx.tools.register(defineContentToolFixture({
+      name: 'pause',
+      description: 'Pause one step.',
+      parameters: {},
+      async execute() {
+        return [{ type: 'text' as const, text: 'paused' }]
+      },
+    }))
+    const { member } = await ctx.agentTeams.spawnTeammate(lead, {
+      name: 'budgeted',
+      description: 'budgeted worker',
+      prompt: content('spend one step'),
+      context: 'fresh',
+      provider: 'spawn',
+      maxTokens: 10,
+      signal: SIGNAL,
+    })
+
+    await vi.waitFor(() => {
+      expect(ctx.agentTeams.listMembers(lead)[1]?.diagnostics).toContain('member token budget exceeded')
+    }, { timeout: 5_000 })
+    await waitNoAgent(ctx, member.id)
+    // The Lead records the child's settlement in its own turn; the child itself
+    // must have received exactly its initial step and no post-budget step.
+    expect(adapter.requests.filter(request => request.messages.some(message => message.source?.kind === 'user')))
+      .toHaveLength(1)
+    expect(durable(lead).members[0]).toMatchObject({ phase: 'active', maxTokens: 10 })
+  }, 20_000)
+
+  it('admits a repository fleet only once for the Lead and its exact bytes', async () => {
+    const repo = repository()
+    mkdirSync(join(repo, '.gnk'))
+    writeFileSync(join(repo, '.gnk', 'fleet.json'), JSON.stringify({
+      version: 1,
+      fleet: { members: [{ name: 'lane', description: 'lane', prompt: 'work' }] },
+    }))
+    const gnkHome = mkdtempSync(join(tmpdir(), 'gnk-team-lane-home-'))
+    roots.push(gnkHome)
+    const { ctx, lead } = await setup([], { gnkHome }, { cwd: repo })
+
+    const snapshot = await ctx.agentTeams.readRepoFleet(lead, SIGNAL)
+    expect(snapshot.approved).toBe(false)
+    expect(snapshot.config.fleet.members[0]?.name).toBe('lane')
+    expect((await ctx.agentTeams.approveRepoFleet(lead, SIGNAL)).approved).toBe(true)
+    expect((await ctx.agentTeams.admitRepoFleet(lead, SIGNAL)).bytesHash).toBe(snapshot.bytesHash)
+    await expect(ctx.agentTeams.admitRepoFleet(lead, SIGNAL))
+      .rejects.toMatchObject({ code: 'TEAM_FLEET_CONFIG_UNAPPROVED' })
+
+    const withoutCwd = await setup([], { gnkHome })
+    await expect(withoutCwd.ctx.agentTeams.readRepoFleet(withoutCwd.lead, SIGNAL))
+      .rejects.toMatchObject({ code: 'TEAM_FLEET_CONFIG_MISSING' })
+  })
+
+  it('finishes disposal when a lane checkpoint refuses a moved HEAD', async () => {
+    const repo = repository()
+    const gnkHome = mkdtempSync(join(tmpdir(), 'gnk-team-lane-home-'))
+    roots.push(gnkHome)
+    const { ctx, lead, teamFiber } = await setup([textResponse('moved lane')], { gnkHome }, { cwd: repo })
+    const { member } = await ctx.agentTeams.spawnTeammate(lead, {
+      name: 'moved',
+      description: 'moved lane',
+      prompt: content('move the lane'),
+      context: 'fresh',
+      provider: 'spawn',
+      writeScopes: ['src'],
+      signal: SIGNAL,
+    })
+    const lane = (await ctx.agentTeams.listLanes(lead))[0]!
+    await waitNoAgent(ctx, member.id)
+    writeFileSync(join(lane.path, 'moved.txt'), 'member commit\n')
+    git(lane.path, 'add', 'moved.txt')
+    git(lane.path, 'commit', '-qm', 'bypass guard')
+
+    await expect(teamFiber.dispose()).resolves.toBeUndefined()
+
+    const record = JSON.parse(readFileSync(join(gnkHome, 'lanes', 'lead', 'moved', 'lane.json'), 'utf8')) as {
+      readonly stage: string
+    }
+    expect(record.stage).toBe('quarantined')
+  }, 20_000)
+
+  it('records a durable read-only policy without creating a lane', async () => {
+    const { ctx, lead } = await setup(['hang', 'hang'])
+    const { member } = await ctx.agentTeams.spawnTeammate(lead, {
+      name: 'reader',
+      description: 'reader',
+      prompt: content('inspect only'),
+      context: 'fresh',
+      provider: 'spawn',
+      readOnly: true,
+      signal: SIGNAL,
+    })
+    const plain = await ctx.agentTeams.spawnTeammate(lead, {
+      name: 'plain',
+      description: 'plain',
+      prompt: content('share the checkout'),
+      context: 'fresh',
+      provider: 'spawn',
+      agentOptions: { model: 'lane-model' },
+      signal: SIGNAL,
+    })
+
+    expect(durable(lead).members[0]).toMatchObject({ phase: 'active', readOnly: true })
+    expect(durable(lead).members[1]).toMatchObject({ phase: 'active' })
+    expect(ctx.agentTeams.listMembers(lead)[2]).toMatchObject({ name: 'plain', model: 'lane-model' })
+    expect(await ctx.agentTeams.listLanes(lead)).toEqual([])
+    const reader = ctx.agents.get(member.id)
+    if (reader !== undefined) {
+      expect(ctx.agentTeams.lanePolicyFor(reader)).toEqual({ kind: 'read-only' })
+      await expect(ctx.agentTeams.checkpointLane(reader, 'missing', SIGNAL))
+        .rejects.toMatchObject({ code: 'TEAM_LEAD_REQUIRED' })
+      await expect(ctx.agentTeams.discardLane(reader, 'missing', SIGNAL))
+        .rejects.toMatchObject({ code: 'TEAM_LEAD_REQUIRED' })
+      await expect(ctx.agentTeams.integrateLane(reader, {
+        lane: 'missing',
+        expectedPrimaryHead: 'head',
+        patchHash: 'hash',
+        gateCommands: [],
+        commitMessage: 'merge',
+        signal: SIGNAL,
+      })).rejects.toMatchObject({ code: 'TEAM_LEAD_REQUIRED' })
+      expect(() => { ctx.agentTeams.resumeLaneQueue(reader) }).toThrow('only the Team Lead')
+      expect(ctx.agentTeams.laneQueueHaltReason(reader)).toBeUndefined()
+      await expect(ctx.agentTeams.readRepoFleet(reader, SIGNAL))
+        .rejects.toMatchObject({ code: 'TEAM_LEAD_REQUIRED' })
+    }
+    const shared = ctx.agents.get(plain.member.id)
+    if (shared !== undefined) expect(ctx.agentTeams.lanePolicyFor(shared)).toEqual({ kind: 'shared' })
+    ctx.agentTeams.interrupt(lead, 'reader')
+    ctx.agentTeams.interrupt(lead, 'plain')
+    await waitNoAgent(ctx, member.id)
+    await waitNoAgent(ctx, plain.member.id)
+  }, 10_000)
+
+  it('contains a scheduled recovery failure as a warning', async () => {
+    const { ctx, lead } = await setup([])
+    const internals = teamInternals(ctx)
+    vi.spyOn(internals, 'recoverFor').mockRejectedValue(new Error('recovery failed'))
+    const warn = vi.spyOn(ctx.logger, 'warn').mockImplementation(() => undefined)
+
+    internals.scheduleRecovery(lead)
+
+    await vi.waitFor(() => {
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('recovery failed'))
+    })
+  })
+
+  it('contains a lane recovery failure as a warning', async () => {
+    const { ctx, lead } = await setup([])
+    const recover = vi.spyOn(LaneLifecycleManager.prototype, 'recover').mockRejectedValue(new Error('lane recovery failed'))
+    const warn = vi.spyOn(ctx.logger, 'warn').mockImplementation(() => undefined)
+
+    teamInternals(ctx).scheduleRecovery(lead)
+
+    await vi.waitFor(() => {
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('lane recovery failed'))
+    })
+    recover.mockRestore()
+  })
+
+  it('reports a disposal checkpoint failure after releasing members', async () => {
+    const { ctx } = await setup([])
+    const internals = teamInternals(ctx)
+    vi.spyOn(internals.roster, 'checkpointLanes').mockRejectedValue(new Error('checkpoint refused'))
+
+    await expect(internals.disposeRuntime()).rejects.toThrow('Agent Teams runtime disposal failed')
+  })
+
+  it('fails closed at a step when the token projection disappears after admission', async () => {
+    const { ctx, lead } = await setup(['hang'], {}, {}, true)
+    const { member } = await ctx.agentTeams.spawnTeammate(lead, {
+      name: 'vanishing-meter',
+      description: 'metered lane',
+      prompt: content('wait'),
+      context: 'fresh',
+      provider: 'spawn',
+      maxTokens: 1_000,
+      signal: SIGNAL,
+    })
+    const live = ctx.agents.get(member.id)!
+    const stateOf = ctx.sessionProjections.stateOf.bind(ctx.sessionProjections)
+    const spy = vi.spyOn(ctx.sessionProjections, 'stateOf').mockImplementation((session, key) => (
+      key === 'tokenUsage' ? undefined : stateOf(session, key)
+    ))
+
+    expect(teamInternals(ctx).roster.enforceTokenBudget(live)).toBe(true)
+    expect(ctx.agentTeams.listMembers(lead)[1]?.diagnostics).toContain('member token budget exceeded')
+    spy.mockRestore()
+    ctx.agentTeams.interrupt(lead, 'vanishing-meter')
+    await waitNoAgent(ctx, member.id)
+  }, 10_000)
+
+  it('rejects invalid lane and budget fields before creating a roster entry', async () => {
+    const { ctx, lead } = await setup([])
+    const base = {
+      name: 'invalid',
+      description: 'invalid request',
+      prompt: content('never starts'),
+      context: 'fresh' as const,
+      provider: 'spawn',
+      signal: SIGNAL,
+    }
+
+    await expect(ctx.agentTeams.spawnTeammate(lead, { ...base, maxTokens: 0 }))
+      .rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    await expect(ctx.agentTeams.spawnTeammate(lead, { ...base, maxTokens: 5 }))
+      .rejects.toMatchObject({ code: 'TEAM_BUDGET_METER_UNAVAILABLE' })
+    await expect(ctx.agentTeams.spawnTeammate(lead, {
+      ...base, writeScopes: ['src'], cwd: '/tmp/lane',
+    })).rejects.toMatchObject({ code: 'TEAM_INVALID_LANE_POLICY' })
+    await expect(ctx.agentTeams.spawnTeammate(lead, {
+      ...base, writeScopes: ['src'], readOnly: true,
+    })).rejects.toMatchObject({ code: 'TEAM_INVALID_LANE_POLICY' })
+    expect(durable(lead).members).toEqual([])
   })
 })

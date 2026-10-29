@@ -364,7 +364,7 @@ export class WorktreeManager {
  * @param field - diagnostic name of the rejected value.
  * @returns the value unchanged.
  */
-function laneSegment(value: string, field: string): string {
+export function laneSegment(value: string, field: string): string {
   if (!PATH_SEGMENT.test(value) || value.includes('..') || value.endsWith('.') || value.endsWith('.lock')) {
     throw new WorktreeError(
       `${field} ${JSON.stringify(value)} must be one path segment of letters, digits, '.', '_', or '-', at most 64 characters,`
@@ -381,7 +381,7 @@ function laneSegment(value: string, field: string): string {
  * @param lane - validated lane name.
  * @returns the lane branch name.
  */
-function laneBranch(session: string, lane: string): string {
+export function laneBranch(session: string, lane: string): string {
   return `${BRANCH_PREFIX}/${session}/${lane}`
 }
 

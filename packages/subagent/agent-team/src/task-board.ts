@@ -15,12 +15,7 @@ import type {
   TeamTaskView,
   UpdateTeamTaskRequest,
 } from './types.ts'
-import { requiredText, writeScope } from './validation.ts'
-
-/** Whether two normalized file or directory prefixes overlap on path components. */
-function scopesOverlap(left: string, right: string): boolean {
-  return left === right || left.startsWith(`${right}/`) || right.startsWith(`${left}/`)
-}
+import { requiredText, scopesOverlap, writeScope } from './validation.ts'
 
 const TASK_GRAPH_ERROR_CODES: Record<TeamTaskGraphViolation, string> = {
   missing: 'TEAM_TASK_NOT_FOUND',

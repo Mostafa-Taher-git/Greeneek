@@ -3,11 +3,19 @@
 import { Context } from '@greeneek/cordis'
 import z from '@greeneek/schemastery'
 import type { Agent } from '@greeneek/gnk-agent'
+import { resolveGnkHome } from '@greeneek/gnk-home-paths'
 import type {} from '@greeneek/gnk-session-persistence'
 import { Remote, TypertRemoteService } from '@greeneek/gnk-typert-protocol'
 import { TeamActivity } from './activity.ts'
 import { errorMessage, TeamError } from './error.ts'
+import { RepoFleetConfigStore } from './fleet-config.ts'
+import type { RepoFleetSnapshot } from './fleet-config.ts'
+import { LaneIntegration } from './integration.ts'
+import type { LaneGateCommand, LaneMergeResult } from './integration.ts'
 import { TeamJournal } from './journal.ts'
+import { LaneLifecycleManager } from './lane-lifecycle.ts'
+import type { LaneCheckpoint, LaneRecord } from './lane-lifecycle.ts'
+import type { LanePolicy } from './lane-policy.ts'
 import { TeamRuntimeLifecycle } from './lifecycle.ts'
 import { TeamMailbox } from './mailbox.ts'
 import { teamProjectionDefinition } from './projection.ts'
@@ -34,6 +42,21 @@ export type * from './types.ts'
 export type { TeamMembership } from './roster.ts'
 export { TeamId, TeamMessageId, TeamTaskId } from './types.ts'
 export { TeamError } from './error.ts'
+export { RepoFleetConfigStore } from './fleet-config.ts'
+export type { RepoFleetConfig, RepoFleetConfigOptions, RepoFleetMember, RepoFleetSnapshot } from './fleet-config.ts'
+export { LaneIntegration } from './integration.ts'
+export type {
+  LaneGateCommand,
+  LaneGateEvidence,
+  LaneGateRunner,
+  LaneIntegrationOptions,
+  LaneMergeRequest,
+  LaneMergeResult,
+} from './integration.ts'
+export { LaneLifecycleManager, LaneName } from './lane-lifecycle.ts'
+export type { LaneCheckpoint, LaneCreateRequest, LaneLifecycleManagerOptions, LaneRecord, LaneStage } from './lane-lifecycle.ts'
+export { assertDisjointLaneScopes, resolveLanePolicy } from './lane-policy.ts'
+export type { ActiveLaneScope, LanePolicy, LanePolicyRequest } from './lane-policy.ts'
 export { GitRevision, WorktreeError, WorktreeManager } from './worktrees.ts'
 export type {
   LaneWorktree,
@@ -56,6 +79,9 @@ const DEFAULT_MAX_TASKS = 256
 const DEFAULT_MAX_PENDING_MESSAGES = 64
 const DEFAULT_MAX_MESSAGE_BYTES = 65_536
 const DEFAULT_DISPOSAL_TIMEOUT_MS = 5_000
+const DEFAULT_MAX_LANE_PATCH_BYTES = 16 * 1024 * 1024
+const DEFAULT_MAX_FLEET_CONFIG_BYTES = 65_536
+const DEFAULT_FLEET_PROVIDERS: readonly string[] = ['spawn', 'fork']
 
 /** Validate one positive safe-integer deployment limit. */
 function positiveLimit(name: string, value: number): number {
@@ -75,6 +101,10 @@ export class TeamService extends TypertRemoteService {
     maxPendingMessagesPerMember: z.number().step(1).min(1).default(DEFAULT_MAX_PENDING_MESSAGES),
     maxMessageBytes: z.number().step(1).min(1).default(DEFAULT_MAX_MESSAGE_BYTES),
     disposalTimeoutMs: z.number().step(1).min(1).default(DEFAULT_DISPOSAL_TIMEOUT_MS),
+    gnkHome: z.string().default(resolveGnkHome(undefined, process.env)),
+    maxLanePatchBytes: z.number().step(1).min(1).default(DEFAULT_MAX_LANE_PATCH_BYTES),
+    maxFleetConfigBytes: z.number().step(1).min(1).default(DEFAULT_MAX_FLEET_CONFIG_BYTES),
+    fleetProviders: z.array(z.string()).default([...DEFAULT_FLEET_PROVIDERS]),
   })
 
   /** Validated deployment limits used by every Team operation. */
@@ -83,6 +113,9 @@ export class TeamService extends TypertRemoteService {
   private readonly activity: TeamActivity
   private readonly lifecycle: TeamRuntimeLifecycle
   private readonly journal: TeamJournal
+  private readonly lanes: LaneLifecycleManager
+  private readonly integration: LaneIntegration
+  private readonly fleet: RepoFleetConfigStore
   private readonly roster: TeamRoster
   private readonly mailbox: TeamMailbox
   private readonly tasks: TeamTaskBoard
@@ -101,12 +134,37 @@ export class TeamService extends TypertRemoteService {
         'disposalTimeoutMs',
         config.disposalTimeoutMs ?? DEFAULT_DISPOSAL_TIMEOUT_MS,
       ),
+      gnkHome: config.gnkHome ?? resolveGnkHome(undefined, process.env),
+      maxLanePatchBytes: positiveLimit(
+        'maxLanePatchBytes',
+        config.maxLanePatchBytes ?? DEFAULT_MAX_LANE_PATCH_BYTES,
+      ),
+      maxFleetConfigBytes: positiveLimit(
+        'maxFleetConfigBytes',
+        config.maxFleetConfigBytes ?? DEFAULT_MAX_FLEET_CONFIG_BYTES,
+      ),
+      fleetProviders: config.fleetProviders ?? [...DEFAULT_FLEET_PROVIDERS],
+    }
+
+    if (this.config.fleetProviders.length === 0
+      || this.config.fleetProviders.some(provider => provider.trim().length === 0)) {
+      throw new TeamError('fleetProviders must name at least one non-empty provider', 'TEAM_INVALID_CONFIG')
     }
 
     this.activity = new TeamActivity()
     this.lifecycle = new TeamRuntimeLifecycle(this.config.disposalTimeoutMs)
     this.journal = new TeamJournal(ctx, (root) => { this.activity.notify(TeamId(root.id)) })
-    this.roster = new TeamRoster(ctx, this.journal, this.lifecycle, this.config.maxMembers)
+    this.lanes = new LaneLifecycleManager({
+      gnkHome: this.config.gnkHome,
+      maxPatchBytes: this.config.maxLanePatchBytes,
+    })
+    this.integration = new LaneIntegration({ lanes: this.lanes })
+    this.fleet = new RepoFleetConfigStore({
+      gnkHome: this.config.gnkHome,
+      maxBytes: this.config.maxFleetConfigBytes,
+      allowedProviders: this.config.fleetProviders,
+    })
+    this.roster = new TeamRoster(ctx, this.journal, this.lifecycle, this.lanes, this.config.maxMembers)
     this.mailbox = new TeamMailbox(
       ctx,
       this.journal,
@@ -118,6 +176,10 @@ export class TeamService extends TypertRemoteService {
     this.tasks = new TeamTaskBoard(this.journal, this.config.maxTasks)
 
     ctx.on('session/event', (session, event) => { this.mailbox.observeSessionEvent(session, event) })
+    ctx.on('agent/pre-step', async ({ agent }, next) => {
+      if (this.roster.enforceTokenBudget(agent)) return { kind: 'reject' }
+      return await next()
+    })
     ctx.on('agent/session-start', ({ agent }) => { this.scheduleRecovery(agent) })
     ctx.on('agent/status', ({ agent }) => {
       const membership = this.roster.tryMembership(agent)
@@ -245,6 +307,155 @@ export class TeamService extends TypertRemoteService {
   }
 
   /**
+   * Resolve one live teammate's durable lane policy for scoped tool guards.
+   * @param agent - exact live Team member.
+   * @returns the durable lane policy, or `shared` outside a teammate lane.
+   */
+  lanePolicyFor(agent: Agent): LanePolicy {
+    return this.roster.lanePolicyFor(agent)
+  }
+
+  /**
+   * List every durable lane record of one Team, including terminal lanes.
+   * @param caller - exact live Team member.
+   * @returns lane records ordered by lane name.
+   */
+  async listLanes(caller: Agent): Promise<LaneRecord[]> {
+    return await this.roster.lanesFor(this.roster.membership(caller).root)
+  }
+
+  /**
+   * Checkpoint one ready lane so its exact patch becomes integrable evidence.
+   * Only the Team Lead may checkpoint.
+   * @param caller - exact live Team member.
+   * @param lane - durable lane name.
+   * @param signal - cancellation for the patch copy.
+   * @returns the checkpoint hash, path, and byte length.
+   */
+  async checkpointLane(caller: Agent, lane: string, signal: AbortSignal): Promise<LaneCheckpoint> {
+    const membership = this.roster.membership(caller)
+    if (membership.role !== 'lead') {
+      throw new TeamError('only the Team Lead can checkpoint lanes', 'TEAM_LEAD_REQUIRED')
+    }
+    const record = await this.requireLane(membership.root, lane)
+    return await this.lanes.checkpoint(record, signal)
+  }
+
+  /**
+   * Explicitly discard one ready lane after preserving its checkpointed patch.
+   * Only the Team Lead may discard.
+   * @param caller - exact live Team member.
+   * @param lane - durable lane name.
+   * @param signal - cancellation for checkpoint and removal.
+   * @returns the preserved checkpoint.
+   */
+  async discardLane(caller: Agent, lane: string, signal: AbortSignal): Promise<LaneCheckpoint> {
+    const membership = this.roster.membership(caller)
+    if (membership.role !== 'lead') {
+      throw new TeamError('only the Team Lead can discard lanes', 'TEAM_LEAD_REQUIRED')
+    }
+    const record = await this.requireLane(membership.root, lane)
+    return await this.lanes.discard(record, signal)
+  }
+
+  /**
+   * Apply one reviewed lane patch, run its gates, commit it, and remove the
+   * merged checkout. Only the Team Lead may integrate.
+   * @param caller - exact live Team member.
+   * @param request - lane, expected primary HEAD, reviewed hash, gates, and commit text.
+   * @returns the primary commit and gate evidence.
+   */
+  async integrateLane(
+    caller: Agent,
+    request: {
+      readonly lane: string
+      readonly expectedPrimaryHead: string
+      readonly patchHash: string
+      readonly gateCommands: readonly LaneGateCommand[]
+      readonly commitMessage: string
+      readonly signal: AbortSignal
+    },
+  ): Promise<LaneMergeResult> {
+    const membership = this.roster.membership(caller)
+    if (membership.role !== 'lead') {
+      throw new TeamError('only the Team Lead can integrate lanes', 'TEAM_LEAD_REQUIRED')
+    }
+    return await this.integration.integrate({ ...request, sessionId: membership.root.id })
+  }
+
+  /**
+   * Resume a Lead's halted merge queue after investigating the stopped lane.
+   * @param caller - exact live Team member.
+   */
+  resumeLaneQueue(caller: Agent): void {
+    const membership = this.roster.membership(caller)
+    if (membership.role !== 'lead') {
+      throw new TeamError('only the Team Lead can resume lane integration', 'TEAM_LEAD_REQUIRED')
+    }
+    this.integration.resume(membership.root.id)
+  }
+
+  /**
+   * Report why one Team's merge queue stopped.
+   * @param caller - exact live Team member.
+   * @returns the halting diagnostic, or undefined while the queue accepts lanes.
+   */
+  laneQueueHaltReason(caller: Agent): string | undefined {
+    const membership = this.roster.membership(caller)
+    return this.integration.haltReason(membership.root.id)
+  }
+
+  /**
+   * Read one repository fleet config without granting spend.
+   * @param caller - exact live Team Lead.
+   * @param signal - cancellation for path and file reads.
+   * @returns the parsed config, exact bytes hash, and approval state.
+   */
+  async readRepoFleet(caller: Agent, signal: AbortSignal): Promise<RepoFleetSnapshot> {
+    return await this.fleet.read(this.leadRepository(caller), signal)
+  }
+
+  /**
+   * Approve the exact fleet bytes currently in the Lead repository.
+   * @param caller - exact live Team Lead.
+   * @param signal - cancellation for the read and approval write.
+   * @returns the approved snapshot.
+   */
+  async approveRepoFleet(caller: Agent, signal: AbortSignal): Promise<RepoFleetSnapshot> {
+    return await this.fleet.approve(this.leadRepository(caller), signal)
+  }
+
+  /**
+   * Consume one fleet approval and return the config it covers.
+   * @param caller - exact live Team Lead.
+   * @param signal - cancellation for the read and approval removal.
+   * @returns the admitted configuration snapshot.
+   */
+  async admitRepoFleet(caller: Agent, signal: AbortSignal): Promise<RepoFleetSnapshot> {
+    return await this.fleet.admit(this.leadRepository(caller), signal)
+  }
+
+  /** Resolve the Lead's repository checkout for one fleet operation. */
+  private leadRepository(caller: Agent): string {
+    const membership = this.roster.membership(caller)
+    if (membership.role !== 'lead') {
+      throw new TeamError('only the Team Lead can use a repository fleet config', 'TEAM_LEAD_REQUIRED')
+    }
+    const cwd = membership.root.session.header.cwd
+    if (cwd === undefined || cwd.trim().length === 0) {
+      throw new TeamError('the Team Lead session has no working directory', 'TEAM_FLEET_CONFIG_MISSING')
+    }
+    return cwd
+  }
+
+  /** Resolve one lane record or fail with a stable not-found code. */
+  private async requireLane(root: Agent, lane: string): Promise<LaneRecord> {
+    const record = (await this.roster.lanesFor(root)).find(candidate => candidate.lane === lane)
+    if (record === undefined) throw new TeamError(`lane "${lane}" not found`, 'TEAM_LANE_NOT_FOUND')
+    return record
+  }
+
+  /**
    * Read the current roster and non-deleted task board through the generated Remote API.
    * @param agent - exact live Team member used as the authority credential.
    * @returns detached current roster and task views.
@@ -306,8 +517,16 @@ export class TeamService extends TypertRemoteService {
     })
   }
 
-  /** Reconcile roster provisioning before retrying that member's pending mailbox. */
+  /** Reconcile roster provisioning while lane recovery runs beside it. */
   private async recoverFor(agent: Agent): Promise<void> {
+    const membership = this.roster.tryMembership(agent)
+    if (membership?.role === 'lead') {
+      // Lane recovery owns a separate durable queue; keeping it beside roster
+      // recovery preserves the provisioning ordering that publishes children.
+      void this.lanes.recover(membership.root.id, this.lifecycle.signal).catch((error: unknown) => {
+        this.ctx.logger.warn(`lane recovery for "${membership.root.id}" failed: ${errorMessage(error)}`)
+      })
+    }
     await this.roster.recoverFor(agent, this.lifecycle.signal)
     await this.mailbox.recoverFor(agent, this.lifecycle.signal)
   }
@@ -320,9 +539,22 @@ export class TeamService extends TypertRemoteService {
     const failures: unknown[] = []
     await this.lifecycle.settle(this.roster.pendingCreations(), failures)
     await this.lifecycle.settle(this.mailbox.pendingDispatches(), failures)
-    for (const [root, childIds] of this.roster.liveChildrenByRoot()) {
+    const rootsWithLanes = this.roster.liveChildrenByRoot()
+    for (const agent of this.ctx.agents.list()) {
+      if (this.roster.tryMembership(agent)?.role === 'lead' && !rootsWithLanes.has(agent)) {
+        rootsWithLanes.set(agent, [])
+      }
+    }
+    for (const [root, childIds] of rootsWithLanes) {
       try {
-        await this.roster.stopTeammates(root, childIds)
+        if (childIds.length > 0) await this.roster.stopTeammates(root, childIds)
+      } catch (error: unknown) {
+        failures.push(error)
+      }
+      try {
+        // Disposal is not the caller's cancellation: checkpoint every ready
+        // lane after its member stopped, then leave the checkout for resume.
+        await this.roster.checkpointLanes(root, new AbortController().signal)
       } catch (error: unknown) {
         failures.push(error)
       }

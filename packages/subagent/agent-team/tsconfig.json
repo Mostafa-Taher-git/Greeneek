@@ -11,6 +11,7 @@
     { "path": "../../../vendor/cordis" },
     { "path": "../../util/brand" },
     { "path": "../../llm/llm" },
+    { "path": "../../llm/token-meter" },
     { "path": "../../core/session" },
     { "path": "../../core/agent" },
     { "path": "../../typert/protocol" },

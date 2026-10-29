@@ -8,7 +8,7 @@ kind: "package-reference"
 
 ## Summary
 
-`gnk-agent-team` turns one coding session into a small working team: the session's agent becomes the Lead, creates named teammates for delegated work, exchanges durable messages with them, and tracks shared tasks on a common board. Messages and task state survive crashes, reloads, and interruptions, so a teammate that was offline receives its queued messages when it resumes. It provides no tools of its own — mount the sibling `gnk-tool-agent-team` so the model can create teammates, message them, and use the task board. It ships with the gnk release family, mounts only through the opt-in [`gnk-agent-team-profile`](../../bundle/agent-team-profile/README.md) layer, and needs durable session storage to activate. The package also exports a lane worktree manager that creates one git checkout per writable lane; no mounted plugin calls it yet.
+`gnk-agent-team` turns one coding session into a small working team: the session's agent becomes the Lead, creates named teammates for delegated work, exchanges durable messages with them, and tracks shared tasks on a common board. Messages and task state survive crashes, reloads, and interruptions, so a teammate that was offline receives its queued messages when it resumes. A write-scoped teammate starts in its own git worktree lane and the Lead merges only a reviewed, gate-checked patch; teammates cannot move refs. It provides no tools of its own — mount the sibling `gnk-tool-agent-team` so the model can create teammates, message them, and use the task board. It ships with the gnk release family, mounts only through the opt-in [`gnk-agent-team-profile`](../../bundle/agent-team-profile/README.md) layer, and needs durable session storage to activate.
 
 ## Table of Contents
 
@@ -52,6 +52,10 @@ With the tools installed, the model does the rest on request — for example, "c
 | `maxPendingMessagesPerMember` | `64` | Maximum queued messages for one member |
 | `maxMessageBytes` | `65,536` | Maximum size of one sent message |
 | `disposalTimeoutMs` | `5,000` | Time allowed for shutdown cleanup |
+| `gnkHome` | `$GNK_HOME` or `~/.gnk` | Home holding lane records, checkpoints, and worktrees |
+| `maxLanePatchBytes` | `16,777,216` | Maximum bytes in one lane checkpoint patch |
+| `maxFleetConfigBytes` | `65,536` | Maximum bytes in one repository fleet config |
+| `fleetProviders` | `["spawn", "fork"]` | Provider names a repository fleet config may launch in-process |
 
 The generated [configuration catalog](../../../docs/config-catalog.md#greeneekgnk-agent-team) is the exhaustive source for every accepted field and its JSDoc.
 
@@ -77,19 +81,21 @@ Tasks have an owner: a member claims a task to start work, completes it when don
 
 File hints produce warnings when two in-progress tasks plan to touch overlapping paths — they never block anything. Deleted tasks remain in history but disappear from the active list.
 
-### Lane worktrees
+### Lane isolation and reviewed integration
 
-`WorktreeManager` gives each writable lane its own checkout, so two lanes can change the same relative path without observing each other. It is a library, not a mounted service: construct it with the repository root and the harness home, then call it from the code that starts and stops lanes.
+A teammate is shared by default. Two spawn fields change that: `readOnly` denies file-mutating and Git-mutating tools, and `writeScopes` gives the teammate an isolated worktree created from the Lead checkout's canonical repository root. Active isolated lanes must declare disjoint scopes; an overlapping spawn is refused before any roster entry or checkout exists, and a write-scoped spawn outside a Git work tree fails closed. A read-only and a write scope in the same request is rejected. Lane checkouts live at `<gnkHome>/worktrees/<sessionId>/<lane>` and their records, checkpoints, and approvals live below `<gnkHome>/lanes`.
 
-| Operation | Result |
-|---|---|
-| `create({ sessionId, lane, signal })` | Creates `<gnkHome>/worktrees/<sessionId>/<lane>` from the repository's current `HEAD` on branch `gnk-lane/<sessionId>/<lane>`; returns the canonical checkout path, the branch, and the recorded base revision |
-| `list({ sessionId, signal })` | Reports the live lanes of one Session with their base revisions, ordered by lane name |
-| `remove({ sessionId, lane, signal })` | Deletes the checkout, its git registration, and its branch; removing a lane that is already absent succeeds |
+Teammates cannot commit, merge, push, tag, or move refs. The shell guard is a refusal for ordinary invocations, not a security boundary: the integration step independently verifies that the lane `HEAD` still equals its recorded base. A moved `HEAD` quarantines the lane and it can never be integrated. Checkpointing stages tracked and untracked changes into one exact patch and records its SHA-256 hash; a patch above `maxLanePatchBytes` is refused. Integration is serialized per Lead and requires a clean primary checkout, the expected primary `HEAD`, a fresh checkpoint whose hash matches the reviewed hash, and the supplied gate commands. It applies only the reviewed patch, runs the gates after the patch, commits, and removes the merged checkout. A conflict, gate failure, or commit failure stops the queue, reverses the applied patch when possible, and leaves the lane and its checkpoint intact. The Lead resumes the queue explicitly after investigating.
 
-A Session id and a lane name must each be one path segment of letters, digits, `.`, `_`, or `-`, at most 64 characters, without `..`, a trailing `.`, or a `.lock` suffix. The manager resolves the Session directory through `realpath` and refuses one that resolves outside `<gnkHome>/worktrees`, so `..`, an absolute lane name, and a symlinked Session directory all fail with `WORKTREE_PATH_ESCAPE`. Creating a lane whose checkout path or branch already exists fails with `WORKTREE_EXISTS`; a root that is not a git repository fails with `WORKTREE_NOT_A_REPOSITORY`, and a repository without a commit fails with `WORKTREE_NO_BASE_REVISION`.
+Checkpointing happens before any explicit discard or merge, and disposal checkpoints every ready lane but never deletes it. Idle and cold-resumed lanes therefore keep the only copy of unmerged work. Startup recovery finishes interrupted create, remove, and close transactions using only recorded lane paths and branches. `WorktreeManager` remains the exported low-level checkout primitive behind these records.
 
-The manager owns the lane branch and never advances it; lane work stays uncommitted, so the checkout's `HEAD` stays the recorded base revision the Lead reviews against. It never checks out, resets, cleans, or deletes any other ref, so the repository's primary checkout is not touched. `remove()` unlinks a link planted at the lane path instead of descending through it, and reports `WORKTREE_REMOVE_INCOMPLETE` naming the checkout or branch that survived.
+### Repository fleet config
+
+A repository may declare a fleet in `.gnk/fleet.json`: a `version` and a `fleet.members` array with each member's name, description, prompt, and optional context, provider, preset, model, reasoning effort, read-only flag, write scopes, and token ceiling. The file is untrusted repository content: it is size-capped, parsed as strict JSON, limited to the configured in-process `fleetProviders`, and validated against the lane policy before use. Launch requires a one-time approval keyed by the exact file bytes and the canonical repository path. Changing the bytes, or admitting once, invalidates the approval; approvals persist atomically under `<gnkHome>/fleet-approvals` and are consumed by `admitRepoFleet()`.
+
+### Token budgets
+
+`spawnTeammate` accepts a per-member `maxTokens` cumulative ceiling. It requires the `tokenUsage` session projection at admission, is recorded on the durable member snapshot, and is checked at each step boundary. A member that exceeds its ceiling is aborted and its roster row reports `member token budget exceeded`. Without the projection, a budgeted spawn fails with `TEAM_BUDGET_METER_UNAVAILABLE`; it never runs unbounded under a ceiling the deployment cannot measure.
 
 ### Waiting and interruption
 
@@ -130,7 +136,11 @@ The [Agent Teams Agent Note](../../../.agents/notes/implemented/feature/2026-08-
 | [`src/roster.ts`](src/roster.ts) | Team identity, membership resolution, provisioning, and roster teardown |
 | [`src/mailbox.ts`](src/mailbox.ts) | Durable queue, target-local dispatch, acknowledgement, and recovery |
 | [`src/task-board.ts`](src/task-board.ts) | Task CAS commands, DAG validation, and derived views |
-| [`src/worktrees.ts`](src/worktrees.ts) | Lane checkout creation, listing, and removal below `<gnkHome>/worktrees` |
+| [`src/worktrees.ts`](src/worktrees.ts) | Low-level lane checkout creation, listing, and removal below `<gnkHome>/worktrees` |
+| [`src/lane-policy.ts`](src/lane-policy.ts) | Shared, read-only, and isolated lane policy resolution and scope disjointness |
+| [`src/lane-lifecycle.ts`](src/lane-lifecycle.ts) | Durable lane records, checkpoints, quarantine, discard, and startup recovery |
+| [`src/integration.ts`](src/integration.ts) | Serialized reviewed patch application, gates, rollback, and queue halt |
+| [`src/fleet-config.ts`](src/fleet-config.ts) | Strict repository fleet parsing and one-time byte-keyed approvals |
 | [`src/journal.ts`](src/journal.ts) | Serialized Lead-log transactions and commit notification |
 | [`src/projection.ts`](src/projection.ts) | Strict replay projection that decodes and validates Team events |
 | [`src/activity.ts`](src/activity.ts) | One-shot change waiters and disposal release |
@@ -140,6 +150,12 @@ The [Agent Teams Agent Note](../../../.agents/notes/implemented/feature/2026-08-
 ### Team identity and roster
 
 Every ordinary runtime root is the implicit Lead of a Team whose `TeamId` equals its `SessionId`; there is no creation event, and durable state begins with the first member, message, or task record. `spawnTeammate()` first appends and flushes a `provisioning` member record, then asks the configured provider to create the reserved child; a provider failure appends a durable `failed` member. A fresh child starts with no Lead history; a fork child captures the Lead's completed-turn prefix once. Recovery reconciles an unterminated provisioning record against the child's independently persisted Session: a matching direct-parent and continuable descriptor plus a recorded initial user message produces `active`, and anything else produces `failed`. If recovery wins a same-process race, the creator accepts the terminal state or reports `TEAM_PROVISIONING_CONFLICT` and drains the child. Names are reserved by the first provisioning record and never reused.
+
+### Lane lifecycle
+
+`LaneLifecycleManager` writes one durable record per lane before git creates its checkout, so an interrupted create leaves a `preparing` record that startup recovery can roll back. A successful checkout moves the record to `ready` with the canonical path, branch, base commit, and normalized scopes. Checkpointing verifies the checkout still sits on its base, stages every tracked and untracked change, stores the exact patch under the lane record directory, and records the SHA-256 hash and byte length. Records and patch paths are validated at the file boundary; a lane record cannot point integration at an arbitrary file. Discard, merge, and close serialize per Lead, mark `closing` before removal, and finish the terminal stage only after the checkout and branch are gone. Recovery touches only records under the Session directory and never deletes a ready checkout.
+
+`LaneIntegration` holds one serialized queue per Lead and one halt reason. A halt prevents a later sibling merge until the Lead calls `resume`. It rejects a dirty primary, a mismatched expected `HEAD`, a changed post-review patch, a moved lane `HEAD`, and a merge conflict before writing the primary. Gate commands run in the primary checkout after the reviewed patch applies; gate output is retained as evidence. A failed gate or commit reverses the applied patch; a rollback that cannot reverse is reported with the primary left for inspection. Only a successful commit advances the primary and removes the referenced lane.
 
 ### Durable mailbox
 

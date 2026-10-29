@@ -1,6 +1,7 @@
 /** Public Agent Teams identities, durable records, and service request values. */
 
 import type { Branded } from '@greeneek/gnk-brand'
+import type { ReasoningEffortId } from '@greeneek/gnk-llm/brand'
 import type { ContentBlock } from '@greeneek/gnk-llm/types'
 import type { SessionId } from '@greeneek/gnk-session/types'
 
@@ -52,6 +53,12 @@ export interface TeamMemberSnapshot {
   readonly context: 'fresh' | 'fork'
   readonly phase: TeamMemberPhase
   readonly error?: string
+  /** The teammate runs without file-mutating or Git-mutating tools. */
+  readonly readOnly?: boolean
+  /** Workspace-relative prefixes of the teammate's isolated lane; absent for shared lanes. */
+  readonly writeScopes?: readonly string[]
+  /** Cumulative token ceiling checked at each step boundary; absent when unbudgeted. */
+  readonly maxTokens?: number
 }
 
 /** Current runtime-enriched roster row. */
@@ -138,6 +145,26 @@ export interface Config {
   readonly maxMessageBytes?: number
   /** Maximum milliseconds allowed for Team-owned runtime disposal. */
   readonly disposalTimeoutMs?: number
+  /** Harness home owning lane records, checkpoints, and worktrees; defaults to `$GNK_HOME` or `~/.gnk`. */
+  readonly gnkHome?: string
+  /** Maximum bytes in one checkpointed lane patch. */
+  readonly maxLanePatchBytes?: number
+  /** Maximum bytes in one repository fleet config. */
+  readonly maxFleetConfigBytes?: number
+  /** Provider names a repository fleet config may launch in-process. */
+  readonly fleetProviders?: string[]
+}
+
+/** Per-child model route overrides accepted by one teammate start. */
+export interface SpawnAgentOptions {
+  /** Provider route override; omitted inherits the Lead request route. */
+  readonly provider?: string
+  /** Model id override; omitted inherits the Lead request route. */
+  readonly model?: string
+  /** Adapter-owned reasoning effort override. */
+  readonly reasoningEffort?: ReasoningEffortId
+  /** Per-response output-token ceiling override. */
+  readonly maxTokens?: number
 }
 
 /** Input for creating one durable teammate. */
@@ -149,8 +176,22 @@ export interface SpawnTeammateRequest {
   readonly provider: string
   /** Lane preset the child composes from; omitted inherits the Lead's composition. */
   readonly agentPreset?: string
+  /** Per-child model route overrides; omitted inherits the Lead's request route. */
+  readonly agentOptions?: SpawnAgentOptions
   /** Absolute lane checkout the child runs in; omitted inherits the Lead's cwd. */
   readonly cwd?: string
+  /**
+   * Run the teammate without file-mutating or Git-mutating tools. Mutually
+   * exclusive with {@link writeScopes}.
+   */
+  readonly readOnly?: boolean
+  /**
+   * Give the teammate an isolated worktree and deny it Git mutations; only the
+   * Lead integrates its checkpointed patch. Requires at least one scope.
+   */
+  readonly writeScopes?: readonly string[]
+  /** Cumulative token ceiling; requires the tokenUsage projection at spawn time. */
+  readonly maxTokens?: number
   readonly signal: AbortSignal
 }
 

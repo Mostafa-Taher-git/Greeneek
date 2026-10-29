@@ -6,10 +6,15 @@ import { brandString } from '@greeneek/gnk-brand'
 import type { Agent } from '@greeneek/gnk-agent'
 import type { MessageId } from '@greeneek/gnk-llm'
 import type { SessionId } from '@greeneek/gnk-session'
+import type { TokenUsageProjection } from '@greeneek/gnk-token-meter'
 import { foldSubagentDescriptor } from '@greeneek/gnk-subagent'
 import type { ContinuableStart } from '@greeneek/gnk-subagent'
 import { errorMessage, TeamError } from './error.ts'
 import type { TeamJournal } from './journal.ts'
+import type { LaneLifecycleManager } from './lane-lifecycle.ts'
+import type { LaneRecord } from './lane-lifecycle.ts'
+import { assertDisjointLaneScopes, resolveLanePolicy } from './lane-policy.ts'
+import type { LanePolicy } from './lane-policy.ts'
 import type { TeamRuntimeLifecycle } from './lifecycle.ts'
 import { readPersistedSession } from './persisted.ts'
 import type { TeamState } from './projection.ts'
@@ -57,17 +62,21 @@ export function resolveActiveMember(
 /** Owns Team identities and the lifecycle of rostered continuable children. */
 export class TeamRoster {
   private readonly inFlightCreations = new Set<Promise<unknown>>()
+  private readonly budgetControllers = new Map<SessionId, AbortController>()
+  private readonly budgetStopped = new Set<SessionId>()
 
   /**
    * @param ctx - Team service context with Agent, Session, persistence, and subagent services.
    * @param journal - authoritative Lead-log transaction owner.
    * @param lifecycle - shared Team runtime admission cutoff.
+   * @param lanes - durable isolated-lane owner.
    * @param maxMembers - maximum immutable roster entries per Team.
    */
   constructor(
     private readonly ctx: Context,
     private readonly journal: TeamJournal,
     private readonly lifecycle: TeamRuntimeLifecycle,
+    private readonly lanes: LaneLifecycleManager,
     private readonly maxMembers: number,
   ) {}
 
@@ -122,6 +131,72 @@ export class TeamRoster {
   }
 
   /**
+   * Resolve one live teammate's durable lane policy for scoped tool guards.
+   * @param agent - exact live teammate.
+   * @returns the durable policy; `shared` for the Lead, shared lanes, and non-members.
+   */
+  lanePolicyFor(agent: Agent): LanePolicy {
+    const membership = this.tryMembership(agent)
+    if (membership?.role !== 'teammate') return { kind: 'shared' }
+    const member = this.journal.state(membership.root).members.find(candidate => candidate.id === agent.id)
+    if (member?.readOnly === true) return { kind: 'read-only' }
+    if (member?.writeScopes !== undefined && member.writeScopes.length > 0) {
+      return { kind: 'isolated', writeScopes: member.writeScopes }
+    }
+    return { kind: 'shared' }
+  }
+
+  /**
+   * Report the durable isolated lanes created for one Lead's teammates.
+   * @param root - exact live Team Lead.
+   * @returns lane records, including terminal ones.
+   */
+  async lanesFor(root: Agent): Promise<LaneRecord[]> {
+    return await this.lanes.list(root.id)
+  }
+
+  /**
+   * Enforce one teammate's cumulative token ceiling at its next step boundary.
+   * The first breach aborts the child through its budget controller and marks
+   * the diagnostic on the roster row.
+   * @param agent - the agent about to run a step.
+   * @returns true when the step must be rejected.
+   */
+  enforceTokenBudget(agent: Agent): boolean {
+    const member = this.teammateSnapshot(agent)
+    if (member?.maxTokens === undefined) return false
+    const usage = this.ctx.sessionProjections.stateOf(agent.session, 'tokenUsage') as
+      | { readonly totals: TokenUsageProjection }
+      | undefined
+    if (usage === undefined) {
+      // The projection was present at admission; losing it at a step boundary
+      // cannot prove the ceiling holds, so the step fails closed.
+      this.stopForBudget(agent.id)
+      return true
+    }
+    const tokens = usage.totals.uncachedInputTokens
+      + usage.totals.outputTokens
+      + usage.totals.cacheReadTokens
+      + usage.totals.cacheWriteTokens
+    if (tokens <= member.maxTokens) return false
+    this.stopForBudget(agent.id)
+    return true
+  }
+
+  /** Abort one child's published run after its token budget was exceeded. */
+  private stopForBudget(childId: SessionId): void {
+    this.budgetStopped.add(childId)
+    this.budgetControllers.get(childId)?.abort('member token budget exceeded')
+  }
+
+  /** Resolve one live teammate's durable roster snapshot. */
+  private teammateSnapshot(agent: Agent): TeamMemberSnapshot | undefined {
+    const membership = this.tryMembership(agent)
+    if (membership?.role !== 'teammate') return undefined
+    return this.journal.state(membership.root).members.find(candidate => candidate.id === agent.id)
+  }
+
+  /**
    * List the runtime-enriched roster visible to one Team member.
    * @param membership - exact caller membership resolved by this roster.
    * @returns Lead and teammate rows in creation order.
@@ -140,6 +215,10 @@ export class TeamRoster {
     for (const member of state.members) {
       const live = this.ctx.agents.get(member.id)
       const model = live?.options.model ?? root.options.model
+      const diagnostics = [
+        ...member.error === undefined ? [] : [member.error],
+        ...this.budgetStopped.has(member.id) ? ['member token budget exceeded'] : [],
+      ]
       result.push({
         id: member.id,
         name: member.name,
@@ -153,7 +232,7 @@ export class TeamRoster {
         provider: member.provider,
         context: member.context,
         ...model === undefined ? {} : { model },
-        diagnostics: member.error === undefined ? [] : [member.error],
+        diagnostics,
       })
     }
     return result
@@ -239,7 +318,35 @@ export class TeamRoster {
    * @param childIds - selected roster child ids.
    */
   async stopTeammates(root: Agent, childIds: readonly SessionId[]): Promise<void> {
-    await this.lifecycle.withTimeout(this.ctx.subagents.drainContinuableChildren(root, childIds))
+    try {
+      await this.lifecycle.withTimeout(this.ctx.subagents.drainContinuableChildren(root, childIds))
+    } finally {
+      for (const childId of childIds) {
+        this.budgetControllers.delete(childId)
+        this.budgetStopped.delete(childId)
+      }
+    }
+  }
+
+  /**
+   * Checkpoint every ready lane after its member stopped, preserving the only
+   * copy of unmerged work. The checkouts stay in place for resume, merge, or
+   * explicit discard.
+   * @param root - exact live Team Lead owning the lanes.
+   * @param signal - cancellation for the checkpoint copies.
+   */
+  async checkpointLanes(root: Agent, signal: AbortSignal): Promise<void> {
+    for (const record of await this.lanesFor(root)) {
+      signal.throwIfAborted()
+      if (record.stage !== 'ready') continue
+      try {
+        await this.lanes.checkpoint(record, signal)
+      } catch (error: unknown) {
+        // Disposal must keep releasing siblings; the checkout and its unmerged
+        // work stay in place, and the warning names the lane to recover.
+        this.ctx.logger.warn(`lane "${record.lane}" checkpoint during disposal failed: ${errorMessage(error)}`)
+      }
+    }
   }
 
   /** Perform one creation admitted before the Team runtime disposal cutoff. */
@@ -251,11 +358,38 @@ export class TeamRoster {
     if (membership.role !== 'lead') {
       throw new TeamError('only the Team Lead can create teammates', 'TEAM_LEAD_REQUIRED')
     }
-    const signal = AbortSignal.any([request.signal, this.lifecycle.signal])
-    signal.throwIfAborted()
+    if (request.maxTokens !== undefined
+      && (!Number.isSafeInteger(request.maxTokens) || request.maxTokens < 1)) {
+      throw new TeamError('maxTokens must be a positive safe integer', 'TEAM_INVALID_ARGUMENT')
+    }
     const root = membership.root
+    if (request.maxTokens !== undefined
+      && this.ctx.sessionProjections.stateOf(root.session, 'tokenUsage') === undefined) {
+      throw new TeamError(
+        'teammate token budgets require the tokenUsage session projection',
+        'TEAM_BUDGET_METER_UNAVAILABLE',
+      )
+    }
+    const budget = new AbortController()
+    const signal = AbortSignal.any([request.signal, this.lifecycle.signal, budget.signal])
+    signal.throwIfAborted()
     const name = this.memberName(request.name)
     const description = requiredText(request.description, 'description', 200)
+    const policy = resolveLanePolicy({
+      ...request.readOnly !== undefined ? { readOnly: request.readOnly } : {},
+      ...request.writeScopes !== undefined ? { writeScopes: request.writeScopes } : {},
+    })
+    if (policy.kind === 'isolated' && request.cwd !== undefined) {
+      throw new TeamError('an isolated lane owns its checkout; omit cwd', 'TEAM_INVALID_LANE_POLICY')
+    }
+    if (policy.kind === 'isolated') {
+      // Refuse an overlapping scope before the immutable roster entry exists;
+      // lane creation repeats the check under its serialized queue.
+      assertDisjointLaneScopes(
+        { lane: name, writeScopes: policy.writeScopes },
+        await this.lanes.activeScopes(root.id),
+      )
+    }
     const childId = brandString<SessionId>(randomUUID())
     const member: TeamMemberSnapshot = {
       id: childId,
@@ -264,6 +398,9 @@ export class TeamRoster {
       provider: requiredText(request.provider, 'provider', 200),
       context: request.context,
       phase: 'provisioning',
+      ...policy.kind === 'read-only' ? { readOnly: true } : {},
+      ...policy.kind === 'isolated' ? { writeScopes: [...policy.writeScopes] } : {},
+      ...request.maxTokens === undefined ? {} : { maxTokens: request.maxTokens },
     }
 
     await this.journal.transact(root.id, async () => {
@@ -277,8 +414,19 @@ export class TeamRoster {
       await this.journal.appendAndFlush(root, 'team/member', { version: 2, teamId: TeamId(root.id), member })
     })
 
+    this.budgetControllers.set(childId, budget)
     let started: ContinuableStart
     try {
+      const laneCwd = policy.kind === 'isolated'
+        ? (await this.lanes.create({
+          sessionId: root.id,
+          lane: name,
+          childSessionId: childId,
+          cwd: root.session.header.cwd,
+          writeScopes: policy.writeScopes,
+          signal,
+        })).path
+        : request.cwd
       started = await this.ctx.subagents.startContinuable({
         childId,
         provider: request.provider,
@@ -287,12 +435,14 @@ export class TeamRoster {
           prompt: request.prompt,
           parent: root,
           ...request.agentPreset !== undefined ? { agentPreset: request.agentPreset } : {},
-          ...request.cwd !== undefined ? { cwd: request.cwd } : {},
+          ...request.agentOptions !== undefined ? { agentOptions: request.agentOptions } : {},
+          ...laneCwd !== undefined ? { cwd: laneCwd } : {},
         },
         signal,
       })
       await this.checkpointInitialPrompt(childId, started.messageId, signal)
     } catch (error: unknown) {
+      this.budgetControllers.delete(childId)
       const failed: TeamMemberSnapshot = {
         ...member,
         phase: 'failed',

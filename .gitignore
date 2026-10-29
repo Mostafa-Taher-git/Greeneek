@@ -52,6 +52,7 @@ __pycache__/
 *.swo
 .DS_Store
 Thumbs.db
+.workbuddy-ai
 
 # Coverage and testing
 .coverage

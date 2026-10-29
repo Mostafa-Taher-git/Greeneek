@@ -30,4 +30,4 @@ The Fleet body keeps a polite live region that diffs consecutive samples. The fi
 ## Verification
 
 - ui-wave 80 tests and ui-chat details 13 tests, including the row disclosure, one-at-a-time drawer, artifact/provider/diagnostic/child content, auto-pick on the nested and running dispatch edges, Tool-selection and tab suppression, missing-seat suppression, and wave/member announcements.
-- The full ui-wave and ui-chat suites are re-run with the icon change; the Dashboard icon is a 1.25-stroke 2×2 pane grid alongside New Session and Settings.
+- The full ui-wave and ui-chat suites are re-run with the icon change; the Dashboard icon is a 1.5-stroke 2×2 pane grid alongside New Session and Settings.

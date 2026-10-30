@@ -89,9 +89,11 @@ describe('CI workflow', () => {
     // Replay stays read-only: CI never writes committed snapshot outputs.
     const snapshot = steps.find(step => typeof step.run === 'string' && step.run.includes('pnpm run test:snapshot'))
     expect(snapshot?.env).toMatchObject({ GNK_SNAPSHOT: 'replay' })
-    // Hygiene runs after the build so the built-invariants gate sees artifacts.
+    // Headless and Web profiles resolve `@greeneek/gnk-*/typert` through package
+    // exports into built `lib/typert.host.js`, so the build precedes replay;
+    // hygiene follows the build so the built-invariants gate sees artifacts.
     const build = runs.findIndex(run => run.trim() === 'pnpm build')
-    expect(runs.findIndex(run => run.includes('pnpm run test:snapshot'))).toBeLessThan(build)
+    expect(build).toBeLessThan(runs.findIndex(run => run.includes('pnpm run test:snapshot')))
     expect(runs.findIndex(run => run.includes('pnpm run hygiene'))).toBeGreaterThan(build)
   })
 })

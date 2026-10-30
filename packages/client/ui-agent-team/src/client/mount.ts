@@ -73,14 +73,22 @@ function registerUi(ctx: ClientContext): void {
     namespace: 'fleet',
     decode: decodeFleetSettings,
   })
+  // `useSyncExternalStore` requires `getSnapshot` to return a stable value between
+  // changes; the scope snapshot is stable, but each derived object literal is not,
+  // so memoize against the last source snapshot to avoid an infinite render loop.
+  let cachedSource: ReturnType<typeof fleetScope.getSnapshot> | undefined
+  let cachedSnapshot: FleetSnapshot | undefined
   const fleetSnapshot = (): FleetSnapshot => {
     const snapshot = fleetScope.getSnapshot()
-    return {
+    if (cachedSnapshot !== undefined && snapshot === cachedSource) return cachedSnapshot
+    cachedSource = snapshot
+    cachedSnapshot = {
       status: snapshot.status,
       value: snapshot.value,
       revision: snapshot.revision,
       writable: snapshot.writable,
     }
+    return cachedSnapshot
   }
   const fleet: FleetSettingsInjected = {
     subscribe: listener => fleetScope.subscribe(listener),

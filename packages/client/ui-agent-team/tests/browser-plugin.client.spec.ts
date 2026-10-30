@@ -115,23 +115,27 @@ async function bench(options: {
   })
   let fleetValue: FleetSettings = { favorites: [] }
   const fleetListeners = new Set<() => void>()
+  // The real scope returns a stable snapshot reference until the next change;
+  // mirror that so a derived-object getSnapshot regression surfaces here.
+  let fleetScopeSnapshot = {
+    status: 'ready' as const,
+    value: fleetValue,
+    base: undefined,
+    user: undefined,
+    revision: 1,
+    writable: true,
+    mode: 'host' as const,
+  }
   ctx.provide('settingsScope', {
     bind: () => ({
-      getSnapshot: () => ({
-        status: 'ready' as const,
-        value: fleetValue,
-        base: undefined,
-        user: undefined,
-        revision: 1,
-        writable: true,
-        mode: 'host' as const,
-      }),
+      getSnapshot: () => fleetScopeSnapshot,
       subscribe: (listener: () => void) => {
         fleetListeners.add(listener)
         return () => { fleetListeners.delete(listener) }
       },
       set: async (field: string, value: unknown) => {
         fleetValue = { ...fleetValue, [field]: value as FleetFavorite[] }
+        fleetScopeSnapshot = { ...fleetScopeSnapshot, value: fleetValue, revision: fleetScopeSnapshot.revision + 1 }
         for (const listener of fleetListeners) listener()
       },
       unset: async () => undefined,
@@ -187,12 +191,17 @@ describe('ui-team browser plugin', () => {
     expect((b.fleetEntry()!.options as { label?: () => string }).label?.()).toBe('Fleet settings')
 
     expect(fleet.getSnapshot()).toMatchObject({ status: 'ready', writable: true })
+    // A late bound getSnapshot must be referentially stable between changes or
+    // useSyncExternalStore loops; and must change after a write.
+    const beforeSave = fleet.getSnapshot()
+    expect(fleet.getSnapshot()).toBe(beforeSave)
     expect((await fleet.loadAvailability()).ok).toBe(true)
     expect(b.calls).toContainEqual({ method: 'agentTeams/fleetAvailability', args: [] })
     const favorite = {
       id: 'review', name: 'Review', members: [{ name: 'worker', description: 'w', prompt: 'go', provider: 'spawn' }],
     }
     await fleet.save([favorite])
+    expect(fleet.getSnapshot()).not.toBe(beforeSave)
     expect(fleet.getSnapshot().value?.favorites).toEqual([favorite])
     const listeners: number[] = []
     const unsubscribe = fleet.subscribe(() => listeners.push(1))

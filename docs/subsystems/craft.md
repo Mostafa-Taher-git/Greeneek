@@ -28,6 +28,12 @@ interface CraftAppManifest {
   readonly platforms: readonly CraftPlatform[]
   /** Whether this app can run a headless job. */
   readonly headlessSupported: boolean
+  /**
+   * Headless transport: `serve` is the app's flat JSON-line protocol; `mcp`
+   * is the standard MCP JSON-RPC server. Defaults to `serve` for manifests
+   * written before the field existed.
+   */
+  readonly transport?: 'serve' | 'mcp'
   /** Minimum supported app version (semantic `x.y.z`). */
   readonly minVersion: string
   /** Attach-mode publication gate. */

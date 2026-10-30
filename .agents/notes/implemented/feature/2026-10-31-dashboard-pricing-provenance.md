@@ -24,6 +24,10 @@ The Dashboard folds the projections it already receives and prices them through 
 
 **Report zero when a route is unpriced.** Rejected: a zero is a claim about spend. Unknown with a stated reason is the honest reading, and the reason distinguishes "no price sourced" from "no tokens recorded" and from "currencies differ".
 
+## Consequences
+
+Spend is visible only after a sourced price list lands, and until then every deployment reads `Unknown` with the reason `no-catalog-entry` rather than a zero or a guess. Adding a price is one reviewed edit to `SHIPPED_PRICING_CATALOG` with its `source` and `effectiveFrom`, and the catalog version travels with every computed amount so a stored figure can be traced to the rates it used. The Dashboard now reports recorded input, output, and cache tokens the host was already sending, and an unmeasured row reports `partial` instead of silently deflating the totals.
+
 ## Verification
 
 - `packages/client/ui-workspace/tests/dashboard-pricing.client.spec.ts` covers route matching, effectiveness windows, newest-effective selection, unparseable dates, cache-read pricing with and without a published rate, unpriced cache writes, rounding, and each refusal reason.

@@ -102,7 +102,7 @@ export function fallbackSource(): CraftSettingsSource {
   }
   return {
     available: () => Promise.resolve(rows),
-    check: async (id: string) => find(id),
-    launchConnected: async (id: string) => find(id),
+    check: (id: string) => Promise.resolve(find(id)),
+    launchConnected: (id: string) => Promise.resolve(find(id)),
   }
 }

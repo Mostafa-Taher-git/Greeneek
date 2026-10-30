@@ -66,13 +66,13 @@ export class CraftLocalProvider implements CraftHostProvider {
   }
 
   /** {@inheritDoc CraftHostProvider.discover} */
-  async discover(app: CraftAppManifest, options: { readonly signal: AbortSignal }): Promise<CraftDiscovery> {
+  discover(app: CraftAppManifest, options: { readonly signal: AbortSignal }): Promise<CraftDiscovery> {
     options.signal.throwIfAborted()
-    return discoverApp(app, this.io.discovery)
+    return Promise.resolve(discoverApp(app, this.io.discovery))
   }
 
   /** {@inheritDoc CraftHostProvider.open} */
-  async open(request: CraftHostOpenRequest): Promise<CraftHostSession> {
+  open(request: CraftHostOpenRequest): Promise<CraftHostSession> {
     request.signal.throwIfAborted()
     if (request.controlToken.trim() === '') {
       throw new CraftError(
@@ -121,11 +121,11 @@ export class CraftLocalProvider implements CraftHostProvider {
         warn: message => this.io.warn?.(message),
       },
     )
-    return { transport, close: () => transport.close() }
+    return Promise.resolve({ transport, close: () => transport.close() })
   }
 
   /** {@inheritDoc CraftHostProvider.launchConnected} */
-  async launchConnected(request: {
+  launchConnected(request: {
     readonly app: CraftAppManifest
     readonly workspaceRoot: string
     readonly roots: CraftRoots
@@ -152,6 +152,7 @@ export class CraftLocalProvider implements CraftHostProvider {
     void handle.done.catch((error: unknown) => {
       this.io.warn?.(`craft-local: connected launch ended early: ${String(error)}`)
     })
+    return Promise.resolve()
   }
 
   /** Resolve the absolute CLI or fail with an actionable state detail. */

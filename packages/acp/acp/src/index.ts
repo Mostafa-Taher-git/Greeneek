@@ -228,6 +228,11 @@ export function apply(ctx: Context, config: AcpConfig): void {
         // The attached log writer's flush materializes an empty session durably.
         await ctx.sessions.flush(record.agent.session)
         assertOpen()
+        // A provider-topology change queued a `config_option_update` on the
+        // session's output tail; drain it before answering so the response and
+        // that notification never race on the wire.
+        await record.drainUpdates()
+        assertOpen()
         return { sessionId, configOptions }
       } catch (error: unknown) {
         sessions.delete(sessionId)
@@ -280,7 +285,11 @@ export function apply(ctx: Context, config: AcpConfig): void {
         }
         sessions.set(sessionId, record)
         try {
-          return { configOptions: await record.configOptions(signal) }
+          const configOptions = await record.configOptions(signal)
+          // Drain a queued `config_option_update` before answering so the
+          // response and that notification never race on the wire.
+          await record.drainUpdates()
+          return { configOptions }
         } catch (error: unknown) {
           sessions.delete(sessionId)
           await record.close('session/resume option discovery failed')

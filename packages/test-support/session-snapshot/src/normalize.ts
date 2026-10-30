@@ -322,7 +322,40 @@ export function normalizeStdout(
     }
     return scrubValue(frame, ctx, cwdPathMode, identityMode) as Record<string, unknown>
   })
-  return frames.map(f => JSON.stringify(f)).join('\n') + '\n'
+  return canonicalizeSessionConfigOrder(frames).map(f => JSON.stringify(f)).join('\n') + '\n'
+}
+
+/**
+ * Canonicalize the wire order of the session-level `config_option_update`.
+ *
+ * Provider-topology discovery resolves off-chain, so the notification that
+ * advertises a freshly created or resumed session's options can be written on
+ * either side of the `session/new` / `session/resume` response. The recorded
+ * contract always places the notification first, so swap any response that is
+ * immediately followed by a `config_option_update` carrying the same options.
+ *
+ * @param frames Id-stabilized, scrubbed stdout frames in arrival order.
+ * @returns Frames with each such response/notification pair in canonical order.
+ */
+function canonicalizeSessionConfigOrder(frames: Record<string, unknown>[]): Record<string, unknown>[] {
+  const ordered = [...frames]
+  for (let index = 0; index + 1 < ordered.length; index++) {
+    const response = ordered[index] as Record<string, unknown>
+    const following = ordered[index + 1] as Record<string, unknown>
+    const result = response.result
+    if (typeof result !== 'object' || result === null) continue
+    const options = (result as { configOptions?: unknown }).configOptions
+    if (!Array.isArray(options)) continue
+    const params = following.params
+    if (typeof params !== 'object' || params === null) continue
+    const update = (params as { update?: Record<string, unknown> }).update
+    if (update?.sessionUpdate !== 'config_option_update') continue
+    if (JSON.stringify(update.configOptions) !== JSON.stringify(options)) continue
+    ordered[index] = following
+    ordered[index + 1] = response
+    index += 1
+  }
+  return ordered
 }
 
 /**

@@ -37,6 +37,43 @@ describe('normalizeStdout', () => {
     expect(out).not.toContain('99')
   })
 
+  const stdoutFrames = (raw: string): Record<string, unknown>[] =>
+    normalizeStdout(raw, ctx).trim().split('\n').map(line => JSON.parse(line) as Record<string, unknown>)
+
+  it('places a trailing config_option_update before the response advertising the same options', () => {
+    const configOptions = [{ id: 'model', currentValue: 'm' }]
+    const raw = [
+      JSON.stringify({ jsonrpc: '2.0', id: 5, result: { sessionId: 's', configOptions } }),
+      JSON.stringify({ jsonrpc: '2.0', method: 'session/update', params: { update: { sessionUpdate: 'config_option_update', configOptions } } }),
+    ].join('\n')
+    expect(stdoutFrames(raw).map(frame => frame.method ?? 'response')).toEqual(['session/update', 'response'])
+  })
+
+  it('keeps ordering when the trailing notification advertises different options', () => {
+    const raw = [
+      JSON.stringify({ jsonrpc: '2.0', id: 5, result: { configOptions: [{ id: 'model', currentValue: 'a' }] } }),
+      JSON.stringify({ jsonrpc: '2.0', method: 'session/update', params: { update: { sessionUpdate: 'config_option_update', configOptions: [{ id: 'model', currentValue: 'b' }] } } }),
+    ].join('\n')
+    expect(stdoutFrames(raw).map(frame => frame.method ?? 'response')).toEqual(['response', 'session/update'])
+  })
+
+  it('ignores responses and followers that cannot be a matching notification', () => {
+    const raw = [
+      JSON.stringify({ result: null }),
+      JSON.stringify({ id: 1, result: 'ok' }),
+      JSON.stringify({ id: 2, result: {} }),
+      JSON.stringify({ method: 'session/update', params: null }),
+      JSON.stringify({ id: 3, result: { configOptions: [{ id: 'model' }] } }),
+      JSON.stringify({ method: 'session/update', params: { update: { sessionUpdate: 'tool_call' } } }),
+      JSON.stringify({ id: 4, result: { configOptions: [{ id: 'model' }] } }),
+      JSON.stringify({ method: 'session/update', params: {} }),
+      JSON.stringify({ id: 5, result: { configOptions: [{ id: 'model' }] } }),
+      JSON.stringify({ method: 'session/update' }),
+      JSON.stringify({ method: 'trailing' }),
+    ].join('\n')
+    expect(() => normalizeStdout(raw, ctx)).not.toThrow()
+  })
+
   it('scrubs the cwd and session id anywhere they appear', () => {
     const raw = JSON.stringify({
       jsonrpc: '2.0', method: 'session/update',

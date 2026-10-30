@@ -1,0 +1,36 @@
+name: Recore snapshots
+# Temporary, manually-triggered helper: regenerates the keyless snapshot
+# expected outputs on the same ubuntu-latest runner (with a usable file
+# sandbox) that validates them, then commits the regenerated tree back to
+# main with [skip ci]. Delete this workflow once the corpus is current.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  recore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Re-record expected outputs
+        run: pnpm run test:snapshot
+        env:
+          GNK_SNAPSHOT: refresh
+      - name: Commit regenerated snapshots
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A snapshots
+          if git diff --cached --quiet; then echo "no snapshot changes"; exit 0; fi
+          git commit -m "test(snapshots): re-record expected outputs on ubuntu-latest [skip ci]"
+          git push origin HEAD:main

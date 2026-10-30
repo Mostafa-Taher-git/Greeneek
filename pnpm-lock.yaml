@@ -4075,6 +4075,9 @@ importers:
       '@greeneek/gnk-session-stats':
         specifier: workspace:^
         version: link:../../session/session-stats
+      '@greeneek/gnk-token-meter':
+        specifier: workspace:^
+        version: link:../../llm/token-meter
       '@greeneek/gnk-typert-protocol':
         specifier: workspace:^
         version: link:../../typert/protocol

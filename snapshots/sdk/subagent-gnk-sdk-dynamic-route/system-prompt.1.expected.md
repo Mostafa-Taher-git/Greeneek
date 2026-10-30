@@ -1,4 +1,4 @@
-You are an AI agent powered by Greeneek Harness.
+You are an AI agent powered by Greeneek.
 
 Echo where you run.
 

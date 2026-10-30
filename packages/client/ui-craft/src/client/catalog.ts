@@ -102,7 +102,13 @@ export function fallbackSource(): CraftSettingsSource {
   }
   return {
     available: () => Promise.resolve(rows),
-    check: (id: string) => Promise.resolve(find(id)),
-    launchConnected: (id: string) => Promise.resolve(find(id)),
+    check: async (id: string) => {
+      await Promise.resolve() // require-await: async guard keeps the not-a-pilot-app throw a rejection
+      return find(id)
+    },
+    launchConnected: async (id: string) => {
+      await Promise.resolve() // require-await: async guard keeps the not-a-pilot-app throw a rejection
+      return find(id)
+    },
   }
 }

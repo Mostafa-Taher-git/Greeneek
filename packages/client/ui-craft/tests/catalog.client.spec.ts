@@ -83,7 +83,7 @@ describe('fallback catalog', () => {
 
   it('rejects an unknown app id instead of guessing a row', async () => {
     const source = fallbackSource()
-    await expect(source.check('ghost')).rejects.toThrow('"ghost" is not a pilot app')
-    await expect(source.launchConnected('ghost')).rejects.toThrow('"ghost" is not a pilot app')
+    await expect(source.check('ghost')).rejects.toThrow('ui-craft: "ghost" is not a pilot app')
+    await expect(source.launchConnected('ghost')).rejects.toThrow('ui-craft: "ghost" is not a pilot app')
   })
 })

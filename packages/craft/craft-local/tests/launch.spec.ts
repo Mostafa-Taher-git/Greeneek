@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { CraftError, loadPilotCatalog } from '@greeneek/gnk-craft'
 import { expandHeadlessLaunch } from '../src/launch.ts'
+import { headlessTemplateViolations } from '@greeneek/gnk-craft'
 import type { HeadlessLaunchValues } from '../src/launch.ts'
 
 const photocraft = loadPilotCatalog().require('photocraft')
@@ -23,17 +24,25 @@ function expectRefusal(template: string, fragment: string): void {
 }
 
 describe('expandHeadlessLaunch', () => {
-  it('expands the shipped PhotoCraft template into the proven serve invocation', () => {
-    expect(expandHeadlessLaunch(photocraft.launch.headless, VALUES)).toEqual([
+  it('expands the shipped PhotoCraft template into the proven MCP invocation', () => {
+    expect(expandHeadlessLaunch(photocraft.launch.headless, VALUES, { requireControlToken: false })).toEqual([
       VALUES.cli,
-      'serve',
+      'mcp',
       '--automation-read-root',
       VALUES.readRoot,
       '--automation-write-root',
       VALUES.writeRoot,
-      '--control-token-file',
-      VALUES.controlTokenFile,
     ])
+  })
+
+  it('reports an unpaired brace before an opening brace', () => {
+    expect(headlessTemplateViolations('{cli} serve }x{readRoot} {writeRoot} {controlTokenFile}')
+      .some(violation => violation.includes('has an unpaired brace'))).toBe(true)
+  })
+
+  it('allows an omitted control token only for a stdio session', () => {
+    expect(headlessTemplateViolations('{cli} serve --read {readRoot} --write {writeRoot}', false)).toEqual([])
+    expect(headlessTemplateViolations('{cli} serve --read {readRoot} --write {writeRoot}')).toContain('must reference {controlTokenFile}')
   })
 
   it('substitutes placeholders inside a glued token and keeps literal runs', () => {

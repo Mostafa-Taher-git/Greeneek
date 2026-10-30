@@ -86,6 +86,11 @@ export interface CraftHeadlessSpec {
   readonly registryMethod: string | null
   /** Reviewed canonical-registry SHA-256, or null when no baseline was reviewed. */
   readonly trustedRegistryHash: string | null
+  /**
+   * Whether the launch needs the per-launch control-token file. `unused` is
+   * valid only for a stdio session where no local port exists to authenticate.
+   */
+  readonly controlToken?: 'required' | 'unused'
   /** Tool names allowed to register from the advertised catalog. */
   readonly toolFilter: readonly string[]
   /** Tool names whose results carry artifact paths. */
@@ -114,6 +119,12 @@ export interface CraftAppManifest {
   readonly platforms: readonly CraftPlatform[]
   /** Whether this app can run a headless job. */
   readonly headlessSupported: boolean
+  /**
+   * Headless transport: `serve` is the app's flat JSON-line protocol; `mcp`
+   * is the standard MCP JSON-RPC server. Defaults to `serve` for manifests
+   * written before the field existed.
+   */
+  readonly transport?: 'serve' | 'mcp'
   /** Minimum supported app version (semantic `x.y.z`). */
   readonly minVersion: string
   /** Attach-mode publication gate. */

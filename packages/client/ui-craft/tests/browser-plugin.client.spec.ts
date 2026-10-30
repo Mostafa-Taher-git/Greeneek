@@ -55,7 +55,7 @@ describe('ui-craft apply', () => {
   it('registers both dictionaries under the craft namespace', async () => {
     const { locale, fiber } = await bench()
     const t = locale.bind('craft')
-    expect(t('section.nav')).toBe('Craft')
+    expect(t('section.nav')).toBe('应用设置')
     expect(t('state.ready')).toBe('就绪')
     locale.setLocale('en')
     expect(t('state.ready')).toBe('Ready')
@@ -70,7 +70,7 @@ describe('ui-craft apply', () => {
     expect(entry.component).toBe(CraftSection)
     expect(entry.options).toMatchObject({ id: 'craft-suite', order: 40 })
     expect(entry.locale).toBe('craft')
-    expect(resolveSlotLabel(entry.options.label)).toBe('Craft')
+    expect(resolveSlotLabel(entry.options.label)).toBe('应用设置')
     const injected = (entry.inject as unknown as () => CraftSectionInjected)()
     const rows = await injected.source.available()
     expect(rows.map(row => row.id)).toEqual(['photocraft', 'pdfcraft'])
@@ -100,7 +100,12 @@ describe('ui-craft apply', () => {
     expect([...ARTIFACT_TOOL_KEYS]).toEqual([
       'mcp__photocraft__render_preview',
       'mcp__photocraft__screenshot',
+      'mcp__pdfcraft__command_run',
+      'mcp__pdfcraft__command_batch',
       'mcp__pdfcraft__render_preview',
+      'mcp__pdfcraft__doc_create_multiple',
+      'mcp__pdfcraft__doc_export_images',
+      'mcp__pdfcraft__doc_save',
     ])
     await fiber.dispose()
     expect(slots.entries('tool.call.toolview')).toHaveLength(0)

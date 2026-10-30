@@ -6,7 +6,9 @@
  */
 
 import type { CraftAppManifest, CraftDiscovery, CraftPlatform } from '@greeneek/gnk-craft'
-import { cliExecutableName, launcherRoots, meetsVersionFloor, parseInstalledJson, platformPath } from './platform.ts'
+import {
+  cliExecutableName, launcherRonPath, launcherRoots, meetsVersionFloor, parseInstalledJson, parseLauncherAppRon, platformPath,
+} from './platform.ts'
 import type { CraftDiscoveryIo, CraftInstallRecord } from './types.ts'
 
 /** Shared launcher manifest file name. */
@@ -46,9 +48,17 @@ export function discoverApp(app: CraftAppManifest, io: CraftDiscoveryIo): CraftD
   let outdated: { readonly version: string; readonly executable: string } | undefined
   let expected: string | undefined
   for (const record of candidates) {
-    const executable = path.join(record.installDir as string, cliExecutableName(app.cliStem, io.platform))
-    if (!io.isFile(executable)) {
-      expected ??= executable
+    const root = record.installDir as string
+    const executableName = cliExecutableName(app.cliStem, io.platform)
+    const candidatesInRoot = [
+      path.join(root, executableName),
+      path.join(root, app.displayName, executableName),
+      path.join(root, app.id, executableName),
+      path.join(root, app.cliStem, executableName),
+    ]
+    const executable = candidatesInRoot.find(candidate => io.isFile(candidate))
+    if (executable === undefined) {
+      expected ??= candidatesInRoot[0]
       continue
     }
     const version = record.version
@@ -90,6 +100,11 @@ function readCandidates(app: CraftAppManifest, io: CraftDiscoveryIo): readonly C
     if (record.installDir === undefined || seen.has(record.installDir)) return
     seen.add(record.installDir)
     records.push(record)
+  }
+  const ronPath = launcherRonPath(io.platform, io.env, io.home)
+  if (ronPath !== undefined) {
+    const ron = io.readText(ronPath)
+    if (ron !== undefined) add(parseLauncherAppRon(ron, app) ?? {})
   }
   for (const root of launcherRoots(io.platform, io.env, io.home)) {
     const installed = io.readText(path.join(root, INSTALLED_FILE))

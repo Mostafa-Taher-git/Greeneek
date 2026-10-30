@@ -122,7 +122,11 @@ export function reviewedCatalog(): CraftCatalog {
   return new CraftCatalog(manifests.map(manifest => manifest.id === 'photocraft'
     ? {
       ...photocraft,
-      headless: { ...photocraft.headless, trustedRegistryHash: hashCommandRegistry(DEFAULT_REGISTRY) },
+      headless: {
+        ...photocraft.headless,
+        registryMethod: 'engine.commands',
+        trustedRegistryHash: hashCommandRegistry(DEFAULT_REGISTRY),
+      },
     }
     : manifest))
 }

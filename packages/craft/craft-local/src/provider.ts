@@ -66,14 +66,12 @@ export class CraftLocalProvider implements CraftHostProvider {
   }
 
   /** {@inheritDoc CraftHostProvider.discover} */
-  // oxlint-disable-next-line typescript/require-await -- Preserve promise rejection semantics at the async provider contract.
   async discover(app: CraftAppManifest, options: { readonly signal: AbortSignal }): Promise<CraftDiscovery> {
     options.signal.throwIfAborted()
     return discoverApp(app, this.io.discovery)
   }
 
   /** {@inheritDoc CraftHostProvider.open} */
-  // oxlint-disable-next-line typescript/require-await -- Preserve promise rejection semantics at the async provider contract.
   async open(request: CraftHostOpenRequest): Promise<CraftHostSession> {
     request.signal.throwIfAborted()
     if (request.controlToken.trim() === '') {
@@ -83,6 +81,8 @@ export class CraftLocalProvider implements CraftHostProvider {
       )
     }
     const executable = this.requireExecutable(request.app)
+    const protocol = request.app.transport === 'mcp' ? 'mcp' : 'serve'
+    const requireControlToken = protocol === 'serve' && request.app.headless.controlToken !== 'unused'
     const tokenPath = controlTokenPath(request.roots)
     // A refused template must fail before the token file exists, so the job
     // root never keeps a secret for a session that cannot start.
@@ -92,9 +92,9 @@ export class CraftLocalProvider implements CraftHostProvider {
       readRoot: request.roots.read,
       writeRoot: request.roots.write,
       controlTokenFile: tokenPath,
-    })
+    }, { requireControlToken })
     this.io.ensureDir(request.roots.write)
-    this.io.writeFile(tokenPath, request.controlToken)
+    if (requireControlToken) this.io.writeFile(tokenPath, request.controlToken)
     let handle: SubprocessHandle
     try {
       handle = this.io.spawn(this.headlessSpec(request, argv))
@@ -113,6 +113,7 @@ export class CraftLocalProvider implements CraftHostProvider {
         terminate: () => { handle.terminate() },
       },
       {
+        protocol,
         listMethod: request.app.headless.listMethod,
         registryMethod: request.app.headless.registryMethod,
         requestTimeoutMs: this.config.requestTimeoutMs,
@@ -124,7 +125,6 @@ export class CraftLocalProvider implements CraftHostProvider {
   }
 
   /** {@inheritDoc CraftHostProvider.launchConnected} */
-  // oxlint-disable-next-line typescript/require-await -- Preserve promise rejection semantics at the async provider contract.
   async launchConnected(request: {
     readonly app: CraftAppManifest
     readonly workspaceRoot: string

@@ -4,17 +4,19 @@
   "displayName": "PhotoCraft",
   "aliases": [],
   "cliStem": "photocraft",
-  "platforms": ["win32"],
+  "platforms": [
+    "win32"
+  ],
   "headlessSupported": true,
   "minVersion": "0.15.1",
-  "verified": false,
+  "verified": true,
   "attach": {
     "supported": false,
     "enabled": false,
     "reason": "Live attach has no authenticated channel in the v0.3.4 pilot; headless jobs only."
   },
   "launch": {
-    "headless": "{cli} serve --automation-read-root {readRoot} --automation-write-root {writeRoot} --control-token-file {controlTokenFile}",
+    "headless": "{cli} mcp --automation-read-root {readRoot} --automation-write-root {writeRoot}",
     "connected": "photocraft --control {jobRoot}"
   },
   "roots": {
@@ -22,7 +24,11 @@
     "write": "job-out"
   },
   "cancellation": "child-process-kill",
-  "riskyCommandClasses": ["overwrite", "save-over", "print"],
+  "riskyCommandClasses": [
+    "overwrite",
+    "save-over",
+    "print"
+  ],
   "sources": [
     {
       "label": "Unverified provenance marker: PhotoCraft's connected launch template, headless list method, tool filter, artifact tools, risky command classes, and attach facts are not proven against an installed app",
@@ -41,6 +47,18 @@
       "url": "urn:greeneek:verified:photocraft-convert:sha256:4966b5bff904504c6bbfaf8e1771c80271a543bda9bfcb40811ced9326b21eeb",
       "date": "2026-10-26",
       "verified": true
+    },
+    {
+      "label": "Verified stdio serve handshake on photocraft-cli.exe 0.16.0 (b1794c6e0): `serve --automation-read-root <tmp> --automation-write-root <tmp>` keeps a stdio session without a control token (the token flags require --port), and closes cleanly when stdin ends.",
+      "url": "urn:greeneek:verified:photocraft-serve-stdio-016",
+      "date": "2026-10-29",
+      "verified": true
+    },
+    {
+      "label": "Verified MCP automation on photocraft-cli.exe 0.16.0: `mcp --automation-read-root <tmp> --automation-write-root <tmp>` advertised 26 tools; doc_new created a 4x4 RGB document and doc_save wrote out.png, 108 bytes, PNG 4x4 8-bit RGB, sha256 6bfbca43e26917da7a23a2c88a2ef11ae910de0ed8bcbfa0cd90ecbb82d73e4d.",
+      "url": "urn:greeneek:verified:photocraft-mcp:sha256:6bfbca43e26917da7a23a2c88a2ef11ae910de0ed8bcbfa0cd90ecbb82d73e4d",
+      "date": "2026-10-30",
+      "verified": true
     }
   ],
   "recipe": {
@@ -50,10 +68,23 @@
   },
   "headless": {
     "listMethod": "command_list",
-    "registryMethod": "engine.commands",
+    "registryMethod": null,
     "trustedRegistryHash": null,
-    "toolFilter": ["command_list", "command_run", "command_batch", "render_preview", "screenshot"],
-    "artifactTools": ["render_preview", "screenshot"],
-    "artifactPatterns": ["*.webp"]
-  }
+    "toolFilter": [
+      "command_list",
+      "command_run",
+      "command_batch",
+      "render_preview",
+      "screenshot"
+    ],
+    "artifactTools": [
+      "render_preview",
+      "screenshot"
+    ],
+    "artifactPatterns": [
+      "*.webp"
+    ],
+    "controlToken": "unused"
+  },
+  "transport": "mcp"
 }

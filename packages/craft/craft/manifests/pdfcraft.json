@@ -2,19 +2,23 @@
   "schemaVersion": 1,
   "id": "pdfcraft",
   "displayName": "PdfCraft",
-  "aliases": ["printcraft"],
+  "aliases": [
+    "printcraft"
+  ],
   "cliStem": "pdfcraft",
-  "platforms": ["win32"],
+  "platforms": [
+    "win32"
+  ],
   "headlessSupported": true,
-  "minVersion": "1.0.0",
-  "verified": false,
+  "minVersion": "0.14.0",
+  "verified": true,
   "attach": {
     "supported": false,
     "enabled": false,
     "reason": "Live attach has no authenticated channel in the v0.3.4 pilot; headless jobs only."
   },
   "launch": {
-    "headless": "{cli} serve --automation-read-root {readRoot} --automation-write-root {writeRoot} --control-token-file {controlTokenFile}",
+    "headless": "{cli} mcp --automation-read-root {readRoot} --automation-write-root {writeRoot}",
     "connected": "pdfcraft --control {jobRoot}"
   },
   "roots": {
@@ -22,13 +26,29 @@
     "write": "job-out"
   },
   "cancellation": "child-process-kill",
-  "riskyCommandClasses": ["overwrite", "save-over", "print"],
+  "riskyCommandClasses": [
+    "overwrite",
+    "save-over",
+    "print"
+  ],
   "sources": [
     {
       "label": "Unverified provenance marker: this manifest's ArtCraft facts are not proven against an installed app. The headless serve template states the bridge launch contract proven on PhotoCraft's CLI; a real PdfCraft CLI run must confirm the app honors it.",
       "url": "urn:greeneek:unverified:pdfcraft-headless",
       "date": "2026-10-26",
       "verified": false
+    },
+    {
+      "label": "Verified CLI transport on pdfcraft-cli.exe 0.14.0: `tools` returned 179 JSON tool descriptors, and `run --script` with doc_create_multiple converted a generated cv.txt into an 858-byte PDF 1.7 artifact inside the confined out root; the `serve` subcommand is absent from this build, so the gateway uses `tools`/`run --script` per call.",
+      "url": "urn:greeneek:verified:pdfcraft-cli-transport",
+      "date": "2026-10-29",
+      "verified": true
+    },
+    {
+      "label": "Verified MCP automation on pdfcraft-cli.exe 0.14.0: `mcp --automation-read-root <tmp> --automation-write-root <tmp>` advertised 179 tools; doc_create_multiple converted a generated cv.txt into an 866-byte PDF 1.7 inside the write root, sha256 e51e871abfb9f3993ca4a27febd37423bde3ba7cad96e1ed07022c995dff4468.",
+      "url": "urn:greeneek:verified:pdfcraft-mcp:sha256:e51e871abfb9f3993ca4a27febd37423bde3ba7cad96e1ed07022c995dff4468",
+      "date": "2026-10-30",
+      "verified": true
     }
   ],
   "recipe": {
@@ -40,8 +60,33 @@
     "listMethod": "command_list",
     "registryMethod": null,
     "trustedRegistryHash": null,
-    "toolFilter": ["command_list", "command_run", "command_batch", "render_preview"],
-    "artifactTools": ["render_preview"],
-    "artifactPatterns": []
-  }
+    "toolFilter": [
+      "command_list",
+      "command_run",
+      "command_batch",
+      "render_preview",
+      "doc_create_multiple",
+      "doc_open",
+      "doc_info",
+      "text_extract",
+      "doc_save",
+      "doc_export_images"
+    ],
+    "artifactTools": [
+      "command_run",
+      "command_batch",
+      "render_preview",
+      "doc_create_multiple",
+      "doc_export_images",
+      "doc_save"
+    ],
+    "artifactPatterns": [
+      "*.pdf",
+      "*.png",
+      "*.jpg",
+      "*.tif"
+    ],
+    "controlToken": "unused"
+  },
+  "transport": "mcp"
 }

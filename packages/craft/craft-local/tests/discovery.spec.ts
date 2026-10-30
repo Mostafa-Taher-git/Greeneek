@@ -65,6 +65,18 @@ describe('discoverApp', () => {
     expect(discovery.detail).toContain('PhotoCraft')
   })
 
+  it('skips launcher state outside Windows and tolerates an unparsable file', () => {
+    const linuxApp: CraftAppManifest = { ...photocraft, platforms: ['linux'] }
+    const linux = discoverApp(linuxApp, createIo({ platform: 'linux', env: {} }))
+    expect(linux.state).toBe('not-installed')
+
+    const ronPath = win32.join(String.raw`C:\Users\u`, 'AppData', 'Roaming', 'ai.storyteller.artcraft-launcher', 'data', 'app.ron')
+    const unparsable = discoverApp(photocraft, createIo({
+      readText: path => path === ronPath ? 'not a map' : undefined,
+    }))
+    expect(unparsable.state).toBe('not-installed')
+  })
+
   it('reports ready with the absolute CLI and version from the launcher manifest', () => {
     const installDir = win32.join('C:\\Apps', 'PhotoCraft')
     const executable = cliPath(photocraft, installDir)

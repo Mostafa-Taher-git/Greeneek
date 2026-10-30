@@ -95,6 +95,33 @@ function tick(): Promise<void> {
 }
 
 describe('JsonRpcCraftTransport', () => {
+  it('performs the MCP handshake and projects tool calls', async () => {
+    const app = createProcess((request, respond) => {
+      if (request.method === 'initialize') {
+        respond(success(request.id, { protocolVersion: '2024-11-05', capabilities: {}, serverInfo: { name: 'app', version: '1' } }))
+        return
+      }
+      if (request.method === 'tools/list') {
+        respond(success(request.id, { tools: [{ name: 'doc_create_multiple', description: 'Create', inputSchema: { type: 'object' } }] }))
+        return
+      }
+      if (request.method === 'tools/call') {
+        respond(success(request.id, {
+          content: [{ type: 'text', text: '{"path":"C:\\out\\cv.pdf"}' }],
+          structuredContent: { path: 'C:\out\cv.pdf', bytes: 3 },
+        }))
+      }
+    })
+    const transport = new JsonRpcCraftTransport(app.process, { ...baseOptions, protocol: 'mcp', registryMethod: null })
+
+    expect(await transport.listTools()).toEqual([{ name: 'doc_create_multiple', description: 'Create', inputSchema: { type: 'object' } }])
+    expect(app.writes.some(line => line.includes('notifications/initialized'))).toBe(true)
+    const result = await transport.callTool('doc_create_multiple', {}, { signal: new AbortController().signal })
+    expect(result.artifacts).toEqual(['C:\out\cv.pdf'])
+    expect(result.content[0]).toMatchObject({ type: 'text' })
+    await transport.close()
+  })
+
   it('requires piped stdin and stdout', () => {
     const done = Promise.resolve({ exitCode: 0, signal: null })
     expect(() => new JsonRpcCraftTransport(
@@ -105,6 +132,48 @@ describe('JsonRpcCraftTransport', () => {
       { stdin: new PassThrough(), stdout: undefined, done, terminate: () => {} },
       baseOptions,
     )).toThrow(/piped stdin and stdout/)
+  })
+
+  it('reads an MCP registry and tolerates structured-only results', async () => {
+    let call = 0
+    const app = createProcess((request, respond) => {
+      if (request.method === 'initialize') { respond(success(request.id, { protocolVersion: '2024-11-05' })); return }
+      if (request.method === 'tools/list') { respond(success(request.id, { tools: [] })); return }
+      if (request.method === 'tools/call') {
+        call += 1
+        respond(success(request.id, call === 1
+          ? {
+            structuredContent: {
+              files: [{ path: String.raw`\\?\C:\out\a.pdf` }],
+            },
+            isError: true,
+          }
+          : { content: [{ type: 'image', data: 'x' }, { type: 'text', text: 'not json' }] }))
+      }
+    })
+    const transport = new JsonRpcCraftTransport(app.process, { ...baseOptions, protocol: 'mcp', registryMethod: null })
+
+    await expect(transport.readCommandRegistry()).resolves.toEqual({ tools: [] })
+    const first = await transport.callTool('x', {}, { signal: new AbortController().signal })
+    expect(first).toMatchObject({ isError: true, artifacts: [String.raw`C:\out\a.pdf`] })
+    expect(first.content[0]).toMatchObject({ type: 'text' })
+    const second = await transport.callTool('y', {}, { signal: new AbortController().signal })
+    expect(second.artifacts).toBeUndefined()
+    await transport.close()
+  })
+
+  it('rejects malformed MCP results', async () => {
+    let call = 0
+    const app = createProcess((request, respond) => {
+      if (request.method === 'initialize') { respond(success(request.id, { protocolVersion: '2024-11-05' })); return }
+      if (request.method === 'notifications/initialized') return
+      call += 1
+      respond(call === 1 ? { jsonrpc: '2.0', id: request.id, result: 42 } : success(request.id, {}))
+    })
+    const transport = new JsonRpcCraftTransport(app.process, { ...baseOptions, protocol: 'mcp', registryMethod: null })
+    await expect(transport.callTool('x', {}, { signal: new AbortController().signal })).rejects.toThrow('non-object MCP result')
+    await expect(transport.callTool('y', {}, { signal: new AbortController().signal })).rejects.toThrow('no MCP content')
+    await transport.close()
   })
 
   it('lists tools and fills safe defaults for omitted fields', async () => {

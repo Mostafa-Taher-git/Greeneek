@@ -27,6 +27,8 @@ export interface CraftTransportProcess {
 
 /** Transport tuning. */
 export interface CraftTransportOptions {
+  /** Wire protocol this app speaks. Defaults to the flat serve protocol. */
+  readonly protocol?: 'serve' | 'mcp'
   /** App method that lists callable tools (`command_list`). */
   readonly listMethod: string
   /** App method that returns the raw command registry, or null when unobserved. */
@@ -68,6 +70,7 @@ export class JsonRpcCraftTransport implements CraftTransport {
   private readonly decoder = new StringDecoder('utf8')
   private buffer = ''
   private nextId = 1
+  private initialized: Promise<void> | undefined
   private closed = false
   private closePromise: Promise<void> | undefined
 
@@ -99,7 +102,10 @@ export class JsonRpcCraftTransport implements CraftTransport {
 
   /** {@inheritDoc CraftTransport.listTools} */
   async listTools(): Promise<readonly CraftToolDescriptor[]> {
-    const result = await this.request(this.options.listMethod, {})
+    if (this.isMcp()) await this.ensureInitialized()
+    const result = this.isMcp()
+      ? await this.request('tools/list', {})
+      : await this.request(this.options.listMethod, {})
     const tools = isRecord(result) ? result.tools : undefined
     if (!Array.isArray(tools)) {
       throw new CraftError(
@@ -112,6 +118,7 @@ export class JsonRpcCraftTransport implements CraftTransport {
 
   /** {@inheritDoc CraftTransport.readCommandRegistry} */
   readCommandRegistry(): Promise<unknown> {
+    if (this.isMcp()) return this.request('tools/list', {})
     const method = this.options.registryMethod
     if (method === null) {
       return Promise.reject(new CraftError('this Craft app has no observed command-registry method', 'CRAFT_APP_ERROR'))
@@ -125,8 +132,35 @@ export class JsonRpcCraftTransport implements CraftTransport {
     args: Readonly<Record<string, unknown>>,
     options: { readonly signal: AbortSignal },
   ): Promise<CraftCallResult> {
-    const result = await this.request(name, args, options.signal)
-    return parseCallResult(result)
+    if (this.isMcp()) await this.ensureInitialized()
+    const result = this.isMcp()
+      ? await this.request('tools/call', { name, arguments: args }, options.signal)
+      : await this.request(name, args, options.signal)
+    return this.isMcp() ? parseMcpCallResult(result) : parseCallResult(result)
+  }
+
+  /** Whether this transport speaks MCP framing. */
+  private isMcp(): boolean {
+    return this.options.protocol === 'mcp'
+  }
+
+  /** Perform the MCP initialize handshake once. */
+  private async ensureInitialized(): Promise<void> {
+    this.initialized ??= (async () => {
+      await this.request('initialize', {
+        protocolVersion: '2024-11-05',
+        capabilities: {},
+        clientInfo: { name: 'gnk-craft-local', version: '1' },
+      })
+      this.notify('notifications/initialized')
+    })()
+    await this.initialized
+  }
+
+  /** Write one JSON-RPC notification without an id. */
+  private notify(method: string): void {
+    this.process.stdin?.write(`${JSON.stringify({ jsonrpc: '2.0', method })}
+`)
   }
 
   /** {@inheritDoc CraftTransport.close} */
@@ -285,6 +319,60 @@ function parseCallResult(value: unknown): CraftCallResult {
     ...artifacts === undefined ? {} : { artifacts },
     ...value.isError === true ? { isError: true } : {},
   }
+}
+
+/**
+ * Validate one MCP tools/call result: content blocks, structured payload, and
+ * artifact paths named by path-like keys.
+ * @param value - untrusted MCP result.
+ * @returns the projected call result.
+ */
+function parseMcpCallResult(value: unknown): CraftCallResult {
+  if (!isRecord(value)) {
+    throw new CraftError('the Craft app returned a non-object MCP result', 'CRAFT_APP_ERROR')
+  }
+  const rawContent = value.content
+  const content = Array.isArray(rawContent) ? rawContent.filter(isRecord) : []
+  if (content.length === 0 && !isRecord(value.structuredContent)) {
+    throw new CraftError('the Craft app returned no MCP content', 'CRAFT_APP_ERROR')
+  }
+  const artifacts = collectArtifacts(value.structuredContent, content)
+  return {
+    content: content.length === 0
+      ? [{ type: 'text', text: JSON.stringify(value.structuredContent) }]
+      : content,
+    ...artifacts.length === 0 ? {} : { artifacts },
+    ...value.isError === true ? { isError: true } : {},
+  }
+}
+
+/** Collect path-like values from structured content and JSON text blocks. */
+function collectArtifacts(structured: unknown, content: readonly Record<string, unknown>[]): string[] {
+  const found = new Set<string>()
+  const visit = (entry: unknown): void => {
+    if (Array.isArray(entry)) {
+      for (const item of entry) visit(item)
+      return
+    }
+    if (!isRecord(entry)) return
+    for (const [key, child] of Object.entries(entry)) {
+      if ((key === 'path' || key === 'out' || key === 'output' || key === 'file') && typeof child === 'string') {
+        found.add(child.startsWith('\\\\?\\') ? child.slice(4) : child)
+      } else if (key === 'files' || key === 'artifacts' || key === 'result' || key === 'results') {
+        visit(child)
+      }
+    }
+  }
+  visit(structured)
+  for (const block of content) {
+    if (block.type !== 'text' || typeof block.text !== 'string') continue
+    try {
+      visit(JSON.parse(block.text))
+    } catch {
+      // A human-facing text block is not a structured path carrier.
+    }
+  }
+  return [...found]
 }
 
 /** Extraction of one human-readable JSON-RPC error message. */

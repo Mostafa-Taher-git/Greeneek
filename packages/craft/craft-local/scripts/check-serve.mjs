@@ -57,11 +57,12 @@ try {
       } catch (error) {
         if (!(error instanceof Error) || !error.message.includes('escapes the job output root')) throw error
       }
-      if (app.headless.registryMethod === null) {
-        console.log(`${app.displayName} (${app.id}): serve handshake passed; no registry method observed`)
-      } else {
+      const tools = await session.transport.listTools()
+      if (tools.length === 0) throw new Error(`${app.displayName} advertised no tools`)
+      console.log(`${app.displayName} (${app.id}): ${app.transport ?? 'serve'} transport opened; ${String(tools.length)} tools advertised`)
+      if (app.headless.registryMethod !== null) {
         const registry = await session.transport.readCommandRegistry()
-        console.log(`${app.displayName} (${app.id}): serve handshake passed; registry ${hashCommandRegistry(registry)}`)
+        console.log(`${app.displayName} (${app.id}): registry ${hashCommandRegistry(registry)}`)
       }
     } finally {
       await session.close()

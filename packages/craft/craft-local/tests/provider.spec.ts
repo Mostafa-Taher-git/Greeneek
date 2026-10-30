@@ -19,6 +19,17 @@ const INSTALL_DIR = resolve('craft-install')
 const LAUNCHER_ROOT = win32.join('C:\\Launcher', 'ArtCraft Launcher')
 const CLI = win32.join(INSTALL_DIR, cliExecutableName(photocraft.cliStem, 'win32'))
 
+/** A serve-protocol variant of the pilot manifest for token and argv tests. */
+const serveApp: CraftAppManifest = {
+  ...photocraft,
+  transport: 'serve',
+  headless: { ...photocraft.headless, controlToken: 'required', registryMethod: 'engine.commands' },
+  launch: {
+    ...photocraft.launch,
+    headless: '{cli} serve --automation-read-root {readRoot} --automation-write-root {writeRoot} --control-token-file {controlTokenFile}',
+  },
+}
+
 const config: CraftLocalConfig = { requestTimeoutMs: 100, graceMs: 20, closeGraceMs: 5 }
 
 interface FakeHandle {
@@ -128,12 +139,12 @@ function localIo(
 
 /** The one accepted open request for the installed PhotoCraft fake. */
 function openRequest(signal = new AbortController().signal): CraftHostOpenRequest {
-  return { app: photocraft, workspaceRoot: WORKSPACE, roots: ROOTS, controlToken: TOKEN, signal }
+  return { app: serveApp, workspaceRoot: WORKSPACE, roots: ROOTS, controlToken: TOKEN, signal }
 }
 
 /** The pilot manifest with one substituted headless template. */
 function manifestWithTemplate(headless: string): CraftAppManifest {
-  return { ...photocraft, launch: { ...photocraft.launch, headless } }
+  return { ...serveApp, launch: { ...serveApp.launch, headless } }
 }
 
 describe('requireExecutable', () => {
@@ -252,6 +263,36 @@ describe('CraftLocalProvider', () => {
     await expect(session.transport.listTools()).resolves.toEqual([])
     await session.close()
     expect(handle.terminate).toHaveBeenCalled()
+  })
+
+  it('opens an MCP session without writing a control token', async () => {
+    const handle = createHandle()
+    const fixture = localIo(installedIo(), () => handle, { warn: false })
+    const provider = new CraftLocalProvider(fixture.io, config)
+    const app: CraftAppManifest = {
+      ...photocraft,
+      transport: 'mcp',
+      headless: { ...photocraft.headless, controlToken: 'unused' },
+      launch: {
+        ...photocraft.launch,
+        headless: '{cli} mcp --automation-read-root {readRoot} --automation-write-root {writeRoot}',
+      },
+    }
+
+    const session = await provider.open({ ...openRequest(), app })
+
+    expect(fixture.ensureDir).toHaveBeenCalledWith(ROOTS.write)
+    expect(fixture.writeFile).not.toHaveBeenCalled()
+    const spec = fixture.spawn.mock.calls[0]?.[0] as SubprocessSpawnSpec
+    expect(spec.argv).toEqual([
+      CLI,
+      'mcp',
+      '--automation-read-root',
+      ROOTS.read,
+      '--automation-write-root',
+      ROOTS.write,
+    ])
+    await session.close()
   })
 
   it('spawns the argument vector the manifest template expands to', async () => {

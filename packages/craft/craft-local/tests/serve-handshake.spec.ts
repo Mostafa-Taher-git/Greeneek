@@ -128,6 +128,9 @@ describe('serve handshake over a real child process', () => {
     const discoveredCli = join(installDir, `photocraft-cli${process.platform === 'win32' ? '.exe' : ''}`)
     const app: CraftAppManifest = {
       ...photocraft,
+      platforms: [...photocraft.platforms, 'linux'],
+      transport: 'serve',
+      headless: { ...photocraft.headless, controlToken: 'required', registryMethod: 'engine.commands' },
       launch: {
         ...photocraft.launch,
         headless: '{cli} serve-fake.mjs serve --automation-read-root {readRoot} --automation-write-root {writeRoot} --control-token-file {controlTokenFile}',

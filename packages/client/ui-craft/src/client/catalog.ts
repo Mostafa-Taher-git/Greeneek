@@ -42,7 +42,14 @@ export const PILOT_APPS: readonly PilotApp[] = [
     id: 'pdfcraft',
     displayName: 'PdfCraft',
     aliases: ['printcraft'],
-    artifactTools: ['render_preview'],
+    artifactTools: [
+      'command_run',
+      'command_batch',
+      'render_preview',
+      'doc_create_multiple',
+      'doc_export_images',
+      'doc_save',
+    ],
     launcherUrl: 'https://craft.example/open/pdfcraft',
     downloadUrl: 'https://craft.example/download/pdfcraft',
   },
@@ -95,9 +102,7 @@ export function fallbackSource(): CraftSettingsSource {
   }
   return {
     available: () => Promise.resolve(rows),
-    // oxlint-disable-next-line typescript/require-await -- async keeps the not-a-pilot-app guard a rejection, not a synchronous throw
     check: async (id: string) => find(id),
-    // oxlint-disable-next-line typescript/require-await -- async keeps the not-a-pilot-app guard a rejection, not a synchronous throw
     launchConnected: async (id: string) => find(id),
   }
 }

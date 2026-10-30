@@ -5,8 +5,8 @@ export const NS = 'craft'
 
 /** Simplified Chinese dictionary (the key-set source of truth). */
 export const zh = {
-  'section.nav': 'Craft',
-  'section.lead': '本机 Craft 应用的无头桥接：查看安装状态、检查安装，并在会话中直接使用它们的工具。',
+  'section.nav': '应用设置',
+  'section.lead': '自动从 ArtCraft 启动器发现已安装应用，显示真实安装状态，并在会话中直接使用它们的工具。',
   'section.loading': '正在读取 Craft 应用状态…',
   'section.error': 'Craft 应用状态读取失败',
   'section.retry': '重试',
@@ -40,8 +40,8 @@ export type CraftKey = keyof typeof zh
 
 /** English dictionary, checked complete against the zh key set. */
 export const en = {
-  'section.nav': 'Craft',
-  'section.lead': 'Headless bridge for local Craft apps: inspect installation state, check an install, and use their tools inside a session.',
+  'section.nav': 'Apps setup',
+  'section.lead': 'Discovers installed ArtCraft apps from the launcher, shows their measured installation state, and uses their tools inside a session.',
   'section.loading': 'Reading Craft app state…',
   'section.error': 'Craft app state failed to load',
   'section.retry': 'Retry',
@@ -72,8 +72,8 @@ export const en = {
 
 /** Arabic dictionary, checked complete against the zh key set. */
 export const ar = {
-  'section.nav': 'Craft',
-  'section.lead': 'جسر بلا واجهة لتطبيقات Craft على هذا الجهاز: اعرض حالة التثبيت وتحقّق من كل تثبيت واستخدم أدواتها داخل جلسة.',
+  'section.nav': 'إعداد التطبيقات',
+  'section.lead': 'يكتشف تطبيقات ArtCraft المثبَّتة من المشغّل، ويعرض حالة التثبيت الحقيقية، ويستخدم أدواتها داخل جلسة.',
   'section.loading': 'جارٍ قراءة حالة تطبيقات Craft…',
   'section.error': 'تعذّر تحميل حالة تطبيقات Craft',
   'section.retry': 'إعادة المحاولة',

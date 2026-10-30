@@ -63,7 +63,11 @@ function trustedPhotoCatalog(registry: unknown): CraftCatalog {
   const base = loadPilotCatalog().require('photocraft')
   return new CraftCatalog([parseManifest({
     ...base,
-    headless: { ...base.headless, trustedRegistryHash: hashCommandRegistry(registry) },
+    headless: {
+      ...base.headless,
+      registryMethod: 'engine.commands',
+      trustedRegistryHash: hashCommandRegistry(registry),
+    },
   })])
 }
 
@@ -203,6 +207,15 @@ describe('status', () => {
 })
 
 describe('open', () => {
+  it('keeps a running session scoped to its own app', async () => {
+    const { craft } = mount()
+    craft.registerProvider(fakeProvider().provider)
+    await craft.open({ app: 'pdfcraft', workspaceRoot: workspace })
+
+    expect(await craft.status('photocraft')).toMatchObject({ state: 'ready' })
+    await expect(craft.status('pdfcraft')).resolves.toMatchObject({ state: 'running' })
+  })
+
   it('opens one headless session with confined roots and a control token', async () => {
     const { craft } = mount()
     const fake = fakeProvider()

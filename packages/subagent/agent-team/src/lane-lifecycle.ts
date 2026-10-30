@@ -7,7 +7,6 @@
  * @module @greeneek/gnk-agent-team/lane-lifecycle
  */
 
-import { execFile } from 'node:child_process'
 import { createHash, randomUUID } from 'node:crypto'
 import { lstatSync } from 'node:fs'
 import { mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promises'
@@ -16,6 +15,7 @@ import type { Branded } from '@greeneek/gnk-brand'
 import type { SessionId } from '@greeneek/gnk-session/types'
 import { z } from 'zod'
 import { errorMessage, TeamError } from './error.ts'
+import { enqueueLane, hostLaneGit, runLaneGit } from './lane-support.ts'
 import { assertDisjointLaneScopes } from './lane-policy.ts'
 import type { ActiveLaneScope } from './lane-policy.ts'
 import { writeScope } from './validation.ts'
@@ -136,7 +136,7 @@ export class LaneLifecycleManager {
   constructor(options: LaneLifecycleManagerOptions) {
     this.gnkHome = resolve(options.gnkHome)
     this.maxPatchBytes = options.maxPatchBytes ?? DEFAULT_MAX_PATCH_BYTES
-    this.runGit = options.runGit ?? hostGit
+    this.runGit = options.runGit ?? hostLaneGit
   }
 
   /**
@@ -419,15 +419,7 @@ export class LaneLifecycleManager {
    * @returns the operation result.
    */
   private async enqueue<T>(sessionId: SessionId, operation: () => Promise<T>): Promise<T> {
-    const previous = this.queues.get(sessionId) ?? Promise.resolve()
-    const next = previous.then(operation, operation)
-    const tracked = next.catch(() => undefined)
-    this.queues.set(sessionId, tracked)
-    try {
-      return await next
-    } finally {
-      if (this.queues.get(sessionId) === tracked) this.queues.delete(sessionId)
-    }
+    return await enqueueLane(this.queues, sessionId, operation)
   }
 
   /**
@@ -605,36 +597,8 @@ export class LaneLifecycleManager {
 
   /** Run one lifecycle-owned git invocation. */
   private async git(argv: readonly string[], signal: AbortSignal, cwd: string): Promise<string> {
-    try {
-      return await this.runGit({ argv, cwd, signal })
-    } catch (error: unknown) {
-      throw new TeamError(
-        `git ${argv.join(' ')} failed in ${cwd}: ${errorMessage(error)}`.slice(0, MAX_DIAGNOSTIC_CHARS),
-        'TEAM_LANE_GIT_FAILED',
-        { cause: error },
-      )
-    }
+    return await runLaneGit(this.runGit, argv, signal, cwd)
   }
-}
-
-/** Host git boundary sharing the worktree runner's bounded output. */
-const hostGit: WorktreeGitRunner = async ({ argv, cwd, signal }) => {
-  return await new Promise<string>((settle, fail) => {
-    execFile('git', [...argv], {
-      cwd,
-      encoding: 'utf8',
-      maxBuffer: 16 * 1024 * 1024,
-      signal,
-      windowsHide: true,
-      env: { ...process.env, GIT_OPTIONAL_LOCKS: '0', GIT_TERMINAL_PROMPT: '0' },
-    }, (error, stdout, stderr) => {
-      if (error === null) {
-        settle(stdout)
-        return
-      }
-      fail(new Error(`${error.message}: ${stderr.trim()}`.slice(0, MAX_DIAGNOSTIC_CHARS)))
-    })
-  })
 }
 
 /** Whether one filesystem error means the recorded path is absent. */

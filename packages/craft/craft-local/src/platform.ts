@@ -83,6 +83,46 @@ export function launcherRoots(
 }
 
 /**
+ * Locate the ArtCraft launcher's Rust state file on Windows.
+ * @param platform - host platform.
+ * @param env - ambient environment.
+ * @param home - home directory fallback.
+ * @returns the absolute app.ron path, or undefined off Windows.
+ */
+export function launcherRonPath(
+  platform: NodeJS.Platform,
+  env: Readonly<Record<string, string | undefined>>,
+  home: string,
+): string | undefined {
+  if (platform !== 'win32') return undefined
+  const roaming = env.APPDATA !== undefined && env.APPDATA !== ''
+    ? env.APPDATA
+    : platformPath(platform).join(home, 'AppData', 'Roaming')
+  return platformPath(platform).join(roaming, 'ai.storyteller.artcraft-launcher', 'data', 'app.ron')
+}
+
+/**
+ * Read one app's per-app install directory from the launcher's Rust state.
+ * The state is a debug-formatted map; only the `per_app` string map is parsed,
+ * and a missing or malformed map is no record rather than a failure.
+ * @param text - raw `app.ron` content.
+ * @param app - manifest whose id and aliases key the lookup.
+ * @returns the declared install directory, or undefined.
+ */
+export function parseLauncherAppRon(text: string, app: CraftAppManifest): CraftInstallRecord | undefined {
+  const section = /per_app:\s*\{([^}]*)\}/u.exec(text.replaceAll('\\"', '"'))?.[1]
+  if (section === undefined) return undefined
+  for (const id of [app.id, ...app.aliases]) {
+    const match = new RegExp(`"${id}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"`, 'u').exec(section)
+    const raw = match?.[1]
+    if (raw === undefined) continue
+    const installDir = raw.replace(/\\\\/gu, '\\')
+    if (installDir.trim() !== '') return { installDir }
+  }
+  return undefined
+}
+
+/**
  * Parse the shared launcher manifest into one app record. Both the flat
  * per-app shape and the `{ apps: { <id>: … } }` shape are accepted because the
  * vendor format is unverified.

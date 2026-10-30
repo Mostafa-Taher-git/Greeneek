@@ -28,7 +28,7 @@ const REQUIRED: readonly HeadlessLaunchTemplatePlaceholder[] = ['readRoot', 'wri
  * @param template - manifest `launch.headless` value.
  * @returns every violation in reading order, phrased to follow "it"; empty when conformant.
  */
-export function headlessTemplateViolations(template: string): readonly string[] {
+export function headlessTemplateViolations(template: string, requireControlToken = true): readonly string[] {
   const trimmed = template.trim()
   if (trimmed === '') return ['is empty']
   const violations: string[] = []
@@ -41,6 +41,7 @@ export function headlessTemplateViolations(template: string): readonly string[] 
     scanToken(token, violations, seen)
   }
   for (const name of REQUIRED) {
+    if (name === 'controlTokenFile' && !requireControlToken) continue
     if (!seen.has(name)) violations.push(`must reference {${name}}`)
   }
   return violations

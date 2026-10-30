@@ -35,8 +35,9 @@ export interface HeadlessLaunchValues {
 export function expandHeadlessLaunch(
   template: string,
   values: HeadlessLaunchValues,
+  options: { readonly requireControlToken?: boolean } = {},
 ): readonly string[] {
-  const violations = headlessTemplateViolations(template)
+  const violations = headlessTemplateViolations(template, options.requireControlToken ?? true)
   if (violations.length > 0) refuse(values.app, violations.join('; '))
   return template.trim().split(/\s+/).map(token =>
     // The grammar probe refused unknown placeholders, so every braced name is

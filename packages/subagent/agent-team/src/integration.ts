@@ -12,6 +12,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import type { SessionId } from '@greeneek/gnk-session/types'
 import { errorMessage, TeamError } from './error.ts'
+import { enqueueLane, hostLaneGit, runLaneGit } from './lane-support.ts'
 import type { LaneLifecycleManager } from './lane-lifecycle.ts'
 import type { LaneRecord } from './lane-lifecycle.ts'
 import { GitRevision } from './worktrees.ts'
@@ -109,7 +110,7 @@ export class LaneIntegration {
    */
   constructor(options: LaneIntegrationOptions) {
     this.lanes = options.lanes
-    this.runGit = options.runGit ?? hostGit
+    this.runGit = options.runGit ?? hostLaneGit
     this.runGate = options.runGate ?? hostGate
     this.maxGateOutputBytes = options.maxGateOutputBytes ?? DEFAULT_MAX_GATE_OUTPUT_BYTES
   }
@@ -296,48 +297,14 @@ export class LaneIntegration {
 
   /** Run one integration-owned git invocation. */
   private async git(argv: readonly string[], signal: AbortSignal, cwd: string): Promise<string> {
-    try {
-      return await this.runGit({ argv, cwd, signal })
-    } catch (error: unknown) {
-      throw new TeamError(
-        `git ${argv.join(' ')} failed in ${cwd}: ${errorMessage(error)}`.slice(0, MAX_DIAGNOSTIC_CHARS),
-        'TEAM_LANE_GIT_FAILED',
-        { cause: error },
-      )
-    }
+    return await runLaneGit(this.runGit, argv, signal, cwd)
   }
 
   /** Run one operation after every earlier operation for the same Lead. */
   private async enqueue<T>(sessionId: SessionId, operation: () => Promise<T>): Promise<T> {
-    const previous = this.queues.get(sessionId) ?? Promise.resolve()
-    const next = previous.then(operation, operation)
-    const tracked = next.catch(() => undefined)
-    this.queues.set(sessionId, tracked)
-    try {
-      return await next
-    } finally {
-      if (this.queues.get(sessionId) === tracked) this.queues.delete(sessionId)
-    }
+    return await enqueueLane(this.queues, sessionId, operation)
   }
 }
-
-/** Host git boundary with bounded captured output. */
-const hostGit: WorktreeGitRunner = async ({ argv, cwd, signal }) => await new Promise<string>((settle, fail) => {
-  execFile('git', [...argv], {
-    cwd,
-    encoding: 'utf8',
-    maxBuffer: 16 * 1024 * 1024,
-    signal,
-    windowsHide: true,
-    env: { ...process.env, GIT_OPTIONAL_LOCKS: '0', GIT_TERMINAL_PROMPT: '0' },
-  }, (error, stdout, stderr) => {
-    if (error === null) {
-      settle(stdout)
-      return
-    }
-    fail(new Error(`${error.message}: ${stderr.trim()}`.slice(0, MAX_DIAGNOSTIC_CHARS)))
-  })
-})
 
 /** Host gate boundary; a nonzero exit rejects with its captured stderr. */
 const hostGate: LaneGateRunner = async ({ argv, cwd, signal }) => {

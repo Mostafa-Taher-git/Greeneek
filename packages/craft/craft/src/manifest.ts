@@ -74,13 +74,14 @@ function strictRecord(
   value: unknown,
   path: string,
   allowed: readonly string[],
+  optional: readonly string[] = [],
 ): Record<string, unknown> {
   if (!isRecord(value)) invalid(path, 'must be an object')
   for (const key of Object.keys(value)) {
     if (!allowed.includes(key)) invalid(`${path}.${key}`, 'is not a recognized field')
   }
   for (const key of allowed) {
-    if (!Object.hasOwn(value, key)) invalid(`${path}.${key}`, 'is required')
+    if (!optional.includes(key) && !Object.hasOwn(value, key)) invalid(`${path}.${key}`, 'is required')
   }
   return value
 }
@@ -166,7 +167,8 @@ function parseHeadless(value: unknown): CraftHeadlessSpec {
     'toolFilter',
     'artifactTools',
     'artifactPatterns',
-  ])
+    'controlToken',
+  ], ['controlToken'])
   const registryMethod = record.registryMethod === null
     ? null
     : stringField(record.registryMethod, 'headless.registryMethod')
@@ -197,7 +199,13 @@ function parseHeadless(value: unknown): CraftHeadlessSpec {
       }
     }
   }
+  const controlToken = record.controlToken === undefined
+    ? undefined
+    : record.controlToken === 'required' || record.controlToken === 'unused'
+      ? record.controlToken
+      : invalid('headless.controlToken', 'must be "required" or "unused"')
   return {
+    ...controlToken === undefined ? {} : { controlToken },
     listMethod: stringField(record.listMethod, 'headless.listMethod'),
     registryMethod,
     trustedRegistryHash,
@@ -207,11 +215,19 @@ function parseHeadless(value: unknown): CraftHeadlessSpec {
   }
 }
 
+/** Parse an optional headless transport name. */
+function parseTransport(value: unknown): 'serve' | 'mcp' {
+  if (value !== 'serve' && value !== 'mcp') invalid('transport', 'must be "serve" or "mcp"')
+  return value
+}
+
 /** Parse launch templates, enforcing the headless placeholder grammar at load. */
-function parseLaunch(value: unknown): CraftLaunchTemplates {
+function parseLaunch(value: unknown, transport: 'serve' | 'mcp', requireControlToken: boolean): CraftLaunchTemplates {
   const record = strictRecord(value, 'launch', ['headless', 'connected'])
   const headless = stringField(record.headless, 'launch.headless')
-  const violations = headlessTemplateViolations(headless)
+  const violations = transport === 'mcp'
+    ? headless.includes('{cli}') ? [] : ['must open with {cli} for the MCP transport']
+    : headlessTemplateViolations(headless, requireControlToken)
   if (violations.length > 0) invalid('launch.headless', violations.join('; '))
   return {
     headless,
@@ -253,7 +269,8 @@ export function parseManifest(value: unknown): CraftAppManifest {
     'sources',
     'recipe',
     'headless',
-  ])
+    'transport',
+  ], ['transport'])
   if (record.schemaVersion !== 1) invalid('schemaVersion', 'must be 1')
   const id = patternField(record.id, 'id', APP_ID, 'be a lowercase kebab-case id')
   const aliases = stringArray(record.aliases, 'aliases', { unique: true, nonEmpty: false })
@@ -265,10 +282,10 @@ export function parseManifest(value: unknown): CraftAppManifest {
   const cancellation = stringField(record.cancellation, 'cancellation')
   if (cancellation !== 'child-process-kill') invalid('cancellation', 'must be "child-process-kill"')
   const verified = booleanField(record.verified, 'verified')
+  const headless = parseHeadless(record.headless)
   if (verified && !sources.some(source => source.verified)) {
     invalid('verified', 'cannot be true without a proven sources entry recording the run')
   }
-  const headless = parseHeadless(record.headless)
   if (headless.trustedRegistryHash !== null && !sources.some(source => source.verified)) {
     invalid('headless.trustedRegistryHash', 'cannot be set without a proven sources entry recording registry review')
   }
@@ -286,10 +303,17 @@ export function parseManifest(value: unknown): CraftAppManifest {
         return platform as CraftPlatform
       }),
     headlessSupported: booleanField(record.headlessSupported, 'headlessSupported'),
+    ...record.transport === undefined
+      ? {}
+      : { transport: parseTransport(record.transport) },
     minVersion: patternField(record.minVersion, 'minVersion', VERSION, 'be a semantic version'),
     verified,
     attach: parseAttach(record.attach),
-    launch: parseLaunch(record.launch),
+    launch: parseLaunch(
+      record.launch,
+      record.transport === 'mcp' ? 'mcp' : 'serve',
+      headless.controlToken !== 'unused',
+    ),
     roots: parseRoots(record.roots),
     cancellation: 'child-process-kill',
     riskyCommandClasses: stringArray(record.riskyCommandClasses, 'riskyCommandClasses', {

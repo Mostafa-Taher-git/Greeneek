@@ -41,7 +41,12 @@ describe('PILOT_APPS', () => {
     expect([...ARTIFACT_TOOL_KEYS]).toEqual([
       'mcp__photocraft__render_preview',
       'mcp__photocraft__screenshot',
+      'mcp__pdfcraft__command_run',
+      'mcp__pdfcraft__command_batch',
       'mcp__pdfcraft__render_preview',
+      'mcp__pdfcraft__doc_create_multiple',
+      'mcp__pdfcraft__doc_export_images',
+      'mcp__pdfcraft__doc_save',
     ])
   })
 })

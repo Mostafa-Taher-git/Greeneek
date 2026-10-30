@@ -55,6 +55,35 @@ function nested(manifest: Record<string, unknown>, key: string): Record<string, 
   return manifest[key] as Record<string, unknown>
 }
 
+describe('transport and token fields', () => {
+  const base = (): Record<string, unknown> => JSON.parse(JSON.stringify(loadPilotCatalog().require('photocraft'))) as Record<string, unknown>
+
+  it('accepts serve and mcp and rejects an unknown transport', () => {
+    const mcp = base()
+    mcp.transport = 'mcp'
+    expect(parseManifest(mcp).transport).toBe('mcp')
+    const serve = base()
+    serve.transport = 'serve'
+    expect(parseManifest(serve).transport).toBe('serve')
+    const bad = base()
+    bad.transport = 'cli'
+    expect(() => parseManifest(bad)).toThrow('must be "serve" or "mcp"')
+    const badTemplate = base()
+    badTemplate.transport = 'mcp'
+    ;(badTemplate.launch as Record<string, unknown>).headless = 'photocraft mcp'
+    expect(() => parseManifest(badTemplate)).toThrow('must open with {cli}')
+  })
+
+  it('accepts required and unused token modes and rejects another value', () => {
+    const unused = base()
+    ;(unused.headless as Record<string, unknown>).controlToken = 'unused'
+    expect(parseManifest(unused).headless.controlToken).toBe('unused')
+    const bad = base()
+    ;(bad.headless as Record<string, unknown>).controlToken = 'optional'
+    expect(() => parseManifest(bad)).toThrow('controlToken')
+  })
+})
+
 describe('bundled pilot catalog', () => {
   it('loads both pilot apps through the real package files', () => {
     expect(PILOT_APP_IDS).toEqual(['photocraft', 'pdfcraft'])
@@ -63,7 +92,7 @@ describe('bundled pilot catalog', () => {
     const photocraft = catalog.require('photocraft')
     expect(photocraft.headless.artifactTools).toEqual(['render_preview', 'screenshot'])
     expect(photocraft.headless.artifactPatterns).toEqual(['*.webp'])
-    expect(photocraft.headless.registryMethod).toBe('engine.commands')
+    expect(photocraft.headless.registryMethod).toBeNull()
     expect(photocraft.headless.trustedRegistryHash).toBeNull()
     expect(photocraft.platforms).toEqual(['win32'])
     expect(catalog.require('PDFCRAFT').displayName).toBe('PdfCraft')
@@ -71,9 +100,9 @@ describe('bundled pilot catalog', () => {
     expect(catalog.require('pdfcraft').headless.trustedRegistryHash).toBeNull()
   })
 
-  it('keeps every pilot row unverified until the real-host smoke proves it', () => {
+  it('keeps a pilot row unverified until the real-host smoke proves it', () => {
     for (const manifest of loadPilotCatalog().apps()) {
-      expect(manifest.verified).toBe(false)
+      expect(manifest.verified).toBe(manifest.sources.some(source => source.verified))
       for (const source of manifest.sources) {
         expect(source.date).toMatch(/^\d{4}-\d{2}-\d{2}$/)
       }
@@ -97,7 +126,7 @@ describe('bundled pilot catalog', () => {
     expect(catalog.find('figcraft')).toBeUndefined()
     const recipe = catalog.recipe('printcraft')
     expect(recipe.name).toBe('craft-pdfcraft')
-    expect(recipe.content).toContain('PdfCraft headless recipe')
+    expect(recipe.content).toContain('PdfCraft MCP recipe')
   })
 
   it('fails an unknown app with the pilot wording instead of crashing', () => {

@@ -1,11 +1,11 @@
-# PdfCraft headless recipe
+# PdfCraft MCP recipe
 
-Use this recipe only while a PdfCraft headless session is open.
+Use this recipe only while a PdfCraft session is open.
 
-1. Call `command_list` to discover the current command catalog. The app was renamed from PrintCraft before v0.2.1; accept `printcraft` as an alias when older notes mention it.
-2. Run commands with `command_run` or `command_batch`.
-3. Write rendered output under the job `out/` directory. Paths outside the write root are rejected.
-4. `render_preview` returns page images inside `out/`; the client renders them as artifact cards.
-5. Print and overwrite classes require an approval card before they run.
+1. Call `command_list` first when the command catalog is unclear; the mounted `mcp__pdfcraft__*` tools come from the app's own MCP server.
+2. Create a PDF from a PDF, image, or text file with `doc_create_multiple` and an absolute `out` path under the job `out/` directory.
+3. Inspect with `doc_open`, `doc_info`, `text_extract`, `text_find`, and `page_render`; edit with `doc_save`, `doc_export_images`, page tools, and `command_run`.
+4. Write every output under the job `out/` directory. Paths outside it are rejected.
+5. Destructive commands (overwrite, save-over, print) require an approval card before they run.
 
 Cancellation kills the app process tree. A cancelled job may leave partial files in `out/`.

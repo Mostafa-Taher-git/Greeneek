@@ -66,13 +66,15 @@ export class CraftLocalProvider implements CraftHostProvider {
   }
 
   /** {@inheritDoc CraftHostProvider.discover} */
-  discover(app: CraftAppManifest, options: { readonly signal: AbortSignal }): Promise<CraftDiscovery> {
+  async discover(app: CraftAppManifest, options: { readonly signal: AbortSignal }): Promise<CraftDiscovery> {
+    await Promise.resolve() // require-await: async guard keeps synchronous throws as rejections
     options.signal.throwIfAborted()
     return Promise.resolve(discoverApp(app, this.io.discovery))
   }
 
   /** {@inheritDoc CraftHostProvider.open} */
-  open(request: CraftHostOpenRequest): Promise<CraftHostSession> {
+  async open(request: CraftHostOpenRequest): Promise<CraftHostSession> {
+    await Promise.resolve() // require-await: async guard keeps synchronous throws as rejections
     request.signal.throwIfAborted()
     if (request.controlToken.trim() === '') {
       throw new CraftError(
@@ -125,11 +127,12 @@ export class CraftLocalProvider implements CraftHostProvider {
   }
 
   /** {@inheritDoc CraftHostProvider.launchConnected} */
-  launchConnected(request: {
+  async launchConnected(request: {
     readonly app: CraftAppManifest
     readonly workspaceRoot: string
     readonly roots: CraftRoots
   }): Promise<void> {
+    await Promise.resolve() // require-await: async guard keeps synchronous throws as rejections
     const executable = this.requireExecutable(request.app)
     const path = platformPath(this.io.discovery.platform)
     const gui = path.join(path.dirname(executable), guiExecutableName(request.app.cliStem, this.io.discovery.platform))

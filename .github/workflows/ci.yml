@@ -64,12 +64,17 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm run duplication
+      # Snapshot subprocesses boot from built lib/ in lib mode (the canonical
+      # snapshot lane): headless profiles resolve `@greeneek/gnk-*/typert`
+      # through package exports into lib/typert.host.js, so the build must
+      # precede replay. The built-invariants hygiene gate also needs these
+      # artifacts.
+      - run: pnpm build
       # Replay is the read-only tier: CI never writes committed outputs.
       - run: pnpm run test:snapshot
         env:
           GNK_SNAPSHOT: replay
-      - run: pnpm build
-      # After the build so the built-invariants gate sees real artifacts.
+          GNK_EXAMPLE_MODE: lib
       - run: pnpm run hygiene
 
   windows-shell:

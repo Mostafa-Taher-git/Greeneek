@@ -101,16 +101,26 @@ describe('CI workflow', () => {
     const lane = jobNamed(workflow, 'consumers')
 
     expect(lane['runs-on']).toBe('ubuntu-latest')
-    // The aggregate builds the tree and then runs the browser, expected-output,
-    // documentation, and built-artifact lanes serially; 45 minutes covers a cold
-    // runner with room to fail instead of hanging.
+    // The job builds once and then runs each lane as its own step; 45 minutes
+    // covers a cold runner with room to fail instead of hanging.
     expect(lane['timeout-minutes']).toBe(45)
     const steps = jobSteps(workflow, 'consumers')
-    const aggregate = steps.find(step => typeof step.run === 'string'
-      && step.run.includes('pnpm run check:ci:consumers'))
-    expect(aggregate).toBeDefined()
-    // Replay stays read-only here too: the lane compares committed outputs.
-    expect(aggregate?.env).toMatchObject({ GNK_SNAPSHOT: 'replay', CI: true })
+    const runs = steps.map(step => (typeof step.run === 'string' ? step.run : ''))
+    // The build must precede every lane that reads built lib/.
+    const build = runs.indexOf('pnpm build')
+    expect(build).toBeGreaterThanOrEqual(0)
+    for (const command of [
+      'pnpm run test:expected',
+      'pnpm run test:web:built',
+      'pnpm run doc-typecheck:contracts-ready',
+    ]) {
+      expect(runs.indexOf(command)).toBeGreaterThan(build)
+    }
+    // Replay stays read-only: the lane compares committed outputs.
+    for (const command of ['pnpm run test:expected', 'pnpm run test:web:built']) {
+      const step = steps.find(candidate => candidate.run === command)
+      expect(step?.env).toMatchObject({ GNK_SNAPSHOT: 'replay', CI: true })
+    }
   })
 })
 

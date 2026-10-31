@@ -90,11 +90,12 @@ jobs:
       - run: pnpm exec vitest run packages/terminal/terminal-bash
 
   consumers:
-    # The consumer verification matrix: one aggregate that runs the lanes a
-    # release claim depends on — expected-output processes, the browser snapshot
-    # suite, the documentation typecheck, and every built-artifact smoke. It is a
-    # separate job so its wall clock never extends the `ci` job, and the release
-    # gate's workflow-run success still requires this job green.
+    # The consumer verification matrix: the lanes a release claim depends on.
+    # Each lane is its own step because the serial aggregate interleaves writers
+    # (`dev:web` rewrites lib/ and apps/web/dist during the HMR case) with
+    # readers, which makes two lanes fail only when run in that order. The build
+    # runs once, first, because headless and Web profiles resolve
+    # `@greeneek/gnk-*/typert` through package exports into built lib/.
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -105,7 +106,30 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm run check:ci:consumers
+      - run: pnpm build
+      - name: Published package layout
+        run: pnpm run publint
+      - name: Built package invariants
+        run: pnpm run verify-built-package-invariants
+      - name: Node compatibility
+        run: pnpm run check:node-compat
+        env:
+          GNK_CLIENT_BUILD_PROFILE: official
+      - name: NodeNext consumer types
+        run: pnpm run verify-node-next-types
+      - name: Expected-output processes
+        run: pnpm run test:expected
         env:
           CI: true
           GNK_SNAPSHOT: replay
+      - name: Browser snapshot suite
+        run: pnpm run test:web:built
+        env:
+          CI: true
+          GNK_SNAPSHOT: replay
+      - name: Documentation typecheck
+        run: pnpm run doc-typecheck:contracts-ready
+        env:
+          GNK_DOC_TYPECHECK_USE_BUILD_OUTPUT: '1'
+      - name: Built-artifact smokes
+        run: pnpm exec vitest run --config vitest.e2e.config.ts apps/cli/tests/profiles/headless/tests/keyless-smoke.e2e.ts apps/cli/tests/built-bin.e2e.ts packages/host/directory-picker-native/tests/built-worker.e2e.ts packages/sdk/server/tests/built-scope-carrier.e2e.ts packages/subagent/subagent-codex/tests/loader-composition.e2e.ts packages/subagent/subagent-claude-code/tests/loader-composition.e2e.ts packages/api/remotes/tests/built-lib.e2e.ts packages/subagent/agent-team/tests/built-lib.e2e.ts packages/workflow/workflow-worker-thread/tests/built-worker.e2e.ts packages/code-runtime/code-runtime-worker-thread/tests/built-lib.e2e.ts packages/lsp/lsp-stdio/tests/built-lib.e2e.ts

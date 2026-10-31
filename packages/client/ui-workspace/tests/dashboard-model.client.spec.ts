@@ -69,15 +69,15 @@ describe('dashboard facts', () => {
       ['local · two', 1],
     ])
     expect(facts.providers).toEqual([
-      { provider: 'openrouter', count: 2 },
-      { provider: 'local', count: 1 },
+      { provider: 'openrouter', count: 2, tokens: 150 },
+      { provider: 'local', count: 1, tokens: 25 },
     ])
     expect(facts.presets).toEqual([
-      { preset: 'army', count: 1 },
-      { preset: 'standard', count: 1 },
+      { preset: 'army', count: 1, tokens: 50 },
+      { preset: 'standard', count: 1, tokens: 100 },
     ])
-    expect(facts.recent.map(row => row.id)).toEqual(['c', 'b', 'a'])
-    expect(facts.recent[0]?.model).toBe('local · two')
+    expect(facts.rows.map(row => row.id)).toEqual(['c', 'b', 'a'])
+    expect(facts.rows[0]?.model).toBe('local · two')
   })
 
   it('excludes archived sessions from every figure', () => {
@@ -92,25 +92,77 @@ describe('dashboard facts', () => {
     expect(facts.sessions).toBe(1)
     expect(facts.turns).toBe(2)
     expect(facts.outputTokens).toBe(10)
-    expect(facts.recent.map(row => row.id)).toEqual(['a'])
+    expect(facts.rows.map(row => row.id)).toEqual(['a'])
   })
 
-  it('keeps a session without a recorded model out of the model breakdown', () => {
+  it('ranks every breakdown by the requested metric', () => {
+    const facts = dashboardFacts({
+      sessions: [
+        session({ id: 'a', provider: 'p1', model: 'm1', preset: 'standard', inputTokens: 10 }),
+        session({ id: 'b', provider: 'p2', model: 'm2', preset: 'army', outputTokens: 90 }),
+        session({ id: 'c', provider: 'p2', model: 'm2', preset: 'army' }),
+      ],
+      workspaces: [],
+      archivedSessionIds: [],
+      metric: 'tokens',
+    })
+    expect(facts.metric).toBe('tokens')
+    expect(facts.models.map(model => model.route)).toEqual(['p2 · m2', 'p1 · m1'])
+    expect(facts.providers).toEqual([
+      { provider: 'p2', count: 2, tokens: 90 },
+      { provider: 'p1', count: 1, tokens: 10 },
+    ])
+    expect(facts.presets).toEqual([
+      { preset: 'army', count: 2, tokens: 90 },
+      { preset: 'standard', count: 1, tokens: 10 },
+    ])
+  })
+
+  it('ranks every breakdown by session count by default', () => {
+    const facts = dashboardFacts({
+      sessions: [
+        session({ id: 'a', provider: 'p1', model: 'm1', inputTokens: 10 }),
+        session({ id: 'b', provider: 'p2', model: 'm2', outputTokens: 90 }),
+        session({ id: 'c', provider: 'p2', model: 'm2' }),
+      ],
+      workspaces: [],
+      archivedSessionIds: [],
+    })
+    expect(facts.metric).toBe('count')
+    expect(facts.models.map(model => model.route)).toEqual(['p2 · m2', 'p1 · m1'])
+    expect(facts.providers[0]).toEqual({ provider: 'p2', count: 2, tokens: 90 })
+  })
+
+  it('excludes an unmeasured row from token totals but not from the row list', () => {
+    const facts = dashboardFacts({
+      sessions: [
+        session({ id: 'a', provider: 'p1', model: 'm1', inputTokens: 10 }),
+        session({ id: 'b', provider: 'p1', model: 'm1', recorded: false, inputTokens: 999 }),
+      ],
+      workspaces: [],
+      archivedSessionIds: [],
+      metric: 'tokens',
+    })
+    expect(facts.inputTokens).toBe(10)
+    expect(facts.providers).toEqual([{ provider: 'p1', count: 2, tokens: 10 }])
+  })
+
+  it('ranks a session without a recorded model out of the model breakdown', () => {
     const facts = dashboardFacts({
       sessions: [session({ id: 'a' }), session({ id: 'b', provider: 'p', model: 'm' })],
       workspaces: [],
       archivedSessionIds: [],
     })
     expect(facts.models.map(model => model.route)).toEqual(['p · m'])
-    expect(facts.recent.find(row => row.id === 'a')?.model).toBeUndefined()
+    expect(facts.rows.find(row => row.id === 'a')?.model).toBeUndefined()
   })
 
-  it('limits the recent list to the newest eight', () => {
+  it('orders every visible session newest first, without a cap', () => {
     const sessions = Array.from({ length: 10 }, (_, index) => session({ id: `s${index}`, updatedAt: index }))
     const facts = dashboardFacts({ sessions, workspaces: [], archivedSessionIds: [] })
-    expect(facts.recent).toHaveLength(8)
-    expect(facts.recent[0]?.id).toBe('s9')
-    expect(facts.recent[7]?.id).toBe('s2')
+    expect(facts.rows).toHaveLength(10)
+    expect(facts.rows[0]?.id).toBe('s9')
+    expect(facts.rows[9]?.id).toBe('s0')
   })
 
   it('reports a session without projections as partial instead of zero work', () => {
@@ -126,7 +178,7 @@ describe('dashboard facts', () => {
     expect(facts.unmeasured).toBe(1)
     expect(facts.turns).toBe(4)
     expect(facts.outputTokens).toBe(10)
-    expect(facts.recent.find(row => row.id === 'b')).toMatchObject({ recorded: false, turns: 0, outputTokens: 0 })
+    expect(facts.rows.find(row => row.id === 'b')).toMatchObject({ recorded: false, turns: 0, outputTokens: 0 })
   })
 
   it('reports the empty state when no visible session exists', () => {
@@ -184,7 +236,7 @@ describe('dashboard facts', () => {
       workspaces: [],
       archivedSessionIds: [],
     })
-    expect(facts.recent.map(row => row.id)).toEqual(['a', 'b'])
+    expect(facts.rows.map(row => row.id)).toEqual(['a', 'b'])
     expect(facts.models.map(model => model.route)).toEqual(['a · a', 'z · z'])
   })
 

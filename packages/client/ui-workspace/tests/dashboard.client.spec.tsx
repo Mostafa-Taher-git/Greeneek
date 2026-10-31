@@ -2,7 +2,7 @@
 // Dashboard view: totals come from the session projections, unknown cost stays
 // absent, and the close action returns to the conversation.
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { SessionListState } from '@greeneek/gnk-api-session-controller/client'
 import type { WorkspaceSnapshot } from '@greeneek/gnk-api-workspace-controller/client'
@@ -207,6 +207,69 @@ describe('DashboardPage', () => {
     // With no workspace holding the session, the name falls back to its cwd.
     expect(screen.getByText('/work/alpha')).toBeTruthy()
     expect(screen.getByText(/had no projection when this page opened/)).toBeTruthy()
+  })
+
+  it('ranks the breakdowns by the selected metric', () => {
+    const usage = {
+      a: {
+        ...row('a'),
+        projectionValues: {
+          modelSelection: { lastUsed: null, next: { provider: 'openrouter', model: 'one' } },
+          tokenUsage: { uncachedInputTokens: 2_000_000, outputTokens: 1_000_000, cacheReadTokens: 0, cacheWriteTokens: 0 },
+        },
+      },
+      b: {
+        ...row('b'),
+        projectionValues: {
+          modelSelection: { lastUsed: { provider: 'openrouter', model: 'one' }, next: null },
+          tokenUsage: { uncachedInputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 },
+        },
+      },
+    }
+    render(<DashboardPage {...props({ ...list, byId: usage })} />)
+    const modelRow = () => within(screen.getByRole('list', { name: 'Model usage distribution' })).getByText('openrouter · one').closest('li')?.textContent ?? ''
+    expect(modelRow()).toContain('2')
+    fireEvent.click(screen.getByRole('button', { name: 'By tokens' }))
+    expect(screen.getByRole('button', { name: 'By tokens' }).getAttribute('aria-pressed')).toBe('true')
+    expect(modelRow()).toContain('3,000,000')
+    fireEvent.click(screen.getByRole('button', { name: 'By sessions' }))
+    expect(modelRow()).toContain('2')
+  })
+
+  it('filters the detail table by route', () => {
+    const routes = {
+      ...list,
+      byId: {
+        a: { ...row('a'), projectionValues: { modelSelection: { lastUsed: null, next: { provider: 'openrouter', model: 'one' } } } },
+        b: { ...row('b'), projectionValues: { modelSelection: { lastUsed: { provider: 'euro', model: 'one' }, next: null } } },
+      },
+    }
+    render(<DashboardPage {...props(routes as unknown as SessionListState)} />)
+    expect(screen.getByText('Alpha')).toBeTruthy()
+    expect(screen.getByText('Beta')).toBeTruthy()
+    fireEvent.change(screen.getByLabelText('Filter'), { target: { value: 'euro · one' } })
+    expect(screen.queryByText('Alpha')).toBeNull()
+    expect(screen.getByText('Beta')).toBeTruthy()
+    fireEvent.change(screen.getByLabelText('Filter'), { target: { value: '' } })
+    expect(screen.getByText('Alpha')).toBeTruthy()
+  })
+
+  it('pages the detail table and disables the buttons at the edges', () => {
+    const many = {
+      ids: Array.from({ length: 10 }, (_, index) => `s${index}`),
+      byId: Object.fromEntries(Array.from({ length: 10 }, (_, index) => [
+        `s${index}`,
+        { id: `s${index}`, displayTitle: `S${index}`, running: false, blank: false, updatedAt: index, projectionValues: {} },
+      ])),
+    }
+    render(<DashboardPage {...props(many as unknown as SessionListState)} />)
+    expect(screen.getByText('Page 1 of 2')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Previous' }).hasAttribute('disabled')).toBe(true)
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }))
+    expect(screen.getByText('Page 2 of 2')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Next' }).hasAttribute('disabled')).toBe(true)
+    fireEvent.click(screen.getByRole('button', { name: 'Previous' }))
+    expect(screen.getByText('Page 1 of 2')).toBeTruthy()
   })
 
   it('closes back to the conversation', () => {

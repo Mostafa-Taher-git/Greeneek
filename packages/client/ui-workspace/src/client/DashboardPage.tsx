@@ -3,6 +3,7 @@
  * the browser already holds. Spend is reported only through the versioned
  * pricing catalog, so an unpriced route stays visibly unknown.
  */
+import { useState } from 'react'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@greeneek/gnk-client-ui-slots'
 import type { SessionListState, SessionSummary } from '@greeneek/gnk-api-session-controller/client'
 import type { WorkspaceSnapshot } from '@greeneek/gnk-api-workspace-controller/client'
@@ -10,7 +11,7 @@ import type { WorkspaceSnapshot } from '@greeneek/gnk-api-workspace-controller/c
 import type {} from '@greeneek/gnk-session-stats/client'
 import type {} from '@greeneek/gnk-token-meter/client'
 import { IconCloseOutline16 } from '@greeneek/gnk-client-ui-primitives'
-import { dashboardFacts, type DashboardSession } from './dashboard-model.ts'
+import { dashboardFacts, type DashboardMetric, type DashboardSession } from './dashboard-model.ts'
 import { SHIPPED_PRICING_CATALOG, type DashboardPricingCatalog } from './dashboard-pricing.ts'
 import { timeLabel } from './time.ts'
 import css from './DashboardPage.module.css'
@@ -37,6 +38,9 @@ const NUMBERS = new Intl.NumberFormat('en-US')
 
 /** Spend keeps up to six decimals so a fraction of a cent stays visible. */
 const MONETARY = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })
+
+/** Rows per page in the session detail table. */
+const PAGE_SIZE = 8
 
 /** Reduce one live session row to dashboard inputs. */
 function dashboardSession(session: SessionSummary, workspace: string): DashboardSession {
@@ -74,6 +78,9 @@ function dashboardSession(session: SessionSummary, workspace: string): Dashboard
 export function DashboardPage({ useSessions, useWorkspaces, t, close, pricing }: DashboardPageProps) {
   const list: SessionListState = useSessions(state => state)
   const workspaces: WorkspaceSnapshot = useWorkspaces(state => state)
+  const [metric, setMetric] = useState<DashboardMetric>('count')
+  const [routeFilter, setRouteFilter] = useState('')
+  const [page, setPage] = useState(0)
   const workspaceBySession = new Map<string, string>()
   for (const workspace of workspaces.items) {
     for (const sessionId of workspace.sessionIds) workspaceBySession.set(sessionId, workspace.title)
@@ -91,6 +98,7 @@ export function DashboardPage({ useSessions, useWorkspaces, t, close, pricing }:
     })),
     archivedSessionIds: workspaces.archivedSessionIds,
     pricing: pricing ?? SHIPPED_PRICING_CATALOG,
+    metric,
   })
   const costValue = facts.cost.kind === 'known'
     ? t('dashboard.costKnown', {
@@ -123,7 +131,21 @@ export function DashboardPage({ useSessions, useWorkspaces, t, close, pricing }:
       unknown: facts.cost.kind === 'unknown',
     },
   ]
-  const mostUsed = facts.models[0]?.count ?? 1
+  const metricValue = (entry: { readonly count: number; readonly tokens: number }): string =>
+    NUMBERS.format(metric === 'tokens' ? entry.tokens : entry.count)
+  const scaleOf = (entry: { readonly count: number; readonly tokens: number }): number =>
+    metric === 'tokens' ? entry.tokens : entry.count
+  const topModel = facts.models[0]
+  const scale = Math.max(1, topModel === undefined ? 1 : scaleOf(topModel))
+  const routeOptions = facts.models.map(model => model.route)
+  const filteredRows = routeFilter === ''
+    ? facts.rows
+    : facts.rows.filter(row => row.model === routeFilter)
+  const pageCount = Math.max(1, Math.ceil(filteredRows.length / PAGE_SIZE))
+  // A filter change can strand the page past the end; clamping keeps the render
+  // a pure function of the inputs instead of resetting through an effect.
+  const currentPage = Math.min(page, pageCount - 1)
+  const pageRows = filteredRows.slice(currentPage * PAGE_SIZE, currentPage * PAGE_SIZE + PAGE_SIZE)
   const now = Date.now()
   return (
     <div className={css.page}>
@@ -167,6 +189,25 @@ export function DashboardPage({ useSessions, useWorkspaces, t, close, pricing }:
           )
           : (
             <>
+              <div className={css.rankRow} role="group" aria-label={t('dashboard.metric')}>
+                <button
+                  type="button"
+                  className={metric === 'count' ? css.rankActive : css.rank}
+                  aria-pressed={metric === 'count'}
+                  onClick={() => { setMetric('count') }}
+                >
+                  {t('dashboard.metricCount')}
+                </button>
+                <button
+                  type="button"
+                  className={metric === 'tokens' ? css.rankActive : css.rank}
+                  aria-pressed={metric === 'tokens'}
+                  onClick={() => { setMetric('tokens') }}
+                >
+                  {t('dashboard.metricTokens')}
+                </button>
+              </div>
+
               <section className={css.section}>
                 <h2 className={css.sectionTitle}>{t('dashboard.models')}</h2>
                 {facts.models.length === 0
@@ -176,11 +217,11 @@ export function DashboardPage({ useSessions, useWorkspaces, t, close, pricing }:
                       {facts.models.map(usage => (
                         <li className={css.modelRow} key={usage.route}>
                           <span className={css.modelRoute} dir="ltr">{usage.route}</span>
-                          <span className={css.modelCount}>{NUMBERS.format(usage.count)}</span>
+                          <span className={css.modelCount}>{metricValue(usage)}</span>
                           <span className={css.modelTrack} aria-hidden="true">
                             <span
                               className={css.modelFill}
-                              style={{ inlineSize: `${Math.max(4, Math.round((usage.count / mostUsed) * 100))}%` }}
+                              style={{ inlineSize: `${Math.max(4, Math.round((scaleOf(usage) / scale) * 100))}%` }}
                             />
                           </span>
                         </li>
@@ -199,7 +240,7 @@ export function DashboardPage({ useSessions, useWorkspaces, t, close, pricing }:
                         {facts.providers.map(entry => (
                           <li className={css.plainRow} key={entry.provider}>
                             <bdi dir="ltr">{entry.provider}</bdi>
-                            <span className={css.plainCount}>{NUMBERS.format(entry.count)}</span>
+                            <span className={css.plainCount}>{metricValue(entry)}</span>
                           </li>
                         ))}
                       </ul>
@@ -215,7 +256,7 @@ export function DashboardPage({ useSessions, useWorkspaces, t, close, pricing }:
                         {facts.presets.map(entry => (
                           <li className={css.plainRow} key={entry.preset}>
                             <bdi dir="ltr">{entry.preset}</bdi>
-                            <span className={css.plainCount}>{NUMBERS.format(entry.count)}</span>
+                            <span className={css.plainCount}>{metricValue(entry)}</span>
                           </li>
                         ))}
                       </ul>
@@ -224,7 +265,20 @@ export function DashboardPage({ useSessions, useWorkspaces, t, close, pricing }:
               </div>
 
               <section className={css.section}>
-                <h2 className={css.sectionTitle}>{t('dashboard.recent')}</h2>
+                <div className={css.sectionHead}>
+                  <h2 className={css.sectionTitle}>{t('dashboard.recent')}</h2>
+                  <label className={css.filterLabel}>
+                    <span className={css.filterCaption}>{t('dashboard.filter')}</span>
+                    <select
+                      className={css.filter}
+                      value={routeFilter}
+                      onChange={(event) => { setRouteFilter(event.target.value); setPage(0) }}
+                    >
+                      <option value="">{t('dashboard.filterAll')}</option>
+                      {routeOptions.map(route => <option key={route} value={route}>{route}</option>)}
+                    </select>
+                  </label>
+                </div>
                 <div className={css.tableWrap}>
                   <table className={css.table}>
                     <thead>
@@ -240,7 +294,7 @@ export function DashboardPage({ useSessions, useWorkspaces, t, close, pricing }:
                       </tr>
                     </thead>
                     <tbody>
-                      {facts.recent.map(row => (
+                      {pageRows.map(row => (
                         <tr key={row.id}>
                           <td><span dir="auto">{row.title}</span></td>
                           <td><span dir="auto">{row.workspace}</span></td>
@@ -262,6 +316,30 @@ export function DashboardPage({ useSessions, useWorkspaces, t, close, pricing }:
                       ))}
                     </tbody>
                   </table>
+                </div>
+                <div className={css.pager}>
+                  <button
+                    type="button"
+                    className={css.pagerButton}
+                    disabled={currentPage === 0}
+                    onClick={() => { setPage(currentPage - 1) }}
+                  >
+                    {t('dashboard.previous')}
+                  </button>
+                  <span className={css.pagerLabel} aria-live="polite">
+                    {t('dashboard.page', {
+                      page: NUMBERS.format(currentPage + 1),
+                      pages: NUMBERS.format(pageCount),
+                    })}
+                  </span>
+                  <button
+                    type="button"
+                    className={css.pagerButton}
+                    disabled={currentPage >= pageCount - 1}
+                    onClick={() => { setPage(currentPage + 1) }}
+                  >
+                    {t('dashboard.next')}
+                  </button>
                 </div>
               </section>
             </>

@@ -50,16 +50,21 @@ export interface DashboardWorkspace {
   readonly sessionIds: readonly string[]
 }
 
+/** Metric a breakdown is ranked by. Only recorded facts may rank a list. */
+export type DashboardMetric = 'count' | 'tokens'
+
 /** One provider group shown in the usage breakdown. */
 export interface DashboardProviderUsage {
   readonly provider: string
   readonly count: number
+  readonly tokens: number
 }
 
 /** One preset group shown in the usage breakdown. */
 export interface DashboardPresetUsage {
   readonly preset: string
   readonly count: number
+  readonly tokens: number
 }
 
 /** One model group shown in the usage breakdown. */
@@ -70,12 +75,14 @@ export interface DashboardModelUsage {
   readonly outputTokens: number
   readonly cacheReadTokens: number
   readonly cacheWriteTokens: number
+  /** Every recorded bucket, so a token-ranked list and the totals agree. */
+  readonly tokens: number
   /** Cost of this route alone, so a single unpriced model stays visible. */
   readonly cost: DashboardCost
 }
 
-/** One recent session row. */
-export interface DashboardRecentSession {
+/** One session row in the detail table. */
+export interface DashboardSessionRow {
   readonly id: string
   readonly title: string
   readonly workspace: string
@@ -103,6 +110,8 @@ export interface DashboardFacts {
   readonly outputTokens: number
   readonly cacheReadTokens: number
   readonly cacheWriteTokens: number
+  /** Breakdowns ranked by {@link DashboardMetric}. */
+  readonly metric: DashboardMetric
   readonly models: readonly DashboardModelUsage[]
   readonly providers: readonly DashboardProviderUsage[]
   readonly presets: readonly DashboardPresetUsage[]
@@ -113,7 +122,8 @@ export interface DashboardFacts {
   readonly dataState: DashboardDataState
   /** Sessions whose projections had not arrived when the fold ran. */
   readonly unmeasured: number
-  readonly recent: readonly DashboardRecentSession[]
+  /** Every visible session, newest first; the page filters and paginates it. */
+  readonly rows: readonly DashboardSessionRow[]
 }
 
 /** Newest first with the id as a deterministic tiebreak. */
@@ -125,29 +135,50 @@ function byRecency(a: DashboardSession, b: DashboardSession): number {
 /** Stable route label for a provider/model pair. */
 function routeOf(session: DashboardSession): string | undefined {
   if (session.provider === undefined || session.model === undefined) return undefined
-  return `${session.provider} · ${session.model}`
+  return `${session.provider} ·{session.model}`
 }
 
-/** Count occurrences, sorted by descending count then label. */
-function tally(values: readonly string[]): { key: string; count: number }[] {
-  const counts = new Map<string, number>()
-  for (const value of values) counts.set(value, (counts.get(value) ?? 0) + 1)
-  return [...counts]
-    .map(([key, count]) => ({ key, count }))
-    .sort((a, b) => b.count - a.count || (a.key < b.key ? -1 : 1))
+/** One counted label with its recorded token total. */
+interface Tally {
+  readonly key: string
+  readonly count: number
+  readonly tokens: number
+}
+
+/** Rank by the requested metric, with the label as a deterministic tiebreak. */
+function byMetric(a: Tally, b: Tally, metric: DashboardMetric): number {
+  const primary = metric === 'tokens' ? b.tokens - a.tokens : b.count - a.count
+  if (primary !== 0) return primary
+  return a.key < b.key ? -1 : 1
+}
+
+/** Count and token totals per label, ranked by the requested metric. */
+function tally(values: readonly { key: string; tokens: number }[], metric: DashboardMetric): Tally[] {
+  const totals = new Map<string, { count: number; tokens: number }>()
+  for (const value of values) {
+    const current = totals.get(value.key) ?? { count: 0, tokens: 0 }
+    current.count += 1
+    current.tokens += value.tokens
+    totals.set(value.key, current)
+  }
+  return [...totals]
+    .map(([key, total]) => ({ key, count: total.count, tokens: total.tokens }))
+    .sort((a, b) => byMetric(a, b, metric))
 }
 
 /**
  * Fold session and workspace projections into the dashboard view model.
- * @param input - visible sessions, workspaces, archived ids, and the pricing catalog.
- * @returns every headline total, breakdown, spend, and the recent rows.
+ * @param input - visible sessions, workspaces, archived ids, the pricing catalog, and the ranking metric.
+ * @returns every headline total, breakdown, spend, and every visible row.
  */
 export function dashboardFacts(input: {
   readonly sessions: readonly DashboardSession[]
   readonly workspaces: readonly DashboardWorkspace[]
   readonly archivedSessionIds: readonly string[]
   readonly pricing?: DashboardPricingCatalog
+  readonly metric?: DashboardMetric
 }): DashboardFacts {
+  const metric = input.metric ?? 'count'
   const archived = new Set(input.archivedSessionIds)
   const visible = input.sessions.filter(session => !archived.has(session.id))
   // An unmeasured row contributes names and recency, never a token count: its
@@ -187,21 +218,32 @@ export function dashboardFacts(input: {
     routes.set(route, current)
   }
   const catalog = input.pricing
-  const models = [...routes]
-    .sort(([routeA, a], [routeB, b]) => b.count - a.count || (routeA < routeB ? -1 : 1))
+  const modelEntries = [...routes]
     .map(([route, usage]) => ({
       route,
-      count: usage.count,
-      inputTokens: usage.inputTokens,
-      outputTokens: usage.outputTokens,
-      cacheReadTokens: usage.cacheReadTokens,
-      cacheWriteTokens: usage.cacheWriteTokens,
-      cost: catalog === undefined
-        ? { kind: 'unknown' as const, reason: 'no-catalog-entry' as const }
-        : priceUsage(catalog, usage, usage, usage.at),
+      usage,
+      tokens: usage.inputTokens + usage.outputTokens
+        + usage.cacheReadTokens + usage.cacheWriteTokens,
     }))
+    .sort((a, b) => byMetric(
+      { key: a.route, count: a.usage.count, tokens: a.tokens },
+      { key: b.route, count: b.usage.count, tokens: b.tokens },
+      metric,
+    ))
+  const models: DashboardModelUsage[] = modelEntries.map(({ route, usage, tokens }) => ({
+    route,
+    count: usage.count,
+    inputTokens: usage.inputTokens,
+    outputTokens: usage.outputTokens,
+    cacheReadTokens: usage.cacheReadTokens,
+    cacheWriteTokens: usage.cacheWriteTokens,
+    tokens,
+    cost: catalog === undefined
+      ? { kind: 'unknown', reason: 'no-catalog-entry' }
+      : priceUsage(catalog, usage, usage, usage.at),
+  }))
   const cost = totalCost(models.map(model => model.cost))
-  const recent = [...visible].sort(byRecency).slice(0, 8).map((session) => {
+  const rows = [...visible].sort(byRecency).map((session) => {
     const model = routeOf(session)
     return {
       id: session.id,
@@ -216,6 +258,9 @@ export function dashboardFacts(input: {
       recorded: session.recorded,
     }
   })
+  const recordedTokens = (session: DashboardSession): number => session.recorded
+    ? session.inputTokens + session.outputTokens + session.cacheReadTokens + session.cacheWriteTokens
+    : 0
   const unmeasured = visible.length - measured.length
   return {
     sessions: visible.length,
@@ -228,15 +273,26 @@ export function dashboardFacts(input: {
     outputTokens: measured.reduce((total, session) => total + session.outputTokens, 0),
     cacheReadTokens: measured.reduce((total, session) => total + session.cacheReadTokens, 0),
     cacheWriteTokens: measured.reduce((total, session) => total + session.cacheWriteTokens, 0),
-    models,
-    providers: tally(visible.flatMap(session => session.provider === undefined ? [] : [session.provider]))
-      .map(entry => ({ provider: entry.key, count: entry.count })),
-    presets: tally(visible.flatMap(session => session.preset === undefined ? [] : [session.preset]))
-      .map(entry => ({ preset: entry.key, count: entry.count })),
+    metric,
+    models: models.map(({ route, count, inputTokens, outputTokens, cacheReadTokens, cacheWriteTokens, tokens, cost: modelCost }) => ({
+      route, count, inputTokens, outputTokens, cacheReadTokens, cacheWriteTokens, tokens, cost: modelCost,
+    })),
+    providers: tally(
+      visible.flatMap(session => session.provider === undefined
+        ? []
+        : [{ key: session.provider, tokens: recordedTokens(session) }]),
+      metric,
+    ).map(entry => ({ provider: entry.key, count: entry.count, tokens: entry.tokens })),
+    presets: tally(
+      visible.flatMap(session => session.preset === undefined
+        ? []
+        : [{ key: session.preset, tokens: recordedTokens(session) }]),
+      metric,
+    ).map(entry => ({ preset: entry.key, count: entry.count, tokens: entry.tokens })),
     cost,
     catalogVersion: cost.kind === 'known' ? cost.catalogVersion : catalog?.version ?? '0',
     dataState: visible.length === 0 ? 'empty' : unmeasured === 0 ? 'complete' : 'partial',
     unmeasured,
-    recent,
+    rows,
   }
 }

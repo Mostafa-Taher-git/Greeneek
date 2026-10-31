@@ -96,6 +96,22 @@ describe('CI workflow', () => {
     expect(build).toBeLessThan(runs.findIndex(run => run.includes('pnpm run test:snapshot')))
     expect(runs.findIndex(run => run.includes('pnpm run hygiene'))).toBeGreaterThan(build)
   })
+
+  it('runs the consumer verification matrix in its own bounded job', () => {
+    const lane = jobNamed(workflow, 'consumers')
+
+    expect(lane['runs-on']).toBe('ubuntu-latest')
+    // The aggregate builds the tree and then runs the browser, expected-output,
+    // documentation, and built-artifact lanes serially; 45 minutes covers a cold
+    // runner with room to fail instead of hanging.
+    expect(lane['timeout-minutes']).toBe(45)
+    const steps = jobSteps(workflow, 'consumers')
+    const aggregate = steps.find(step => typeof step.run === 'string'
+      && step.run.includes('pnpm run check:ci:consumers'))
+    expect(aggregate).toBeDefined()
+    // Replay stays read-only here too: the lane compares committed outputs.
+    expect(aggregate?.env).toMatchObject({ GNK_SNAPSHOT: 'replay', CI: true })
+  })
 })
 
 describe('Desktop release workflow', () => {

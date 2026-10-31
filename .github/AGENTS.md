@@ -12,8 +12,12 @@ a gitleaks secret scan over the push range, a non-blocking
 parallel Ubuntu runner carrying the release-verification layers `ci` never ran:
 `pnpm run duplication`, read-only `pnpm run test:snapshot`, and — after its own
 `pnpm build`, so the built-invariants gate sees artifacts — `pnpm run hygiene`.
-The release gate looks for the whole workflow run, so both jobs must be green.
-Every action is on a Node 24 major.
+Its `consumers` job runs the consumer verification matrix as one aggregate
+(`pnpm run check:ci:consumers`): built-artifact checks, expected-output
+processes, the browser snapshot suite, and the documentation typecheck, with
+replay kept read-only. A fourth job runs the `pwsh` terminal lane on
+`windows-latest`. The release gate looks for the whole workflow run, so every
+job must be green. Every action is on a Node 24 major.
 
 `release-desktop.yml` builds both desktop platforms on a `desktop-*` tag or a
 manual dispatch that names one, then publishes a single GitHub Release. Its

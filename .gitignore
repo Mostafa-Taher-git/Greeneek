@@ -1,4 +1,3 @@
-```
 # Configuration and build artifacts
 *.cordis.yml
 *.yml.bak
@@ -20,6 +19,8 @@ vendor/*/lib/
 # Local build/test residue (regenerable; never commit)
 .artifacts/
 .gnk-build/
+.rebrand/
+.tmp-gnk-home/
 apps/desktop/.staging/
 
 # Generator-test scratch workspaces (created under packages/typert/generator/tests, cleaned after each test)
@@ -60,4 +61,3 @@ coverage/
 htmlcov/
 .pytest_cache/
 .mypy_cache/
-```

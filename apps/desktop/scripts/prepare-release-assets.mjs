@@ -11,6 +11,21 @@ import { fileURLToPath } from 'node:url'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
+/**
+ * Resolve the directory holding this run's built installers. A supplied
+ * `--dist` is relative to the working directory the command runs from (the
+ * release workflow runs at the repository root); the default stays inside the
+ * desktop package so a bare `node scripts/prepare-release-assets.mjs` works.
+ * @param rootDir - the desktop package directory.
+ * @param distArg - value of `--dist`, if any.
+ * @param cwd - working directory a relative `distArg` resolves against.
+ * @returns the absolute dist directory.
+ */
+export function resolveDistDir(rootDir, distArg, cwd) {
+  if (distArg === undefined) return path.join(rootDir, 'dist')
+  return path.resolve(cwd, distArg)
+}
+
 export function releaseAssetMappings(version) {
   return [
     [`Greeneek-Desktop-${version}-linux-amd64.deb`, 'Greeneek-Desktop-latest-linux-amd64.deb'],
@@ -45,7 +60,7 @@ export function prepareReleaseAssets({ distDir, version }) {
 
   if (present.length === 0) {
     const missingAssets = mappings.map(([sourceName]) => sourceName)
-    throw new Error(`Missing release assets:\n${missingAssets.join('\n')}`)
+    throw new Error(`Missing release assets in ${distDir}:\n${missingAssets.join('\n')}`)
   }
 
   for (const [sourceName, aliasName] of present) {
@@ -67,7 +82,7 @@ function main() {
   const tag = resolveReleaseTag(argumentValue('--tag'), process.env.GITHUB_REF_NAME)
   const manifest = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'))
   const version = tag ? parseDesktopVersion(tag) : (argumentValue('--version') ?? manifest.version)
-  const distDir = path.resolve(root, argumentValue('--dist') ?? 'dist')
+  const distDir = resolveDistDir(root, argumentValue('--dist'), process.cwd())
   const aliases = prepareReleaseAssets({ distDir, version })
   process.stdout.write(`Prepared stable release aliases:\n${aliases.join('\n')}\n`)
 }

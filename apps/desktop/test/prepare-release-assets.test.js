@@ -1,22 +1,51 @@
 import { strict as assert } from 'node:assert'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, relative, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, it } from 'node:test'
 import {
   parseDesktopVersion,
   prepareReleaseAssets,
   releaseAssetMappings,
+  resolveDistDir,
   resolveReleaseTag,
 } from '../scripts/prepare-release-assets.mjs'
 
 const VERSION = '0.9.0'
+const SCRIPT = fileURLToPath(new URL('../scripts/prepare-release-assets.mjs', import.meta.url))
 
 function stageDist(names) {
   const dir = mkdtempSync(join(tmpdir(), 'greeneek-release-assets-'))
   for (const name of names) writeFileSync(join(dir, name), `bytes-of-${name}`)
   return dir
 }
+
+describe('resolveDistDir', () => {
+  it('keeps the default inside the desktop package', () => {
+    assert.equal(
+      resolveDistDir('/repo/apps/desktop', undefined, '/repo'),
+      join('/repo/apps/desktop', 'dist'),
+    )
+  })
+
+  it('resolves a supplied relative path against the working directory', () => {
+    assert.equal(
+      resolveDistDir('/repo/apps/desktop', 'apps/desktop/.staging/app/dist', '/repo'),
+      resolve('/repo', 'apps/desktop/.staging/app/dist'),
+    )
+  })
+
+  it('keeps an absolute path as given', () => {
+    const dir = stageDist([])
+    try {
+      assert.equal(resolveDistDir('/repo/apps/desktop', dir, '/somewhere'), dir)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+})
 
 describe('prepare-release-assets', () => {
   it('aliases every versioned asset when the full matrix is present', () => {
@@ -56,10 +85,32 @@ describe('prepare-release-assets', () => {
     try {
       assert.throws(
         () => prepareReleaseAssets({ distDir: dir, version: VERSION }),
-        /Missing release assets/,
+        (error) => error.message.startsWith(`Missing release assets in ${dir}:`),
       )
     } finally {
       rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('aliases from a repo-root-relative --dist, the way the release workflow calls it', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'greeneek-release-cwd-'))
+    const distDir = join(cwd, 'apps/desktop/.staging/app/dist')
+    mkdirSync(distDir, { recursive: true })
+    for (const name of releaseAssetMappings('0.9.1').map(([source]) => source)) {
+      writeFileSync(join(distDir, name), `bytes-of-${name}`)
+    }
+    try {
+      const result = spawnSync(
+        process.execPath,
+        [SCRIPT, '--dist', relative(cwd, distDir), '--tag', 'desktop-v0.9.1'],
+        { cwd, encoding: 'utf8' },
+      )
+      assert.equal(result.status, 0, result.stderr)
+      assert.match(result.stdout, /Prepared stable release aliases/)
+      assert.ok(existsSync(join(distDir, 'Greeneek-Desktop-latest-linux-amd64.deb')))
+      assert.ok(existsSync(join(distDir, 'Greeneek-Desktop-latest-windows-x64.exe')))
+    } finally {
+      rmSync(cwd, { recursive: true, force: true })
     }
   })
 

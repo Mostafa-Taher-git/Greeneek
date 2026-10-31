@@ -322,40 +322,63 @@ export function normalizeStdout(
     }
     return scrubValue(frame, ctx, cwdPathMode, identityMode) as Record<string, unknown>
   })
-  return canonicalizeSessionConfigOrder(frames).map(f => JSON.stringify(f)).join('\n') + '\n'
+  return dropRedundantSessionConfigUpdate(frames).map(f => JSON.stringify(f)).join('\n') + '\n'
 }
 
 /**
- * Canonicalize the wire order of the session-level `config_option_update`.
+ * Drop the redundant session-level `config_option_update`.
  *
  * Provider-topology discovery resolves off-chain, so the notification that
- * advertises a freshly created or resumed session's options can be written on
- * either side of the `session/new` / `session/resume` response. The recorded
- * contract always places the notification first, so swap any response that is
- * immediately followed by a `config_option_update` carrying the same options.
+ * advertises a freshly created or resumed session's options is written only
+ * when the topology happens to change after the session exists — it appears on
+ * one run and is absent on the next, on either side of the response. The
+ * `session/new` / `session/resume` response already carries the same options,
+ * so the frame adds no information; keeping it would make the corpus depend on
+ * that race. A notification that is not adjacent to a response carrying the
+ * same options is a genuine mid-session topology change and is kept.
  *
  * @param frames Id-stabilized, scrubbed stdout frames in arrival order.
- * @returns Frames with each such response/notification pair in canonical order.
+ * @returns Frames without the duplicates of an adjacent response's options.
  */
-function canonicalizeSessionConfigOrder(frames: Record<string, unknown>[]): Record<string, unknown>[] {
-  const ordered = [...frames]
-  for (let index = 0; index + 1 < ordered.length; index++) {
-    const response = ordered[index] as Record<string, unknown>
-    const following = ordered[index + 1] as Record<string, unknown>
-    const result = response.result
-    if (typeof result !== 'object' || result === null) continue
-    const options = (result as { configOptions?: unknown }).configOptions
-    if (!Array.isArray(options)) continue
-    const params = following.params
-    if (typeof params !== 'object' || params === null) continue
-    const update = (params as { update?: Record<string, unknown> }).update
-    if (update?.sessionUpdate !== 'config_option_update') continue
-    if (JSON.stringify(update.configOptions) !== JSON.stringify(options)) continue
-    ordered[index] = following
-    ordered[index + 1] = response
-    index += 1
+function dropRedundantSessionConfigUpdate(
+  frames: Record<string, unknown>[],
+): Record<string, unknown>[] {
+  const kept: Record<string, unknown>[] = []
+  for (const [index, frame] of frames.entries()) {
+    const options = sessionConfigOptions(frame)
+    if (options === undefined) {
+      kept.push(frame)
+      continue
+    }
+    const adjacent = [frames[index - 1], frames[index + 1]]
+    if (adjacent.some(neighbour => sameOptions(responseConfigOptions(neighbour), options))) continue
+    kept.push(frame)
   }
-  return ordered
+  return kept
+}
+
+/** Options carried by a `config_option_update` session update, if any. */
+function sessionConfigOptions(frame: Record<string, unknown>): unknown {
+  const params = frame.params
+  if (typeof params !== 'object' || params === null) return undefined
+  const update = (params as { update?: Record<string, unknown> }).update
+  if (update?.sessionUpdate !== 'config_option_update') return undefined
+  return update.configOptions
+}
+
+/** Options carried by a `session/new` or `session/resume` response, if any. */
+function responseConfigOptions(frame: Record<string, unknown> | undefined): unknown {
+  if (frame === undefined) return undefined
+  const result = frame.result
+  if (typeof result !== 'object' || result === null) return undefined
+  const options = (result as { configOptions?: unknown }).configOptions
+  return Array.isArray(options) ? options : undefined
+}
+
+/** Structural equality for two option lists; either `undefined` never matches. */
+function sameOptions(left: unknown, right: unknown): boolean {
+  if (left === undefined || right === undefined) return false
+  return JSON.stringify(left) === JSON.stringify(right)
 }
 
 /**

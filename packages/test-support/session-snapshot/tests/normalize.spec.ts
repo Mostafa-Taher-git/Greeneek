@@ -40,21 +40,39 @@ describe('normalizeStdout', () => {
   const stdoutFrames = (raw: string): Record<string, unknown>[] =>
     normalizeStdout(raw, ctx).trim().split('\n').map(line => JSON.parse(line) as Record<string, unknown>)
 
-  it('places a trailing config_option_update before the response advertising the same options', () => {
+  it('drops a config_option_update that duplicates the following response options', () => {
     const configOptions = [{ id: 'model', currentValue: 'm' }]
     const raw = [
       JSON.stringify({ jsonrpc: '2.0', id: 5, result: { sessionId: 's', configOptions } }),
       JSON.stringify({ jsonrpc: '2.0', method: 'session/update', params: { update: { sessionUpdate: 'config_option_update', configOptions } } }),
     ].join('\n')
-    expect(stdoutFrames(raw).map(frame => frame.method ?? 'response')).toEqual(['session/update', 'response'])
+    expect(stdoutFrames(raw).map(frame => frame.method ?? 'response')).toEqual(['response'])
   })
 
-  it('keeps ordering when the trailing notification advertises different options', () => {
+  it('drops the notification when it precedes the response carrying the same options', () => {
+    const configOptions = [{ id: 'model', currentValue: 'm' }]
+    const raw = [
+      JSON.stringify({ jsonrpc: '2.0', method: 'session/update', params: { update: { sessionUpdate: 'config_option_update', configOptions } } }),
+      JSON.stringify({ jsonrpc: '2.0', id: 5, result: { sessionId: 's', configOptions } }),
+    ].join('\n')
+    expect(stdoutFrames(raw).map(frame => frame.method ?? 'response')).toEqual(['response'])
+  })
+
+  it('keeps a notification that advertises different options than the response', () => {
     const raw = [
       JSON.stringify({ jsonrpc: '2.0', id: 5, result: { configOptions: [{ id: 'model', currentValue: 'a' }] } }),
       JSON.stringify({ jsonrpc: '2.0', method: 'session/update', params: { update: { sessionUpdate: 'config_option_update', configOptions: [{ id: 'model', currentValue: 'b' }] } } }),
     ].join('\n')
     expect(stdoutFrames(raw).map(frame => frame.method ?? 'response')).toEqual(['response', 'session/update'])
+  })
+
+  it('keeps a mid-session topology change that no response advertises', () => {
+    const raw = [
+      JSON.stringify({ jsonrpc: '2.0', id: 5, result: { sessionId: 's' } }),
+      JSON.stringify({ jsonrpc: '2.0', method: 'session/update', params: { update: { sessionUpdate: 'config_option_update', configOptions: [{ id: 'model' }] } } }),
+      JSON.stringify({ jsonrpc: '2.0', method: 'session/update', params: { update: { sessionUpdate: 'agent_message_chunk' } } }),
+    ].join('\n')
+    expect(stdoutFrames(raw).map(frame => frame.method ?? 'response')).toEqual(['response', 'session/update', 'session/update'])
   })
 
   it('ignores responses and followers that cannot be a matching notification', () => {
@@ -73,6 +91,7 @@ describe('normalizeStdout', () => {
     ].join('\n')
     expect(() => normalizeStdout(raw, ctx)).not.toThrow()
   })
+
 
   it('scrubs the cwd and session id anywhere they appear', () => {
     const raw = JSON.stringify({

@@ -32,3 +32,11 @@ Published artifacts today: Linux `deb` + `AppImage`, Windows NSIS `exe` + portab
 ## Website (`docs/user` projection)
 
 `docs/user/` prose and the desktop download links are the canonical sources; `pnpm run website:build` validates links and `pnpm run doc-sync` gates the documentation. Update the desktop guide's download links only when an artifact type joins or leaves the release set.
+
+## Startup failures and support data
+
+The desktop writes one persistent log and mirrors the gnk service's output into it: `gnk.log` inside Electron's platform logs directory — `%APPDATA%\Greeneek\logs\gnk.log` on Windows, `~/.config/Greeneek/logs/gnk.log` on Linux. The intended support flow for every startup report is: ask the user for that file, plus the packaged app's `boot-health.json` counter from the userData directory (`%APPDATA%\Greeneek` on Windows), and match the failing module against the release manifest.
+
+`desktop-v0.3.6` carries a known startup failure: the packaged tree could not load `@greeneek/gnk-session-telemetry-otel` because `@opentelemetry/otlp-transformer` was absent from the deployed module tree, so the app exited during boot with a Node module-not-found error naming that package. The cause was a stager that resolved a transitive edge through a symlink leaving the staged tree — it "existed" on the build machine, so neither staging nor packaging noticed the missing real directory. The staging closure invariant (every required production edge resolves inside the staged tree, verified per platform by `smoke:packaged` and `smoke-installed` before publish) is the recurrence guard; the same symptom on a later release signals a new missing edge and must be reproduced and root-caused the same way rather than patched by adding the one named module as a direct dependency.
+
+v0.3.6 users cannot self-recover except by upgrading; release notes for a later tag must link the fix, and the v0.3.6 release notes carry the known-issue warning (see the GitHub release for `desktop-v0.3.6`). Never remove a known-issue note from its release body once the release has shipped.

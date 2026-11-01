@@ -41,7 +41,7 @@
 - text: {{clock}}
 - textbox "Message or run a task... / commands, @ files or sessions"
 - 'button "Access mode, current: Workspace Write"': Workspace Write
-- button "Code tools"
+- button "CTC"
 - button "Select model, current Greeneek-V4-Flash":
   - text: Greeneek-V4-Flash
   - img

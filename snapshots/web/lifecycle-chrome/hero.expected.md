@@ -29,7 +29,7 @@
 - textbox "Describe what you want to build... / commands, @ files or sessions":
   - paragraph
 - 'button "Access mode, current: Workspace Write"': Workspace Write
-- button "Code tools"
+- button "CTC"
 - button "Select model, current Greeneek-V4-Flash":
   - text: Greeneek-V4-Flash
   - img

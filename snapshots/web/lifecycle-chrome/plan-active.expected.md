@@ -28,7 +28,7 @@
   - img
 - textbox "Describe what you want to build... / commands, @ files or sessions"
 - 'button "Access mode, current: Workspace Write"': Workspace Write
-- button "Code tools"
+- button "CTC"
 - button "Plan mode on, press to turn off": Plan
 - button "Select model, current Greeneek-V4-Flash":
   - text: Greeneek-V4-Flash

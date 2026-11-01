@@ -1482,47 +1482,47 @@ describe('composer control seats', () => {
 
   it('the code tools chip stays hidden before a baseline lands and without its face', () => {
     const bare = bench()
-    expect(bare.view.container.querySelector('button[aria-label="代码工具"]')).toBeNull()
+    expect(bare.view.container.querySelector(`button[aria-label="${zh['input.codeTools']}"]`)).toBeNull()
     cleanup()
     const withFace = bench({ presentCodeTools: () => Promise.resolve({ ok: true }) })
-    expect(withFace.view.container.querySelector('button[aria-label="代码工具"]')).toBeNull()
+    expect(withFace.view.container.querySelector(`button[aria-label="${zh['input.codeTools']}"]`)).toBeNull()
     cleanup()
     const withProjection = bench({ presentAs: null })
-    expect(withProjection.view.container.querySelector('button[aria-label="代码工具"]')).toBeNull()
+    expect(withProjection.view.container.querySelector(`button[aria-label="${zh['input.codeTools']}"]`)).toBeNull()
   })
 
   it('the code tools chip renders off-state over a baseline; the menu carries the opt-in and the caveat', () => {
     const { view } = bench({ presentCodeTools: () => Promise.resolve({ ok: true }), presentAs: null })
-    const trigger = view.getByLabelText('代码工具')
+    const trigger = view.getByLabelText(zh['input.codeTools'])
     expect(trigger.getAttribute('title')).toBe('未开启')
     fireEvent.click(trigger)
-    expect(view.getByRole('menuitem', { name: '为本会话开启代码工具' })).toBeTruthy()
+    expect(view.getByRole('menuitem', { name: zh['input.codeTools.on'] })).toBeTruthy()
     expect(view.getByText(zh['input.codeTools.caveat'])).toBeTruthy()
   })
 
   it('opting in calls the injected face and closes the menu on acceptance', async () => {
     const presentCodeTools = vi.fn(() => Promise.resolve({ ok: true as const }))
     const { view } = bench({ presentCodeTools, presentAs: null })
-    fireEvent.click(view.getByLabelText('代码工具'))
-    fireEvent.click(view.getByRole('menuitem', { name: '为本会话开启代码工具' }))
+    fireEvent.click(view.getByLabelText(zh['input.codeTools']))
+    fireEvent.click(view.getByRole('menuitem', { name: zh['input.codeTools.on'] }))
     await act(async () => {})
     expect(presentCodeTools).toHaveBeenCalledTimes(1)
     expect(presentCodeTools.mock.calls[0]).toEqual([])
     await act(async () => {})
-    expect(view.queryByRole('menuitem', { name: '为本会话开启代码工具' })).toBeNull()
+    expect(view.queryByRole('menuitem', { name: zh['input.codeTools.on'] })).toBeNull()
   })
 
   it('toasts both refusal reasons through the bar banner without closing the menu', async () => {
     let response: PresentCodeToolsResult = { ok: false, reason: 'locked', detail: '' }
     const presentCodeTools = vi.fn(() => Promise.resolve(response))
     const { view } = bench({ presentCodeTools, presentAs: null })
-    fireEvent.click(view.getByLabelText('代码工具'))
-    const row = view.getByRole('menuitem', { name: '为本会话开启代码工具' })
+    fireEvent.click(view.getByLabelText(zh['input.codeTools']))
+    const row = view.getByRole('menuitem', { name: zh['input.codeTools.on'] })
 
     fireEvent.click(row)
     await act(async () => {})
-    expect(view.getByRole('alert').textContent).toContain('本会话的代码工具声明方式已锁定')
-    expect(view.queryByRole('menuitem', { name: '为本会话开启代码工具' })).not.toBeNull()
+    expect(view.getByRole('alert').textContent).toContain(zh['input.codeTools.locked'])
+    expect(view.queryByRole('menuitem', { name: zh['input.codeTools.on'] })).not.toBeNull()
 
     response = { ok: false, reason: 'runtime-required', detail: '' }
     fireEvent.click(row)
@@ -1535,23 +1535,23 @@ describe('composer control seats', () => {
       { ok: false, reason: 'unavailable', detail: 'gone' },
     ))
     const { view } = bench({ presentCodeTools, presentAs: null })
-    fireEvent.click(view.getByLabelText('代码工具'))
-    fireEvent.click(view.getByRole('menuitem', { name: '为本会话开启代码工具' }))
+    fireEvent.click(view.getByLabelText(zh['input.codeTools']))
+    fireEvent.click(view.getByRole('menuitem', { name: zh['input.codeTools.on'] }))
     await act(async () => {})
     expect(presentCodeTools).toHaveBeenCalledOnce()
     expect(view.queryByRole('alert')).toBeNull()
-    expect(view.queryByRole('menuitem', { name: '为本会话开启代码工具' })).not.toBeNull()
+    expect(view.queryByRole('menuitem', { name: zh['input.codeTools.on'] })).not.toBeNull()
   })
 
   it('the on-state chip marks enabled, opens to the caveat alone, and offers no action', () => {
     const presentCodeTools = vi.fn(() => Promise.resolve({ ok: true as const }))
     const { view } = bench({ presentCodeTools, presentAs: 'both' })
-    const trigger = view.getByLabelText('代码工具')
+    const trigger = view.getByLabelText(zh['input.codeTools'])
     expect(trigger.getAttribute('title')).toBeNull()
-    expect(trigger.textContent).toContain('代码工具')
+    expect(trigger.textContent).toContain(zh['input.codeTools'])
     fireEvent.click(trigger)
     expect(view.getByText(zh['input.codeTools.caveat'])).toBeTruthy()
-    expect(view.queryByRole('menuitem', { name: '为本会话开启代码工具' })).toBeNull()
+    expect(view.queryByRole('menuitem', { name: zh['input.codeTools.on'] })).toBeNull()
     expect(presentCodeTools).not.toHaveBeenCalled()
   })
 
@@ -1561,13 +1561,13 @@ describe('composer control seats', () => {
       presentCodeTools: () => Promise.resolve({ ok: true }),
       presentAs: null,
     })
-    expect((view.getByLabelText('代码工具') as HTMLButtonElement).disabled).toBe(true)
+    expect((view.getByLabelText(zh['input.codeTools']) as HTMLButtonElement).disabled).toBe(true)
     cleanup()
     const live = bench({
       running: true,
       presentCodeTools: () => Promise.resolve({ ok: true }),
       presentAs: null,
     })
-    expect((live.view.getByLabelText('代码工具') as HTMLButtonElement).disabled).toBe(false)
+    expect((live.view.getByLabelText(zh['input.codeTools']) as HTMLButtonElement).disabled).toBe(false)
   })
 })

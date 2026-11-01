@@ -222,8 +222,11 @@ describe('the shipped Web composition', () => {
   it('supplies the shipped presets, and only those, from the system root', async () => {
     const listed = await ctx.agentPresets.list()
 
+    // The shipped system root carries seven presets: `army` and `maestro`
+    // joined `standard`/`ptc`/`cordis`/`instructor`/`pixels-designer` when the
+    // delegation presets shipped, and the roster is platform-independent.
     expect(listed.filter(preset => preset.trust === 'system').map(preset => preset.id).sort())
-      .toEqual(['cordis', 'instructor', 'pixels-designer', 'ptc', 'standard'])
+      .toEqual(['army', 'cordis', 'instructor', 'maestro', 'pixels-designer', 'ptc', 'standard'])
     expect(listed.find(preset => preset.id === 'narrow')?.trust).toBe('user')
     expect(ctx.agentPresets.defaultId).toBe('standard')
   })

@@ -931,7 +931,12 @@ describe('DirectoryBrowser', () => {
     // has no focus trap.
     rowButton(screen.getByRole('listitem')).focus()
     await waitFor(() => { expect(within(columns()[0]!).getByText('harness')).toBeTruthy() })
-    expect(document.activeElement).toBe(screen.getByLabelText('browser.editPath'))
+    // The re-park is the effect that runs after the landed scan commits, so it
+    // settles with that commit rather than inside the `fireEvent` that started
+    // the walk. Reading it once synchronously races the focus move.
+    await waitFor(() => {
+      expect(document.activeElement).toBe(screen.getByLabelText('browser.editPath'))
+    })
   })
 
   it('keeps the panes and stays silent when a draft-following scan fails', async () => {

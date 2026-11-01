@@ -121,6 +121,10 @@ describe('CI workflow', () => {
       const step = steps.find(candidate => candidate.run === command)
       expect(step?.env).toMatchObject({ GNK_SNAPSHOT: 'replay', CI: true })
     }
+    // The Web suite launches Playwright Chromium, whose browser binary is not
+    // part of `pnpm install`; the job that runs the lane installs it first.
+    expect(runs.indexOf('pnpm exec playwright install --with-deps chromium'))
+      .toBeLessThan(runs.indexOf('pnpm run test:web:built'))
   })
 })
 

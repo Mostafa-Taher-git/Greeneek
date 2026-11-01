@@ -122,8 +122,9 @@ describe('CI workflow', () => {
       expect(step?.env).toMatchObject({ GNK_SNAPSHOT: 'replay', CI: true })
     }
     // The Web suite launches Playwright Chromium, whose browser binary is not
-    // part of `pnpm install`; the job that runs the lane installs it first.
-    expect(runs.indexOf('pnpm exec playwright install --with-deps chromium'))
+    // part of `pnpm install`; the job that runs the lane installs it first. The
+    // CLI resolves through the package that declares Playwright, not the root.
+    expect(runs.indexOf('pnpm --filter @greeneek/gnk-web-frontend exec playwright install --with-deps chromium'))
       .toBeLessThan(runs.indexOf('pnpm run test:web:built'))
   })
 })

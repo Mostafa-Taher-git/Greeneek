@@ -122,10 +122,11 @@ jobs:
           GNK_SNAPSHOT: replay
       - name: Browser binaries for the Web suite
         # The Web scenarios launch Playwright's Chromium. `pnpm install` fetches
-        # the driver only; the browser itself is a separate download, and without
-        # it every scenario fails at `browserType.launch` rather than on any
-        # product behavior.
-        run: pnpm exec playwright install --with-deps chromium
+        # the driver only — and the CLI belongs to `@greeneek/gnk-web-frontend`,
+        # not the workspace root — so the browser is installed through that
+        # package here; without it every scenario fails at `browserType.launch`
+        # rather than on any product behavior.
+        run: pnpm --filter @greeneek/gnk-web-frontend exec playwright install --with-deps chromium
       - name: Browser snapshot suite
         run: pnpm run test:web:built
         env:

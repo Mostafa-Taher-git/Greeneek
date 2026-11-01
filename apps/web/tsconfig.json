@@ -25,7 +25,6 @@
     "tests/scaffold.ts",
     "tests/scaffold-hermetic.e2e.ts",
     "tests/startup-rpc-budget.e2e.ts",
-    "tests/minimal-preset.snapshot.ts",
     "tests/message-feedback-protocol.snapshot.ts",
     "tests/live-interactions.e2e.ts",
     "tests/question-composer.e2e.ts",

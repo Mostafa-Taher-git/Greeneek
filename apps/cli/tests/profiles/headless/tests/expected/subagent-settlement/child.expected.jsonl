@@ -1,5 +1,5 @@
 {"type":"session","version":0,"id":"{{sessionId}}","createdAt":0,"cwd":"{{cwd}}","parentSession":"{{sessionId}}","origin":"subagent","delegationDepth":1}
-{"type":"subagent/descriptor","data":{"version":3,"mode":"continuable","provider":"spawn","label":"Return child result","agentProvider":"greeneek-official","agentModel":"greeneek-v4-flash"}}
+{"type":"subagent/descriptor","data":{"version":4,"mode":"continuable","provider":"spawn","label":"Return child result","agentProvider":"greeneek-official","agentModel":"greeneek-v4-flash"}}
 {"type":"session/end-seed","data":{}}
 {"type":"sandbox/mode","data":{"mode":"workspace-write","source":"delegation"}}
 {"type":"approval/policy","data":{"policy":"never","source":"delegation"}}

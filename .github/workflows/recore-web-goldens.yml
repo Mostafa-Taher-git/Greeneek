@@ -1,0 +1,51 @@
+name: Recore web goldens
+
+# The Web scenarios compare against committed ARIA and session fixtures, and a
+# refresh must run on the same platform family as CI: recording on Windows bakes
+# host path spellings into fixtures that the ubuntu lane then fails on. This job
+# writes nothing back; it uploads the refreshed files for a human or the
+# executing agent to review and commit with the source change that moved them.
+
+on:
+  workflow_dispatch:
+    inputs:
+      scenario:
+        description: 'Scenario filter passed to vitest -t (empty refreshes every scenario)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  recore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm --filter @greeneek/gnk-web-frontend exec playwright install --with-deps chromium
+      - name: Refresh the fixtures
+        run: pnpm exec vitest run --config vitest.web.config.ts ${{ inputs.scenario != '' && format('-t "{0}"', inputs.scenario) || '' }}
+        env:
+          CI: true
+          GNK_SNAPSHOT: refresh
+      - name: Collect what moved
+        run: |
+          git status --porcelain > "$RUNNER_TEMP/recore-status.txt" || true
+          git diff --binary > "$RUNNER_TEMP/recore.patch" || true
+          if [ ! -s "$RUNNER_TEMP/recore.patch" ]; then
+            printf 'no fixture changed on this run\n' > "$RUNNER_TEMP/recore.patch"
+          fi
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: recore-web-goldens
+          path: |
+            ${{ runner.temp }}/recore.patch
+            ${{ runner.temp }}/recore-status.txt

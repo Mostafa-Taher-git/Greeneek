@@ -24,7 +24,7 @@ This package adds an Agent Teams action to the Web conversation header, where a 
 <a id="use-this-package"></a>
 ## Use this package
 
-Install the package through [`@greeneek/gnk-agent-team-web-profile`](../../bundle/agent-team-web-profile/README.md) after the stable Web bundle and the Host-side Agent Teams profile. The Web Client loader mounts the `/client` export; the root Host export is inert, and the package has no user configuration fields.
+`@greeneek/gnk-web-app` mounts this package in the shipped Web composition, beside the `agent-team` service `@greeneek/gnk-base` mounts, so a Web profile needs no extra layer to show the roster. The Web Client loader mounts the `/client` export; the root Host export is inert, and the package has no user configuration fields.
 
 ### Inspect and navigate the roster
 
@@ -67,7 +67,7 @@ Starting a create or update invalidates older refreshes. Success reloads the com
 <a id="further-exploration"></a>
 ## Further Exploration
 
-- [Agent Teams Web profile](../../bundle/agent-team-web-profile/README.md) — the opt-in bundle that mounts this Client plugin.
+- [Web application bundle](../../bundle/web-app/README.md) — the shipped layer that mounts this Client plugin.
 - [Agent Teams service](../../subagent/agent-team/README.md) — authoritative roster, task, and Remote behavior.
 - [Conversation UI](../../client/ui-conversation/README.md) — the stable header slot and addressed-subagent navigation surface.
 - [Experimental packages](../README.md) — incubation status and release exclusion.

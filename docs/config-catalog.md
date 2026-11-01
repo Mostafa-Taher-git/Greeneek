@@ -3582,7 +3582,6 @@ Imported as libraries by other packages; a `cordis.yml` cannot load them.
 
 - `@greeneek/gnk-agent-loop-testkit` ([`packages/test-support/agent-loop-testkit/src/index.ts`](../packages/test-support/agent-loop-testkit/src/index.ts))
 - `@greeneek/gnk-agent-team-profile` ([`packages/bundle/agent-team-profile/src/index.ts`](../packages/bundle/agent-team-profile/src/index.ts))
-- `@greeneek/gnk-agent-team-web-profile` ([`packages/bundle/agent-team-web-profile/src/index.ts`](../packages/bundle/agent-team-web-profile/src/index.ts))
 - `@greeneek/gnk-anonymous-user-id` ([`packages/identity/anonymous-user-id/src/index.ts`](../packages/identity/anonymous-user-id/src/index.ts))
 - `@greeneek/gnk-api-authorization-controller` ([`packages/api/authorization-controller/src/index.ts`](../packages/api/authorization-controller/src/index.ts))
 - `@greeneek/gnk-app-boot` ([`packages/boot/app-boot/src/index.ts`](../packages/boot/app-boot/src/index.ts))

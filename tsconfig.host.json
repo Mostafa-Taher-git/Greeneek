@@ -304,7 +304,6 @@
     { "path": "./packages/subagent/agent-team" },
     { "path": "./packages/bundle/agent-team-profile" },
     { "path": "./packages/subagent/tool-agent-team" },
-    { "path": "./packages/bundle/agent-team-web-profile" },
     { "path": "./packages/workflow/workflow" },
     { "path": "./packages/workflow/workflow-worker-thread" },
     { "path": "./packages/workflow/tool-workflow" },

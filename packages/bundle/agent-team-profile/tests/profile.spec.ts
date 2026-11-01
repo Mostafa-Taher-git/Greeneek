@@ -20,7 +20,6 @@ describe('Agent Teams profile bundle', () => {
     expect(manifest.publishConfig).toEqual({ access: 'public' })
     expect(manifest.gnk?.bundle?.patch).toBe('./cordis.patch.yml')
     expect(manifest.dependencies).toMatchObject({
-      '@greeneek/gnk-agent-team': 'workspace:^',
       '@greeneek/gnk-tool-agent-team': 'workspace:^',
     })
 
@@ -40,10 +39,9 @@ describe('Agent Teams profile bundle', () => {
     expect(patches.find(patch => patch.id === 'tool-subagent')?.config).toMatchObject({ backgroundMode: 'one-shot' })
     expect(patches.find(patch => patch.id === 'tool-subagent-fork')?.config).toMatchObject({ backgroundMode: 'one-shot' })
     const inserted = patches.flatMap(patch => patch.insert ?? [])
-    expect(inserted.find(entry => entry.id === 'agent-team')).toMatchObject({
-      name: '@greeneek/gnk-agent-team',
-      config: { maxMembers: 8 },
-    })
+    // `gnk-base` owns the Team service row, so this layer must not insert it:
+    // a duplicate loader id refuses every profile that stacks this layer.
+    expect(inserted.find(entry => entry.id === 'agent-team')).toBeUndefined()
     expect(inserted.find(entry => entry.id === 'tool-agent-team')).toMatchObject({
       name: '@greeneek/gnk-tool-agent-team',
       config: { freshProvider: 'spawn', forkProvider: 'fork' },

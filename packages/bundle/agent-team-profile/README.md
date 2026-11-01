@@ -8,7 +8,7 @@ kind: "package-bundle"
 
 ## Summary
 
-`gnk-agent-team-profile` is the opt-in Maestro layer that enables [Agent Teams](../../subagent/agent-team/README.md) over `@greeneek/gnk-base`. Its patch inserts the Team domain and Team-scoped tools, disables the overlapping global continuable-child controls, and keeps the ordinary fresh and fork delegation tools as one-shot operations. Add it explicitly to a profile; no shipped default profile applies it.
+`gnk-agent-team-profile` is the opt-in Maestro layer that enables [Agent Teams](../../subagent/agent-team/README.md) over `@greeneek/gnk-base`. Its patch inserts the Team tool, disables the overlapping global continuable-child controls, and keeps the ordinary fresh and fork delegation tools as one-shot operations. `gnk-base` already mounts the Team service and `gnk-web-app` its browser panel, so this layer adds no domain or UI row. Add it explicitly to a profile; no shipped default profile applies it.
 
 ## Table of Contents
 
@@ -37,7 +37,7 @@ The profile must already contain `@greeneek/gnk-base`, whose Subagent services a
 
 ### What you get
 
-The layer adds the Agent Teams domain and its scoped creation, roster, messaging, interruption, waiting, and task-board tools. It disables the global continuable-child control rows whose tool names overlap with Team controls, while leaving `subagent` and `subagent_fork` available as one-shot delegation tools.
+The layer adds the Team-scoped creation, roster, messaging, interruption, waiting, and task-board tools. It disables the global continuable-child control rows whose tool names overlap with Team controls, while leaving `subagent` and `subagent_fork` available as one-shot delegation tools. The Team domain itself and its browser panel come from `gnk-base` and `gnk-web-app`.
 
 -----
 
@@ -47,7 +47,7 @@ The layer adds the Agent Teams domain and its scoped creation, roster, messaging
 <details>
 <summary>Implementation internals — click to expand</summary>
 
-The package's runtime content is [`cordis.patch.yml`](cordis.patch.yml). Applied after `gnk-base`, the patch disables `tool-subagent-control` and `tool-subagent-list-agents`; sets the fresh and fork Subagent rows to `one-shot`; and inserts the Team service and tool rows with explicit providers and limits.
+The package's runtime content is [`cordis.patch.yml`](cordis.patch.yml). Applied after `gnk-base`, the patch disables `tool-subagent-control` and `tool-subagent-list-agents`; sets the fresh and fork Subagent rows to `one-shot`; and inserts the Team tool row with its explicit providers and limits. The `agent-team` service itself is mounted by `gnk-base`, so re-inserting it here would refuse the loader with a duplicate entry id.
 
 | File | Role |
 |---|---|

@@ -16,7 +16,7 @@ Every workspace package (`packages/<family>/<name>`), categorized by what it con
 | LLM | Model routes and provider adapters | `packages/llm/*` |
 | Capability | Every other plugin, grouped by family directory | fallback: anything unmatched |
 
-Scope: 260 workspace packages; every package appears under each of its kinds (24 Tool, 4 Skill, 6 Command, 42 UI, 7 LLM, 184 Capability rows). A package with several kinds (e.g. a tool that also contributes a command) appears in each section.
+Scope: 259 workspace packages; every package appears under each of its kinds (24 Tool, 4 Skill, 6 Command, 42 UI, 7 LLM, 183 Capability rows). A package with several kinds (e.g. a tool that also contributes a command) appears in each section.
 
 ## Tools
 
@@ -165,7 +165,6 @@ Scope: 260 workspace packages; every package appears under each of its kinds (24
 | --- | --- |
 | `@greeneek/gnk-acp-app` | Automation-only ACP stdio application profile for users and maintainers launching persistent harness agents. |
 | `@greeneek/gnk-agent-team-profile` | Maestro Agent Teams profile layer over gnk-base, for profiles that want Team-scoped coordination tools while retaining one-shot delegation. |
-| `@greeneek/gnk-agent-team-web-profile` | Add the Agent Teams panel to a Web profile that applies the Host Team layer. |
 | `@greeneek/gnk-base` | The shared gnk core: model access, tools, durable sessions, and safety defaults for every gnk --profile surface, for users composing or customizing a profile. |
 | `@greeneek/gnk-headless` | One-shot task mode for gnk: run a single task from the command line and get the final answer printed, for users scripting or automating gnk. |
 | `@greeneek/gnk-sdk-app` | SDK stdio application profile for users and maintainers launching a JSON-RPC harness runtime. |

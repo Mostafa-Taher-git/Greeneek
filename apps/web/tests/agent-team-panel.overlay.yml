@@ -1,5 +1,6 @@
-# Equivalent to the two explicit Agent Teams profile layers over the scaffold's
-# stable base and Web bundles.
+# Equivalent to the Host Agent Teams profile layer over the scaffold's stable
+# base and Web bundles. `gnk-base` mounts the Team service and `gnk-web-app`
+# mounts its browser panel, so this overlay carries only the Team tool.
 - id: tool-subagent-control
   disabled: true
 
@@ -19,21 +20,8 @@
     backgroundMode: one-shot
 
 - insert:
-    - id: agent-team
-      name: '@greeneek/gnk-agent-team'
-      config:
-        maxMembers: 8
-        maxTasks: 256
-        maxPendingMessagesPerMember: 64
-        maxMessageBytes: 65536
-        disposalTimeoutMs: 5000
-
     - id: tool-agent-team
       name: '@greeneek/gnk-tool-agent-team'
       config:
         freshProvider: spawn
         forkProvider: fork
-
-- insert:
-    - id: ui-agent-team
-      name: '@greeneek/gnk-client-ui-agent-team'

@@ -19,10 +19,8 @@ const SNAPSHOT_DIR = fileURLToPath(new URL('./snapshots/agent-team-panel', impor
 const PANEL_EXPECTED = join(SNAPSHOT_DIR, 'task.expected.md')
 const OVERLAY = fileURLToPath(new URL('./agent-team-panel.overlay.yml', import.meta.url))
 const HOST_PATCH = fileURLToPath(new URL('../../../packages/bundle/agent-team-profile/cordis.patch.yml', import.meta.url))
-const WEB_PATCH = fileURLToPath(new URL('../../../packages/bundle/agent-team-web-profile/cordis.patch.yml', import.meta.url))
 const INSTALL_ANCHORS = [
   fileURLToPath(new URL('../../../packages/bundle/agent-team-profile/package.json', import.meta.url)),
-  fileURLToPath(new URL('../../../packages/bundle/agent-team-web-profile/package.json', import.meta.url)),
 ]
 const MODE = webSnapshotMode()
 
@@ -33,11 +31,10 @@ function profileEntries(path: string): unknown[] {
 }
 
 describe('Agent Teams panel overlay', () => {
-  it('matches the shipped Host and Web profile layers', () => {
-    expect(profileEntries(OVERLAY)).toEqual([
-      ...profileEntries(HOST_PATCH),
-      ...profileEntries(WEB_PATCH),
-    ])
+  it('matches the shipped Host profile layer', () => {
+    // The Web side needs no layer here: `gnk-web-app` mounts `ui-agent-team`
+    // in the shipped composition, so a second insert would refuse the loader.
+    expect(profileEntries(OVERLAY)).toEqual(profileEntries(HOST_PATCH))
   })
 })
 

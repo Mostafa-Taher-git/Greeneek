@@ -226,7 +226,6 @@
       "@greeneek/gnk-sdk-jsonrpc-server": ["./packages/sdk/server/src"],
       "@greeneek/gnk-agent-team": ["./packages/subagent/agent-team/src"],
       "@greeneek/gnk-agent-team-profile": ["./packages/bundle/agent-team-profile/src"],
-      "@greeneek/gnk-agent-team-web-profile": ["./packages/bundle/agent-team-web-profile/src"],
       "@greeneek/gnk-tool-agent-team": ["./packages/subagent/tool-agent-team/src"],
       "@greeneek/gnk-experimental-webworker-runtime": ["./packages/experimental/webworker-runtime/src"],
       "@greeneek/gnk-experimental-webworker-packer": ["./packages/experimental/webworker-packer/src"],

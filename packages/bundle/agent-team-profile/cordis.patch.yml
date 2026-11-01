@@ -1,6 +1,9 @@
 # Private Agent Teams profile layer. Apply after gnk-base so these replacements
 # remove the global continuable-child controls before the scoped Team tools
 # register the overlapping list_agents, send_message, and interrupt_agent names.
+#
+# `gnk-base` mounts the `agent-team` service itself, so this layer inserts only
+# its tool. Inserting the service a second time refuses the whole loader tree.
 
 - id: tool-subagent-control
   disabled: true
@@ -21,15 +24,6 @@
     backgroundMode: one-shot
 
 - insert:
-    - id: agent-team
-      name: '@greeneek/gnk-agent-team'
-      config:
-        maxMembers: 8
-        maxTasks: 256
-        maxPendingMessagesPerMember: 64
-        maxMessageBytes: 65536
-        disposalTimeoutMs: 5000
-
     - id: tool-agent-team
       name: '@greeneek/gnk-tool-agent-team'
       config:

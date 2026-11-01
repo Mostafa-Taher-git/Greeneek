@@ -1145,28 +1145,9 @@ importers:
 
   packages/bundle/agent-team-profile:
     dependencies:
-      '@greeneek/gnk-agent-team':
-        specifier: workspace:^
-        version: link:../../subagent/agent-team
       '@greeneek/gnk-tool-agent-team':
         specifier: workspace:^
         version: link:../../subagent/tool-agent-team
-    devDependencies:
-      '@greeneek/cordis':
-        specifier: workspace:^
-        version: link:../../../vendor/cordis
-      '@greeneek/cordis-plugin-include':
-        specifier: workspace:^
-        version: link:../../../vendor/include
-      js-yaml:
-        specifier: ^4.2.0
-        version: 4.3.1
-
-  packages/bundle/agent-team-web-profile:
-    dependencies:
-      '@greeneek/gnk-client-ui-agent-team':
-        specifier: workspace:^
-        version: link:../../client/ui-agent-team
     devDependencies:
       '@greeneek/cordis':
         specifier: workspace:^

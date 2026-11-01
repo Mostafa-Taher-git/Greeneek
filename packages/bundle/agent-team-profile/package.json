@@ -34,7 +34,6 @@
     }
   },
   "dependencies": {
-    "@greeneek/gnk-agent-team": "workspace:^",
     "@greeneek/gnk-tool-agent-team": "workspace:^"
   },
   "peerDependencies": {

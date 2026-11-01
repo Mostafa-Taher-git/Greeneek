@@ -390,6 +390,61 @@ describe('the shipped Web composition', () => {
     }
   })
 
+  it('carries the whole `ptc` surface plus the ordinary catalog when CTC is declared', async () => {
+    // The parity claim for the per-session opt-in: `presentAs('both')` on a
+    // `standard` composition must reach every tool the `ptc` preset sends and
+    // keep the tools that preset gives up. Read at the assembly, which is what
+    // the model receives; `ctx.tools.schemas` is the capability catalog and
+    // presentation never changes it.
+    const coded = await ctx.agents.create({
+      sessionId: SessionId('preset-ctc-parity-ptc'),
+      setup: agentCtx => ctx.agentPresets.mount(agentCtx, 'ptc').then(() => undefined),
+    })
+    const ctc = await ctx.agents.create({
+      sessionId: SessionId('preset-ctc-parity'),
+      setup: async (agentCtx) => {
+        await ctx.agentPresets.mount(agentCtx, 'standard')
+        // Exactly the call the Session Controller makes for a user's CTC
+        // opt-in. Its disposer is the agent scope's own to run at disposal.
+        agentCtx.tools.presentAs('both')
+      },
+    })
+    try {
+      const ptcAssembly = await ctx.systemPrompt.assemble({ scope: coded.agent })
+      const ctcAssembly = await ctx.systemPrompt.assemble({ scope: ctc.agent })
+      // PTC mode sends the model one tool.
+      expect(ptcAssembly.tools.map(tool => tool.name)).toEqual(['run_code'])
+
+      // CTC sends the session's whole capability catalog, and that catalog
+      // already carries the transport: `run_code` reaches the model beside
+      // every ordinary tool, so nothing the `ptc` preset could do is lost.
+      const ctcNames = ctcAssembly.tools.map(tool => tool.name)
+      expect([...ctcNames].sort()).toEqual(toolNames(ctx, ctc.agent).sort())
+      expect(ctcNames).toContain('run_code')
+
+      // The one capability difference the owner must see: `ptc` disables
+      // `workflow` because `run_code` is its composition surface, and it denies
+      // a model-direct native call. CTC keeps both.
+      expect(ctcNames).toContain('workflow')
+      expect(toolNames(ctx, coded.agent)).not.toContain('workflow')
+      // The generated SDK is built from each scope's own catalog, so CTC's
+      // names the tool PTC's omits.
+      const ctcSdk = ctcAssembly.sections.find(section => section.name === 'tools:sdk')?.text ?? ''
+      const ptcSdk = ptcAssembly.sections.find(section => section.name === 'tools:sdk')?.text ?? ''
+      expect(ctcSdk).toContain('web_search')
+      expect(ptcSdk).toContain('web_search')
+      expect(ctcSdk).toContain('workflow')
+      expect(ptcSdk).not.toContain('workflow')
+      // CTC carries no PTC-only rule text: the collapse section a non-native
+      // presentation registers renders empty for `both`, and the prompt renderer
+      // drops it from what the model reads.
+      expect(ctcAssembly.sections.find(section => section.name === 'tools:ptc-only')?.text ?? '').toBe('')
+    } finally {
+      await ctc.dispose()
+      await coded.dispose()
+    }
+  })
+
   it('keeps the self-referential toolset out of every other preset', async () => {
     const handle = await ctx.agents.create({
       sessionId: SessionId('preset-no-cordis'),

@@ -38,14 +38,20 @@ declare module '@greeneek/gnk-session-projection/types' {
 
 /** Request the user's opt-in of one Session into the lazy code-tools presentation. */
 export interface SessionPresentCodeToolsRequest {
-  /** The Session whose presentation the user turns on. */
+  /** The Session whose presentation the user changes. */
   readonly sessionId: SessionId
+  /**
+   * Desired state: `true` presents the code tools, `false` withdraws them.
+   * Absent means `true`, which is the shape a caller that only ever opted in
+   * sends.
+   */
+  readonly enabled?: boolean
 }
 
-/** Result of a successful opt-in: the presentation now visible to the Session's model. */
+/** Result of a successful declaration: the presentation now visible to the Session's model. */
 export interface SessionPresentCodeToolsValue {
-  /** The presentation declaring the Session's code tools. */
-  readonly presentAs: 'both'
+  /** The presentation the Session's model now sees. */
+  readonly presentAs: 'both' | 'native'
 }
 
 declare module '@greeneek/gnk-session/types' {
@@ -217,6 +223,7 @@ declare module '@greeneek/gnk-typert-protocol' {
       readonly existingPreset?: string
     }
     'tool/code-runtime-required': { readonly sessionId: SessionId }
+    'tool/presentation-busy': { readonly sessionId: SessionId }
     'tool/presentation-locked': { readonly sessionId: SessionId }
     'session/attachment-invalid': { readonly reason: string }
     'session/queue-item-not-found': { readonly itemId: MessageId }

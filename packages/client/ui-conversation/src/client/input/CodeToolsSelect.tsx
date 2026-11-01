@@ -1,4 +1,4 @@
-/** The composer's code tools chip: the user's per-session opt-in to the lazy `both` presentation. */
+/** The composer's CTC chip: the user's reversible per-session switch between the native and lazy `both` presentations. */
 
 import { useEffect, useState } from 'react'
 import clsx from 'clsx'
@@ -11,8 +11,8 @@ import css from './CodeToolsSelect.module.css'
 export interface CodeToolsSelectProps {
   /** The session's folded presentation (undefined = no projection landed yet). */
   presentAs: 'native' | 'ptc' | 'both' | null | undefined
-  /** The host opt-in action (undefined = capability absent). */
-  presentCodeTools: (() => Promise<PresentCodeToolsResult>) | undefined
+  /** The host presentation action, asked for one desired state (undefined = capability absent). */
+  presentCodeTools: ((enabled: boolean) => Promise<PresentCodeToolsResult>) | undefined
   /** The bar's transient banner sink for refused opt-ins. */
   showToast: (text: string) => void
   /** Whether the composer refuses interaction entirely. */
@@ -50,27 +50,34 @@ export function CodeToolsSelect({ presentAs, presentCodeTools, showToast, locked
   if (presentAs === undefined || presentCodeTools === undefined) return null
 
   const enabled = presentAs === 'both'
-  const items: MenuEntry[] = enabled
-    ? []
-    : [{
-      id: 'both',
-      label: t('input.codeTools.on'),
-      icon: codeGlyph,
-      disabled: busy,
-    }]
-  const footer: MenuEntry[] = [{
-    type: 'label',
-    id: 'caveat',
-    text: t('input.codeTools.caveat'),
+  // One row carries whichever change is actually available, so the menu never
+  // offers two contradictory switches and the off state keeps a single action.
+  const items: MenuEntry[] = [{
+    id: enabled ? 'native' : 'both',
+    label: enabled ? t('input.codeTools.offAction') : t('input.codeTools.on'),
+    icon: codeGlyph,
+    disabled: busy,
   }]
+  const footer: MenuEntry[] = [
+    {
+      type: 'label',
+      id: 'about',
+      text: t('input.codeTools.about'),
+    },
+    {
+      type: 'label',
+      id: 'caveat',
+      text: t('input.codeTools.caveat'),
+    },
+  ]
 
-  const enable = (): void => {
+  const declare = (next: boolean): void => {
     if (busy) return
     setBusy(true)
-    void presentCodeTools()
+    void presentCodeTools(next)
       .then((result) => {
         if (result.ok) {
-          // The folded projection flips the trigger to its on state; close now.
+          // The folded projection flips the trigger; close now.
           setOpen(false)
           return
         }
@@ -78,6 +85,8 @@ export function CodeToolsSelect({ presentAs, presentCodeTools, showToast, locked
           showToast(t('input.codeTools.runtimeRequired'))
         } else if (result.reason === 'locked') {
           showToast(t('input.codeTools.locked'))
+        } else if (result.reason === 'busy') {
+          showToast(t('input.codeTools.busy'))
         }
         // An unavailable refusal stays silent: the Session is leaving and the
         // bar tears down over it.
@@ -90,7 +99,10 @@ export function CodeToolsSelect({ presentAs, presentCodeTools, showToast, locked
       open={open}
       items={items}
       footer={footer}
-      onSelect={(id) => { if (id === 'both') enable() }}
+      onSelect={(id) => {
+        if (id === 'both') declare(true)
+        else if (id === 'native') declare(false)
+      }}
       onClose={() => { setOpen(false) }}
       side="top"
       anchor={

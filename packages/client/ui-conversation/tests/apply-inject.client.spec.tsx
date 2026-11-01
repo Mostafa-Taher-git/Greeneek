@@ -44,7 +44,7 @@ async function bench() {
   // The code tools chip's opt-in remote, scripted over the test double (it
   // provides 'remote' and 'remote.session' together).
   let presentResponse: PresentResponse = { ok: true, value: { presentAs: 'both' } }
-  const presented = vi.fn<(request: { sessionId: SessionId }) => Promise<PresentResponse>>(
+  const presented = vi.fn<(request: { sessionId: SessionId; enabled: boolean }) => Promise<PresentResponse>>(
     _request => Promise.resolve({ ...presentResponse }),
   )
   new TestRemote(runtime.ctx, { session: { presentCodeTools: presented } })
@@ -252,9 +252,16 @@ describe('Conversation inject API', () => {
     const b = await bench()
     const face = b.composerApi(ROOT).presentCodeTools
     expect(face).toBeTypeOf('function')
-    await expect(face!()).resolves.toEqual({ ok: true })
+    await expect(face!(true)).resolves.toEqual({ ok: true })
     expect(b.presented).toHaveBeenCalledTimes(1)
-    expect(b.presented).toHaveBeenCalledWith({ sessionId: ROOT })
+    expect(b.presented).toHaveBeenCalledWith({ sessionId: ROOT, enabled: true })
+    await b.runtime.dispose()
+  })
+
+  it('sends the desired state when the chip withdraws the presentation', async () => {
+    const b = await bench()
+    await b.composerApi(ROOT).presentCodeTools!(false)
+    expect(b.presented).toHaveBeenCalledWith({ sessionId: ROOT, enabled: false })
     await b.runtime.dispose()
   })
 
@@ -262,11 +269,13 @@ describe('Conversation inject API', () => {
     const b = await bench()
     const face = b.composerApi(ROOT).presentCodeTools!
     b.setPresent({ ok: false, error: new RemoteError('tool/presentation-locked', 'locked up', { sessionId: ROOT }) })
-    await expect(face()).resolves.toEqual({ ok: false, reason: 'locked', detail: 'locked up' })
+    await expect(face(true)).resolves.toEqual({ ok: false, reason: 'locked', detail: 'locked up' })
     b.setPresent({ ok: false, error: new RemoteError('tool/code-runtime-required', 'no runtime', { sessionId: ROOT }) })
-    await expect(face()).resolves.toEqual({ ok: false, reason: 'runtime-required', detail: 'no runtime' })
+    await expect(face(true)).resolves.toEqual({ ok: false, reason: 'runtime-required', detail: 'no runtime' })
     b.setPresent({ ok: false, error: new RemoteError('session/not-found', 'gone', { sessionId: ROOT }) })
-    await expect(face()).resolves.toEqual({ ok: false, reason: 'unavailable', detail: 'gone (session/not-found)' })
+    await expect(face(true)).resolves.toEqual({ ok: false, reason: 'unavailable', detail: 'gone (session/not-found)' })
+    b.setPresent({ ok: false, error: new RemoteError('tool/presentation-busy', 'mid-turn', { sessionId: ROOT }) })
+    await expect(face(false)).resolves.toEqual({ ok: false, reason: 'busy', detail: 'mid-turn' })
     await b.runtime.dispose()
   })
 

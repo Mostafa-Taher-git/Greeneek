@@ -512,7 +512,7 @@ Source: [`packages/llm/llm-retry/src/types.ts:11`](../packages/llm/llm-retry/src
 'model/selection': ModelSelection
 ```
 
-Source: [`packages/api/session-controller/src/types.ts:57`](../packages/api/session-controller/src/types.ts)
+Source: [`packages/api/session-controller/src/types.ts:63`](../packages/api/session-controller/src/types.ts)
 
 ### `permission/*`
 
@@ -915,18 +915,19 @@ Source: [`packages/core/tools/src/types.ts:50`](../packages/core/tools/src/types
 
 ```ts persistence-catalog
 /**
- * One scope DECLARED its tool presentation: the per-session `both` opt-in
- * calls `ctx.tools.presentAs('both')` once on the agent's own scope, and
- * a preset composition mounts through the same call on its standing
- * scope. `to` is the presentation that scope's model sees from the
- * declaring turn on. A declaration is turn-1-final — the presentation
- * lock answers any later re-declare of the same scope with the typed
- * `PRESENTATION_LOCKED` refusal and logs nothing, so a replayed session
- * holds one winning declaration per scope. Only a declaration belonging
- * to a session appends: the Session Controller's opt-in remote appends it
- * exactly once when the user turns the presentation on, a composition
- * mount has none so it stays silent there, and a resumed process
- * re-declares silently from the recorded projection. Log-only:
+ * One scope changed its tool presentation: the per-session `both` opt-in
+ * calls `ctx.tools.presentAs('both')` on the agent's own scope, and its
+ * withdrawal calls `presentAs('native')` after running that declaration's
+ * disposer. `to` is the presentation that scope's model sees from the
+ * recording turn on. The user's own declaration is reversible; any
+ * declaration the Session Controller does not own — a preset composition's
+ * standing one above all — stays turn-1-final, and the presentation lock
+ * answers a later re-declare of that scope with the typed
+ * `PRESENTATION_LOCKED` refusal while logging nothing. Only a change the
+ * Session Controller accepted appends, so a session log carries one event
+ * per accepted toggle and replays to the last recorded presentation; a
+ * composition mount has none so it stays silent there, and a resumed
+ * process re-declares silently from the recorded projection. Log-only:
  * `deriveMessages()` ignores it; UIs pair it
  * with the agent's presentation chip for live state and with the
  * `request/header` series the declaration reopens on resume.
@@ -934,7 +935,7 @@ Source: [`packages/core/tools/src/types.ts:50`](../packages/core/tools/src/types
 'tool/present-as': ToolPresentationEventData
 ```
 
-Source: [`packages/core/tools/src/types.ts:84`](../packages/core/tools/src/types.ts)
+Source: [`packages/core/tools/src/types.ts:85`](../packages/core/tools/src/types.ts)
 
 <a id="toolresult--surface"></a>
 

@@ -5501,11 +5501,11 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'SessionPresentCodeToolsRequest',
-    declaration: 'export interface SessionPresentCodeToolsRequest {\n    readonly sessionId: SessionId;\n}',
+    declaration: 'export interface SessionPresentCodeToolsRequest {\n    readonly sessionId: SessionId;\n    readonly enabled?: boolean;\n}',
   },
   {
     name: 'SessionPresentCodeToolsValue',
-    declaration: 'export interface SessionPresentCodeToolsValue {\n    readonly presentAs: \'both\';\n}',
+    declaration: 'export interface SessionPresentCodeToolsValue {\n    readonly presentAs: \'both\' | \'native\';\n}',
   },
   {
     name: 'SessionProjectionBaseline',

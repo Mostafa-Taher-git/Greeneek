@@ -28,6 +28,7 @@ import {
   hasApiSessionSubagentOwner,
   inspectApiSession,
 } from './agent.ts'
+import { holdsPresentation, rememberPresentation, releasePresentation } from './presentation.ts'
 import type {
   SessionAttachmentRequest,
   SessionAttachmentValue,
@@ -158,52 +159,75 @@ export class SessionCommandController {
   }
 
   /**
-   * Opt one Session into the lazy `both` code-tools presentation.
+   * Change one Session's code-tools presentation.
    *
-   * The user's opt-in applies once to the live agent's own scope and is
-   * turn-1-final: the presentation lock answers any later declaration of the
-   * same agent scope with the typed `ToolPresentationLockedError`, rethrown
-   * here as `tool/presentation-locked`. The opt-in is never a deployment
-   * default — nothing reads this call to change composition for sessions
-   * that never asked.
-   * @param request - Session identity.
-   * @returns the now-active presentation.
+   * The user owns exactly one declaration on the live agent's own scope, so
+   * withdrawing it runs that declaration's disposer: `presentAs` is
+   * turn-1-final, and its disposer also removes the SDK and collapse prompt
+   * sections the declaration mounted. A preset's own composition never enters
+   * this registry, and its presentation stays out of the `presentAs`
+   * projection, so the chip never sees a state it would misreport. The opt-in
+   * is never a deployment default — nothing reads this call to change
+   * composition for sessions that never asked.
+   *
+   * Adding a presentation mid-turn is harmless: the running turn was never
+   * told about `run_code`, so it cannot call it. Removing one is not — the
+   * turn's schema list already offers `run_code`, and `native` drops it from
+   * the scope's dispatch table, so a call made after the toggle would be
+   * refused as an unknown tool. Withdrawal therefore waits for the turn.
+   * @param request - Session identity and the desired state.
+   * @returns the presentation now visible to the Session's model.
    */
   async presentCodeTools(request: SessionPresentCodeToolsRequest): Promise<SessionPresentCodeToolsValue> {
     const agent = await this.resolveAgent(request.sessionId)
-    // oxlint-disable-next-line typescript/require-await -- the admission contract wants a Promise, but the declaration chain is synchronous
+    const enabled = request.enabled ?? true
+    // oxlint-disable-next-line typescript/require-await -- the admission contract wants a Promise; the declaration chain is synchronous
     return this.agents.serializeImageAdmission(agent, async () => {
-      if (agent.ctx.get('codeRuntime') === undefined) {
+      const scope = agent.ctx
+      if (!enabled && agent.status === 'running') {
+        throw new RemoteError(
+          'tool/presentation-busy',
+          'the running turn was given `run_code`; withdrawing it now would refuse that call as an unknown tool',
+          { sessionId: request.sessionId },
+        )
+      }
+      if (enabled && scope.get('codeRuntime') === undefined) {
         throw new RemoteError(
           'tool/code-runtime-required',
           'presenting code tools requires a composed code runtime; this deployment mounts no `codeRuntime` provider',
           { sessionId: request.sessionId },
         )
       }
-      let dispose: () => void
-      try {
-        dispose = agent.ctx.tools.presentAs('both')
-      } catch (error: unknown) {
-        if (error instanceof ToolPresentationLockedError) {
-          throw new RemoteError(
-            'tool/presentation-locked',
-            error.message,
-            { sessionId: request.sessionId },
-          )
+      if (enabled && holdsPresentation(scope)) return { presentAs: 'both' }
+      if (!enabled && !releasePresentation(scope)) return { presentAs: 'native' }
+      if (enabled) {
+        try {
+          rememberPresentation(scope, scope.tools.presentAs('both'))
+        } catch (error: unknown) {
+          if (error instanceof ToolPresentationLockedError) {
+            throw new RemoteError(
+              'tool/presentation-locked',
+              error.message,
+              { sessionId: request.sessionId },
+            )
+          }
+          throw error
         }
-        throw error
       }
+      const to: 'both' | 'native' = enabled ? 'both' : 'native'
       try {
-        agent.session.append('tool/present-as', { to: 'both' })
+        agent.session.append('tool/present-as', { to })
       } catch (error: unknown) {
-        dispose()
+        // Undo the live change so the refused request leaves nothing behind.
+        if (enabled) releasePresentation(scope)
+        else rememberPresentation(scope, scope.tools.presentAs('both'))
         throw new RemoteError(
           'gateway/internal',
           `failed to record the code-tools declaration for session "${request.sessionId}": ${error instanceof Error ? error.message : String(error)}`,
           {},
         )
       }
-      return { presentAs: 'both' }
+      return { presentAs: to }
     })
   }
 

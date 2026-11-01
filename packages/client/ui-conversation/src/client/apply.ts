@@ -336,8 +336,8 @@ export function apply(ctx: Context): void {
           const result = await session.command(line)
           return result.ok && result.value.matched
         },
-        presentCodeTools: async () => {
-          const response = await ctx.remote.session.presentCodeTools({ sessionId })
+        presentCodeTools: async (enabled) => {
+          const response = await ctx.remote.session.presentCodeTools({ sessionId, enabled })
           if (response.ok) return { ok: true as const }
           const { code } = response.error
           if (code === 'tool/code-runtime-required') {
@@ -345,6 +345,9 @@ export function apply(ctx: Context): void {
           }
           if (code === 'tool/presentation-locked') {
             return { ok: false as const, reason: 'locked' as const, detail: response.error.message }
+          }
+          if (code === 'tool/presentation-busy') {
+            return { ok: false as const, reason: 'busy' as const, detail: response.error.message }
           }
           // Ghost ids and any other refusal read the same: cannot act here.
           return { ok: false as const, reason: 'unavailable' as const, detail: `${response.error.message} (${code})` }

@@ -43,3 +43,7 @@ Two sessions in one process can now present differently, so "which tools does th
 `ctx.tools.schemas(agent)` remains the agent's CAPABILITY catalog and is unchanged by presentation — only the assembly's tools collapse. Tests asserting what the model receives must read the assembly; `web-agent-presets.spec.ts` asserts both sides of that distinction for the shipped `ptc` preset.
 
 The shipped roster is four presets (标准/代码/极简/创造), so any golden listing them moves. A deployment that composes no code runtime can compose no ptc preset; the shipped Web overlay carries one, the base composition does not.
+
+## Related
+
+- [The CTC opt-in keeps its disposer, so the user can withdraw it](./2026-11-01-ctc-reversible-presentation.md) — narrows this note's turn-1-final declaration rule to presentations the Session Controller does not own, and records what the composer chip shows for each state.

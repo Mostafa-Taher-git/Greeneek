@@ -15,6 +15,7 @@ import { SessionQueryError, type SessionObservation } from '@greeneek/gnk-sessio
 import { ToolPresentationLockedError } from '@greeneek/gnk-tools'
 import { RemoteError } from '@greeneek/gnk-typert-protocol'
 import type {} from '@greeneek/gnk-typert-registry'
+import { rememberPresentation } from './presentation.ts'
 import type { ModelSelection } from './types.ts'
 
 /** Cold Session identity absent from persistence. */
@@ -578,7 +579,7 @@ export class ApiSessionAgentController {
     return async (agentCtx: Context) => {
       await setup(agentCtx)
       try {
-        agentCtx.tools.presentAs(presentation)
+        rememberPresentation(agentCtx, agentCtx.tools.presentAs(presentation))
       } catch (error: unknown) {
         if (!(error instanceof ToolPresentationLockedError)) throw error
       }

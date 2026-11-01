@@ -12,12 +12,20 @@
   config:
     providers:
       greeneek:
+        # The pi-ai built-in catalog keeps the upstream provider id, so a
+        # rebranded route keys off no catalog defaults and declares its model
+        # explicitly (the missing-catalog refusal's declared-route shape).
+        api: openai-completions
         apiKeyEnv: GREENEEK_API_KEY
         baseURL: !!js process.env.GNK_SNAPSHOT_BASE_URL
         reasoning: low
-        modelOverrides:
-          greeneek-v4-flash:
+        models:
+          - id: greeneek-v4-flash
             maxTokens: 1024
+            reasoningEfforts: { off: null, low: 'low' }
+            # The native adapter caps output via max_tokens; keep the pi-ai
+            # route on the same shared-fixture wire dialect.
+            compat: { maxTokensField: 'max_tokens' }
         streamIdleTimeoutMs: 1000
 
 - id: agent-loop

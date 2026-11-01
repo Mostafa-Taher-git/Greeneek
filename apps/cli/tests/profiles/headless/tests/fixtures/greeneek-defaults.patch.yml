@@ -5,12 +5,17 @@
 - id: headless-runner
   disabled: true
 
-- id: llm-greeneek
-  config:
-    baseURL: !!js process.env.GNK_SNAPSHOT_BASE_URL
-    thinking: enabled
-    reasoningEffort: low
-    streamIdleTimeoutMs: 150
+- insert:
+    # The headless profile no longer mounts the native adapter by default: a
+    # shipped unconfigured route would answer every request with
+    # MISSING_ENDPOINT. The snapshot mounts it over the local fixture server.
+    - id: llm-greeneek
+      name: '@greeneek/gnk-llm-greeneek'
+      config:
+        baseURL: !!js process.env.GNK_SNAPSHOT_BASE_URL
+        thinking: enabled
+        reasoningEffort: low
+        streamIdleTimeoutMs: 150
 
 - id: agent-loop
   config:

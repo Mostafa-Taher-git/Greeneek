@@ -46,15 +46,8 @@
     maxDepth: 1
 
 - insert:
-    - id: agent-team
-      name: '@greeneek/gnk-agent-team'
-      config:
-        maxMembers: 8
-        maxTasks: 256
-        maxPendingMessagesPerMember: 64
-        maxMessageBytes: 65536
-        disposalTimeoutMs: 5000
-
+    # The base bundle always mounts the Team service (Maestro ships it there),
+    # so only its tool follows up here.
     - id: tool-agent-team
       name: '@greeneek/gnk-tool-agent-team'
       config:

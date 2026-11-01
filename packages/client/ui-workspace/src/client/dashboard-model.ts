@@ -135,7 +135,7 @@ function byRecency(a: DashboardSession, b: DashboardSession): number {
 /** Stable route label for a provider/model pair. */
 function routeOf(session: DashboardSession): string | undefined {
   if (session.provider === undefined || session.model === undefined) return undefined
-  return `${session.provider} ·{session.model}`
+  return `${session.provider} · ${session.model}`
 }
 
 /** One counted label with its recorded token total. */

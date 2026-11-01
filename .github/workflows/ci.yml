@@ -113,8 +113,6 @@ jobs:
         run: pnpm run verify-built-package-invariants
       - name: Node compatibility
         run: pnpm run check:node-compat
-        env:
-          GNK_CLIENT_BUILD_PROFILE: official
       - name: NodeNext consumer types
         run: pnpm run verify-node-next-types
       - name: Expected-output processes

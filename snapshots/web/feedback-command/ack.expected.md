@@ -1,14 +1,13 @@
 - banner:
   - navigation "Session hierarchy":
-    - button "Reply with the single word" [disabled]
+    - button "Reply with the single word"
   - img
   - text: Standard mode
-  - button "Session log":
-    - text: Session log
+  - button "Agent Team":
     - img
-  - tablist:
-    - tab "Chat" [selected]
-    - tab "Trajectory"
+    - text: Agent Team
+  - button "Session options":
+    - img
 - button "System prompt":
   - img
   - img
@@ -37,9 +36,8 @@
   - img
   - text: "feedback Feedback recorded for session session-{{uuid}} Anonymous user: {{uuid}}. Session sharing is enabled."
 - textbox "Message or run a task... / commands, @ files or sessions"
-- button "Commands":
-  - img
 - 'button "Access mode, current: Workspace Write"': Workspace Write
+- button "CTC"
 - button "Select model, current Greeneek-V4-Flash":
   - text: Greeneek-V4-Flash
   - img

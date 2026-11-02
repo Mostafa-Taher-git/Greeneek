@@ -1,14 +1,13 @@
 - banner:
   - navigation "Session hierarchy":
-    - button "workspace" [disabled]
+    - button "workspace"
   - img
   - text: Standard mode
-  - button "Session log":
-    - text: Session log
+  - button "Agent Team":
     - img
-  - tablist:
-    - tab "Chat" [selected]
-    - tab "Trajectory"
+    - text: Agent Team
+  - button "Session options":
+    - img
 - group "Command input": /goal Keep the composer context panels aligned
 - 'button "goal Goal created Status: active Objective: Keep the composer context panels aligned Rounds: 0/256 Activation: armed Commands: /goal edit <objective>, /goal pause, /goal clear"':
   - img
@@ -40,9 +39,8 @@
   - img
 - button "2 queued messages"
 - textbox "Cmd/Ctrl+Enter steers all queued messages"
-- button "Commands":
-  - img
 - 'button "Access mode, current: Workspace Write"': Workspace Write
+- button "CTC"
 - button "Select model, current Greeneek-V4-Flash":
   - text: Greeneek-V4-Flash
   - img

@@ -1,6 +1,9 @@
 - banner:
   - navigation "Session hierarchy":
-    - button "Markdown image policy" [disabled]
+    - button "Markdown image policy"
+  - button "Agent Team":
+    - img
+    - text: Agent Team
   - button "Session options":
     - img
 - text: Show the Markdown image policy. {{clock}}
@@ -25,6 +28,7 @@
 - text: {{clock}}
 - textbox "Message or run a task... / commands, @ files or sessions"
 - 'button "Access mode, current: Workspace Write"': Workspace Write
+- button "CTC"
 - button "Select model, current Greeneek-V4-Flash":
   - text: Greeneek-V4-Flash
   - img

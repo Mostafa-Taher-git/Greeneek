@@ -1,12 +1,11 @@
 - banner:
   - navigation "Session hierarchy":
-    - button "Use the read tool twice" [disabled]
-  - button "Session log":
-    - text: Session log
+    - button "Use the read tool twice"
+  - button "Agent Team":
     - img
-  - tablist:
-    - tab "Chat" [selected]
-    - tab "Trajectory"
+    - text: Agent Team
+  - button "Session options":
+    - img
 - navigation "Turn navigation":
   - button "Jump to turn 1"
   - button "Jump to turn 2"
@@ -63,9 +62,8 @@
   - text: "feedback Feedback recorded for session {{seededId}} Anonymous user: {{uuid}}. Session sharing is not configured."
 - text: "Feedback recorded for session {{seededId}} Anonymous user: {{uuid}}. Session sharing is not configured."
 - textbox "Message or run a task... / commands, @ files or sessions"
-- button "Commands":
-  - img
 - 'button "Access mode, current: Read Only"': Read Only
+- button "CTC"
 - button "Select model, current Greeneek-V4-Flash":
   - text: Greeneek-V4-Flash
   - img

@@ -16,6 +16,9 @@
     - button "命令":
       - img
       - text: 命令
+    - button "Fleet 设置":
+      - img
+      - text: Fleet 设置
     - button "关于":
       - img
       - text: 关于
@@ -35,16 +38,6 @@
         - img
         - text: 查看
       - 'button "复制: 标准模式"':
-        - img
-        - text: 复制
-    - listitem:
-      - 'button "设为默认: PTC 模式"':
-        - text: PTC 模式 内置 功能完整的编码 Agent，但默认不提供 workflow 工具；其他工具通过 PTC 模式 SDK 呈现，让模型用一个 TypeScript 程序组合多步操作。
-        - code: ptc
-      - 'button "查看: PTC 模式"':
-        - img
-        - text: 查看
-      - 'button "复制: PTC 模式"':
         - img
         - text: 复制
     - listitem:

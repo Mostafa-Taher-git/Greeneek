@@ -1,6 +1,9 @@
 - banner:
   - navigation "Session hierarchy":
-    - button "CJK strong emphasis" [disabled]
+    - button "CJK strong emphasis"
+  - button "Agent Team":
+    - img
+    - text: Agent Team
   - button "Session options":
     - img
 - text: Render adjacent CJK strong emphasis. {{clock}}
@@ -46,6 +49,7 @@
 - text: {{clock}}
 - textbox "Message or run a task... / commands, @ files or sessions"
 - 'button "Access mode, current: Workspace Write"': Workspace Write
+- button "CTC"
 - button "Select model, current Greeneek-V4-Flash":
   - text: Greeneek-V4-Flash
   - img

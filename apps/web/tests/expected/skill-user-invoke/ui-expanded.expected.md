@@ -1,8 +1,11 @@
 - banner:
   - navigation "Session hierarchy":
-    - button "/user-invoke-demo and confirm the fixtur" [disabled]
+    - button "/user-invoke-demo and confirm the fixtur"
   - img
   - text: Standard mode
+  - button "Agent Team":
+    - img
+    - text: Agent Team
   - button "Session options":
     - img
 - button "System prompt":
@@ -38,6 +41,7 @@
 - text: {{clock}}
 - textbox "Message or run a task... / commands, @ files or sessions"
 - 'button "Access mode, current: Workspace Write"': Workspace Write
+- button "CTC"
 - button "Select model, current Greeneek-V4-Flash":
   - text: Greeneek-V4-Flash
   - img

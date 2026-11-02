@@ -16,6 +16,9 @@
     - button "命令":
       - img
       - text: 命令
+    - button "Fleet 设置":
+      - img
+      - text: Fleet 设置
     - button "关于":
       - img
       - text: 关于

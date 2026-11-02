@@ -16,6 +16,9 @@
     - button "Commands":
       - img
       - text: Commands
+    - button "Fleet settings":
+      - img
+      - text: Fleet settings
     - button "About":
       - img
       - text: About

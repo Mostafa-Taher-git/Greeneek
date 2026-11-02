@@ -1,14 +1,13 @@
 - banner:
   - navigation "Session hierarchy":
-    - 'button "Using ONE run_code program: run" [disabled]'
+    - 'button "Using ONE run_code program: run"'
   - img
-  - text: PTC mode
-  - button "Session log":
-    - text: Session log
+  - text: Standard mode
+  - button "Agent Team":
     - img
-  - tablist:
-    - tab "Chat" [selected]
-    - tab "Trajectory"
+    - text: Agent Team
+  - button "Session options":
+    - img
 - button "System prompt":
   - img
   - img
@@ -27,15 +26,10 @@
   - img
   - img
   - text: "Think The user wants me to write a single `run_code` program that:"
-- button "Code Run bash echo and catch missing file read":
+- text: Failed
+- 'button "Code Error: unknown tool \"run_code\""':
   - img
-  - img
-  - text: Code Run bash echo and catch missing file read
-- img
-- text: Bash Echo CODE_ROUND_OK Failed
-- 'button "Read Error: cannot read \"{{cwd}}/workspace/missing.txt\": not found"':
-  - img
-  - text: "Read Error: cannot read \"{{cwd}}/workspace/missing.txt\": not found"
+  - text: "Code Error: unknown tool \"run_code\""
 - button "Think The program ran successfully. Let me now reply DONE as instructed.":
   - img
   - img
@@ -54,9 +48,8 @@
   - text: Ran for {{duration}}
 - text: {{clock}}
 - textbox "Message or run a task... / commands, @ files or sessions"
-- button "Commands":
-  - img
 - 'button "Access mode, current: Workspace Write"': Workspace Write
+- button "CTC"
 - button "Select model, current Greeneek-V4-Flash":
   - text: Greeneek-V4-Flash
   - img

@@ -1,8 +1,11 @@
 - banner:
   - navigation "Session hierarchy":
-    - button "Use the ask_user_question tool to" [disabled]
+    - button "Use the ask_user_question tool to"
   - img
   - text: Standard mode
+  - button "Agent Team":
+    - img
+    - text: Agent Team
   - button "Session options":
     - img
 - button "System prompt":

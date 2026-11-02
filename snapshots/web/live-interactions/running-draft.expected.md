@@ -1,8 +1,11 @@
 - banner:
   - navigation "Session hierarchy":
-    - button "Reply with a one-sentence description" [disabled]
+    - button "Reply with a one-sentence description"
   - img
   - text: Standard mode
+  - button "Agent Team":
+    - img
+    - text: Agent Team
   - button "Session options":
     - img
 - button "System prompt":
@@ -21,6 +24,7 @@
 - textbox "Message or run a task... / commands, @ files or sessions":
   - paragraph: Queue this follow-up while the current turn is running.
 - 'button "Access mode, current: Workspace Write"': Workspace Write
+- button "CTC"
 - button "Select model, current Greeneek-V4-Flash":
   - text: Greeneek-V4-Flash
   - img

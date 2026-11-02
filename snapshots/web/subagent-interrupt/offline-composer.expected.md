@@ -5,12 +5,11 @@
     - 'button "Switch subagent: event-sourcing researcher"': event-sourcing researcher
   - img
   - text: Standard mode
-  - button "Session log":
-    - text: Session log
+  - button "Agent Team":
     - img
-  - tablist:
-    - tab "Chat" [selected]
-    - tab "Trajectory"
+    - text: Agent Team
+  - button "Session options":
+    - img
 - button "System prompt":
   - img
   - img
@@ -25,8 +24,7 @@
 - paragraph: partial
 - status: Deep diving...
 - textbox "Parent session offline; sending is unavailable but you can still stop the run" [disabled]
-- button "Commands" [disabled]:
-  - img
 - 'button "Access mode, current: Custom" [disabled]': Custom
+- button "CTC" [disabled]
 - button "Stop generating"
 - button "Send message" [disabled]

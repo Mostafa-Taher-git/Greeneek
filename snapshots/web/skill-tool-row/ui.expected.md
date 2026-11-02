@@ -1,12 +1,11 @@
 - banner:
   - navigation "Session hierarchy":
-    - button "Load the editing-cordis-compositions ski" [disabled]
-  - button "Session log":
-    - text: Session log
+    - button "Load the editing-cordis-compositions ski"
+  - button "Agent Team":
     - img
-  - tablist:
-    - tab "Chat" [selected]
-    - tab "Trajectory"
+    - text: Agent Team
+  - button "Session options":
+    - img
 - button "System prompt":
   - img
   - img
@@ -52,9 +51,8 @@
   - text: Ran for {{duration}}
 - text: {{date}} {{clock}}
 - textbox "Message or run a task... / commands, @ files or sessions"
-- button "Commands":
-  - img
 - 'button "Access mode, current: Full access"': Full access
+- button "CTC"
 - button "Select model, current Greeneek-V4-Flash":
   - text: Greeneek-V4-Flash
   - img

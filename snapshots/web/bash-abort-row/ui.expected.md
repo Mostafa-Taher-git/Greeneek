@@ -1,12 +1,11 @@
 - banner:
   - navigation "Session hierarchy":
-    - 'button "Run two shell commands: wait" [disabled]'
-  - button "Session log":
-    - text: Session log
+    - 'button "Run two shell commands: wait"'
+  - button "Agent Team":
     - img
-  - tablist:
-    - tab "Chat" [selected]
-    - tab "Trajectory"
+    - text: Agent Team
+  - button "Session options":
+    - img
 - button "System prompt":
   - img
   - img
@@ -27,9 +26,8 @@
   - img
   - text: "Failed Bash Error: tool call aborted before dispatch"
 - textbox "Message or run a task... / commands, @ files or sessions"
-- button "Commands":
-  - img
 - 'button "Access mode, current: Full access"': Full access
+- button "CTC"
 - button "Select model, current Greeneek-V4-Flash":
   - text: Greeneek-V4-Flash
   - img

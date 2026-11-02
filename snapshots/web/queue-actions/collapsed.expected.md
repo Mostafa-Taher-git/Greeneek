@@ -1,14 +1,13 @@
 - banner:
   - navigation "Session hierarchy":
-    - button "Reply with a one-sentence description" [disabled]
+    - button "Reply with a one-sentence description"
   - img
   - text: Standard mode
-  - button "Session log":
-    - text: Session log
+  - button "Agent Team":
     - img
-  - tablist:
-    - tab "Chat" [selected]
-    - tab "Trajectory"
+    - text: Agent Team
+  - button "Session options":
+    - img
 - button "System prompt":
   - img
   - img
@@ -24,9 +23,8 @@
 - status: Deep diving...
 - button "2 queued messages"
 - textbox "Cmd/Ctrl+Enter steers all queued messages"
-- button "Commands":
-  - img
 - 'button "Access mode, current: Workspace Write"': Workspace Write
+- button "CTC"
 - button "Select model, current Greeneek-V4-Flash":
   - text: Greeneek-V4-Flash
   - img

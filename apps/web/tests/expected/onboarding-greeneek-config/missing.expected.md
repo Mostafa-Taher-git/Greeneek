@@ -1,8 +1,52 @@
 - dialog "添加一个 API Key 开始使用":
   - heading "添加一个 API Key 开始使用" [level=2]
-  - paragraph: 配置 Greeneek 官方模型，即可开始使用。
+  - paragraph: 选择一个模型提供方并填入其 API 密钥即可开始使用；之后可在“设置 → 模型”中添加更多。
+  - text: 提供方
+  - combobox "提供方":
+    - option "Amazon Bedrock" [selected]
+    - option "Ant Ling"
+    - option "Anthropic"
+    - option "Azure OpenAI"
+    - option "Baseten"
+    - option "Cerebras"
+    - option "Cloudflare AI Gateway"
+    - option "Cloudflare Workers AI"
+    - option "DeepSeek"
+    - option "Fireworks"
+    - option "GitHub Copilot"
+    - option "Google"
+    - option "Google Vertex AI"
+    - option "Groq"
+    - option "Hugging Face"
+    - option "Kilo Gateway"
+    - option "Kimi For Coding"
+    - option "Meta"
+    - option "MiniMax"
+    - option "MiniMax CN"
+    - option "Mistral"
+    - option "Moonshot AI"
+    - option "Moonshot AI CN"
+    - option "NVIDIA"
+    - option "OpenAI"
+    - option "OpenAI Codex"
+    - option "OpenCode Zen"
+    - option "OpenCode Go"
+    - option "OpenRouter"
+    - option "Qwen Token Plan"
+    - option "Qwen Token Plan CN"
+    - option "Qwen Token Plan Individual"
+    - option "Radius"
+    - option "Together"
+    - option "Vercel AI Gateway"
+    - option "xAI"
+    - option "Xiaomi"
+    - option "Xiaomi Token Plan AMS"
+    - option "Xiaomi Token Plan CN"
+    - option "Xiaomi Token Plan SGP"
+    - option "Z.AI"
+    - option "Z.AI Coding CN"
   - text: API 密钥
   - textbox "API 密钥":
-    - /placeholder: 输入 API 密钥
+    - /placeholder: 输入 API 密钥，或留空使用环境认证
   - button "稍后配置"
   - button "保存并继续" [disabled]

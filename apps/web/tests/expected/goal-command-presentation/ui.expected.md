@@ -1,8 +1,11 @@
 - banner:
   - navigation "Session hierarchy":
-    - button "workspace" [disabled]
+    - button "workspace"
   - img
   - text: Standard mode
+  - button "Agent Team":
+    - img
+    - text: Agent Team
   - button "Session options":
     - img
 - group "Command input": /goal
@@ -12,6 +15,7 @@
   - text: "goal No goal is currently set. Usage: /goal [<objective>|clear|edit <objective>|pause|resume]"
 - textbox "Message or run a task... / commands, @ files or sessions"
 - 'button "Access mode, current: Workspace Write"': Workspace Write
+- button "CTC"
 - button "Select model, current Greeneek-V4-Flash":
   - text: Greeneek-V4-Flash
   - img

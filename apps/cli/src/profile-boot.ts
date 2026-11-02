@@ -18,6 +18,7 @@ import { FiberState, type Context } from '@greeneek/cordis'
 import type { PatchOptions } from '@greeneek/cordis-plugin-include'
 import type { EntryOptions } from '@greeneek/cordis-plugin-loader'
 import {
+  checkPatchComposition,
   boot,
   composeEntries,
   healProfilesModuleFallback,
@@ -176,8 +177,26 @@ async function composeProfile(
   await healProfilesModuleFallback({ installAnchor: INSTALL_ANCHOR, profile })
   const safe = resolveSafeMode(process.env.GNK_SAFE_MODE)
   const homePatches = safe ? [] : loadOptionalPatches(NAME, homePatchPath()) ?? []
-  const overlays = safe ? [] : patchFiles.flatMap(file => loadOverlayPatches(NAME, resolve(file)))
+  // One entry per `--patch` file, in argv order, so a skipped row can be blamed on
+  // the file that wrote it even when two overlays patch the same id.
+  const overlayLayers = safe
+    ? []
+    : patchFiles.map(file => ({ file: resolve(file), patches: loadOverlayPatches(NAME, resolve(file)) }))
+  const overlays = overlayLayers.flatMap(layer => layer.patches)
   const bundlePatches = profile.layers.flatMap(layer => layer.patches)
+  // Every layer is composed the way the mount composes it, before anything
+  // mounts. Shipped layers are refused outright: a bundle or profile patch that
+  // names a row this composition never carries is a defect in that layer, and the
+  // mount would only log it, booting with the intended configuration silently
+  // absent. The machine-local layers stay applicable-but-noisy by design — one
+  // home patch or `--patch` overlay is shared across surfaces and need not match
+  // every tree — so each skipped row there is reported instead of vanishing.
+  checkPatchComposition(NAME, [
+    ...profile.layers.map(layer => ({ label: layer.packageName, patches: layer.patches, strict: true })),
+    ...(safe ? [] : [{ label: profile.patchPath, patches: profile.patches, strict: true }]),
+    ...(safe ? [] : [{ label: homePatchPath(), patches: homePatches, strict: false }]),
+    ...overlayLayers.map(layer => ({ label: layer.file, patches: layer.patches, strict: false })),
+  ])
   const rows = new Map<string, EntryOptions>()
   for (const row of composeEntries([bundlePatches, profile.patches, homePatches, overlays])) {
     if (typeof row.id === 'string') rows.set(row.id, row)

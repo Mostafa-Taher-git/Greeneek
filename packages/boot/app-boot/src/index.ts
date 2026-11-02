@@ -28,6 +28,7 @@ declare module '@greeneek/cordis' {
 }
 
 export {
+  checkPatchComposition,
   composeEntries,
   DEFAULT_PROFILE_BUNDLES,
   DEFAULT_PROFILE_PATCH_RELOAD,
@@ -44,6 +45,7 @@ export {
   type GnkBundleManifest,
   type GnkManifestSection,
   type GnkProfileManifest,
+  type NamedPatchLayer,
   type Profile,
   type ProfileLayer,
   type ProfileManifest,

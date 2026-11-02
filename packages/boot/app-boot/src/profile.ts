@@ -859,3 +859,62 @@ export function composeEntries(
     warn(message.replace(/%C/g, () => JSON.stringify(args[index++])))
   })
 }
+
+/** One patch layer, named for the diagnostics it is blamed on. */
+export interface NamedPatchLayer {
+  /** Where the layer came from: a bundle package name or a patch file path. */
+  label: string
+  /** The layer's parsed patch list. */
+  patches: PatchOptions[]
+  /**
+   * True when an unmatched target in this layer is a defect rather than a
+   * plausible inapplicability. Shipped bundle layers and a profile's own patch
+   * file are authored beside the rows they target, so they are strict. The
+   * machine-local layers — `$GNK_HOME/cordis.patch.yml` and `--patch` overlays —
+   * are shared across surfaces and need not match every tree, so they stay
+   * lenient and only report.
+   */
+  strict: boolean
+}
+
+/**
+ * Refuse a strict patch layer that targets a row no lower layer carries, and
+ * report every skipped patch a lenient layer writes.
+ *
+ * `@greeneek/cordis-plugin-include` answers an unmatched patch with a warning on
+ * the root logger, which a mounted tree may not configure at all: the entry is
+ * dropped and the composition boots without the configuration its author wrote.
+ * Each prefix is composed as one flattened `applyEntryPatches` call over an empty
+ * root, exactly as the mounted include does, so a patch a lower layer satisfies
+ * is never blamed on the layer that added the row, and a patch naming a row only
+ * a later layer inserts is still reported — the mount skips it the same way.
+ * @param binName - the diagnostic prefix on the thrown error and each warning.
+ * @param layers - every patch layer in application order, strictness per layer.
+ * @param warn - sink for a lenient layer's skipped patches.
+ * @throws on the first strict layer whose patch the mount would drop.
+ */
+export function checkPatchComposition(
+  binName: string,
+  layers: readonly NamedPatchLayer[],
+  warn: (line: string) => void = line => void process.stderr.write(`${line}\n`),
+): void {
+  let previousWarnings = 0
+  for (let count = 1; count <= layers.length; count += 1) {
+    const prefix = layers.slice(0, count)
+    const layer = prefix[count - 1]
+    /* v8 ignore next -- count indexes 1..layers.length, so the layer exists */
+    if (layer === undefined) continue
+    const warnings: string[] = []
+    composeEntries(prefix.map(entry => entry.patches), line => void warnings.push(line))
+    for (const line of warnings.slice(previousWarnings)) {
+      if (layer.strict) {
+        throw new Error(
+          `${binName}: ${layer.label} patches a row this composition does not carry (${line}). `
+          + 'Add the row with `- insert:` or target an id a lower layer declares.',
+        )
+      }
+      warn(`${binName}: ${layer.label} skipped a patch (${line})`)
+    }
+    previousWarnings = warnings.length
+  }
+}

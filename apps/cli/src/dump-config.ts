@@ -9,6 +9,7 @@
 import { existsSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import {
+  checkPatchComposition,
   loadOptionalPatches,
   loadOverlayPatches,
   renderConfigDump,
@@ -47,6 +48,16 @@ export function runDumpConfig(profile: string, defaultOnly: boolean, patches: re
       layers.push({ label: absolute, patches: loadOverlayPatches(NAME, absolute) })
     }
   }
+  // A dump must not print a tree the same invocation's boot would refuse: the
+  // shipped layers are checked under the same rule `runProfile` applies. The
+  // lenient sink is discarded because `renderConfigDump` already reports each
+  // skipped overlay row with its layer label below.
+  const strictLayers = loaded.layers.length + (!defaultOnly && existsSync(loaded.patchPath) ? 1 : 0)
+  checkPatchComposition(NAME, layers.map((layer, index) => ({
+    label: layer.label,
+    patches: layer.patches,
+    strict: index < strictLayers,
+  })), () => {})
   // The dump anchors on the same empty root file the boot includes.
   process.stdout.write(renderConfigDump(NAME, join(loaded.dir, PROFILE_ROOT_FILENAME), layers))
 }

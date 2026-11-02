@@ -1,3 +1,5 @@
+- button "Collapse sidebar" [expanded]:
+  - img
 - button "New session":
   - img
   - text: New Session

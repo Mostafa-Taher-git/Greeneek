@@ -65,8 +65,21 @@ function TrajectoryTable(
   )
 }
 
-afterEach(() => {
+/**
+ * Let any notification the virtualizer scheduled run while jsdom still exists.
+ * `@tanstack/virtual` debounces its scrolling-reset notification onto a timer in
+ * the observed window; a `cleanup()` that destroys the tree can leave that timer
+ * pending, and when it fires after vitest tears the environment down its callback
+ * reaches for a `window` that no longer exists — an unhandled error the runner
+ * attributes to this file. The wait is longer than the library's
+ * `isScrollingResetDelay` default so the pending timer always lands first.
+ */
+const flushVirtualizerNotifications = (): Promise<void> =>
+  new Promise((resolve) => { setTimeout(resolve, 150) })
+
+afterEach(async () => {
   cleanup()
+  await flushVirtualizerNotifications()
   vi.restoreAllMocks()
   Reflect.deleteProperty(HTMLElement.prototype, 'scrollTo')
 })

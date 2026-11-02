@@ -1,13 +1,13 @@
 /**
- * Settings shell root: the sidebar-foot trigger row plus the centered modal
- * panel (figma 501:29947, 1080x700) with the section nav rail. The shell is
+ * Settings shell root: the sidebar-foot trigger row plus the centered page panel
+ * (figma 501:29947, 1080x700) with the section nav rail. The shell is
  * a pure composition face — every piece of text (trigger label, panel title,
  * close label, sections) arrives from registrants through slots; accessible
- * names resolve to that content (trigger: its own text; dialog:
- * aria-labelledby the title node; close: visually-hidden slot text). Modal
+ * names resolve to that content (trigger: its own text; panel:
+ * aria-labelledby the title node; close: visually-hidden slot text). Panel
  * open state and the active section id are component-local viewing state;
  * the onboarding coordinator mounts exactly one ordered registrant while the
- * sessions-derived empty-Hero fact is active. Visible dialog chrome belongs
+ * sessions-derived empty-Hero fact is active. Visible step chrome belongs
  * to the step, so a mounted-but-deciding step paints nothing here.
  */
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
@@ -60,7 +60,7 @@ function SettingsPanel({ rows, renderSlot, section, onSelect, onClose }: PanelPr
     return () => { document.removeEventListener('keydown', onKeyDown) }
   }, [onClose])
 
-  // Entering the dialog focuses the close button; the root restores its trigger on close.
+  // Entering the panel focuses the close button; the root restores its trigger on close.
   const closeButton = useRef<HTMLButtonElement | null>(null)
   useEffect(() => { closeButton.current?.focus() }, [])
 

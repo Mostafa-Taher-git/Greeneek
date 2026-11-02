@@ -86,7 +86,9 @@ describe('web e2e: plugin configuration section', () => {
     // Collapsed: a card's fields appear only once it is expanded.
     expect(await dialog.getByLabel('命令超时（毫秒）').count()).toBe(0)
 
-    const snapshot = await captureStableAria(page, '[role="dialog"]', scaffold.workspaceCwd)
+    // Settings is a full page (`5dde9feb`), so its region is the visible `main`,
+    // the same capture region `models-settings.e2e.ts` pins.
+    const snapshot = await captureStableAria(page, 'main:not([hidden])', scaffold.workspaceCwd)
     await compareOrRefreshGolden(SECTION_EXPECTED, snapshot, MODE)
     expect(tripwire.pageErrors).toEqual([])
   }, 60_000)

@@ -94,7 +94,13 @@ it('renders durable record images in the Trajectory details panel from the share
   // Selecting the record opens the details panel; the ui-attachment gallery
   // resolves the durable reference through the SAME per-session cache Chat
   // used, so the object URL is identical — no second attachment read.
-  const panel = await screen.findByRole('tabpanel')
+  // Chat's own details column is mounted at the same time and also carries
+  // role="tabpanel", so the query targets the id TrajectoryTable declares.
+  const panel = await waitFor(() => {
+    const node = document.getElementById('trajectory-detail-panel')
+    if (node === null) throw new Error('trajectory details panel not mounted')
+    return node
+  })
   await waitFor(() => {
     expect(within(panel).getAllByRole('img').length).toBeGreaterThan(0)
   }, { timeout: 10_000 })

@@ -67,7 +67,9 @@ describe.skipIf(MODE === 'record')('web e2e: another usable provider ends first-
     const options = await pick.locator('option').allTextContents()
     expect(options).toContain('MiniMax CN')
     await settings.getByRole('textbox', { name: 'API 密钥', exact: true }).waitFor({ timeout: 10_000 })
-    const dismissed = await captureStableAria(page, '[role="dialog"]', scaffold.workspaceCwd)
+    // The add card is a section of the Settings page, not a modal, so the capture
+    // region is the visible `main` (`5dde9feb` made Settings a full page).
+    const dismissed = await captureStableAria(page, 'main:not([hidden])', scaffold.workspaceCwd)
     await compareOrRefreshGolden(DISMISSED_EXPECTED, dismissed, MODE)
 
     // Cancelling the add card returns to the dormant catalog.

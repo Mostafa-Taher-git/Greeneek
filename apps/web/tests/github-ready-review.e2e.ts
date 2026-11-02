@@ -156,7 +156,9 @@ describe.skipIf(MODE === 'record')('web e2e: GitHub ready-for-review', () => {
 
     const workspaceRow = page.locator('[role="treeitem"]').first()
     if (await workspaceRow.getAttribute('aria-expanded') !== 'true') await workspaceRow.click()
-    await page.getByText(TITLE, { exact: true }).click()
+    // The session title renders twice — in the Sessions tree row and in the
+    // surface beside it — so the click targets the tree this test then captures.
+    await page.getByRole('tree', { name: 'Sessions' }).getByText(TITLE, { exact: true }).click()
     await page.getByText(REPLY, { exact: true }).waitFor({ state: 'visible', timeout: 30_000 })
     const tree = await captureStableAria(page, '[role="tree"][aria-label="Sessions"]', scaffold.workspaceCwd)
     const conversation = await captureStableAria(page, '[class*="centerCol"]', scaffold.workspaceCwd)

@@ -32,11 +32,18 @@ jobs:
       - run: pnpm build
       - run: pnpm --filter @greeneek/gnk-web-frontend exec playwright install --with-deps chromium
       - name: Refresh the fixtures
+        # A scenario may legitimately fail in refresh mode (its assertions are
+        # not all golden-directed); the artifacts above still carry every
+        # fixture the pass wrote, so the collector must run either way.
+        continue-on-error: true
         run: pnpm exec vitest run --config vitest.web.config.ts ${{ inputs.scenario != '' && format('-t "{0}"', inputs.scenario) || '' }}
         env:
           CI: true
           GNK_SNAPSHOT: refresh
       - name: Collect what moved
+        # A failed refresh step still leaves the fixtures it wrote; the
+        # collector must run either way so the artifacts stay available.
+        if: always()
         run: |
           git status --porcelain > "$RUNNER_TEMP/recore-status.txt" || true
           git diff --binary > "$RUNNER_TEMP/recore.patch" || true

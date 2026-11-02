@@ -137,8 +137,11 @@ describe('web e2e: plugin configuration section', () => {
 
     const timeout = dialog.getByLabel('命令超时（毫秒）')
     await timeout.waitFor({ timeout: 10_000 })
-    // The composed default this deployment ships, before any user layer.
-    expect(await timeout.inputValue()).toBe('60000')
+    // The composed default before any user layer: the mounted shell provider
+    // installs the `shell` namespace from its own schema, whose timeout defaults
+    // to 120,000 (packages/shell/bash-local/src/index.ts). The `bash-sandbox` row's
+    // 60000 is that provider's own cap and is not what this card edits.
+    expect(await timeout.inputValue()).toBe('120000')
     await timeout.fill('12000')
     await timeout.blur()
 
@@ -205,7 +208,7 @@ describe('web e2e: plugin configuration section', () => {
     // The reset stages the composed default; the document still carries the
     // override until the save lands.
     await dialog.getByRole('button', { name: '恢复默认' }).click()
-    await expect.poll(() => timeout.inputValue(), { timeout: 5_000 }).toBe('60000')
+    await expect.poll(() => timeout.inputValue(), { timeout: 5_000 }).toBe('120000')
     expect(await settingsDocument()).toContain('timeoutMs: 12000')
 
     await dialog.getByRole('button', { name: '保存', exact: true }).click()
@@ -215,7 +218,7 @@ describe('web e2e: plugin configuration section', () => {
     const expandTerminal = dialog.getByRole('button', { name: '展开设置: 终端' })
     await expandTerminal.waitFor({ timeout: 5_000 })
     await expandTerminal.click()
-    expect(await timeout.inputValue()).toBe('60000')
+    expect(await timeout.inputValue()).toBe('120000')
     expect(await dialog.getByText('已覆盖').count()).toBe(0)
     expect(tripwire.pageErrors).toEqual([])
   }, 60_000)

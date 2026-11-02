@@ -194,6 +194,7 @@ export const RESIDUE_ALLOWLIST = [
   { file: /^(\.\/)?packages\/llm\/llm-pi-ai\//, why: 'B4: pi-ai upstream catalog provider ids and thinkingFormat wire values — typed contract of @earendil-works/pi-ai; DeepSeek endpoints stay refused by the egress guard in buildProvider (decisions.md D16)' },
   { file: /^(\.\/)?apps\/web\/tests\/expected\/models-settings\/empty\.expected\.md$/, why: 'D16: aria snapshot of the pi-ai upstream provider catalog — deepseek is a catalog id like cerebras/fireworks, not a brand claim' },
   { file: /^(\.\/)?apps\/web\/tests\/expected\/onboarding-usable-provider\//, why: 'D16: recorded aria snapshots name the deepseek catalog option like every other external model provider' },
+  { file: /^(\.\/)?apps\/web\/tests\/expected\/onboarding-greeneek-config\//, why: 'D16: recorded aria snapshot of the same provider dropdown the onboarding dialog renders from the pi-ai upstream catalog — deepseek is a catalog id like cerebras/fireworks, not a brand claim' },
   { file: /^(\.\/)?packages\/client\/ui-settings-models\/tests\/sign-in-dialog\.client\.spec\.tsx$/, why: 'D16: the spec drives the provider catalog (deepseek id + DEEPSEEK_API_KEY env) to assert its dismissal path' },
 ];
 

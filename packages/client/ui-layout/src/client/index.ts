@@ -46,8 +46,10 @@ declare module '@greeneek/gnk-client-ui-slots' {
      * the seats it declares disappear with it. To add something to the
      * sidebar, register into one of those inner seats instead.
      *
-     * The occupant receives the frame's live column state (collapsed, width)
-     * and is expected to render the compact control rail while collapsed.
+     * The occupant receives the frame's live column state (collapsed, width) and
+     * the host fact that decides whether the frame already renders its sidebar
+     * toggle (desktopHost), and is expected to render the compact control rail
+     * while collapsed.
      */
     'sidebar': { kind: 'single'; scope: 'root'; owner: SidebarOwnerProps }
     /**

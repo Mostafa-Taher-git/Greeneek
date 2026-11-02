@@ -58,7 +58,7 @@ async function bench(options: { locale?: 'en' } = {}) {
 describe('sidebar shell snapshots', () => {
   it('renders the expanded column in the default locale (zh, no setLocale)', async () => {
     const { runtime } = await bench()
-    const slot = runtime.renderSlot('sidebar', { collapsed: false, width: 300 })
+    const slot = runtime.renderSlot('sidebar', { collapsed: false, width: 300, desktopHost: false })
     // Wordmark is home; capsule is New Session.
     expect(slot.view.getByRole('button', { name: '回到主页' })).toBeTruthy()
     expect(slot.view.getAllByRole('button', { name: '新建会话' })).toHaveLength(1)
@@ -68,7 +68,7 @@ describe('sidebar shell snapshots', () => {
 
   it('renders the expanded column (wordmark, capsule, empty holes)', async () => {
     const { runtime } = await bench({ locale: 'en' })
-    const slot = runtime.renderSlot('sidebar', { collapsed: false, width: 300 })
+    const slot = runtime.renderSlot('sidebar', { collapsed: false, width: 300, desktopHost: false })
     // Wordmark is home; capsule is New Session.
     expect(slot.view.getByRole('button', { name: 'Go to home' })).toBeTruthy()
     expect(slot.view.getAllByRole('button', { name: 'New session' })).toHaveLength(1)
@@ -76,16 +76,26 @@ describe('sidebar shell snapshots', () => {
     await runtime.dispose()
   })
 
+  it('carries no fold control on the desktop host, where the titlebar owns it', async () => {
+    const { runtime } = await bench({ locale: 'en' })
+    const slot = runtime.renderSlot('sidebar', { collapsed: false, width: 300, desktopHost: true })
+    expect(slot.view.queryByRole('button', { name: 'Collapse sidebar' })).toBeNull()
+    expect(slot.view.getByRole('button', { name: 'Go to home' })).toBeTruthy()
+    await runtime.dispose()
+  })
+
   it('renders the collapsed rail after the crossfade settles, in place', async () => {
     const { runtime } = await bench({ locale: 'en' })
-    const slot = runtime.renderSlot('sidebar', { collapsed: false, width: 300 })
+    const slot = runtime.renderSlot('sidebar', { collapsed: false, width: 300, desktopHost: false })
     const shell = slot.container.firstElementChild
-    slot.update({ collapsed: true, width: 56 })
+    slot.update({ collapsed: true, width: 56, desktopHost: false })
     // The wide content (wordmark shortcut) unmounts at the 150ms settle;
-    // only the rail's capsule remains a New-session button.
+    // only the rail's capsule remains a New-session button. The Web host's fold
+    // control keeps its seat, centered in the rail.
     await waitFor(() => {
       expect(slot.view.getAllByRole('button', { name: 'New session' })).toHaveLength(1)
     })
+    expect(slot.view.getByRole('button', { name: 'Open sidebar' })).toBeTruthy()
     expect(slot.container).toMatchSnapshot()
     // Same tree position: the owner flip re-rendered the shell in place.
     expect(slot.container.firstElementChild).toBe(shell)
@@ -94,7 +104,7 @@ describe('sidebar shell snapshots', () => {
 
   it('a locale switch refreshes mounted copy without re-registration', async () => {
     const { runtime, locale } = await bench()
-    const slot = runtime.renderSlot('sidebar', { collapsed: false, width: 300 })
+    const slot = runtime.renderSlot('sidebar', { collapsed: false, width: 300, desktopHost: false })
     expect(slot.view.getByRole('button', { name: '回到主页' })).toBeTruthy()
     expect(slot.view.getAllByRole('button', { name: '新建会话' })).toHaveLength(1)
     // Same fiber, same registration: setLocale alone re-renders the outlet.

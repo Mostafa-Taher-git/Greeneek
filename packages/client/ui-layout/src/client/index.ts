@@ -110,6 +110,13 @@ export interface SidebarOwnerProps {
   collapsed: boolean
   /** Rendered column width in px (SIDEBAR_COLLAPSED when collapsed). */
   width: number
+  /**
+   * True when the frameless-desktop titlebar row is rendered, so the desktop's
+   * own sidebar toggle already occupies the window's inline-start. The sidebar
+   * reads this to decide whether it must carry its own collapse control: on the
+   * Web host no titlebar exists, so nothing else offers one.
+   */
+  desktopHost: boolean
 }
 
 /** Titlebar owner share: whether the sidebar is currently closed. */

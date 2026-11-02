@@ -426,6 +426,51 @@
   padding-inline: 0;
 }
 
+/* The Web host's fold control: one icon box on its own row above New Session,
+   because the Web host renders no titlebar row. Expanded it rides the column's
+   trailing edge; on the rail it centers in the 56px track like every other
+   control box. It stays icon-only in both widths, so the collapse choreography
+   never has to fade a label. */
+.foldRow {
+  flex: none;
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 2px;
+}
+
+.foldToggle {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  box-sizing: border-box;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  cursor: pointer;
+  transition:
+    background-color 150ms var(--ds-ease-in-out),
+    color 150ms var(--ds-ease-in-out);
+}
+
+.foldToggle:hover {
+  background: color-mix(in srgb, var(--gnk-sidebar-neon) 13%, transparent);
+  color: var(--dsw-alias-label-primary);
+}
+
+.foldToggle:focus-visible {
+  outline: 2px solid var(--gnk-sidebar-neon);
+  outline-offset: 1px;
+}
+
+.collapsed .foldRow {
+  justify-content: center;
+}
+
 .newSession {
   position: relative;
   flex: none;
@@ -502,9 +547,9 @@
   background: var(--dsw-alias-interactive-bg-hover);
 }
 
-/* The fold toggle does not exist on the rail: the desktop titlebar owns the
-   one collapse control (a second one here was a duplicate affordance, and
-   the rail reads cleaner without it). */
+/* The host rule for the fold control: the desktop titlebar owns it there, so
+   the column renders none; on the Web host the `.foldRow` above is the only one
+   and keeps its seat in both widths. */
 
 .newSessionLabel {
   max-width: 200px;

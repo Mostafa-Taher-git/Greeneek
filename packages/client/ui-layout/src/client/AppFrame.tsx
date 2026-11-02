@@ -211,6 +211,7 @@ export function AppFrame({
         {renderSlot('sidebar', {
           collapsed: sidebarCollapsed,
           width: cols.sidebar,
+          desktopHost,
         })}
       </div>
       <>

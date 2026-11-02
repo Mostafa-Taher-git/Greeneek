@@ -779,7 +779,7 @@ describe('scrubRequestHeaders', () => {
 })
 
 describe('scrubSessionSnapshot', () => {
-  it('preserves the header while projecting and scrubbing each body record', () => {
+  it('zeroes the recording instant while projecting and scrubbing each body record', () => {
     const header = '  {"type":"session","version":0,"id":"s","createdAt":7}  '
     const request = JSON.stringify({
       type: 'request/header', seq: 0, time: 9,
@@ -790,12 +790,36 @@ describe('scrubSessionSnapshot', () => {
       data: { turn: 1, seq: 41, time: 42 },
     })
 
+    // The header's creation instant is wall-clock state no re-record reproduces,
+    // so the committed form stores 0 and replay rebuilds order from sequence.
     expect(scrubSessionSnapshot(`${header}\n${request}\n${event}\n`)).toBe([
-      header,
+      '{"type":"session","version":0,"id":"s","createdAt":0}',
       '{"type":"request/header","data":{"header":{"system":"{{system}}","tools":"{{tools}}"},"reason":"initial"}}',
       '{"type":"turn/start","data":{"turn":1,"seq":41,"time":42}}',
       '',
     ].join('\n'))
+  })
+
+  it('writes chunk gaps and hook durations as zero so a refresh leaves them identical', () => {
+    const header = JSON.stringify({ type: 'session', version: 0, id: 's', createdAt: 1_700_000_000_000 })
+    const chunks = JSON.stringify({
+      type: 'text-chunks', time0: 5, seq0: 2,
+      data: { turn: 1, step: 1, index: 0, dt: [0, 3, 17, 41], texts: ['a', 'b', 'c', 'd'] },
+    })
+    const hook = JSON.stringify({ type: 'hook/result', data: { name: 'pre', durationMs: 812 } })
+    const goal = JSON.stringify({ type: 'goal/change', data: { status: 'active', createdAt: 11, updatedAt: 12 } })
+    const once = scrubSessionSnapshot([header, chunks, hook, goal].join('\n') + '\n')
+
+    expect(once).toBe([
+      '{"type":"session","version":0,"id":"s","createdAt":0}',
+      '{"type":"text-chunks","data":{"turn":1,"step":1,"index":0,"dt":[0,0,0,0],"texts":["a","b","c","d"]}}',
+      '{"type":"hook/result","data":{"name":"pre","durationMs":0}}',
+      '{"type":"goal/change","data":{"status":"active","createdAt":0,"updatedAt":0}}',
+      '',
+    ].join('\n'))
+    // Re-recording the same content a minute later is the same bytes: nothing
+    // here can churn a fixture diff.
+    expect(scrubSessionSnapshot(once)).toBe(once)
   })
 
   it('rejects headerless input', () => {

@@ -382,6 +382,43 @@ function sameOptions(left: unknown, right: unknown): boolean {
 }
 
 /**
+ * Zero the clock-derived values a re-record cannot reproduce.
+ *
+ * The session header's creation instant, a packed chunk row's `time0` anchor and
+ * its per-chunk `dt` arrival gaps, an ordinary event's `time`, a hook run's
+ * `durationMs`, and a goal row's lifecycle timestamps all come from the wall
+ * clock of whichever process recorded them. A fixture re-recorded a minute later
+ * would diff on them while asserting nothing, so the committed form stores zero
+ * and a refresh leaves the line identical; replay rebuilds event order from
+ * sequence. Field presence is preserved so a fixture missing a field stays
+ * missing it.
+ *
+ * @param record - one parsed session record, mutated in place.
+ */
+function zeroRecordClocks(record: Record<string, unknown>): void {
+  if (record.type === 'session') {
+    if ('createdAt' in record) record.createdAt = 0
+  } else if (isPackedFixtureRow(record)) {
+    if ('time0' in record) record.time0 = 0
+    const data = record.data
+    if (data !== null && typeof data === 'object' && Array.isArray((data as { dt?: unknown }).dt)) {
+      (data as { dt: unknown[] }).dt = (data as { dt: unknown[] }).dt.map(() => 0)
+    }
+  } else if ('time' in record) {
+    record.time = 0
+  }
+  if (record.type === 'hook/result' && record.data !== null && typeof record.data === 'object') {
+    const data = record.data as Record<string, unknown>
+    if ('durationMs' in data) data.durationMs = 0
+  }
+  if (record.type === 'goal/change' && record.data !== null && typeof record.data === 'object') {
+    const data = record.data as Record<string, unknown>
+    if ('createdAt' in data) data.createdAt = 0
+    if ('updatedAt' in data) data.updatedAt = 0
+  }
+}
+
+/**
  * Normalize a session JSONL log into a stable expected output: the header line's
  * volatile fields (`createdAt`, `id`, `cwd`) are zeroed/scrubbed, ordinary
  * event `time`, packed-row `time0`, and goal-change lifecycle clock values are
@@ -406,26 +443,7 @@ export function normalizeSessionLog(
   const lines = rawLog.split('\n').filter(line => line.trim().length > 0)
   const records = lines.map((line) => {
     const record = JSON.parse(line) as Record<string, unknown>
-    if (record.type === 'session') {
-      if ('createdAt' in record) record.createdAt = 0
-    } else if (isPackedFixtureRow(record)) {
-      if ('time0' in record) record.time0 = 0
-      const data = record.data
-      if (data !== null && typeof data === 'object' && Array.isArray((data as { dt?: unknown }).dt)) {
-        (data as { dt: unknown[] }).dt = (data as { dt: unknown[] }).dt.map(() => 0)
-      }
-    } else if ('time' in record) {
-      record.time = 0
-    }
-    if (record.type === 'hook/result' && record.data !== null && typeof record.data === 'object') {
-      const data = record.data as Record<string, unknown>
-      if ('durationMs' in data) data.durationMs = 0
-    }
-    if (record.type === 'goal/change' && record.data !== null && typeof record.data === 'object') {
-      const data = record.data as Record<string, unknown>
-      if ('createdAt' in data) data.createdAt = 0
-      if ('updatedAt' in data) data.updatedAt = 0
-    }
+    zeroRecordClocks(record)
     if (Object.hasOwn(record, 'sourceEventSeqs')) {
       record.sourceEventSeqs = decodeSeqRanges(record.sourceEventSeqs)
     }
@@ -549,9 +567,12 @@ export function scrubRequestHeaders(rawLog: string): string {
 
 /**
  * Project a persisted session log while tokenizing all request-header bulk.
- * Each non-empty line is parsed at most once; the session header stays
- * byte-identical. Body records omit their persistence-only envelopes, and
- * request-header payloads are tokenized.
+ * Each non-empty line is parsed at most once. Every record has its
+ * wall-clock fields zeroed by {@link zeroRecordClocks}, so a fixture written
+ * now matches one re-recorded later instead of churning on the recording
+ * instant; the header keeps its committed shape with `createdAt` at 0. Body
+ * records omit their persistence-only envelopes, and request-header payloads
+ * are tokenized.
  *
  * @param rawLog - persisted or already-projected session JSONL.
  * @returns committed snapshot JSONL with request headers tokenized.
@@ -562,9 +583,10 @@ export function scrubSessionSnapshot(rawLog: string): string {
   return scrubbed.split('\n').map((line) => {
     if (line.trim().length === 0) return line
     const record = JSON.parse(line) as Record<string, unknown>
+    zeroRecordClocks(record)
     if (recordIndex++ === 0) {
       if (record.type !== 'session') throw new Error('session snapshot must start with a session header')
-      return line
+      return JSON.stringify(record)
     }
     omitFixtureEnvelope(record)
     return JSON.stringify(record)

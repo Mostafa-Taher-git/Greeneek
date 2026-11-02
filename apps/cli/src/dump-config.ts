@@ -49,15 +49,15 @@ export function runDumpConfig(profile: string, defaultOnly: boolean, patches: re
     }
   }
   // A dump must not print a tree the same invocation's boot would refuse: the
-  // shipped layers are checked under the same rule `runProfile` applies. The
-  // lenient sink is discarded because `renderConfigDump` already reports each
-  // skipped overlay row with its layer label below.
+  // shipped layers are checked under the same rule `runProfile` applies. Each
+  // lenient layer's skipped row is still printed below, labelled with its file,
+  // because `renderConfigDump` reports every diagnostic the composition emits.
   const strictLayers = loaded.layers.length + (!defaultOnly && existsSync(loaded.patchPath) ? 1 : 0)
   checkPatchComposition(NAME, layers.map((layer, index) => ({
     label: layer.label,
     patches: layer.patches,
     strict: index < strictLayers,
-  })), () => {})
+  })))
   // The dump anchors on the same empty root file the boot includes.
   process.stdout.write(renderConfigDump(NAME, join(loaded.dir, PROFILE_ROOT_FILENAME), layers))
 }

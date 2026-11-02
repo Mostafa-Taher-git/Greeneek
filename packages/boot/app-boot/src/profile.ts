@@ -878,8 +878,8 @@ export interface NamedPatchLayer {
 }
 
 /**
- * Refuse a strict patch layer that targets a row no lower layer carries, and
- * report every skipped patch a lenient layer writes.
+ * Refuse a repository-owned patch layer that targets a row no lower layer
+ * carries.
  *
  * `@greeneek/cordis-plugin-include` answers an unmatched patch with a warning on
  * the root logger, which a mounted tree may not configure at all: the entry is
@@ -887,16 +887,21 @@ export interface NamedPatchLayer {
  * Each prefix is composed as one flattened `applyEntryPatches` call over an empty
  * root, exactly as the mounted include does, so a patch a lower layer satisfies
  * is never blamed on the layer that added the row, and a patch naming a row only
- * a later layer inserts is still reported — the mount skips it the same way.
- * @param binName - the diagnostic prefix on the thrown error and each warning.
+ * a later layer inserts is still refused — the mount skips it the same way.
+ *
+ * A lenient layer's skip changes nothing here. One shared overlay is not expected
+ * to match every tree, and its skip stays visible where this repository already
+ * reports it: the mounted loader logs it through its own logger, and
+ * `--dump-config` prints it with the layer label. Printing it from the boot path
+ * would collide with a surface that reads an empty stderr as its success signal —
+ * the recorded-session headless suite asserts exactly that.
+ * @param binName - the diagnostic prefix on the thrown error.
  * @param layers - every patch layer in application order, strictness per layer.
- * @param warn - sink for a lenient layer's skipped patches.
  * @throws on the first strict layer whose patch the mount would drop.
  */
 export function checkPatchComposition(
   binName: string,
   layers: readonly NamedPatchLayer[],
-  warn: (line: string) => void = line => void process.stderr.write(`${line}\n`),
 ): void {
   let previousWarnings = 0
   for (let count = 1; count <= layers.length; count += 1) {
@@ -913,7 +918,8 @@ export function checkPatchComposition(
           + 'Add the row with `- insert:` or target an id a lower layer declares.',
         )
       }
-      warn(`${binName}: ${layer.label} skipped a patch (${line})`)
+      // Lenient layer: the mount skips this row and its own logger says so,
+      // so the boot proceeds with the rest of the composition.
     }
     previousWarnings = warnings.length
   }

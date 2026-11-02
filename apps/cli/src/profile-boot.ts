@@ -188,9 +188,11 @@ async function composeProfile(
   // mounts. Shipped layers are refused outright: a bundle or profile patch that
   // names a row this composition never carries is a defect in that layer, and the
   // mount would only log it, booting with the intended configuration silently
-  // absent. The machine-local layers stay applicable-but-noisy by design — one
-  // home patch or `--patch` overlay is shared across surfaces and need not match
-  // every tree — so each skipped row there is reported instead of vanishing.
+  // absent. The machine-local layers stay lenient by design — one home patch or
+  // `--patch` overlay is shared across surfaces and need not match every tree —
+  // and their skips reach the operator through the loader logger and
+  // `--dump-config`, never stdout or stderr, because a headless run reads an
+  // empty stderr as a successful boot.
   checkPatchComposition(NAME, [
     ...profile.layers.map(layer => ({ label: layer.packageName, patches: layer.patches, strict: true })),
     ...(safe ? [] : [{ label: profile.patchPath, patches: profile.patches, strict: true }]),

@@ -1,5 +1,5 @@
-- dialog "设置":
-  - navigation:
+- main "设置":
+  - navigation "设置":
     - text: 设置
     - button "通用设置":
       - img
@@ -16,6 +16,9 @@
     - button "命令":
       - img
       - text: 命令
+    - button "Fleet 设置":
+      - img
+      - text: Fleet 设置
     - button "关于":
       - img
       - text: 关于
@@ -41,4 +44,8 @@
       - listitem:
         - 'button "展开设置: Subagent"':
           - text: Subagent 控制 Agent 为 Subagent 选择模型的权限。
+          - img
+      - listitem:
+        - 'button "展开设置: 网页搜索"':
+          - text: 网页搜索 Greeneek 搜索提供方。
           - img

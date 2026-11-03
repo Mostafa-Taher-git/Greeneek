@@ -76,9 +76,8 @@ describe('web e2e: plugin configuration section', () => {
     const dialog = await openPlugins()
 
     // Every card the shipped web composition exposes: the shell executor, the
-    // agent loop, and subagent selection. (No search card: the base bundle
-    // mounts only key-gated third-party providers, whose namespaces stay
-    // unavailable — and cardless — until a key is present.)
+    // agent loop, subagent selection, and the web-search namespace, which the
+    // shipped search provider installs whether or not a key is present.
     await dialog.getByText('Subagent', { exact: true }).waitFor({ timeout: 10_000 })
     expect(await dialog.getByRole('button', { name: '展开设置: Subagent' }).count()).toBe(1)
     await dialog.getByText('终端', { exact: true }).waitFor({ timeout: 10_000 })

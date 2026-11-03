@@ -1,5 +1,5 @@
-- dialog "设置":
-  - navigation:
+- main "设置":
+  - navigation "设置":
     - text: 设置
     - button "通用设置":
       - img
@@ -16,6 +16,9 @@
     - button "命令":
       - img
       - text: 命令
+    - button "Fleet 设置":
+      - img
+      - text: Fleet 设置
     - button "关于":
       - img
       - text: 关于
@@ -45,6 +48,7 @@
     - option "Hugging Face"
     - option "Kilo Gateway"
     - option "Kimi For Coding"
+    - option "Meta"
     - option "MiniMax"
     - option "MiniMax CN" [selected]
     - option "Mistral"
@@ -59,6 +63,7 @@
     - option "Qwen Token Plan"
     - option "Qwen Token Plan CN"
     - option "Qwen Token Plan Individual"
+    - option "Radius"
     - option "Together"
     - option "Vercel AI Gateway"
     - option "xAI"

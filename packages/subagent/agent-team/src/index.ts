@@ -229,7 +229,17 @@ export class TeamService extends TypertRemoteService {
         this.settingsProvider = undefined
       }, 'agentTeams.fleetSettings()')
     })
-    this.roster = new TeamRoster(ctx, this.journal, this.lifecycle, this.lanes, this.config.maxMembers)
+    this.roster = new TeamRoster(
+      ctx,
+      this.journal,
+      this.lifecycle,
+      this.lanes,
+      this.config.maxMembers,
+      // The mailbox owns durable queueing and dispatch, so the roster's settlement
+      // report is authored there. The reference resolves at settlement, after this
+      // constructor has assigned the mailbox.
+      (root, member) => this.mailbox.reportSettledMember(root, member),
+    )
     this.mailbox = new TeamMailbox(
       ctx,
       this.journal,

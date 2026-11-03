@@ -25,7 +25,9 @@ import type {
   SpawnTeammateResult,
   TeamMemberMode,
   TeamMemberPhase,
+  TeamMemberReport,
   TeamMemberResult,
+  TeamMemberSettled,
   TeamMemberSnapshot,
   TeamMemberView,
 } from './types.ts'
@@ -84,6 +86,13 @@ export function resolveActiveMember(
   return { id: member.id, name }
 }
 
+/**
+ * Author one settled member's report to the Lead. The mailbox owner supplies this
+ * so the roster keeps one durable writer per root while never guessing how a report
+ * is framed or dispatched.
+ */
+export type MemberReportSink = (root: Agent, member: TeamMemberSettled) => Promise<TeamMemberReport>
+
 /** Owns Team identities and the lifecycle of rostered continuable children. */
 export class TeamRoster {
   private readonly inFlightCreations = new Set<Promise<unknown>>()
@@ -96,6 +105,7 @@ export class TeamRoster {
    * @param lifecycle - shared Team runtime admission cutoff.
    * @param lanes - durable isolated-lane owner.
    * @param maxMembers - maximum immutable roster entries per Team.
+   * @param reportSettlement - queue one settled member's report inside the settlement transaction.
    */
   constructor(
     private readonly ctx: Context,
@@ -103,6 +113,7 @@ export class TeamRoster {
     private readonly lifecycle: TeamRuntimeLifecycle,
     private readonly lanes: LaneLifecycleManager,
     private readonly maxMembers: number,
+    private readonly reportSettlement: MemberReportSink,
   ) {}
 
   /**
@@ -672,9 +683,10 @@ export class TeamRoster {
       try {
         await this.settleOneShotCompleted(root, childId, outcome)
       } catch (error: unknown) {
-        // The row keeps its `active` edge and restart reconciliation ends it; the
-        // warning names the member whose result never reached the durable log.
-        this.ctx.logger.warn(`teammate "${name}" completed result was not recorded: ${errorMessage(error)}`)
+        // The report and the terminal edge commit separately, so a failure here can
+        // leave either side durable; the warning names the member whose settlement did
+        // not finish rather than claiming a specific edge is missing.
+        this.ctx.logger.warn(`teammate "${name}" settlement did not complete: ${errorMessage(error)}`)
       }
     })()
     this.inFlightCreations.add(operation)
@@ -739,28 +751,45 @@ export class TeamRoster {
     }
   }
 
-  /** Append the single `active -> completed` edge a one-shot member may take. */
+  /**
+   * Append the single `active -> completed` edge a one-shot member may take and queue
+   * its report to the Lead.
+   *
+   * The report is queued first, inside the same root transaction as the terminal edge.
+   * Each append commits on its own, so this order means a process interruption between
+   * the two writes can only leave the report queued for the mailbox's own recovery, never
+   * a terminal member whose Lead is left waiting for a result. Delivery starts only
+   * after the transaction commits, because it steers the Lead and opens its own
+   * transaction on the same root.
+   * @param root - exact live Team Lead owning the durable roster.
+   * @param childId - settled member identity.
+   * @param outcome - the result to persist plus an optional failure reason.
+   */
   private async settleOneShotCompleted(
     root: Agent,
     childId: SessionId,
     outcome: { readonly result: TeamMemberResult; readonly error?: string },
   ): Promise<void> {
     try {
-      await this.journal.transact(root.id, async () => {
+      const dispatch = await this.journal.transact(root.id, async () => {
         const current = this.journal.state(root).members.find(member => member.id === childId)
         /* v8 ignore next -- restart reconciliation can settle the row before this watcher arrives. */
-        if (current?.phase !== 'active') return
+        if (current?.phase !== 'active') return () => Promise.resolve(false)
+        const settled: TeamMemberSettled = {
+          ...current,
+          phase: 'completed',
+          result: outcome.result,
+          ...outcome.error === undefined ? {} : { error: outcome.error },
+        }
+        const report = await this.reportSettlement(root, settled)
         await this.journal.appendAndFlush(root, 'team/member', {
           version: 2,
           teamId: TeamId(root.id),
-          member: {
-            ...current,
-            phase: 'completed',
-            result: outcome.result,
-            ...outcome.error === undefined ? {} : { error: outcome.error },
-          },
+          member: settled,
         })
+        return report.dispatch
       })
+      await dispatch()
     } finally {
       // Terminal is terminal: the member's cancellation controller and budget
       // diagnostic stop being consulted whether the edge landed or not.

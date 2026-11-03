@@ -2147,8 +2147,11 @@ describe('One-shot members', () => {
   /** The durable roster row for one member name, read through the Team projection. */
   function rowOf(ctx: Context, lead: Agent, name: string): Record<string, unknown> | undefined {
     const state = ctx.sessionProjections.stateOf(lead.session, 'agentTeam') as unknown as
-      | { readonly members: readonly Record<string, unknown>[] }
+      | { readonly members: readonly Record<string, unknown>[]; readonly failure?: string }
       | undefined
+    // A refused Team event stops the projection where it stands, so a row read after
+    // one would otherwise look merely stale.
+    if (state?.failure !== undefined) throw new Error(`Team projection failed: ${state.failure}`)
     return state?.members.find(candidate => candidate.name === name)
   }
 
@@ -2162,6 +2165,37 @@ describe('One-shot members', () => {
       signal: SIGNAL,
       ...extra,
     })
+  }
+
+  /**
+   * Let real Session I/O progress while the fake clock is installed.
+   *
+   * Every Team append flushes through the persistence writer, so a settlement needs
+   * more than a clock advance: its continuation runs on the real event loop, which
+   * fake timers do not run. Yielding between ticks keeps durable-state assertions
+   * deterministic without depending on wall-clock speed.
+   */
+  async function drainClock(): Promise<void> {
+    await vi.runOnlyPendingTimersAsync()
+    await new Promise<void>((resolve) => {
+      process.nextTick(resolve)
+    })
+  }
+
+  /**
+   * Drive the fake clock until one member's settlement is durable.
+   * @param ctx - Team service context.
+   * @param lead - exact live Lead owning the roster.
+   * @param name - member whose row is awaited.
+   * @param phase - phase the row must reach.
+   */
+  async function awaitSettled(ctx: Context, lead: Agent, name: string, phase: string): Promise<void> {
+    for (let pump = 0; pump < 300; pump += 1) {
+      await drainClock()
+      if (rowOf(ctx, lead, name)?.phase === phase) return
+    }
+    expect(rowOf(ctx, lead, name), `teammate "${name}" never reached ${phase}`)
+      .toMatchObject({ phase })
   }
 
   it('dispatches through start, never startContinuable, and settles the row as completed', async () => {
@@ -2241,6 +2275,9 @@ describe('One-shot members', () => {
       const provider = oneShot(ctx, 'ext-stall', { result: () => Promise.withResolvers<never>().promise })
       await spawnOneShot(ctx, lead, 'stalled', 'ext-stall', { timeoutMs: 5_000 })
       await vi.advanceTimersByTimeAsync(5_000)
+      // The settlement queue now holds two appends for one member: the Lead-directed
+      // report and the terminal edge. Both are durable before the row is read.
+      await awaitSettled(ctx, lead, 'stalled', 'completed')
       expect(rowOf(ctx, lead, 'stalled')).toMatchObject({
         phase: 'completed',
         result: { stopReason: 'timeout' },
@@ -2281,6 +2318,7 @@ describe('One-shot members', () => {
       await vi.advanceTimersByTimeAsync(3_000)
       finished.resolve({ output: content('arrived first'), stopReason: 'completed' })
       await vi.advanceTimersByTimeAsync(20_000)
+      await awaitSettled(ctx, lead, 'quick', 'completed')
       // The budget timer is cleared at settlement, so it cannot append a second
       // terminal edge: durable() throws on any projection failure.
       expect(durable(lead).members.find(member => member.name === 'quick')).toMatchObject({
@@ -2302,9 +2340,11 @@ describe('One-shot members', () => {
       const provider = oneShot(ctx, 'ext-late', { result: () => finished.promise })
       await spawnOneShot(ctx, lead, 'stale', 'ext-late', { timeoutMs: 5_000 })
       await vi.advanceTimersByTimeAsync(5_000)
+      await awaitSettled(ctx, lead, 'stale', 'completed')
       expect(rowOf(ctx, lead, 'stale')).toMatchObject({ phase: 'completed', result: { stopReason: 'timeout' } })
       finished.reject(new Error('provider failed after expiry'))
       await vi.advanceTimersByTimeAsync(0)
+      await vi.runAllTimersAsync()
       // The row already holds its terminal edge; the late rejection is observed and
       // dropped instead of re-settling the member or disposing the run twice.
       expect(rowOf(ctx, lead, 'stale')?.result).toEqual({ stopReason: 'timeout' })
@@ -2389,7 +2429,7 @@ describe('One-shot members', () => {
     expect(() => ctx.agentTeams.interrupt(lead, 'legacy')).not.toThrow(/runs one-shot/u)
   })
 
-  it('reports a settled one-shot member whose terminal edge cannot be recorded', async () => {
+  it('reports a settlement whose first durable write is refused', async () => {
     const { ctx, lead } = await setup([])
     const finished = Promise.withResolvers<SubagentResult>()
     const provider = oneShot(ctx, 'ext-unrecorded', { result: () => finished.promise })
@@ -2398,12 +2438,209 @@ describe('One-shot members', () => {
     vi.spyOn(teamInternals(ctx).journal, 'appendAndFlush').mockRejectedValueOnce(new Error('durable append refused'))
     finished.resolve({ output: content('arrived'), stopReason: 'completed' })
     await vi.waitFor(() => {
-      expect(warn).toHaveBeenCalledWith(expect.stringContaining('teammate "lost" completed result was not recorded'))
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('teammate "lost" settlement did not complete'))
     }, { timeout: 5_000 })
-    // The row keeps the edge it has and the run is still disposed once; restart
-    // reconciliation ends the member rather than leaving a second settlement pending.
+    // Neither the report nor the terminal edge was written, the run is still disposed
+    // once, and restart reconciliation ends the member rather than leaving a second
+    // settlement pending.
     expect(rowOf(ctx, lead, 'lost')?.phase).toBe('active')
     expect(provider.dispositions).toHaveLength(1)
+  })
+
+  /** How often one item was steered into the Lead; a claimed inbox entry repeats its text. */
+  function steeredCount(lead: Agent, id: string): number {
+    return lead.session.snapshotEvents().filter(event => event.type === 'agent/inbox/spliced')
+      .filter(event => event.data.inserted.some(input => input.source.kind === 'team-message'
+        && input.source.messageId === id)).length
+  }
+
+  /** Peer items the Lead's own Session recorded, with the text a model would read. */
+  function leadReceipts(lead: Agent): { id: string; sender: string; text: string }[] {
+    return lead.session.snapshotEvents().flatMap((event) => {
+      if (event.type === 'user/message') {
+        if (event.data.source.kind !== 'team-message') return []
+        return [{
+          id: event.data.source.messageId,
+          sender: event.data.source.senderName,
+          text: event.data.content.map(block => block.type === 'text' ? block.text : '').join(' '),
+        }]
+      }
+      if (event.type !== 'agent/inbox/spliced') return []
+      return event.data.inserted.flatMap((input) => {
+        if (input.source.kind !== 'team-message') return []
+        return [{
+          id: input.source.messageId,
+          sender: input.source.senderName,
+          text: input.content.map(block => block.type === 'text' ? block.text : '').join(' '),
+        }]
+      })
+    })
+  }
+
+  /** The settled member's report identity, derived the way the mailbox derives it. */
+  function reportId(ctx: Context, lead: Agent, name: string): string {
+    return `team-message-${String(rowOf(ctx, lead, name)?.id)}`
+  }
+
+  /** Wait for one member's report to reach the Lead, then return its identity. */
+  async function waitReceipt(ctx: Context, lead: Agent, name: string): Promise<string> {
+    const id = reportId(ctx, lead, name)
+    await vi.waitFor(() => {
+      expect(leadReceipts(lead).some(receipt => receipt.id === id)).toBe(true)
+    }, { timeout: 5_000 })
+    return id
+  }
+
+  it('reports a successful one-shot result to the Lead exactly once', async () => {
+    const { ctx, lead } = await setup(['hang'])
+    oneShot(ctx, 'ext-report')
+    await spawnOneShot(ctx, lead, 'reporter', 'ext-report')
+    await vi.waitFor(() => { expect(rowOf(ctx, lead, 'reporter')?.phase).toBe('completed') }, { timeout: 5_000 })
+    const id = await waitReceipt(ctx, lead, 'reporter')
+    const receipt = leadReceipts(lead).find(candidate => candidate.id === id)!
+    expect(receipt.sender).toBe('reporter')
+    expect(receipt.text).toContain('one-shot teammate "reporter" settled with stop reason "completed" on provider "ext-report".')
+    expect(receipt.text).toContain('Final assistant output:')
+    expect(receipt.text).toContain('cli answer')
+    expect(durable(lead).pendingMessages).toEqual([])
+    // Exactly one queue edge and one acknowledgement exist for the member, so no
+    // second settlement or dispatch produced a second report.
+    const edges = lead.session.snapshotEvents().filter(event => event.type === 'team/message/queued'
+      || event.type === 'team/message/delivered')
+      .filter(event => (event.type === 'team/message/queued'
+        ? event.data.message.id === id
+        : event.data.messageId === id))
+    expect(edges.map(event => event.type)).toEqual(['team/message/queued', 'team/message/delivered'])
+  })
+
+  it('reports a failed one-shot member with its failure detail', async () => {
+    const { ctx, lead } = await setup(['hang'])
+    oneShot(ctx, 'ext-boom', { result: () => Promise.reject(new Error('cli crashed')) })
+    await spawnOneShot(ctx, lead, 'crashy', 'ext-boom')
+    await vi.waitFor(() => { expect(rowOf(ctx, lead, 'crashy')?.phase).toBe('completed') }, { timeout: 5_000 })
+    const id = await waitReceipt(ctx, lead, 'crashy')
+    const text = leadReceipts(lead).find(candidate => candidate.id === id)!.text
+    expect(text).toContain('settled with stop reason "error"')
+    expect(text).toContain('roster recorded: cli crashed')
+    expect(text).toContain('The run produced no output.')
+  })
+
+  it('reports a budget expiry and an aborted run as distinct outcomes', async () => {
+    vi.useFakeTimers()
+    try {
+      const first = await setup(['hang'])
+      oneShot(first.ctx, 'ext-timeout', { result: () => Promise.withResolvers<never>().promise })
+      await spawnOneShot(first.ctx, first.lead, 'slow', 'ext-timeout', { timeoutMs: 5_000 })
+      await vi.advanceTimersByTimeAsync(5_000)
+      await awaitSettled(first.ctx, first.lead, 'slow', 'completed')
+      const timedOutId = reportId(first.ctx, first.lead, 'slow')
+      for (let pump = 0; pump < 300; pump += 1) {
+        await drainClock()
+        if (leadReceipts(first.lead).some(receipt => receipt.id === timedOutId)) break
+      }
+      const timedOut = leadReceipts(first.lead)
+        .find(receipt => receipt.id === timedOutId)
+      expect(timedOut?.text).toContain('settled with stop reason "timeout"')
+      expect(timedOut?.text).toContain('roster recorded: one-shot member "slow" exceeded its 5000ms budget and was cancelled')
+
+      const second = await setup(['hang'])
+      const finished = Promise.withResolvers<SubagentResult>()
+      oneShot(second.ctx, 'ext-abort', { result: () => finished.promise })
+      const controller = new AbortController()
+      await second.ctx.agentTeams.spawnTeammate(second.lead, {
+        name: 'cancelled',
+        description: 'one-shot',
+        prompt: content('run'),
+        context: 'fresh',
+        provider: 'ext-abort',
+        signal: controller.signal,
+      })
+      controller.abort('user cancelled')
+      finished.resolve({ output: content('stopped early'), stopReason: 'aborted' })
+      await vi.waitFor(() => {
+        expect(leadReceipts(second.lead).some(receipt => receipt.text.includes('stop reason "aborted"')))
+          .toBe(true)
+      }, { timeout: 5_000 })
+      const receipt = leadReceipts(second.lead).find(candidate => candidate.text.includes('stop reason "aborted"'))!
+      expect(receipt.text).toContain('stopped early')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('keeps an undeliverable report queued and retries it without duplicating', async () => {
+    const { ctx, lead } = await setup(['hang', 'hang'])
+    oneShot(ctx, 'ext-retry')
+    await spawnOneShot(ctx, lead, 'queued', 'ext-retry')
+    vi.spyOn(lead, 'steer').mockImplementationOnce(() => { throw new Error('Lead inbox busy') })
+    const id = reportId(ctx, lead, 'queued')
+    await vi.waitFor(() => {
+      expect(durable(lead).pendingMessages.map(message => message.id)).toContain(id)
+    }, { timeout: 5_000 })
+    expect(steeredCount(lead, id)).toBe(0)
+
+    const pending = durable(lead).pendingMessages.find(message => message.id === id)!
+    await expect(teamInternals(ctx).mailbox.tryDispatch(lead, pending, SIGNAL)).resolves.toBe(true)
+    expect(steeredCount(lead, id)).toBe(1)
+    expect(durable(lead).pendingMessages).toEqual([])
+  })
+
+  it('keeps the report durable when the terminal edge cannot be written', async () => {
+    const { ctx, lead } = await setup(['hang'])
+    oneShot(ctx, 'ext-halfwrite')
+    await spawnOneShot(ctx, lead, 'half', 'ext-halfwrite')
+    const journal = teamInternals(ctx).journal
+    const forward = journal.appendAndFlush.bind(journal)
+    vi.spyOn(journal, 'appendAndFlush').mockImplementation(async (root, type, data) => {
+      if (type === 'team/member') throw new Error('roster write refused')
+      await forward(root, type, data)
+    })
+    const warn = vi.spyOn(ctx.logger, 'warn').mockImplementation(() => undefined)
+    const id = reportId(ctx, lead, 'half')
+    await vi.waitFor(() => {
+      expect(durable(lead).pendingMessages.map(message => message.id)).toContain(id)
+    }, { timeout: 5_000 })
+    // The member keeps its active edge and the warning names it, so nothing claims a
+    // terminal row that was never written.
+    expect(rowOf(ctx, lead, 'half')?.phase).toBe('active')
+    await vi.waitFor(() => {
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('teammate "half" settlement did not complete'))
+    }, { timeout: 5_000 })
+    // The queued report survives on its own: recovery delivers it without a second
+    // settlement attempt.
+    await teamInternals(ctx).recoverFor(lead)
+    expect(steeredCount(lead, id)).toBe(1)
+  })
+
+  it('reports each settled member separately and keeps a sibling report intact', async () => {
+    const { ctx, lead } = await setup(['hang', 'hang', 'hang'])
+    oneShot(ctx, 'ext-a', { result: () => Promise.resolve({ output: content('answer A'), stopReason: 'completed' }) })
+    oneShot(ctx, 'ext-b', { result: () => Promise.reject(new Error('provider B died')) })
+    await spawnOneShot(ctx, lead, 'alpha', 'ext-a')
+    await spawnOneShot(ctx, lead, 'beta', 'ext-b')
+    const alphaId = await waitReceipt(ctx, lead, 'alpha')
+    const betaId = await waitReceipt(ctx, lead, 'beta')
+    const alpha = leadReceipts(lead).find(candidate => candidate.id === alphaId)!
+    const beta = leadReceipts(lead).find(candidate => candidate.id === betaId)!
+    expect(alpha.text).toContain('answer A')
+    expect(beta.text).toContain('stop reason "error"')
+    expect(beta.text).toContain('provider B died')
+    expect(rowOf(ctx, lead, 'alpha')?.result).toEqual({ stopReason: 'completed', output: content('answer A') })
+    expect(rowOf(ctx, lead, 'beta')).toMatchObject({ result: { stopReason: 'error' }, error: 'provider B died' })
+  })
+
+  it('withholds output that cannot fit one Team message and names where it stays', async () => {
+    const { ctx, lead } = await setup(['hang'], { maxMessageBytes: 320 })
+    oneShot(ctx, 'ext-big', { result: () => Promise.resolve({ output: content('x'.repeat(900)), stopReason: 'completed' }) })
+    await spawnOneShot(ctx, lead, 'verbose', 'ext-big')
+    await vi.waitFor(() => { expect(rowOf(ctx, lead, 'verbose')?.phase).toBe('completed') }, { timeout: 5_000 })
+    const id = await waitReceipt(ctx, lead, 'verbose')
+    const text = leadReceipts(lead).find(candidate => candidate.id === id)!.text
+    expect(text).toContain('exceeded the 320-byte Team message limit')
+    expect(text).toContain('stays recorded whole on teammate "verbose"\'s roster row')
+    expect(text).not.toContain('xxxx')
+    // The durable row keeps the complete output the report could not carry.
+    expect(rowOf(ctx, lead, 'verbose')?.result).toEqual({ stopReason: 'completed', output: content('x'.repeat(900)) })
   })
 
   it('refuses lane-only shapes on each side of the split', async () => {
@@ -2423,7 +2660,7 @@ describe('One-shot members', () => {
   it('launches one fleet that mixes a continuable lane with a one-shot CLI-style member', async () => {
     const settingsRoot = mkdtempSync(join(tmpdir(), 'gnk-team-mixed-fleet-'))
     roots.push(settingsRoot)
-    const { ctx, lead } = await setup(['hang'], {}, {}, false, join(settingsRoot, 'settings.json'))
+    const { ctx, lead } = await setup(['hang', 'hang'], {}, {}, false, join(settingsRoot, 'settings.json'))
     const provider = oneShot(ctx, 'ext-cli')
     const continuable = vi.spyOn(ctx.subagents, 'startContinuable')
     // Availability names each shape before any spend, so the editor and the
@@ -2453,6 +2690,12 @@ describe('One-shot members', () => {
     }, { timeout: 5_000 })
     expect(rowOf(ctx, lead, 'cli')?.result).toEqual({ stopReason: 'completed', output: content('cli answer') })
     expect(provider.dispositions).toHaveLength(1)
+    // The Lead actually receives the one-shot result as a peer item, while the lane
+    // member stays live and usable.
+    const cliReport = await waitReceipt(ctx, lead, 'cli')
+    const reportText = leadReceipts(lead).find(candidate => candidate.id === cliReport)!.text
+    expect(reportText).toContain('one-shot teammate "cli" settled with stop reason "completed"')
+    expect(reportText).toContain('cli answer')
 
     // The settled one-shot is terminal and inert in the roster, while the lane
     // member keeps its mailbox: one member's shape never changes the other's.

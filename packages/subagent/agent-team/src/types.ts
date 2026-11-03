@@ -89,6 +89,15 @@ export interface TeamMemberSnapshot {
   readonly maxTokens?: number
 }
 
+/**
+ * A settled one-shot member row. The roster writes this edge once per member, and
+ * its recorded result is the subject of the report the Lead receives.
+ */
+export type TeamMemberSettled = TeamMemberSnapshot & {
+  readonly phase: 'completed'
+  readonly result: TeamMemberResult
+}
+
 /** Current runtime-enriched roster row. */
 export interface TeamMemberView {
   readonly id: SessionId
@@ -144,6 +153,21 @@ export interface TeamMessageSnapshot {
   readonly senderName: string
   readonly targetId: SessionId
   readonly content: ContentBlock[]
+}
+
+/**
+ * One settled member's report to the Lead, queued inside the settlement
+ * transaction so the report is durable before any delivery is attempted.
+ */
+export interface TeamMemberReport {
+  /** Report identity derived from the member id, which makes a second report impossible. */
+  readonly messageId: TeamMessageId
+  /**
+   * Attempt delivery of the queued report. The roster runs this only after the
+   * settlement transaction commits, because delivery steers the Lead and opens its
+   * own transaction on the same root.
+   */
+  readonly dispatch: () => Promise<boolean>
 }
 
 /** Source retained by the target Session for durable mailbox de-duplication. */

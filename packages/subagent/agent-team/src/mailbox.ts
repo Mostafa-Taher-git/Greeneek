@@ -20,6 +20,8 @@ import { TeamId, TeamMessageId } from './types.ts'
 import type {
   SendTeamMessageRequest,
   SendTeamMessageResult,
+  TeamMemberReport,
+  TeamMemberSettled,
   TeamMessageSnapshot,
 } from './types.ts'
 
@@ -59,6 +61,48 @@ export class TeamMailbox {
       signal: AbortSignal.any([request.signal, this.lifecycle.signal]),
     })
     return await this.trackDispatch(operation)
+  }
+
+  /**
+   * Queue one settled member's report to the Lead as an ordinary durable mailbox
+   * item, then admit its delivery. The roster calls this while it holds the
+   * settlement transaction, so the report commits before the member's terminal edge:
+   * a process interruption between the two writes can only leave the report queued
+   * for recovery, never a completed member whose Lead is left waiting. The report
+   * identity comes from the member id, so the projection refuses a second report for
+   * the same member, and the target-side receipt check keeps a retried delivery from
+   * steering the Lead twice.
+   * A report ignores the per-target pending limit because one settled member authors
+   * exactly one report, while the message byte cap still bounds what the Lead's model
+   * must read: output that cannot fit is named as withheld and stays recorded whole on
+   * the member row.
+   * @param root - exact live Team Lead that owns the roster and the mailbox.
+   * @param member - settled row carrying the member identity, result, and error.
+   * @returns the durable report identity and a delivery attempt to run after commit.
+   */
+  async reportSettledMember(root: Agent, member: TeamMemberSettled): Promise<TeamMemberReport> {
+    const identity = {
+      id: TeamMessageId(`team-message-${member.id}`),
+      senderId: member.id,
+      senderName: member.name,
+      targetId: root.id,
+    }
+    let message: TeamMessageSnapshot = { ...identity, content: this.reportContent(member) }
+    if (this.deliveryBytes(message) > this.maxMessageBytes) {
+      message = { ...identity, content: this.reportContent(member, true) }
+    }
+    await this.journal.appendAndFlush(root, 'team/message/queued', {
+      version: 2,
+      teamId: TeamId(root.id),
+      message,
+    })
+    // Delivery is returned unstarted: it steers the Lead and opens its own root
+    // transaction, so it must not begin while the settlement transaction still holds
+    // the Lead's Session flush.
+    return {
+      messageId: message.id,
+      dispatch: () => this.tryDispatch(root, message, this.lifecycle.signal),
+    }
   }
 
   /**
@@ -134,7 +178,7 @@ export class TeamMailbox {
         targetId: target.id,
         content,
       }
-      if (Buffer.byteLength(JSON.stringify(this.deliveryContent(queued)), 'utf8') > this.maxMessageBytes) {
+      if (this.deliveryBytes(queued) > this.maxMessageBytes) {
         throw new TeamError(`team message exceeds ${this.maxMessageBytes} bytes`, 'TEAM_MESSAGE_TOO_LARGE')
       }
       await this.journal.appendAndFlush(root, 'team/message/queued', {
@@ -309,6 +353,48 @@ export class TeamMailbox {
     return [
       { type: 'text', text: `Team message ${message.id} from ${message.senderName}:` },
       ...structuredClone(message.content),
+    ]
+  }
+
+  /** Byte size of one candidate delivery as the receiving model will read it. */
+  private deliveryBytes(message: TeamMessageSnapshot): number {
+    return Buffer.byteLength(JSON.stringify(this.deliveryContent(message)), 'utf8')
+  }
+
+  /**
+   * Build one settled member's report content: who finished, how it ended, and what
+   * it produced.
+   * @param member - settled roster row.
+   * @param withholdOutput - drop the output blocks and name their place of record, used
+   * when the full output cannot fit one Team message.
+   * @returns the report content blocks.
+   */
+  private reportContent(member: TeamMemberSettled, withholdOutput = false): ContentBlock[] {
+    const output = member.result.output ?? []
+    return [
+      {
+        type: 'text',
+        text: `one-shot teammate "${member.name}" settled with stop reason "${member.result.stopReason}"`
+          + ` on provider "${member.provider}".`,
+      },
+      ...(member.result.diagnostic === undefined
+        ? []
+        : [{ type: 'text' as const, text: `provider diagnostic: ${member.result.diagnostic}` }]),
+      ...(member.error === undefined
+        ? []
+        : [{ type: 'text' as const, text: `roster recorded: ${member.error}` }]),
+      ...(output.length === 0
+        ? [{ type: 'text' as const, text: 'The run produced no output.' }]
+        : withholdOutput
+          ? [{
+            type: 'text' as const,
+            text: `The run's output exceeded the ${this.maxMessageBytes}-byte Team message limit;`
+              + ` it stays recorded whole on teammate "${member.name}"'s roster row.`,
+          }]
+          : [
+            { type: 'text' as const, text: 'Final assistant output:' },
+            ...structuredClone(output),
+          ]),
     ]
   }
 

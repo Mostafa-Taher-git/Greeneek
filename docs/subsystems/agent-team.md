@@ -32,7 +32,7 @@ Every member starts in `provisioning` and leaves it exactly once, to `active` or
 
 ## Durable mailbox
 
-The Lead Session first stores the complete queued message. A target receipt is acknowledged only after its pending inbox item or recorded user message is durable, leaving queued-minus-delivered as the recovery mailbox.
+The Lead Session first stores the complete queued message. A target receipt is acknowledged only after its pending inbox item or recorded user message is durable, leaving queued-minus-delivered as the recovery mailbox. A settled one-shot member's report to the Lead is one of these queued items: its identity is derived from the member id, so the projection refuses a second report for the same member and a retried delivery cannot steer a Lead that already received it.
 
 ```ts type-equiv
 /** One peer message retained until its target Session records it. */

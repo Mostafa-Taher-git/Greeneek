@@ -946,7 +946,7 @@ describe.skipIf(!existsSync(gnkBin))('gnk BUILT bin (node lib/bin.js, no tsx)', 
         ['sdk-app-startup', '@greeneek/gnk-sdk-app'],
         ['sdk-jsonrpc-server', '@greeneek/gnk-sdk-jsonrpc-server'],
         ['greeneek-llm-api-extensions', '@greeneek/gnk-greeneek-llm-api-extensions'],
-        ['llm-greeneek', '@greeneek/gnk-llm-greeneek'],
+        ['llm-pi-ai', '@greeneek/gnk-llm-pi-ai'],
         ['sandbox', '@greeneek/gnk-sandbox-local'],
         ['session-projection', '@greeneek/gnk-session-projection'],
         ['sandbox-policy', '@greeneek/gnk-sandbox-policy'],
@@ -985,18 +985,16 @@ describe.skipIf(!existsSync(gnkBin))('gnk BUILT bin (node lib/bin.js, no tsx)', 
       const init = await runBuiltBin(['--profile', 'web', '--dump-default-config'], { GNK_HOME: home })
       expect(init.code).toBe(0)
       const profilePatch = join(home, 'profiles', 'web', 'cordis.patch.yml')
-      writeFileSync(profilePatch, [
+      const userLayer = [
         '- id: agent-loop',
         '  config:',
         '    agents:',
         '      - id: personal',
         '        provider: personal-provider',
         '        model: personal-model',
-        '- id: absent-row',
-        '  config:',
-        '    x: 1',
         '',
-      ].join('\n'))
+      ].join('\n')
+      writeFileSync(profilePatch, userLayer)
       const overlay = join(home, 'overlay.cordis.yml')
       writeFileSync(overlay, [
         '- id: agent-loop',
@@ -1007,7 +1005,7 @@ describe.skipIf(!existsSync(gnkBin))('gnk BUILT bin (node lib/bin.js, no tsx)', 
         '        model: configured-model',
         '',
       ].join('\n'))
-      const { stdout, code, stderr } = await runBuiltBin(
+      const { stdout, code } = await runBuiltBin(
         ['--profile', 'web', '--patch', overlay, '--dump-config'],
         { GNK_HOME: home },
       )
@@ -1016,7 +1014,23 @@ describe.skipIf(!existsSync(gnkBin))('gnk BUILT bin (node lib/bin.js, no tsx)', 
       expect(stdout).not.toContain('personal-provider')
       // Both layers patched the row; the comment lists them in application order.
       expect(stdout).toContain(`patched by ${profilePatch}, ${overlay}`)
-      expect(stderr).toContain('patch: entry "absent-row" not found')
-    }, SPAWN_TIMEOUT_MS * 2 + 30_000)
+
+      // The profile's own layer authors rows beside the tree it targets, so a row
+      // it does not carry refuses the launch instead of being skipped silently.
+      writeFileSync(profilePatch, ['- id: absent-row', '  config:', '    x: 1', ''].join('\n'))
+      const refused = await runBuiltBin(['--profile', 'web', '--dump-config'], { GNK_HOME: home })
+      expect(refused.code, refused.stderr).toBe(1)
+      expect(refused.stderr).toContain('patches a row this composition does not carry')
+      expect(refused.stderr).toContain('patch: entry "absent-row" not found')
+
+      // A `--patch` overlay stays lenient: the mount skips the row and its own
+      // logger names it, so one shared overlay need not match every tree.
+      const ghostOverlay = join(home, 'ghost.cordis.yml')
+      writeFileSync(ghostOverlay, ['- id: absent-row', '  config:', '    x: 1', ''].join('\n'))
+      writeFileSync(profilePatch, userLayer)
+      const lenient = await runBuiltBin(['--profile', 'web', '--patch', ghostOverlay, '--dump-config'], { GNK_HOME: home })
+      expect(lenient.code, lenient.stderr).toBe(0)
+      expect(lenient.stderr).toContain('patch: entry "absent-row" not found')
+    }, SPAWN_TIMEOUT_MS * 3 + 40_000)
   })
 })

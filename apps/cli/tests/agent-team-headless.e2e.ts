@@ -41,8 +41,18 @@ describe('gnk run with Agent Teams enabled', () => {
         },
       }, undefined, 2) + '\n')
       await writeFile(join(profileDir, 'cordis.patch.yml'), [
-        '- id: llm-greeneek',
+        // The shipped composition routes models through `llm-pi-ai`; this scenario
+        // answers from the fixture LLM it inserts below, so the keyless router row
+        // is disabled rather than a Greeneek adapter the tree never carries.
+        '- id: llm-pi-ai',
         '  disabled: true',
+        // The fixture adapter answers as `greeneek-official`, so the headless run
+        // pins that route: a headless turn resolves the deployment default over the
+        // live registry instead of waiting for a picker.
+        '- id: agent-default-model',
+        '  config:',
+        '    provider: greeneek-official',
+        '    model: greeneek-v4-flash',
         '- id: session-persistence-jsonl',
         '  config:',
         `    root: '${sessions}'`,

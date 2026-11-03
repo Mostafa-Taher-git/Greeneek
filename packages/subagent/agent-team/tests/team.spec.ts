@@ -8,6 +8,7 @@ import type { Agent } from '@greeneek/gnk-agent'
 import AgentLoop from '@greeneek/gnk-agent-loop'
 import { mountAgentLoopTestDependencies } from '@greeneek/gnk-agent-loop-testkit'
 import { createUserMessage } from '@greeneek/gnk-llm'
+import type { SubagentResult } from '@greeneek/gnk-subagent'
 import { SessionLogOffset, SessionId, type Session, type SessionEvent } from '@greeneek/gnk-session'
 import SessionProjectionRegistry from '@greeneek/gnk-session-projection'
 import JsonlSessionPersistence from '@greeneek/gnk-session-persistence-jsonl'
@@ -107,6 +108,7 @@ interface TeamServiceInternals {
   }
   readonly journal: {
     state(root: Agent): unknown
+    appendAndFlush(root: Agent, type: string, data: unknown): Promise<void>
   }
   disposeRuntime(): Promise<void>
   recoverFor(agent: Agent): Promise<void>
@@ -2100,6 +2102,322 @@ describe('Fleet favorites', () => {
     expect(await ctx.agentTeams.saveFleetFavorite(lead, {
       id: 'x', name: 'X', members: [{ name: 'x', description: 'x', prompt: 'x', provider: 'spawn' }],
     }, 0)).toMatchObject({ ok: false, error: { code: 'TEAM_FLEET_SETTINGS_UNAVAILABLE' } })
+  })
+})
+
+describe('One-shot members', () => {
+  /** One-shot provider registration plus the observations the tests assert on. */
+  function oneShot(
+    ctx: Context,
+    name: string,
+    options: {
+      /** Created when the provider is asked to start, so a rejection is always awaited. */
+      readonly result?: () => Promise<SubagentResult>
+    } = {},
+  ): { readonly dispositions: number[]; signal(): AbortSignal | undefined } {
+    const dispositions: number[] = []
+    let seen: AbortSignal | undefined
+    ctx.subagents.registerProvider({
+      name,
+      capabilities: {
+        agentOptions: false,
+        outputSchema: false,
+        depthLimit: false,
+        toolFilter: false,
+        persona: false,
+        agentPreset: false,
+      },
+      inheritsParentContext: false,
+      start: async (request: { signal: AbortSignal }) => {
+        seen = request.signal
+        return {
+          id: SessionId('one-shot-run'),
+          localAgent: undefined,
+          result: options.result?.() ?? Promise.resolve({ output: content('cli answer'), stopReason: 'completed' }),
+          dispose: async () => { dispositions.push(1) },
+        }
+      },
+    })
+    return {
+      dispositions,
+      signal: () => seen,
+    }
+  }
+
+  /** The durable roster row for one member name, read through the Team projection. */
+  function rowOf(ctx: Context, lead: Agent, name: string): Record<string, unknown> | undefined {
+    const state = ctx.sessionProjections.stateOf(lead.session, 'agentTeam') as unknown as
+      | { readonly members: readonly Record<string, unknown>[] }
+      | undefined
+    return state?.members.find(candidate => candidate.name === name)
+  }
+
+  function spawnOneShot(ctx: Context, lead: Agent, name: string, provider: string, extra: Record<string, unknown> = {}) {
+    return ctx.agentTeams.spawnTeammate(lead, {
+      name,
+      description: `${name} responsibility`,
+      prompt: content(`${name} initial`),
+      context: 'fresh',
+      provider,
+      signal: SIGNAL,
+      ...extra,
+    })
+  }
+
+  it('dispatches through start, never startContinuable, and settles the row as completed', async () => {
+    const { ctx, lead } = await setup([])
+    const provider = oneShot(ctx, 'ext-cli')
+    const continuable = vi.spyOn(ctx.subagents, 'startContinuable')
+    await spawnOneShot(ctx, lead, 'worker', 'ext-cli')
+    expect(continuable).not.toHaveBeenCalled()
+    await vi.waitFor(() => { expect(rowOf(ctx, lead, 'worker')?.phase).toBe('completed') }, { timeout: 5_000 })
+    expect(rowOf(ctx, lead, 'worker')).toMatchObject({
+      mode: 'one-shot',
+      result: { stopReason: 'completed', output: content('cli answer') },
+    })
+    // Disposal happens exactly once, and the row is no longer interactive.
+    expect(provider.dispositions).toHaveLength(1)
+  })
+
+  it('preserves stopReason, output, and provider diagnostic on a partial run', async () => {
+    const { ctx, lead } = await setup([])
+    oneShot(ctx, 'ext-partial', {
+      result: () => Promise.resolve({ output: content('partial work'), stopReason: 'error', diagnostic: 'provider refused' }),
+    })
+    await spawnOneShot(ctx, lead, 'partial', 'ext-partial')
+    await vi.waitFor(() => { expect(rowOf(ctx, lead, 'partial')?.phase).toBe('completed') }, { timeout: 5_000 })
+    expect(rowOf(ctx, lead, 'partial')?.result).toEqual({
+      stopReason: 'error',
+      output: content('partial work'),
+      diagnostic: 'provider refused',
+    })
+  })
+
+  it('refuses messages, follow-ups, and interruption on a running one-shot member', async () => {
+    const { ctx, lead } = await setup([])
+    const settled = Promise.withResolvers<SubagentResult>()
+    oneShot(ctx, 'ext-hold', { result: () => settled.promise })
+    await spawnOneShot(ctx, lead, 'held', 'ext-hold')
+    expect(rowOf(ctx, lead, 'held')?.phase).toBe('active')
+
+    await expect(ctx.agentTeams.sendMessage(lead, {
+      target: 'held', content: content('follow up'), signal: SIGNAL,
+    })).rejects.toMatchObject({ code: 'TEAM_MEMBER_NOT_INTERACTIVE' })
+    expect(() => ctx.agentTeams.interrupt(lead, 'held')).toThrow(/runs one-shot/)
+
+    settled.resolve({ output: content('late'), stopReason: 'completed' })
+    await vi.waitFor(() => { expect(rowOf(ctx, lead, 'held')?.phase).toBe('completed') }, { timeout: 5_000 })
+  })
+
+  it('carries caller cancellation to the provider signal and settles exactly once', async () => {
+    const { ctx, lead } = await setup([])
+    const finished = Promise.withResolvers<SubagentResult>()
+    const provider = oneShot(ctx, 'ext-cancel', { result: () => finished.promise })
+    const controller = new AbortController()
+    await ctx.agentTeams.spawnTeammate(lead, {
+      name: 'cancelled',
+      description: 'one-shot',
+      prompt: content('run'),
+      context: 'fresh',
+      provider: 'ext-cancel',
+      signal: controller.signal,
+    })
+    const seen = provider.signal()
+    expect(seen?.aborted).toBe(false)
+    controller.abort('user cancelled')
+    expect(seen?.aborted).toBe(true)
+    // A provider that reports its own cancellation settles through the same single
+    // path as any other result.
+    finished.resolve({ output: content('stopped early'), stopReason: 'aborted' })
+    await vi.waitFor(() => { expect(rowOf(ctx, lead, 'cancelled')?.phase).toBe('completed') }, { timeout: 5_000 })
+    expect(rowOf(ctx, lead, 'cancelled')?.result).toEqual({ stopReason: 'aborted', output: content('stopped early') })
+    expect(provider.dispositions).toHaveLength(1)
+  })
+
+  it('settles a never-finishing run as a timeout deterministically, disposing once', async () => {
+    vi.useFakeTimers()
+    try {
+      const { ctx, lead } = await setup([])
+      const provider = oneShot(ctx, 'ext-stall', { result: () => Promise.withResolvers<never>().promise })
+      await spawnOneShot(ctx, lead, 'stalled', 'ext-stall', { timeoutMs: 5_000 })
+      await vi.advanceTimersByTimeAsync(5_000)
+      expect(rowOf(ctx, lead, 'stalled')).toMatchObject({
+        phase: 'completed',
+        result: { stopReason: 'timeout' },
+      })
+      expect(String(rowOf(ctx, lead, 'stalled')?.error)).toContain('exceeded its 5000ms budget')
+      // The expiry cancels the run at its source, not merely the local wait.
+      expect(provider.signal()?.aborted).toBe(true)
+      expect(provider.dispositions).toHaveLength(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('keeps a successful sibling result intact when another one-shot member fails', async () => {
+    const { ctx, lead } = await setup([])
+    oneShot(ctx, 'ext-ok')
+    oneShot(ctx, 'ext-bad', { result: () => Promise.reject(new Error('provider exploded')) })
+    await spawnOneShot(ctx, lead, 'keeper', 'ext-ok')
+    await spawnOneShot(ctx, lead, 'breaker', 'ext-bad')
+    await vi.waitFor(() => {
+      expect(rowOf(ctx, lead, 'keeper')?.phase).toBe('completed')
+      expect(rowOf(ctx, lead, 'breaker')?.phase).toBe('completed')
+    }, { timeout: 5_000 })
+    expect(rowOf(ctx, lead, 'keeper')?.result).toEqual({ stopReason: 'completed', output: content('cli answer') })
+    expect(rowOf(ctx, lead, 'breaker')).toMatchObject({
+      result: { stopReason: 'error' },
+      error: 'provider exploded',
+    })
+  })
+
+  it('settles once when the run arrives before its budget expires', async () => {
+    vi.useFakeTimers()
+    try {
+      const { ctx, lead } = await setup([])
+      const finished = Promise.withResolvers<SubagentResult>()
+      const provider = oneShot(ctx, 'ext-early', { result: () => finished.promise })
+      await spawnOneShot(ctx, lead, 'quick', 'ext-early', { timeoutMs: 10_000 })
+      await vi.advanceTimersByTimeAsync(3_000)
+      finished.resolve({ output: content('arrived first'), stopReason: 'completed' })
+      await vi.advanceTimersByTimeAsync(20_000)
+      // The budget timer is cleared at settlement, so it cannot append a second
+      // terminal edge: durable() throws on any projection failure.
+      expect(durable(lead).members.find(member => member.name === 'quick')).toMatchObject({
+        phase: 'completed',
+        result: { stopReason: 'completed', output: content('arrived first') },
+      })
+      expect(durable(lead).members.find(member => member.name === 'quick')).not.toHaveProperty('error')
+      expect(provider.dispositions).toHaveLength(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('discards a provider failure that surfaces after the budget expired', async () => {
+    vi.useFakeTimers()
+    try {
+      const { ctx, lead } = await setup([])
+      const finished = Promise.withResolvers<SubagentResult>()
+      const provider = oneShot(ctx, 'ext-late', { result: () => finished.promise })
+      await spawnOneShot(ctx, lead, 'stale', 'ext-late', { timeoutMs: 5_000 })
+      await vi.advanceTimersByTimeAsync(5_000)
+      expect(rowOf(ctx, lead, 'stale')).toMatchObject({ phase: 'completed', result: { stopReason: 'timeout' } })
+      finished.reject(new Error('provider failed after expiry'))
+      await vi.advanceTimersByTimeAsync(0)
+      // The row already holds its terminal edge; the late rejection is observed and
+      // dropped instead of re-settling the member or disposing the run twice.
+      expect(rowOf(ctx, lead, 'stale')?.result).toEqual({ stopReason: 'timeout' })
+      expect(provider.dispositions).toHaveLength(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('maps a provider rejection inside an active budget to an error result', async () => {
+    const { ctx, lead } = await setup([])
+    const provider = oneShot(ctx, 'ext-throws', { result: () => Promise.reject(new Error('cli crashed')) })
+    await spawnOneShot(ctx, lead, 'crashed', 'ext-throws', { timeoutMs: 60_000 })
+    await vi.waitFor(() => { expect(rowOf(ctx, lead, 'crashed')?.phase).toBe('completed') }, { timeout: 5_000 })
+    expect(rowOf(ctx, lead, 'crashed')).toMatchObject({
+      result: { stopReason: 'error' },
+      error: 'cli crashed',
+    })
+    expect(provider.dispositions).toHaveLength(1)
+  })
+
+  it('records a run without output and lists the settled member as inactive', async () => {
+    const { ctx, lead } = await setup([])
+    oneShot(ctx, 'ext-silent', { result: () => Promise.resolve({ output: [], stopReason: 'refusal' }) })
+    await spawnOneShot(ctx, lead, 'silent', 'ext-silent')
+    await vi.waitFor(() => { expect(rowOf(ctx, lead, 'silent')?.phase).toBe('completed') }, { timeout: 5_000 })
+    expect(rowOf(ctx, lead, 'silent')?.result).toEqual({ stopReason: 'refusal' })
+    // A settled one-shot is terminal: the roster has no live child to report, and it
+    // no longer resolves as a messaging target.
+    expect(ctx.agentTeams.listMembers(lead).find(member => member.name === 'silent'))
+      .toMatchObject({ status: 'inactive' })
+    await expect(ctx.agentTeams.sendMessage(lead, {
+      target: 'silent', content: content('too late'), signal: SIGNAL,
+    })).rejects.toMatchObject({ code: 'TEAM_MEMBER_NOT_FOUND' })
+  })
+
+  it('settles an unfinished one-shot member as failed during recovery', async () => {
+    const { ctx, lead } = await setup([])
+    lead.session.append('team/member', {
+      version: 2,
+      teamId: TeamId(lead.id),
+      member: {
+        id: SessionId('orphaned-one-shot'),
+        name: 'orphan',
+        description: 'run lost with the previous process',
+        provider: 'ext-orphan',
+        context: 'fresh',
+        phase: 'provisioning',
+        mode: 'one-shot',
+      },
+    })
+    await teamInternals(ctx).roster.reconcileProvisioning(lead, SIGNAL)
+    // Recovery has no lane to resume, so the row ends failed instead of becoming an
+    // interactive teammate the Lead could keep messaging.
+    expect(rowOf(ctx, lead, 'orphan')).toMatchObject({ phase: 'failed' })
+    expect(String(rowOf(ctx, lead, 'orphan')?.error)).toContain('child Session recovery failed')
+    expect(() => ctx.agentTeams.interrupt(lead, 'orphan')).toThrow(/not found/u)
+  })
+
+  it('keeps a row recorded before the mode field interactive as a lane', async () => {
+    const { ctx, lead } = await setup([])
+    const legacy = {
+      id: SessionId('legacy-child'),
+      name: 'legacy',
+      description: 'recorded before member modes existed',
+      provider: 'spawn',
+      context: 'fresh' as const,
+      phase: 'provisioning' as const,
+    }
+    lead.session.append('team/member', { version: 2, teamId: TeamId(lead.id), member: legacy })
+    lead.session.append('team/member', {
+      version: 2,
+      teamId: TeamId(lead.id),
+      member: { ...legacy, phase: 'active' as const },
+    })
+    await ctx.sessions.flush(lead.session)
+    // An absent mode is a lane, so the mailbox keeps queueing for it rather than
+    // refusing it as non-interactive.
+    await expect(ctx.agentTeams.sendMessage(lead, {
+      target: 'legacy', content: content('queued for a lane'), signal: SIGNAL,
+    })).resolves.toMatchObject({ status: 'queued' })
+    expect(() => ctx.agentTeams.interrupt(lead, 'legacy')).not.toThrow(/runs one-shot/u)
+  })
+
+  it('reports a settled one-shot member whose terminal edge cannot be recorded', async () => {
+    const { ctx, lead } = await setup([])
+    const finished = Promise.withResolvers<SubagentResult>()
+    const provider = oneShot(ctx, 'ext-unrecorded', { result: () => finished.promise })
+    await spawnOneShot(ctx, lead, 'lost', 'ext-unrecorded')
+    const warn = vi.spyOn(ctx.logger, 'warn').mockImplementation(() => undefined)
+    vi.spyOn(teamInternals(ctx).journal, 'appendAndFlush').mockRejectedValueOnce(new Error('durable append refused'))
+    finished.resolve({ output: content('arrived'), stopReason: 'completed' })
+    await vi.waitFor(() => {
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('teammate "lost" completed result was not recorded'))
+    }, { timeout: 5_000 })
+    // The row keeps the edge it has and the run is still disposed once; restart
+    // reconciliation ends the member rather than leaving a second settlement pending.
+    expect(rowOf(ctx, lead, 'lost')?.phase).toBe('active')
+    expect(provider.dispositions).toHaveLength(1)
+  })
+
+  it('refuses lane-only shapes on each side of the split', async () => {
+    const { ctx, lead } = await setup([])
+    oneShot(ctx, 'ext-mixed')
+    await expect(spawnOneShot(ctx, lead, 'budgeted', 'spawn', { timeoutMs: 1_000 }))
+      .rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    await expect(spawnOneShot(ctx, lead, 'isolated', 'ext-mixed', { writeScopes: ['src'] }))
+      .rejects.toMatchObject({ code: 'TEAM_INVALID_LANE_POLICY' })
+    // A continuable member is still recorded as a lane, so recovery and messaging
+    // keep their existing meaning.
+    const lane = await spawnOneShot(ctx, lead, 'normal', 'spawn')
+    expect(rowOf(ctx, lead, 'normal')).toMatchObject({ phase: 'active', mode: 'lane' })
+    expect(lane.member.role).toBe('teammate')
   })
 })
 

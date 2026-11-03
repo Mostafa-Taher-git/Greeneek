@@ -132,6 +132,38 @@ describe('Agent Teams projection events', () => {
     }, SessionSeq(1))])).toThrow(/name .* reused/)
   })
 
+  it('permits the completed edge only for a one-shot member', () => {
+    const oneShot = member({ mode: 'one-shot' })
+    const settled = event('team/member', {
+      version: 2,
+      teamId: TEAM,
+      member: { ...oneShot, phase: 'completed', result: { stopReason: 'completed' } },
+    }, SessionSeq(2))
+    expect(projectTeam(ROOT, [
+      event('team/member', { version: 2, teamId: TEAM, member: oneShot }, SessionSeq(0)),
+      event('team/member', { version: 2, teamId: TEAM, member: { ...oneShot, phase: 'active' } }, SessionSeq(1)),
+      settled,
+    ]).members[0]).toMatchObject({ phase: 'completed', result: { stopReason: 'completed' } })
+
+    // A lane, including a row recorded before the mode field existed, stays
+    // interactive, so a completed edge is rejected for it.
+    for (const lane of [member(), member({ mode: 'lane' })]) {
+      expect(() => projectTeam(ROOT, [
+        event('team/member', { version: 2, teamId: TEAM, member: lane }, SessionSeq(0)),
+        event('team/member', { version: 2, teamId: TEAM, member: { ...lane, phase: 'active' } }, SessionSeq(1)),
+        event('team/member', { version: 2, teamId: TEAM, member: { ...lane, phase: 'completed' } }, SessionSeq(2)),
+      ])).toThrow(/invalid active -> completed/)
+    }
+
+    // One terminal edge per one-shot member: a repeat cannot rewrite its result.
+    expect(() => projectTeam(ROOT, [
+      event('team/member', { version: 2, teamId: TEAM, member: oneShot }, SessionSeq(0)),
+      event('team/member', { version: 2, teamId: TEAM, member: { ...oneShot, phase: 'active' } }, SessionSeq(1)),
+      settled,
+      { ...settled, seq: SessionSeq(3), time: SessionSeq(3) },
+    ])).toThrow(/invalid completed -> completed/)
+  })
+
   it('enforces task revision continuity', () => {
     const first = event('team/task', { version: 2, teamId: TEAM, task: task() }, SessionSeq(0))
     expect(() => projectTeam(ROOT, [event('team/task', {

@@ -16,6 +16,8 @@ interface TeamMemberSnapshot {
   readonly provider: string
   readonly context: 'fresh' | 'fork'
   readonly phase: TeamMemberPhase
+  readonly mode?: TeamMemberMode
+  readonly result?: TeamMemberResult
   readonly error?: string
   /** The teammate runs without file-mutating or Git-mutating tools. */
   readonly readOnly?: boolean
@@ -26,7 +28,7 @@ interface TeamMemberSnapshot {
 }
 ```
 
-Every member starts in `provisioning` and reaches exactly one terminal roster phase, `active` or `failed`. Runtime `running`/`idle`/`inactive` status is derived separately and never rewrites this record. `readOnly` marks a shared-checkout teammate whose file and Git mutation tools are denied; `writeScopes` marks an isolated worktree lane; `maxTokens` is a cumulative ceiling checked at each step boundary.
+Every member starts in `provisioning` and leaves it exactly once, to `active` or `failed`. A one-shot member then takes one `active -> completed` edge when its run settles; a continuable lane stays `active` because its outcome lives in its own Session log. `mode` records which execution model the provider's registered capability selected, and a member recorded before the field existed is a `lane`. `result` preserves the settled one-shot outcome: the `stopReason` the run reported, its output when it produced any, and its diagnostic when the provider supplied one. Runtime `running`/`idle`/`inactive` status is derived separately and never rewrites this record. `readOnly` marks a shared-checkout teammate whose file and Git mutation tools are denied; `writeScopes` marks an isolated worktree lane; `maxTokens` is a cumulative ceiling checked at each step boundary.
 
 ## Durable mailbox
 

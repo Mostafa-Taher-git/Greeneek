@@ -63,9 +63,17 @@ The generated [configuration catalog](../../../docs/config-catalog.md#greeneekgn
 
 Ask the Lead to create a teammate: give it a unique lowercase name such as `reviewer` and describe its job. A teammate starts fresh with no memory of the Lead's conversation, or as a fork that inherits the Lead's completed turns; the creation request chooses which. Teammate names are permanent — even a teammate whose creation failed keeps its name, and no name is ever reused.
 
-The roster shows every member with its role (`lead` or `teammate`) and current status: `running`, `idle`, `inactive` (a member that exists but is not loaded), `provisioning`, or `failed`. A member that is not loaded receives its messages when it wakes.
+The roster shows every member with its role (`lead` or `teammate`) and current status: `running`, `idle`, `inactive` (a member that exists but is not loaded), `provisioning`, or `failed`. A member that is not loaded receives its messages when it wakes. A settled one-shot member is terminal and reports `inactive`.
 
 Only the Lead can create teammates or interrupt them.
+
+### One-shot members
+
+A provider either holds a continuable child or it does not, and the Team chooses the execution model from that registered capability, never from the provider's name: a provider with a continuable start path produces a `lane` member, and a provider that only produces a single run produces a `one-shot` member. Both share the same roster row, reserved name, and durable provisioning-failure contract, so one Team can mix in-process lanes with external adapter members.
+
+A one-shot member is one delegation with one result. Its run is published and the Lead's spawn call returns, so a member that never settles cannot hold the Team's tool call open and one member's outcome never decides a sibling's. When the run settles, the member takes a single `active -> completed` edge carrying the provider's `stopReason`, its output when it produced any, and its diagnostic when the provider supplied one. `timeoutMs` bounds one run: expiry aborts the member's own cancellation controller, which the composed start signal carries to the provider, and the row settles with `stopReason: 'timeout'`. Only a one-shot member may take the `completed` edge; a lane never does, and a member recorded before the `mode` field existed is a lane.
+
+A one-shot member has no inbox and no turn to steer, so sending it a message or interrupting it is refused with `TEAM_MEMBER_NOT_INTERACTIVE`; delegate again or choose a continuable provider. An isolated write scope needs a durable lane to checkpoint, so a one-shot spawn carrying `writeScopes` is refused, and `timeoutMs` on a continuable spawn is refused for the same reason. The run is disposed once whether it settles, rejects, times out, or is cancelled. Recovery ends an unfinished one-shot member as `failed` because there is no lane to resume.
 
 ### Messages between teammates
 
@@ -105,7 +113,7 @@ A `fleet` settings namespace stores named favorites: each favorite has an id, a 
 
 A member can wait for the next team change — a teammate's status, an incoming message, or a task update — instead of polling repeatedly; the wait reports only whether it timed out, and the caller re-reads the current state afterward.
 
-The Lead can stop a teammate's current turn without deleting its queued messages; task ownership is unchanged.
+The Lead can stop a teammate's current turn without deleting its queued messages; task ownership is unchanged. A one-shot member is refused by name with `TEAM_MEMBER_NOT_INTERACTIVE` because it has no turn to steer.
 
 ### What success and failure look like
 
@@ -154,7 +162,7 @@ The [Agent Teams Agent Note](../../../.agents/notes/implemented/feature/2026-08-
 
 ### Team identity and roster
 
-Every ordinary runtime root is the implicit Lead of a Team whose `TeamId` equals its `SessionId`; there is no creation event, and durable state begins with the first member, message, or task record. `spawnTeammate()` first appends and flushes a `provisioning` member record, then asks the configured provider to create the reserved child; a provider failure appends a durable `failed` member. A fresh child starts with no Lead history; a fork child captures the Lead's completed-turn prefix once. Recovery reconciles an unterminated provisioning record against the child's independently persisted Session: a matching direct-parent and continuable descriptor plus a recorded initial user message produces `active`, and anything else produces `failed`. If recovery wins a same-process race, the creator accepts the terminal state or reports `TEAM_PROVISIONING_CONFLICT` and drains the child. Names are reserved by the first provisioning record and never reused.
+Every ordinary runtime root is the implicit Lead of a Team whose `TeamId` equals its `SessionId`; there is no creation event, and durable state begins with the first member, message, or task record. `spawnTeammate()` first appends and flushes a `provisioning` member record, then asks the configured provider to create the reserved child; a provider failure appends a durable `failed` member. The record's `mode` says which start path was chosen: a continuable provider is handed the child and stays `active` until its own run stops, and a one-shot provider publishes a run that later appends the single `completed` edge carrying its `SubagentResult`. A fresh child starts with no Lead history; a fork child captures the Lead's completed-turn prefix once. Recovery reconciles an unterminated provisioning record against the child's independently persisted Session: a matching direct-parent and continuable descriptor plus a recorded initial user message produces `active`, and anything else produces `failed`, which is also how an interrupted one-shot run ends because its provider owns no resumable lane. If recovery wins a same-process race, the creator accepts the terminal state or reports `TEAM_PROVISIONING_CONFLICT` and drains the child. Names are reserved by the first provisioning record and never reused.
 
 ### Lane lifecycle
 

@@ -8,7 +8,7 @@ import type { MessageId } from '@greeneek/gnk-llm'
 import type { SessionId } from '@greeneek/gnk-session'
 import type { TokenUsageProjection } from '@greeneek/gnk-token-meter'
 import { foldSubagentDescriptor } from '@greeneek/gnk-subagent'
-import type { ContinuableStart } from '@greeneek/gnk-subagent'
+import type { ContinuableStart, SubagentResult, SubagentRun as OneShotRun } from '@greeneek/gnk-subagent'
 import { errorMessage, TeamError } from './error.ts'
 import type { TeamJournal } from './journal.ts'
 import type { LaneLifecycleManager } from './lane-lifecycle.ts'
@@ -23,12 +23,28 @@ import { TeamId } from './types.ts'
 import type {
   SpawnTeammateRequest,
   SpawnTeammateResult,
+  TeamMemberMode,
+  TeamMemberPhase,
+  TeamMemberResult,
   TeamMemberSnapshot,
   TeamMemberView,
 } from './types.ts'
 import { requiredText } from './validation.ts'
 
 const MEMBER_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u
+
+/**
+ * Keep the durable fields a one-shot run contributes to the roster row. The run's
+ * `output` IS the child's final assistant message content, so the row does not
+ * duplicate it; the full turn history stays in the child's own Session log.
+ */
+function memberResultOf(result: SubagentResult): TeamMemberResult {
+  return {
+    stopReason: result.stopReason,
+    ...result.output.length === 0 ? {} : { output: result.output },
+    ...result.diagnostic === undefined ? {} : { diagnostic: result.diagnostic },
+  }
+}
 
 /** Caller identity inside one implicit Team. */
 export interface TeamMembership {
@@ -55,6 +71,15 @@ export function resolveActiveMember(
   const member = state.members.find(candidate => candidate.name === name)
   if (member === undefined || member.phase !== 'active') {
     throw new TeamError(`active teammate "${name}" not found`, 'TEAM_MEMBER_NOT_FOUND')
+  }
+  // A one-shot member is a single delegation with one result: it has no inbox and
+  // no turn to steer, so interactive operations are refused by name rather than
+  // queued somewhere they would never be read.
+  if (member.mode === 'one-shot') {
+    throw new TeamError(
+      `teammate "${name}" runs one-shot and cannot receive messages, follow-ups, or interruption; delegate again or use a continuable provider`,
+      'TEAM_MEMBER_NOT_INTERACTIVE',
+    )
   }
   return { id: member.id, name }
 }
@@ -227,7 +252,10 @@ export class TeamRoster {
           ? 'failed'
           : member.phase === 'provisioning'
             ? 'provisioning'
-            : live?.status ?? 'inactive',
+            // A settled one-shot has no live child to report on; it is terminal.
+            : member.phase === 'completed'
+              ? 'inactive'
+              : live?.status ?? 'inactive',
         description: member.description,
         provider: member.provider,
         context: member.context,
@@ -391,13 +419,33 @@ export class TeamRoster {
       )
     }
     const childId = brandString<SessionId>(randomUUID())
+    const provider = requiredText(request.provider, 'provider', 200)
+    // The execution model follows the registry: a provider whose descriptor
+    // carries prepareContinuable gets a durable lane, and one that does not is
+    // dispatched through its supported one-shot start path. Nothing here names a
+    // provider, so adding a CLI adapter needs no change to the Team.
+    const continuable = this.ctx.subagents.getProvider(provider)?.prepareContinuable !== undefined
+    const mode: TeamMemberMode = continuable ? 'lane' : 'one-shot'
+    if (continuable && request.timeoutMs !== undefined) {
+      throw new TeamError(
+        'timeoutMs applies to one-shot members; interrupt a continuable lane instead',
+        'TEAM_INVALID_ARGUMENT',
+      )
+    }
+    if (!continuable && policy.kind === 'isolated') {
+      throw new TeamError(
+        `provider "${provider}" cannot hold an isolated lane: a one-shot member has no durable lane to checkpoint`,
+        'TEAM_INVALID_LANE_POLICY',
+      )
+    }
     const member: TeamMemberSnapshot = {
       id: childId,
       name,
       description,
-      provider: requiredText(request.provider, 'provider', 200),
+      provider,
       context: request.context,
       phase: 'provisioning',
+      mode,
       ...policy.kind === 'read-only' ? { readOnly: true } : {},
       ...policy.kind === 'isolated' ? { writeScopes: [...policy.writeScopes] } : {},
       ...request.maxTokens === undefined ? {} : { maxTokens: request.maxTokens },
@@ -415,7 +463,8 @@ export class TeamRoster {
     })
 
     this.budgetControllers.set(childId, budget)
-    let started: ContinuableStart
+    let started: ContinuableStart | undefined
+    let run: OneShotRun | undefined
     try {
       const laneCwd = policy.kind === 'isolated'
         ? (await this.lanes.create({
@@ -427,20 +476,31 @@ export class TeamRoster {
           signal,
         })).path
         : request.cwd
-      started = await this.ctx.subagents.startContinuable({
-        childId,
-        provider: request.provider,
-        label: description,
-        request: {
-          prompt: request.prompt,
-          parent: root,
-          ...request.agentPreset !== undefined ? { agentPreset: request.agentPreset } : {},
-          ...request.agentOptions !== undefined ? { agentOptions: request.agentOptions } : {},
-          ...laneCwd !== undefined ? { cwd: laneCwd } : {},
-        },
-        signal,
-      })
-      await this.checkpointInitialPrompt(childId, started.messageId, signal)
+      // One request object feeds both execution models, so a lane and a one-shot
+      // child are composed from the same caller inputs.
+      const childRequest = {
+        prompt: request.prompt,
+        parent: root,
+        ...request.agentPreset !== undefined ? { agentPreset: request.agentPreset } : {},
+        ...request.agentOptions !== undefined ? { agentOptions: request.agentOptions } : {},
+        ...laneCwd !== undefined ? { cwd: laneCwd } : {},
+      }
+      if (continuable) {
+        started = await this.ctx.subagents.startContinuable({
+          childId,
+          provider: request.provider,
+          label: description,
+          request: childRequest,
+          signal,
+        })
+        await this.checkpointInitialPrompt(childId, started.messageId, signal)
+      } else {
+        run = await this.ctx.subagents.start(request.provider, {
+          ...childRequest,
+          label: description,
+          signal,
+        })
+      }
     } catch (error: unknown) {
       this.budgetControllers.delete(childId)
       const failed: TeamMemberSnapshot = {
@@ -485,6 +545,9 @@ export class TeamRoster {
       }
       throw conflict
     }
+    // A one-shot member is live now and settles on its own: its result must not
+    // block the Lead's tool call, and a sibling's outcome must never depend on it.
+    if (run !== undefined) this.trackOneShot(root, childId, name, run, request.timeoutMs, budget)
     return { member: this.memberView(active) }
   }
 
@@ -548,7 +611,10 @@ export class TeamRoster {
       // creator owns the terminal member edge.
       if (this.ctx.agents.get(member.id) !== undefined) continue
       let phase: 'active' | 'failed' = 'failed'
-      let failure = 'provisioning did not leave a resumable child Session'
+      // Re-activation requires a persisted continuable descriptor, which only a
+      // lane child ever writes: an unfinished one-shot member settles failed here
+      // with the same reason the Lead sees, never as a resumable lane.
+      let failure = 'persisted child Session does not match the provisioned continuation'
       try {
         const loaded = await readPersistedSession(this.ctx.sessionPersistence, member.id, signal)
         const suffix = loaded.events.slice(loaded.inheritedEventCount)
@@ -557,11 +623,7 @@ export class TeamRoster {
         if (loaded.header.parentSession === root.id
           && descriptor?.mode === 'continuable'
           && descriptor.provider === member.provider
-          && acceptedInitialPrompt) {
-          phase = 'active'
-        } else {
-          failure = 'persisted child Session does not match the provisioned continuation'
-        }
+          && acceptedInitialPrompt) phase = 'active'
       } catch (error: unknown) {
         failure = `child Session recovery failed: ${errorMessage(error)}`
       }
@@ -581,6 +643,129 @@ export class TeamRoster {
           member: settled,
         })
       })
+    }
+  }
+
+  /**
+   * Watch a dispatched one-shot member and record its one terminal edge.
+   *
+   * The Lead's spawn call returns as soon as the run is published: a member that
+   * never settles cannot hold the Team's tool call open, and one member's outcome
+   * never decides a sibling's. `budget` still owns cancellation, so a budget or
+   * lifecycle abort reaches the provider through the signal the run was started with.
+   * @param root - exact live Team Lead owning the durable roster.
+   * @param childId - reserved member identity, which is the one-shot run's id.
+   * @param name - model-facing member name, used in the recorded reason.
+   * @param run - the published one-shot run.
+   * @param timeoutMs - cancellation budget, or undefined for none.
+   */
+  private trackOneShot(
+    root: Agent,
+    childId: SessionId,
+    name: string,
+    run: OneShotRun,
+    timeoutMs: number | undefined,
+    budget: AbortController,
+  ): void {
+    const operation = (async (): Promise<void> => {
+      const outcome = await this.awaitOneShot(run, timeoutMs, name, budget)
+      try {
+        await this.settleOneShotCompleted(root, childId, outcome)
+      } catch (error: unknown) {
+        // The row keeps its `active` edge and restart reconciliation ends it; the
+        // warning names the member whose result never reached the durable log.
+        this.ctx.logger.warn(`teammate "${name}" completed result was not recorded: ${errorMessage(error)}`)
+      }
+    })()
+    this.inFlightCreations.add(operation)
+    // The operation reports its own settlement failure above, so it never rejects
+    // and disposal only needs the removal to stop tracking a settled member.
+    void operation.finally(() => { this.inFlightCreations.delete(operation) })
+  }
+
+  /**
+   * Await one published run, cancelling it at its budget.
+   *
+   * A budget expiry is a terminal outcome, not a hanging member. It aborts the
+   * member's own budget controller, which the composed start signal carries to
+   * the provider — so the run is cancelled at its source and not merely locally
+   * abandoned — and the run is disposed exactly once, here, on every path. The
+   * timer is the only wall clock involved, so a test drives it with fake timers
+   * instead of racing real time.
+   * @param run - the published one-shot run.
+   * @param timeoutMs - cancellation budget, or undefined to wait for settlement.
+   * @param name - member name for the recorded reason.
+   * @param budget - the member's own cancellation controller.
+   * @returns the result to persist plus an optional failure reason.
+   */
+  private async awaitOneShot(
+    run: OneShotRun,
+    timeoutMs: number | undefined,
+    name: string,
+    budget: AbortController,
+  ): Promise<{ readonly result: TeamMemberResult; readonly error?: string }> {
+    if (timeoutMs === undefined) {
+      try {
+        return { result: memberResultOf(await run.result) }
+      } catch (error: unknown) {
+        return { result: { stopReason: 'error' }, error: errorMessage(error) }
+      } finally {
+        await run.dispose()
+      }
+    }
+    const expired = Promise.withResolvers<void>()
+    const timer = setTimeout(() => {
+      budget.abort(`one-shot member "${name}" exceeded its ${String(timeoutMs)}ms budget`)
+      expired.resolve()
+    }, timeoutMs)
+    try {
+      const settled = await Promise.race([
+        run.result.then(result => ({ result })),
+        expired.promise.then(() => undefined),
+      ])
+      if (settled !== undefined) return { result: memberResultOf(settled.result) }
+      // Never await the run after expiry: a provider that ignores cancellation
+      // must not be able to keep this member — or the Team's disposal — waiting.
+      void run.result.catch(() => undefined)
+      return {
+        result: { stopReason: 'timeout' },
+        error: `one-shot member "${name}" exceeded its ${String(timeoutMs)}ms budget and was cancelled`,
+      }
+    } catch (error: unknown) {
+      return { result: { stopReason: 'error' }, error: errorMessage(error) }
+    } finally {
+      clearTimeout(timer)
+      await run.dispose()
+    }
+  }
+
+  /** Append the single `active -> completed` edge a one-shot member may take. */
+  private async settleOneShotCompleted(
+    root: Agent,
+    childId: SessionId,
+    outcome: { readonly result: TeamMemberResult; readonly error?: string },
+  ): Promise<void> {
+    try {
+      await this.journal.transact(root.id, async () => {
+        const current = this.journal.state(root).members.find(member => member.id === childId)
+        /* v8 ignore next -- restart reconciliation can settle the row before this watcher arrives. */
+        if (current?.phase !== 'active') return
+        await this.journal.appendAndFlush(root, 'team/member', {
+          version: 2,
+          teamId: TeamId(root.id),
+          member: {
+            ...current,
+            phase: 'completed',
+            result: outcome.result,
+            ...outcome.error === undefined ? {} : { error: outcome.error },
+          },
+        })
+      })
+    } finally {
+      // Terminal is terminal: the member's cancellation controller and budget
+      // diagnostic stop being consulted whether the edge landed or not.
+      this.budgetControllers.delete(childId)
+      this.budgetStopped.delete(childId)
     }
   }
 
@@ -615,7 +800,7 @@ export class TeamRoster {
   private async settleProvisioning(
     root: Agent,
     terminal: TeamMemberSnapshot,
-  ): Promise<'active' | 'failed'> {
+  ): Promise<TeamMemberPhase> {
     return this.journal.transact(root.id, async () => {
       const current = this.journal.state(root).members.find(member => member.id === terminal.id)
       /* v8 ignore next 3 -- the append-only provisioning event is committed by this operation before settlement. */

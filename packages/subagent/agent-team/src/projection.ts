@@ -70,7 +70,13 @@ const teamMemberSnapshotSchema = z.object({
   description: z.string(),
   provider: z.string(),
   context: z.enum(['fresh', 'fork']),
-  phase: z.enum(['provisioning', 'active', 'failed']),
+  phase: z.enum(['provisioning', 'active', 'failed', 'completed']),
+  mode: z.enum(['lane', 'one-shot']).optional(),
+  result: z.object({
+    stopReason: z.string(),
+    output: z.array(contentBlockSchema).optional(),
+    diagnostic: z.string().optional(),
+  }).strict().optional(),
   error: z.string().optional(),
   readOnly: z.boolean().optional(),
   writeScopes: z.array(z.string()).optional(),
@@ -253,7 +259,14 @@ function applyCurrentTeamEvent(state: TeamState, event: TeamSessionEvent): void 
         if (prior.name !== member.name || prior.provider !== member.provider || prior.context !== member.context) {
           throw new Error(`teammate "${member.id}" changed immutable identity fields`)
         }
-        if (prior.phase !== 'provisioning' || member.phase === 'provisioning') {
+        // One durable edge leaves provisioning; a one-shot member additionally
+        // settles its active row once. An absent mode is a lane, so members
+        // recorded before this distinction keep their original law.
+        const settlesProvisioning = prior.phase === 'provisioning' && member.phase !== 'provisioning'
+        const completesOneShot = prior.phase === 'active'
+          && prior.mode === 'one-shot'
+          && member.phase === 'completed'
+        if (member.phase === 'provisioning' || !(settlesProvisioning || completesOneShot)) {
           throw new Error(`teammate "${member.name}" has an invalid ${prior.phase} -> ${member.phase} transition`)
         }
       }

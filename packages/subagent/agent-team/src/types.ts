@@ -41,8 +41,34 @@ export function TeamMessageId(id: string): TeamMessageId {
   return id as TeamMessageId
 }
 
-/** Durable teammate lifecycle. */
-export type TeamMemberPhase = 'provisioning' | 'active' | 'failed'
+/**
+ * Durable teammate lifecycle. `completed` is terminal and reachable only by a
+ * one-shot member: a continuable lane stays `active` until its run stops, and its
+ * outcome lives in its own Session log rather than in a terminal Team edge.
+ */
+export type TeamMemberPhase = 'provisioning' | 'active' | 'failed' | 'completed'
+
+/**
+ * How a member executes. `lane` is a continuable child the Lead can message and
+ * interrupt; `one-shot` is a single delegation that settles with a result. The
+ * field is absent on members recorded before this distinction existed, and an
+ * absent mode means `lane`.
+ */
+export type TeamMemberMode = 'lane' | 'one-shot'
+
+/** Outcome preserved when a one-shot member settles. */
+export interface TeamMemberResult {
+  /**
+   * The child's terminal stop reason as the subagent seam reported it, or the
+   * roster's own `timeout` when its budget expired and `error` when the run
+   * rejected before reporting.
+   */
+  readonly stopReason: string
+  /** The child's final assistant output; absent when it produced none. */
+  readonly output?: readonly ContentBlock[]
+  /** Provider-authored failure detail for a non-`completed` result. */
+  readonly diagnostic?: string
+}
 
 /** Whole durable value written on every teammate lifecycle change. */
 export interface TeamMemberSnapshot {
@@ -52,6 +78,8 @@ export interface TeamMemberSnapshot {
   readonly provider: string
   readonly context: 'fresh' | 'fork'
   readonly phase: TeamMemberPhase
+  readonly mode?: TeamMemberMode
+  readonly result?: TeamMemberResult
   readonly error?: string
   /** The teammate runs without file-mutating or Git-mutating tools. */
   readonly readOnly?: boolean
@@ -197,6 +225,12 @@ export interface SpawnTeammateRequest {
   readonly writeScopes?: readonly string[]
   /** Cumulative token ceiling; requires the tokenUsage projection at spawn time. */
   readonly maxTokens?: number
+  /**
+   * Cancel a one-shot member that has not settled within this many
+   * milliseconds. Meaningless for a continuable lane, whose turn is steered and
+   * interrupted instead, so a lane request naming it is refused.
+   */
+  readonly timeoutMs?: number
   readonly signal: AbortSignal
 }
 

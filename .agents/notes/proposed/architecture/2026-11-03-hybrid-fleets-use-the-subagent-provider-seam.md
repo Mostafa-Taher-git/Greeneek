@@ -20,7 +20,7 @@ Two adapter families, distinguished by descriptor presence and not by a new type
 
 Admission becomes derived: omitting `Config.fleetProviders` means "every registered provider this surface can lane", while an explicit non-empty list narrows it, and the existing loud refusal for an empty list stays. Availability reporting and validation read the same derivation so Settings cannot offer a row the launcher would reject.
 
-Mixed fleets additionally need a one-shot lane mode in the roster, `lane-lifecycle.ts`, the projection and the result contract, so a provider without `prepareContinuable` can be a fleet member that runs to completion and returns a structured result. Mailbox and follow-up stay refused for such a member — reported, never silently dropped. Tracked as plan items S8-03c and S8-03d.
+Mixed fleets additionally need a one-shot member mode in the roster, the projection and the result contract, so a provider without `prepareContinuable` can be a fleet member that runs to completion and returns a structured result. Mailbox and follow-up stay refused for such a member — reported, never silently dropped. Tracked as plan items S8-03c and S8-03d.
 
 ## Alternatives considered
 
@@ -32,7 +32,7 @@ Mixed fleets additionally need a one-shot lane mode in the roster, `lane-lifecyc
 
 Widening admission lets a fleet name a provider whose CLI is absent. Mitigation: availability rows come from the live registry and launch re-asserts readiness without substituting another provider (`assertFavoriteProviderReady`, `fleet-settings.ts:263-273`); repository fleet files keep their byte cap, strict schema and one-time approval keyed to exact bytes (`fleet-config.ts:97-176`).
 
-A one-shot lane mode touches durable-session recovery. Mitigation: the mode is added beside the continuable one with its own descriptor value, so `roster.ts:558`'s match stays exact and a one-shot member is never silently re-activated as a lane.
+A one-shot member mode touches durable-session recovery. Mitigation: recovery re-activates a member only when its persisted descriptor reads `mode === 'continuable'`, which a one-shot run never writes, so an unfinished one-shot member settles `failed` instead of being silently re-activated as a lane.
 
 Fleet storage gains scheduler-shaped fields (enabled, priority, concurrency, per-member timeout, default fleet, per-project defaults). Mitigation: each field lands only with the code that enforces it plus a test, because a stored-but-unenforced timeout is the silent ignoring this decision rejects.
 
@@ -47,7 +47,11 @@ Fleet storage gains scheduler-shaped fields (enabled, priority, concurrency, per
 
 ## Verification
 
-Nothing is implemented yet by this note. Every factual claim above is read from the cited shipped source. The note's first draft asserted that `fleet-*.spec.ts` already covered hybrid admission and field migration; no such tests exist, and that claim was removed rather than softened. Acceptance is the criteria listed above.
+**Part of this decision is now implemented and measured.** The roster admits a provider without `prepareContinuable` as a `one-shot` member: dispatch is selected from the registered capability, one `active -> completed` durable edge carries `stopReason`, `output` and `diagnostic`, `timeoutMs` aborts the member's own budget controller through the composed start signal, mailbox and interrupt refusals return `TEAM_MEMBER_NOT_INTERACTIVE`, a failing sibling keeps its own row, disposal runs once across success, timeout and cancellation, recovery ends an unfinished one-shot member as `failed`, and the projection permits `completed` only for one-shot rows. Evidence: `packages/subagent/agent-team/tests/team.spec.ts` → `One-shot members`, `tests/projection-events.spec.ts` → `permits the completed edge only for a one-shot member`, and `vitest run packages/subagent/agent-team` → 178 passed / 1 skipped with 100% on lines, functions, branches and statements for `roster.ts`, `projection.ts`, `types.ts`, `fleet-settings.ts`, `integration.ts`, and `lane-support.ts`.
+
+**The implementation corrected two points of this proposal.** A one-shot member needs no `lane-lifecycle.ts` change and no new descriptor value: an isolated write scope needs the durable lane that a one-shot run does not have, so a one-shot spawn with `writeScopes` is refused with `TEAM_INVALID_LANE_POLICY`, and `timeoutMs` on a continuable spawn is refused with `TEAM_INVALID_ARGUMENT` because a lane is stopped by interrupting it. Fleet admission derivation shipped separately as S8-03d.
+
+**Still unimplemented, and not claimed.** Fleet launch still requires a continuable provider — `fleetProviderAvailability` reports a registered non-continuable provider as `unsupported-version` — so a mixed repository fleet or stored favorite cannot yet start a one-shot member. No shipped profile mounts an external CLI adapter, so no mixed fleet has been run in `gnk web`. A settled one-shot result is durable on the member row but is not yet delivered to the Lead's model or shown in a roster row. Every factual claim above that is not labelled as measured is read from the cited shipped source.
 
 ## Related
 

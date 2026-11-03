@@ -201,7 +201,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/subagent/agent-team/src/types.ts:137`](../packages/subagent/agent-team/src/types.ts)
+Source: [`packages/subagent/agent-team/src/types.ts:165`](../packages/subagent/agent-team/src/types.ts)
 
 <a id="greeneekgnk-agent-tool-presentation"></a>
 

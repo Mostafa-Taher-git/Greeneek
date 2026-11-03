@@ -37,6 +37,9 @@ export const MODULE_PROXIES: Record<string, string> = {
   'crypto': './node/builtin_modules/implemented/crypto.ts',
   // `buffer` itself stays unaliased: the shim is backed by that npm package.
   'node:buffer': './node/builtin_modules/implemented/buffer.ts',
+  // Same for `string_decoder`: the bare specifier resolves to the npm package
+  // that backs the shim, so only the prefixed form needs an alias.
+  'node:string_decoder': './node/builtin_modules/implemented/string_decoder.ts',
   // Tunnel request source: fake bind, real route face. `node:process` and
   // `process` are absent on purpose — the worker host installs that global
   // (`./globals/process.ts`).

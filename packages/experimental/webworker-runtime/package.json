@@ -32,7 +32,8 @@
     "acorn": "^8.17.0",
     "buffer": "^6.0.3",
     "picomatch": "^4.0.4",
-    "readable-stream": "^4.7.0"
+    "readable-stream": "^4.7.0",
+    "string_decoder": "^1.3.0"
   },
   "peerDependencies": {
     "@greeneek/cordis": "workspace:^",
@@ -52,8 +53,8 @@
     "@greeneek/gnk-sandbox-local": "workspace:^",
     "@greeneek/gnk-sandbox-policy": "workspace:^",
     "@greeneek/gnk-session": "workspace:^",
-    "@greeneek/gnk-session-projection": "workspace:^",
     "@greeneek/gnk-session-persistence-jsonl": "workspace:^",
+    "@greeneek/gnk-session-projection": "workspace:^",
     "@greeneek/gnk-subagent": "workspace:^",
     "@greeneek/gnk-subprocess-local": "workspace:^",
     "@greeneek/node-addon-landlock-run": "workspace:^",

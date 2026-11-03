@@ -87,6 +87,20 @@ describe('module identity through the loader', () => {
     expect(require('events')).toBe(require('node:events'))
     expect(require('fs')).toBe(require('node:fs'))
     expect(require('tty')).toBe(require('node:tty'))
+    expect(require('string_decoder')).toBe(require('node:string_decoder'))
+  })
+
+  it('keeps a UTF-8 sequence split across chunks undecoded until it completes', () => {
+    // A pipe's chunks end anywhere. Craft's JSON-RPC transport reads stdout
+    // through this decoder, so a partial multi-byte sequence must stay
+    // buffered rather than decode to a replacement character.
+    const { StringDecoder } = loaderRequire()('node:string_decoder') as {
+      StringDecoder: new (encoding: string) => { write(chunk: Uint8Array): string }
+    }
+    const bytes = Buffer.from('é', 'utf8')
+    const decoder = new StringDecoder('utf8')
+    expect(decoder.write(bytes.subarray(0, 1))).toBe('')
+    expect(decoder.write(bytes.subarray(1))).toBe('é')
   })
 
   it('reports that worker file descriptors are not terminals', () => {

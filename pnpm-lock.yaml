@@ -5036,6 +5036,9 @@ importers:
       readable-stream:
         specifier: ^4.7.0
         version: 4.7.0
+      string_decoder:
+        specifier: ^1.3.0
+        version: 1.3.0
     devDependencies:
       '@greeneek/cordis':
         specifier: workspace:^

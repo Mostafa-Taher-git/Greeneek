@@ -487,6 +487,18 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'one row per provider, with ready only for continuable providers.',
       },
       {
+        signature: 'async duplicateFleet(caller: Agent, id: string, expectedRevision: number): Promise<FleetFavoriteResult>',
+        description: 'Copy one saved fleet under a fresh identity, ready for editing.',
+        parameters: [{ name: 'caller', description: 'exact live Team Lead.' }, { name: 'id', description: 'fleet being duplicated.' }, { name: 'expectedRevision', description: 'fenced settings revision.' }],
+        returns: 'the section holding the copy, or a typed refusal.',
+      },
+      {
+        signature: 'async installStarterFleet(caller: Agent, templateId: string, expectedRevision: number): Promise<FleetFavoriteResult>',
+        description: 'Install one starter fleet as an editable saved fleet, never as fixed configuration the user cannot change or remove.',
+        parameters: [{ name: 'caller', description: 'exact live Team Lead.' }, { name: 'templateId', description: '`development`, `research`, or `quality-assurance`.' }, { name: 'expectedRevision', description: 'fenced settings revision.' }],
+        returns: 'the section holding the installed fleet, or a typed refusal.',
+      },
+      {
         signature: 'fleetFavorites(caller: Agent): FleetFavoritesView',
         description: 'Read the fleet favorites section and current settings revision.',
         parameters: [{ name: 'caller', description: 'exact live Team Lead.' }],
@@ -4389,7 +4401,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'FleetFavorite',
-    declaration: 'export interface FleetFavorite {\n    readonly id: string;\n    readonly name: string;\n    readonly members: FleetFavoriteMember[];\n}',
+    declaration: 'export interface FleetFavorite {\n    readonly id: string;\n    readonly name: string;\n    readonly members: FleetFavoriteMember[];\n    readonly enabled?: boolean;\n}',
   },
   {
     name: 'FleetFavoriteMember',

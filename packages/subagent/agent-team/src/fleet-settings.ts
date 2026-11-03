@@ -56,6 +56,8 @@ export interface FleetFavorite {
   /** Display name shown in Settings. */
   readonly name: string
   readonly members: FleetFavoriteMember[]
+  /** False keeps the fleet saved but unlaunchable until it is enabled again. */
+  readonly enabled?: boolean
 }
 
 /** Complete user-writable fleet settings section. */
@@ -101,6 +103,7 @@ const favoriteSchema = z.object({
   id: z.string().required(),
   name: z.string().required(),
   members: z.array(memberSchema).required(),
+  enabled: z.boolean(),
 })
 
 /** Settings schema for the complete fleet section. */
@@ -171,7 +174,7 @@ export function validateFleetFavorite(favorite: FleetFavorite): void {
 }
 
 /**
- * Validate the complete fleet section, including unique favorite ids.
+ * Validate the complete fleet section: every favorite is valid and ids are unique.
  * @param settings - schema-resolved section.
  * @throws {TeamError} `TEAM_FLEET_FAVORITE_INVALID` for any invalid favorite or duplicate id.
  */
@@ -184,6 +187,83 @@ export function validateFleetSettings(settings: FleetSettings): void {
     }
     ids.add(favorite.id)
   }
+}
+
+/** A fleet with `enabled: false` stays saved and refuses to launch. */
+export function isFleetEnabled(favorite: FleetFavorite): boolean {
+  return favorite.enabled !== false
+}
+
+/**
+ * Copy one fleet under a fresh identity, ready for editing.
+ * @param favorite - fleet being duplicated.
+ * @param existingIds - ids already saved, so the copy never collides.
+ * @returns the duplicate with `-copy` and `-copy-2`, `-copy-3` … suffixes as needed.
+ */
+export function duplicateFleetFavorite(favorite: FleetFavorite, existingIds: ReadonlySet<string>): FleetFavorite {
+  const baseId = `${favorite.id}-copy`
+  let suffix = 2
+  let id = baseId
+  while (existingIds.has(id)) {
+    id = `${baseId}-${String(suffix)}`
+    suffix += 1
+  }
+  return {
+    ...favorite,
+    id,
+    name: `${favorite.name} (copy)`,
+    members: favorite.members.map(member => ({ ...member })),
+  }
+}
+
+/**
+ * Starter fleets, shipped as editable copies rather than fixed configuration:
+ * installing one returns a favorite the user can rename, re-member, and delete.
+ */
+export const FLEET_STARTER_TEMPLATES: readonly FleetFavorite[] = [
+  {
+    id: 'development',
+    name: 'Development',
+    members: [
+      { name: 'implementer', description: 'write the change', prompt: 'Implement the requested change in the workspace.', provider: 'spawn' },
+      { name: 'verifier', description: 'run the checks', prompt: 'Run the tests and checks for the change just made and report the exact output.', provider: 'spawn', readOnly: true },
+    ],
+  },
+  {
+    id: 'research',
+    name: 'Research',
+    members: [
+      { name: 'investigator', description: 'read the codebase', prompt: 'Investigate the question and cite the files that answer it.', provider: 'spawn', readOnly: true },
+      { name: 'synthesiser', description: 'summarise findings', prompt: 'Summarise the investigation into the decisions it constrains.', provider: 'spawn', readOnly: true },
+    ],
+  },
+  {
+    id: 'quality-assurance',
+    name: 'QA',
+    members: [
+      { name: 'test-author', description: 'write tests', prompt: 'Write the tests that cover the requested behaviour.', provider: 'spawn' },
+      { name: 'test-runner', description: 'execute tests', prompt: 'Execute the test suite and report every failure with its output.', provider: 'spawn', readOnly: true },
+    ],
+  },
+]
+
+/**
+ * One starter template as an editable saved fleet under its template id.
+ * @param id - template identity.
+ * @param existingIds - ids already saved.
+ * @returns the installable fleet copy.
+ * @throws {TeamError} `TEAM_FLEET_TEMPLATE_UNKNOWN` for an id with no template.
+ */
+export function starterFleet(id: string, existingIds: ReadonlySet<string>): FleetFavorite {
+  const template = FLEET_STARTER_TEMPLATES.find(candidate => candidate.id === id)
+  if (template === undefined) {
+    throw new TeamError(
+      `no starter fleet template named ${JSON.stringify(id)}; available: ${FLEET_STARTER_TEMPLATES.map(candidate => candidate.id).join(', ')}`,
+      'TEAM_FLEET_TEMPLATE_UNKNOWN',
+    )
+  }
+  const taken = existingIds.has(template.id) ? duplicateFleetFavorite(template, existingIds) : template
+  return { ...taken, members: taken.members.map(member => ({ ...member })) }
 }
 
 /**

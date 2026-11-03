@@ -2003,6 +2003,49 @@ describe('Fleet favorites', () => {
     expect(ctx.agentTeams.listMembers(lead).some(member => member.name === 'solo')).toBe(true)
   }, 20_000)
 
+  it('refuses a disabled fleet, duplicates a saved fleet, and installs a starter as editable', async () => {
+    const settingsRoot = mkdtempSync(join(tmpdir(), 'gnk-team-fleet-settings-'))
+    roots.push(settingsRoot)
+    const { ctx, lead } = await setup(
+      [textResponse('fleet member')],
+      {},
+      {},
+      false,
+      join(settingsRoot, 'settings.json'),
+    )
+    const favorite = {
+      id: 'review',
+      name: 'Review',
+      enabled: false,
+      members: [{ name: 'reviewer', description: 'review', prompt: 'run', provider: 'spawn' }],
+    }
+    const saved = await ctx.agentTeams.saveFleetFavorite(lead, favorite, 0)
+    if (!saved.ok) throw new Error(saved.error.message)
+
+    // A disabled fleet stays saved and refuses to launch by name.
+    expect(await ctx.agentTeams.launchFleetFavorite(lead, 'review', true))
+      .toMatchObject({ ok: false, error: { code: 'fleet-disabled' } })
+
+    const copied = await ctx.agentTeams.duplicateFleet(lead, 'review', saved.value.revision)
+    if (!copied.ok) throw new Error(copied.error.message)
+    expect(copied.value.favorites.map(candidate => candidate.id)).toEqual(['review', 'review-copy'])
+    expect(copied.value.favorites.find(candidate => candidate.id === 'review-copy')?.name)
+      .toBe('Review (copy)')
+
+    const installed = await ctx.agentTeams.installStarterFleet(lead, 'research', copied.value.revision)
+    if (!installed.ok) throw new Error(installed.error.message)
+    const research = installed.value.favorites.find(candidate => candidate.id === 'research')
+    expect(research?.members.length).toBeGreaterThan(1)
+
+    // An unknown template names what does exist, and a missing source is its own refusal.
+    const unknown = await ctx.agentTeams.installStarterFleet(lead, 'deploy', installed.value.revision)
+    expect(unknown).toMatchObject({ ok: false, error: { code: 'TEAM_FLEET_TEMPLATE_UNKNOWN' } })
+    if (unknown.ok) throw new Error('expected the unknown template to be refused')
+    expect(unknown.error.message).toContain('development, research, quality-assurance')
+    expect(await ctx.agentTeams.duplicateFleet(lead, 'absent', installed.value.revision))
+      .toMatchObject({ ok: false, error: { code: 'TEAM_FLEET_FAVORITE_NOT_FOUND' } })
+  }, 20_000)
+
   it('fails closed when the fleet settings namespace is not mounted', async () => {
     const { ctx, lead } = await setup([])
     expect(() => ctx.agentTeams.fleetFavorites(lead))

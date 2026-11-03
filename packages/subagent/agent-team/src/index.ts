@@ -13,10 +13,13 @@ import { RepoFleetConfigStore } from './fleet-config.ts'
 import type { RepoFleetSnapshot } from './fleet-config.ts'
 import {
   assertFavoriteProviderReady,
+  duplicateFleetFavorite,
   favoriteMemberRequest,
   FLEET_SETTINGS_NAMESPACE,
   FleetSettingsSchema,
   fleetProviderAvailability,
+  isFleetEnabled,
+  starterFleet,
   validateFleetFavorite,
   validateFleetSettings,
 } from './fleet-settings.ts'
@@ -521,6 +524,49 @@ export class TeamService extends TypertRemoteService {
   }
 
   /**
+   * Copy one saved fleet under a fresh identity, ready for editing.
+   * @param caller - exact live Team Lead.
+   * @param id - fleet being duplicated.
+   * @param expectedRevision - fenced settings revision.
+   * @returns the section holding the copy, or a typed refusal.
+   */
+  async duplicateFleet(caller: Agent, id: string, expectedRevision: number): Promise<FleetFavoriteResult> {
+    this.roster.membership(caller)
+    try {
+      const current = this.favoritesView().favorites
+      const source = current.find(candidate => candidate.id === id)
+      if (source === undefined) {
+        throw new TeamError(`fleet favorite "${id}" not found`, 'TEAM_FLEET_FAVORITE_NOT_FOUND')
+      }
+      const copy = duplicateFleetFavorite(source, new Set(current.map(candidate => candidate.id)))
+      await this.writeFleetFavorites([...current, copy], expectedRevision)
+      return { ok: true, value: this.favoritesView() }
+    } catch (error: unknown) {
+      return this.fleetFailure(error)
+    }
+  }
+
+  /**
+   * Install one starter fleet as an editable saved fleet, never as fixed
+   * configuration the user cannot change or remove.
+   * @param caller - exact live Team Lead.
+   * @param templateId - `development`, `research`, or `quality-assurance`.
+   * @param expectedRevision - fenced settings revision.
+   * @returns the section holding the installed fleet, or a typed refusal.
+   */
+  async installStarterFleet(caller: Agent, templateId: string, expectedRevision: number): Promise<FleetFavoriteResult> {
+    this.roster.membership(caller)
+    try {
+      const current = this.favoritesView().favorites
+      const installed = starterFleet(templateId, new Set(current.map(candidate => candidate.id)))
+      await this.writeFleetFavorites([...current, installed], expectedRevision)
+      return { ok: true, value: this.favoritesView() }
+    } catch (error: unknown) {
+      return this.fleetFailure(error)
+    }
+  }
+
+  /**
    * Read the fleet favorites section and current settings revision.
    * @param caller - exact live Team Lead.
    * @returns providers, favorites, and the revision for the next fenced write.
@@ -614,6 +660,12 @@ export class TeamService extends TypertRemoteService {
       const favorite = this.favoritesView().favorites.find(candidate => candidate.id === id)
       if (favorite === undefined) {
         throw new TeamError(`fleet favorite "${id}" not found`, 'TEAM_FLEET_FAVORITE_NOT_FOUND')
+      }
+      if (!isFleetEnabled(favorite)) {
+        return {
+          ok: false,
+          error: { code: 'fleet-disabled', message: `fleet "${id}" is disabled; enable it to launch` },
+        }
       }
       const providers = this.fleetAvailability(caller)
       // Validate every provider before the first child exists, so an

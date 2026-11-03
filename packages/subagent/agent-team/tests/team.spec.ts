@@ -2046,6 +2046,53 @@ describe('Fleet favorites', () => {
       .toMatchObject({ ok: false, error: { code: 'TEAM_FLEET_FAVORITE_NOT_FOUND' } })
   }, 20_000)
 
+  it('starts a fleet in concurrency batches and keeps sibling members alive when one fails', async () => {
+    const settingsRoot = mkdtempSync(join(tmpdir(), 'gnk-team-fleet-settings-'))
+    roots.push(settingsRoot)
+    const { ctx, lead } = await setup(
+      [textResponse('first'), textResponse('second'), textResponse('third'), textResponse('clash')],
+      {},
+      {},
+      false,
+      join(settingsRoot, 'settings.json'),
+    )
+    // An existing teammate supplies a name the fleet will collide with, which is
+    // a deterministic mid-launch failure rather than a timed or flaky one.
+    const taken = await ctx.agentTeams.spawnTeammate(lead, {
+      name: 'clash',
+      description: 'existing',
+      prompt: [{ type: 'text', text: 'hold the name' }],
+      context: 'fresh',
+      provider: 'spawn',
+      signal: new AbortController().signal,
+    })
+    expect(taken.member.name).toBe('clash')
+
+    const favorite = {
+      id: 'wide',
+      name: 'Wide fleet',
+      concurrency: 3,
+      members: [
+        { name: 'alpha', description: 'a', prompt: 'run', provider: 'spawn' },
+        { name: 'clash', description: 'b', prompt: 'run', provider: 'spawn' },
+        { name: 'beta', description: 'c', prompt: 'run', provider: 'spawn' },
+      ],
+    }
+    const saved = await ctx.agentTeams.saveFleetFavorite(lead, favorite, 0)
+    if (!saved.ok) throw new Error(saved.error.message)
+
+    const refused = await ctx.agentTeams.launchFleetFavorite(lead, 'wide', true)
+    expect(refused).toMatchObject({ ok: false, error: { code: 'fleet-member-failed' } })
+    if (refused.ok) throw new Error('expected the colliding member to fail the launch')
+    expect(refused.error.message).toContain('"clash"')
+    expect(refused.error.message).toContain('2 sibling(s) started')
+
+    // The two siblings that started are real roster members: one member's failure
+    // cancelled neither of them, and the fleet did not roll back.
+    expect(ctx.agentTeams.listMembers(lead).map(member => member.name).sort())
+      .toEqual(['alpha', 'beta', 'clash', 'lead'])
+  }, 30_000)
+
   it('fails closed when the fleet settings namespace is not mounted', async () => {
     const { ctx, lead } = await setup([])
     expect(() => ctx.agentTeams.fleetFavorites(lead))

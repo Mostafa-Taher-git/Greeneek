@@ -4401,7 +4401,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'FleetFavorite',
-    declaration: 'export interface FleetFavorite {\n    readonly id: string;\n    readonly name: string;\n    readonly members: FleetFavoriteMember[];\n    readonly enabled?: boolean;\n}',
+    declaration: 'export interface FleetFavorite {\n    readonly id: string;\n    readonly name: string;\n    readonly members: FleetFavoriteMember[];\n    readonly enabled?: boolean;\n    readonly concurrency?: number;\n}',
   },
   {
     name: 'FleetFavoriteMember',

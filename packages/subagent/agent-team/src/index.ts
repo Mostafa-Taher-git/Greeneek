@@ -15,6 +15,7 @@ import {
   assertFavoriteProviderReady,
   duplicateFleetFavorite,
   favoriteMemberRequest,
+  fleetConcurrency,
   FLEET_SETTINGS_NAMESPACE,
   FleetSettingsSchema,
   fleetProviderAvailability,
@@ -120,6 +121,11 @@ const DEFAULT_MAX_MESSAGE_BYTES = 65_536
 const DEFAULT_DISPOSAL_TIMEOUT_MS = 5_000
 const DEFAULT_MAX_LANE_PATCH_BYTES = 16 * 1024 * 1024
 const DEFAULT_MAX_FLEET_CONFIG_BYTES = 65_536
+
+/** Outcome of starting one fleet member inside a launch batch. */
+type FleetMemberOutcome
+  = { readonly ok: true; readonly member: TeamMemberView }
+  | { readonly ok: false; readonly name: string; readonly message: string }
 
 /** Validate one positive safe-integer deployment limit. */
 function positiveLimit(name: string, value: number): number {
@@ -672,12 +678,36 @@ export class TeamService extends TypertRemoteService {
       // unavailable later member cannot leave a partially launched fleet.
       for (const member of favorite.members) assertFavoriteProviderReady(member, providers)
       const members: TeamMemberView[] = []
-      for (const member of favorite.members) {
-        const spawned = await this.spawnTeammate(caller, {
-          ...favoriteMemberRequest(member),
-          signal: this.lifecycle.signal,
-        })
-        members.push(spawned.member)
+      // Members start in batches of the fleet's concurrency. Every member of a
+      // batch reaches its own outcome before the launch reports, so one member's
+      // failure cancels no sibling and the already-started siblings stay rostered.
+      const concurrency = fleetConcurrency(favorite)
+      for (let start = 0; start < favorite.members.length; start += concurrency) {
+        const batch = favorite.members.slice(start, start + concurrency)
+        const outcomes = await Promise.all(batch.map(async (member): Promise<FleetMemberOutcome> => {
+          try {
+            const spawned = await this.spawnTeammate(caller, {
+              ...favoriteMemberRequest(member),
+              signal: this.lifecycle.signal,
+            })
+            return { ok: true, member: spawned.member }
+          } catch (error: unknown) {
+            return { ok: false, name: member.name, message: errorMessage(error) }
+          }
+        }))
+        let failure: { readonly name: string; readonly message: string } | undefined
+        for (const outcome of outcomes) {
+          if (outcome.ok) {
+            members.push(outcome.member)
+            continue
+          }
+          failure = { name: outcome.name, message: outcome.message }
+        }
+        if (failure !== undefined) {
+          const started = String(members.length)
+          const detail = `member "${failure.name}" failed; ${started} sibling(s) started: ${failure.message}`
+          return { ok: false, error: { code: 'fleet-member-failed', message: detail } }
+        }
       }
       return { ok: true, value: { members } }
     } catch (error: unknown) {

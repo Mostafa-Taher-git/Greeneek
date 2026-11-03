@@ -58,6 +58,11 @@ export interface FleetFavorite {
   readonly members: FleetFavoriteMember[]
   /** False keeps the fleet saved but unlaunchable until it is enabled again. */
   readonly enabled?: boolean
+  /**
+   * Members launching at once. The default 1 is the sequential launch this
+   * surface shipped with; a larger value starts members in batches of that size.
+   */
+  readonly concurrency?: number
 }
 
 /** Complete user-writable fleet settings section. */
@@ -104,6 +109,7 @@ const favoriteSchema = z.object({
   name: z.string().required(),
   members: z.array(memberSchema).required(),
   enabled: z.boolean(),
+  concurrency: z.number().step(1).min(1),
 })
 
 /** Settings schema for the complete fleet section. */
@@ -192,6 +198,11 @@ export function validateFleetSettings(settings: FleetSettings): void {
 /** A fleet with `enabled: false` stays saved and refuses to launch. */
 export function isFleetEnabled(favorite: FleetFavorite): boolean {
   return favorite.enabled !== false
+}
+
+/** Members the launcher may start at once; 1 keeps the sequential launch. */
+export function fleetConcurrency(favorite: FleetFavorite): number {
+  return favorite.concurrency ?? 1
 }
 
 /**

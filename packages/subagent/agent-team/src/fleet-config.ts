@@ -1,8 +1,9 @@
 /**
  * Repository fleet configuration and its one-time approval record. A fleet
  * file is untrusted repository content: it is size-capped, parsed as strict
- * JSON, limited to in-process providers, and may launch only after a fresh
- * approval keyed by the exact file bytes and the canonical repository path.
+ * JSON, limited to the providers this composition admits for Team lanes, and
+ * may launch only after a fresh approval keyed by the exact file bytes and the
+ * canonical repository path.
  * @module @greeneek/gnk-agent-team/fleet-config
  */
 
@@ -16,8 +17,13 @@ import { resolveLanePolicy } from './lane-policy.ts'
 
 /** Default cap on one repository fleet file. */
 const DEFAULT_MAX_FLEET_CONFIG_BYTES = 65_536
-/** Default providers that the G1 in-process Team surface can launch. */
-const DEFAULT_FLEET_PROVIDERS: readonly string[] = ['spawn', 'fork']
+/**
+ * Provider a member uses when the fleet file names none. Admission still
+ * requires this provider to be registered by the composition, so a build that
+ * does not mount the in-process spawner refuses the member instead of inventing
+ * a launch path.
+ */
+const DEFAULT_MEMBER_PROVIDER = 'spawn'
 
 const fleetMemberSchema = z.object({
   name: z.string().min(1).max(64),
@@ -67,8 +73,18 @@ export interface RepoFleetConfigOptions {
   readonly gnkHome: string
   /** Upper bound on one fleet file. */
   readonly maxBytes?: number
-  /** Provider names this deployment may launch in-process. */
+  /**
+   * Admitted provider names, fixed by the deployment. Use this only to narrow a
+   * fleet to specific providers; an empty array admits nothing and is rejected.
+   */
   readonly allowedProviders?: readonly string[]
+  /**
+   * Admitted provider names resolved at validation time, from the live provider
+   * registry. This is how a composition admits what it actually mounts — native
+   * in-process providers and external CLI adapters alike — without the fleet
+   * layer naming providers itself.
+   */
+  readonly resolveAllowedProviders?: () => ReadonlySet<string>
 }
 
 /**
@@ -77,15 +93,32 @@ export interface RepoFleetConfigOptions {
 export class RepoFleetConfigStore {
   private readonly gnkHome: string
   private readonly maxBytes: number
-  private readonly allowedProviders: ReadonlySet<string>
+  private readonly admittedProviderNames: () => ReadonlySet<string>
 
   /**
-   * @param options - harness home, byte cap, and in-process provider allowlist.
+   * @param options - harness home, byte cap, and one provider admission rule.
+   * @throws {TeamError} `TEAM_INVALID_CONFIG` when no admission rule is supplied.
    */
   constructor(options: RepoFleetConfigOptions) {
+    if (options.allowedProviders === undefined && options.resolveAllowedProviders === undefined) {
+      throw new TeamError(
+        'RepoFleetConfigStore needs allowedProviders or resolveAllowedProviders: an unspecified fleet provider set would either admit everything or nothing in silence',
+        'TEAM_INVALID_CONFIG',
+      )
+    }
+    if (options.allowedProviders !== undefined
+      && (options.allowedProviders.length === 0
+        || options.allowedProviders.some(provider => provider.trim().length === 0))) {
+      throw new TeamError('allowedProviders must name at least one non-empty provider', 'TEAM_INVALID_CONFIG')
+    }
     this.gnkHome = options.gnkHome
     this.maxBytes = options.maxBytes ?? DEFAULT_MAX_FLEET_CONFIG_BYTES
-    this.allowedProviders = new Set(options.allowedProviders ?? DEFAULT_FLEET_PROVIDERS)
+    if (options.allowedProviders !== undefined) {
+      const fixed = new Set(options.allowedProviders)
+      this.admittedProviderNames = () => fixed
+    } else {
+      this.admittedProviderNames = options.resolveAllowedProviders as () => ReadonlySet<string>
+    }
   }
 
   /**
@@ -193,10 +226,10 @@ export class RepoFleetConfigStore {
         )
       }
       names.add(member.name)
-      const provider = member.provider ?? 'spawn'
-      if (!this.allowedProviders.has(provider)) {
+      const provider = member.provider ?? DEFAULT_MEMBER_PROVIDER
+      if (!this.admittedProviderNames().has(provider)) {
         throw new TeamError(
-          `repository fleet member "${member.name}" uses provider "${provider}", outside this deployment's in-process fleet providers`,
+          `repository fleet member "${member.name}" uses provider "${provider}", which this composition does not admit for Team lanes: it is either not registered here or cannot hold a durable lane. Configure fleetProviders to narrow the admitted set; nothing is substituted.`,
           'TEAM_FLEET_PROVIDER_UNSUPPORTED',
         )
       }

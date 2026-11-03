@@ -117,7 +117,6 @@ const DEFAULT_MAX_MESSAGE_BYTES = 65_536
 const DEFAULT_DISPOSAL_TIMEOUT_MS = 5_000
 const DEFAULT_MAX_LANE_PATCH_BYTES = 16 * 1024 * 1024
 const DEFAULT_MAX_FLEET_CONFIG_BYTES = 65_536
-const DEFAULT_FLEET_PROVIDERS: readonly string[] = ['spawn', 'fork']
 
 /** Validate one positive safe-integer deployment limit. */
 function positiveLimit(name: string, value: number): number {
@@ -140,7 +139,13 @@ export class TeamService extends TypertRemoteService {
     gnkHome: z.string().default(resolveGnkHome(undefined, process.env)),
     maxLanePatchBytes: z.number().step(1).min(1).default(DEFAULT_MAX_LANE_PATCH_BYTES),
     maxFleetConfigBytes: z.number().step(1).min(1).default(DEFAULT_MAX_FLEET_CONFIG_BYTES),
-    fleetProviders: z.array(z.string()).default([...DEFAULT_FLEET_PROVIDERS]),
+    /**
+     * Providers a fleet may name. The default `[]` admits every registered
+     * provider that can hold a Team lane, so mounting an external CLI adapter
+     * makes its members valid without the fleet layer naming providers itself; a
+     * non-empty list narrows fleets to exactly those providers.
+     */
+    fleetProviders: z.array(z.string()).default([]),
   })
 
   /** Validated deployment limits used by every Team operation. */
@@ -181,12 +186,11 @@ export class TeamService extends TypertRemoteService {
         'maxFleetConfigBytes',
         config.maxFleetConfigBytes ?? DEFAULT_MAX_FLEET_CONFIG_BYTES,
       ),
-      fleetProviders: config.fleetProviders ?? [...DEFAULT_FLEET_PROVIDERS],
+      fleetProviders: config.fleetProviders ?? [],
     }
 
-    if (this.config.fleetProviders.length === 0
-      || this.config.fleetProviders.some(provider => provider.trim().length === 0)) {
-      throw new TeamError('fleetProviders must name at least one non-empty provider', 'TEAM_INVALID_CONFIG')
+    if (this.config.fleetProviders.some(provider => provider.trim().length === 0)) {
+      throw new TeamError('fleetProviders must not contain a blank provider name', 'TEAM_INVALID_CONFIG')
     }
 
     this.activity = new TeamActivity()
@@ -200,7 +204,9 @@ export class TeamService extends TypertRemoteService {
     this.fleet = new RepoFleetConfigStore({
       gnkHome: this.config.gnkHome,
       maxBytes: this.config.maxFleetConfigBytes,
-      allowedProviders: this.config.fleetProviders,
+      ...this.config.fleetProviders.length === 0
+        ? { resolveAllowedProviders: () => this.laneCapableProviders() }
+        : { allowedProviders: this.config.fleetProviders },
     })
     ctx.inject(['settings'], (settingsCtx) => {
       this.settingsProvider = settingsCtx.settings
@@ -496,13 +502,22 @@ export class TeamService extends TypertRemoteService {
     return this.providerAvailability()
   }
 
+  /**
+   * Registered providers that can hold a durable Team lane. The roster only lanes
+   * continuable children, so a fleet member on any other provider is refused
+   * before spend rather than failing at launch.
+   * @returns the provider names admitted for fleet use when the deployment narrows nothing.
+   */
+  private laneCapableProviders(): ReadonlySet<string> {
+    return new Set(this.ctx.subagents.list().filter(name => (
+      this.ctx.subagents.getProvider(name)?.prepareContinuable !== undefined
+    )))
+  }
+
   /** Build provider availability from the live registry and configured names. */
   private providerAvailability(): FleetProviderAvailability[] {
     const providers = this.ctx.subagents.list()
-    const continuable = new Set(providers.filter(name => (
-      this.ctx.subagents.getProvider(name)?.prepareContinuable !== undefined
-    )))
-    return fleetProviderAvailability(this.config.fleetProviders, providers, continuable)
+    return fleetProviderAvailability(this.config.fleetProviders, providers, this.laneCapableProviders())
   }
 
   /**

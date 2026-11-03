@@ -86,7 +86,7 @@ Lane records are durable JSON validated at the file boundary. `preparing` and `c
 
 Named fleet favorites live in the `fleet` settings namespace. A favorite holds an id, a display name, and members with provider, context, preset, model, reasoning effort, read-only flag, write scopes, and token ceiling. The settings owner fences writes by revision; a launch revalidates every provider and never substitutes one. Availability is derived from the live provider registry: `ready` only for a provider that can hold a durable lane, `unsupported-version` for a registered provider without that capability, and `not-installed` for a configured provider that is absent. No probe launches a paid or state-changing run.
 
-A repository may declare `.gnk/fleet.json` with a strict `version` and `fleet.members` array. Parsing is size-capped and provider-limited to the deployment's in-process fleet providers. Launching requires a one-time approval keyed by the canonical repository path and the SHA-256 of the exact file bytes; changed bytes require fresh approval, and an admitted approval is removed.
+A repository may declare `.gnk/fleet.json` with a strict `version` and `fleet.members` array. Parsing is size-capped, and each member's provider must be admitted for Team lanes: by default that means every provider the composition registers that can hold a durable lane, so one fleet may mix in-harness agents with external CLI agents, and `fleetProviders` narrows the set explicitly. Launching requires a one-time approval keyed by the canonical repository path and the SHA-256 of the exact file bytes; changed bytes require fresh approval, and an admitted approval is removed.
 
 ## Replay
 

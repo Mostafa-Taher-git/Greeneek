@@ -176,7 +176,9 @@ describe('Team identity and provisioning', () => {
         await expect(setup([], { [field]: value })).rejects.toThrow()
       }
     }
-    await expect(setup([], { fleetProviders: [] })).rejects.toThrow('fleetProviders')
+    // `[]` is the documented sentinel meaning "admit what this composition
+    // registers", so it must build; only a blank name is a misconfiguration.
+    await expect(setup([], { fleetProviders: [] })).resolves.toBeDefined()
     await expect(setup([], { fleetProviders: ['spawn', ' '] })).rejects.toThrow('fleetProviders')
   })
 

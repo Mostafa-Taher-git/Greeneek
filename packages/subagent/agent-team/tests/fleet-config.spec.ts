@@ -10,6 +10,18 @@ import { RepoFleetConfigStore } from '../src/fleet-config.ts'
 const SIGNAL = new AbortController().signal
 const roots: string[] = []
 
+/**
+ * Provider set the pre-existing cases pin, so their assertions keep meaning the
+ * same narrowing they were written against. The derived-admission cases below
+ * use `resolveAllowedProviders` instead.
+ */
+const NATIVE = ['spawn', 'fork']
+
+/** One store admitting the native providers, so a rejection case stays readable. */
+function nativeStore(gnkHome: string): RepoFleetConfigStore {
+  return new RepoFleetConfigStore({ gnkHome, allowedProviders: NATIVE })
+}
+
 afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true })
 })
@@ -74,7 +86,7 @@ async function rejection(operation: Promise<unknown>): Promise<TeamError> {
 describe('repository fleet config', () => {
   it('reads a valid document with its exact bytes hash and approval state', async () => {
     const repo = repository(validDocument())
-    const store = new RepoFleetConfigStore({ gnkHome: tempRoot() })
+    const store = new RepoFleetConfigStore({ gnkHome: tempRoot(), allowedProviders: NATIVE })
 
     const snapshot = await store.read(repo, SIGNAL)
 
@@ -87,7 +99,7 @@ describe('repository fleet config', () => {
 
   it('requires a fresh approval for changed bytes and consumes it once', async () => {
     const repo = repository(validDocument())
-    const store = new RepoFleetConfigStore({ gnkHome: tempRoot() })
+    const store = new RepoFleetConfigStore({ gnkHome: tempRoot(), allowedProviders: NATIVE })
 
     const approved = await store.approve(repo, SIGNAL)
     expect(approved.approved).toBe(true)
@@ -106,7 +118,7 @@ describe('repository fleet config', () => {
   it('writes approvals atomically below the harness home', async () => {
     const repo = repository(validDocument())
     const gnkHome = tempRoot('gnk-fleet-home-')
-    const store = new RepoFleetConfigStore({ gnkHome })
+    const store = new RepoFleetConfigStore({ gnkHome, allowedProviders: NATIVE })
 
     const approved = await store.approve(repo, SIGNAL)
     const approvals = join(gnkHome, 'fleet-approvals')
@@ -123,13 +135,13 @@ describe('repository fleet config', () => {
 
   it('rejects an oversized, malformed, duplicate, or unsupported document', async () => {
     const gnkHome = tempRoot()
-    const store = new RepoFleetConfigStore({ gnkHome, maxBytes: 512 })
+    const store = new RepoFleetConfigStore({ gnkHome, maxBytes: 512, allowedProviders: NATIVE })
 
-    expect((await rejection(new RepoFleetConfigStore({ gnkHome }).read(repository('{'), SIGNAL))).code)
+    expect((await rejection(nativeStore(gnkHome).read(repository('{'), SIGNAL))).code)
       .toBe('TEAM_FLEET_CONFIG_INVALID')
-    expect((await rejection(new RepoFleetConfigStore({ gnkHome }).read(repository(JSON.stringify({ version: 2 })), SIGNAL))).code)
+    expect((await rejection(nativeStore(gnkHome).read(repository(JSON.stringify({ version: 2 })), SIGNAL))).code)
       .toBe('TEAM_FLEET_CONFIG_INVALID')
-    expect((await rejection(new RepoFleetConfigStore({ gnkHome }).read(repository(validDocument({ version: 2 })), SIGNAL))).code)
+    expect((await rejection(nativeStore(gnkHome).read(repository(validDocument({ version: 2 })), SIGNAL))).code)
       .toBe('TEAM_FLEET_CONFIG_INVALID')
 
     const duplicate = validDocument({
@@ -140,27 +152,103 @@ describe('repository fleet config', () => {
         ],
       },
     })
-    expect((await rejection(new RepoFleetConfigStore({ gnkHome }).read(repository(duplicate), SIGNAL))).code)
+    expect((await rejection(nativeStore(gnkHome).read(repository(duplicate), SIGNAL))).code)
       .toBe('TEAM_FLEET_CONFIG_INVALID')
 
     const unsupported = validDocument({
       fleet: { members: [{ name: 'remote', description: 'a', prompt: 'a', provider: 'claude-code' }] },
     })
-    expect((await rejection(new RepoFleetConfigStore({ gnkHome }).read(repository(unsupported), SIGNAL))).code)
+    expect((await rejection(nativeStore(gnkHome).read(repository(unsupported), SIGNAL))).code)
       .toBe('TEAM_FLEET_PROVIDER_UNSUPPORTED')
 
     const contradictory = validDocument({
       fleet: { members: [{ name: 'both', description: 'a', prompt: 'a', readOnly: true, writeScopes: ['src'] }] },
     })
-    expect((await rejection(new RepoFleetConfigStore({ gnkHome }).read(repository(contradictory), SIGNAL))).code)
+    expect((await rejection(nativeStore(gnkHome).read(repository(contradictory), SIGNAL))).code)
       .toBe('TEAM_FLEET_CONFIG_INVALID')
 
     const large = repository(validDocument({ padding: 'x'.repeat(1_024) }))
     expect((await rejection(store.read(large, SIGNAL))).code).toBe('TEAM_FLEET_CONFIG_TOO_LARGE')
   })
 
+  it('admits an external CLI provider the composition reports, so one fleet can mix native and CLI members', async () => {
+    const document = JSON.stringify({
+      version: 1,
+      fleet: {
+        members: [
+          { name: 'native', description: 'in harness', prompt: 'Review the change.', provider: 'fork' },
+          { name: 'cli', description: 'external agent', prompt: 'Implement the change.', provider: 'claude-code' },
+        ],
+      },
+    })
+    const store = new RepoFleetConfigStore({
+      gnkHome: tempRoot('gnk-fleet-home-'),
+      resolveAllowedProviders: () => new Set(['spawn', 'fork', 'claude-code']),
+    })
+
+    const snapshot = await store.read(repository(document), SIGNAL)
+    expect(snapshot.config.fleet.members.map(member => member.provider))
+      .toEqual(['fork', 'claude-code'])
+  })
+
+  it('re-resolves admission per read, so mounting or removing an adapter needs no restart', async () => {
+    const document = JSON.stringify({
+      version: 1,
+      fleet: { members: [{ name: 'cli', description: 'external agent', prompt: 'Run.', provider: 'codex' }] },
+    })
+    const repo = repository(document)
+    let admitted = new Set(['spawn'])
+    const store = new RepoFleetConfigStore({
+      gnkHome: tempRoot('gnk-fleet-home-'),
+      resolveAllowedProviders: () => admitted,
+    })
+
+    expect((await rejection(store.read(repo, SIGNAL))).code).toBe('TEAM_FLEET_PROVIDER_UNSUPPORTED')
+    admitted = new Set(['spawn', 'codex'])
+    expect((await store.read(repo, SIGNAL)).config.fleet.members[0]?.provider).toBe('codex')
+    admitted = new Set(['spawn'])
+    expect((await rejection(store.read(repo, SIGNAL))).code).toBe('TEAM_FLEET_PROVIDER_UNSUPPORTED')
+  })
+
+  it('names the refused provider and the reason instead of claiming an in-process limit', async () => {
+    const document = JSON.stringify({
+      version: 1,
+      fleet: { members: [{ name: 'cli', description: 'external agent', prompt: 'Run.', provider: 'acp' }] },
+    })
+    const store = new RepoFleetConfigStore({
+      gnkHome: tempRoot('gnk-fleet-home-'),
+      resolveAllowedProviders: () => new Set(['spawn', 'fork']),
+    })
+
+    const error = await rejection(store.read(repository(document), SIGNAL))
+    expect(error.message).toContain('"acp"')
+    expect(error.message).toContain('does not admit')
+    expect(error.message).not.toContain('in-process fleet providers')
+  })
+
+  it('admission-checks the provider a member gets when it names none', async () => {
+    const document = JSON.stringify({
+      version: 1,
+      fleet: { members: [{ name: 'implicit', description: 'no provider', prompt: 'Run.' }] },
+    })
+    const store = new RepoFleetConfigStore({
+      gnkHome: tempRoot('gnk-fleet-home-'),
+      resolveAllowedProviders: () => new Set(['fork']),
+    })
+
+    expect((await rejection(store.read(repository(document), SIGNAL))).code)
+      .toBe('TEAM_FLEET_PROVIDER_UNSUPPORTED')
+  })
+
+  it('refuses to be built without a provider admission rule or with an unusable list', () => {
+    const gnkHome = tempRoot('gnk-fleet-home-')
+    expect(() => new RepoFleetConfigStore({ gnkHome })).toThrow('allowedProviders or resolveAllowedProviders')
+    expect(() => new RepoFleetConfigStore({ gnkHome, allowedProviders: [] })).toThrow('at least one non-empty provider')
+    expect(() => new RepoFleetConfigStore({ gnkHome, allowedProviders: [' '] })).toThrow('at least one non-empty provider')
+  })
+
   it('reports a missing repository or fleet file and refuses a directory', async () => {
-    const store = new RepoFleetConfigStore({ gnkHome: tempRoot() })
+    const store = new RepoFleetConfigStore({ gnkHome: tempRoot(), allowedProviders: NATIVE })
     expect((await rejection(store.read(join(tempRoot(), 'absent'), SIGNAL))).code)
       .toBe('TEAM_FLEET_CONFIG_MISSING')
     expect((await rejection(store.read(tempRoot(), SIGNAL))).code)

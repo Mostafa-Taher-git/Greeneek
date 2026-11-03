@@ -151,7 +151,12 @@ export interface Config {
   readonly maxLanePatchBytes?: number
   /** Maximum bytes in one repository fleet config. */
   readonly maxFleetConfigBytes?: number
-  /** Provider names a repository fleet config may launch in-process. */
+  /**
+   * Providers a fleet member may name. The empty default admits every registered
+   * provider that can hold a durable Team lane, so an added CLI adapter becomes
+   * usable without naming it here and a removed one stops being usable. A
+   * non-empty list narrows fleets to exactly those providers.
+   */
   readonly fleetProviders?: string[]
 }
 

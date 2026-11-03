@@ -26,6 +26,7 @@ const REQUIRED: readonly HeadlessLaunchTemplatePlaceholder[] = ['readRoot', 'wri
 /**
  * Scan one headless launch template against the placeholder grammar.
  * @param template - manifest `launch.headless` value.
+ * @param requireControlToken - when true, the template must reference `{controlTokenFile}`; false is for a launch without a control token.
  * @returns every violation in reading order, phrased to follow "it"; empty when conformant.
  */
 export function headlessTemplateViolations(template: string, requireControlToken = true): readonly string[] {

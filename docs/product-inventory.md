@@ -78,7 +78,7 @@ Every section below registers on the `settings.section` slot and is reached thro
 
 | Surface | Evidence | Disposition |
 |---|---|---|
-| Page opened from `sidebar.primary.action` into the `dashboard` slot: session, workspace, running, delegated-session, turn, step, input, output, and cache-read token totals; model, provider, and preset breakdowns; recent-session table; empty and partial states | `packages/client/ui-workspace/tests/dashboard-*` (188 tests in the package, 100% coverage on the three dashboard sources) | verified for recorded projections |
+| Page opened from `sidebar.primary.action` into the `dashboard` slot: session, workspace, running, delegated-session, turn, step, input, output, and cache-read token totals; model, provider, and preset breakdowns; recent-session table; empty and partial states | `packages/client/ui-workspace/tests/dashboard.client.spec.tsx`, `dashboard-model.client.spec.ts`, `dashboard-pricing.client.spec.ts` (188 tests in the package, 100% coverage on the three dashboard sources) | verified for recorded projections |
 | Spend | `packages/client/ui-workspace/src/client/dashboard-pricing.ts` with an empty shipped catalog | implemented — honest `unknown` beside its reason; see the pricing-provenance note |
 | Dashboard remainder | live-agent and request counts, CLI/lane/outcome breakdowns, ranked most-used, operational-health rows, filterable paginated table, performance budget | blocked — named in plan item P2-09 |
 

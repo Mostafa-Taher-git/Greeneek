@@ -50,7 +50,7 @@ export const isContextOverflow = notImplementedFail(MODULE, 'isContextOverflow')
  * worker host resolves route credentials through the harness's own auth seam
  * instead.
  * @param name - display name pi-ai would label the route's auth with.
- * @param envVars - environment variables the real helper would read.
+ * @param _envVars - environment variables the real helper would read; the stub resolves none, so it ignores them.
  * @returns the marker shape route authentication filters on.
  */
 export function envApiKeyAuth(name: string, _envVars: readonly string[]): unknown {
@@ -75,17 +75,26 @@ function inertProtocol(symbol: string): unknown {
   })
 }
 
-/** Anthropic messages API implementation (unavailable on any request). */
+/**
+ * Anthropic messages API implementation (unavailable on any request).
+ * @returns the inert implementation object.
+ */
 export function anthropicMessagesApi(): unknown {
   return inertProtocol('anthropicMessagesApi')
 }
 
-/** OpenAI completions API implementation (unavailable on any request). */
+/**
+ * OpenAI completions API implementation (unavailable on any request).
+ * @returns the inert implementation object.
+ */
 export function openAICompletionsApi(): unknown {
   return inertProtocol('openAICompletionsApi')
 }
 
-/** OpenAI responses API implementation (unavailable on any request). */
+/**
+ * OpenAI responses API implementation (unavailable on any request).
+ * @returns the inert implementation object.
+ */
 export function openAIResponsesApi(): unknown {
   return inertProtocol('openAIResponsesApi')
 }

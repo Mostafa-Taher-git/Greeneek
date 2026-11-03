@@ -147,7 +147,11 @@ export class LaneIntegration {
     this.halted.delete(sessionId)
   }
 
-  /** Whether one Lead's queue is halted and the diagnostic that stopped it. */
+  /**
+   * Whether one Lead's queue is halted and the diagnostic that stopped it.
+   * @param sessionId - Lead Session whose queue is read.
+   * @returns the halt reason, or undefined when the queue runs.
+   */
   haltReason(sessionId: SessionId): string | undefined {
     return this.halted.get(sessionId)
   }

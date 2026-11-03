@@ -195,12 +195,20 @@ export function validateFleetSettings(settings: FleetSettings): void {
   }
 }
 
-/** A fleet with `enabled: false` stays saved and refuses to launch. */
+/**
+ * A fleet with `enabled: false` stays saved and refuses to launch.
+ * @param favorite - one stored fleet favorite.
+ * @returns whether the launcher may start its members.
+ */
 export function isFleetEnabled(favorite: FleetFavorite): boolean {
   return favorite.enabled !== false
 }
 
-/** Members the launcher may start at once; 1 keeps the sequential launch. */
+/**
+ * Members the launcher may start at once; 1 keeps the sequential launch.
+ * @param favorite - one stored fleet favorite.
+ * @returns how many of its members a batch launch admits concurrently.
+ */
 export function fleetConcurrency(favorite: FleetFavorite): number {
   return favorite.concurrency ?? 1
 }

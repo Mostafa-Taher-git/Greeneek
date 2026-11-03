@@ -27,11 +27,17 @@ export interface ILayout {
   openDetails(): void
   /** Close the details panel. */
   closeDetails(): void
-  /** Open Settings in the main column, optionally selecting a section. */
+  /**
+   * Open Settings in the main column, optionally selecting a section.
+   * @param section - Settings section id to select, or undefined to keep the current section.
+   */
   openSettings(section?: string): void
   /** Open the local Dashboard in the main column. */
   openDashboard(): void
-  /** Select a Settings section without leaving the page. */
+  /**
+   * Select a Settings section without leaving the page.
+   * @param section - Settings section id to show.
+   */
   selectSettingsSection(section: string): void
   /** Return to the mounted conversation. */
   showConversation(): void

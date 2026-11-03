@@ -56,8 +56,13 @@ export async function enqueueLane<T>(
   }
 }
 
-/** Host git boundary with bounded captured output and optional locks. */
-export const hostLaneGit: WorktreeGitRunner = async ({ argv, cwd, signal }) => await new Promise<string>((settle, fail) => {
+/**
+ * Host git boundary with bounded captured output and optional locks.
+ * @param request - argv, working directory, and cancellation signal for one git call.
+ * @returns the call's standard output.
+ */
+export const hostLaneGit: WorktreeGitRunner = async request => await new Promise<string>((settle, fail) => {
+  const { argv, cwd, signal } = request
   execFile('git', [...argv], {
     cwd,
     encoding: 'utf8',

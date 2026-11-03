@@ -30,6 +30,7 @@ export interface HeadlessLaunchValues {
  * Expand one headless template into argv.
  * @param template - manifest `launch.headless` value.
  * @param values - executable path and confined job facts.
+ * @param options - `requireControlToken` defaults to true; a false value lets a template omit the `{controlTokenFile}` placeholder.
  * @returns the argument vector, `argv[0]` being the absolute CLI.
  */
 export function expandHeadlessLaunch(

@@ -43,10 +43,9 @@ const CALLED: [string, Record<string, unknown>, readonly string[]][] = [
   // these three need a real process, so they stay refusals.
   ['node:child_process', childProcess, ['execFileSync', 'execSync', 'fork']],
   ['node-pty', nodePty, ['spawn', 'open']],
-  ['@greeneek/pi-ai', piAi, [
-    'createProvider', 'createModels', 'openAICompletionsApi', 'openAIResponsesApi', 'anthropicMessagesApi',
-    'isContextOverflow', 'getSupportedThinkingLevels',
-  ]],
+  // The mount-time factories answer structurally; the members inside CALLED
+  // are the ones activation never reaches.
+  ['@greeneek/pi-ai', piAi, ['createModels', 'getSupportedThinkingLevels', 'isContextOverflow']],
 ]
 
 /** Classes that refuse when constructed. */
@@ -113,6 +112,55 @@ describe('constructible-but-inert fakes', () => {
     server.close(() => { closed = true })
     expect(closed).toBe(true)
   })
+})
+
+describe('the pi-ai mount surface', () => {
+  it('createProvider keeps the descriptor fields and answers getModels', () => {
+    quiet()
+    const models = [{ id: 'kilo-auto/small' }]
+    const provider = piAi.createProvider({ id: 'kilo', name: 'Kilo', auth: { apiKey: { type: 'api-key' } }, api: {}, models }) as {
+      id: string
+      name: string
+      auth: unknown
+      getModels: () => unknown[]
+    }
+    expect(provider.id).toBe('kilo')
+    expect(provider.name).toBe('Kilo')
+    expect(provider.auth).toEqual({ apiKey: { type: 'api-key' } })
+    expect(provider.getModels()).toEqual(models)
+    expect(provider.getModels()).not.toBe(models)
+
+    const empty = piAi.createProvider({ id: 'bare' }) as { getModels: () => unknown[] }
+    expect(empty.getModels()).toEqual([])
+  })
+
+  it('request transport through a structural provider refuses while naming the host', () => {
+    quiet()
+    const provider = piAi.createProvider({ id: 'kilo' }) as { stream: () => never; streamSimple: () => never }
+    expect(() => provider.stream()).toThrow(/pi-ai\.stream\b.*not available in the worker host/)
+    expect(() => provider.streamSimple()).toThrow(/pi-ai\.streamSimple\b.*not available in the worker host/)
+  })
+
+  it('envApiKeyAuth resolves unconfigured and refuses to prompt', async () => {
+    quiet()
+    const auth = piAi.envApiKeyAuth('Kilo API key', ['KILO_API_KEY']) as {
+      name: string
+      login: () => never
+      resolve: (input?: never) => Promise<undefined>
+    }
+    expect(auth.name).toBe('Kilo API key')
+    expect(() => auth.login()).toThrow(/pi-ai\.envApiKeyAuth\(\)\.login\b.*not available in the worker host/)
+    await expect(auth.resolve()).resolves.toBeUndefined()
+  })
+
+  for (const symbol of ['anthropicMessagesApi', 'openAICompletionsApi', 'openAIResponsesApi'] as const) {
+    it(`${symbol} builds an inert implementation object that reports before throwing`, () => {
+      quiet()
+      const api = piAi[symbol]() as Record<string, unknown>
+      expect(() => api[symbol]).toThrow() // the member getter itself refuses
+      expect(() => 'anything' in api).toThrow(new RegExp(`${symbol}\\b.*not available in the worker host`))
+    })
+  }
 })
 
 describe('replaced external packages', () => {

@@ -50,8 +50,8 @@ const EMPTY_MEMBER: FleetFavoriteMember = {
 
 const STATE_KEYS = {
   'not-installed': 'fleet.state.notInstalled',
+  'one-shot': 'fleet.state.oneShot',
   unauthenticated: 'fleet.state.unauthenticated',
-  'unsupported-version': 'fleet.state.unsupported',
   ready: 'fleet.state.ready',
   'temporarily-unavailable': 'fleet.state.unavailable',
 } as const satisfies Record<FleetProviderState, TeamKey>

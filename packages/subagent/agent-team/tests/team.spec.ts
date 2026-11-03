@@ -2419,6 +2419,52 @@ describe('One-shot members', () => {
     expect(rowOf(ctx, lead, 'normal')).toMatchObject({ phase: 'active', mode: 'lane' })
     expect(lane.member.role).toBe('teammate')
   })
+
+  it('launches one fleet that mixes a continuable lane with a one-shot CLI-style member', async () => {
+    const settingsRoot = mkdtempSync(join(tmpdir(), 'gnk-team-mixed-fleet-'))
+    roots.push(settingsRoot)
+    const { ctx, lead } = await setup(['hang'], {}, {}, false, join(settingsRoot, 'settings.json'))
+    const provider = oneShot(ctx, 'ext-cli')
+    const continuable = vi.spyOn(ctx.subagents, 'startContinuable')
+    // Availability names each shape before any spend, so the editor and the
+    // launcher cannot disagree about what the composition registers.
+    expect(ctx.agentTeams.fleetAvailability(lead).find(row => row.name === 'ext-cli'))
+      .toMatchObject({ state: 'one-shot', oneShot: true, continuable: false })
+    expect(ctx.agentTeams.fleetAvailability(lead).find(row => row.name === 'spawn'))
+      .toMatchObject({ state: 'ready', oneShot: true, continuable: true })
+
+    const saved = await ctx.agentTeams.saveFleetFavorite(lead, {
+      id: 'mixed',
+      name: 'Mixed fleet',
+      members: [
+        { name: 'native', description: 'lane work', prompt: 'hold the lane', provider: 'spawn' },
+        { name: 'cli', description: 'one-shot work', prompt: 'run the external agent', provider: 'ext-cli' },
+      ],
+    }, 0)
+    if (!saved.ok) throw new Error(saved.error.message)
+    expect(await ctx.agentTeams.launchFleetFavorite(lead, 'mixed', true)).toMatchObject({ ok: true })
+
+    // One call to each execution model: the lane child is continuable, the CLI-style
+    // member is dispatched as a single delegation that settles with its result.
+    expect(continuable).toHaveBeenCalledTimes(1)
+    expect(rowOf(ctx, lead, 'native')).toMatchObject({ mode: 'lane', phase: 'active' })
+    await vi.waitFor(() => {
+      expect(rowOf(ctx, lead, 'cli')).toMatchObject({ mode: 'one-shot', phase: 'completed' })
+    }, { timeout: 5_000 })
+    expect(rowOf(ctx, lead, 'cli')?.result).toEqual({ stopReason: 'completed', output: content('cli answer') })
+    expect(provider.dispositions).toHaveLength(1)
+
+    // The settled one-shot is terminal and inert in the roster, while the lane
+    // member keeps its mailbox: one member's shape never changes the other's.
+    const statuses = Object.fromEntries(ctx.agentTeams.listMembers(lead).map(member => [member.name, member.status]))
+    expect(statuses.cli).toBe('inactive')
+    expect(await ctx.agentTeams.sendMessage(lead, {
+      target: 'native', content: content('lane mail'), signal: SIGNAL,
+    })).toMatchObject({ status: 'accepted' })
+    await expect(ctx.agentTeams.sendMessage(lead, {
+      target: 'cli', content: content('too late'), signal: SIGNAL,
+    })).rejects.toMatchObject({ code: 'TEAM_MEMBER_NOT_FOUND' })
+  }, 30_000)
 })
 
 describe('Team lane isolation', () => {

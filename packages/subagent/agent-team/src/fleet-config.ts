@@ -1,7 +1,7 @@
 /**
  * Repository fleet configuration and its one-time approval record. A fleet
  * file is untrusted repository content: it is size-capped, parsed as strict
- * JSON, limited to the providers this composition admits for Team lanes, and
+ * JSON, limited to the providers this composition registers, and
  * may launch only after a fresh approval keyed by the exact file bytes and the
  * canonical repository path.
  * @module @greeneek/gnk-agent-team/fleet-config
@@ -229,7 +229,7 @@ export class RepoFleetConfigStore {
       const provider = member.provider ?? DEFAULT_MEMBER_PROVIDER
       if (!this.admittedProviderNames().has(provider)) {
         throw new TeamError(
-          `repository fleet member "${member.name}" uses provider "${provider}", which this composition does not admit for Team lanes: it is either not registered here or cannot hold a durable lane. Configure fleetProviders to narrow the admitted set; nothing is substituted.`,
+          `repository fleet member "${member.name}" uses provider "${provider}", which this composition does not admit: it is either not registered here or excluded by fleetProviders. A member that needs an isolated write scope additionally needs a provider holding a durable lane. Configure fleetProviders to narrow the admitted set; nothing is substituted.`,
           'TEAM_FLEET_PROVIDER_UNSUPPORTED',
         )
       }

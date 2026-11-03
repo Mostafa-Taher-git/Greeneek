@@ -17,8 +17,8 @@ export const FLEET_SETTINGS_NAMESPACE = 'fleet'
 /** Honest provider availability states exposed to the Fleet settings page. */
 export type FleetProviderState =
   | 'not-installed'
+  | 'one-shot'
   | 'unauthenticated'
-  | 'unsupported-version'
   | 'ready'
   | 'temporarily-unavailable'
 
@@ -28,9 +28,11 @@ export interface FleetProviderAvailability {
   readonly name: string
   /** Honest state derived without launching a paid or state-changing run. */
   readonly state: FleetProviderState
-  /** Whether the provider can hold a durable Team lane. */
+  /** Whether the provider runs a delegated task to one result. */
+  readonly oneShot: boolean
+  /** Whether the provider holds a durable lane: mailbox, interrupt, and recovery. */
   readonly continuable: boolean
-  /** Human-readable reason for a non-ready state. */
+  /** Human-readable reason for a non-`ready` state. */
   readonly detail?: string
 }
 
@@ -287,9 +289,9 @@ export function starterFleet(id: string, existingIds: ReadonlySet<string>): Flee
 
 /**
  * Build honest availability rows for this deployment's configured providers.
- * A provider that cannot hold a durable lane is reported as unsupported, and
- * a configured but unregistered provider as not installed; no probe launches a
- * paid or state-changing run.
+ * Every registered provider runs a one-shot delegation, so only the durable-lane
+ * capability separates `ready` from `one-shot`, and a configured but unregistered
+ * provider is `not-installed`. No probe launches a paid or state-changing run.
  * @param configured - provider names this deployment expects for fleets.
  * @param providers - currently registered provider names.
  * @param continuable - names of providers that can hold a durable lane.
@@ -306,6 +308,7 @@ export function fleetProviderAvailability(
       return {
         name,
         state: 'not-installed',
+        oneShot: false,
         continuable: false,
         detail: 'provider is not registered in this composition',
       }
@@ -313,12 +316,13 @@ export function fleetProviderAvailability(
     if (!continuable.has(name)) {
       return {
         name,
-        state: 'unsupported-version',
+        state: 'one-shot',
+        oneShot: true,
         continuable: false,
-        detail: 'provider cannot hold a durable Team lane',
+        detail: 'provider runs one delegation to a result and holds no durable Team lane',
       }
     }
-    return { name, state: 'ready', continuable: true }
+    return { name, state: 'ready', oneShot: true, continuable: true }
   })
 }
 
@@ -353,20 +357,28 @@ export function favoriteMemberRequest(member: FleetFavoriteMember): Omit<SpawnTe
 }
 
 /**
- * Refuse a favorite member whose provider is not ready, without substituting
- * another provider.
+ * Refuse a favorite member whose provider cannot run it, without substituting
+ * another provider. A one-shot provider is admitted: the roster settles its run
+ * and refuses interactive operations on it. An isolated write scope needs the
+ * durable lane that only a continuable provider has, so that shape is refused.
  * @param member - favorite member being launched.
  * @param providers - current availability rows.
- * @throws {TeamError} `TEAM_FLEET_PROVIDER_UNAVAILABLE` naming the provider and state.
+ * @throws {TeamError} `TEAM_FLEET_PROVIDER_UNAVAILABLE` naming the provider, its state, and the reason.
  */
 export function assertFavoriteProviderReady(
   member: FleetFavoriteMember,
   providers: readonly FleetProviderAvailability[],
 ): void {
   const provider = providers.find(candidate => candidate.name === member.provider)
-  if (provider?.state === 'ready') return
+  if (provider === undefined || !provider.oneShot) {
+    throw new TeamError(
+      `fleet member "${member.name}" provider "${member.provider}" is ${provider?.state ?? 'not-installed'}; refusing to substitute another provider`,
+      'TEAM_FLEET_PROVIDER_UNAVAILABLE',
+    )
+  }
+  if (provider.continuable || member.writeScopes === undefined || member.writeScopes.length === 0) return
   throw new TeamError(
-    `fleet member "${member.name}" provider "${member.provider}" is ${provider?.state ?? 'not-installed'}; refusing to substitute another provider`,
+    `fleet member "${member.name}" declares an isolated write scope, but provider "${member.provider}" is one-shot and has no durable lane to checkpoint`,
     'TEAM_FLEET_PROVIDER_UNAVAILABLE',
   )
 }

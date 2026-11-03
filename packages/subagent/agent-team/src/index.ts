@@ -214,7 +214,7 @@ export class TeamService extends TypertRemoteService {
       gnkHome: this.config.gnkHome,
       maxBytes: this.config.maxFleetConfigBytes,
       ...this.config.fleetProviders.length === 0
-        ? { resolveAllowedProviders: () => this.laneCapableProviders() }
+        ? { resolveAllowedProviders: () => this.admittedProviders() }
         : { allowedProviders: this.config.fleetProviders },
     })
     ctx.inject(['settings'], (settingsCtx) => {
@@ -504,7 +504,7 @@ export class TeamService extends TypertRemoteService {
    * Report honest availability for every configured or registered fleet
    * provider without launching a paid or state-changing probe.
    * @param caller - exact live Team member.
-   * @returns one row per provider, with ready only for continuable providers.
+   * @returns one row per provider: `ready` holds a durable lane, `one-shot` runs one delegation to a result.
    */
   fleetAvailability(caller: Agent): FleetProviderAvailability[] {
     this.roster.membership(caller)
@@ -512,12 +512,22 @@ export class TeamService extends TypertRemoteService {
   }
 
   /**
-   * Registered providers that can hold a durable Team lane. The roster only lanes
-   * continuable children, so a fleet member on any other provider is refused
-   * before spend rather than failing at launch.
-   * @returns the provider names admitted for fleet use when the deployment narrows nothing.
+   * Providers a fleet member may name. The roster dispatches a continuable provider
+   * as a durable lane and every other registered provider as one delegation that
+   * settles with a result, so registration alone admits a provider to a fleet.
+   * `Config.fleetProviders` narrows this set when a deployment pins one.
+   * @returns the provider names admitted for fleet use in the current composition.
    */
-  private laneCapableProviders(): ReadonlySet<string> {
+  private admittedProviders(): ReadonlySet<string> {
+    return new Set(this.ctx.subagents.list())
+  }
+
+  /**
+   * Providers that hold a durable Team lane, which is what mailbox delivery,
+   * interruption, checkpointed write scopes, and startup recovery require.
+   * @returns the continuable provider names in the current composition.
+   */
+  private continuableProviders(): ReadonlySet<string> {
     return new Set(this.ctx.subagents.list().filter(name => (
       this.ctx.subagents.getProvider(name)?.prepareContinuable !== undefined
     )))
@@ -525,8 +535,11 @@ export class TeamService extends TypertRemoteService {
 
   /** Build provider availability from the live registry and configured names. */
   private providerAvailability(): FleetProviderAvailability[] {
-    const providers = this.ctx.subagents.list()
-    return fleetProviderAvailability(this.config.fleetProviders, providers, this.laneCapableProviders())
+    return fleetProviderAvailability(
+      this.config.fleetProviders,
+      this.ctx.subagents.list(),
+      this.continuableProviders(),
+    )
   }
 
   /**

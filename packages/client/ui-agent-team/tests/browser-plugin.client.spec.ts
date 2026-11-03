@@ -68,7 +68,7 @@ async function bench(options: {
         : { ok: true as const, value: view })
     },
     fleetAvailability: answer('agentTeams/fleetAvailability', [
-      { name: 'spawn', state: 'ready', continuable: true },
+      { name: 'spawn', state: 'ready', oneShot: true, continuable: true },
     ] satisfies FleetProviderAvailability[]),
     launchFleetFavorite: answer('agentTeams/launchFleetFavorite', {
       ok: true,

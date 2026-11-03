@@ -89,7 +89,7 @@ export const zh = {
   'fleet.scopes': '范围 {scopes}',
   'fleet.state.notInstalled': '未安装',
   'fleet.state.unauthenticated': '未认证',
-  'fleet.state.unsupported': '版本不支持',
+  'fleet.state.oneShot': '仅一次性执行',
   'fleet.state.ready': '就绪',
   'fleet.state.unavailable': '暂时不可用',
 } satisfies Record<string, string>
@@ -183,7 +183,7 @@ export const en = {
   'fleet.scopes': 'scopes {scopes}',
   'fleet.state.notInstalled': 'Not installed',
   'fleet.state.unauthenticated': 'Unauthenticated',
-  'fleet.state.unsupported': 'Unsupported version',
+  'fleet.state.oneShot': 'One-shot only',
   'fleet.state.ready': 'Ready',
   'fleet.state.unavailable': 'Temporarily unavailable',
 } satisfies Record<TeamKey, string>
@@ -274,7 +274,7 @@ export const ar = {
   'fleet.scopes': 'النطاقات {scopes}',
   'fleet.state.notInstalled': 'غير مثبّت',
   'fleet.state.unauthenticated': 'غير مصادق',
-  'fleet.state.unsupported': 'إصدار غير مدعوم',
+  'fleet.state.oneShot': 'فقط یک‌بار اجرا',
   'fleet.state.ready': 'جاهز',
   'fleet.state.unavailable': 'غير متاح مؤقتًا',
 } satisfies Record<TeamKey, string>

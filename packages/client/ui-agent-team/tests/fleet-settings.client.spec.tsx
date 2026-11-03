@@ -28,10 +28,18 @@ const FAVORITE: FleetFavorite = {
 }
 
 const PROVIDERS: FleetProviderAvailability[] = [
-  { name: 'spawn', state: 'ready', continuable: true },
+  { name: 'spawn', state: 'ready', oneShot: true, continuable: true },
   {
     name: 'claude-code',
+    state: 'one-shot',
+    oneShot: true,
+    continuable: false,
+    detail: 'provider runs one delegation to a result and holds no durable Team lane',
+  },
+  {
+    name: 'absent-cli',
     state: 'not-installed',
+    oneShot: false,
     continuable: false,
     detail: 'provider is not registered in this composition',
   },
@@ -112,6 +120,9 @@ describe('fleet settings section', () => {
     expect(await view.findByText('Provider availability')).toBeDefined()
     expect((await view.findAllByText('spawn')).length).toBeGreaterThan(0)
     expect(await view.findByText('Not installed')).toBeDefined()
+    // A registered provider without a durable lane is named as one-shot rather than
+    // as an unsupported version: its members run, they just cannot be steered.
+    expect(await view.findByText('One-shot only')).toBeDefined()
     expect(await view.findByText('Review fleet')).toBeDefined()
     expect(await view.findByText('1 member(s)')).toBeDefined()
   })
@@ -338,7 +349,7 @@ describe('fleet settings section', () => {
 
   it('defaults a new member to spawn when no provider is ready', async () => {
     const { view } = setup('en', {
-      providers: [{ name: 'missing', state: 'not-installed', continuable: false }],
+      providers: [{ name: 'missing', state: 'not-installed', oneShot: false, continuable: false }],
     })
     await view.findByText('Provider availability')
     fireEvent.click(view.getByRole('button', { name: 'New fleet' }))

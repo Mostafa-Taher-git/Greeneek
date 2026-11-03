@@ -86,9 +86,9 @@ A write-scoped teammate starts in a lane worktree at `<gnkHome>/worktrees/<LeadS
 
 Lane records are durable JSON validated at the file boundary. `preparing` and `closing` records are the only stages startup recovery mutates; `ready` lanes keep unmerged work across idle, cold resume, and Team disposal. Disposal checkpoints ready lanes without deleting them.
 
-Named fleet favorites live in the `fleet` settings namespace. A favorite holds an id, a display name, and members with provider, context, preset, model, reasoning effort, read-only flag, write scopes, and token ceiling. The settings owner fences writes by revision; a launch revalidates every provider and never substitutes one. Availability is derived from the live provider registry: `ready` only for a provider that can hold a durable lane, `unsupported-version` for a registered provider without that capability, and `not-installed` for a configured provider that is absent. No probe launches a paid or state-changing run.
+Named fleet favorites live in the `fleet` settings namespace. A favorite holds an id, a display name, and members with provider, context, preset, model, reasoning effort, read-only flag, write scopes, and token ceiling. The settings owner fences writes by revision; a launch revalidates every provider and never substitutes one. Availability is derived from the live provider registry: `ready` for a provider with a continuable start, `one-shot` for a registered provider without one, and `not-installed` for a configured provider that is absent. No probe launches a paid or state-changing run.
 
-A repository may declare `.gnk/fleet.json` with a strict `version` and `fleet.members` array. Parsing is size-capped, and each member's provider must be admitted for Team lanes: by default that means every provider the composition registers that can hold a durable lane, so one fleet may mix in-harness agents with external CLI agents, and `fleetProviders` narrows the set explicitly. Launching requires a one-time approval keyed by the canonical repository path and the SHA-256 of the exact file bytes; changed bytes require fresh approval, and an admitted approval is removed.
+A repository may declare `.gnk/fleet.json` with a strict `version` and `fleet.members` array. Parsing is size-capped, and each member's provider must be admitted: by default that means every provider the composition registers, because the roster lanes a continuable provider and dispatches any other provider as one delegation that settles with a result, so one fleet may mix in-harness agents with external CLI agents, and `fleetProviders` narrows the set explicitly. Launching requires a one-time approval keyed by the canonical repository path and the SHA-256 of the exact file bytes; changed bytes require fresh approval, and an admitted approval is removed.
 
 ## Replay
 
@@ -278,7 +278,7 @@ async admitRepoFleet(caller: Agent, signal: AbortSignal): Promise<RepoFleetSnaps
  * Report honest availability for every configured or registered fleet
  * provider without launching a paid or state-changing probe.
  * @param caller - exact live Team member.
- * @returns one row per provider, with ready only for continuable providers.
+ * @returns one row per provider: `ready` holds a durable lane, `one-shot` runs one delegation to a result.
  */
 fleetAvailability(caller: Agent): FleetProviderAvailability[]
 

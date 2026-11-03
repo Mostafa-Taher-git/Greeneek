@@ -193,9 +193,10 @@ export interface Config {
   readonly maxFleetConfigBytes?: number
   /**
    * Providers a fleet member may name. The empty default admits every registered
-   * provider that can hold a durable Team lane, so an added CLI adapter becomes
-   * usable without naming it here and a removed one stops being usable. A
-   * non-empty list narrows fleets to exactly those providers.
+   * provider, because the roster dispatches a continuable provider as a durable lane
+   * and any other provider as one delegation that settles with a result, so an added
+   * CLI adapter becomes usable without naming it here and a removed one stops being
+   * usable. A non-empty list narrows fleets to exactly those providers.
    */
   readonly fleetProviders?: string[]
 }

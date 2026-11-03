@@ -484,7 +484,7 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         signature: 'fleetAvailability(caller: Agent): FleetProviderAvailability[]',
         description: 'Report honest availability for every configured or registered fleet provider without launching a paid or state-changing probe.',
         parameters: [{ name: 'caller', description: 'exact live Team member.' }],
-        returns: 'one row per provider, with ready only for continuable providers.',
+        returns: 'one row per provider: `ready` holds a durable lane, `one-shot` runs one delegation to a result.',
       },
       {
         signature: 'async duplicateFleet(caller: Agent, id: string, expectedRevision: number): Promise<FleetFavoriteResult>',
@@ -4421,11 +4421,11 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'FleetProviderAvailability',
-    declaration: 'export interface FleetProviderAvailability {\n    readonly name: string;\n    readonly state: FleetProviderState;\n    readonly continuable: boolean;\n    readonly detail?: string;\n}',
+    declaration: 'export interface FleetProviderAvailability {\n    readonly name: string;\n    readonly state: FleetProviderState;\n    readonly oneShot: boolean;\n    readonly continuable: boolean;\n    readonly detail?: string;\n}',
   },
   {
     name: 'FleetProviderState',
-    declaration: 'export type FleetProviderState = \'not-installed\' | \'unauthenticated\' | \'unsupported-version\' | \'ready\' | \'temporarily-unavailable\';',
+    declaration: 'export type FleetProviderState = \'not-installed\' | \'one-shot\' | \'unauthenticated\' | \'ready\' | \'temporarily-unavailable\';',
   },
   {
     name: 'FsDirEntry',

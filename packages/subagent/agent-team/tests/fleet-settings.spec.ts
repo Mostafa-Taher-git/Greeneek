@@ -16,7 +16,7 @@ const FAVORITE: FleetFavorite = {
 }
 
 describe('fleet provider availability', () => {
-  it('distinguishes ready, unsupported, and uninstalled providers', () => {
+  it('distinguishes ready, one-shot, and uninstalled providers', () => {
     const rows = fleetProviderAvailability(
       ['spawn', 'fork', 'missing'],
       ['spawn', 'fork', 'claude-code'],
@@ -24,19 +24,19 @@ describe('fleet provider availability', () => {
     )
 
     expect(rows).toEqual([
-      expect.objectContaining({ name: 'claude-code', state: 'unsupported-version', continuable: false }),
-      expect.objectContaining({ name: 'fork', state: 'ready', continuable: true }),
-      expect.objectContaining({ name: 'missing', state: 'not-installed', continuable: false }),
-      expect.objectContaining({ name: 'spawn', state: 'ready', continuable: true }),
+      expect.objectContaining({ name: 'claude-code', state: 'one-shot', oneShot: true, continuable: false }),
+      expect.objectContaining({ name: 'fork', state: 'ready', oneShot: true, continuable: true }),
+      expect.objectContaining({ name: 'missing', state: 'not-installed', oneShot: false, continuable: false }),
+      expect.objectContaining({ name: 'spawn', state: 'ready', oneShot: true, continuable: true }),
     ])
     expect(rows.find(row => row.name === 'missing')?.detail).toContain('not registered')
-    expect(rows.find(row => row.name === 'claude-code')?.detail).toContain('durable Team lane')
+    expect(rows.find(row => row.name === 'claude-code')?.detail).toContain('holds no durable Team lane')
   })
 
   it('refuses an unavailable provider without substituting a ready one', () => {
     const rows: FleetProviderAvailability[] = [
-      { name: 'spawn', state: 'ready', continuable: true },
-      { name: 'missing', state: 'not-installed', continuable: false },
+      { name: 'spawn', state: 'ready', oneShot: true, continuable: true },
+      { name: 'missing', state: 'not-installed', oneShot: false, continuable: false },
     ]
     expect(() => { assertFavoriteProviderReady(FAVORITE.members[0]!, rows) }).not.toThrow()
     expect(() => {
@@ -45,6 +45,23 @@ describe('fleet provider availability', () => {
     expect(() => {
       assertFavoriteProviderReady({ ...FAVORITE.members[0]!, provider: 'absent' }, rows)
     }).toThrow('is not-installed')
+  })
+
+  it('admits a one-shot provider and refuses only the lane it cannot hold', () => {
+    const rows: FleetProviderAvailability[] = [
+      { name: 'spawn', state: 'ready', oneShot: true, continuable: true },
+      { name: 'claude-code', state: 'one-shot', oneShot: true, continuable: false },
+    ]
+    const member = { name: 'reviewer', description: 'review', prompt: 'review it', provider: 'claude-code' }
+    // A plain delegation and a read-only policy are both runnable one-shot.
+    expect(() => { assertFavoriteProviderReady(member, rows) }).not.toThrow()
+    expect(() => { assertFavoriteProviderReady({ ...member, readOnly: true }, rows) }).not.toThrow()
+    expect(() => {
+      assertFavoriteProviderReady({ ...member, writeScopes: ['src'] }, rows)
+    }).toThrow('is one-shot and has no durable lane to checkpoint')
+    expect(() => {
+      assertFavoriteProviderReady({ ...member, writeScopes: [] }, rows)
+    }).not.toThrow()
   })
 })
 

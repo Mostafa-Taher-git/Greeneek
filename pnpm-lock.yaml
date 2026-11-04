@@ -8333,12 +8333,21 @@ importers:
       '@greeneek/gnk-subagent':
         specifier: workspace:^
         version: link:../subagent
+      '@greeneek/gnk-subagent-acp':
+        specifier: workspace:^
+        version: link:../subagent-acp
       '@greeneek/gnk-subagent-fork-in-process':
         specifier: workspace:^
         version: link:../subagent-fork-in-process
       '@greeneek/gnk-subagent-spawn-in-process':
         specifier: workspace:^
         version: link:../subagent-spawn-in-process
+      '@greeneek/gnk-subprocess':
+        specifier: workspace:^
+        version: link:../../subprocess/subprocess
+      '@greeneek/gnk-subprocess-local':
+        specifier: workspace:^
+        version: link:../../subprocess/subprocess-local
       '@greeneek/gnk-token-meter':
         specifier: workspace:^
         version: link:../../llm/token-meter

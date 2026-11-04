@@ -77,6 +77,8 @@ A one-shot member has no inbox and no turn to steer, so sending it a message or 
 
 Every settled member reports to the Lead through the ordinary mailbox: one durable queued item addressed to the Lead, named for the member, carrying its stop reason, the roster's own reason when the run failed or was cancelled, the provider diagnostic when there was one, and the final assistant output. The report identity comes from the member, so a member cannot report twice, and an output too large for one Team message is withheld by name — its complete blocks stay on the member's durable row. Delivery is retried by mailbox recovery if the Lead could not take it, and a Lead that already received it is never steered again.
 
+A native lane and a real out-of-process agent running side by side in one Team is proven by `tests/opencode-acp-fleet.e2e.ts`, which drives OpenCode through `@greeneek/gnk-subagent-acp`, asserts the settled answer, its single Lead report, the sibling that fails at the process boundary, and cancellation reaching the child process. The suite skips with a printed reason when no OpenCode executable resolves, so a skip is never read as a pass.
+
 ### Messages between teammates
 
 Any member can send a message to any other member or to the Lead. A live member receives it immediately; an offline member's messages queue and arrive when it resumes. Messages are never lost and never delivered twice.

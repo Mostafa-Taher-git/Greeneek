@@ -86,8 +86,11 @@
     "@greeneek/gnk-settings": "workspace:^",
     "@greeneek/gnk-settings-file": "workspace:^",
     "@greeneek/gnk-subagent": "workspace:^",
+    "@greeneek/gnk-subagent-acp": "workspace:^",
     "@greeneek/gnk-subagent-fork-in-process": "workspace:^",
     "@greeneek/gnk-subagent-spawn-in-process": "workspace:^",
+    "@greeneek/gnk-subprocess": "workspace:^",
+    "@greeneek/gnk-subprocess-local": "workspace:^",
     "@greeneek/gnk-token-meter": "workspace:^",
     "@greeneek/gnk-typert-protocol": "workspace:^"
   }

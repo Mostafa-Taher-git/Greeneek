@@ -41,6 +41,25 @@ export type FleetSettingsSectionProps =
 
 type MemberPatch = { [K in keyof FleetFavoriteMember]?: FleetFavoriteMember[K] | undefined }
 
+/**
+ * Provider states a fleet member may be assigned to. `ready` holds a durable lane
+ * with mailbox, interruption, and recovery; `one-shot` runs one delegation that
+ * settles with a result, which the roster dispatches from the same registry, so a
+ * mixed fleet of in-harness lanes and external agents is editable here.
+ */
+const SELECTABLE_STATES: ReadonlySet<FleetProviderState> = new Set(['ready', 'one-shot'])
+
+/**
+ * Provider a newly added member starts on, preferring one that holds a durable lane.
+ * @param providers - availability rows loaded for this composition.
+ * @returns a selectable provider name, or the composition's `spawn` default.
+ */
+function defaultProvider(providers: readonly FleetProviderAvailability[]): string {
+  return providers.find(provider => provider.state === 'ready')?.name
+    ?? providers.find(provider => SELECTABLE_STATES.has(provider.state))?.name
+    ?? 'spawn'
+}
+
 const EMPTY_MEMBER: FleetFavoriteMember = {
   name: '',
   description: '',
@@ -121,7 +140,7 @@ function MemberEditor({ index, member, providers, t, onChange, onRemove }: {
             ? null
             : <option value={member.provider}>{member.provider} — {t('fleet.state.notInstalled')}</option>}
           {providers.map(provider => (
-            <option key={provider.name} value={provider.name} disabled={provider.state !== 'ready'}>
+            <option key={provider.name} value={provider.name} disabled={!SELECTABLE_STATES.has(provider.state)}>
               {provider.name} — {t(STATE_KEYS[provider.state])}
             </option>
           ))}
@@ -220,7 +239,7 @@ export function FleetSettingsSection({
   }
 
   const openNew = (): void => {
-    setDraft({ id: '', name: '', members: [{ ...EMPTY_MEMBER, provider: providers.find(p => p.state === 'ready')?.name ?? 'spawn' }] })
+    setDraft({ id: '', name: '', members: [{ ...EMPTY_MEMBER, provider: defaultProvider(providers) }] })
     setNotice(null)
   }
 

@@ -554,6 +554,76 @@ function approvalStub(ctx: Context, outcome: 'allowed-once' | 'rejected' | 'canc
   return requests
 }
 
+describe('gnk-tool-team provider selection', () => {
+  it('dispatches a named provider and keeps the configured default when none is named', async () => {
+    const { ctx, lead } = await setup([textResponse('unused')])
+    const spawn = vi.spyOn(ctx.agentTeams, 'spawnTeammate').mockResolvedValue({
+      member: { id: 'provider-child', name: 'external', role: 'teammate', status: 'running', diagnostics: [] },
+    } as never)
+
+    const named = await execute(ctx, lead, 'spawn_teammate', {
+      name: 'external',
+      description: 'one delegation to an external agent',
+      prompt: 'answer once',
+      provider: 'fork',
+    })
+    expect(named.isError, text(named)).toBe(false)
+    expect(spawn).toHaveBeenCalledWith(lead, expect.objectContaining({ context: 'fresh', provider: 'fork' }))
+
+    const defaulted = await execute(ctx, lead, 'spawn_teammate', {
+      name: 'defaulted',
+      description: 'uses the composition default',
+      prompt: 'stay available',
+    })
+    expect(defaulted.isError, text(defaulted)).toBe(false)
+    expect(spawn).toHaveBeenLastCalledWith(lead, expect.objectContaining({ context: 'fresh', provider: 'spawn' }))
+
+    const forked = await execute(ctx, lead, 'spawn_teammate', {
+      name: 'inheriting',
+      description: 'inherits the completed Lead turns',
+      prompt: 'continue',
+      context: 'fork',
+    })
+    expect(forked.isError, text(forked)).toBe(false)
+    expect(spawn).toHaveBeenLastCalledWith(lead, expect.objectContaining({ context: 'fork', provider: 'fork' }))
+  })
+
+  it('refuses a provider this composition does not register before any teammate exists', async () => {
+    const { ctx, lead } = await setup([textResponse('unused')])
+    const spawn = vi.spyOn(ctx.agentTeams, 'spawnTeammate')
+
+    const refused = await execute(ctx, lead, 'spawn_teammate', {
+      name: 'ghost',
+      description: 'unregistered provider',
+      prompt: 'answer once',
+      provider: 'no-such-cli',
+    })
+    expect(refused.isError).toBe(true)
+    expect(text(refused)).toContain('provider "no-such-cli" is not registered in this composition')
+    expect(text(refused)).toContain('spawn')
+    expect(spawn).not.toHaveBeenCalled()
+    expect(ctx.agentTeams.listMembers(lead)).toHaveLength(1)
+  })
+
+  it('launches one approved fleet whose members name different providers', async () => {
+    const { ctx, lead } = await setup(['hang', 'hang'])
+    const requests = approvalStub(ctx, 'allowed-once')
+
+    const result = await execute(ctx, lead, 'spawn_fleet', {
+      members: [
+        { name: 'native', description: 'holds the lane', prompt: 'stay available' },
+        { name: 'coder', description: 'external work', prompt: 'answer once', provider: 'fork' },
+      ],
+    })
+    expect(result.isError, text(result)).toBe(false)
+    expect(requests).toHaveLength(1)
+    expect(requests[0]?.reason).toContain('native — provider=spawn')
+    expect(requests[0]?.reason).toContain('coder — provider=fork')
+    expect(ctx.agentTeams.listMembers(lead).filter(member => member.role === 'teammate').map(member => `${member.name}:${member.provider}`))
+      .toEqual(['native:spawn', 'coder:fork'])
+  })
+})
+
 describe('gnk-tool-team fleet confirmation', () => {
   it('shows every member field and creates nothing when the confirmation is declined', async () => {
     const { ctx, lead } = await setup([textResponse('unused')])

@@ -100,6 +100,7 @@ const FLEET_MEMBER_SCHEMA = {
     prompt: { type: 'string', required: true },
     context: { type: 'string', enum: ['fresh', 'fork'] },
     preset: { type: 'string' },
+    provider: { type: 'string' },
     model: { type: 'string' },
     reasoning_effort: { type: 'string' },
     read_only: { type: 'boolean' },
@@ -230,6 +231,7 @@ interface FleetMemberArgs {
   readonly description: string
   readonly prompt: string
   readonly context?: 'fresh' | 'fork'
+  readonly provider?: string
   readonly preset?: string
   readonly model?: string
   readonly reasoning_effort?: string
@@ -243,14 +245,45 @@ type FleetProposal = Omit<SpawnTeammateRequest, 'signal'>
 
 const MEMBER_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u
 
+/** Resolves one teammate's provider from a requested name and its context. */
+type ProviderChoice = (requested: string | undefined, context: 'fresh' | 'fork') => string
+
+/**
+ * Choose the provider one teammate runs on. An omitted choice keeps the
+ * composition's configured default for its context; a named provider must be
+ * registered here, because the roster would otherwise reserve a teammate name on
+ * a child that cannot start.
+ * @param ctx - context owning the Team service and its provider registry.
+ * @param caller - exact live Team Lead requesting the teammate.
+ * @param config - configured default providers for fresh and fork contexts.
+ * @returns a resolver giving the provider name, or refusing before any child exists.
+ */
+function providerSelector(
+  ctx: Context,
+  caller: Agent,
+  config: Required<Config>,
+): ProviderChoice {
+  return (requested, context) => {
+    if (requested === undefined) return context === 'fork' ? config.forkProvider : config.freshProvider
+    const rows = ctx.agentTeams.fleetAvailability(caller)
+    if (!rows.some(row => row.name === requested)) {
+      throw new TeamError(
+        `provider "${requested}" is not registered in this composition; this Team can dispatch on ${rows.map(row => row.name).join(', ')}`,
+        'TEAM_PROVIDER_UNAVAILABLE',
+      )
+    }
+    return requested
+  }
+}
+
 /**
  * Validate and normalize every member before the approval card is shown, so a
  * rejection never happens after the user already consented to a partial fleet.
  * @param members - member field sets from the tool call.
- * @param config - configured in-process provider names.
+ * @param selectProvider - resolves a named provider or the context's configured default.
  * @returns admitted proposals in request order.
  */
-function fleetProposals(members: readonly FleetMemberArgs[], config: Required<Config>): FleetProposal[] {
+function fleetProposals(members: readonly FleetMemberArgs[], selectProvider: ProviderChoice): FleetProposal[] {
   if (members.length === 0) {
     throw new TeamError('a fleet needs at least one member', 'TEAM_INVALID_ARGUMENT')
   }
@@ -280,7 +313,7 @@ function fleetProposals(members: readonly FleetMemberArgs[], config: Required<Co
       description: member.description,
       prompt: [{ type: 'text' as const, text: member.prompt }],
       context,
-      provider: context === 'fork' ? config.forkProvider : config.freshProvider,
+      provider: selectProvider(member.provider, context),
       ...member.preset === undefined ? {} : { agentPreset: member.preset },
       ...agentOptions === undefined ? {} : { agentOptions },
       ...member.read_only === undefined ? {} : { readOnly: member.read_only },
@@ -355,6 +388,10 @@ function install(agent: Agent, ctx: Context, config: Required<Config>): () => vo
           enum: ['fresh', 'fork'],
           description: 'fresh starts without Lead history; fork inherits completed Lead turns. Defaults to fresh.',
         },
+        provider: {
+          type: 'string',
+          description: 'Delegation provider this teammate runs on, taken from the providers this composition registers. Omitted uses the configured default for the context. A provider with no continuable lane runs exactly one delegation that settles with a result, so it receives no messages, no follow-up, and cannot be interrupted; it also cannot hold write_scopes.',
+        },
         preset: {
           type: 'string',
           description: 'Agent preset the lane composes from (for example standard or instructor); omitted inherits the Lead composition.',
@@ -386,7 +423,7 @@ function install(agent: Agent, ctx: Context, config: Required<Config>): () => vo
           description: args.description,
           prompt: [{ type: 'text', text: args.prompt }],
           context,
-          provider: context === 'fork' ? config.forkProvider : config.freshProvider,
+          provider: providerSelector(ctx, agent, config)(args.provider, context),
           ...args.preset !== undefined ? { agentPreset: args.preset } : {},
           ...agentOptions === undefined ? {} : { agentOptions },
           ...args.cwd !== undefined ? { cwd: args.cwd } : {},
@@ -408,7 +445,7 @@ function install(agent: Agent, ctx: Context, config: Required<Config>): () => vo
       output: jsonOutput(FLEET_VALUE_SCHEMA),
       async execute(args, exec) {
         const agent = callingAgent(exec.agent, 'spawn_fleet')
-        const proposals = fleetProposals(args.members, config)
+        const proposals = fleetProposals(args.members, providerSelector(ctx, agent, config))
         const approval = ctx.get('approval')
         if (approval === undefined) {
           throw new TeamError(

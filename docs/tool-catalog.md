@@ -2078,6 +2078,9 @@ Create several teammates after one explicit user approval card. The card lists e
           "preset": {
             "type": "string"
           },
+          "provider": {
+            "type": "string"
+          },
           "model": {
             "type": "string"
           },
@@ -2140,6 +2143,10 @@ Create one named, durable teammate. Only the Team Lead may call this tool.
         "fresh",
         "fork"
       ]
+    },
+    "provider": {
+      "type": "string",
+      "description": "Delegation provider this teammate runs on, taken from the providers this composition registers. Omitted uses the configured default for the context. A provider with no continuable lane runs exactly one delegation that settles with a result, so it receives no messages, no follow-up, and cannot be interrupted; it also cannot hold write_scopes."
     },
     "preset": {
       "type": "string",

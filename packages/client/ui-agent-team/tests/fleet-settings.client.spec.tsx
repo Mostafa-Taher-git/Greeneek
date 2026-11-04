@@ -127,6 +127,36 @@ describe('fleet settings section', () => {
     expect(await view.findByText('1 member(s)')).toBeDefined()
   })
 
+  it('offers a one-shot provider as a member and keeps an uninstalled one disabled', async () => {
+    const { view } = setup()
+    await view.findByText('Provider availability')
+    fireEvent.click(view.getByRole('button', { name: 'New fleet' }))
+
+    const select = view.getByLabelText('Provider') as HTMLSelectElement
+    const option = (name: string): HTMLOptionElement | null => select.querySelector(`option[value="${name}"]`)
+    // A registered provider without a durable lane can still be a fleet member: it runs
+    // one delegation to a result. Only a provider this composition does not register
+    // stays unselectable, because the launcher would refuse it.
+    expect(option('claude-code')?.disabled).toBe(false)
+    expect(option('claude-code')?.textContent).toContain('One-shot only')
+    expect(option('absent-cli')?.disabled).toBe(true)
+    fireEvent.change(select, { target: { value: 'claude-code' } })
+    expect(select.value).toBe('claude-code')
+  })
+
+  it('defaults a new member to the first selectable provider when no provider holds a lane', async () => {
+    const { view } = setup('en', { providers: PROVIDERS.filter(provider => provider.state !== 'ready') })
+    await view.findByText('Provider availability')
+    fireEvent.click(view.getByRole('button', { name: 'New fleet' }))
+    expect((view.getByLabelText('Provider') as HTMLSelectElement).value).toBe('claude-code')
+  })
+
+  it('falls back to the composition default provider before availability has loaded', async () => {
+    const { view } = setup('en', { providers: [] })
+    fireEvent.click(view.getByRole('button', { name: 'New fleet' }))
+    expect((view.getByLabelText('Provider') as HTMLSelectElement).value).toBe('spawn')
+  })
+
   it('echoes each member before launch and starts nothing on cancel', async () => {
     const { view, launch } = setup()
     fireEvent.click(await view.findByRole('button', { name: 'Launch' }))

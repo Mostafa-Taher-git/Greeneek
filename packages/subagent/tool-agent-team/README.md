@@ -49,13 +49,13 @@ The smallest addition to an existing composition is the two-package fragment fro
 
 The generated [configuration catalog](../../../docs/config-catalog.md#greeneekgnk-tool-agent-team) is the exhaustive source for every accepted field and its JSDoc.
 
-Try it by asking the Lead model: "create a teammate named reviewer to check the diff, then send reviewer the change summary". The model calls the creation tool and then the messaging tool.
+Try it by asking the Lead model: "create a teammate named reviewer to check the diff, then send reviewer the change summary". The model calls the creation tool and then the messaging tool. To run a teammate on a different provider, name one that this composition registers: "create a teammate named coder that runs on the opencode provider". An omitted provider keeps the configured default for the context, and an unregistered name is refused before any teammate is created, listing what this Team can dispatch on.
 
 ### What the model can do
 
 The thirteen tools group into six capabilities:
 
-- **Create a teammate** — `spawn_teammate` takes a name, a description, and the initial task, with optional preset, model, reasoning effort, checkout, read-only flag, write scopes, and token ceiling; only the Lead can call it.
+- **Create a teammate** — `spawn_teammate` takes a name, a description, and the initial task, with optional provider, preset, model, reasoning effort, checkout, read-only flag, write scopes, and token ceiling; only the Lead can call it. The provider must be registered in this composition, and one with no continuable lane runs exactly one delegation that settles with a result, so it takes no messages, no follow-up, no interruption, and no write scopes.
 - **Create a fleet** — `spawn_fleet` validates every member, shows one approval card that echoes each member's provider, context, preset, model, effort, token budget, and write capability, then spawns only after an `allowed-once` decision. A rejection, cancellation, timeout, or missing approval capability creates zero children and zero worktrees.
 - **Lanes** — `checkpoint_lane` stores the exact reviewed patch and hash; `integrate_lane` applies that patch to a clean primary checkout, runs gates, commits, and removes the lane; `discard_lane` checkpoints then removes a lane. Only the Lead can call them, and a failed merge halts the queue.
 - **Send messages** — `send_message` steers a running member at its nearest step boundary, starts an idle member, and cold-resumes an inactive teammate.

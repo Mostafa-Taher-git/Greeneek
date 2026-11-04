@@ -69,6 +69,7 @@
     "@greeneek/gnk-session-reference": "workspace:^",
     "@greeneek/gnk-skill": "workspace:^",
     "@greeneek/gnk-skill-filesystem": "workspace:^",
+    "@greeneek/gnk-subagent-acp": "workspace:^",
     "@greeneek/gnk-terminal": "workspace:^",
     "@greeneek/gnk-terminal-bash": "workspace:^",
     "@greeneek/gnk-time-context": "workspace:^",

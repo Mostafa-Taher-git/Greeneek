@@ -1,0 +1,25 @@
+# Opt-in reference for OpenCode as a Team or subagent provider, verified against
+# OpenCode CLI 2.2.4. Install the `opencode` executable and sign in with
+# `opencode auth` first; GNK starts the child but never runs a package manager or
+# reads OpenCode's credential store.
+#
+# The row reuses the shipped generic ACP provider, so no ACP code is duplicated:
+# `opencode acp` answers `initialize` with `protocolVersion: 1` and
+# `agentCapabilities.loadSession: true`. That answer is OpenCode's claim, not a
+# Greeneek lifecycle. `@greeneek/gnk-subagent-acp` drives one prompt per run and
+# registers no continuable start path, so this provider is admitted as a one-shot
+# Team member and the roster never books it a durable lane, a mailbox, or an
+# interrupt target.
+#
+# `permission: reject` is the safe default because no human sees the child's
+# prompt; `allow` accepts the child's own `allow_once` or `allow_always` option.
+# Omit `cwd` so each child runs in the delegating session's workspace.
+
+- insert:
+    - id: subagent-opencode
+      name: '@greeneek/gnk-subagent-acp'
+      config:
+        providerName: opencode
+        command: opencode
+        args: [acp]
+        permission: reject

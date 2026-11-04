@@ -1,0 +1,28 @@
+# Opt-in reference for KiloCode as a Team or subagent provider, verified against
+# KiloCode CLI 7.8.18. Install the `kilo` executable and sign in first; GNK starts
+# the child but never runs a package manager or reads Kilo's credential store.
+#
+# The row reuses the shipped generic ACP provider, so no ACP code is duplicated:
+# `kilo acp` answers `initialize` with `protocolVersion: 1`,
+# `agentCapabilities.loadSession: true`, and `mcpCapabilities.sse: true`. That
+# answer is Kilo's claim, not a Greeneek lifecycle. `@greeneek/gnk-subagent-acp`
+# drives one prompt per run and registers no continuable start path, so this
+# provider is admitted as a one-shot Team member and the roster never books it a
+# durable lane, a mailbox, or an interrupt target.
+#
+# Kilo model routes are account state, not integration state. A Kilo Gateway
+# account with zero credits answers `Payment Required` with `"balance": 0`, so a
+# task needs gateway credits or another configured provider; Kilo model ids take
+# the form `kilo/<provider>/<model>`.
+#
+# `permission: reject` is the safe default because no human sees the child's
+# prompt. Omit `cwd` so each child runs in the delegating session's workspace.
+
+- insert:
+    - id: subagent-kilocode
+      name: '@greeneek/gnk-subagent-acp'
+      config:
+        providerName: kilocode
+        command: kilo
+        args: [acp]
+        permission: reject

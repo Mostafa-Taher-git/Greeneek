@@ -249,6 +249,9 @@ importers:
       '@greeneek/gnk-skill-filesystem':
         specifier: workspace:^
         version: link:../../packages/skill/skill-filesystem
+      '@greeneek/gnk-subagent-acp':
+        specifier: workspace:^
+        version: link:../../packages/subagent/subagent-acp
       '@greeneek/gnk-terminal':
         specifier: workspace:^
         version: link:../../packages/terminal/terminal

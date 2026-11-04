@@ -1,0 +1,37 @@
+# Opt-in reference for Hermes Agent as a Team or subagent provider, verified
+# against Hermes Agent v0.19.0 (2026.9.24 stable build, install method `git`).
+# Install Hermes and configure a provider first — `hermes acp --check` reports
+# whether the ACP adapter is importable, and `hermes setup` or the `hermes auth`
+# pool configures model credentials. GNK starts the child and never runs a
+# package manager, a setup wizard, or a credential read.
+#
+# The row reuses the shipped generic ACP provider, so no ACP code is duplicated:
+# `hermes acp` answers `initialize` with `protocolVersion: 1` and
+# `agentCapabilities: { loadSession: true, promptCapabilities: { image: true },
+# sessionCapabilities: { fork, list, resume } }`. Those are Hermes' own claims.
+# `@greeneek/gnk-subagent-acp` drives one prompt per run and registers no
+# continuable start path, so this provider is admitted as a one-shot Team member
+# and the roster never books it a durable lane, a mailbox, or an interrupt
+# target. Hermes persists its own sessions regardless (`hermes sessions list`),
+# which is storage on the child side, not a Greeneek continuation.
+#
+# `permission: reject` is the safe default because no human sees the child's
+# prompt; `allow` accepts the child's own allow options. Omit `cwd` so each child
+# runs in the delegating session's workspace. Hermes prints plugin-discovery and
+# dotenv diagnostics on standard error, which the provider inherits to the parent
+# stream; that noise is not a run failure.
+#
+# Task execution through Hermes is unverified: on a host whose pooled
+# credentials were `moa`, `nvidia`, `opencode-zen`, and `openrouter`, one-shot
+# runs returned `HTTP 401: User not found` for the `moa` and `openrouter` routes
+# and `HTTP 404: 404 page not found` for the `nvidia` route, so a working provider
+# credential is required before a Hermes member can complete a task.
+
+- insert:
+    - id: subagent-hermes
+      name: '@greeneek/gnk-subagent-acp'
+      config:
+        providerName: hermes
+        command: hermes
+        args: [acp]
+        permission: reject

@@ -75,6 +75,36 @@ const STATE_KEYS = {
   'temporarily-unavailable': 'fleet.state.unavailable',
 } as const satisfies Record<FleetProviderState, TeamKey>
 
+/**
+ * Execution modes a provider genuinely supports, in Greeneek's own names.
+ *
+ * Harmony is the persistent continuable Agent Lane and Melody is one independent
+ * delegation that settles with a result; neither is a provider. The pair comes from
+ * the capability the adapter implements — a session id or an ACP handshake never
+ * sets Harmony — and a continuable start always also answers a single delegation,
+ * because the lane is built on that same start path.
+ * @param provider - one registered provider's availability row.
+ * @returns the locale key naming that row's supported modes.
+ */
+function modesKey(provider: FleetProviderAvailability): TeamKey {
+  return provider.continuable ? 'fleet.modes.both' : 'fleet.modes.melody'
+}
+
+/**
+ * Label one provider row carries.
+ *
+ * A usable provider is distinguished by the modes it supports, because that is the
+ * difference a fleet editor decision turns on; any other row states why it is not
+ * usable instead, so status and modes never repeat each other.
+ * @param provider - one availability row from the live registry.
+ * @returns the locale key to render for that row.
+ */
+function rowKey(provider: FleetProviderAvailability): TeamKey {
+  return provider.state === 'ready' || provider.state === 'one-shot'
+    ? modesKey(provider)
+    : STATE_KEYS[provider.state]
+}
+
 /** Render one caught value as a message for an inline notice. */
 export function errorText(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
@@ -141,7 +171,7 @@ function MemberEditor({ index, member, providers, t, onChange, onRemove }: {
             : <option value={member.provider}>{member.provider} — {t('fleet.state.notInstalled')}</option>}
           {providers.map(provider => (
             <option key={provider.name} value={provider.name} disabled={!SELECTABLE_STATES.has(provider.state)}>
-              {provider.name} — {t(STATE_KEYS[provider.state])}
+              {provider.name} — {t(rowKey(provider))}
             </option>
           ))}
         </select>
@@ -315,7 +345,7 @@ export function FleetSettingsSection({
         {providers.length > 0 && (
           <ul className={css.providers}>
             {providers.map(provider => (
-              <li key={provider.name} data-state={provider.state}>{provider.name} — {t(STATE_KEYS[provider.state])}</li>
+              <li key={provider.name} data-state={provider.state}>{provider.name} — {t(rowKey(provider))}</li>
             ))}
           </ul>
         )}
@@ -334,11 +364,12 @@ export function FleetSettingsSection({
       </header>
 
       <h3 className={css.subtitle}>{t('fleet.availability')}</h3>
+      <p className={css.description}>{t('fleet.modes.help')}</p>
       <ul className={css.providers} aria-label={t('fleet.availability')}>
         {providers.map(provider => (
           <li key={provider.name} data-state={provider.state}>
             <strong>{provider.name}</strong>
-            <span>{t(STATE_KEYS[provider.state])}</span>
+            <span>{t(rowKey(provider))}</span>
             {provider.detail !== undefined && <small>{provider.detail}</small>}
           </li>
         ))}

@@ -114,17 +114,28 @@ const SCOPED: FleetFavorite = {
 }
 
 describe('fleet settings section', () => {
-  it('renders provider availability and each saved favorite', async () => {
+  it('names each provider by the execution modes it really supports', async () => {
     const { view } = setup()
 
     expect(await view.findByText('Provider availability')).toBeDefined()
-    expect((await view.findAllByText('spawn')).length).toBeGreaterThan(0)
+    // Harmony and Melody replace the old `fork`/`spawn` vocabulary, and the
+    // distinction is the provider's own capability: the in-process pair holds a lane,
+    // a registered external adapter runs one delegation to a result.
+    expect(await view.findByText('Harmony and Melody')).toBeDefined()
+    expect(await view.findByText('Melody only')).toBeDefined()
     expect(await view.findByText('Not installed')).toBeDefined()
-    // A registered provider without a durable lane is named as one-shot rather than
-    // as an unsupported version: its members run, they just cannot be steered.
-    expect(await view.findByText('One-shot only')).toBeDefined()
+    expect(await view.findByText(/Both are execution modes, not providers/u)).toBeDefined()
     expect(await view.findByText('Review fleet')).toBeDefined()
     expect(await view.findByText('1 member(s)')).toBeDefined()
+
+    // A mode is never offered as a provider, in the list or in the member selector.
+    await view.findByText('Provider availability')
+    fireEvent.click(view.getByRole('button', { name: 'New fleet' }))
+    const select = view.getByLabelText('Provider') as HTMLSelectElement
+    expect(select.querySelector('option[value="Harmony and Melody"]')).toBeNull()
+    expect(select.querySelector('option[value="Melody only"]')).toBeNull()
+    expect(select.querySelector('option[value="spawn"]')?.textContent).toContain('Harmony and Melody')
+    expect(select.querySelector('option[value="claude-code"]')?.textContent).toContain('Melody only')
   })
 
   it('offers a one-shot provider as a member and keeps an uninstalled one disabled', async () => {
@@ -138,7 +149,7 @@ describe('fleet settings section', () => {
     // one delegation to a result. Only a provider this composition does not register
     // stays unselectable, because the launcher would refuse it.
     expect(option('claude-code')?.disabled).toBe(false)
-    expect(option('claude-code')?.textContent).toContain('One-shot only')
+    expect(option('claude-code')?.textContent).toContain('Melody only')
     expect(option('absent-cli')?.disabled).toBe(true)
     fireEvent.change(select, { target: { value: 'claude-code' } })
     expect(select.value).toBe('claude-code')

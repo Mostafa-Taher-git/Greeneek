@@ -92,6 +92,9 @@ export const zh = {
   'fleet.state.oneShot': '仅一次性执行',
   'fleet.state.ready': '就绪',
   'fleet.state.unavailable': '暂时不可用',
+  'fleet.modes.both': 'Harmony 与 Melody',
+  'fleet.modes.melody': '仅 Melody',
+  'fleet.modes.help': 'Harmony 是持久的队友车道，保留信箱、后续操作与恢复；Melody 是一次委派并以其结果收尾。两者是执行模式，不是 provider。',
 } satisfies Record<string, string>
 
 /** Agent Teams locale key union. */
@@ -186,6 +189,9 @@ export const en = {
   'fleet.state.oneShot': 'One-shot only',
   'fleet.state.ready': 'Ready',
   'fleet.state.unavailable': 'Temporarily unavailable',
+  'fleet.modes.both': 'Harmony and Melody',
+  'fleet.modes.melody': 'Melody only',
+  'fleet.modes.help': 'Harmony is a persistent teammate lane that keeps its mailbox, follow-up, and recovery. Melody is one delegation that settles with a result. Both are execution modes, not providers.',
 } satisfies Record<TeamKey, string>
 
 /** Arabic dictionary checked against the Chinese key set. */
@@ -277,4 +283,7 @@ export const ar = {
   'fleet.state.oneShot': 'فقط یک‌بار اجرا',
   'fleet.state.ready': 'جاهز',
   'fleet.state.unavailable': 'غير متاح مؤقتًا',
+  'fleet.modes.both': 'Harmony و Melody',
+  'fleet.modes.melody': 'Melody فقط',
+  'fleet.modes.help': 'Harmony مسار دائم للزميل يحتفظ بالبريد والمتابعة والاستعادة؛ Melody تفويض واحد ينتج بنتيجة. كلاهما وضع تنفيذ وليس مزوّدًا.',
 } satisfies Record<TeamKey, string>

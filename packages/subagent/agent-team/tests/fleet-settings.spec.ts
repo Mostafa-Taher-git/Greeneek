@@ -30,7 +30,7 @@ describe('fleet provider availability', () => {
       expect.objectContaining({ name: 'spawn', state: 'ready', oneShot: true, continuable: true }),
     ])
     expect(rows.find(row => row.name === 'missing')?.detail).toContain('not registered')
-    expect(rows.find(row => row.name === 'claude-code')?.detail).toContain('holds no durable Team lane')
+    expect(rows.find(row => row.name === 'claude-code')?.detail).toContain('holds no Harmony lane')
   })
 
   it('refuses an unavailable provider without substituting a ready one', () => {
@@ -58,7 +58,7 @@ describe('fleet provider availability', () => {
     expect(() => { assertFavoriteProviderReady({ ...member, readOnly: true }, rows) }).not.toThrow()
     expect(() => {
       assertFavoriteProviderReady({ ...member, writeScopes: ['src'] }, rows)
-    }).toThrow('is one-shot and has no durable lane to checkpoint')
+    }).toThrow('runs Melody and has no Harmony lane to checkpoint')
     expect(() => {
       assertFavoriteProviderReady({ ...member, writeScopes: [] }, rows)
     }).not.toThrow()

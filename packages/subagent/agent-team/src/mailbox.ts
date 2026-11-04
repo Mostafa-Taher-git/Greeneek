@@ -363,7 +363,8 @@ export class TeamMailbox {
 
   /**
    * Build one settled member's report content: who finished, how it ended, and what
-   * it produced.
+   * it produced. The report names the Melody execution mode rather than the stored
+   * `mode` value, which stays `one-shot` on the roster row.
    * @param member - settled roster row.
    * @param withholdOutput - drop the output blocks and name their place of record, used
    * when the full output cannot fit one Team message.
@@ -374,7 +375,7 @@ export class TeamMailbox {
     return [
       {
         type: 'text',
-        text: `one-shot teammate "${member.name}" settled with stop reason "${member.result.stopReason}"`
+        text: `Melody teammate "${member.name}" settled with stop reason "${member.result.stopReason}"`
           + ` on provider "${member.provider}".`,
       },
       ...(member.result.diagnostic === undefined

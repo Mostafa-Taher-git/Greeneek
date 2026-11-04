@@ -2237,7 +2237,7 @@ describe('One-shot members', () => {
     await expect(ctx.agentTeams.sendMessage(lead, {
       target: 'held', content: content('follow up'), signal: SIGNAL,
     })).rejects.toMatchObject({ code: 'TEAM_MEMBER_NOT_INTERACTIVE' })
-    expect(() => ctx.agentTeams.interrupt(lead, 'held')).toThrow(/runs one-shot/)
+    expect(() => ctx.agentTeams.interrupt(lead, 'held')).toThrow(/runs Melody/)
 
     settled.resolve({ output: content('late'), stopReason: 'completed' })
     await vi.waitFor(() => { expect(rowOf(ctx, lead, 'held')?.phase).toBe('completed') }, { timeout: 5_000 })
@@ -2282,7 +2282,7 @@ describe('One-shot members', () => {
         phase: 'completed',
         result: { stopReason: 'timeout' },
       })
-      expect(String(rowOf(ctx, lead, 'stalled')?.error)).toContain('exceeded its 5000ms budget')
+      expect(String(rowOf(ctx, lead, 'stalled')?.error)).toContain('Melody member "stalled" exceeded its 5000ms budget')
       // The expiry cancels the run at its source, not merely the local wait.
       expect(provider.signal()?.aborted).toBe(true)
       expect(provider.dispositions).toHaveLength(1)
@@ -2426,7 +2426,7 @@ describe('One-shot members', () => {
     await expect(ctx.agentTeams.sendMessage(lead, {
       target: 'legacy', content: content('queued for a lane'), signal: SIGNAL,
     })).resolves.toMatchObject({ status: 'queued' })
-    expect(() => ctx.agentTeams.interrupt(lead, 'legacy')).not.toThrow(/runs one-shot/u)
+    expect(() => ctx.agentTeams.interrupt(lead, 'legacy')).not.toThrow(/runs Melody/u)
   })
 
   it('reports a settlement whose first durable write is refused', async () => {
@@ -2499,7 +2499,9 @@ describe('One-shot members', () => {
     const id = await waitReceipt(ctx, lead, 'reporter')
     const receipt = leadReceipts(lead).find(candidate => candidate.id === id)!
     expect(receipt.sender).toBe('reporter')
-    expect(receipt.text).toContain('one-shot teammate "reporter" settled with stop reason "completed" on provider "ext-report".')
+    expect(receipt.text).toContain('Melody teammate "reporter" settled with stop reason "completed" on provider "ext-report".')
+    // The user-facing name is vocabulary only: the durable row keeps the stored mode.
+    expect(rowOf(ctx, lead, 'reporter')?.mode).toBe('one-shot')
     expect(receipt.text).toContain('Final assistant output:')
     expect(receipt.text).toContain('cli answer')
     expect(durable(lead).pendingMessages).toEqual([])
@@ -2541,7 +2543,7 @@ describe('One-shot members', () => {
       const timedOut = leadReceipts(first.lead)
         .find(receipt => receipt.id === timedOutId)
       expect(timedOut?.text).toContain('settled with stop reason "timeout"')
-      expect(timedOut?.text).toContain('roster recorded: one-shot member "slow" exceeded its 5000ms budget and was cancelled')
+      expect(timedOut?.text).toContain('roster recorded: Melody member "slow" exceeded its 5000ms budget and was cancelled')
 
       const second = await setup(['hang'])
       const finished = Promise.withResolvers<SubagentResult>()
@@ -2657,6 +2659,24 @@ describe('One-shot members', () => {
     expect(lane.member.role).toBe('teammate')
   })
 
+  it('names every Lead-visible and model-visible Team string in Harmony and Melody', async () => {
+    const { ctx, lead } = await setup([])
+    oneShot(ctx, 'ext-terms')
+    await expect(spawnOneShot(ctx, lead, 'budgeted', 'spawn', { timeoutMs: 1_000 }))
+      .rejects.toThrow('timeoutMs applies to a Melody member; interrupt a Harmony teammate instead')
+    await expect(spawnOneShot(ctx, lead, 'isolated', 'ext-terms', { writeScopes: ['src'] }))
+      .rejects.toThrow('a Melody member has no Harmony lane to checkpoint')
+
+    await spawnOneShot(ctx, lead, 'runner', 'ext-terms')
+    const id = await waitReceipt(ctx, lead, 'runner')
+    const text = leadReceipts(lead).find(candidate => candidate.id === id)!.text
+    // The report the Lead reads carries the mode name and none of the retired internal
+    // vocabulary, while the roster row keeps the stored value the projection validates.
+    expect(text).toContain('Melody teammate "runner" settled with stop reason "completed"')
+    expect(text).not.toContain('one-shot')
+    expect(rowOf(ctx, lead, 'runner')?.mode).toBe('one-shot')
+  })
+
   it('launches one fleet that mixes a continuable lane with a one-shot CLI-style member', async () => {
     const settingsRoot = mkdtempSync(join(tmpdir(), 'gnk-team-mixed-fleet-'))
     roots.push(settingsRoot)
@@ -2694,7 +2714,7 @@ describe('One-shot members', () => {
     // member stays live and usable.
     const cliReport = await waitReceipt(ctx, lead, 'cli')
     const reportText = leadReceipts(lead).find(candidate => candidate.id === cliReport)!.text
-    expect(reportText).toContain('one-shot teammate "cli" settled with stop reason "completed"')
+    expect(reportText).toContain('Melody teammate "cli" settled with stop reason "completed"')
     expect(reportText).toContain('cli answer')
 
     // The settled one-shot is terminal and inert in the roster, while the lane

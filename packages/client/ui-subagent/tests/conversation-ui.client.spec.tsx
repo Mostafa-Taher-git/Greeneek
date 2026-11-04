@@ -10,7 +10,7 @@ import {
   SubagentHeaderLineage, type SubagentHeaderLineageProps,
 } from '../src/client/SubagentHeaderLineage.tsx'
 import { SubagentReadOnlyComposer } from '../src/client/SubagentReadOnlyComposer.tsx'
-import { zh } from '../src/client/locales.ts'
+import { ar, en, zh } from '../src/client/locales.ts'
 
 afterEach(() => {
   cleanup()
@@ -155,8 +155,8 @@ describe('SubagentHeaderLineage', () => {
 
     expect(input.setCatalogOpen).toHaveBeenCalledWith(PARENT, true)
     expect(screen.getAllByRole('treeitem')).toHaveLength(3)
-    expect(screen.getByText('正在扫描项目文件 · 可继续 · 正在运行')).toBeTruthy()
-    expect(screen.getByText('一次性 · 当前未运行')).toBeTruthy()
+    expect(screen.getByText('正在扫描项目文件 · Harmony · 正在运行')).toBeTruthy()
+    expect(screen.getByText('Melody · 当前未运行')).toBeTruthy()
     const diagnostic = screen.getByRole('treeitem', { name: /会话记录损坏/ })
     expect(diagnostic.getAttribute('aria-disabled')).toBe('true')
     expect(screen.getByRole('button', { name: '展开 worker 的下级子代理' })).toBeTruthy()
@@ -826,8 +826,20 @@ describe('SubagentReadOnlyComposer', () => {
     expect(screen.getByRole('status').textContent).toContain('父会话当前不在线')
   })
 
-  it('explains that one-shot histories never accept follow-ups', () => {
+  it('explains that Melody histories never accept follow-ups', () => {
     render(<SubagentReadOnlyComposer matched={{ reason: 'one-shot' }} t={t} />)
-    expect(screen.getByRole('status').textContent).toContain('一次性任务不支持后续消息')
+    expect(screen.getByRole('status').textContent).toContain('Melody 任务不支持后续消息')
+  })
+
+  // The approved mode names are the only user-facing vocabulary in every shipped
+  // locale; the `reason` and `mode` values the components switch on stay internal.
+  it('names both modes with the approved vocabulary in every locale', () => {
+    for (const dictionary of [zh, en, ar]) {
+      expect([dictionary['mode.continuable'], dictionary['mode.oneShot']]).toEqual(['Harmony', 'Melody'])
+      expect(dictionary['readonly.oneShot.title']).toContain('Melody')
+    }
+    render(<SubagentReadOnlyComposer matched={{ reason: 'one-shot' }} t={makeTranslate(en)} />)
+    expect(screen.getByRole('status').textContent)
+      .toContain('Melody tasks do not accept follow-ups')
   })
 })

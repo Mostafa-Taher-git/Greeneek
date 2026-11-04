@@ -33,6 +33,8 @@ export const Config: z<Config> = z.object({
 /** Model-facing collaboration guidance shared by Lead and teammates. */
 const POLICY = `Agent Teams is available in this session, but create teammates only when the user explicitly asks to use Agent Teams or teammates.
 
+The two execution modes are named Harmony and Melody. A Harmony teammate holds a persistent lane: it keeps a mailbox, takes follow-up messages, and can be interrupted. A Melody teammate is one delegation that settles with a single result, which the Lead receives as a peer message naming its stop reason, so it never blocks on a slow external agent and cannot take messages, follow-up, interruption, or write scopes. Name a teammate's provider to choose between them; an omitted provider keeps the composition's default.
+
 Teammates share the Lead checkout unless spawn_teammate declares write_scopes, which creates an isolated worktree lane. Write scopes of active isolated lanes must be disjoint; a read-only lane denies file and Git mutations. Teammates cannot commit, merge, push, tag, or move refs. The Lead checkpoints a lane, reviews its patch hash, then calls integrate_lane against a clean primary checkout; that runs the gates, commits, and removes the merged checkout. A conflict or gate failure halts the queue until the Lead investigates and resumes it. Ordinary shared edits are immediately visible to every member, so split shared write work into disjoint scopes and use task dependencies when work must be ordered.
 
 Prefer read/edit/write for file changes. If a file operation returns FS_STALE_VERSION, read the current file, rebase your intended change onto the new content, and retry. Bash, formatters, code generators, and scripts are not fully protected by the filesystem version guard; coordinate them explicitly and have the Lead review the final diff and run tests.
@@ -390,7 +392,7 @@ function install(agent: Agent, ctx: Context, config: Required<Config>): () => vo
         },
         provider: {
           type: 'string',
-          description: 'Delegation provider this teammate runs on, taken from the providers this composition registers. Omitted uses the configured default for the context. A provider with no continuable lane runs exactly one delegation that settles with a result, so it receives no messages, no follow-up, and cannot be interrupted; it also cannot hold write_scopes.',
+          description: 'Delegation provider this teammate runs on, taken from the providers this composition registers. Omitted uses the configured default for the context. A provider with a continuable start holds a Harmony lane: it keeps a mailbox, takes follow-up messages, and can be interrupted. A provider without one runs one Melody delegation that settles with a result, so it receives no messages, no follow-up, and cannot be interrupted; it also cannot hold write_scopes.',
         },
         preset: {
           type: 'string',

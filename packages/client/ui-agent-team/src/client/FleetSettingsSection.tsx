@@ -67,13 +67,16 @@ const EMPTY_MEMBER: FleetFavoriteMember = {
   provider: 'spawn',
 }
 
+/**
+ * Status label for the provider states that are not usable. A `ready` or `one-shot`
+ * row is labelled by the execution modes it supports instead, so no provider ever
+ * shows both a mode claim and a status for the same fact.
+ */
 const STATE_KEYS = {
   'not-installed': 'fleet.state.notInstalled',
-  'one-shot': 'fleet.state.oneShot',
   unauthenticated: 'fleet.state.unauthenticated',
-  ready: 'fleet.state.ready',
   'temporarily-unavailable': 'fleet.state.unavailable',
-} as const satisfies Record<FleetProviderState, TeamKey>
+} as const satisfies Record<Exclude<FleetProviderState, 'ready' | 'one-shot'>, TeamKey>
 
 /**
  * Execution modes a provider genuinely supports, in Greeneek's own names.

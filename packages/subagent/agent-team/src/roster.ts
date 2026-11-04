@@ -76,10 +76,11 @@ export function resolveActiveMember(
   }
   // A one-shot member is a single delegation with one result: it has no inbox and
   // no turn to steer, so interactive operations are refused by name rather than
-  // queued somewhere they would never be read.
+  // queued somewhere they would never be read. The refusal names the Melody mode the
+  // caller chose and the Harmony provider that would hold a turn instead.
   if (member.mode === 'one-shot') {
     throw new TeamError(
-      `teammate "${name}" runs one-shot and cannot receive messages, follow-ups, or interruption; delegate again or use a continuable provider`,
+      `teammate "${name}" runs Melody and cannot receive messages, follow-ups, or interruption; delegate again or use a Harmony-capable provider`,
       'TEAM_MEMBER_NOT_INTERACTIVE',
     )
   }
@@ -439,13 +440,13 @@ export class TeamRoster {
     const mode: TeamMemberMode = continuable ? 'lane' : 'one-shot'
     if (continuable && request.timeoutMs !== undefined) {
       throw new TeamError(
-        'timeoutMs applies to one-shot members; interrupt a continuable lane instead',
+        'timeoutMs applies to a Melody member; interrupt a Harmony teammate instead',
         'TEAM_INVALID_ARGUMENT',
       )
     }
     if (!continuable && policy.kind === 'isolated') {
       throw new TeamError(
-        `provider "${provider}" cannot hold an isolated lane: a one-shot member has no durable lane to checkpoint`,
+        `provider "${provider}" cannot hold an isolated checkout: a Melody member has no Harmony lane to checkpoint`,
         'TEAM_INVALID_LANE_POLICY',
       )
     }
@@ -727,7 +728,7 @@ export class TeamRoster {
     }
     const expired = Promise.withResolvers<void>()
     const timer = setTimeout(() => {
-      budget.abort(`one-shot member "${name}" exceeded its ${String(timeoutMs)}ms budget`)
+      budget.abort(`Melody member "${name}" exceeded its ${String(timeoutMs)}ms budget`)
       expired.resolve()
     }, timeoutMs)
     try {
@@ -741,7 +742,7 @@ export class TeamRoster {
       void run.result.catch(() => undefined)
       return {
         result: { stopReason: 'timeout' },
-        error: `one-shot member "${name}" exceeded its ${String(timeoutMs)}ms budget and was cancelled`,
+        error: `Melody member "${name}" exceeded its ${String(timeoutMs)}ms budget and was cancelled`,
       }
     } catch (error: unknown) {
       return { result: { stopReason: 'error' }, error: errorMessage(error) }

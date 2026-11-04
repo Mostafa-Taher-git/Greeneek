@@ -164,6 +164,19 @@ describe('Agent Teams projection events', () => {
     ])).toThrow(/invalid completed -> completed/)
   })
 
+  it('keeps the Harmony and Melody labels out of the persisted mode values', () => {
+    // Those names are user-facing vocabulary only. A row storing either one is not a
+    // durable Team record, so the wording can change without touching the log format.
+    for (const mode of ['Harmony', 'Melody', 'melody', 'harmony']) {
+      expect(() => projectTeam(ROOT, [
+        {
+          ...event('team/member', { version: 2, teamId: TEAM, member: member() }, SessionSeq(0)),
+          data: { version: 2, teamId: TEAM, member: { ...member(), mode } },
+        },
+      ] as unknown as SessionEvent[])).toThrow(/persisted Agent Teams .* payload is invalid/)
+    }
+  })
+
   it('enforces task revision continuity', () => {
     const first = event('team/task', { version: 2, teamId: TEAM, task: task() }, SessionSeq(0))
     expect(() => projectTeam(ROOT, [event('team/task', {

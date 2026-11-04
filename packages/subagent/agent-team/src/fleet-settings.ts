@@ -319,7 +319,7 @@ export function fleetProviderAvailability(
         state: 'one-shot',
         oneShot: true,
         continuable: false,
-        detail: 'provider runs one delegation to a result and holds no durable Team lane',
+        detail: 'provider runs one Melody delegation and holds no Harmony lane',
       }
     }
     return { name, state: 'ready', oneShot: true, continuable: true }
@@ -378,7 +378,7 @@ export function assertFavoriteProviderReady(
   }
   if (provider.continuable || member.writeScopes === undefined || member.writeScopes.length === 0) return
   throw new TeamError(
-    `fleet member "${member.name}" declares an isolated write scope, but provider "${member.provider}" is one-shot and has no durable lane to checkpoint`,
+    `fleet member "${member.name}" declares an isolated write scope, but provider "${member.provider}" runs Melody and has no Harmony lane to checkpoint`,
     'TEAM_FLEET_PROVIDER_UNAVAILABLE',
   )
 }

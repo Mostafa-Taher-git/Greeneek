@@ -244,7 +244,7 @@ describe.skipIf(OPENCODE === undefined)('real OpenCode member in a mixed Team', 
     expect(teamEvents(lead, 'team/message/delivered')).toHaveLength(1)
     const receipt = leadReceipts(lead).find(candidate => candidate.id === reportId)
     expect(receipt?.sender).toBe('coder')
-    expect(receipt?.text).toContain('one-shot teammate "coder" settled with stop reason "completed"')
+    expect(receipt?.text).toContain('Melody teammate "coder" settled with stop reason "completed"')
     expect(receipt?.text).toContain(answer)
 
     // The settled external member is terminal; the lane is untouched by its completion.
@@ -318,7 +318,7 @@ describe.skipIf(OPENCODE === undefined)('real OpenCode member in a mixed Team', 
     const receipts = leadReceipts(lead)
     expect(receipts).toHaveLength(1)
     expect(receipts[0]?.sender).toBe('coder')
-    expect(receipts[0]?.text).toContain('one-shot teammate "coder" settled with stop reason "completed"')
+    expect(receipts[0]?.text).toContain('Melody teammate "coder" settled with stop reason "completed"')
   }, TEST_TIMEOUT_MS)
 
   it('carries Lead-side cancellation into the OpenCode child process tree', async () => {

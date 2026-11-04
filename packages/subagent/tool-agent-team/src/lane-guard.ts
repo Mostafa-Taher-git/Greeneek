@@ -119,14 +119,13 @@ export function gitMutation(command: string): string | undefined {
       const candidate = tokens[index]
       if (candidate === undefined || !isGit(candidate)) continue
       let cursor = index + 1
-      while (cursor < tokens.length) {
+      // An option that declares a value consumes the token after it, so the scan can
+      // step past the last token; a missing token ends the scan the same way a
+      // non-option token does, and either way the token at `cursor` is the subcommand.
+      for (;;) {
         const token = tokens[cursor]
-        if (token === undefined) break
-        if (token.startsWith('-')) {
-          cursor += GIT_OPTIONS_WITH_VALUE.has(token) ? 2 : 1
-          continue
-        }
-        break
+        if (token === undefined || !token.startsWith('-')) break
+        cursor += GIT_OPTIONS_WITH_VALUE.has(token) ? 2 : 1
       }
       const subcommand = tokens[cursor]
       if (subcommand === undefined) continue

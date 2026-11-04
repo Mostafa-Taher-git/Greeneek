@@ -59,6 +59,15 @@ describe('git mutation detection', () => {
       expect(gitMutation(command), command).toBeUndefined()
     }
   })
+
+  it('treats a command whose Git option has no value token as having no subcommand', () => {
+    // An option that declares a value advances the scan past the end of the command,
+    // which is the only way the scan can end without naming a subcommand. A truncated
+    // command is not a mutation, so the guard leaves it dispatchable.
+    for (const command of ['git -C', 'git --work-tree', 'sh -c "git -c"']) {
+      expect(gitMutation(command), command).toBeUndefined()
+    }
+  })
 })
 
 describe('teammate lane guard', () => {

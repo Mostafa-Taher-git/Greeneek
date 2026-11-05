@@ -508,7 +508,7 @@ describe('web e2e: persisted subagent conversation and human continuation', () =
     await parentSession.click()
     await page.getByRole('button', { name: '3 subagents' }).hover()
     await page.getByRole('treeitem', { name: new RegExp(ONE_SHOT_LABEL) }).click()
-    await page.getByText('One-shot tasks do not accept follow-ups; review the full execution record here.').waitFor()
+    await page.getByText('Melody tasks do not accept follow-ups; review the full execution record here.').waitFor()
     expect(scaffold.ctx.agents.get(oneShotId)).toBeUndefined()
   })
 

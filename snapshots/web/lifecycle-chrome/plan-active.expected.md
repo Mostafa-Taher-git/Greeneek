@@ -28,14 +28,7 @@
   - img
   - text: workspace
   - img
-- combobox "Agent mode":
-  - option "Standard mode" [selected]
-  - option "Army mode"
-  - option "Maestro mode"
-  - option "Pixels Designer (preview)"
-  - option "Instructor (preview)"
-  - option "Creator mode"
-- paragraph: Full coding agent with file editing, shell, file and web search, skills, planning, goals, subagents, and workflows.
+- button "Agent mode": Standard mode
 - textbox "Describe what you want to build... / commands, @ files or sessions"
 - 'button "Access mode, current: Workspace Write"': Workspace Write
 - button "CTC"

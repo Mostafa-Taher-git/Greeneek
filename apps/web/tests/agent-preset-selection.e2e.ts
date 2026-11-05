@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url'
 import { mkdir, mkdtemp, realpath, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { Browser, Page } from 'playwright'
+import type { Browser, Locator, Page } from 'playwright'
 import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it, onTestFailed } from 'vitest'
 import {
@@ -202,6 +202,29 @@ async function menuOptions(page: Page): Promise<string[]> {
   return await menu.getByRole('option').allTextContents()
 }
 
+/** The mode control's trigger: the staged mode's glyph and name. */
+function modeTrigger(page: Page): Locator {
+  return page.getByRole('button', { name: 'Agent mode' })
+}
+
+/**
+ * The mode menu row whose own name line is `name`.
+ * Matching the name line exactly is what keeps a mode whose description quotes
+ * another mode (Creator says "all Standard mode capabilities") from answering a
+ * check meant for that other mode.
+ */
+function modeRow(page: Page, name: string): Locator {
+  return page.getByRole('menuitem').filter({ has: page.getByText(name, { exact: true }) })
+}
+
+/** Open the mode menu and choose the row that names `name`. */
+async function pickMode(page: Page, name: string): Promise<void> {
+  if (await modeTrigger(page).getAttribute('aria-expanded') !== 'true') {
+    await modeTrigger(page).click()
+  }
+  await modeRow(page, name).click()
+}
+
 describe('web e2e: agent-preset selection', () => {
   let scaffold: WebScaffold
   let browser: Browser
@@ -243,43 +266,46 @@ describe('web e2e: agent-preset selection', () => {
     await connectFreshWorkspace(page, scaffold.workspaceCwd)
 
     // One row now holds both session-scope choices: the workspace picker and the
-    // mode dropdown that used to sit alone under the input card.
+    // mode control that used to sit alone under the input card.
     const workspaceRow = await captureStableAria(page, '[class*="heroWorkspaceRow"]', scaffold.workspaceCwd)
 
     await compareOrRefreshGolden(HERO_EXPECTED, workspaceRow, MODE)
-    // The dropdown opens on the deployment default, by the name that preset
-    // publishes rather than its directory name.
+    // The trigger names the mode the deployment staged, and it is a menu button
+    // whose list only exists while the person is in it.
     expect(workspaceRow).toContain('Standard mode')
-    expect(workspaceRow).toContain('combobox "Agent mode"')
-    await expect.poll(() => page.getByLabel('Agent mode').inputValue()).toBe('standard')
+    expect(workspaceRow).toContain('button "Agent mode"')
+    await expect.poll(() => modeTrigger(page).innerText()).toBe('Standard mode')
   })
 
-  it('lists every mode as one option each, with the staged one described', async () => {
+  it('lists every mode as one row each, with what it does under its name', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-agent-preset-modes'))
-    const group = page.getByLabel('Agent mode')
-    // Fixed order: shipped modes first, authored presets in roster order.
-    const order = await group.locator('option').evaluateAll(
-      options => options.map(option => option.textContent),
-    )
-    expect(order.slice(0, 6)).toEqual([
+    await modeTrigger(page).click()
+    const rows = page.getByRole('menuitem')
+    // Fixed order: shipped modes first, authored presets in roster order. A row's
+    // first line is its name, so the order check reads that line alone.
+    const texts = await rows.allInnerTexts()
+    const names = texts.map(text => text.split('\n')[0]?.trim())
+    expect(names.slice(0, 6)).toEqual([
       'Standard mode', 'Army mode', 'Maestro mode', 'Pixels Designer (preview)',
       'Instructor (preview)', 'Creator mode',
     ])
-    expect(order.slice(6).sort()).toEqual(['Narrow mode', 'Refusing mode'])
-    const states = await group.locator('option').evaluateAll(
-      options => options.map(option => [option.textContent, (option as unknown as HTMLOptionElement).disabled] as const),
-    )
+    expect(names.slice(6).sort()).toEqual(['Narrow mode', 'Refusing mode'])
+    // The sentence sits under its own mode, not on a shared caption line, so each
+    // row answers what choosing it would do.
+    expect(texts[0]).toContain('Full coding agent with file editing')
     for (const label of ['Army mode', 'Maestro mode']) {
-      expect(states.find(([text]) => text === label)?.[1]).toBe(false)
+      expect(await modeRow(page, label).isDisabled()).toBe(false)
     }
-    // The staged mode's own sentence stays visible beside the control, so the
-    // pick is explained without opening it.
-    await expect.poll(() => page.getByText(/Full coding agent with file editing/).isVisible()).toBe(true)
+    // Escape is the primitive's own dismissal, and the closed row states nothing
+    // about a mode: the hero keeps one compact control.
+    await page.keyboard.press('Escape')
+    await expect.poll(() => rows.count()).toBe(0)
+    await expect.poll(() => page.getByText(/Full coding agent with file editing/).count()).toBe(0)
   })
 
   it('applies the staged pick to the blank session, and the host honors it', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-agent-preset-stage'))
-    await page.getByLabel('Agent mode').selectOption({ label: 'Narrow mode' })
+    await pickMode(page, 'Narrow mode')
 
     // The chip stages; the blank session the workspace connect produced is
     // what the stage lands on. The host's own answer is what comes back.
@@ -288,8 +314,8 @@ describe('web e2e: agent-preset selection', () => {
 
   it('says why a switch was refused instead of letting the chip revert in silence', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-agent-preset-refused'))
-    await page.getByLabel('Agent mode').selectOption({ label: 'Narrow mode' })
-    await page.getByLabel('Agent mode').selectOption({ label: 'Refusing mode' })
+    await pickMode(page, 'Narrow mode')
+    await pickMode(page, 'Refusing mode')
 
     // Health cleared every row, so nothing on the settings page says this
     // preset is unusable — the banner is where the host's reason lands, and
@@ -298,7 +324,7 @@ describe('web e2e: agent-preset selection', () => {
     await banner.waitFor({ timeout: 15_000 })
     expect(await banner.textContent()).toContain('this row refuses to start')
     await expect.poll(() => livePreset(scaffold), { timeout: 15_000 }).toBe('narrow')
-    await expect.poll(() => page.getByLabel('Agent mode').inputValue()).toBe('narrow')
+    await expect.poll(() => modeTrigger(page).innerText()).toBe('Narrow mode')
   }, 60_000)
 
   it('re-reads the slash catalog through the composition the switch installed', async () => {
@@ -326,8 +352,8 @@ describe('web e2e: agent-preset selection', () => {
     // against its list row, so a row that never reprojected the first switch
     // answers "already standard" and sends nothing — and restores the catalog
     // instead of leaving the session reading the narrower composition.
-    await page.getByLabel('Agent mode').selectOption({ label: 'Narrow mode' })
-    await page.getByLabel('Agent mode').selectOption({ label: 'Standard mode' })
+    await pickMode(page, 'Narrow mode')
+    await pickMode(page, 'Standard mode')
     await expect.poll(() => livePreset(scaffold), { timeout: 15_000 }).toBe('standard')
 
     await writeComposerDraft(page, composer, '/')

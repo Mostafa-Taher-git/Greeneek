@@ -6,65 +6,97 @@
   max-width: 100%;
 }
 
+/* The mode's logo leads the trigger, so the glyph carries the color and the name
+   stays readable text beside it. */
 .icon {
   display: inline-flex;
   flex: none;
   color: var(--dsw-alias-label-secondary);
 }
 
-.select {
+.trigger,
+.triggerOpen {
   flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   min-width: 0;
   max-width: 220px;
   height: 28px;
   padding: 0 8px;
   border: 0.5px solid var(--dsw-alias-border-l3);
   border-radius: 8px;
+  corner-shape: round;
   background: var(--dsw-alias-bg-layer-2);
   color: var(--dsw-alias-label-primary);
   font-family: var(--dsw-font-family);
   font-size: 12px;
   line-height: 18px;
   font-weight: 500;
+  cursor: pointer;
 }
 
-.select:hover:not(:disabled) {
+.triggerOpen {
+  background: var(--dsw-alias-interactive-bg-hover);
+  border-color: var(--dsw-alias-border-l2);
+}
+
+.trigger:hover:not(:disabled) {
   background: var(--dsw-alias-interactive-bg-hover);
 }
 
-.select:focus-visible {
+.trigger:focus-visible,
+.triggerOpen:focus-visible {
   outline: 2px solid var(--dsw-alias-state-business-primary);
   outline-offset: 1px;
 }
 
-.select:disabled {
+.trigger:disabled,
+.triggerOpen:disabled {
   cursor: progress;
   opacity: 0.55;
 }
 
-/* The staged mode's sentence shares the row, so it elides instead of wrapping the
-   chip and the dropdown onto separate lines. */
-.description {
-  margin: 0;
+.triggerName {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 12px;
-  line-height: 17px;
-  color: var(--dsw-alias-label-caption);
 }
 
+/* Menu rows carry two lines: the mode name in the menu's own primary type, then
+   what the mode does. Menu.module.css sets white-space: nowrap on its label
+   wrapper, so this column restates wrapping for its own subtree and the card still
+   sizes inside the primitive's 218-360px range. */
+.itemText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  white-space: normal;
+}
+
+.itemName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.itemDescription {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 400;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+/* The row carries no caption: what a mode does is read inside its own menu row. */
 @media (max-width: 720px) {
   .root {
     gap: 4px;
   }
 
-  .select {
+  .trigger,
+  .triggerOpen {
     max-width: 150px;
-  }
-
-  .description {
-    display: none;
   }
 }

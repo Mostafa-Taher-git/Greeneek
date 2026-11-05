@@ -1,7 +1,7 @@
 /**
  * Lead-facing tool Consumer of the wave engine: `ctx.waves` reaches the model
- * as two tools. `wave_dispatch` fans out a one-shot fleet of one-shot
- * subagent members, waits for the whole wave to settle, and renders the
+ * as two tools. `wave_dispatch` fans out a fleet of Melody subagent
+ * members, waits for the whole wave to settle, and renders the
  * settled result — per-member status, token, and output rows plus diagnostics
  * and validated artifact pointers — in the model-facing payload. `wave_cancel`
  * cancels one retained wave by id, or every unsettled fleet of the calling
@@ -59,7 +59,7 @@ export function apply(ctx: Context, config: Config): void {
 function dispatchTool(ctx: Context, defaultProvider: string): ToolDefinition {
   return defineTool({
     name: 'wave_dispatch',
-    description: 'Dispatch a wave: a fleet of one-shot subagents that runs concurrently until every member '
+    description: 'Dispatch a wave: a fleet of Melody subagents that runs concurrently until every member '
       + 'settles, and returns one report row per member — final output, status, tokens, child session id, and '
       + 'the engine-validated artifact pointers its structured result named. Each member does not see this '
       + 'conversation, so give every member a complete, standalone prompt, and give a member whose payload '

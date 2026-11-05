@@ -31,7 +31,7 @@ export const dispatchParameters = {
   members: {
     type: 'array',
     required: true,
-    description: 'The fleet: one one-shot subagent per entry, launched concurrently and reported in this order.',
+    description: 'The fleet: one Melody subagent per entry, launched concurrently and reported in this order.',
     items: {
       type: 'object',
       additionalProperties: false,

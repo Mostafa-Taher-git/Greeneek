@@ -2,13 +2,13 @@
   - img
   - text: workspace
   - img
-- radiogroup "Agent mode":
-  - radio "Standard mode" [checked]
-  - radio "Army mode"
-  - radio "Maestro mode"
-  - radio "Pixels Designer (preview)"
-  - radio "Instructor (preview)"
-  - radio "Creator mode"
-  - radio "Refusing mode"
-  - radio "Narrow mode"
+- combobox "Agent mode":
+  - option "Standard mode" [selected]
+  - option "Army mode"
+  - option "Maestro mode"
+  - option "Pixels Designer (preview)"
+  - option "Instructor (preview)"
+  - option "Creator mode"
+  - option "Refusing mode"
+  - option "Narrow mode"
 - paragraph: Full coding agent with file editing, shell, file and web search, skills, planning, goals, subagents, and workflows.

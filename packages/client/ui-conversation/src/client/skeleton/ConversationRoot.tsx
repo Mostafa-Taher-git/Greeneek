@@ -317,6 +317,11 @@ export function ConversationRoot({
         },
         onClose: () => { setPickerOpen(false) },
       })}
+      {/* The mode dropdown shares this row so the two session-scope choices - where
+          work happens and which agent composition runs it - read as one control group. */}
+      <span className={css.heroModeSlot} data-testid="hero-mode">
+        {renderSlot('conversation.hero.agentPreset', {})}
+      </span>
     </div>
   )
 
@@ -353,13 +358,6 @@ export function ConversationRoot({
       {hero && heroWorkspaceRow}
       {zone !== undefined && renderSlot('conversation.input.dock', zone)}
       {inputBar}
-      {/* The mode switcher sits alone under the input card, centered, so the
-          workspace row above stays a single-purpose row. */}
-      {hero && (
-        <div className={css.heroModeRow} data-testid="hero-mode-row">
-          {renderSlot('conversation.hero.agentPreset', {})}
-        </div>
-      )}
       {hero && (
         <div className={css.heroRecentRow} data-testid="hero-recent-row">
           {renderSlot('conversation.hero.recentSessions', { workspaceId })}

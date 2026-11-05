@@ -24,7 +24,7 @@ This package provides the agent-preset surfaces of the Web GUI: a chip on the ne
 <a id="use-this-package"></a>
 ## Use this package
 
-Mount this plugin alongside the settings and conversation packages; the preset surfaces then appear where their slots render. The new-session chip opens on the deployment default and stages a pick that lands on the next blank session; the stage is spent on first use, so the following new session opens on the default again. The chip presents the two shipped modes, Standard and Creator; PTC remains a legal preset reachable through Settings or a custom preset copy, and recorded PTC sessions keep replaying their composition, but it no longer has a pill of its own.
+Mount this plugin alongside the settings and conversation packages; the preset surfaces then appear where their slots render. The new-session dropdown opens on the deployment default and stages a pick that lands on the next blank session; the stage is spent on first use, so the following new session opens on the default again. The dropdown is one control in the hero's workspace row, beside the workspace picker, listing every registered mode with the shipped ones first and authored presets after; the staged mode's one-line description and glyph sit beside it, and a retired preset such as PTC stays a legal composition reachable through Settings or a custom preset copy — recorded PTC sessions keep replaying their composition — while the dropdown offers no PTC option. A session staged on a mode the roster no longer offers keeps displaying it through a hidden option rather than showing a mode it is not running.
 
 ### Managing the roster
 

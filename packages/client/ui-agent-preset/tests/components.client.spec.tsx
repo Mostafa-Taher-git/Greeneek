@@ -6,7 +6,7 @@
  * tools, so the choice is only ever offered before one starts.
  */
 
-import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { bindSnapshotSelector } from '@greeneek/gnk-client-test-runtime'
 import { createSnapshotStore } from '@greeneek/gnk-client-store'
@@ -81,14 +81,16 @@ function renderLabel(
   return { load, view }
 }
 
-describe('the new-session mode switcher', () => {
-  it('reads the roster once and shows the staged mode checked with its sentence', async () => {
+describe('the new-session mode dropdown', () => {
+  const select = (): HTMLSelectElement => screen.getByLabelText('Agent mode') as HTMLSelectElement
+
+  it('reads the roster once and shows the staged mode selected with its sentence', async () => {
     const actions = renderSeat()
 
     await waitFor(() => { expect(actions.load).toHaveBeenCalledTimes(1) })
-    screen.getByRole('radiogroup', { name: 'Agent mode' })
-    expect(screen.getByRole('radio', { name: en.presetStandardName }).getAttribute('aria-checked')).toBe('true')
+    expect(select().value).toBe('standard')
     expect(screen.getByText(en.presetStandardDescription)).toBeTruthy()
+    expect(select().getAttribute('aria-describedby')).toBeTruthy()
   })
 
   it('orders shipped modes first and authored presets last', () => {
@@ -103,21 +105,21 @@ describe('the new-session mode switcher', () => {
       ],
     })
 
-    const names = screen.getAllByRole('radio').map(radio => radio.getAttribute('aria-label') ?? radio.textContent)
-    expect(names).toEqual([
+    expect(screen.getAllByRole('option').map(option => option.textContent)).toEqual([
       en.presetStandardName,
       en.presetArmyName,
       en.presetMaestroName,
       en.presetCordisName,
       'mine',
     ])
-    expect(screen.getByRole('radio', { name: en.presetCordisName }).getAttribute('aria-checked')).toBe('true')
-    expect(screen.getByRole('radio', { name: en.presetArmyName })).toHaveProperty('disabled', false)
-    // Maestro is a shipped mode now, not a placeholder: the pill starts sessions.
-    expect(screen.getByRole('radio', { name: en.presetMaestroName })).toHaveProperty('disabled', false)
+    expect(select().value).toBe('cordis')
+    // Army and Maestro start sessions, so neither option is parked.
+    for (const name of [en.presetArmyName, en.presetMaestroName]) {
+      expect(screen.getByRole('option', { name })).toHaveProperty('disabled', false)
+    }
   })
 
-  it('retires the PTC pill while the roster keeps supplying the preset', () => {
+  it('retires the PTC option while the roster keeps supplying the preset', () => {
     const options = [
       { id: 'mine', trust: 'user' as const },
       { id: 'cordis', trust: 'system' as const },
@@ -129,78 +131,79 @@ describe('the new-session mode switcher', () => {
     renderSeat({ current: 'ptc', options })
 
     // PTC still composes sessions — Settings and custom presets start it, and
-    // recorded PTC sessions keep replaying — but v0.3.4 retires its hero pill,
-    // so the row offers the shipped modes and appends only `mine`.
+    // recorded PTC sessions keep replaying — but v0.3.4 retires its option, so
+    // the dropdown offers the shipped modes and appends only `mine`.
     expect(options.map(option => option.id)).toContain('ptc')
-    expect(screen.queryByRole('radio', { name: en.presetPtcName })).toBeNull()
-    expect(screen.getAllByRole('radio').map(radio => radio.getAttribute('aria-label') ?? radio.textContent))
-      .toEqual([
-        en.presetStandardName,
-        en.presetArmyName,
-        en.presetMaestroName,
-        en.presetCordisName,
-        'mine',
-      ])
-    // A session already on PTC checks no pill rather than inventing one.
-    expect(screen.queryByRole('radio', { checked: true })).toBeNull()
+    expect(screen.queryByRole('option', { name: en.presetPtcName })).toBeNull()
+    expect(screen.getAllByRole('option').map(option => option.textContent)).toEqual([
+      en.presetStandardName,
+      en.presetArmyName,
+      en.presetMaestroName,
+      en.presetCordisName,
+      'mine',
+    ])
+    // A session already on PTC keeps showing PTC through a hidden option, so the
+    // control never displays a mode the session is not running.
+    expect(select().value).toBe('ptc')
+    expect(screen.getAllByRole('option').map(option => option.textContent))
+      .not.toContain(en.presetPtcName)
   })
 
   it('falls back to the id when the staged preset published no name', () => {
     renderSeat({ current: 'mine' })
 
-    expect(screen.getByRole('radio', { name: 'mine' }).getAttribute('aria-checked')).toBe('true')
+    expect(screen.getByRole('option', { name: 'mine' })).toHaveProperty('selected', true)
   })
 
-  it('checks nothing while the staged id is absent from the roster', () => {
+  it('states no sentence while the staged id is absent from the roster', () => {
     renderSeat({ current: 'arriving' })
 
-    expect(screen.queryByRole('radio', { checked: true })).toBeNull()
+    expect(select().value).toBe('arriving')
+    expect(select().getAttribute('aria-describedby')).toBeNull()
+    expect(screen.queryByRole('paragraph')).toBeNull()
   })
 
-  it('stages the picked preset on click', () => {
+  it('stages the picked preset on select', () => {
     const actions = renderSeat()
 
-    fireEvent.click(screen.getByRole('radio', { name: 'mine' }))
+    fireEvent.change(select(), { target: { value: 'mine' } })
 
     expect(actions.select).toHaveBeenCalledWith('mine')
   })
 
-  it('disables every pill while a switch is in flight', () => {
+  it('disables the control while a switch is in flight', () => {
     renderSeat({ busy: true })
 
-    for (const radio of screen.getAllByRole('radio')) {
-      expect(radio).toHaveProperty('disabled', true)
-    }
+    expect(select()).toHaveProperty('disabled', true)
   })
 
-  it('gives every pill its own glyph', () => {
+  it('carries the staged mode\'s glyph beside the control', () => {
     renderSeat()
-    const group = within(screen.getByRole('radiogroup', { name: 'Agent mode' }))
-    for (const name of [en.presetStandardName, en.presetArmyName, en.presetMaestroName, 'mine']) {
-      expect(group.getByRole('radio', { name }).querySelector('svg')).toBeTruthy()
-    }
+
+    // An <option> cannot hold a glyph, so the icon names the mode that is staged
+    // rather than repeating one per option.
+    expect(document.querySelectorAll('svg')).toHaveLength(1)
   })
 
-  it('previews the hovered pill sentence and settles back on the staged one', () => {
-    renderSeat()
+  it('keeps the caption on the staged mode while a switch is in flight', () => {
+    const actions = renderSeat()
 
-    expect(screen.getByText(en.presetStandardDescription)).toBeTruthy()
-    // React synthesizes enter/leave from over/out pairs, so the test speaks
-    // that pair rather than bare enter/leave events.
-    fireEvent.mouseOver(screen.getByRole('radio', { name: en.presetMaestroName }))
-    expect(screen.getByText(en.presetMaestroDescription)).toBeTruthy()
-    fireEvent.mouseOut(screen.getByRole('radiogroup', { name: 'Agent mode' }))
+    fireEvent.change(select(), { target: { value: 'maestro' } })
+
+    // The host has not committed the switch, so the sentence still describes the
+    // mode that is actually staged; a refusal leaves it there.
+    expect(actions.select).toHaveBeenCalledWith('maestro')
     expect(screen.getByText(en.presetStandardDescription)).toBeTruthy()
   })
 
   it('renders nothing before the roster arrives or when there is none', () => {
     const empty = renderSeat({ options: [] })
     expect(empty).toBeTruthy()
-    expect(screen.queryByRole('radiogroup')).toBeNull()
+    expect(screen.queryByRole('combobox')).toBeNull()
     cleanup()
 
     renderSeat({ current: '' })
-    expect(screen.queryByRole('radiogroup')).toBeNull()
+    expect(screen.queryByRole('combobox')).toBeNull()
   })
 
   it('acknowledges the introduce cue at once instead of animating it', () => {
@@ -219,7 +222,7 @@ describe('a refused switch', () => {
       const reason = 'failed to import loader entry live-on-mac (@greeneek/gnk-also-gone)'
       renderSeat({}, () => Promise.resolve(reason))
 
-      fireEvent.click(screen.getByRole('radio', { name: 'mine' }))
+      fireEvent.change(screen.getByLabelText('Agent mode'), { target: { value: 'mine' } })
 
       // The host refuses a mount discovery reported healthy, so this banner is
       // the only place the cause appears — the row has already reverted and
@@ -242,7 +245,7 @@ describe('a refused switch', () => {
   it('says nothing when the switch lands', async () => {
     const actions = renderSeat()
 
-    fireEvent.click(screen.getByRole('radio', { name: 'mine' }))
+    fireEvent.change(screen.getByLabelText('Agent mode'), { target: { value: 'mine' } })
 
     await waitFor(() => { expect(actions.select).toHaveBeenCalledWith('mine') })
     expect(screen.queryByRole('alert')).toBeNull()

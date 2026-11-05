@@ -9,7 +9,7 @@ This inventory names every shipped surface group, the authoritative file that li
 | Surface | Members listed in | Evidence | Disposition |
 |---|---|---|---|
 | Transcript, streaming, tool rows, reasoning rows, PTC cards | `packages/client/ui-chat`, `packages/client/ui-conversation` | `pnpm run test:gui`; recorded web scenarios under `apps/web/tests` | verified |
-| Composer, mode pills, model and effort controls, attachments, steering, Emergency Stop | `packages/client/ui-chat` | `test:gui`; live dev-app pass (2026-10-31 ledger) | verified |
+| Composer, mode dropdown, model and effort controls, attachments, steering, Emergency Stop | `packages/client/ui-chat` | `test:gui`; live dev-app pass (2026-10-31 ledger) | verified |
 | Sidebar, workspace browser, folding, rename, search rail | `packages/client/ui-sidebar`, `packages/client/ui-workspace` | `test:gui`; `sidebar-*` and `workspace-*` web scenarios | verified |
 | Session lifecycle: create, resume, fork, rename, archive, delete, reload | `packages/api/session-controller`, `packages/api/workspace-controller` | `test:gui`; `snapshots/session`, `snapshots/sdk` | verified |
 | Plan mode, goals, todos, background jobs | `packages/plan`, `packages/goal`, `packages/todo`, `packages/jobs` | package suites in `pnpm run test` | verified |

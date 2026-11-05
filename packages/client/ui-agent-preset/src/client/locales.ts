@@ -11,7 +11,7 @@ export type AgentPresetSettingsKey =
   | 'presetInstructorName' | 'presetInstructorDescription'
   | 'presetArmyName' | 'presetArmyDescription'
   | 'presetMaestroName' | 'presetMaestroDescription'
-  | 'switcherLabel' | 'switcherComingSoon'
+  | 'switcherLabel'
   | 'duplicate' | 'duplicateUnavailable' | 'delete' | 'presetId' | 'presetIdPlaceholder' | 'copyOf'
   | 'displayName' | 'displayNamePlaceholder'
   | 'defaultBadge' | 'noDescription' | 'builtInGroup' | 'customGroup'
@@ -57,7 +57,6 @@ export const en: Record<AgentPresetSettingsKey, string> = {
   presetMaestroDescription:
     'Harmony lanes under one coordinator: delegates code, docs, and design tasks to in-process members from the standard, instructor, and pixels-designer presets working in parallel.',
   switcherLabel: 'Agent mode',
-  switcherComingSoon: 'Coming soon',
   duplicate: 'Duplicate',
   duplicateUnavailable: 'This deployment has no writable preset directory',
   delete: 'Delete',
@@ -123,7 +122,6 @@ export const zh: Record<AgentPresetSettingsKey, string> = {
   presetMaestroName: 'Maestro 模式',
   presetMaestroDescription: '同一协调者下的 Harmony 车道：把代码、文档与设计任务并行委派给来自标准、导师与像素设计预设的进程内成员。',
   switcherLabel: 'Agent 模式',
-  switcherComingSoon: '即将推出',
   duplicate: '复制',
   duplicateUnavailable: '此部署未配置可写的预设目录',
   delete: '删除',
@@ -186,7 +184,6 @@ export const ar = {
   presetMaestroName: 'وضع Maestro',
   presetMaestroDescription: 'مسارات Harmony دائمة تحت منسّق واحد: يفوّض مهام الكود والتوثيق والتصميم إلى أعضاء داخل العملية من قوالب المعيار والمعلّم ومصمّم البكسل تعمل بالتوازي.',
   switcherLabel: 'وضع الوكيل',
-  switcherComingSoon: 'قريبًا',
   duplicate: 'نسخ',
   duplicateUnavailable: 'ليس لهذا النشر مجلد إعدادات مسبقة قابل للكتابة',
   delete: 'حذف',

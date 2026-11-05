@@ -1,113 +1,70 @@
 .root {
   display: flex;
-  flex-direction: column;
   align-items: center;
   gap: 6px;
   min-width: 0;
   max-width: 100%;
 }
 
-.row {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px;
-  border: 0.5px solid var(--dsw-alias-border-l3);
-  border-radius: 16px;
-  background: var(--dsw-alias-bg-layer-2);
-  width: max-content;
-  max-width: 100%;
-  overflow-x: auto;
-  scrollbar-width: none;
-  --gnk-scrollbar-thumb: var(--dsw-alias-scrollbar-bg-l2);
-  --gnk-scrollbar-thumb-hover: var(--dsw-alias-scrollbar-hover-l2);
-}
-
-.row::-webkit-scrollbar {
-  display: none;
-}
-
-.pill {
+.icon {
   display: inline-flex;
   flex: none;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-width: 32px;
-  height: 30px;
-  padding: 0 10px;
-  border: none;
-  border-radius: 12px;
-  background: transparent;
   color: var(--dsw-alias-label-secondary);
+}
+
+.select {
+  flex: none;
+  min-width: 0;
+  max-width: 220px;
+  height: 28px;
+  padding: 0 8px;
+  border: 0.5px solid var(--dsw-alias-border-l3);
+  border-radius: 8px;
+  background: var(--dsw-alias-bg-layer-2);
+  color: var(--dsw-alias-label-primary);
   font-family: var(--dsw-font-family);
   font-size: 12px;
   line-height: 18px;
   font-weight: 500;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.pill:hover {
+.select:hover:not(:disabled) {
   background: var(--dsw-alias-interactive-bg-hover);
-  color: var(--dsw-alias-label-primary);
 }
 
-.pill:focus-visible {
+.select:focus-visible {
   outline: 2px solid var(--dsw-alias-state-business-primary);
   outline-offset: 1px;
 }
 
-.pillActive {
-  background: var(--dsw-alias-bg-layer-1);
-  color: var(--dsw-alias-label-primary);
-  box-shadow: var(--dsw-elevation-panel);
+.select:disabled {
+  cursor: progress;
+  opacity: 0.55;
 }
 
-.pillActive:hover {
-  background: var(--dsw-alias-bg-layer-1);
-}
-
-.pill:disabled {
-  cursor: not-allowed;
-  opacity: 0.45;
-}
-
-.pillIcon {
-  display: inline-flex;
-  flex: none;
-}
-
-.pillLabel {
-  display: inline-block;
-  white-space: nowrap;
-}
-
+/* The staged mode's sentence shares the row, so it elides instead of wrapping the
+   chip and the dropdown onto separate lines. */
 .description {
   margin: 0;
-  padding: 0 12px;
-  min-height: 17px;
-  max-width: 680px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 12px;
   line-height: 17px;
   color: var(--dsw-alias-label-caption);
-  text-align: center;
 }
 
 @media (max-width: 720px) {
-  .row {
-    justify-content: flex-start;
-    width: 100%;
+  .root {
+    gap: 4px;
   }
 
-  .pill {
-    padding: 0 8px;
+  .select {
+    max-width: 150px;
   }
-}
 
-@media (prefers-reduced-motion: reduce) {
-  .pill {
-    transition: none;
+  .description {
+    display: none;
   }
 }

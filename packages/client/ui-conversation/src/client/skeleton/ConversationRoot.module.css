@@ -397,12 +397,12 @@
   padding-inline-start: 20px;
 }
 
-/* The mode switcher lives alone under the hero input card, centered with its
-   own sentence line — never sharing the workspace row above. */
-.heroModeRow {
-  display: flex;
-  justify-content: center;
-  margin-top: 4px;
+/* The mode dropdown shares the workspace row, so it stays an inline group that can
+   shrink with the row instead of forcing the caption onto its own line. */
+.heroModeSlot {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
 }
 
 /* Recent sessions sit last under the hero stack, capped to the composer card

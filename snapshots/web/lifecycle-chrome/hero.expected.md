@@ -28,6 +28,14 @@
   - img
   - text: workspace
   - img
+- combobox "Agent mode":
+  - option "Standard mode" [selected]
+  - option "Army mode"
+  - option "Maestro mode"
+  - option "Pixels Designer (preview)"
+  - option "Instructor (preview)"
+  - option "Creator mode"
+- paragraph: Full coding agent with file editing, shell, file and web search, skills, planning, goals, subagents, and workflows.
 - textbox "Describe what you want to build... / commands, @ files or sessions":
   - paragraph
 - 'button "Access mode, current: Workspace Write"': Workspace Write
@@ -36,14 +44,6 @@
   - text: Greeneek-V4-Flash
   - img
 - button "Send message" [disabled]
-- radiogroup "Agent mode":
-  - radio "Standard mode" [checked]
-  - radio "Army mode"
-  - radio "Maestro mode"
-  - radio "Pixels Designer (preview)"
-  - radio "Instructor (preview)"
-  - radio "Creator mode"
-- paragraph: Full coding agent with file editing, shell, file and web search, skills, planning, goals, subagents, and workflows.
 - heading "Recent in workspace" [level=2]
 - list:
   - listitem:

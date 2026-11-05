@@ -238,50 +238,48 @@ describe('web e2e: agent-preset selection', () => {
     await scaffold?.close()
   })
 
-  it('offers the mode switcher on the new-session screen, alone under the input card', async () => {
+  it('offers the mode dropdown in the workspace row above the input card', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-agent-preset-hero'))
     await connectFreshWorkspace(page, scaffold.workspaceCwd)
 
-    // Two regions: the workspace row above the card, the mode row below it.
+    // One row now holds both session-scope choices: the workspace picker and the
+    // mode dropdown that used to sit alone under the input card.
     const workspaceRow = await captureStableAria(page, '[class*="heroWorkspaceRow"]', scaffold.workspaceCwd)
-    const modeRow = await captureStableAria(page, '[data-testid="hero-mode-row"]', scaffold.workspaceCwd)
-    const snapshot = `${workspaceRow}\n${modeRow}`
 
-    await compareOrRefreshGolden(HERO_EXPECTED, snapshot, MODE)
-    // The switcher opens on the deployment default, by the name that preset
+    await compareOrRefreshGolden(HERO_EXPECTED, workspaceRow, MODE)
+    // The dropdown opens on the deployment default, by the name that preset
     // publishes rather than its directory name.
-    expect(snapshot).toContain('Standard mode')
-    expect(workspaceRow).not.toContain('Standard mode')
-    await expect.poll(() => page.getByRole('radio', { name: 'Standard mode' }).getAttribute('aria-checked'))
-      .toBe('true')
+    expect(workspaceRow).toContain('Standard mode')
+    expect(workspaceRow).toContain('combobox "Agent mode"')
+    await expect.poll(() => page.getByLabel('Agent mode').inputValue()).toBe('standard')
   })
 
-  it('lists every mode with its sentence, placeholders parked', async () => {
+  it('lists every mode as one option each, with the staged one described', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-agent-preset-modes'))
-    const group = page.getByRole('radiogroup', { name: 'Agent mode' })
+    const group = page.getByLabel('Agent mode')
     // Fixed order: shipped modes first, authored presets in roster order.
-    const order = await group.getByRole('radio').evaluateAll(
-      radios => radios.map(radio => radio.textContent),
+    const order = await group.locator('option').evaluateAll(
+      options => options.map(option => option.textContent),
     )
     expect(order.slice(0, 6)).toEqual([
       'Standard mode', 'Army mode', 'Maestro mode', 'Pixels Designer (preview)',
       'Instructor (preview)', 'Creator mode',
     ])
     expect(order.slice(6).sort()).toEqual(['Narrow mode', 'Refusing mode'])
-    expect(await group.getByRole('radio', { name: 'Army mode', exact: true }).isDisabled()).toBe(false)
-    expect(await group.getByRole('radio', { name: 'Maestro mode', exact: true }).isDisabled()).toBe(false)
-    // Labels are persistent at practical widths (owner-requested mode clarity).
-    const pixelsLabel = group.getByRole('radio', { name: 'Pixels Designer (preview)', exact: true })
-      .getByText('Pixels Designer (preview)', { exact: true })
-    await expect.poll(() => pixelsLabel.isVisible()).toBe(true)
-    const creatorLabel = group.getByRole('radio', { name: 'Creator mode', exact: true })
-      .getByText('Creator mode', { exact: true })
-    await expect.poll(() => creatorLabel.isVisible()).toBe(true)
+    const states = await group.locator('option').evaluateAll(
+      options => options.map(option => [option.textContent, (option as unknown as HTMLOptionElement).disabled] as const),
+    )
+    for (const label of ['Army mode', 'Maestro mode']) {
+      expect(states.find(([text]) => text === label)?.[1]).toBe(false)
+    }
+    // The staged mode's own sentence stays visible beside the control, so the
+    // pick is explained without opening it.
+    await expect.poll(() => page.getByText(/Full coding agent with file editing/).isVisible()).toBe(true)
   })
 
   it('applies the staged pick to the blank session, and the host honors it', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-agent-preset-stage'))
-    await page.getByRole('radio', { name: /Narrow mode/ }).click()
+    await page.getByLabel('Agent mode').selectOption({ label: 'Narrow mode' })
 
     // The chip stages; the blank session the workspace connect produced is
     // what the stage lands on. The host's own answer is what comes back.
@@ -290,8 +288,8 @@ describe('web e2e: agent-preset selection', () => {
 
   it('says why a switch was refused instead of letting the chip revert in silence', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-agent-preset-refused'))
-    await page.getByRole('radio', { name: 'Narrow mode' }).click()
-    await page.getByRole('radio', { name: /Refusing mode/ }).click()
+    await page.getByLabel('Agent mode').selectOption({ label: 'Narrow mode' })
+    await page.getByLabel('Agent mode').selectOption({ label: 'Refusing mode' })
 
     // Health cleared every row, so nothing on the settings page says this
     // preset is unusable — the banner is where the host's reason lands, and
@@ -300,8 +298,7 @@ describe('web e2e: agent-preset selection', () => {
     await banner.waitFor({ timeout: 15_000 })
     expect(await banner.textContent()).toContain('this row refuses to start')
     await expect.poll(() => livePreset(scaffold), { timeout: 15_000 }).toBe('narrow')
-    await expect.poll(() => page.getByRole('radio', { name: 'Narrow mode' }).getAttribute('aria-checked'))
-      .toBe('true')
+    await expect.poll(() => page.getByLabel('Agent mode').inputValue()).toBe('narrow')
   }, 60_000)
 
   it('re-reads the slash catalog through the composition the switch installed', async () => {
@@ -329,8 +326,8 @@ describe('web e2e: agent-preset selection', () => {
     // against its list row, so a row that never reprojected the first switch
     // answers "already standard" and sends nothing — and restores the catalog
     // instead of leaving the session reading the narrower composition.
-    await page.getByRole('radio', { name: 'Narrow mode' }).click()
-    await page.getByRole('radio', { name: /^Standard mode/ }).first().click()
+    await page.getByLabel('Agent mode').selectOption({ label: 'Narrow mode' })
+    await page.getByLabel('Agent mode').selectOption({ label: 'Standard mode' })
     await expect.poll(() => livePreset(scaffold), { timeout: 15_000 }).toBe('standard')
 
     await writeComposerDraft(page, composer, '/')

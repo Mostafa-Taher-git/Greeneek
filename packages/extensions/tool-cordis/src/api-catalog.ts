@@ -4421,7 +4421,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'FleetProviderAvailability',
-    declaration: 'export interface FleetProviderAvailability {\n    readonly name: string;\n    readonly state: FleetProviderState;\n    readonly oneShot: boolean;\n    readonly continuable: boolean;\n    readonly detail?: string;\n}',
+    declaration: 'export interface FleetProviderAvailability {\n    readonly name: string;\n    readonly state: FleetProviderState;\n    readonly oneShot: boolean;\n    readonly continuable: boolean;\n}',
   },
   {
     name: 'FleetProviderState',

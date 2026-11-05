@@ -29,8 +29,7 @@ describe('fleet provider availability', () => {
       expect.objectContaining({ name: 'missing', state: 'not-installed', oneShot: false, continuable: false }),
       expect.objectContaining({ name: 'spawn', state: 'ready', oneShot: true, continuable: true }),
     ])
-    expect(rows.find(row => row.name === 'missing')?.detail).toContain('not registered')
-    expect(rows.find(row => row.name === 'claude-code')?.detail).toContain('holds no Harmony lane')
+    expect(rows.find(row => row.name === 'missing')?.state).toBe('not-installed')
   })
 
   it('refuses an unavailable provider without substituting a ready one', () => {

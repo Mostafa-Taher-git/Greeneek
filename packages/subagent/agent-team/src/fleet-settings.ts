@@ -22,7 +22,11 @@ export type FleetProviderState =
   | 'ready'
   | 'temporarily-unavailable'
 
-/** One configured provider's current availability. */
+/**
+ * One configured provider's current availability. The row carries facts, not prose:
+ * a sentence authored here would reach every locale untranslated, so the Settings
+ * page renders `state` and the two capability flags through its own dictionaries.
+ */
 export interface FleetProviderAvailability {
   /** Registry or configured provider name. */
   readonly name: string
@@ -32,8 +36,6 @@ export interface FleetProviderAvailability {
   readonly oneShot: boolean
   /** Whether the provider holds a durable lane: mailbox, interrupt, and recovery. */
   readonly continuable: boolean
-  /** Human-readable reason for a non-`ready` state. */
-  readonly detail?: string
 }
 
 /** One member of a named fleet favorite. */
@@ -310,7 +312,6 @@ export function fleetProviderAvailability(
         state: 'not-installed',
         oneShot: false,
         continuable: false,
-        detail: 'provider is not registered in this composition',
       }
     }
     if (!continuable.has(name)) {
@@ -319,7 +320,6 @@ export function fleetProviderAvailability(
         state: 'one-shot',
         oneShot: true,
         continuable: false,
-        detail: 'provider runs one Melody delegation and holds no Harmony lane',
       }
     }
     return { name, state: 'ready', oneShot: true, continuable: true }

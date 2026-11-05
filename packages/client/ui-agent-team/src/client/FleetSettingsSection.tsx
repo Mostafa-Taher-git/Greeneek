@@ -258,6 +258,9 @@ export function FleetSettingsSection({
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
   const [providers, setProviders] = useState<readonly FleetProviderAvailability[]>([])
   const [draft, setDraft] = useState<FleetFavorite | null>(null)
+  // The id the open draft was loaded from. Editing `favorite.id` renames that row
+  // rather than leaving the original behind and appending a second fleet.
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [pendingLaunch, setPendingLaunch] = useState<FleetFavorite | null>(null)
@@ -273,11 +276,13 @@ export function FleetSettingsSection({
 
   const openNew = (): void => {
     setDraft({ id: '', name: '', members: [{ ...EMPTY_MEMBER, provider: defaultProvider(providers) }] })
+    setEditingId(null)
     setNotice(null)
   }
 
   const openEdit = (favorite: FleetFavorite): void => {
     setDraft(structuredClone(favorite))
+    setEditingId(favorite.id)
     setNotice(null)
   }
 
@@ -291,11 +296,13 @@ export function FleetSettingsSection({
     }
     setBusy(true)
     try {
-      const next = favorites.some(candidate => candidate.id === favorite.id)
-        ? favorites.map(candidate => candidate.id === favorite.id ? favorite : candidate)
+      const sourceId = editingId ?? favorite.id
+      const next = favorites.some(candidate => candidate.id === sourceId)
+        ? favorites.map(candidate => candidate.id === sourceId ? favorite : candidate)
         : [...favorites, favorite]
       await save(next)
       setDraft(null)
+      setEditingId(null)
       setNotice(t('fleet.saved'))
     } catch (error: unknown) {
       setNotice(t('fleet.error', { message: errorText(error) }))
@@ -373,7 +380,6 @@ export function FleetSettingsSection({
           <li key={provider.name} data-state={provider.state}>
             <strong>{provider.name}</strong>
             <span>{t(rowKey(provider))}</span>
-            {provider.detail !== undefined && <small>{provider.detail}</small>}
           </li>
         ))}
       </ul>
@@ -484,14 +490,14 @@ export function FleetSettingsSection({
               onClick={() => {
                 setDraft({
                   ...draft,
-                  members: [...draft.members, { ...EMPTY_MEMBER, provider: providers.find(p => p.state === 'ready')?.name ?? 'spawn' }],
+                  members: [...draft.members, { ...EMPTY_MEMBER, provider: defaultProvider(providers) }],
                 })
               }}
             >
               {t('fleet.addMember')}
             </Button>
             <Button variant="primary" type="submit" disabled={busy || draft.members.length === 0}>{t('fleet.save')}</Button>
-            <Button variant="outline" disabled={busy} onClick={() => { setDraft(null) }}>{t('fleet.cancel')}</Button>
+            <Button variant="outline" disabled={busy} onClick={() => { setDraft(null); setEditingId(null) }}>{t('fleet.cancel')}</Button>
           </div>
         </form>
       )}

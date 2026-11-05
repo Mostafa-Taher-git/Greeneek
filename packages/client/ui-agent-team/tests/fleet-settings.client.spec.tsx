@@ -29,20 +29,8 @@ const FAVORITE: FleetFavorite = {
 
 const PROVIDERS: FleetProviderAvailability[] = [
   { name: 'spawn', state: 'ready', oneShot: true, continuable: true },
-  {
-    name: 'claude-code',
-    state: 'one-shot',
-    oneShot: true,
-    continuable: false,
-    detail: 'provider runs one delegation to a result and holds no durable Team lane',
-  },
-  {
-    name: 'absent-cli',
-    state: 'not-installed',
-    oneShot: false,
-    continuable: false,
-    detail: 'provider is not registered in this composition',
-  },
+  { name: 'claude-code', state: 'one-shot', oneShot: true, continuable: false },
+  { name: 'absent-cli', state: 'not-installed', oneShot: false, continuable: false },
 ]
 
 /** Locale translator for the shipped dictionaries. */
@@ -424,5 +412,33 @@ describe('fleet settings section', () => {
     expect(await view.findByText('توفر provider')).toBeDefined()
     expect(await view.findByText('Fleets المحفوظة')).toBeDefined()
     expect(root.getAttribute('dir')).toBe('rtl')
+  })
+
+  it('renames a saved fleet in place instead of appending a second row', async () => {
+    const { view, save } = setup()
+    await view.findByText('Review fleet')
+    fireEvent.click(view.getByRole('button', { name: 'Edit' }))
+    fireEvent.change(view.getByLabelText(/Fleet id/), { target: { value: 'review-renamed' } })
+    fireEvent.click(view.getByRole('button', { name: /^Save/ }))
+
+    // The row the editor opened from is replaced, so one fleet is stored: the new id
+    // with the original member, and the old id is gone.
+    const stored = save.mock.calls[0]![0]
+    expect(stored.map(favorite => favorite.id)).toEqual(['review-renamed'])
+    expect(stored[0]!.members.map(member => member.name)).toEqual(FAVORITE.members.map(member => member.name))
+  })
+
+  it('adds a member on the same default provider the first member got', async () => {
+    const { view } = setup('en', { providers: PROVIDERS.filter(provider => provider.state !== 'ready') })
+    await view.findByText('Provider availability')
+    fireEvent.click(view.getByRole('button', { name: 'New fleet' }))
+    fireEvent.click(view.getByRole('button', { name: 'Add member' }))
+
+    // A fleet over providers that hold no durable lane must not silently pin a lane
+    // provider, so both members start on the selectable one.
+    const selects = view.getAllByLabelText('Provider') as HTMLSelectElement[]
+    expect(selects).toHaveLength(2)
+    expect(selects[0]!.value).toBe('claude-code')
+    expect(selects[1]!.value).toBe('claude-code')
   })
 })

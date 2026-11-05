@@ -363,7 +363,7 @@ export class TeamMailbox {
 
   /**
    * Build one settled member's report content: who finished, how it ended, and what
-   * it produced. The report names the Melody execution mode rather than the stored
+   * it produced. The report names the Melody run rather than the stored
    * `mode` value, which stays `one-shot` on the roster row.
    * @param member - settled roster row.
    * @param withholdOutput - drop the output blocks and name their place of record, used

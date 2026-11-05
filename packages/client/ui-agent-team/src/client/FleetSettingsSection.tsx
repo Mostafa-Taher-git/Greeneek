@@ -73,8 +73,8 @@ const EMPTY_MEMBER: FleetFavoriteMember = {
 
 /**
  * Status label for the provider states that are not usable. A `ready` or `one-shot`
- * row is labelled by the execution modes it supports instead, so no provider ever
- * shows both a mode claim and a status for the same fact.
+ * row is labelled by the run types it supports instead, so no provider ever shows
+ * both a run-type claim and a status for the same fact.
  */
 const STATE_KEYS = {
   'not-installed': 'fleet.state.notInstalled',
@@ -83,32 +83,69 @@ const STATE_KEYS = {
 } as const satisfies Record<Exclude<FleetProviderState, 'ready' | 'one-shot'>, TeamKey>
 
 /**
- * Execution modes a provider genuinely supports, in Greeneek's own names.
- *
- * Harmony is the persistent continuable Agent Lane and Melody is one independent
- * delegation that settles with a result; neither is a provider. The pair comes from
- * the capability the adapter implements — a session id or an ACP handshake never
- * sets Harmony — and a continuable start always also answers a single delegation,
- * because the lane is built on that same start path.
- * @param provider - one registered provider's availability row.
- * @returns the locale key naming that row's supported modes.
+ * Registry names whose product name Greeneek's own dictionaries carry. A provider
+ * registered under any other name - an ACP adapter the deployment configured - is
+ * shown by that name, because the client cannot know what its owner called it.
  */
-function modesKey(provider: FleetProviderAvailability): TeamKey {
-  return provider.continuable ? 'fleet.modes.both' : 'fleet.modes.melody'
+const PROVIDER_NAME_KEYS: Readonly<Record<string, TeamKey>> = {
+  fork: 'fleet.provider.fork',
+  spawn: 'fleet.provider.spawn',
+  'claude-code': 'fleet.provider.claudeCode',
+  codex: 'fleet.provider.codex',
+}
+
+/**
+ * Display name for one provider.
+ * @param name - registry name, which is what a saved fleet and cordis.yml carry.
+ * @param t - section dictionary.
+ * @returns the product name for a provider Greeneek ships, or the registry name.
+ */
+function providerLabel(name: string, t: FleetSettingsSectionProps['t']): string {
+  const key = PROVIDER_NAME_KEYS[name]
+  return key === undefined ? name : t(key)
+}
+
+/**
+ * Provider as a single line names it: the product name with the registry name
+ * beside it, or the registry name alone when Greeneek ships no product name, so
+ * an unbranded provider is never written twice.
+ * @param name - registry name, which is what a saved fleet and cordis.yml carry.
+ * @param t - section dictionary.
+ * @returns the display text for one provider.
+ */
+function providerName(name: string, t: FleetSettingsSectionProps['t']): string {
+  const label = providerLabel(name, t)
+  return label === name ? name : `${label} (${name})`
+}
+
+/**
+ * Run types a provider genuinely supports, in Greeneek's own names.
+ *
+ * Harmony is the durable continuable Agent Lane and Melody is a single delegation
+ * that ends with its result; neither is a provider, and neither is an agent mode -
+ * those are the presets beside the composer. The pair comes from the capability the
+ * adapter implements: a session id or an ACP handshake never sets Harmony, and a
+ * continuable start always also answers a single delegation, because the lane is
+ * built on that same start path.
+ * @param provider - one registered provider's availability row.
+ * @returns the locale key naming that row's supported run types.
+ */
+function executionKey(provider: FleetProviderAvailability): TeamKey {
+  return provider.continuable ? 'fleet.execution.both' : 'fleet.execution.melody'
 }
 
 /**
  * Label one provider row carries.
  *
- * A usable provider is distinguished by the modes it supports, because that is the
- * difference a fleet editor decision turns on; any other row states why it is not
- * usable instead, so status and modes never repeat each other.
+ * A usable provider is distinguished by the run types it supports, because that is
+ * the difference a fleet editor decision turns on; any other row states why it is
+ * not usable instead, so status and run type never repeat each other.
  * @param provider - one availability row from the live registry.
  * @returns the locale key to render for that row.
  */
 function rowKey(provider: FleetProviderAvailability): TeamKey {
   return provider.state === 'ready' || provider.state === 'one-shot'
-    ? modesKey(provider)
+    ? executionKey(provider)
     : STATE_KEYS[provider.state]
 }
 
@@ -206,10 +243,10 @@ function MemberEditor({ index, member, providers, t, onChange, onRemove }: {
         >
           {providers.some(provider => provider.name === member.provider)
             ? null
-            : <option value={member.provider}>{member.provider} — {t('fleet.state.notInstalled')}</option>}
+            : <option value={member.provider}>{providerName(member.provider, t)} — {t('fleet.state.notInstalled')}</option>}
           {providers.map(provider => (
             <option key={provider.name} value={provider.name} disabled={!SELECTABLE_STATES.has(provider.state)}>
-              {provider.name} — {t(rowKey(provider))}
+              {providerName(provider.name, t)} — {t(rowKey(provider))}
             </option>
           ))}
         </select>
@@ -431,13 +468,18 @@ export function FleetSettingsSection({
         <h2 className={css.title}>{t('fleet.title')}</h2>
         <p className={css.status}>{t('fleet.unavailable')}</p>
         <Button variant="outline" onClick={() => { void refreshAvailability() }}>{t('fleet.refresh')}</Button>
-        {providers.length > 0 && (
-          <ul className={css.providers}>
-            {providers.map(provider => (
-              <li key={provider.name} data-state={provider.state}>{provider.name} — {t(rowKey(provider))}</li>
-            ))}
-          </ul>
-        )}
+        {providers.length > 0
+          ? (
+            <ul className={css.providers}>
+              {providers.map(provider => (
+                <li key={provider.name} data-state={provider.state}>
+                  <strong>{providerLabel(provider.name, t)}</strong>
+                  <span>{t(rowKey(provider))}</span>
+                </li>
+              ))}
+            </ul>
+          )
+          : <p className={css.status}>{t('fleet.providersEmpty')}</p>}
       </section>
     )
   }
@@ -453,15 +495,27 @@ export function FleetSettingsSection({
       </header>
 
       <h3 className={css.subtitle}>{t('fleet.availability')}</h3>
-      <p className={css.description}>{t('fleet.modes.help')}</p>
-      <ul className={css.providers} aria-label={t('fleet.availability')}>
-        {providers.map(provider => (
-          <li key={provider.name} data-state={provider.state}>
-            <strong>{provider.name}</strong>
-            <span>{t(rowKey(provider))}</span>
-          </li>
-        ))}
-      </ul>
+      <p className={css.description}>{t('fleet.execution.help')}</p>
+      {providers.length === 0
+        ? <p className={css.status}>{t('fleet.providersEmpty')}</p>
+        : (
+          <ul className={css.providers} aria-label={t('fleet.availability')}>
+            {providers.map((provider) => {
+              const label = providerLabel(provider.name, t)
+              return (
+                <li key={provider.name} data-state={provider.state}>
+                  <div className={css.providerName}>
+                    <strong>{label}</strong>
+                    {/* The registry name is the value the fleet stores and cordis.yml
+                        configures, so a branded row still states it. */}
+                    {label === provider.name ? null : <code dir="ltr">{provider.name}</code>}
+                  </div>
+                  <span>{t(rowKey(provider))}</span>
+                </li>
+              )
+            })}
+          </ul>
+        )}
 
       <div className={css.favoriteHeader}>
         <h3 className={css.subtitle}>{t('fleet.favorites')}</h3>
@@ -487,7 +541,7 @@ export function FleetSettingsSection({
                     )}
                     <span>{t('fleet.memberCount', { count: favorite.members.length })}</span>
                     <span className={css.memberSummary}>
-                      {favorite.members.map(member => member.provider).join(', ')}
+                      {favorite.members.map(member => providerLabel(member.provider, t)).join(', ')}
                     </span>
                   </div>
                   <div className={css.actions}>
@@ -528,7 +582,7 @@ export function FleetSettingsSection({
                 </div>
                 <ul className={css.starterMembers}>
                   {starter.members.map(member => (
-                    <li key={member.name}>{member.name} — {member.description} ({member.provider})</li>
+                    <li key={member.name}>{member.name} — {member.description} ({providerName(member.provider, t)})</li>
                   ))}
                 </ul>
                 <Button
@@ -551,7 +605,7 @@ export function FleetSettingsSection({
           <ul>
             {pendingLaunch.members.map(member => (
               <li key={member.name}>
-                {member.name}: {member.provider}, {member.preset ?? t('fleet.inherited')},
+                {member.name}: {providerName(member.provider, t)}, {member.preset ?? t('fleet.inherited')},
                 {' '}{member.model ?? t('fleet.inherited')},
                 {' '}{member.reasoningEffort ?? t('fleet.inherited')},
                 {' '}{member.maxTokens === undefined ? t('fleet.unbounded') : t('fleet.tokens', { count: member.maxTokens })},

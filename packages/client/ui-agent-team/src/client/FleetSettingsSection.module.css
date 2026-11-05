@@ -73,10 +73,26 @@
 
 .providers li {
   display: grid;
-  grid-template-columns: minmax(90px, max-content) max-content;
+  grid-template-columns: minmax(90px, 1fr) max-content;
   align-items: center;
   gap: 10px;
   font-size: 13px;
+}
+
+/* The product name carries the row; the registry name under it is the value a
+   saved fleet stores and cordis.yml configures, so it stays readable. */
+.providerName {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.providerName code {
+  font-family: var(--ds-font-family-code);
+  font-size: 11px;
+  line-height: 14px;
+  color: var(--dsw-alias-label-caption);
 }
 
 .providers li[data-state='ready'] {

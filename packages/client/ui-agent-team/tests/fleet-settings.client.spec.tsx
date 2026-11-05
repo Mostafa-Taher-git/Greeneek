@@ -2,7 +2,7 @@
 import { Context } from '@greeneek/cordis'
 import { LocaleRuntime } from '@greeneek/gnk-client-locale/client'
 import type { FleetFavorite, FleetProviderAvailability } from '@greeneek/gnk-agent-team/client'
-import { cleanup, fireEvent, render } from '@testing-library/react'
+import { cleanup, fireEvent, render, within } from '@testing-library/react'
 import { RemoteError } from '@greeneek/gnk-client-test-runtime'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
@@ -131,28 +131,41 @@ const SCOPED: FleetFavorite = {
 }
 
 describe('fleet settings section', () => {
-  it('names each provider by the execution modes it really supports', async () => {
+  it('names each provider by what it is and the run types it really supports', async () => {
     const { view } = setup()
 
     expect(await view.findByText('Provider availability')).toBeDefined()
-    // Harmony and Melody replace the old `fork`/`spawn` vocabulary, and the
-    // distinction is the provider's own capability: the in-process pair holds a lane,
-    // a registered external adapter runs one delegation to a result.
+    // Harmony and Melody name how a member runs; the distinction is the provider's
+    // own capability: the in-process pair holds a lane, a registered external
+    // adapter runs one delegation to a result.
     expect(await view.findByText('Harmony and Melody')).toBeDefined()
     expect(await view.findByText('Melody only')).toBeDefined()
     expect(await view.findByText('Not installed')).toBeDefined()
-    expect(await view.findByText(/Both are execution modes, not providers/u)).toBeDefined()
+    expect(await view.findByText(/they are not the agent modes beside the composer/u)).toBeDefined()
+    expect(view.queryByText(/execution modes/u)).toBeNull()
     expect(await view.findByText('Review fleet')).toBeDefined()
     expect(await view.findByText('1 member(s)')).toBeDefined()
 
-    // A mode is never offered as a provider, in the list or in the member selector.
+    // A provider Greeneek ships is named by its product name, and the registry
+    // name it persists stays visible; one the deployment configured is shown by
+    // that name, because the client cannot know what its owner called it.
+    const availability = view.getByRole('list', { name: 'Provider availability' })
+    expect(within(availability).getByText('Greeneek built-in (fresh context)')).toBeTruthy()
+    expect(within(availability).getByText('Claude Code')).toBeTruthy()
+    expect(within(availability).getByText('spawn')).toBeTruthy()
+    expect(within(availability).getByText('claude-code')).toBeTruthy()
+    expect(within(availability).getByText('absent-cli')).toBeTruthy()
+
+    // A run type is never offered as a provider, in the list or in the member selector.
     await view.findByText('Provider availability')
     fireEvent.click(view.getByRole('button', { name: 'New fleet' }))
     const select = view.getByLabelText('Provider') as HTMLSelectElement
     expect(select.querySelector('option[value="Harmony and Melody"]')).toBeNull()
     expect(select.querySelector('option[value="Melody only"]')).toBeNull()
-    expect(select.querySelector('option[value="spawn"]')?.textContent).toContain('Harmony and Melody')
-    expect(select.querySelector('option[value="claude-code"]')?.textContent).toContain('Melody only')
+    expect(select.querySelector('option[value="spawn"]')?.textContent)
+      .toBe('Greeneek built-in (fresh context) (spawn) — Harmony and Melody')
+    expect(select.querySelector('option[value="claude-code"]')?.textContent)
+      .toBe('Claude Code (claude-code) — Melody only')
   })
 
   it('offers a one-shot provider as a member and keeps an uninstalled one disabled', async () => {
@@ -181,6 +194,7 @@ describe('fleet settings section', () => {
 
   it('falls back to the composition default provider before availability has loaded', async () => {
     const { view } = setup('en', { providers: [] })
+    expect(await view.findByText('This composition registers no provider.')).toBeTruthy()
     fireEvent.click(view.getByRole('button', { name: 'New fleet' }))
     expect((view.getByLabelText('Provider') as HTMLSelectElement).value).toBe('spawn')
   })
@@ -190,7 +204,7 @@ describe('fleet settings section', () => {
     fireEvent.click(await view.findByRole('button', { name: 'Launch' }))
 
     const dialog = await view.findByRole('alertdialog', { name: 'Confirm fleet launch' })
-    expect(dialog.textContent).toContain('reviewer: spawn')
+    expect(dialog.textContent).toContain('reviewer: Greeneek built-in (fresh context) (spawn)')
     expect(dialog.textContent).toContain('mock')
     expect(dialog.textContent).toContain('high')
     expect(dialog.textContent).toContain('4000 tokens')
@@ -302,8 +316,9 @@ describe('fleet settings section', () => {
     })
     fireEvent.click(view.getAllByRole('button', { name: 'Launch' })[1]!)
     const dialog = view.getByRole('alertdialog')
-    expect(dialog.textContent).toContain('shared: spawn, inherited, inherited, inherited, unbounded, shared checkout')
-    expect(dialog.textContent).toContain('scoped: spawn')
+    expect(dialog.textContent).toContain('shared: Greeneek built-in (fresh context) (spawn)')
+    expect(dialog.textContent).toContain('inherited, inherited, inherited, unbounded, shared checkout')
+    expect(dialog.textContent).toContain('scoped: Greeneek built-in (fresh context) (spawn)')
     expect(dialog.textContent).toContain('scopes src, docs')
     fireEvent.click(view.getByRole('button', { name: 'Cancel' }))
   })
@@ -438,7 +453,7 @@ describe('fleet settings section', () => {
     root.setAttribute('dir', 'rtl')
 
     expect(await view.findByText('إعدادات Fleet')).toBeDefined()
-    expect(await view.findByText('توفر provider')).toBeDefined()
+    expect(await view.findByText('توفّر المزوّد')).toBeDefined()
     expect(await view.findByText('Fleets المحفوظة')).toBeDefined()
     expect(root.getAttribute('dir')).toBe('rtl')
   })
@@ -477,8 +492,8 @@ describe('fleet settings section', () => {
     expect(view.getByText('Starter fleets')).toBeTruthy()
     expect(view.getByText('Development')).toBeTruthy()
     // The preview is the host's own template: exactly what Install would create.
-    expect(view.getByText('implementer — write the change (spawn)')).toBeTruthy()
-    expect(view.getByText('verifier — run the checks (spawn)')).toBeTruthy()
+    expect(view.getByText('implementer — write the change (Greeneek built-in (fresh context) (spawn))')).toBeTruthy()
+    expect(view.getByText('verifier — run the checks (Greeneek built-in (fresh context) (spawn))')).toBeTruthy()
 
     fireEvent.click(view.getByRole('button', { name: 'Install' }))
     expect(await view.findByText('Starter installed as an editable fleet.')).toBeTruthy()

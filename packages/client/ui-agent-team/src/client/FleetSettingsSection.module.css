@@ -73,7 +73,7 @@
 
 .providers li {
   display: grid;
-  grid-template-columns: minmax(90px, max-content) max-content 1fr;
+  grid-template-columns: minmax(90px, max-content) max-content;
   align-items: center;
   gap: 10px;
   font-size: 13px;
@@ -83,13 +83,44 @@
   border-color: var(--dsw-alias-border-success);
 }
 
-.providers li[data-state='not-installed'],
-.providers li[data-state='unsupported-version'] {
+/* An uninstalled provider is dimmed rather than hidden, so the row still says what
+   the composition is missing. A `one-shot` row is usable and stays at full strength. */
+.providers li[data-state='not-installed'] {
   opacity: 0.75;
 }
 
-.providers small {
+.tag {
   color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+}
+
+.starters {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.starterList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.starter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.starterMembers {
+  margin: 0;
+  padding-inline-start: 18px;
+  color: var(--dsw-alias-label-secondary);
   font-size: 12px;
 }
 
@@ -211,7 +242,8 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .favorite {
+  .favorite,
+  .starter {
     align-items: flex-start;
     flex-direction: column;
   }

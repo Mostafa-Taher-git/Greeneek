@@ -33,6 +33,23 @@ const PROVIDERS: FleetProviderAvailability[] = [
   { name: 'absent-cli', state: 'not-installed', oneShot: false, continuable: false },
 ]
 
+/** Starter templates the host catalog returns, in shipped shape. */
+const STARTERS: FleetFavorite[] = [
+  {
+    id: 'development',
+    name: 'Development',
+    members: [
+      { name: 'implementer', description: 'write the change', prompt: 'Implement it.', provider: 'spawn' },
+      { name: 'verifier', description: 'run the checks', prompt: 'Run the checks.', provider: 'spawn', readOnly: true },
+    ],
+  },
+]
+
+/** One accepted fleet mutation, shaped like the remote result the page consumes. */
+function mutationAccepted(): unknown {
+  return { ok: true as const, value: { ok: true as const, value: { providers: [], favorites: [], revision: 2 } } }
+}
+
 /** Locale translator for the shipped dictionaries. */
 function translator(localeId: 'en' | 'ar'): { t: (key: string, params?: Record<string, unknown>) => string; close: () => void } {
   const ctx = new Context()
@@ -53,6 +70,9 @@ function setup(localeId: 'en' | 'ar' = 'en', options: {
   readonly emptySnapshot?: boolean
   readonly saveFailure?: unknown
   readonly launch?: () => Promise<unknown>
+  readonly starters?: readonly FleetFavorite[]
+  readonly startersFailure?: 'error' | 'throw'
+  readonly fleetAction?: () => Promise<unknown>
 } = {}) {
   let favorites: FleetFavorite[] = [...(options.favorites ?? [FAVORITE])]
   let snapshot: FleetSnapshot = {
@@ -84,6 +104,15 @@ function setup(localeId: 'en' | 'ar' = 'en', options: {
       : { ok: true as const, value: options.providers ?? PROVIDERS }),
     save,
     launch,
+    async loadStarters() {
+      if (options.startersFailure === 'throw') throw new RemoteError('gateway/internal', 'starters unreachable', {})
+      if (options.startersFailure === 'error') {
+        return { ok: false as const, error: new RemoteError('gateway/internal', 'starters unreachable', {}) }
+      }
+      return { ok: true as const, value: options.starters ?? STARTERS }
+    },
+    duplicate: vi.fn((options.fleetAction ?? (async () => mutationAccepted())) as never),
+    installStarter: vi.fn((options.fleetAction ?? (async () => mutationAccepted())) as never),
     canLaunch: () => options.canLaunch ?? true,
   } as unknown as FleetSettingsInjected
   const { t, close } = translator(localeId)
@@ -440,5 +469,119 @@ describe('fleet settings section', () => {
     expect(selects).toHaveLength(2)
     expect(selects[0]!.value).toBe('claude-code')
     expect(selects[1]!.value).toBe('claude-code')
+  })
+
+  it('previews each starter fleet and installs it as an editable favorite', async () => {
+    const { view } = setup()
+    await view.findByText('Provider availability')
+    expect(view.getByText('Starter fleets')).toBeTruthy()
+    expect(view.getByText('Development')).toBeTruthy()
+    // The preview is the host's own template: exactly what Install would create.
+    expect(view.getByText('implementer — write the change (spawn)')).toBeTruthy()
+    expect(view.getByText('verifier — run the checks (spawn)')).toBeTruthy()
+
+    fireEvent.click(view.getByRole('button', { name: 'Install' }))
+    expect(await view.findByText('Starter installed as an editable fleet.')).toBeTruthy()
+  })
+
+  it('reports a fleet mutation the host refuses', async () => {
+    const { view } = setup('en', {
+      fleetAction: async () => ({
+        ok: true,
+        value: { ok: false, error: { code: 'fleet-conflict', message: 'fleet settings changed elsewhere' } },
+      }),
+    })
+    fireEvent.click(view.getByRole('button', { name: 'Duplicate' }))
+    expect(await view.findByText(/fleet settings changed elsewhere/)).toBeTruthy()
+  })
+
+  it('reports a fleet mutation that failed before reaching the host', async () => {
+    const { view } = setup('en', {
+      fleetAction: async () => ({ ok: false, error: new RemoteError('gateway/internal', 'fleet gateway down', {}) }),
+    })
+    // The starter catalog must have rendered before the Install control exists.
+    await view.findByText('Development')
+    fireEvent.click(view.getByRole('button', { name: 'Install' }))
+    expect(await view.findByText(/fleet gateway down/)).toBeTruthy()
+  })
+
+  it('reports a fleet mutation that never reached the host', async () => {
+    const { view } = setup('en', { fleetAction: async () => { throw new Error('socket closed mid-call') } })
+    fireEvent.click(view.getByRole('button', { name: 'Duplicate' }))
+    expect(await view.findByText(/socket closed mid-call/)).toBeTruthy()
+  })
+
+  it('reports a starter catalog the composition cannot read and still lists favorites', async () => {
+    const { view } = setup('en', { startersFailure: 'error' })
+    expect(await view.findByText(/starters unreachable/)).toBeTruthy()
+    expect(view.queryByText('Starter fleets')).toBeNull()
+    expect(view.getByText('Review fleet')).toBeTruthy()
+  })
+
+  it('reports a starter catalog whose read rejects outright', async () => {
+    const { view } = setup('en', { startersFailure: 'throw' })
+    expect(await view.findByText(/starters unreachable/)).toBeTruthy()
+  })
+
+  it('blocks a disabled fleet, names why, and re-enables it from the editor', async () => {
+    const { view, save } = setup('en', { favorites: [{ ...FAVORITE, enabled: false }] })
+    const launch = await view.findByRole('button', { name: 'Launch' })
+    expect(launch.hasAttribute('disabled')).toBe(true)
+    expect(launch.getAttribute('title')).toBe('Enable this fleet to launch it.')
+    expect(view.getByText('Disabled')).toBeTruthy()
+
+    fireEvent.click(view.getByRole('button', { name: 'Edit' }))
+    const enabled = view.getByLabelText('Enabled') as HTMLInputElement
+    expect(enabled.checked).toBe(false)
+    fireEvent.click(enabled)
+    fireEvent.click(view.getByRole('button', { name: /^Save/ }))
+    // Re-enabling stores no key at all, so the row keeps the shape a fleet had
+    // before the field existed instead of writing an explicit default.
+    expect(save.mock.calls[0]![0]).toEqual([FAVORITE])
+  })
+
+  it('stores a disabled flag when the owner turns a fleet off', async () => {
+    const { view, save } = setup()
+    await view.findByText('Review fleet')
+    fireEvent.click(view.getByRole('button', { name: 'Edit' }))
+    const enabled = view.getByLabelText('Enabled') as HTMLInputElement
+    expect(enabled.checked).toBe(true)
+    fireEvent.click(enabled)
+    fireEvent.click(view.getByRole('button', { name: /^Save/ }))
+    expect(save.mock.calls[0]![0]).toEqual([{ ...FAVORITE, enabled: false }])
+  })
+
+  it('stores concurrency above the sequential default', async () => {
+    const { view, save } = setup()
+    await view.findByText('Review fleet')
+    expect(view.queryByText(/at once/)).toBeNull()
+    fireEvent.click(view.getByRole('button', { name: 'Edit' }))
+    // 1 is what the launcher already does, so an unset fleet reads as 1.
+    expect((view.getByLabelText('Members at once') as HTMLInputElement).value).toBe('1')
+    // With one member and one requested start, the field explains the batching
+    // rule rather than warning about a batch the fleet cannot exceed.
+    expect(view.getByText('How many members one launch starts simultaneously; 1 starts them one after another.')).toBeTruthy()
+    fireEvent.change(view.getByLabelText('Members at once'), { target: { value: '3' } })
+    // A batch larger than the fleet has no hidden meaning: the page states that
+    // every member starts together instead of leaving the number unexplained.
+    expect(view.getByText('Asking for more than 1 starts every member together, because the fleet has no more members.')).toBeTruthy()
+    fireEvent.click(view.getByRole('button', { name: /^Save/ }))
+    expect(save.mock.calls[0]![0][0]!.concurrency).toBe(3)
+    // The saved row states the setting, so the list itself shows what a launch does.
+    expect(await view.findByText('3 at once')).toBeTruthy()
+  })
+
+  it('stores no concurrency key once the owner returns to sequential launches', async () => {
+    const { view, save } = setup('en', { favorites: [{ ...FAVORITE, concurrency: 3 }] })
+    await view.findByText('3 at once')
+    fireEvent.click(view.getByRole('button', { name: 'Edit' }))
+    fireEvent.change(view.getByLabelText('Members at once'), { target: { value: '1' } })
+    // An emptied field also reads as sequential, so a half-typed value cannot leave
+    // a larger batch stored than the control displays.
+    fireEvent.change(view.getByLabelText('Members at once'), { target: { value: '' } })
+    fireEvent.click(view.getByRole('button', { name: /^Save/ }))
+    // Returning to 1 stores no key, so the row matches a fleet saved before the
+    // field existed instead of carrying a redundant value.
+    expect(Object.hasOwn(save.mock.calls[0]![0][0]!, 'concurrency')).toBe(false)
   })
 })

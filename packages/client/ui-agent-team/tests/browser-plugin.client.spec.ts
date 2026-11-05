@@ -74,6 +74,19 @@ async function bench(options: {
       ok: true,
       value: { members: [] },
     }),
+    fleetStarters: answer('agentTeams/fleetStarters', [{
+      id: 'development',
+      name: 'Development',
+      members: [{ name: 'implementer', description: 'write', prompt: 'go', provider: 'spawn' }],
+    }]),
+    duplicateFleet: answer('agentTeams/duplicateFleet', {
+      ok: true,
+      value: { providers: [], favorites: [], revision: 2 },
+    }),
+    installStarterFleet: answer('agentTeams/installStarterFleet', {
+      ok: true,
+      value: { providers: [], favorites: [], revision: 3 },
+    }),
     createTask: answer('agentTeams/createTask', task),
     updateTask: (...args: unknown[]) => {
       calls.push({ method: 'agentTeams/updateTask', args })
@@ -217,9 +230,25 @@ describe('ui-team browser plugin', () => {
       args: [SESSION, 'review', true],
     })
 
+    // The starter catalog and both fleet mutations ride the same generated namespace,
+    // each fenced by the revision the page is showing.
+    expect((await fleet.loadStarters()).ok).toBe(true)
+    expect(b.calls).toContainEqual({ method: 'agentTeams/fleetStarters', args: [] })
+    const beforeDuplicate = fleet.getSnapshot().revision
+    expect((await fleet.duplicate('review')).ok).toBe(true)
+    expect(b.calls).toContainEqual({ method: 'agentTeams/duplicateFleet', args: [SESSION, 'review', beforeDuplicate] })
+    const beforeInstall = fleet.getSnapshot().revision
+    expect((await fleet.installStarter('development')).ok).toBe(true)
+    expect(b.calls).toContainEqual({ method: 'agentTeams/installStarterFleet', args: [SESSION, 'development', beforeInstall] })
+
     b.select(undefined as never)
     expect(fleet.canLaunch()).toBe(false)
     await expect(fleet.launch('review')).rejects.toThrow('Open a session before launching a fleet.')
+    // No session means no authorizing Lead, so no mutation leaves the browser.
+    await expect(fleet.duplicate('review')).rejects
+      .toThrow('Open a session with loaded fleet settings before changing fleets.')
+    await expect(fleet.installStarter('development')).rejects
+      .toThrow('Open a session with loaded fleet settings before changing fleets.')
   })
 
   it('registers one disposable header action with RPC-backed task operations', async () => {

@@ -4,6 +4,7 @@ import { useEffect, useSyncExternalStore, useState, type FormEvent, type ReactNo
 import type {
   FleetFavorite,
   FleetFavoriteMember,
+  FleetFavoriteResult,
   FleetLaunchResult,
   FleetProviderAvailability,
   FleetProviderState,
@@ -28,8 +29,11 @@ export interface FleetSettingsInjected {
   readonly subscribe: (listener: () => void) => () => void
   readonly getSnapshot: () => FleetSnapshot
   readonly loadAvailability: () => Promise<RemoteResult<FleetProviderAvailability[]>>
+  readonly loadStarters: () => Promise<RemoteResult<readonly FleetFavorite[]>>
   readonly save: (favorites: readonly FleetFavorite[]) => Promise<void>
   readonly launch: (favoriteId: string) => Promise<RemoteResult<FleetLaunchResult>>
+  readonly duplicate: (favoriteId: string) => Promise<RemoteResult<FleetFavoriteResult>>
+  readonly installStarter: (templateId: string) => Promise<RemoteResult<FleetFavoriteResult>>
   readonly canLaunch: () => boolean
 }
 
@@ -123,6 +127,37 @@ export function decodeFleetSettings(section: unknown): FleetSettings | undefined
 /** Derive a stable lower-kebab id from a display name. */
 function slug(name: string): string {
   return name.trim().toLocaleLowerCase().replace(/[^a-z0-9]+/gu, '-').replace(/^-|-$/gu, '').slice(0, 64)
+}
+
+/**
+ * Apply the enabled checkbox to a draft in the shape the launcher reads.
+ *
+ * Enabled is the default, so it is stored as the absence of the key rather than
+ * `enabled: true`; simply overwriting with `true` would leave a previously stored
+ * `false` in place, because spreading the draft keeps the key.
+ * @param favorite - draft being edited.
+ * @param enabled - checkbox state after the change.
+ * @returns the draft to store.
+ */
+function withEnabled(favorite: FleetFavorite, enabled: boolean): FleetFavorite {
+  if (!enabled) return { ...favorite, enabled: false }
+  const { enabled: _dropped, ...rest } = favorite
+  return rest
+}
+
+/**
+ * Apply the concurrency field in the same shape, for the same reason.
+ *
+ * One member at a time is what the launcher does when the key is absent, so moving
+ * back to 1 has to drop the key rather than keep whatever larger batch was stored.
+ * @param favorite - draft being edited.
+ * @param members - how many members one launch starts at once.
+ * @returns the draft to store.
+ */
+function withConcurrency(favorite: FleetFavorite, members: number): FleetFavorite {
+  if (members > 1) return { ...favorite, concurrency: members }
+  const { concurrency: _dropped, ...rest } = favorite
+  return rest
 }
 
 /** One member field editor. */
@@ -253,10 +288,11 @@ function MemberEditor({ index, member, providers, t, onChange, onRemove }: {
  * @returns the fleet settings page.
  */
 export function FleetSettingsSection({
-  t, subscribe, getSnapshot, loadAvailability, save, launch, canLaunch,
+  t, subscribe, getSnapshot, loadAvailability, loadStarters, save, launch, duplicate, installStarter, canLaunch,
 }: FleetSettingsSectionProps): ReactNode {
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
   const [providers, setProviders] = useState<readonly FleetProviderAvailability[]>([])
+  const [starters, setStarters] = useState<readonly FleetFavorite[]>([])
   const [draft, setDraft] = useState<FleetFavorite | null>(null)
   // The id the open draft was loaded from. Editing `favorite.id` renames that row
   // rather than leaving the original behind and appending a second fleet.
@@ -265,13 +301,56 @@ export function FleetSettingsSection({
   const [busy, setBusy] = useState(false)
   const [pendingLaunch, setPendingLaunch] = useState<FleetFavorite | null>(null)
   const favorites = snapshot.value?.favorites ?? []
-  useEffect(() => { void refreshAvailability() }, [])
   const writable = snapshot.writable && snapshot.status === 'ready'
 
   const refreshAvailability = async (): Promise<void> => {
     const result = await loadAvailability()
     if (result.ok) setProviders(result.value)
     else setNotice(t('fleet.error', { message: result.error.message }))
+  }
+
+  // The starter catalog is read from the host so the page previews exactly what an
+  // install would create, rather than a list the client would have to keep in step.
+  // A composition that cannot answer is reported, and the favorites page still works.
+  const refreshStarters = async (): Promise<void> => {
+    try {
+      const result = await loadStarters()
+      if (result.ok) setStarters(result.value)
+      else setNotice(t('fleet.error', { message: result.error.message }))
+    } catch (error: unknown) {
+      setNotice(t('fleet.error', { message: errorText(error) }))
+    }
+  }
+
+  useEffect(() => {
+    void refreshAvailability()
+    void refreshStarters()
+  }, [])
+
+  /**
+   * Run one host-side fleet mutation (duplicate, starter install) and report its
+   * outcome in the page's own notice line, then re-read the derived rows so a refused
+   * provider or a stale revision is visible instead of swallowed.
+   * @param action - the mutation to attempt.
+   * @param saved - locale key naming what a successful mutation did.
+   */
+  const runFleetAction = async (action: () => Promise<RemoteResult<FleetFavoriteResult>>, saved: TeamKey): Promise<void> => {
+    setBusy(true)
+    try {
+      const result = await action()
+      if (!result.ok) {
+        setNotice(t('fleet.error', { message: result.error.message }))
+      } else if (!result.value.ok) {
+        setNotice(t('fleet.error', { message: result.value.error.message }))
+      } else {
+        setNotice(t(saved))
+        await refreshAvailability()
+      }
+    } catch (error: unknown) {
+      setNotice(t('fleet.error', { message: errorText(error) }))
+    } finally {
+      setBusy(false)
+    }
   }
 
   const openNew = (): void => {
@@ -392,31 +471,78 @@ export function FleetSettingsSection({
         ? <p className={css.status}>{t('fleet.empty')}</p>
         : (
           <ul className={css.favorites}>
-            {favorites.map(favorite => (
-              <li key={favorite.id} className={css.favorite}>
+            {favorites.map((favorite) => {
+              // A disabled fleet stays listed and editable but cannot be launched, and
+              // the reason is stated before the click rather than after a refusal.
+              const blocked = favorite.enabled === false
+                ? t('fleet.disabledCannotLaunch')
+                : !canLaunch() ? t('fleet.needSession') : undefined
+              return (
+                <li key={favorite.id} className={css.favorite}>
+                  <div className={css.favoriteText}>
+                    <strong>{favorite.name}</strong>
+                    {favorite.enabled === false && <span className={css.tag}>{t('fleet.disabledTag')}</span>}
+                    {favorite.concurrency !== undefined && favorite.concurrency > 1 && (
+                      <span className={css.tag}>{t('fleet.concurrentTag', { count: favorite.concurrency })}</span>
+                    )}
+                    <span>{t('fleet.memberCount', { count: favorite.members.length })}</span>
+                    <span className={css.memberSummary}>
+                      {favorite.members.map(member => member.provider).join(', ')}
+                    </span>
+                  </div>
+                  <div className={css.actions}>
+                    <Button variant="outline" disabled={busy} onClick={() => { openEdit(favorite) }}>{t('fleet.edit')}</Button>
+                    <Button
+                      variant="outline"
+                      disabled={busy || blocked !== undefined}
+                      title={blocked}
+                      onClick={() => { setPendingLaunch(favorite) }}
+                    >
+                      {t('fleet.launch')}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      disabled={busy || !writable}
+                      onClick={() => { void runFleetAction(() => duplicate(favorite.id), 'fleet.duplicated') }}
+                    >
+                      {t('fleet.duplicate')}
+                    </Button>
+                    <Button variant="outline" disabled={busy} onClick={() => { void remove(favorite) }}>{t('fleet.delete')}</Button>
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+
+      {starters.length > 0 && (
+        <section className={css.starters}>
+          <h3 className={css.subtitle}>{t('fleet.starters')}</h3>
+          <p className={css.description}>{t('fleet.startersHelp')}</p>
+          <ul className={css.starterList}>
+            {starters.map(starter => (
+              <li key={starter.id} className={css.starter}>
                 <div className={css.favoriteText}>
-                  <strong>{favorite.name}</strong>
-                  <span>{t('fleet.memberCount', { count: favorite.members.length })}</span>
-                  <span className={css.memberSummary}>
-                    {favorite.members.map(member => member.provider).join(', ')}
-                  </span>
+                  <strong>{starter.name}</strong>
+                  <span>{t('fleet.memberCount', { count: starter.members.length })}</span>
                 </div>
-                <div className={css.actions}>
-                  <Button variant="outline" disabled={busy} onClick={() => { openEdit(favorite) }}>{t('fleet.edit')}</Button>
-                  <Button
-                    variant="outline"
-                    disabled={busy || !canLaunch()}
-                    title={canLaunch() ? undefined : t('fleet.needSession')}
-                    onClick={() => { setPendingLaunch(favorite) }}
-                  >
-                    {t('fleet.launch')}
-                  </Button>
-                  <Button variant="outline" disabled={busy} onClick={() => { void remove(favorite) }}>{t('fleet.delete')}</Button>
-                </div>
+                <ul className={css.starterMembers}>
+                  {starter.members.map(member => (
+                    <li key={member.name}>{member.name} — {member.description} ({member.provider})</li>
+                  ))}
+                </ul>
+                <Button
+                  variant="outline"
+                  disabled={busy || !writable}
+                  onClick={() => { void runFleetAction(() => installStarter(starter.id), 'fleet.installed') }}
+                >
+                  {t('fleet.install')}
+                </Button>
               </li>
             ))}
           </ul>
-        )}
+        </section>
+      )}
 
       {pendingLaunch !== null && (
         <div className={css.confirm} role="alertdialog" aria-label={t('fleet.confirmTitle')}>
@@ -463,6 +589,39 @@ export function FleetSettingsSection({
               onChange={(event) => { setDraft({ ...draft, id: event.target.value }) }}
             />
           </label>
+          <label className={css.check}>
+            <input
+              type="checkbox"
+              checked={draft.enabled !== false}
+              onChange={(event) => { setDraft(withEnabled(draft, event.target.checked)) }}
+            />
+            <span>{t('fleet.enabled')}</span>
+          </label>
+          <p className={css.description}>{t('fleet.enabledHelp')}</p>
+          <label className={css.field}>
+            <span>{t('fleet.concurrency')}</span>
+            <input
+              type="number"
+              min={1}
+              step={1}
+              value={draft.concurrency ?? 1}
+              onChange={(event) => {
+                const parsed = Number.parseInt(event.target.value, 10)
+                // An unparsable field reads as the sequential default, so the stored
+                // row never keeps a batch size the control no longer shows. No `max`
+                // attribute: native range validation would block saving a batch that
+                // is larger than a draft still short of its members.
+                setDraft(withConcurrency(draft, Number.isSafeInteger(parsed) ? parsed : 1))
+              }}
+            />
+          </label>
+          {/* The practical ceiling is the member count, so a batch over it is named
+              rather than left as a number that silently does something else. */}
+          <p className={css.description}>
+            {(draft.concurrency ?? 1) > draft.members.length
+              ? t('fleet.concurrencyAllAtOnce', { count: draft.members.length })
+              : t('fleet.concurrencyHelp')}
+          </p>
           {draft.members.map((member, index) => (
             <MemberEditor
               key={index}

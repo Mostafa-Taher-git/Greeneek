@@ -90,11 +90,31 @@ function registerUi(ctx: ClientContext): void {
     }
     return cachedSnapshot
   }
+  /**
+   * The Lead session and fenced settings revision a host-side fleet mutation needs.
+   * Both are read at call time, so a mutation never carries a stale fence or runs
+   * against a session that closed between render and click.
+   * @returns the exact Lead session and the revision to fence the write against.
+   * @throws When no session is open or the fleet section has not loaded, because
+   * either one would send a mutation the host cannot authorize or fence.
+   */
+  const fleetFence = (): { readonly lead: SessionId; readonly revision: number } => {
+    const current = sessions.list.getSnapshot().current
+    const snapshot = fleetSnapshot()
+    if (current === undefined || snapshot.revision === undefined) {
+      throw new Error('Open a session with loaded fleet settings before changing fleets.')
+    }
+    return { lead: leadSessionId(current), revision: snapshot.revision }
+  }
+
   const fleet: FleetSettingsInjected = {
     subscribe: listener => fleetScope.subscribe(listener),
     getSnapshot: fleetSnapshot,
     async loadAvailability() {
       return await ctx.remote.agentTeams.fleetAvailability()
+    },
+    async loadStarters() {
+      return await ctx.remote.agentTeams.fleetStarters()
     },
     async save(favorites) {
       await fleetScope.set('favorites', [...favorites])
@@ -103,6 +123,14 @@ function registerUi(ctx: ClientContext): void {
       const current = sessions.list.getSnapshot().current
       if (current === undefined) throw new Error('Open a session before launching a fleet.')
       return await ctx.remote.agentTeams.launchFleetFavorite(leadSessionId(current), favoriteId, true)
+    },
+    async duplicate(favoriteId) {
+      const fence = fleetFence()
+      return await ctx.remote.agentTeams.duplicateFleet(fence.lead, favoriteId, fence.revision)
+    },
+    async installStarter(templateId) {
+      const fence = fleetFence()
+      return await ctx.remote.agentTeams.installStarterFleet(fence.lead, templateId, fence.revision)
     },
     canLaunch: () => sessions.list.getSnapshot().current !== undefined,
   }

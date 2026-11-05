@@ -257,8 +257,13 @@ describe('web e2e: agent-preset authoring is a host-side copy', () => {
     // new-session screen with the self-referential preset staged, and the
     // blank session the flow produces composes from it on the host.
     await dialog.waitFor({ state: 'detached', timeout: 10_000 })
-    // The new-session mode switcher exposes modes as radios, not buttons.
-    await page.getByRole('radio', { name: '创造模式' }).waitFor({ timeout: 10_000 })
+    // The new-session mode control is a menu button whose trigger names the
+    // staged mode, so the flow's result is read off the trigger's own line
+    // rather than off a radio that no longer exists.
+    await expect.poll(
+      async () => await page.getByRole('button', { name: 'Agent 模式' }).innerText(),
+      { timeout: 10_000 },
+    ).toBe('创造模式')
     await expect.poll(async () => {
       const response = await scaffold.hostFetch('/api/session/list', {
         method: 'POST',

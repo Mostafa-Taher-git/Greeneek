@@ -6,6 +6,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   duplicateFleetFavorite,
+  fleetStarterTemplates,
   FLEET_STARTER_TEMPLATES,
   isFleetEnabled,
   starterFleet,
@@ -60,6 +61,17 @@ describe('starter fleets', () => {
   it('installs under its own id when free and under a copy id when taken', () => {
     expect(starterFleet('research', new Set()).id).toBe('research')
     expect(starterFleet('research', new Set(['research'])).id).toBe('research-copy')
+  })
+
+  it('hands the preview surface copies it cannot mutate back into the catalog', () => {
+    const offered = fleetStarterTemplates()
+    expect(offered.map(template => template.id))
+      .toEqual(['development', 'research', 'quality-assurance'])
+    // Identity, not equality: a caller that edited what it was shown must not reach
+    // the templates every later install copies from.
+    expect(offered[0]).not.toBe(FLEET_STARTER_TEMPLATES[0])
+    expect(offered[0]!.members[0]).not.toBe(FLEET_STARTER_TEMPLATES[0]!.members[0])
+    expect(starterFleet('development', new Set()).members[0]).not.toBe(FLEET_STARTER_TEMPLATES[0]!.members[0])
   })
 
   it('names the available template ids when asked for one that does not exist', () => {

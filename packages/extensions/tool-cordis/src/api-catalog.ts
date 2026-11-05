@@ -552,6 +552,24 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         parameters: [{ name: 'agent', description: 'exact live Team Lead.' }, { name: 'id', description: 'favorite identity.' }, { name: 'confirmed', description: 'explicit UI confirmation.' }],
         returns: 'created members or a typed refusal.',
       },
+      {
+        signature: '@Remote(\'fleetStarters\') remoteFleetStarters(): FleetFavorite[]',
+        description: 'Read the starter fleet catalog through the generated Remote API, so the Settings page can preview each starter before installing it rather than naming templates the client would have to duplicate.',
+        parameters: [],
+        returns: 'an editable copy of every shipped starter, in shipped order.',
+      },
+      {
+        signature: '@Remote(\'duplicateFleet\') remoteDuplicateFleet(agent: Agent, id: string, expectedRevision: number): Promise<FleetFavoriteResult>',
+        description: 'Duplicate one saved fleet through the generated Remote API.',
+        parameters: [{ name: 'agent', description: 'exact live Team Lead.' }, { name: 'id', description: 'fleet being duplicated.' }, { name: 'expectedRevision', description: 'settings revision the page read.' }],
+        returns: 'the section holding the copy, or a typed refusal.',
+      },
+      {
+        signature: '@Remote(\'installStarterFleet\') remoteInstallStarterFleet(agent: Agent, templateId: string, expectedRevision: number): Promise<FleetFavoriteResult>',
+        description: 'Install one starter fleet as an editable favorite through the generated Remote API.',
+        parameters: [{ name: 'agent', description: 'exact live Team Lead.' }, { name: 'templateId', description: 'starter identity from `fleetStarters`.' }, { name: 'expectedRevision', description: 'settings revision the page read.' }],
+        returns: 'the section holding the installed fleet, or a typed refusal.',
+      },
     ],
   },
   {

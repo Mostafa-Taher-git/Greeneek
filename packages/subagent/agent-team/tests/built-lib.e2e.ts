@@ -41,7 +41,10 @@ describe.skipIf(!requiredArtifacts)('Agent Teams built LIB service', () => {
       className: 'TeamService',
       methods: [
         '@greeneek/gnk-agent-team#agentTeams/createTask',
+        '@greeneek/gnk-agent-team#agentTeams/duplicateFleet',
         '@greeneek/gnk-agent-team#agentTeams/fleetAvailability',
+        '@greeneek/gnk-agent-team#agentTeams/fleetStarters',
+        '@greeneek/gnk-agent-team#agentTeams/installStarterFleet',
         '@greeneek/gnk-agent-team#agentTeams/launchFleetFavorite',
         '@greeneek/gnk-agent-team#agentTeams/updateTask',
         '@greeneek/gnk-agent-team#agentTeams/view',

@@ -1951,6 +1951,27 @@ describe('Fleet favorites', () => {
     expect(await ctx.agentTeams.remoteLaunchFleetFavorite(lead, 'absent', true))
       .toMatchObject({ ok: false, error: { code: 'TEAM_FLEET_FAVORITE_NOT_FOUND' } })
 
+    // The three catalog surfaces the Settings page drives reach the same service code
+    // through the Remote wrappers, and each mutation still fences its write.
+    expect(ctx.agentTeams.remoteFleetStarters().map(template => template.id))
+      .toEqual(['development', 'research', 'quality-assurance'])
+    const duplicated = await ctx.agentTeams.remoteDuplicateFleet(
+      lead,
+      'other-fleet',
+      deleted.ok ? deleted.value.revision : 0,
+    )
+    expect(duplicated.ok).toBe(true)
+    const installed = await ctx.agentTeams.remoteInstallStarterFleet(
+      lead,
+      'development',
+      duplicated.ok ? duplicated.value.revision : 0,
+    )
+    expect(installed.ok).toBe(true)
+    if (duplicated.ok && installed.ok) {
+      expect(installed.value.favorites.map(candidate => candidate.id))
+        .toEqual(['other-fleet', 'other-fleet-copy', 'development'])
+    }
+
     const write = vi.spyOn(
       ctx.agentTeams as unknown as { writeFleetFavorites: (favorites: unknown, revision: number) => Promise<void> },
       'writeFleetFavorites',
@@ -2094,6 +2115,113 @@ describe('Fleet favorites', () => {
     expect(ctx.agentTeams.listMembers(lead).map(member => member.name).sort())
       .toEqual(['alpha', 'beta', 'clash', 'lead'])
   }, 30_000)
+
+  it('admits no more members at once than the fleet concurrency allows', async () => {
+    const settingsRoot = mkdtempSync(join(tmpdir(), 'gnk-team-fleet-paced-'))
+    roots.push(settingsRoot)
+    const { ctx, lead } = await setup(
+      [textResponse('a'), textResponse('b'), textResponse('c'), textResponse('d')],
+      {},
+      {},
+      false,
+      join(settingsRoot, 'settings.json'),
+    )
+    const saved = await ctx.agentTeams.saveFleetFavorite(lead, {
+      id: 'paced',
+      name: 'Paced fleet',
+      concurrency: 2,
+      members: [
+        { name: 'm1', description: 'a', prompt: 'run', provider: 'spawn' },
+        { name: 'm2', description: 'b', prompt: 'run', provider: 'spawn' },
+        { name: 'm3', description: 'c', prompt: 'run', provider: 'spawn' },
+        { name: 'm4', description: 'd', prompt: 'run', provider: 'spawn' },
+      ],
+    }, 0)
+    if (!saved.ok) throw new Error(saved.error.message)
+
+    // Each spawn is held at the admission seam, so a third start could only appear
+    // if the launch loop did not wait for its batch. Real spawning then proceeds
+    // unchanged, which keeps the roster members genuine.
+    const starts: string[] = []
+    const held: Array<() => void> = []
+    let inFlight = 0
+    let peak = 0
+    const real = ctx.agentTeams.spawnTeammate.bind(ctx.agentTeams)
+    const spy = vi.spyOn(ctx.agentTeams, 'spawnTeammate').mockImplementation(async (caller, request) => {
+      starts.push(request.name)
+      inFlight += 1
+      peak = Math.max(peak, inFlight)
+      await new Promise<void>((resolve) => { held.push(resolve) })
+      inFlight -= 1
+      return await real(caller, request)
+    })
+
+    const launched = ctx.agentTeams.launchFleetFavorite(lead, 'paced', true)
+    await vi.waitFor(() => { expect(starts).toEqual(['m1', 'm2']) })
+    expect(held).toHaveLength(2)
+    held.forEach((release) => { release() })
+
+    await vi.waitFor(() => { expect(starts).toHaveLength(4) })
+    held.forEach((release) => { release() })
+    const result = await launched
+    spy.mockRestore()
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) throw new Error(result.error.message)
+    expect(result.value.members.map(member => member.name).sort()).toEqual(['m1', 'm2', 'm3', 'm4'])
+    expect(peak).toBe(2)
+  }, 30_000)
+
+  it('reports every failed member of one launch batch, not only the last', async () => {
+    const settingsRoot = mkdtempSync(join(tmpdir(), 'gnk-team-fleet-batch-'))
+    roots.push(settingsRoot)
+    const { ctx, lead } = await setup(
+      ['hang', 'hang', 'hang'],
+      {},
+      {},
+      false,
+      join(settingsRoot, 'settings.json'),
+    )
+    // Two teammates already hold the names the fleet will ask for, so the whole
+    // batch fails deterministically - the shape that hides a failure when only the
+    // last outcome of a batch is reported.
+    for (const name of ['one', 'two']) {
+      await spawn(ctx, lead, name)
+    }
+    const saved = await ctx.agentTeams.saveFleetFavorite(lead, {
+      id: 'collide',
+      name: 'Collide',
+      concurrency: 2,
+      members: [
+        { name: 'one', description: 'a', prompt: 'run', provider: 'spawn' },
+        { name: 'two', description: 'b', prompt: 'run', provider: 'spawn' },
+      ],
+    }, 0)
+    if (!saved.ok) throw new Error(saved.error.message)
+
+    const refused = await ctx.agentTeams.launchFleetFavorite(lead, 'collide', true)
+    expect(refused).toMatchObject({ ok: false, error: { code: 'fleet-member-failed' } })
+    if (refused.ok) throw new Error('expected the colliding batch to fail')
+    expect(refused.error.message).toContain('2 member(s) failed')
+    expect(refused.error.message).toContain('"one"')
+    expect(refused.error.message).toContain('"two"')
+  }, 30_000)
+
+  it('refuses a fleet mutation from a teammate', async () => {
+    const settingsRoot = mkdtempSync(join(tmpdir(), 'gnk-team-fleet-teammate-'))
+    roots.push(settingsRoot)
+    const { ctx, lead } = await setup(['hang'], {}, {}, false, join(settingsRoot, 'settings.json'))
+    const started = await spawn(ctx, lead, 'worker')
+    const worker = await waitRunning(ctx, started.member.id)
+
+    // Duplicating and installing write the shared fleet section, so they need the
+    // same Lead authority that saving and deleting already required.
+    await expect(ctx.agentTeams.duplicateFleet(worker, 'anything', 0))
+      .rejects.toMatchObject({ code: 'TEAM_LEAD_REQUIRED' })
+    await expect(ctx.agentTeams.installStarterFleet(worker, 'research', 0))
+      .rejects.toMatchObject({ code: 'TEAM_LEAD_REQUIRED' })
+    expect(ctx.agentTeams.fleetFavorites(worker).favorites).toEqual([])
+  }, 20_000)
 
   it('fails closed when the fleet settings namespace is not mounted', async () => {
     const { ctx, lead } = await setup([])

@@ -3,6 +3,7 @@
 export type {
   FleetFavorite,
   FleetFavoriteMember,
+  FleetFavoriteResult,
   FleetFavoritesView,
   FleetLaunchResult,
   FleetProviderAvailability,

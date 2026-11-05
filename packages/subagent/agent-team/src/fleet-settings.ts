@@ -271,6 +271,19 @@ export const FLEET_STARTER_TEMPLATES: readonly FleetFavorite[] = [
 ]
 
 /**
+ * Each starter template as an editable fleet copy, safe to hand to a caller that
+ * only previews it: the shipped templates are module constants, so a caller that
+ * received them by reference could mutate what every later install copies from.
+ * @returns one deep copy per template, in shipped order.
+ */
+export function fleetStarterTemplates(): FleetFavorite[] {
+  return FLEET_STARTER_TEMPLATES.map(template => ({
+    ...template,
+    members: template.members.map(member => ({ ...member })),
+  }))
+}
+
+/**
  * One starter template as an editable saved fleet under its template id.
  * @param id - template identity.
  * @param existingIds - ids already saved.

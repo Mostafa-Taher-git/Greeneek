@@ -14,6 +14,7 @@ import type { RepoFleetSnapshot } from './fleet-config.ts'
 import {
   assertFavoriteProviderReady,
   duplicateFleetFavorite,
+  fleetStarterTemplates,
   favoriteMemberRequest,
   fleetConcurrency,
   FLEET_SETTINGS_NAMESPACE,
@@ -560,7 +561,7 @@ export class TeamService extends TypertRemoteService {
    * @returns the section holding the copy, or a typed refusal.
    */
   async duplicateFleet(caller: Agent, id: string, expectedRevision: number): Promise<FleetFavoriteResult> {
-    this.roster.membership(caller)
+    this.requireFleetLead(caller)
     try {
       const current = this.favoritesView().favorites
       const source = current.find(candidate => candidate.id === id)
@@ -584,7 +585,7 @@ export class TeamService extends TypertRemoteService {
    * @returns the section holding the installed fleet, or a typed refusal.
    */
   async installStarterFleet(caller: Agent, templateId: string, expectedRevision: number): Promise<FleetFavoriteResult> {
-    this.roster.membership(caller)
+    this.requireFleetLead(caller)
     try {
       const current = this.favoritesView().favorites
       const installed = starterFleet(templateId, new Set(current.map(candidate => candidate.id)))
@@ -617,10 +618,7 @@ export class TeamService extends TypertRemoteService {
     favorite: FleetFavorite,
     expectedRevision: number,
   ): Promise<FleetFavoriteResult> {
-    const membership = this.roster.membership(caller)
-    if (membership.role !== 'lead') {
-      throw new TeamError('only the Team Lead can change fleet favorites', 'TEAM_LEAD_REQUIRED')
-    }
+    this.requireFleetLead(caller)
     try {
       validateFleetFavorite(favorite)
       const current = this.favoritesView().favorites
@@ -647,10 +645,7 @@ export class TeamService extends TypertRemoteService {
     id: string,
     expectedRevision: number,
   ): Promise<FleetFavoriteResult> {
-    const membership = this.roster.membership(caller)
-    if (membership.role !== 'lead') {
-      throw new TeamError('only the Team Lead can change fleet favorites', 'TEAM_LEAD_REQUIRED')
-    }
+    this.requireFleetLead(caller)
     try {
       const current = this.favoritesView().favorites
       if (!current.some(candidate => candidate.id === id)) {
@@ -718,23 +713,34 @@ export class TeamService extends TypertRemoteService {
             return { ok: false, name: member.name, message: errorMessage(error) }
           }
         }))
-        let failure: { readonly name: string; readonly message: string } | undefined
+        const failures: string[] = []
         for (const outcome of outcomes) {
           if (outcome.ok) {
             members.push(outcome.member)
             continue
           }
-          failure = { name: outcome.name, message: outcome.message }
+          failures.push(`"${outcome.name}": ${outcome.message}`)
         }
-        if (failure !== undefined) {
+        if (failures.length > 0) {
+          // Every failed member of the batch is named. Above concurrency 1 several
+          // members settle together, and reporting only the last one would hide
+          // reasons the Lead has to act on; the list stays bounded by batch size.
           const started = String(members.length)
-          const detail = `member "${failure.name}" failed; ${started} sibling(s) started: ${failure.message}`
+          const detail = `${String(failures.length)} member(s) failed; ${started} sibling(s) started: ${failures.join('; ')}`
           return { ok: false, error: { code: 'fleet-member-failed', message: detail } }
         }
       }
       return { ok: true, value: { members } }
     } catch (error: unknown) {
       return this.fleetFailure(error)
+    }
+  }
+
+  /** Require the Lead role that every fleet-favorites mutation needs. */
+  private requireFleetLead(caller: Agent): void {
+    const membership = this.roster.membership(caller)
+    if (membership.role !== 'lead') {
+      throw new TeamError('only the Team Lead can change fleet favorites', 'TEAM_LEAD_REQUIRED')
     }
   }
 
@@ -858,6 +864,41 @@ export class TeamService extends TypertRemoteService {
   @Remote('launchFleetFavorite')
   remoteLaunchFleetFavorite(agent: Agent, id: string, confirmed: boolean): Promise<FleetLaunchResult> {
     return this.launchFleetFavorite(agent, id, confirmed)
+  }
+
+  /**
+   * Read the starter fleet catalog through the generated Remote API, so the Settings
+   * page can preview each starter before installing it rather than naming templates
+   * the client would have to duplicate.
+   * @returns an editable copy of every shipped starter, in shipped order.
+   */
+  @Remote('fleetStarters')
+  remoteFleetStarters(): FleetFavorite[] {
+    return fleetStarterTemplates()
+  }
+
+  /**
+   * Duplicate one saved fleet through the generated Remote API.
+   * @param agent - exact live Team Lead.
+   * @param id - fleet being duplicated.
+   * @param expectedRevision - settings revision the page read.
+   * @returns the section holding the copy, or a typed refusal.
+   */
+  @Remote('duplicateFleet')
+  remoteDuplicateFleet(agent: Agent, id: string, expectedRevision: number): Promise<FleetFavoriteResult> {
+    return this.duplicateFleet(agent, id, expectedRevision)
+  }
+
+  /**
+   * Install one starter fleet as an editable favorite through the generated Remote API.
+   * @param agent - exact live Team Lead.
+   * @param templateId - starter identity from `fleetStarters`.
+   * @param expectedRevision - settings revision the page read.
+   * @returns the section holding the installed fleet, or a typed refusal.
+   */
+  @Remote('installStarterFleet')
+  remoteInstallStarterFleet(agent: Agent, templateId: string, expectedRevision: number): Promise<FleetFavoriteResult> {
+    return this.installStarterFleet(agent, templateId, expectedRevision)
   }
 
   /** Preserve Team task rejections while allowing unexpected failures to reject the Remote call. */

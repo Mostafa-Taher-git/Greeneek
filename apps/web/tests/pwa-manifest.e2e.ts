@@ -12,15 +12,15 @@ it('ships install metadata with the built web application', async () => {
   const manifest: unknown = JSON.parse(await readFile(join(DIST_ROOT, 'manifest.webmanifest'), 'utf8'))
   expect(manifest).toEqual({
     id: '/',
-    name: 'Greeneek Harness',
-    short_name: 'GNK',
+    name: 'Greeneek',
+    short_name: 'Greeneek',
     start_url: '/',
     scope: '/',
     display: 'fullscreen',
     icons: [{
-      src: '/favicon.svg',
-      sizes: 'any',
-      type: 'image/svg+xml',
+      src: '/favicon.png',
+      sizes: '1347x1168',
+      type: 'image/png',
       purpose: 'any',
     }],
   })

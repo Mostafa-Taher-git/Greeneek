@@ -150,6 +150,32 @@ function rowKey(provider: FleetProviderAvailability): TeamKey {
 }
 
 /** Render one caught value as a message for an inline notice. */
+/**
+ * One fleet mutation's outcome after both failure layers are read: the remote
+ * call itself, then the business result it returns. Callers turn the message
+ * into a notice and never inspect a half-read result.
+ */
+type FleetActionOutcome<T> =
+  | { readonly ok: true; readonly value: T }
+  | { readonly ok: false; readonly message: string }
+
+/**
+ * Read both failure layers of a host fleet mutation into one outcome.
+ * @param result - the remote result carrying a fleet business result.
+ * @returns the business value on success, or the message that refused it.
+ */
+function readFleetOutcome<T>(
+  result: RemoteResult<
+    | { readonly ok: true; readonly value: T }
+    | { readonly ok: false; readonly error: { readonly message: string } }
+  >,
+): FleetActionOutcome<T> {
+  if (!result.ok) return { ok: false, message: result.error.message }
+  return result.value.ok
+    ? { ok: true, value: result.value.value }
+    : { ok: false, message: result.value.error.message }
+}
+
 export function errorText(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
 }
@@ -374,11 +400,9 @@ export function FleetSettingsSection({
   const runFleetAction = async (action: () => Promise<RemoteResult<FleetFavoriteResult>>, saved: TeamKey): Promise<void> => {
     setBusy(true)
     try {
-      const result = await action()
-      if (!result.ok) {
-        setNotice(t('fleet.error', { message: result.error.message }))
-      } else if (!result.value.ok) {
-        setNotice(t('fleet.error', { message: result.value.error.message }))
+      const outcome = readFleetOutcome(await action())
+      if (!outcome.ok) {
+        setNotice(t('fleet.error', { message: outcome.message }))
       } else {
         setNotice(t(saved))
         await refreshAvailability()
@@ -444,13 +468,11 @@ export function FleetSettingsSection({
     if (pendingLaunch === null) return
     setBusy(true)
     try {
-      const result = await launch(pendingLaunch.id)
-      if (!result.ok) {
-        setNotice(t('fleet.error', { message: result.error.message }))
-      } else if (!result.value.ok) {
-        setNotice(t('fleet.error', { message: result.value.error.message }))
+      const outcome = readFleetOutcome(await launch(pendingLaunch.id))
+      if (!outcome.ok) {
+        setNotice(t('fleet.error', { message: outcome.message }))
       } else {
-        setNotice(t('fleet.launched', { count: result.value.value.members.length }))
+        setNotice(t('fleet.launched', { count: outcome.value.members.length }))
       }
     } catch (error: unknown) {
       setNotice(t('fleet.error', { message: errorText(error) }))

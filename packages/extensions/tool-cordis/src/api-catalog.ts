@@ -1605,7 +1605,7 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'the normalized selection installed for the Session.',
       },
       {
-        signature: '@Remote(\'presentCodeTools\') presentCodeTools( request: SessionPresentCodeToolsRequest, ): Promise<SessionPresentCodeToolsValue>',
+        signature: '@Remote(\'presentCtc\') presentCtc( request: SessionPresentCtcRequest, ): Promise<SessionPresentCtcValue>',
         description: 'Opt one Session into the lazy `both` code-tools presentation.',
         parameters: [{ name: 'request', description: 'Session whose presentation the user turns on.' }],
         returns: 'the presentation now declared for the Session\'s model.',
@@ -5530,12 +5530,12 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface SessionPersistenceStatOptions {\n    readonly signal?: AbortSignal;\n}',
   },
   {
-    name: 'SessionPresentCodeToolsRequest',
-    declaration: 'export interface SessionPresentCodeToolsRequest {\n    readonly sessionId: SessionId;\n    readonly enabled?: boolean;\n}',
+    name: 'SessionPresentCtcRequest',
+    declaration: 'export interface SessionPresentCtcRequest {\n    readonly sessionId: SessionId;\n    readonly enabled?: boolean;\n}',
   },
   {
-    name: 'SessionPresentCodeToolsValue',
-    declaration: 'export interface SessionPresentCodeToolsValue {\n    readonly presentAs: \'both\' | \'native\';\n}',
+    name: 'SessionPresentCtcValue',
+    declaration: 'export interface SessionPresentCtcValue {\n    readonly presentAs: \'both\' | \'native\';\n}',
   },
   {
     name: 'SessionProjectionBaseline',

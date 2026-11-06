@@ -24,7 +24,7 @@ import type { SubmitOutcome } from '../src/client/contract/input.ts'
 import { SessionInputShell } from '../src/client/input/facade.ts'
 import { $replaceDetectSpanWithText, $selectDetectSpan } from '../src/client/input/editor/span-map.ts'
 import type {
-  ComposerAttachment, ComposerAttachmentsOwnerProps, PresentCodeToolsResult,
+  ComposerAttachment, ComposerAttachmentsOwnerProps, PresentCtcResult,
 } from '../src/client/contract/slots.ts'
 import type { DraftAttachmentId } from '../src/client/contract/input.ts'
 import { InputBar } from '../src/client/input/InputBar.tsx'
@@ -58,7 +58,7 @@ interface BenchOptions {
   /** The `presentAs` projection value the standard-kit useProjection serves. */
   presentAs?: 'native' | 'ptc' | 'both' | null
   /** The injected CTC switch face (absent = no chip). */
-  presentCodeTools?: (enabled: boolean) => Promise<PresentCodeToolsResult>
+  presentCtc?: (enabled: boolean) => Promise<PresentCtcResult>
   /** The `imageLimits` projection value (absent = no attachment service). */
   imageLimits?: {
     maxImageBytes: number
@@ -194,7 +194,7 @@ function bench(over?: BenchOptions) {
     useMenuLauncher: bindSnapshotSelector(menuLauncher),
     stop,
     command: over?.command ?? (() => Promise.resolve(true)),
-    presentCodeTools: over?.presentCodeTools,
+    presentCtc: over?.presentCtc,
     // Mirrors the real lookup chain (conversation namespace, then common).
     t: over?.t ?? makeTranslate(zh, commonZh),
     renderSlot,
@@ -1484,7 +1484,7 @@ describe('composer control seats', () => {
     const bare = bench()
     expect(bare.view.container.querySelector(`button[aria-label="${zh['input.codeTools']}"]`)).toBeNull()
     cleanup()
-    const withFace = bench({ presentCodeTools: () => Promise.resolve({ ok: true }) })
+    const withFace = bench({ presentCtc: () => Promise.resolve({ ok: true }) })
     expect(withFace.view.container.querySelector(`button[aria-label="${zh['input.codeTools']}"]`)).toBeNull()
     cleanup()
     const withProjection = bench({ presentAs: null })
@@ -1492,7 +1492,7 @@ describe('composer control seats', () => {
   })
 
   it('the code tools chip renders off-state over a baseline; the menu carries the opt-in, the description, and the caveat', () => {
-    const { view } = bench({ presentCodeTools: () => Promise.resolve({ ok: true }), presentAs: null })
+    const { view } = bench({ presentCtc: () => Promise.resolve({ ok: true }), presentAs: null })
     const trigger = view.getByLabelText(zh['input.codeTools'])
     expect(trigger.getAttribute('title')).toBe(zh['input.codeTools.off'])
     fireEvent.click(trigger)
@@ -1502,21 +1502,21 @@ describe('composer control seats', () => {
   })
 
   it('opting in calls the injected face and closes the menu on acceptance', async () => {
-    const presentCodeTools = vi.fn(() => Promise.resolve({ ok: true as const }))
-    const { view } = bench({ presentCodeTools, presentAs: null })
+    const presentCtc = vi.fn(() => Promise.resolve({ ok: true as const }))
+    const { view } = bench({ presentCtc, presentAs: null })
     fireEvent.click(view.getByLabelText(zh['input.codeTools']))
     fireEvent.click(view.getByRole('menuitem', { name: zh['input.codeTools.on'] }))
     await act(async () => {})
-    expect(presentCodeTools).toHaveBeenCalledTimes(1)
-    expect(presentCodeTools.mock.calls[0]).toEqual([true])
+    expect(presentCtc).toHaveBeenCalledTimes(1)
+    expect(presentCtc.mock.calls[0]).toEqual([true])
     await act(async () => {})
     expect(view.queryByRole('menuitem', { name: zh['input.codeTools.on'] })).toBeNull()
   })
 
   it('toasts every refusal reason through the bar banner without closing the menu', async () => {
-    let response: PresentCodeToolsResult = { ok: false, reason: 'locked', detail: '' }
-    const presentCodeTools = vi.fn(() => Promise.resolve(response))
-    const { view } = bench({ presentCodeTools, presentAs: null })
+    let response: PresentCtcResult = { ok: false, reason: 'locked', detail: '' }
+    const presentCtc = vi.fn(() => Promise.resolve(response))
+    const { view } = bench({ presentCtc, presentAs: null })
     fireEvent.click(view.getByLabelText(zh['input.codeTools']))
     const row = view.getByRole('menuitem', { name: zh['input.codeTools.on'] })
 
@@ -1537,21 +1537,21 @@ describe('composer control seats', () => {
   })
 
   it('leaves an unavailable refusal silent; the session is dropping', async () => {
-    const presentCodeTools = vi.fn(() => Promise.resolve<PresentCodeToolsResult>(
+    const presentCtc = vi.fn(() => Promise.resolve<PresentCtcResult>(
       { ok: false, reason: 'unavailable', detail: 'gone' },
     ))
-    const { view } = bench({ presentCodeTools, presentAs: null })
+    const { view } = bench({ presentCtc, presentAs: null })
     fireEvent.click(view.getByLabelText(zh['input.codeTools']))
     fireEvent.click(view.getByRole('menuitem', { name: zh['input.codeTools.on'] }))
     await act(async () => {})
-    expect(presentCodeTools).toHaveBeenCalledOnce()
+    expect(presentCtc).toHaveBeenCalledOnce()
     expect(view.queryByRole('alert')).toBeNull()
     expect(view.queryByRole('menuitem', { name: zh['input.codeTools.on'] })).not.toBeNull()
   })
 
   it('the on-state chip marks enabled and offers the withdrawal, not the opt-in', () => {
-    const presentCodeTools = vi.fn(() => Promise.resolve({ ok: true as const }))
-    const { view } = bench({ presentCodeTools, presentAs: 'both' })
+    const presentCtc = vi.fn(() => Promise.resolve({ ok: true as const }))
+    const { view } = bench({ presentCtc, presentAs: 'both' })
     const trigger = view.getByLabelText(zh['input.codeTools'])
     expect(trigger.getAttribute('title')).toBeNull()
     expect(trigger.textContent).toContain(zh['input.codeTools'])
@@ -1559,29 +1559,29 @@ describe('composer control seats', () => {
     expect(view.getByText(zh['input.codeTools.caveat'])).toBeTruthy()
     expect(view.queryByRole('menuitem', { name: zh['input.codeTools.on'] })).toBeNull()
     expect(view.getByRole('menuitem', { name: zh['input.codeTools.offAction'] })).toBeTruthy()
-    expect(presentCodeTools).not.toHaveBeenCalled()
+    expect(presentCtc).not.toHaveBeenCalled()
   })
 
   it('withdrawing calls the injected face with false and closes the menu on acceptance', async () => {
-    const presentCodeTools = vi.fn(() => Promise.resolve({ ok: true as const }))
-    const { view } = bench({ presentCodeTools, presentAs: 'both' })
+    const presentCtc = vi.fn(() => Promise.resolve({ ok: true as const }))
+    const { view } = bench({ presentCtc, presentAs: 'both' })
     fireEvent.click(view.getByLabelText(zh['input.codeTools']))
     fireEvent.click(view.getByRole('menuitem', { name: zh['input.codeTools.offAction'] }))
     await act(async () => {})
-    expect(presentCodeTools.mock.calls[0]).toEqual([false])
+    expect(presentCtc.mock.calls[0]).toEqual([false])
   })
 
   it('disabled locks the code tools chip (running does not)', () => {
     const { view } = bench({
       disabled: true,
-      presentCodeTools: () => Promise.resolve({ ok: true }),
+      presentCtc: () => Promise.resolve({ ok: true }),
       presentAs: null,
     })
     expect((view.getByLabelText(zh['input.codeTools']) as HTMLButtonElement).disabled).toBe(true)
     cleanup()
     const live = bench({
       running: true,
-      presentCodeTools: () => Promise.resolve({ ok: true }),
+      presentCtc: () => Promise.resolve({ ok: true }),
       presentAs: null,
     })
     expect((live.view.getByLabelText(zh['input.codeTools']) as HTMLButtonElement).disabled).toBe(false)

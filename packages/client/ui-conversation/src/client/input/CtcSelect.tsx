@@ -4,15 +4,15 @@ import { useEffect, useState } from 'react'
 import clsx from 'clsx'
 import type { MenuEntry } from '@greeneek/gnk-client-ui-primitives'
 import { IconCheckOutline16, IconChevronDownOutline14, Menu } from '@greeneek/gnk-client-ui-primitives'
-import type { ComposerBarProps, PresentCodeToolsResult } from '../contract/slots.ts'
-import css from './CodeToolsSelect.module.css'
+import type { ComposerBarProps, PresentCtcResult } from '../contract/slots.ts'
+import css from './CtcSelect.module.css'
 
 /** Composer props slice driving the chip. */
-export interface CodeToolsSelectProps {
+export interface CtcSelectProps {
   /** The session's folded presentation (undefined = no projection landed yet). */
   presentAs: 'native' | 'ptc' | 'both' | null | undefined
   /** The host presentation action, asked for one desired state (undefined = capability absent). */
-  presentCodeTools: ((enabled: boolean) => Promise<PresentCodeToolsResult>) | undefined
+  presentCtc: ((enabled: boolean) => Promise<PresentCtcResult>) | undefined
   /** The bar's transient banner sink for refused opt-ins. */
   showToast: (text: string) => void
   /** Whether the composer refuses interaction entirely. */
@@ -35,19 +35,19 @@ const codeGlyph = (
   </svg>
 )
 
-export function CodeToolsSelect({ presentAs, presentCodeTools, showToast, locked, t }: CodeToolsSelectProps) {
+export function CtcSelect({ presentAs, presentCtc, showToast, locked, t }: CtcSelectProps) {
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   // Locking or losing the session face collapses an open menu like the
   // Access chip does on its own lock/value change.
   useEffect(() => {
-    if (locked || presentCodeTools === undefined) setOpen(false)
-  }, [locked, presentCodeTools])
+    if (locked || presentCtc === undefined) setOpen(false)
+  }, [locked, presentCtc])
 
   // Pre-baseline (undefined projection) and capability-absent both render
   // nothing: the chip exists for users, and a Session without a landed
   // presentation value has nothing meaningful to show yet.
-  if (presentAs === undefined || presentCodeTools === undefined) return null
+  if (presentAs === undefined || presentCtc === undefined) return null
 
   const enabled = presentAs === 'both'
   // One row carries whichever change is actually available, so the menu never
@@ -74,7 +74,7 @@ export function CodeToolsSelect({ presentAs, presentCodeTools, showToast, locked
   const declare = (next: boolean): void => {
     if (busy) return
     setBusy(true)
-    void presentCodeTools(next)
+    void presentCtc(next)
       .then((result) => {
         if (result.ok) {
           // The folded projection flips the trigger; close now.

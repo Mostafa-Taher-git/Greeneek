@@ -20,7 +20,7 @@ usePinnedBrowserLanguages('zh-CN')
 
 const ROOT = 'root-1' as SessionId
 
-/** What the scripted `remote.session.presentCodeTools` next answers. */
+/** What the scripted `remote.session.presentCtc` next answers. */
 type PresentResponse =
   | { ok: true; value: { presentAs: 'both' } }
   | { ok: false; error: RemoteError }
@@ -47,7 +47,7 @@ async function bench() {
   const presented = vi.fn<(request: { sessionId: SessionId; enabled: boolean }) => Promise<PresentResponse>>(
     _request => Promise.resolve({ ...presentResponse }),
   )
-  new TestRemote(runtime.ctx, { session: { presentCodeTools: presented } })
+  new TestRemote(runtime.ctx, { session: { presentCtc: presented } })
   const sessionFake = sessionFakeFor()
   await runtime.sessions.add({
     id: ROOT,
@@ -237,7 +237,7 @@ describe('Conversation inject API', () => {
     const absent = injectBar(undefined)
     expect(absent.keyboard).toBeUndefined()
     expect(absent.stop).toBeUndefined()
-    expect(absent.presentCodeTools).toBeUndefined()
+    expect(absent.presentCtc).toBeUndefined()
     expect(absent.hooks.notices.getSnapshot()).toBeNull()
     expect(absent.hooks.lexicon.getSnapshot().size).toBe(0)
     expect(absent.hooks.menuLauncher.getSnapshot()).toBeNull()
@@ -250,7 +250,7 @@ describe('Conversation inject API', () => {
 
   it('exposes the code tools opt-in face through the scripted session remote', async () => {
     const b = await bench()
-    const face = b.composerApi(ROOT).presentCodeTools
+    const face = b.composerApi(ROOT).presentCtc
     expect(face).toBeTypeOf('function')
     await expect(face!(true)).resolves.toEqual({ ok: true })
     expect(b.presented).toHaveBeenCalledTimes(1)
@@ -260,14 +260,14 @@ describe('Conversation inject API', () => {
 
   it('sends the desired state when the chip withdraws the presentation', async () => {
     const b = await bench()
-    await b.composerApi(ROOT).presentCodeTools!(false)
+    await b.composerApi(ROOT).presentCtc!(false)
     expect(b.presented).toHaveBeenCalledWith({ sessionId: ROOT, enabled: false })
     await b.runtime.dispose()
   })
 
   it('maps the wire refusal codes onto the chip reason set', async () => {
     const b = await bench()
-    const face = b.composerApi(ROOT).presentCodeTools!
+    const face = b.composerApi(ROOT).presentCtc!
     b.setPresent({ ok: false, error: new RemoteError('tool/presentation-locked', 'locked up', { sessionId: ROOT }) })
     await expect(face(true)).resolves.toEqual({ ok: false, reason: 'locked', detail: 'locked up' })
     b.setPresent({ ok: false, error: new RemoteError('tool/code-runtime-required', 'no runtime', { sessionId: ROOT }) })

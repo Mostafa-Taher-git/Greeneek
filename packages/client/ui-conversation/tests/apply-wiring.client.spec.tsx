@@ -16,7 +16,7 @@ async function bench(options: { declareConversation?: boolean } = {}) {
   const runtime = await SlotTestRuntime.create()
   // The Conversation plugin requires the remote namespaces: script the opt-in
   // the code tools chip faces use.
-  new TestRemote(runtime.ctx, { session: { presentCodeTools: () => Promise.resolve({ ok: true }) } })
+  new TestRemote(runtime.ctx, { session: { presentCtc: () => Promise.resolve({ ok: true }) } })
   runtime.ctx.provide('uiWorkspace', { connectWorkspace: vi.fn(async () => SID) } as never)
   runtime.ctx.provide('settingsScope', { bind: () => stubSettingsScope().scope } as never)
   const locale = new LocaleRuntime(runtime.ctx)

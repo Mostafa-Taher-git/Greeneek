@@ -37,7 +37,7 @@ declare module '@greeneek/gnk-session-projection/types' {
 }
 
 /** Request the user's opt-in of one Session into the lazy code-tools presentation. */
-export interface SessionPresentCodeToolsRequest {
+export interface SessionPresentCtcRequest {
   /** The Session whose presentation the user changes. */
   readonly sessionId: SessionId
   /**
@@ -49,7 +49,7 @@ export interface SessionPresentCodeToolsRequest {
 }
 
 /** Result of a successful declaration: the presentation now visible to the Session's model. */
-export interface SessionPresentCodeToolsValue {
+export interface SessionPresentCtcValue {
   /** The presentation the Session's model now sees. */
   readonly presentAs: 'both' | 'native'
 }

@@ -284,7 +284,7 @@ export interface ComposerBarOwnerProps {
  * a withdrawal waits for the turn to settle), and `unavailable` (the Session
  * cannot act — a ghost id, a gone binding, or any other refusal).
  */
-export type PresentCodeToolsResult =
+export type PresentCtcResult =
   | { readonly ok: true }
   | {
     readonly ok: false
@@ -306,7 +306,7 @@ export interface ComposerBarInjected {
   ) => InputSubmitMode
   stop: (() => void) | undefined
   command: ((line: string) => Promise<boolean>) | undefined
-  presentCodeTools: ((enabled: boolean) => Promise<PresentCodeToolsResult>) | undefined
+  presentCtc: ((enabled: boolean) => Promise<PresentCtcResult>) | undefined
   hooks: {
     notices: ObservableSnapshot<InputNotice | null>
     lexicon: ObservableSnapshot<ReadonlyMap<'/' | '@', readonly string[]>>

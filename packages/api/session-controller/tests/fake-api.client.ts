@@ -224,8 +224,8 @@ export class FakeApiClient {
           payload,
           this.onSelectModel(payload),
         ),
-        presentCodeTools: payload => this.record(
-          'session.presentCodeTools',
+        presentCtc: payload => this.record(
+          'session.presentCtc',
           payload,
           Promise.resolve(ok({ presentAs: 'both' as const })),
         ),

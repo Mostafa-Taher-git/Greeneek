@@ -12,7 +12,7 @@ The label hid the second half of the complaint. "Code tools" said nothing about 
 
 **The controller records the declaration it owns.** `packages/api/session-controller/src/presentation.ts` keeps a `WeakMap` from an agent's own context to its disposer — `rememberPresentation`, `releasePresentation`, `holdsPresentation`. A preset composition declares through the same `presentAs` call on a standing scope and never enters that registry, so the Session Controller distinguishes its own declaration from a deployment's without asking the tools registry to track ownership it has no use for.
 
-**The remote takes a desired state.** `session.presentCodeTools` accepts `enabled` (absent means `true`) and returns the presentation now active, `'both'` or `'native'`. Asking for `both` while the controller already holds a declaration returns that state without a second event; asking to withdraw a session that never declared returns `native` without one. A double click cannot fabricate history.
+**The remote takes a desired state.** `session.presentCtc` accepts `enabled` (absent means `true`) and returns the presentation now active, `'both'` or `'native'`. Asking for `both` while the controller already holds a declaration returns that state without a second event; asking to withdraw a session that never declared returns `native` without one. A double click cannot fabricate history.
 
 **Both directions append one `tool/present-as` event per accepted change.** The existing projection fold already returns the latest event's `to`, so replay reproduces every state a toggling session held, and a resumed agent re-declares from that value and enters the registry — a re-adopted Session is withdrawable like a fresh one.
 
@@ -20,7 +20,7 @@ The label hid the second half of the complaint. "Code tools" said nothing about 
 
 **Withdrawal waits for an idle Agent; enable does not.** Under `both` the scope's dispatch table carries `run_code`. Switching the same scope to `native` removes it, so a withdrawal landing mid-turn would refuse a `run_code` call that the running turn was already given as available. Adding a presentation is additive and simply applies to the next request, so it stays available at any time. The refusal is the typed `tool/presentation-busy`, which the chip renders as "Disable CTC once this turn finishes."
 
-**The chip shows the one change that is available.** `CodeToolsSelect` renders a single row whose id and label follow the folded `presentAs` — opt-in when off, withdrawal when on — and its footer states what CTC does and the measured per-turn prompt cost. The row's own id is the desired state, so the menu never presents two contradictory switches.
+**The chip shows the one change that is available.** `CtcSelect` renders a single row whose id and label follow the folded `presentAs` — opt-in when off, withdrawal when on — and its footer states what CTC does and the measured per-turn prompt cost. The row's own id is the desired state, so the menu never presents two contradictory switches.
 
 ## Alternatives considered
 

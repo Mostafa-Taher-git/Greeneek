@@ -146,12 +146,12 @@ async function harness(stubs: HarnessStubs = {}) {
   }
 }
 
-describe('session.presentCodeTools opt-in', () => {
+describe('session.presentCtc opt-in', () => {
   it('applies the opt-in once to the live agent scope and logs the declaration', async () => {
     const { ctx, remote, declarations } = await harness({ codeRuntime: true })
     await remote.create({ sessionId: SessionId('s1') })
 
-    const result = await remote.presentCodeTools({ sessionId: SessionId('s1') })
+    const result = await remote.presentCtc({ sessionId: SessionId('s1') })
 
     expect(result).toMatchObject({ ok: true, value: { presentAs: 'both' } })
     expect(declarations).toEqual(['both'])
@@ -166,9 +166,9 @@ describe('session.presentCodeTools opt-in', () => {
   it('treats a repeated opt-in as the state it already left', async () => {
     const { ctx, remote, declarations } = await harness({ codeRuntime: true })
     await remote.create({ sessionId: SessionId('s2') })
-    await remote.presentCodeTools({ sessionId: SessionId('s2'), enabled: true })
+    await remote.presentCtc({ sessionId: SessionId('s2'), enabled: true })
 
-    const repeat = await remote.presentCodeTools({ sessionId: SessionId('s2'), enabled: true })
+    const repeat = await remote.presentCtc({ sessionId: SessionId('s2'), enabled: true })
 
     expect(repeat).toMatchObject({ ok: true, value: { presentAs: 'both' } })
     expect(declarations).toEqual(['both'])
@@ -179,15 +179,15 @@ describe('session.presentCodeTools opt-in', () => {
   it('withdraws the opt-in and lets the same session declare it again', async () => {
     const { ctx, remote, declarations, withdrawals } = await harness({ codeRuntime: true })
     await remote.create({ sessionId: SessionId('s5') })
-    await remote.presentCodeTools({ sessionId: SessionId('s5'), enabled: true })
+    await remote.presentCtc({ sessionId: SessionId('s5'), enabled: true })
 
-    const off = await remote.presentCodeTools({ sessionId: SessionId('s5'), enabled: false })
+    const off = await remote.presentCtc({ sessionId: SessionId('s5'), enabled: false })
     expect(off).toMatchObject({ ok: true, value: { presentAs: 'native' } })
     expect(withdrawals).toEqual(['both'])
     using observed = await ctx.sessionQuery.observeSession(SessionId('s5'))
     expect((observed.projections?.values as Record<string, unknown>).presentAs).toBe('native')
 
-    const on = await remote.presentCodeTools({ sessionId: SessionId('s5'), enabled: true })
+    const on = await remote.presentCtc({ sessionId: SessionId('s5'), enabled: true })
     expect(on).toMatchObject({ ok: true, value: { presentAs: 'both' } })
     // The withdrawal released the scope, so the re-declaration is a fresh one
     // rather than the lock refusal a second presentAs on a live scope gives.
@@ -201,7 +201,7 @@ describe('session.presentCodeTools opt-in', () => {
     const { ctx, remote, withdrawals } = await harness({ codeRuntime: true })
     await remote.create({ sessionId: SessionId('s6') })
 
-    const off = await remote.presentCodeTools({ sessionId: SessionId('s6'), enabled: false })
+    const off = await remote.presentCtc({ sessionId: SessionId('s6'), enabled: false })
 
     expect(off).toMatchObject({ ok: true, value: { presentAs: 'native' } })
     expect(withdrawals).toEqual([])
@@ -213,7 +213,7 @@ describe('session.presentCodeTools opt-in', () => {
     const { remote, declarations } = await harness({ codeRuntime: true, compositionDeclares: true })
     await remote.create({ sessionId: SessionId('s7') })
 
-    const response = await remote.presentCodeTools({ sessionId: SessionId('s7'), enabled: true })
+    const response = await remote.presentCtc({ sessionId: SessionId('s7'), enabled: true })
 
     expect(response).toMatchObject({
       ok: false,
@@ -226,7 +226,7 @@ describe('session.presentCodeTools opt-in', () => {
     const { remote } = await harness()
     await remote.create({ sessionId: SessionId('s3') })
 
-    const response = await remote.presentCodeTools({ sessionId: SessionId('s3') })
+    const response = await remote.presentCtc({ sessionId: SessionId('s3') })
 
     expect(response).toMatchObject({
       ok: false,
@@ -237,7 +237,7 @@ describe('session.presentCodeTools opt-in', () => {
   it('re-declares the opt-in silently when re-adopting the Session', async () => {
     const { ctx, remote, declarations, disposeAgent } = await harness({ codeRuntime: true })
     await remote.create({ sessionId: SessionId('s4') })
-    await remote.presentCodeTools({ sessionId: SessionId('s4') })
+    await remote.presentCtc({ sessionId: SessionId('s4') })
     await disposeAgent(SessionId('s4'))
     expect(declarations).toEqual(['both'])
 
@@ -251,9 +251,9 @@ describe('session.presentCodeTools opt-in', () => {
   it('refuses a withdrawal while the Agent runs and keeps the live declaration', async () => {
     const { remote, declarations, withdrawals } = await harness({ codeRuntime: true, status: 'running' })
     await remote.create({ sessionId: SessionId('s8') })
-    await remote.presentCodeTools({ sessionId: SessionId('s8'), enabled: true })
+    await remote.presentCtc({ sessionId: SessionId('s8'), enabled: true })
 
-    const refused = await remote.presentCodeTools({ sessionId: SessionId('s8'), enabled: false })
+    const refused = await remote.presentCtc({ sessionId: SessionId('s8'), enabled: false })
 
     expect(refused).toMatchObject({
       ok: false,
@@ -268,7 +268,7 @@ describe('session.presentCodeTools opt-in', () => {
     await remote.create({ sessionId: SessionId('s9') })
     refuseAppend(new Error('log offline'))
 
-    const refused = await remote.presentCodeTools({ sessionId: SessionId('s9'), enabled: true })
+    const refused = await remote.presentCtc({ sessionId: SessionId('s9'), enabled: true })
 
     expect(refused.ok).toBe(false)
     if (refused.ok) throw new Error('unreachable')
@@ -280,18 +280,18 @@ describe('session.presentCodeTools opt-in', () => {
     expect(log.events.filter(event => event.type === 'tool/present-as')).toHaveLength(0)
 
     allowAppend()
-    const retry = await remote.presentCodeTools({ sessionId: SessionId('s9'), enabled: true })
+    const retry = await remote.presentCtc({ sessionId: SessionId('s9'), enabled: true })
     expect(retry).toMatchObject({ ok: true, value: { presentAs: 'both' } })
   })
 
   it('restores the declaration when a withdrawal cannot be recorded', async () => {
     const { ctx, remote, declarations, withdrawals, refuseAppend } = await harness({ codeRuntime: true })
     await remote.create({ sessionId: SessionId('s10') })
-    await remote.presentCodeTools({ sessionId: SessionId('s10'), enabled: true })
+    await remote.presentCtc({ sessionId: SessionId('s10'), enabled: true })
     // A thrown non-Error still reaches the refusal text through `String`.
     refuseAppend('log offline')
 
-    const refused = await remote.presentCodeTools({ sessionId: SessionId('s10'), enabled: false })
+    const refused = await remote.presentCtc({ sessionId: SessionId('s10'), enabled: false })
 
     expect(refused.ok).toBe(false)
     if (refused.ok) throw new Error('unreachable')
@@ -310,7 +310,7 @@ describe('session.presentCodeTools opt-in', () => {
     })
     await remote.create({ sessionId: SessionId('s11') })
 
-    const refused = await remote.presentCodeTools({ sessionId: SessionId('s11'), enabled: true })
+    const refused = await remote.presentCtc({ sessionId: SessionId('s11'), enabled: true })
 
     expect(refused).toMatchObject({ ok: false, error: { code: 'gateway/internal', message: 'registry exploded' } })
     expect(declarations).toEqual([])

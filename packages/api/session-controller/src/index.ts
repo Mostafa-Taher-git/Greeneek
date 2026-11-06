@@ -45,8 +45,8 @@ import type {
   SessionOpenWorkspacePathValue,
   SessionPage,
   SessionPageRequest,
-  SessionPresentCodeToolsRequest,
-  SessionPresentCodeToolsValue,
+  SessionPresentCtcRequest,
+  SessionPresentCtcValue,
   SessionPromptRequest,
   SessionPromptValue,
   SessionRenameRequest,
@@ -263,11 +263,11 @@ export class SessionController extends TypertRemoteService {
    * @param request - Session whose presentation the user turns on.
    * @returns the presentation now declared for the Session's model.
    */
-  @Remote('presentCodeTools')
-  presentCodeTools(
-    request: SessionPresentCodeToolsRequest,
-  ): Promise<SessionPresentCodeToolsValue> {
-    return this.commands.presentCodeTools(request)
+  @Remote('presentCtc')
+  presentCtc(
+    request: SessionPresentCtcRequest,
+  ): Promise<SessionPresentCtcValue> {
+    return this.commands.presentCtc(request)
   }
 
   /**

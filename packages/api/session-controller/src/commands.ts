@@ -38,8 +38,8 @@ import type {
   SessionCreateValue,
   SessionForkRequest,
   SessionForkValue,
-  SessionPresentCodeToolsRequest,
-  SessionPresentCodeToolsValue,
+  SessionPresentCtcRequest,
+  SessionPresentCtcValue,
   SessionPromptRequest,
   SessionPromptValue,
   SessionRenameRequest,
@@ -178,11 +178,10 @@ export class SessionCommandController {
    * @param request - Session identity and the desired state.
    * @returns the presentation now visible to the Session's model.
    */
-  async presentCodeTools(request: SessionPresentCodeToolsRequest): Promise<SessionPresentCodeToolsValue> {
+  async presentCtc(request: SessionPresentCtcRequest): Promise<SessionPresentCtcValue> {
     const agent = await this.resolveAgent(request.sessionId)
     const enabled = request.enabled ?? true
-    // oxlint-disable-next-line typescript/require-await -- the admission contract wants a Promise; the declaration chain is synchronous
-    return this.agents.serializeImageAdmission(agent, async () => {
+    const apply = (): SessionPresentCtcValue => {
       const scope = agent.ctx
       if (!enabled && agent.status === 'running') {
         throw new RemoteError(
@@ -228,7 +227,8 @@ export class SessionCommandController {
         )
       }
       return { presentAs: to }
-    })
+    }
+    return this.agents.serializeImageAdmission(agent, () => Promise.resolve(apply()))
   }
 
   /**

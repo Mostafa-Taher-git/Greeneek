@@ -718,7 +718,7 @@ inspect( sessionId: SessionId, signal?: AbortSignal, ): Promise<SessionInspectio
  * @param request - Session whose presentation the user turns on.
  * @returns the presentation now declared for the Session's model.
  */
-@Remote('presentCodeTools') presentCodeTools( request: SessionPresentCodeToolsRequest, ): Promise<SessionPresentCodeToolsValue>
+@Remote('presentCtc') presentCtc( request: SessionPresentCtcRequest, ): Promise<SessionPresentCtcValue>
 
 /**
  * Describe every currently routable model for Host-generation selectors.

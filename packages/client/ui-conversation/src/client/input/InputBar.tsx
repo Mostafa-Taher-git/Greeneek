@@ -33,7 +33,7 @@ import { ComposerContentEditable } from './editor/ComposerContentEditable.tsx'
 import { DecoratorPortals } from './editor/DecoratorPortals.tsx'
 import { registerComposerKeymap } from './editor/keymap.ts'
 import { attachmentErrorText, imageSizeText } from '../image-labels.ts'
-import { CodeToolsSelect } from './CodeToolsSelect.tsx'
+import { CtcSelect } from './CtcSelect.tsx'
 import { ContextMeter } from './ContextMeter.tsx'
 import { PermissionSelect } from './PermissionSelect.tsx'
 import css from './InputBar.module.css'
@@ -42,7 +42,7 @@ export type InputBarProps = ComposerBarProps
 
 export const InputBar = memo(function InputBar({
   useSession, useInput, inputActions, keyboard, addImages, removeImage, draftImages,
-  resolveSubmitMode, stop, command, presentCodeTools, t,
+  resolveSubmitMode, stop, command, presentCtc, t,
   renderSlot, useNotices, useLexicon, useMenuLauncher,
   useProjection, sessionId, variant, disabled: inert = false, blocked,
   workspacePickerOpen = false, onRequestWorkspace,
@@ -335,12 +335,12 @@ export const InputBar = memo(function InputBar({
   // The code tools opt-in chip: the bar answers the opt-in remote directly
   // (face present with the Session; hidden until a projection baseline
   // lands). Sibling of the Access chip, never a seat.
-  const codeToolsSelect: ReactNode = presentCodeTools === undefined
+  const ctcSelect: ReactNode = presentCtc === undefined
     ? null
     : (
-      <CodeToolsSelect
+      <CtcSelect
         presentAs={presentAs}
-        presentCodeTools={presentCodeTools}
+        presentCtc={presentCtc}
         showToast={showToast}
         locked={locked}
         t={t}
@@ -455,7 +455,7 @@ export const InputBar = memo(function InputBar({
           <div className={css.tools}>
             <div className={css.modes}>
               {accessSelect}
-              {codeToolsSelect}
+              {ctcSelect}
               {sessionId === undefined ? null : renderSlot('conversation.input.plan', { locked })}
             </div>
             {input === undefined || sessionId === undefined

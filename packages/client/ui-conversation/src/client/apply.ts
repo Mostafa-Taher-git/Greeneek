@@ -293,7 +293,7 @@ export function apply(ctx: Context): void {
             submissionPolicy.resolve(running, gesture, steeringAvailable),
           stop: undefined,
           command: undefined,
-          presentCodeTools: undefined,
+          presentCtc: undefined,
           hooks: {
             notices: ABSENT_NOTICES,
             lexicon: ABSENT_LEXICON,
@@ -336,8 +336,8 @@ export function apply(ctx: Context): void {
           const result = await session.command(line)
           return result.ok && result.value.matched
         },
-        presentCodeTools: async (enabled) => {
-          const response = await ctx.remote.session.presentCodeTools({ sessionId, enabled })
+        presentCtc: async (enabled) => {
+          const response = await ctx.remote.session.presentCtc({ sessionId, enabled })
           if (response.ok) return { ok: true as const }
           const { code } = response.error
           if (code === 'tool/code-runtime-required') {

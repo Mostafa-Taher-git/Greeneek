@@ -20,6 +20,7 @@ vendor/*/lib/
 .artifacts/
 .gnk-build/
 .rebrand/
+.recore/
 .tmp-gnk-home/
 apps/desktop/.staging/
 

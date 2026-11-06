@@ -29,6 +29,11 @@ pre-commit:
     - name: secrets (staged)
       run: node scripts/verify-secrets.mjs
 
+    # A session's probe scripts and CI dumps land at the repository root, where
+    # one `git add -A` would commit them. Reject them before the commit exists.
+    - name: local scratch (staged)
+      run: node_modules/.bin/tsx scripts/verify-no-local-scratch.ts
+
     - name: vendor manifest guard
       run: scripts/check-vendor-manifest.sh
 

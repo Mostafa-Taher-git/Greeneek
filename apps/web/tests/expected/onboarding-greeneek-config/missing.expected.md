@@ -3,7 +3,8 @@
   - paragraph: 选择一个模型提供方并填入其 API 密钥即可开始使用；之后可在“设置 → 模型”中添加更多。
   - text: 提供方
   - combobox "提供方":
-    - option "Amazon Bedrock" [selected]
+    - option "Greeneek" [selected]
+    - option "Amazon Bedrock"
     - option "Ant Ling"
     - option "Anthropic"
     - option "Azure OpenAI"
@@ -47,6 +48,6 @@
     - option "Z.AI Coding CN"
   - text: API 密钥
   - textbox "API 密钥":
-    - /placeholder: 输入 API 密钥，或留空使用环境认证
+    - /placeholder: 输入 API 密钥
   - button "稍后配置"
   - button "保存并继续" [disabled]

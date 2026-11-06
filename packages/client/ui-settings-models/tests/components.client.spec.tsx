@@ -559,6 +559,90 @@ describe('ModelsSection', () => {
     expect(onClose).toHaveBeenCalledWith(true)
   })
 
+  it('activates a dormant onboarding provider and retries only its failed credential write', async () => {
+    const namespace = wireNamespaces()[2]!
+    const committed: SettingsNamespaceView = {
+      ...namespace,
+      user: { providers: {
+        ...(namespace.user as { providers: object }).providers,
+        anthropic: { apiKeyEnv: 'ANTHROPIC_API_KEY' },
+      } },
+      value: { providers: {
+        ...(namespace.value as { providers: object }).providers,
+        anthropic: { apiKeyEnv: 'ANTHROPIC_API_KEY' },
+      } },
+      revision: 1,
+    }
+    const mutate = vi.fn(() => Promise.resolve(remoteOk(committed)))
+    const set = vi.fn()
+      .mockResolvedValueOnce(remoteFail('credential store unavailable'))
+      .mockResolvedValueOnce(remoteOk(undefined))
+    const { face } = scriptedFace({ mutate, set })
+    const onClose = vi.fn()
+    const { ProviderEditor } = await import('../src/client/ProviderEditor.tsx')
+    const props = {
+      provider: 'anthropic',
+      displayName: 'Anthropic',
+      namespace,
+      schema: settingsSchema,
+      settingsPath: ['providers', 'anthropic'],
+      operations: operationsWith(face),
+      t,
+      readOnly: false,
+      credentialOnly: true,
+      credentialRequired: true,
+      onClose,
+    }
+    const { rerender } = render(<ProviderEditor {...props} />)
+    fireEvent.change(screen.getByLabelText(en.keyInput), { target: { value: 'sk-onboarding' } })
+    fireEvent.click(screen.getByText(en.apply))
+    await screen.findByText('credential store unavailable')
+
+    expect(mutate).toHaveBeenCalledExactlyOnceWith('llm-pi-ai', [
+      { op: 'set', path: ['providers', 'anthropic', 'apiKeyEnv'], value: 'ANTHROPIC_API_KEY' },
+    ], 0)
+    expect(set).toHaveBeenCalledWith('ANTHROPIC_API_KEY', 'sk-onboarding')
+    expect(mutate.mock.invocationCallOrder[0]).toBeLessThan(set.mock.invocationCallOrder[0]!)
+    expect(onClose).not.toHaveBeenCalled()
+
+    rerender(<ProviderEditor {...props} namespace={committed} />)
+    fireEvent.click(screen.getByText(en.apply))
+    await waitFor(() => { expect(onClose).toHaveBeenCalledWith(true) })
+    expect(mutate).toHaveBeenCalledOnce()
+    expect(set).toHaveBeenCalledTimes(2)
+    expect(set).toHaveBeenLastCalledWith('ANTHROPIC_API_KEY', 'sk-onboarding')
+    expect(screen.getByLabelText<HTMLInputElement>(en.keyInput).value).toBe('')
+  })
+
+  it.each([
+    ['settings/conflict', en.conflict],
+    ['settings/rejected', 'profile refused'],
+  ] as const)('keeps the onboarding key unwritten after %s', async (code, message) => {
+    const mutate = vi.fn(() => Promise.resolve(remoteFail('profile refused', code)))
+    const { face, set } = scriptedFace({ mutate })
+    const onClose = vi.fn()
+    const { ProviderEditor } = await import('../src/client/ProviderEditor.tsx')
+    render(<ProviderEditor
+      provider="anthropic"
+      displayName="Anthropic"
+      namespace={wireNamespaces()[2]!}
+      schema={settingsSchema}
+      settingsPath={['providers', 'anthropic']}
+      operations={operationsWith(face)}
+      t={t}
+      readOnly={false}
+      credentialOnly
+      credentialRequired
+      onClose={onClose}
+    />)
+    fireEvent.change(screen.getByLabelText(en.keyInput), { target: { value: 'sk-onboarding' } })
+    fireEvent.click(screen.getByText(en.apply))
+    await screen.findByText(message)
+    expect(set).not.toHaveBeenCalled()
+    expect(onClose).not.toHaveBeenCalled()
+    expect(screen.getByText<HTMLButtonElement>(en.apply).disabled).toBe(false)
+  })
+
   it('applies customized greeneek fields as path ops', async () => {
     const { mutate } = await mountGreeneekCard({
       mutate: vi.fn(() => Promise.resolve(remoteOk(wireNamespaces()[0]))),

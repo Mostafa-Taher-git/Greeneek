@@ -8,7 +8,7 @@ kind: "package-reference"
 
 ## Summary
 
-`gnk-client-ui-settings-models` is the Models settings page of the gnk web client: users configure API keys (stored write-only under the profile's credential reference), edit each provider's model list, and hand-declare custom pi-ai routes, with provider rows and one editor card at a time. The page joins the provider directory, the settings document, and the credential descriptions into one shared snapshot, so a row's state stays consistent across all three. It also walks first-run users through two ordered dialogs — a versioned internal-testing notice and the conditional official-Greeneek credential step.
+`gnk-client-ui-settings-models` lets users configure write-only API keys, edit model lists, and add custom pi-ai providers. The Models page joins provider, settings, and credential state so its rows stay consistent. First-run users see a versioned internal-testing notice followed by provider selection and credential setup when no provider is usable.
 
 ## Table of Contents
 
@@ -40,7 +40,7 @@ The add flow is a card carrying the dormant-directory provider select — a bare
 
 ### First-run dialogs
 
-After the versioned notice step completes, the Greeneek step projects first-run readiness from the same joined snapshot. ANY provider the user can already reach ends it without rendering; only a user with none is asked for the official Greeneek key. Configure later completes only this coordinator pass, and an absent adapter, inactive route, failed join, read-only deployment, or unusable capability completes the step without rendering — Models remains the diagnostic surface.
+After the notice, users with no usable provider choose one from the configurable directory and enter its key. Saving activates a dormant pi-ai route by recording its credential reference before storing the key. An already usable provider ends the step without rendering. Configure later completes only this coordinator pass; missing adapters, failed joins, read-only settings, and unavailable credential storage remain diagnostic concerns on the Models page.
 
 ### Extension slots
 
@@ -66,7 +66,7 @@ Each settings write carries the card's current `revision`, so a concurrent write
 
 ### Onboarding coordinator
 
-The notice step owns its exact copy in `src/client/locales.ts` and its acknowledgement version in `src/onboarding-copy.ts`; on loopback it compares and writes `ui-onboarding.welcomeNoticeVersion` through the existing settings API, and only an explicit Continue records the current version. A non-loopback browser cannot use that Host-only namespace, so acknowledgement is process-local and the notice returns after reload. The Greeneek step renders the existing `ProviderEditor` in credential-only mode inside the shared onboarding modal; `credentials.set` stays the only secret write, and no provider settings are changed.
+The notice's copy and acknowledgement version live in `src/onboarding-copy.ts`. On loopback, only an explicit Continue writes `ui-onboarding.welcomeNoticeVersion`; elsewhere acknowledgement is process-local and the notice returns after reload. Provider setup renders `ProviderEditor` in credential-only mode inside the shared modal. A pi-ai profile without a credential reference receives only the derived `apiKeyEnv` setting before `credentials.set` stores the key. Existing references and unrelated settings remain unchanged. A refused settings write prevents credential storage; a failed credential write retries without repeating a committed settings mutation.
 
 </details>
 

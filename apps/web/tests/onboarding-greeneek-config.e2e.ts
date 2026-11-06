@@ -1,7 +1,6 @@
-// Keyless browser e2e: the shipped Greeneek adapter stays mounted while its
-// credential is absent, both ordered steps share the shipped modal chrome,
-// and the inline key write lands in an isolated harness home without a reload
-// or model call.
+// Keyless browser e2e: an explicitly mounted Greeneek adapter has no credential.
+// Both ordered steps share the shipped modal, and the inline key write lands
+// in an isolated harness home without a reload or model call.
 import { randomBytes } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
@@ -31,7 +30,11 @@ describe.skipIf(MODE === 'record')('web e2e: first-run Greeneek credential setup
   const browserConsole: string[] = []
 
   beforeAll(async () => {
-    scaffold = await launchWebScaffold({ greeneekMissingCredential: true, welcomeNoticePending: true })
+    scaffold = await launchWebScaffold({
+      greeneekMissingCredential: true,
+      welcomeNoticePending: true,
+      extraOverlayPath: fileURLToPath(new URL('./shipped-greeneek-adapter.overlay.yml', import.meta.url)),
+    })
     browser = await chromium.launch()
     // The scenario asserts the shipped Chinese copy, so the browser asks for it.
     page = await browser.newPage({ viewport: { width: 1440, height: 960 }, locale: ZH_BROWSER_LOCALE })
@@ -72,6 +75,7 @@ describe.skipIf(MODE === 'record')('web e2e: first-run Greeneek credential setup
 
     const credentialStep = page.getByRole('dialog', { name: '添加一个 API Key 开始使用' })
     await credentialStep.waitFor({ timeout: 15_000 })
+    await credentialStep.getByLabel('提供方', { exact: true }).selectOption('greeneek-official')
     const keyInput = credentialStep.getByLabel('API 密钥', { exact: true })
     await keyInput.waitFor({ timeout: 10_000 })
     const initial = await captureStableAria(page, '[role="dialog"]', scaffold.workspaceCwd)
@@ -84,7 +88,7 @@ describe.skipIf(MODE === 'record')('web e2e: first-run Greeneek credential setup
     expect(await page.locator('#root').evaluate(root => (root as HTMLElement).inert)).toBe(false)
 
     const stored = await readFile(join(scaffold.harnessHome, '.credentials.yaml'), 'utf8')
-    expect(stored.includes(`GREENEEK_API_KEY: ${secret}`)).toBe(true)
+    expect(stored.includes(`GNK_WEB_E2E_ABSENT_KEY: ${secret}`)).toBe(true)
     expect((await page.content()).includes(secret)).toBe(false)
     expect((await page.locator('body').ariaSnapshot()).includes(secret)).toBe(false)
     expect(browserConsole.some(line => line.includes(secret))).toBe(false)
@@ -100,7 +104,10 @@ describe.skipIf(MODE === 'record')('web e2e: first-run Greeneek credential setup
     await settings.getByRole('button', { name: '模型' }).click()
     const greeneekRow = settings.getByText('Greeneek', { exact: true }).first()
     await greeneekRow.waitFor({ timeout: 10_000 })
-    await greeneekRow.locator('xpath=ancestor::li').getByRole('button', { name: '编辑' }).click()
+    // The row carries two controls whose names both begin with 编辑; the
+    // provider card is the one addressed by its exact accessible name.
+    await greeneekRow.locator('xpath=ancestor::li')
+      .getByRole('button', { name: '编辑 Greeneek (greeneek-official)', exact: true }).click()
     const configuredInput = settings.getByLabel('API 密钥', { exact: true })
     await configuredInput.waitFor({ timeout: 10_000 })
     await expect.poll(
@@ -200,7 +207,8 @@ describe.skipIf(MODE === 'record')('web e2e: first-run Greeneek credential setup
     await settings.getByRole('button', { name: '模型' }).click()
     const greeneek = settings.getByText('Greeneek', { exact: true }).first()
     await greeneek.waitFor({ timeout: 10_000 })
-    await greeneek.locator('xpath=ancestor::li').getByRole('button', { name: '编辑' }).click()
+    await greeneek.locator('xpath=ancestor::li')
+      .getByRole('button', { name: '编辑 Greeneek (greeneek-official)', exact: true }).click()
     await settings.getByText('自定义设置').click()
     await settings.getByRole('button', { name: /删除模型/ }).first().click()
     await settings.getByRole('button', { name: '添加模型' }).click()
@@ -212,7 +220,7 @@ describe.skipIf(MODE === 'record')('web e2e: first-run Greeneek credential setup
     await settings.getByLabel('上下文窗口 3').fill('131072')
     await settings.getByLabel('最大输出 token 数 3').fill('64K')
 
-    const modelEditor = await captureStableAria(page, '[role="dialog"]', scaffold.workspaceCwd)
+    const modelEditor = await captureStableAria(page, 'main:not([hidden])', scaffold.workspaceCwd)
     await compareOrRefreshGolden(MODELS_EXPECTED, modelEditor, MODE)
     await settings.getByRole('button', { name: '保存', exact: true }).click()
     await customModelId.waitFor({ state: 'detached', timeout: 15_000 })

@@ -127,3 +127,57 @@ describe.skipIf(MODE === 'record')('web e2e: another usable provider ends first-
     await assertFixtureInventory(SNAPSHOT_DIR, ['dismissed.expected.md'])
   })
 })
+
+describe.skipIf(MODE === 'record')('web e2e: dormant provider onboarding', () => {
+  let scaffold: WebScaffold
+  let browser: Browser
+  let page: Page
+
+  beforeAll(async () => {
+    scaffold = await launchWebScaffold({ greeneekMissingCredential: true })
+    browser = await chromium.launch()
+    page = await browser.newPage({ viewport: { width: 1440, height: 960 }, locale: ZH_BROWSER_LOCALE })
+    await page.goto(scaffold.authenticatedUrl, { waitUntil: 'load' })
+  }, 120_000)
+
+  afterAll(async () => {
+    await browser?.close()
+    await scaffold?.close()
+  })
+
+  it('registers the chosen route, keeps its key private, and stays configured after reload', async () => {
+    onTestFailed(() => saveFailureShot(page, 'web-e2e-onboarding-dormant-provider'))
+    const tripwire = watchConsole(page)
+    const consoleMessages: string[] = []
+    page.on('console', message => consoleMessages.push(message.text()))
+    const credentialStep = page.getByRole('dialog', { name: CREDENTIAL_STEP })
+    await credentialStep.waitFor({ timeout: 15_000 })
+    await credentialStep.getByLabel('提供方', { exact: true }).selectOption('minimax-cn')
+    await credentialStep.getByLabel('API 密钥', { exact: true }).fill('sk-e2e-onboarding-minimax')
+    await credentialStep.getByRole('button', { name: '保存并继续' }).click()
+    await credentialStep.waitFor({ state: 'detached', timeout: 15_000 })
+
+    const document = await readFile(join(scaffold.harnessHome, 'settings.yaml'), 'utf8')
+    expect(document).toContain('apiKeyEnv: MINIMAX_CN_API_KEY')
+    expect(document).not.toContain('sk-e2e-onboarding-minimax')
+    const credentials = await readFile(join(scaffold.harnessHome, '.credentials.yaml'), 'utf8')
+    expect(credentials).toContain('MINIMAX_CN_API_KEY: sk-e2e-onboarding-minimax')
+    expect(credentials).not.toContain('GREENEEK_API_KEY')
+
+    const warningsBefore = tripwire.warnings.length
+    await page.reload({ waitUntil: 'load' })
+    acknowledgeReloadConnectionLoss(tripwire, warningsBefore)
+    await page.waitForSelector('[class*="frame"]', { timeout: 15_000 })
+    await page.getByRole('button', { name: '设置', exact: true }).click()
+    const settings = page.getByRole('main', { name: '设置' })
+    await settings.getByRole('button', { name: '模型' }).click()
+    await settings.getByText('MiniMax CN', { exact: true }).first().waitFor({ timeout: 10_000 })
+    expect(await credentialStep.count()).toBe(0)
+    expect(await page.locator('#root').evaluate(root => (root as HTMLElement).inert)).toBe(false)
+    expect((await page.content()).includes('sk-e2e-onboarding-minimax')).toBe(false)
+    expect((await page.locator('body').ariaSnapshot()).includes('sk-e2e-onboarding-minimax')).toBe(false)
+    expect(consoleMessages.some(line => line.includes('sk-e2e-onboarding-minimax'))).toBe(false)
+    expect(tripwire.warnings).toEqual([])
+    expect(tripwire.pageErrors).toEqual([])
+  }, 60_000)
+})

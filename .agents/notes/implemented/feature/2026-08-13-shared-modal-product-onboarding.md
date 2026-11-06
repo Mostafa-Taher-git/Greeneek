@@ -15,7 +15,7 @@ First-run onboarding mixed two interaction models: a viewport takeover for produ
 
 **The welcome notice reuses the existing durable field.** Its exact copy and version live in `onboarding-copy.ts`. Loopback clients compare and write `ui-onboarding.welcomeNoticeVersion` through the existing settings API, and only Continue acknowledges the current version. Non-loopback pages retain the existing process-local fallback because the Client keeps Host settings persistence disabled there. No Host schema, API-proxy allowlist, or persistence implementation changes.
 
-**The credential dialog reuses the existing editor and write boundary.** The Models join still decides whether any provider is usable. When the official Greeneek reference is writable and missing, `ProviderEditor` renders in credential-only mode inside the shared modal. It validates the key and calls the existing `credentials.set`; it does not mutate provider settings. Save and continue waits for the write and refreshed readiness, while Configure later completes only the current coordinator pass.
+**The credential dialog reuses the existing editor and write boundary.** The Models join decides whether any provider is usable. A user with none chooses a configurable provider and enters its key through `ProviderEditor` in the shared modal. The editor validates the key and stores it through `credentials.set`. Native Greeneek setup changes no provider settings; a dormant pi-ai provider requires the non-secret reference write described in [provider activation](../bug-fix/2026-11-06-onboarding-registers-dormant-provider.md). Save and continue waits for the write and refreshed readiness, while Configure later completes only the current coordinator pass.
 
 ## Alternatives considered
 

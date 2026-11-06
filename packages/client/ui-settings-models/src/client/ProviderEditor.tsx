@@ -70,7 +70,7 @@ export interface ProviderEditorProps {
   t: (key: keyof typeof en) => string
   /** Disable writes (read-only settings provider). */
   readOnly: boolean
-  /** Render only the credential field and actions, without provider settings. */
+  /** Hide provider fields; saving a pi-ai key still records its required credential reference. */
   credentialOnly?: boolean
   /** Require a newly entered credential before this editor can submit. */
   credentialRequired?: boolean
@@ -269,11 +269,9 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
       && fallback === undefined
       && committedOriginal === undefined
       && Object.keys(next).length === 0
-    const ops: SettingsPathOpView[] = props.credentialOnly === true
-      ? []
-      : materializesNativeProfile
-        ? [{ op: 'set', path: [...settingsPath], value: {} }]
-        : pathOps(settingsPath, committedOriginal, next)
+    const ops: SettingsPathOpView[] = materializesNativeProfile
+      ? [{ op: 'set', path: [...settingsPath], value: {} }]
+      : pathOps(settingsPath, committedOriginal, next)
     if (ops.length > 0) {
       const written = await operations.writeSettings(ns, ops, expectedRevision)
       if (written.kind !== 'written') return written.kind === 'conflict' ? t('conflict') : written.message

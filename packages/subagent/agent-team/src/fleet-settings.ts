@@ -51,6 +51,12 @@ export interface FleetFavoriteMember {
   readonly readOnly?: boolean
   readonly writeScopes?: string[]
   readonly maxTokens?: number
+  /**
+   * Cancellation budget in milliseconds for a Melody member. The launcher
+   * refuses it for a Harmony member, whose running turn is interrupted rather
+   * than timed out.
+   */
+  readonly timeoutMs?: number
 }
 
 /** One named fleet favorite. */
@@ -106,6 +112,7 @@ const memberSchema = z.object({
   readOnly: z.boolean(),
   writeScopes: z.array(z.string()),
   maxTokens: z.number().step(1).min(1),
+  timeoutMs: z.number().step(1).min(1),
 })
 
 const favoriteSchema = z.object({
@@ -366,6 +373,7 @@ export function favoriteMemberRequest(member: FleetFavoriteMember): Omit<SpawnTe
       ? {}
       : { writeScopes: member.writeScopes },
     ...member.maxTokens === undefined ? {} : { maxTokens: member.maxTokens },
+    ...member.timeoutMs === undefined ? {} : { timeoutMs: member.timeoutMs },
   }
 }
 

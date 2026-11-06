@@ -240,6 +240,7 @@ describe('fleet settings section', () => {
     fireEvent.change(view.getByLabelText('Model'), { target: { value: 'mock' } })
     fireEvent.change(view.getByLabelText('Reasoning effort'), { target: { value: 'high' } })
     fireEvent.change(view.getByLabelText('Token ceiling'), { target: { value: '2000' } })
+    fireEvent.change(view.getByLabelText('Timeout (ms)'), { target: { value: '30000' } })
     fireEvent.click(view.getByLabelText('Read-only'))
     fireEvent.click(view.getByRole('button', { name: 'Save' }))
 
@@ -257,6 +258,7 @@ describe('fleet settings section', () => {
         model: 'mock',
         reasoningEffort: 'high',
         maxTokens: 2_000,
+        timeoutMs: 30_000,
         readOnly: true,
       }],
     })
@@ -279,6 +281,7 @@ describe('fleet settings section', () => {
     fireEvent.change(view.getByLabelText('Model'), { target: { value: '' } })
     fireEvent.change(view.getByLabelText('Reasoning effort'), { target: { value: '' } })
     fireEvent.change(view.getByLabelText('Token ceiling'), { target: { value: '' } })
+    fireEvent.change(view.getByLabelText('Timeout (ms)'), { target: { value: '0' } })
     fireEvent.change(view.getByLabelText(/Fleet id/u), { target: { value: 'review-fleet' } })
     fireEvent.click(view.getByRole('button', { name: 'Save' }))
     await vi.waitFor(() => { expect(save).toHaveBeenCalled() })
@@ -291,6 +294,7 @@ describe('fleet settings section', () => {
     expect(saved.members[0]?.model).toBeUndefined()
     expect(saved.members[0]?.reasoningEffort).toBeUndefined()
     expect(saved.members[0]?.maxTokens).toBeUndefined()
+    expect(saved.members[0]?.timeoutMs).toBeUndefined()
 
     await vi.waitFor(() => {
       expect(view.getByRole('button', { name: 'Launch' }).hasAttribute('disabled')).toBe(false)

@@ -84,6 +84,7 @@ describe('favorite member requests', () => {
       reasoningEffort: 'high',
       readOnly: true,
       maxTokens: 2_000,
+      timeoutMs: 30_000,
     })).toEqual({
       name: 'full',
       description: 'full member',
@@ -94,6 +95,7 @@ describe('favorite member requests', () => {
       agentOptions: { model: 'mock', reasoningEffort: 'high' },
       readOnly: true,
       maxTokens: 2_000,
+      timeoutMs: 30_000,
     })
     expect(favoriteMemberRequest({
       ...FAVORITE.members[0]!, writeScopes: ['src'], readOnly: false,

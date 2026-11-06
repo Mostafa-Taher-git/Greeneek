@@ -4423,7 +4423,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'FleetFavoriteMember',
-    declaration: 'export interface FleetFavoriteMember {\n    readonly name: string;\n    readonly description: string;\n    readonly prompt: string;\n    readonly provider: string;\n    readonly context?: \'fresh\' | \'fork\';\n    readonly preset?: string;\n    readonly model?: string;\n    readonly reasoningEffort?: string;\n    readonly readOnly?: boolean;\n    readonly writeScopes?: string[];\n    readonly maxTokens?: number;\n}',
+    declaration: 'export interface FleetFavoriteMember {\n    readonly name: string;\n    readonly description: string;\n    readonly prompt: string;\n    readonly provider: string;\n    readonly context?: \'fresh\' | \'fork\';\n    readonly preset?: string;\n    readonly model?: string;\n    readonly reasoningEffort?: string;\n    readonly readOnly?: boolean;\n    readonly writeScopes?: string[];\n    readonly maxTokens?: number;\n    readonly timeoutMs?: number;\n}',
   },
   {
     name: 'FleetFavoriteResult',

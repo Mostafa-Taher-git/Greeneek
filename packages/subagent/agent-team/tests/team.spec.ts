@@ -2024,6 +2024,22 @@ describe('Fleet favorites', () => {
       await waitNoAgent(ctx, launched.value.members[0]!.id)
     }
     expect(ctx.agentTeams.listMembers(lead).some(member => member.name === 'solo')).toBe(true)
+
+    // A stored timeout belongs to a Melody member. A Harmony member keeps its
+    // turn and is interrupted instead, so the launch refuses it loudly rather
+    // than dropping a setting the fleet appears to save.
+    const timedLane = {
+      id: 'timed-lane',
+      name: 'Timed lane',
+      members: [{ name: 'laner', description: 'lane', prompt: 'run', provider: 'fork', timeoutMs: 1_000 }],
+    }
+    const savedTimed = await ctx.agentTeams.saveFleetFavorite(lead, timedLane, savedSingle.value.revision)
+    if (!savedTimed.ok) throw new Error(savedTimed.error.message)
+    const refusedTimeout = await ctx.agentTeams.launchFleetFavorite(lead, 'timed-lane', true)
+    expect(refusedTimeout).toMatchObject({ ok: false, error: { code: 'fleet-member-failed' } })
+    if (!refusedTimeout.ok) {
+      expect(refusedTimeout.error.message).toContain('timeoutMs applies to a Melody member')
+    }
   }, 20_000)
 
   it('refuses a disabled fleet, duplicates a saved fleet, and installs a starter as editable', async () => {

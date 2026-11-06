@@ -321,6 +321,19 @@ function MemberEditor({ index, member, providers, t, onChange, onRemove }: {
           }}
         />
       </label>
+      <label className={css.field}>
+        <span>{t('fleet.timeout')}</span>
+        <input
+          type="number"
+          min={1}
+          step={1}
+          value={member.timeoutMs ?? ''}
+          onChange={(event) => {
+            const parsed = Number.parseInt(event.target.value, 10)
+            onChange({ timeoutMs: Number.isSafeInteger(parsed) && parsed > 0 ? parsed : undefined })
+          }}
+        />
+      </label>
       <label className={css.check}>
         <input
           type="checkbox"

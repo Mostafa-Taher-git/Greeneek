@@ -10,6 +10,8 @@ Two requested surfaces were missing. The sidebar had no Dashboard entry, so the 
 
 The Dashboard is a full-page center-column destination in `ui-layout` (`mainPage: 'dashboard'`, a single `dashboard` slot next to Settings). The trigger sits in a new `sidebar.primary.action` list seat rendered directly under New Session; `ui-workspace` registers both the trigger and the page because it already owns the authoritative Session and Workspace projections and their dictionaries. The page folds `sessionStats` (turns, steps, recorded output tokens), `modelSelection` (provider/model usage), and list facts (session/workspace/running counts and recent rows). Input tokens and cost stay unknown: no local record or versioned price exists, so the page never estimates them. This is the local-first slice of the accepted Dashboard contract; host aggregation, pricing provenance, API-key labels, and permission states remain the plan's P2-09 remainder.
 
+The page follows the Settings destination contract: a `main` landmark named by its title, document Escape and the close control both return to the conversation, and focus enters on the close control. Every sidebar navigation intent — New Session, opening or forking a Session, and the hero's recent rows — calls `showConversation` before it changes the selection, so a destination never leaves the sidebar visibly inert behind it.
+
 The frameless titlebar controls use `inset-inline-end: 0`, so they sit on the far right in LTR and the far left in RTL. The injected flex row inherits the document direction, which mirrors the visual order in RTL to close, maximize, minimize while the DOM keeps minimize, maximize, close for assistive technology. The titlebar's inline-end padding already reserved the same reading edge, so no page content moves under the controls.
 
 ## Alternatives considered
@@ -27,7 +29,8 @@ The frameless titlebar controls use `inset-inline-end: 0`, so they sit on the fa
 
 ## Verification
 
-- Dashboard fold and page tests: totals, archival exclusion, model grouping, recent limit, and close-to-conversation.
+- Dashboard fold and page tests: totals, archival exclusion, model grouping, recent limit, close-to-conversation, the named `main` landmark, Escape and initial focus.
+- Sidebar and Workspace navigation tests pin that opening or starting a Session yields a full-page destination first.
 - RTL window capture of the running Electron app: controls at the far left in the order close, maximize, minimize; the Arabic shell keeps the sidebar toggle at the far right.
 - Chromium audit: Dashboard button directly under New Session, full-page Dashboard in Arabic, no horizontal overflow at 1440×900 or 900×800, and dark rendering.
 - Web snapshot alignment: the Settings page goldens now target the page rather than the retired modal, the mode list pins persistent labels, the built-boot brand check accepts the shipped image mark, and the folding scenario normalizes its random workspace basename. Web seed fixtures JSON-escape the platform cwd, so the Windows lane parses them.

@@ -106,10 +106,17 @@ export function apply(ctx: Context): void {
   }
   const pickerFlowSource = flowSource('conversation.hero.workspace.directoryFlow')
   const browserInjected = (): WorkspaceBrowserInjected => ({
-    // Explicit group actions keep their target; unscoped New Session inherits
-    // the current Session Workspace before the recent-Workspace fallback.
-    startSession: (workspaceId) => { uiWorkspace.startSession(workspaceId) },
-    open: (sessionId) => { sessions.open(sessionId) },
+    // Opening or starting a Session is a navigation intent: a full-page
+    // destination (Settings, Dashboard) must yield to the conversation it
+    // names instead of leaving the sidebar visibly inert behind it.
+    startSession: (workspaceId) => {
+      layout()?.showConversation()
+      uiWorkspace.startSession(workspaceId)
+    },
+    open: (sessionId) => {
+      layout()?.showConversation()
+      sessions.open(sessionId)
+    },
     searchSessions,
     searchResultLimit: sessions.searchResultLimit,
     renameSession: async (sessionId, title) => {
@@ -122,7 +129,10 @@ export function apply(ctx: Context): void {
     },
     forkSession: (sessionId) => {
       sessions.fork({ sessionId, increaseTitle: true })
-        .then((childId) => { sessions.open(childId) })
+        .then((childId) => {
+          layout()?.showConversation()
+          sessions.open(childId)
+        })
         .catch(() => {
           // Fork or child-rename failure keeps the current selection.
         })
@@ -145,7 +155,10 @@ export function apply(ctx: Context): void {
     hooks: { directoryFlow: pickerFlowSource },
   })
   const recentSessionsInjected = (): RecentSessionsInjected => ({
-    open: (sessionId) => { sessions.open(sessionId) },
+    open: (sessionId) => {
+      layout()?.showConversation()
+      sessions.open(sessionId)
+    },
   })
   // The two picker registrations declare their directory-flow child in the
   // same call; the recent-sessions seat has no children. Slot injection

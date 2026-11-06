@@ -75,6 +75,9 @@ function props(
 describe('DashboardPage', () => {
   it('renders projection totals, model usage, and the recent rows', () => {
     render(<DashboardPage {...props()} />)
+    // The page is a destination, not a panel: the main landmark is named by the
+    // title a reader lands on, the same contract the Settings page follows.
+    expect(screen.getByRole('main', { name: 'Dashboard' })).toBeTruthy()
     expect(screen.getByRole('heading', { name: 'Dashboard' })).toBeTruthy()
     expect(screen.getByText('Sessions').parentElement?.textContent).toContain('2')
     expect(screen.getByText('Workspaces').parentElement?.textContent).toContain('1')
@@ -276,6 +279,17 @@ describe('DashboardPage', () => {
     const close = vi.fn()
     render(<DashboardPage {...props()} close={close} />)
     fireEvent.click(screen.getByRole('button', { name: 'Back to conversation' }))
+    expect(close).toHaveBeenCalledOnce()
+  })
+
+  it('closes on Escape and focuses the close button on mount', () => {
+    const close = vi.fn()
+    render(<DashboardPage {...props()} close={close} />)
+    const closeBtn = screen.getByRole('button', { name: 'Back to conversation' })
+    expect(document.activeElement).toBe(closeBtn)
+    fireEvent.keyDown(document, { key: 'Enter' })
+    expect(close).not.toHaveBeenCalled()
+    fireEvent.keyDown(document, { key: 'Escape' })
     expect(close).toHaveBeenCalledOnce()
   })
 })

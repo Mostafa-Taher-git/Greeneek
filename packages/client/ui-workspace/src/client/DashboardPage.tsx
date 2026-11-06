@@ -3,7 +3,7 @@
  * the browser already holds. Spend is reported only through the versioned
  * pricing catalog, so an unpriced route stays visibly unknown.
  */
-import { useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@greeneek/gnk-client-ui-slots'
 import type { SessionListState, SessionSummary } from '@greeneek/gnk-api-session-controller/client'
 import type { WorkspaceSnapshot } from '@greeneek/gnk-api-workspace-controller/client'
@@ -147,15 +147,28 @@ export function DashboardPage({ useSessions, useWorkspaces, t, close, pricing }:
   const currentPage = Math.min(page, pageCount - 1)
   const pageRows = filteredRows.slice(currentPage * PAGE_SIZE, currentPage * PAGE_SIZE + PAGE_SIZE)
   const now = Date.now()
+  const titleId = useId()
+  const closeButton = useRef<HTMLButtonElement | null>(null)
+  // The Dashboard is a destination, so it leaves the same way Settings does:
+  // Escape closes it, and focus enters on the control that returns to the
+  // conversation. The listener lives exactly as long as the page is mounted.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') close()
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => { document.removeEventListener('keydown', onKeyDown) }
+  }, [close])
+  useEffect(() => { closeButton.current?.focus() }, [])
   return (
-    <div className={css.page}>
+    <main className={css.page} aria-labelledby={titleId}>
       <div className={css.inner}>
         <header className={css.header}>
           <div className={css.titleBlock}>
-            <h1 className={css.title}>{t('dashboard.title')}</h1>
+            <h1 id={titleId} className={css.title}>{t('dashboard.title')}</h1>
             <p className={css.description}>{t('dashboard.description')}</p>
           </div>
-          <button type="button" className={css.close} aria-label={t('dashboard.close')} onClick={close}>
+          <button ref={closeButton} type="button" className={css.close} aria-label={t('dashboard.close')} onClick={close}>
             <IconCloseOutline16 />
           </button>
         </header>
@@ -347,6 +360,6 @@ export function DashboardPage({ useSessions, useWorkspaces, t, close, pricing }:
 
         <p className={css.note}>{t('dashboard.note')}</p>
       </div>
-    </div>
+    </main>
   )
 }

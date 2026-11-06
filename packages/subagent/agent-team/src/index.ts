@@ -9,6 +9,7 @@ import type { SettingsProvider, SettingsScope } from '@greeneek/gnk-settings'
 import { Remote, TypertRemoteService } from '@greeneek/gnk-typert-protocol'
 import { TeamActivity } from './activity.ts'
 import { errorMessage, TeamError } from './error.ts'
+import type { HarnessDescriptor } from './harness-descriptor.ts'
 import { RepoFleetConfigStore } from './fleet-config.ts'
 import type { RepoFleetSnapshot } from './fleet-config.ts'
 import {
@@ -542,6 +543,33 @@ export class TeamService extends TypertRemoteService {
     return new Set(this.ctx.subagents.list().filter(name => (
       this.ctx.subagents.getProvider(name)?.prepareContinuable !== undefined
     )))
+  }
+
+  /** Build Harness descriptors from the live provider registry. */
+  private harnesses(): Array<{
+    readonly name: string
+    readonly state: 'ready' | 'one-shot' | 'not-installed' | 'unauthenticated' | 'temporarily-unavailable'
+    readonly models: readonly { readonly id: string; readonly efforts?: readonly { readonly id: string }[] }[] | 'unknown'
+    readonly supportsAgentOptions: boolean
+    readonly supportsContextFork: boolean
+  }> {
+    return this.ctx.subagents.list().map((name) => {
+      const provider = this.ctx.subagents.getProvider(name)
+      const continuable = provider?.prepareContinuable !== undefined
+      const route = provider?.agentRouteDefaults
+      return {
+        name,
+        state: continuable ? 'ready' : 'one-shot',
+        models: route === undefined ? 'unknown' : [{ id: route.model }],
+        supportsAgentOptions: provider?.capabilities.agentOptions ?? false,
+        supportsContextFork: provider?.inheritsParentContext ?? false,
+      }
+    })
+  }
+
+  @Remote('harnesses')
+  remoteHarnesses(): HarnessDescriptor[] {
+    return this.harnesses()
   }
 
   /** Build provider availability from the live registry and configured names. */

@@ -49,7 +49,6 @@
     "test:snapshot": "vitest run --config vitest.snapshot.config.ts",
     "test:snapshot:record": "GNK_SNAPSHOT=record vitest run --config vitest.snapshot.config.ts --update",
     "test:snapshot:refresh": "GNK_SNAPSHOT=refresh vitest run --config vitest.snapshot.config.ts",
-    "migrate:packed-session-fixtures": "tsx scripts/migrate-packed-session-fixtures.ts",
     "test:web": "npm run build && npm run test:web:built",
     "test:web:refresh": "npm run build && GNK_SNAPSHOT=refresh vitest run --config vitest.web.config.ts",
     "test:web:built": "vitest run --config vitest.web.config.ts",

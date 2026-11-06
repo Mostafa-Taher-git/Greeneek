@@ -44,7 +44,7 @@ Two more wire-visible facts join the call: a `codeRuntime` refusal (`tool/code-r
 
 ## Verification
 
-- `packages/api/session-controller/tests/session-present-code-tools.host.spec.ts` covers the enable/disable/enable cycle in one session with one event per change, the idempotent repeat, the never-declared withdrawal, the mid-turn withdrawal refusal with the declaration left in place, enable and withdrawal undo when the log write fails (an `Error` and a non-`Error` throw), a composition-declared presentation refusing the user, the missing-runtime refusal, and a silent re-declaration on re-adopt.
+- `packages/api/session-controller/tests/session-present-ctc.host.spec.ts` covers the enable/disable/enable cycle in one session with one event per change, the idempotent repeat, the never-declared withdrawal, the mid-turn withdrawal refusal with the declaration left in place, enable and withdrawal undo when the log write fails (an `Error` and a non-`Error` throw), a composition-declared presentation refusing the user, the missing-runtime refusal, and a silent re-declaration on re-adopt.
 - `packages/client/ui-conversation/tests/input-bar.client.spec.tsx` asserts the off state offers the opt-in, the on state offers the withdrawal instead, each call passes its desired boolean, and every refusal reason reaches the banner with the menu still open.
 - `packages/client/ui-conversation/tests/apply-inject.client.spec.tsx` pins the wire request as `{ sessionId, enabled }` for both states and each `RemoteError` code onto the chip's reason set.
 - `pnpm exec vitest run packages/api/session-controller packages/client/ui-conversation` passes 375 tests, and the changed sources measure no uncovered statement or branch under the per-file coverage report.

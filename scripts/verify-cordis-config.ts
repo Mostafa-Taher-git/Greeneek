@@ -10,7 +10,7 @@
  * Loader fixtures resolve from their package manifest.
  */
 
-import { globSync, readFileSync } from 'node:fs'
+import { existsSync, globSync, readFileSync } from 'node:fs'
 import { dirname, relative, resolve } from 'node:path'
 import { Script } from 'node:vm'
 import ts from 'typescript'
@@ -57,11 +57,33 @@ const CHOOSER_BACKEND_PACKAGES = [
 const errors: string[] = []
 const pluginReferences: PluginReference[] = []
 
+/**
+ * Read one Loader config, following a symlink checkout that landed as text.
+ *
+ * Git on Windows with `core.symlinks=false` writes a symbolic link as an
+ * ordinary file containing its relative target path. A config reached that way
+ * would otherwise parse as a string and be reported as a non-array root even
+ * though the real layer is valid, so a relative `.yml`/`.yaml` target that
+ * exists beside it supplies the document instead.
+ * @param repoRoot - repository root the config path is relative to.
+ * @param file - repository-relative config path.
+ * @returns the parsed Loader document, following one textual symlink target.
+ */
+export function loadCordisConfigDocument(repoRoot: string, file: string): unknown {
+  const path = resolve(repoRoot, file)
+  const document = loadCordisYaml(readFileSync(path, 'utf8'))
+  if (typeof document !== 'string') return document
+  const targetName = document.trim()
+  if (!targetName.endsWith('.yml') && !targetName.endsWith('.yaml')) return document
+  const target = resolve(dirname(path), targetName)
+  return existsSync(target) ? loadCordisYaml(readFileSync(target, 'utf8')) : document
+}
+
 if (import.meta.main) {
   const files = cordisConfigFiles(root)
 
   for (const file of files) {
-    const document = loadCordisYaml(readFileSync(resolve(root, file), 'utf8'))
+    const document = loadCordisConfigDocument(root, file)
     if (!isUnknownArray(document)) {
       errors.push(`${file}: root must be a Loader entry array`)
       continue

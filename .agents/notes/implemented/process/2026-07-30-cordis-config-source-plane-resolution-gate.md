@@ -24,3 +24,4 @@ Status: implemented
 - A configured workspace specifier that resolves only through built `lib/` is now a red `verify-cordis-config` (in `hygiene` and CI) instead of a clean-tree-only startup crash.
 - New single-file subpath exports referenced from a cordis.yml need an explicit `tsconfig.base.json` `paths` entry at introduction time; the gate message says so.
 - The gate resolves with `tsconfig.base.json` options only; a specifier needing client-only compiler options to resolve would fail it, which matches the facade's role as the single resolution surface for tsx and vitest.
+- On a Windows checkout with `core.symlinks=false`, a link layer arrives as a text file holding its relative target. The gate follows one existing `.yml`/`.yaml` target before parsing, so the real layer is validated instead of being reported as a non-array root.

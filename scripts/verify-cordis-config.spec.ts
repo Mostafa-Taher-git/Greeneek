@@ -11,10 +11,38 @@ import { describe, expect, it } from 'vitest'
 import {
   bundleManifestPaths,
   bundlePluginDependencyErrors,
+  loadCordisConfigDocument,
   metadataExpressionErrors,
   packageTestFixtureDependencyErrors,
   packageTestPluginDependencyErrors,
 } from './verify-cordis-config.ts'
+
+describe('verify-cordis-config textual symlink checkouts', () => {
+  it('follows a relative YAML target written as file content', () => {
+    const fixture = mkdtempSync(join(tmpdir(), 'gnk-cordis-symlink-'))
+    try {
+      writeFileSync(join(fixture, 'target.yml'), '- id: example\n  name: "@greeneek/gnk-example"\n')
+      writeFileSync(join(fixture, 'cordis.patch.yml'), './target.yml\n')
+
+      expect(loadCordisConfigDocument(fixture, 'cordis.patch.yml')).toEqual([
+        { id: 'example', name: '@greeneek/gnk-example' },
+      ])
+    } finally {
+      rmSync(fixture, { recursive: true, force: true })
+    }
+  })
+
+  it('leaves a plain scalar document alone when it names no existing YAML file', () => {
+    const fixture = mkdtempSync(join(tmpdir(), 'gnk-cordis-scalar-'))
+    try {
+      writeFileSync(join(fixture, 'cordis.yml'), './missing.yml\n')
+
+      expect(loadCordisConfigDocument(fixture, 'cordis.yml')).toBe('./missing.yml')
+    } finally {
+      rmSync(fixture, { recursive: true, force: true })
+    }
+  })
+})
 
 describe('verify-cordis-config metadata expressions', () => {
   it('accepts a disabled !!js expression', () => {

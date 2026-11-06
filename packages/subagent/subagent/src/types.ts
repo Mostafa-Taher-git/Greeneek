@@ -341,6 +341,12 @@ export interface SubagentProvider {
    */
   readonly agentRouteDefaults?: Readonly<{ provider: string; model: string }>
   /**
+   * Optional Harness-level capability advertisement (S8-22). Present only when
+   * a provider can honestly describe its models, effort levels, context
+   * strategies, and permissions at registration time. Absent means unknown.
+   */
+  readonly harnessCapabilities?: unknown
+  /**
    * Establish a ONE-SHOT child and return its handle after publication.
    * The service has already validated that every requested start-time
    * capability is supported and resolved `request.descriptor`, so a

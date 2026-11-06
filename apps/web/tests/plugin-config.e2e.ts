@@ -71,6 +71,29 @@ describe('web e2e: plugin configuration section', () => {
     return readFile(join(scaffold.harnessHome, 'settings.yaml'), 'utf8').catch(() => '')
   }
 
+  /**
+   * The `shell` section as the mounted provider composed it. On Linux the
+   * `bash-sandbox` row publishes this namespace and the base bundle pins
+   * `timeoutMs: 60000` on it; on Windows that row is disabled and `pwsh-local`
+   * publishes its own default. The card must report the value that actually
+   * bounds commands, so the first scenario reads it from the Host before any
+   * user layer exists and the later ones reuse that reading.
+   */
+  let composedShellTimeoutMs: string | undefined
+  async function readComposedShellTimeout(): Promise<string> {
+    const section = scaffold.ctx.settings.get('shell') as { timeoutMs?: number }
+    if (typeof section.timeoutMs !== 'number') {
+      throw new Error('plugin-config e2e: the shell namespace carries no composed timeoutMs')
+    }
+    return String(section.timeoutMs)
+  }
+  function defaultShellTimeout(): string {
+    if (composedShellTimeoutMs === undefined) {
+      throw new Error('plugin-config e2e: run the staged-write scenario first; these scenarios share one settings document')
+    }
+    return composedShellTimeoutMs
+  }
+
   it('shows one card per exposed host-plane namespace', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-plugin-config-cards'))
     const dialog = await openPlugins()
@@ -138,11 +161,8 @@ describe('web e2e: plugin configuration section', () => {
 
     const timeout = dialog.getByLabel('命令超时（毫秒）')
     await timeout.waitFor({ timeout: 10_000 })
-    // The composed default before any user layer: the mounted shell provider
-    // installs the `shell` namespace from its own schema, whose timeout defaults
-    // to 120,000 (packages/shell/bash-local/src/index.ts). The `bash-sandbox` row's
-    // 60000 is that provider's own cap and is not what this card edits.
-    expect(await timeout.inputValue()).toBe('120000')
+    composedShellTimeoutMs = await readComposedShellTimeout()
+    expect(await timeout.inputValue()).toBe(composedShellTimeoutMs)
     await timeout.fill('12000')
     await timeout.blur()
 
@@ -209,7 +229,7 @@ describe('web e2e: plugin configuration section', () => {
     // The reset stages the composed default; the document still carries the
     // override until the save lands.
     await dialog.getByRole('button', { name: '恢复默认' }).click()
-    await expect.poll(() => timeout.inputValue(), { timeout: 5_000 }).toBe('120000')
+    await expect.poll(() => timeout.inputValue(), { timeout: 5_000 }).toBe(defaultShellTimeout())
     expect(await settingsDocument()).toContain('timeoutMs: 12000')
 
     await dialog.getByRole('button', { name: '保存', exact: true }).click()
@@ -219,7 +239,7 @@ describe('web e2e: plugin configuration section', () => {
     const expandTerminal = dialog.getByRole('button', { name: '展开设置: 终端' })
     await expandTerminal.waitFor({ timeout: 5_000 })
     await expandTerminal.click()
-    expect(await timeout.inputValue()).toBe('120000')
+    expect(await timeout.inputValue()).toBe(defaultShellTimeout())
     expect(await dialog.getByText('已覆盖').count()).toBe(0)
     expect(tripwire.pageErrors).toEqual([])
   }, 60_000)

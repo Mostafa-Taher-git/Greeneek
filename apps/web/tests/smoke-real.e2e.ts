@@ -424,7 +424,11 @@ describe('gnk web keyless CLI smoke', () => {
     const tsxLoader = pathToFileURL(createRequire(join(REPO_ROOT, 'package.json')).resolve('tsx')).href
     const child = spawn(
       process.execPath,
-      ['--import', tsxLoader, join(REPO_ROOT, 'apps/cli/src/bin.ts'), 'web', '--no-open', '--port', '0'],
+      ['--import', tsxLoader, join(REPO_ROOT, 'apps/cli/src/bin.ts'), 'web',
+        // The scenario owns the endpoint its provider serves, so it owns the
+        // row that reads it: the base bundle mounts no native adapter.
+        '--patch', fileURLToPath(new URL('./scenario-greeneek-adapter.overlay.yml', import.meta.url)),
+        '--no-open', '--port', '0'],
       {
         cwd: workspace,
         env: {
@@ -539,7 +543,9 @@ describe('gnk web keyless CLI smoke', () => {
     const tsxLoader = pathToFileURL(createRequire(join(REPO_ROOT, 'package.json')).resolve('tsx')).href
     const child = spawn(
       process.execPath,
-      ['--import', tsxLoader, join(REPO_ROOT, 'apps/cli/src/bin.ts'), 'web', '--no-open', '--port', '0'],
+      ['--import', tsxLoader, join(REPO_ROOT, 'apps/cli/src/bin.ts'), 'web',
+        '--patch', fileURLToPath(new URL('./scenario-greeneek-adapter.overlay.yml', import.meta.url)),
+        '--no-open', '--port', '0'],
       {
         cwd: workspace,
         env: {
@@ -624,7 +630,9 @@ describe('gnk web keyless CLI smoke', () => {
     const tsxLoader = pathToFileURL(createRequire(join(REPO_ROOT, 'package.json')).resolve('tsx')).href
     const child = spawn(
       process.execPath,
-      ['--import', tsxLoader, join(REPO_ROOT, 'apps/cli/src/bin.ts'), 'web', '--no-open', '--port', '0'],
+      ['--import', tsxLoader, join(REPO_ROOT, 'apps/cli/src/bin.ts'), 'web',
+        '--patch', fileURLToPath(new URL('./scenario-greeneek-adapter.overlay.yml', import.meta.url)),
+        '--no-open', '--port', '0'],
       {
         cwd: workspace,
         env: {

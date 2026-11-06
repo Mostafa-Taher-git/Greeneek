@@ -1,0 +1,8 @@
+# The shipped base bundle deliberately mounts no native Greeneek adapter, so a
+# scenario that points `$GREENEEK_BASE_URL` at its own scripted endpoint has to
+# insert the row that reads it. No config here: the adapter takes the endpoint
+# from `$GREENEEK_BASE_URL` and the credential from `$GREENEEK_API_KEY`, both of
+# which the scenario exports for the process it launches.
+- insert:
+    - id: llm-greeneek
+      name: '@greeneek/gnk-llm-greeneek'

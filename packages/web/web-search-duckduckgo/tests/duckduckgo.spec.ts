@@ -210,6 +210,21 @@ describe('DuckDuckGoSearchProvider Wikipedia fallback', () => {
         .resolves.toEqual({ sources: [], truncated: false })
     }
   })
+
+  it('reports cancellation of the surrounding search rather than an empty result', async () => {
+    const controller = new AbortController()
+    const fetchMock = vi.fn(async (input: unknown) => {
+      if (String(input).includes('w/api.php')) {
+        controller.abort()
+        throw new DOMException('aborted', 'AbortError')
+      }
+      return jsonResponse({ RelatedTopics: [] })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(new DuckDuckGoSearchProvider(options).search({ query: 'q' }, controller.signal))
+      .rejects.toMatchObject({ code: 'WEB_ABORTED' })
+  })
 })
 describe('DuckDuckGoSearchProvider availability', () => {
   it('is available out of the box: no key exists', () => {

@@ -8,7 +8,7 @@ kind: "package-reference"
 
 ## Summary
 
-With `gnk-web-search-duckduckgo`, the harness searches the web through DuckDuckGo's Instant Answer API — no key, no account, usable out of the box. Choose it when a deployment wants search with zero configuration. The abstract maps to the first source, related-topic blurbs to further sources, and a non-blank instant answer (calculations, conversions) to `content`. Entries with a blank URL are dropped. When Instant Answer answers nothing, the provider falls back to a Wikipedia search rather than reporting nothing; a failing fallback resolves empty instead of failing the search. The model-facing `web_search` tool lives in `gnk-tool-web`.
+With `gnk-web-search-duckduckgo`, the harness searches the web through DuckDuckGo's Instant Answer API — no key, no account, usable out of the box. Choose it when a deployment wants search with zero configuration. The abstract maps to the first source, related-topic blurbs to further sources, and a non-blank instant answer (calculations, conversions) to `content`. Entries with a blank URL are dropped. When Instant Answer answers nothing, the provider falls back to a Wikipedia search rather than reporting nothing; a failing fallback resolves empty instead of failing the search, while an abort of the surrounding search reports `WEB_ABORTED` rather than an empty result. The model-facing `web_search` tool lives in `gnk-tool-web`.
 
 ## Table of Contents
 

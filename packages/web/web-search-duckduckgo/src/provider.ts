@@ -272,7 +272,15 @@ export class DuckDuckGoSearchProvider implements WebSearchProvider {
       if (!response.ok) return []
       const payload = await response.json() as WikipediaSearchResponse
       return mapWikipediaResponse(payload)
-    } catch {
+    } catch (error: unknown) {
+      // An abort of the surrounding search is cancellation, not an empty
+      // enrichment: reporting no sources would let a cancelled search read as
+      // a answered one (the seam's cancellation contract).
+      if (signal?.aborted === true || isAbortError(error)) {
+        throw new WebError('DuckDuckGo search aborted', 'WEB_ABORTED', { cause: error })
+      }
+      // Anything else failed after the Instant Answer already answered, so the
+      // best-effort enrichment contributes no sources rather than failing it.
       return []
     }
   }

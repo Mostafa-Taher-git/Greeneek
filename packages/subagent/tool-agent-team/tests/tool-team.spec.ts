@@ -11,6 +11,7 @@ import { ToolCallId } from '@greeneek/gnk-llm'
 import { scopeOf } from '@greeneek/gnk-scope'
 import { SessionId } from '@greeneek/gnk-session'
 import SessionProjectionRegistry from '@greeneek/gnk-session-projection'
+import FileSettingsProvider from '@greeneek/gnk-settings-file'
 import JsonlSessionPersistence from '@greeneek/gnk-session-persistence-jsonl'
 import SessionQueryEngine from '@greeneek/gnk-session-query'
 import SubagentService from '@greeneek/gnk-subagent'
@@ -61,7 +62,7 @@ afterEach(() => {
 async function setup(
   script: ConstructorParameters<typeof MockAdapter>[0],
   legacyControl = false,
-  options: { readonly cwd?: string; readonly gnkHome?: string } = {},
+  options: { readonly cwd?: string; readonly gnkHome?: string; readonly settingsPath?: string } = {},
 ) {
   const ctx = new Context()
   await mountAgentLoopTestDependencies(ctx)
@@ -75,6 +76,9 @@ async function setup(
   if (legacyControl) await ctx.plugin(ToolSubagentControl)
   await ctx.plugin(SubagentSpawn, { providerName: 'spawn' })
   await ctx.plugin(SubagentFork, { providerName: 'fork' })
+  if (options.settingsPath !== undefined) {
+    await ctx.plugin(FileSettingsProvider, { path: options.settingsPath, watch: false })
+  }
   await ctx.plugin(TeamService, options.gnkHome === undefined ? {} : { gnkHome: options.gnkHome })
   const fiber = await ctx.plugin(toolTeam)
   const adapter = new MockAdapter(script)
@@ -696,6 +700,46 @@ describe('gnk-tool-team fleet confirmation', () => {
     await waitNoAgent(ctx, childId)
     await ctx.agentTeams.discardLane(lead, 'lane-alpha', SIGNAL)
   }, 20_000)
+
+  it('never rewrites a saved favorite for a one-time approved fleet instruction', async () => {
+    const settingsRoot = mkdtempSync(join(tmpdir(), 'gnk-tool-team-one-time-'))
+    roots.push(settingsRoot)
+    const { ctx, lead } = await setup([textResponse('unused')], false, {
+      settingsPath: join(settingsRoot, 'settings.json'),
+    })
+
+    const favorite = {
+      id: 'review-fleet',
+      name: 'Review fleet',
+      members: [{ name: 'reviewer', description: 'review', prompt: 'review it', provider: 'spawn' }],
+    }
+    expect((await ctx.agentTeams.saveFleetFavorite(lead, favorite, 0)).ok).toBe(true)
+    const savedFleet = ctx.agentTeams.fleetFavorites(lead)
+    expect(savedFleet.favorites).toHaveLength(1)
+
+    const save = vi.spyOn(ctx.agentTeams, 'saveFleetFavorite')
+    const spawn = vi.spyOn(ctx.agentTeams, 'spawnTeammate').mockResolvedValue({
+      member: { id: 'one-time-child', name: 'one-time', role: 'teammate', status: 'running', diagnostics: [] },
+    } as never)
+    const requests = approvalStub(ctx, 'allowed-once')
+
+    for (const [label, name] of [
+      ['first one-time fleet', 'one-time-a'],
+      ['second one-time fleet', 'one-time-b'],
+    ] as const) {
+      const result = await execute(ctx, lead, 'spawn_fleet', {
+        label,
+        members: [{ name, description: 'one task', prompt: 'answer once', model: 'other-model' }],
+      })
+      expect(result.isError, text(result)).toBe(false)
+    }
+
+    // Each one-time instruction asks again; neither persists a fleet or changes the saved default.
+    expect(requests).toHaveLength(2)
+    expect(spawn).toHaveBeenCalledTimes(2)
+    expect(save.mock.calls.length, 'a one-time instruction must not write fleet settings').toBe(0)
+    expect(ctx.agentTeams.fleetFavorites(lead)).toEqual(savedFleet)
+  })
 
   it('fails closed before any child when the approval capability is absent', async () => {
     const { ctx, lead } = await setup([textResponse('unused')])

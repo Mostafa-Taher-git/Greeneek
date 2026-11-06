@@ -79,6 +79,14 @@ The project root is the nearest ancestor containing `.git`; without one, the cur
 
 Chokidar watches existing roots for direct bundle/flat-entry additions and removals plus direct skill-entry changes. A missing root is followed one absent path segment at a time from its nearest existing ancestor until Chokidar can attach. Resource files below a bundle are not catalog changes. Model-facing `write` and `edit` observations synchronously invalidate the provider when their target is catalog-relevant, while the host watcher covers IDE, Git, shell, and external-process mutations. Watcher failures make the current observation incomplete without hiding readable candidates from direct loads; project-scoped watchers use a configured bounded LRU.
 
+## Adopted `ds-*` skill pack
+
+`.agents/skills/ds-*/SKILL.md` holds 29 project-scoped skills adopted from [aicodeking/deepseek-stack](https://github.com/aicodeking/deepseek-stack) (MIT, upstream commit `d4f1ebe72e8314c3a0c6135bb82f623c650f7218`, 2026-10-28). Upstream frontmatter and bodies are unchanged. Each file appends a shared Greeneek working contract, and the skills whose upstream git or release workflow conflicts with this repository also append a Greeneek-specific override. [UPSTREAM.md](../../.agents/skills/ds-help/UPSTREAM.md) carries the provenance and license text, and `ds-watch-pr/scripts/watch_pr.py` is the unmodified upstream watcher, requiring `python3` and a logged-in `gh`.
+
+The pack uses the rank-200 `project-agents` root, so no generated catalog changes when a skill is added or edited: the local provider discovers them at runtime, and the Consumer exposes them in the session catalog and as `/<name>` user gestures. The gesture is a skill load, not an entry in the closed `ctx.commands` namespace. Adding a skill directory requires no Cordis patch row.
+
+The `ds-skill-pack` leaf of `doc-quick` and `doc-sync` runs [`scripts/ds-skill-pack.spec.ts`](../../scripts/ds-skill-pack.spec.ts). It asserts the closed 29-name inventory, frontmatter the shipped loader accepts, the `/ds-<name>` trigger in every description, the Greeneek contract and overrides, and that all 29 names are returned by `ctx.skills.list({ cwd: <repo root> })` as `project-agents` rows that are both user-invocable and model-invocable.
+
 ## Skill identity
 
 Skill names are kebab-case (`^[a-z0-9]+(?:-[a-z0-9]+)*$`). The local provider accepts directory bundles (`<name>/SKILL.md`) and flat Markdown files (`<name>.md`). Nested recursive `**/SKILL.md` discovery is not supported.

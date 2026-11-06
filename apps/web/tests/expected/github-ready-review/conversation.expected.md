@@ -11,9 +11,12 @@
 
 - banner:
   - navigation "Session hierarchy":
-    - button "Review greeneek-harness/greeneek-harness#314" [disabled]
+    - button "Review greeneek-harness/greeneek-harness#314"
   - img
   - text: Standard mode
+  - button "Agent Team":
+    - img
+    - text: Agent Team
   - button "Session options":
     - img
 - button "System prompt":
@@ -38,6 +41,7 @@
 - text: {{clock}}
 - textbox "Message or run a task... / commands, @ files or sessions"
 - 'button "Access mode, current: Read Only"': Read Only
+- button "CTC"
 - button "Select model, current github-webhook-review-test/reply":
   - text: github-webhook-review-test/reply
   - img

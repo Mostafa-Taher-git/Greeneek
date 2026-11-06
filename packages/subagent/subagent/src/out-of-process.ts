@@ -233,6 +233,8 @@ export interface SubprocessRunHandleParts {
   requestCancel: () => void
   /** Tear the child process down to quiescence (backend-owned ladder). */
   teardown: () => Promise<void>
+  /** Optional ACP `initialize` response retained for Harness discovery (S8-23). */
+  acpInitializeResult?: unknown
 }
 
 /**
@@ -249,6 +251,7 @@ export function subprocessRunHandle(parts: SubprocessRunHandleParts): SubagentRu
     id: parts.id,
     localAgent: undefined,
     result: parts.result,
+    acpInitializeResult: parts.acpInitializeResult,
     dispose(): Promise<void> {
       if (disposal !== undefined) return disposal
       parts.signal.removeEventListener('abort', parts.onAbort)

@@ -302,6 +302,12 @@ export interface SubagentRun {
    */
   readonly result: Promise<SubagentResult>
   /**
+   * The raw ACP `initialize` response, retained (S8-23) so a Harness descriptor
+   * can be derived from the child's advertised capabilities instead of being
+   * discarded at the protocol boundary.
+   */
+  readonly acpInitializeResult?: unknown
+  /**
    * Cancel remaining work, reach child quiescence, and release resources.
    * Idempotent.
    */

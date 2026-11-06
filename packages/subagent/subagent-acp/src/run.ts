@@ -470,10 +470,11 @@ export async function startAcpRun(request: SubagentStartRequest, spec: AcpRunSpe
 
   // Establish the remote session before publishing a handle. Any failure owns
   // the still-private process and therefore reaps it before rejecting.
+  let initializeResult: unknown
   try {
     await Promise.race([
       (async (): Promise<void> => {
-        await agent.request(methods.agent.initialize, {
+        initializeResult = await agent.request(methods.agent.initialize, {
           protocolVersion: PROTOCOL_VERSION,
           // Advertise NO optional client capabilities (no fs, no terminal): the
           // child self-serves in its own process.
@@ -585,6 +586,7 @@ export async function startAcpRun(request: SubagentStartRequest, spec: AcpRunSpe
 
   return subprocessRunHandle({
     id,
+    acpInitializeResult: initializeResult,
     result,
     signal: request.signal,
     onAbort,

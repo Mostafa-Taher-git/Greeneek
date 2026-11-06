@@ -1,0 +1,12 @@
+# The shipped base bundle deliberately mounts no native Greeneek adapter, so a
+# scenario that reads its settings namespace or its retry defaults inserts its
+# own row instead of expecting a row no shipped composition carries. The
+# endpoint is a dead loopback and the credential reference names a variable
+# nothing sets, so the row boots usable-but-unconfigured and a scenario request
+# that slipped through would fail loudly rather than reach a real endpoint.
+- insert:
+    - id: llm-greeneek
+      name: '@greeneek/gnk-llm-greeneek'
+      config:
+        apiKeyEnv: GNK_WEB_E2E_ABSENT_KEY
+        baseURL: http://127.0.0.1:9

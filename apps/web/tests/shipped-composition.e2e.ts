@@ -25,6 +25,13 @@ const FILE_REFERENCE_PROMPT = fileURLToPath(new URL(
 ))
 
 /**
+ * The shipped base bundle deliberately mounts no native Greeneek adapter, so
+ * this scenario inserts the row it owns instead of overriding a row no shipped
+ * composition carries.
+ */
+const GREENEK_ADAPTER_OVERLAY = fileURLToPath(new URL('./shipped-greeneek-adapter.overlay.yml', import.meta.url))
+
+/**
  * The catalog the shipped Web composition puts in front of the model, minus the
  * ripgrep-dependent pair below. The absences are deliberate, not incidental
  * gaps: the `cordis_*` toolset executes model-written JavaScript that no
@@ -76,7 +83,10 @@ afterEach(async () => {
 })
 
 it('assembles the shipped Web transport, catalog, guidance, and defaults', async () => {
-  scaffold = await launchWebScaffold({ greeneekMissingCredential: true })
+  scaffold = await launchWebScaffold({
+    greeneekMissingCredential: true,
+    extraOverlayPath: GREENEK_ADAPTER_OVERLAY,
+  })
   const ctx = scaffold.ctx
   const index = await fetch(`http://127.0.0.1:${String(ctx.webServer.port)}`, {
     headers: { 'accept-encoding': 'gzip' },

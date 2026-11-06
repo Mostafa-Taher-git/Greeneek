@@ -299,9 +299,11 @@ export interface LaunchOptions {
    */
   cordisTools?: boolean
   /**
-   * Keep the shipped Greeneek adapter mounted while masking the process
-   * environment's GREENEEK_API_KEY for this scaffold lifetime. This is the
-   * keyless first-run configuration lane; the default disables the adapter.
+   * Boot the keyless first-run configuration lane: mask the process
+   * environment's GREENEEK_API_KEY for this scaffold lifetime and register no
+   * fallback provider route. The shipped base bundle mounts no Greeneek adapter
+   * row, so a scenario that needs shipped routes inserts its own through
+   * {@link extraOverlayPath}.
    */
   greeneekMissingCredential?: boolean
   /** Leave the current welcome notice pending; ordinary scenarios pre-acknowledge it before browser boot. */
@@ -559,9 +561,6 @@ export async function launchWebScaffold(options: LaunchOptions = {}): Promise<We
           baseURL: options.greeneekSearch.baseURL,
         },
       }],
-    ...mode === 'record' || options.greeneekMissingCredential === true
-      ? []
-      : [{ id: 'llm-greeneek', disabled: true }],
   ]
 
   // Sessions inherit the gateway's process.cwd() default; run the boot from

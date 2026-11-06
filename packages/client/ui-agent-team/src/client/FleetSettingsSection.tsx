@@ -29,6 +29,7 @@ export interface FleetSettingsInjected {
   readonly subscribe: (listener: () => void) => () => void
   readonly getSnapshot: () => FleetSnapshot
   readonly loadAvailability: () => Promise<RemoteResult<FleetProviderAvailability[]>>
+  readonly loadHarnesses: () => Promise<RemoteResult<HarnessDescriptor[]>>
   readonly loadStarters: () => Promise<RemoteResult<readonly FleetFavorite[]>>
   readonly save: (favorites: readonly FleetFavorite[]) => Promise<void>
   readonly launch: (favoriteId: string) => Promise<RemoteResult<FleetLaunchResult>>
@@ -364,7 +365,7 @@ function MemberEditor({ index, member, providers, t, onChange, onRemove }: {
  * @returns the fleet settings page.
  */
 export function FleetSettingsSection({
-  t, subscribe, getSnapshot, loadAvailability, loadStarters, save, launch, duplicate, installStarter, canLaunch,
+  t, subscribe, getSnapshot, loadAvailability, loadHarnesses, loadStarters, save, launch, duplicate, installStarter, canLaunch,
 }: FleetSettingsSectionProps): ReactNode {
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
   const [providers, setProviders] = useState<readonly FleetProviderAvailability[]>([])
@@ -385,6 +386,15 @@ export function FleetSettingsSection({
     else setNotice(t('fleet.error', { message: result.error.message }))
   }
 
+  const refreshHarnesses = async (): Promise<void> => {
+    try {
+      const result = await loadHarnesses()
+      if (result.ok) void result.value
+    } catch (error: unknown) {
+      setNotice(t('fleet.error', { message: errorText(error) }))
+    }
+  }
+
   // The starter catalog is read from the host so the page previews exactly what an
   // install would create, rather than a list the client would have to keep in step.
   // A composition that cannot answer is reported, and the favorites page still works.
@@ -400,6 +410,7 @@ export function FleetSettingsSection({
 
   useEffect(() => {
     void refreshAvailability()
+    void refreshHarnesses()
     void refreshStarters()
   }, [])
 

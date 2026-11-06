@@ -113,6 +113,9 @@ function registerUi(ctx: ClientContext): void {
     async loadAvailability() {
       return await ctx.remote.agentTeams.fleetAvailability()
     },
+    async loadHarnesses() {
+      return await ctx.remote.agentTeams.harnesses()
+    },
     async loadStarters() {
       return await ctx.remote.agentTeams.fleetStarters()
     },

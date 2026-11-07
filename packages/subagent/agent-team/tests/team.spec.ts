@@ -1948,6 +1948,12 @@ describe('Fleet favorites', () => {
     expect(await ctx.agentTeams.launchFleetFavorite(lead, 'absent', true))
       .toMatchObject({ ok: false, error: { code: 'TEAM_FLEET_FAVORITE_NOT_FOUND' } })
     expect(ctx.agentTeams.remoteFleetAvailability()).toEqual(ctx.agentTeams.fleetAvailability(lead))
+    const harnesses = ctx.agentTeams.remoteHarnesses()
+    expect(Array.isArray(harnesses)).toBe(true)
+    expect(harnesses.length).toBeGreaterThan(0)
+    for (const harness of harnesses) {
+      expect(typeof harness.name).toBe('string')
+    }
     expect(await ctx.agentTeams.remoteLaunchFleetFavorite(lead, 'absent', true))
       .toMatchObject({ ok: false, error: { code: 'TEAM_FLEET_FAVORITE_NOT_FOUND' } })
 

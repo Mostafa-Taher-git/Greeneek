@@ -12,6 +12,7 @@ export type {
 } from './fleet-settings.ts'
 export type {
   CreateTeamTaskRequest,
+  HarnessDescriptor,
   TeamMemberView,
   TeamTaskAction,
   TeamTaskId,

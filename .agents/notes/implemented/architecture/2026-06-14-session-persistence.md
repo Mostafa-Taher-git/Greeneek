@@ -33,3 +33,11 @@ Format versioning: the header carries a `version`; cold reads reject any non-cur
 ## Consequences
 
 The Service Definition, JSONL provider, and metadata contract in `gnk-session` (`session.header`, the `create(id?, options?)` signature) buy durable resume/fork, a read/replay path, crash tolerance, and host-side session access over the existing event-sourced log. The reusable `runPersistenceContract` suite holds the provider and future implementations to the same append-only, contiguous-seq, lazy-materialization, logical-recovery, integer-metadata, and serializability semantics. Persisting the full logical log also settles event fidelity: every `assistant/chunk` survives exactly even when JSONL packs several into one storage row.
+
+## Testing
+
+`packages/core/agent-loop/tests/resume.spec.ts` drives create/resume and the pending-inbox cases against the real JSONL provider. The pending-inbox resume case parks its writer in a child process (`tests/fixtures/pending-inbox-child.ts`) that flushes a flushed idle inbox and then holds the write lease until killed, so the resumed runtime replays a genuinely released log instead of contending with an in-process lease owner.
+
+## Related
+
+- [the unified send and inbox splice decision](2026-07-22-unified-send-and-coalesced-user-messages.md)

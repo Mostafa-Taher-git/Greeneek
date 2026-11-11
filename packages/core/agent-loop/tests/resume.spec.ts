@@ -1,5 +1,7 @@
 import { ToolCallId, createMessage, createUserMessage } from '@greeneek/gnk-llm'
 import { afterEach, describe, expect, it, vi, type MockInstance } from 'vitest'
+import { spawn, type ChildProcess } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
 import { Context } from '@greeneek/cordis'
 import { appendFile, mkdtemp, readdir, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -18,7 +20,52 @@ import SessionProjectionRegistry from '@greeneek/gnk-session-projection'
 import { MockAdapter, textResponse } from './mock-adapter.ts'
 
 const dirs: string[] = []
-afterEach(async () => { for (const d of dirs.splice(0)) await rm(d, { recursive: true, force: true }) })
+const children: ChildProcess[] = []
+afterEach(async () => {
+  for (const child of children.splice(0)) {
+    if (child.exitCode === null && child.signalCode === null) {
+      child.kill()
+      await new Promise<void>((resolve) => { child.once('exit', () => { resolve() }) })
+    }
+  }
+  for (const d of dirs.splice(0)) await rm(d, { recursive: true, force: true })
+})
+
+/** Start a second process that keeps a flushed idle inbox alive until killed. */
+async function startPendingInboxProcess(root: string): Promise<ChildProcess> {
+  const entry = fileURLToPath(new URL('./fixtures/pending-inbox-child.ts', import.meta.url))
+  const child = spawn(process.execPath, ['--import', 'tsx/esm', entry, root], {
+    cwd: process.cwd(),
+    stdio: ['ignore', 'pipe', 'pipe'],
+    windowsHide: true,
+  })
+  children.push(child)
+  let stdout = ''
+  let stderr = ''
+  const ready = new Promise<void>((resolve, reject) => {
+    child.stdout?.setEncoding('utf8')
+    child.stderr?.setEncoding('utf8')
+    child.stdout?.on('data', (chunk: string) => {
+      stdout += chunk
+      if (stdout.includes('PENDING_INBOX_READY')) resolve()
+    })
+    child.stderr?.on('data', (chunk: string) => { stderr += chunk })
+    child.once('error', reject)
+    child.once('exit', (code, signal) => {
+      if (!stdout.includes('PENDING_INBOX_READY')) {
+        reject(new Error(`pending-inbox child exited before readiness (${code ?? signal}): ${stderr}`))
+      }
+    })
+  })
+  await ready
+  return child
+}
+
+/** Wait until an owned child has released its process and file handles. */
+async function waitForChildExit(child: ChildProcess): Promise<void> {
+  if (child.exitCode !== null || child.signalCode !== null) return
+  await new Promise<void>((resolve) => { child.once('exit', () => { resolve() }) })
+}
 
 async function persistentHarness(adapter: MockAdapter): Promise<{ ctx: Context; root: string }> {
   const root = await mkdtemp(join(tmpdir(), 'gnk-resume-'))
@@ -930,17 +977,14 @@ describe('the session-persistence Agent Note: AgentLoop factory create/resume', 
   })
 
   it('a pending idle inject() survives persist + resume without a synthetic turn', async () => {
-    const adapter1 = new MockAdapter([textResponse('answer')])
-    const { ctx: ctx1, root } = await persistentHarness(adapter1)
-    const a1 = (await ctx1.agents.create({ sessionId: SessionId('inject-sess'), meta: { cwd: '/w' } })).agent
-    a1.followup(createUserMessage({ content: [{ type: 'text', text: 'q' }], source: { kind: 'user' } }))
-    await waitForIdle(ctx1, a1)
-    a1.inject(createUserMessage({ content: [{ type: 'text', text: 'background job 42 finished' }], source: { kind: 'plugin', plugin: 'tool-bash' } }))
-    await a1.whenIdle()
-    await ctx1.sessions.flush(a1.session)
+    const root = await mkdtemp(join(tmpdir(), 'gnk-resume-inject-'))
+    dirs.push(root)
+    const child = await startPendingInboxProcess(root)
+    expect(child.kill()).toBe(true)
+    await waitForChildExit(child)
 
-    // Lifecycle 2: resume; the injected context is still pending and becomes
-    // model-visible when the next turn admits it.
+    // Lifecycle 2 runs after the writer process has exited, so resume replays
+    // the durable inbox splice instead of competing with a live session lease.
     const ctx2 = await mountPersistentHarness(root, new MockAdapter([textResponse('next')]))
     const stored = await readStoredEvents(ctx2, SessionId('inject-sess'))
     expect(stored.some(event => event.type === 'agent/inbox/spliced')).toBe(true)
@@ -952,7 +996,6 @@ describe('the session-persistence Agent Note: AgentLoop factory create/resume', 
     const flat = JSON.stringify(a2.session.deriveMessages())
     expect(flat).toContain('background job 42 finished')
     await ctx2.fiber.dispose()
-    await ctx1.fiber.dispose()
   })
 
   it('resume reloads a persisted session: history + turn numbering continue, no duplicate seqs', async () => {

@@ -261,6 +261,7 @@
 `src/client/stores.ts: export function readConversationViewPreference(sessionId: SessionId): string | null {`
 `src/client/view-selection.ts: export const CHAT_VIEW_ID = 'chat'`
 `src/client/view-selection.ts: export function resolveActiveView(`
+`src/css-modules.d.ts: export default classes`
 `src/index.ts: export function apply(ctx: Context): void {`
 `src/index.ts: export {`
 `src/submission-settings.ts: export const BUSY_ENTER_BEHAVIORS = ['queue', 'steer'] as const`

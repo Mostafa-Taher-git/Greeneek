@@ -41,4 +41,5 @@
 `src/client/popup.ts: export interface PopupState {`
 `src/client/popup.ts: export type TokenSegment =`
 `src/client/service.ts: export class CommandUiRuntime extends Service implements CommandUiContract {`
+`src/css-modules.d.ts: export default classes`
 `src/index.ts: export function apply(): void {}`

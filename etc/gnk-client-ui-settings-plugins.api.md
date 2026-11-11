@@ -79,4 +79,5 @@
 `src/client/web-search-card-controller.ts: export interface WebSearchCardFace extends CardActions {`
 `src/client/web-search-card-controller.ts: export interface WebSearchCardState extends CardShell {`
 `src/client/web-search-card-controller.ts: export interface WebSearchSettings {`
+`src/css-modules.d.ts: export default classes`
 `src/index.ts: export function apply(): void {}`

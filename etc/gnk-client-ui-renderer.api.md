@@ -26,6 +26,7 @@
 `src/client/registry.ts: export class SlotRegistry extends Service {`
 `src/client/registry.ts: export interface RootOwnerProps { children?: never }`
 `src/client/scoped-slots.tsx: export function createSlotRenderer(): SlotRenderer {`
+`src/client/use-sync-external-store.d.ts: export function useSyncExternalStoreWithSelector<Snapshot, Selection>(`
 `src/index.ts: export function apply(): void {}`
 `src/invariant.ts: export const apply = (ctx: Context): Promise<() => void> =>`
 `src/invariant.ts: export const inject = ['invariants']`

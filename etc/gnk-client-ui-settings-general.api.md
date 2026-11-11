@@ -41,4 +41,5 @@
 `src/client/shell-contract.ts: export type SettingsPageComponentProps =`
 `src/client/shell-contract.ts: export type SettingsRootComponentProps =`
 `src/client/shell-contract.ts: export type SettingsRootInjected = {`
+`src/css-modules.d.ts: export default classes`
 `src/index.ts: export function apply(ctx: Context): void {`

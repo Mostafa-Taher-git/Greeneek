@@ -12,13 +12,20 @@
 `src/client/RecentSessionsSeat.tsx: export function RecentSessionsSeat({ workspaceId, open, useSessions, useWorkspaces, t }: RecentSessionsSeatProps) {`
 `src/client/RecentSessionsSeat.tsx: export interface RecentSessionsInjected {`
 `src/client/RecentSessionsSeat.tsx: export type RecentSessionsSeatProps =`
+`src/client/SessionHeaderUtilities.tsx: export function SessionHeaderUtilities({`
+`src/client/SessionHeaderUtilities.tsx: export interface SessionHeaderUtilitiesInjected {`
+`src/client/SessionHeaderUtilities.tsx: export type SessionHeaderUtilitiesProps =`
 `src/client/WorkspacePicker.tsx: export function WorkspacePickFlow({`
 `src/client/WorkspacePicker.tsx: export function WorkspacePicker({`
 `src/client/WorkspacePicker.tsx: export interface WorkspacePickFlowProps {`
 `src/client/contract/slots.ts: export interface DirectoryFlowOwnerProps {`
+`src/client/contract/slots.ts: export interface ExternalAppEntry {`
+`src/client/contract/slots.ts: export interface ExternalAppsShare {`
+`src/client/contract/slots.ts: export interface GitFacts {`
 `src/client/contract/slots.ts: export type DirectoryFlowSlotName =`
 `src/client/contract/slots.ts: export type DirectoryPickingHooks = PropsHooks<DirectoryPickingInjected['hooks']>`
 `src/client/contract/slots.ts: export type DirectoryPickingInjected = {`
+`src/client/contract/slots.ts: export type OpenPathTarget =`
 `src/client/contract/slots.ts: export type WorkspaceBrowserInjected = {`
 `src/client/contract/slots.ts: export type WorkspaceBrowserProps =`
 `src/client/contract/slots.ts: export type WorkspacePickerInjected = DirectoryPickingInjected & {`
@@ -57,11 +64,16 @@
 `src/client/navigation.ts: export class DirectoryBrowseError extends Error {`
 `src/client/navigation.ts: export interface UiWorkspace {`
 `src/client/navigation.ts: export { UiWorkspaceService }`
-`src/client/rows/Rows.tsx: export function ProjectRowItem({ group, onToggle, onCreate, actions, drag, home, t }: {`
+`src/client/openInMenu.tsx: export const OPEN_IN_APP_PREFIX = 'open-in:app:'`
+`src/client/openInMenu.tsx: export function fileManagerLabel(`
+`src/client/openInMenu.tsx: export function openInMenuItems(`
+`src/client/openInMenu.tsx: export function openInTarget(id: string): OpenPathTarget {`
+`src/client/rows/Rows.tsx: export function ProjectRowItem({ group, onToggle, onCreate, actions, openItems, onOpenPath, git, onMenuOpen, drag, home, t }: {`
 `src/client/rows/Rows.tsx: export function SearchResultItem({ result, currentId, onOpen, t }: {`
-`src/client/rows/Rows.tsx: export function SessionNodeItem({ node, currentId, now, onOpen, onRename, onFork, onArchive, onDelete, drag, flat = false, t }: {`
+`src/client/rows/Rows.tsx: export function SessionNodeItem({`
 `src/client/rows/Rows.tsx: export interface RowDragProps {`
 `src/client/rows/WorkspaceBrowser.tsx: export function WorkspaceBrowser({`
+`src/client/sessionMenuItems.tsx: export function sharedSessionMenuItems(t: MenuTranslate): MenuItem[] {`
 `src/client/stores.ts: export const FLAT_SESSION_ORDER_KEY = '__flat_session_order__'`
 `src/client/stores.ts: export function createWorkspaceViewStore(): EngineStoreHandle<WorkspaceViewState, WorkspaceViewActions> {`
 `src/client/stores.ts: export type SessionGroupBy = 'workspace' | 'flat'`
@@ -82,4 +94,6 @@
 `src/client/tree.ts: export interface TreeView {`
 `src/client/tree.ts: export type SessionOrderBy = 'manual' | 'updated'`
 `src/client/tree.ts: export type SessionPendingInteractionStatus = 'approval' | 'plan-review' | 'question'`
+`src/client/useExternalApps.ts: export function useExternalApps(`
+`src/css-modules.d.ts: export default classes`
 `src/index.ts: export function apply(): void {}`

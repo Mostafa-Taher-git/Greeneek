@@ -24,6 +24,7 @@
 `src/client/settings-store.ts: export function createLanguageRowStore(): EngineStoreHandle<LanguageRowState, LanguageRowActions> {`
 `src/client/settings-store.ts: export interface LanguageOptionRow {`
 `src/client/settings-store.ts: export interface LanguageRowState {`
+`src/css-modules.d.ts: export default classes`
 `src/index.ts: export function apply(ctx: Context): void {`
 `src/index.ts: export {`
 `src/locale-settings.ts: export const LOCALE_DOCUMENT_TAGS = {`

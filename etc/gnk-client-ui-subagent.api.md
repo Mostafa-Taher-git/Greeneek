@@ -20,4 +20,5 @@
 `src/client/locales.ts: export type SubagentKey = keyof typeof zh`
 `src/client/subagent-lineage.ts: export function indexSubagentDescendants(`
 `src/client/subagent-lineage.ts: export interface SubagentDescendantSummary {`
+`src/css-modules.d.ts: export default classes`
 `src/index.ts: export function apply(): void {}`

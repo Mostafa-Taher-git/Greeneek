@@ -38,4 +38,5 @@
 `src/client/settings/CraftSection.tsx: export function CraftSection({ source, t }: CraftSectionProps) {`
 `src/client/settings/CraftSection.tsx: export interface CraftSectionInjected {`
 `src/client/settings/CraftSection.tsx: export type CraftSectionProps =`
+`src/css-modules.d.ts: export default classes`
 `src/index.ts: export function apply(): void {}`

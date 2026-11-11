@@ -8,7 +8,7 @@
 `src/client/FleetSidebar.tsx: export function FleetSidebar(props: FleetSidebarProps) {`
 `src/client/contract.ts: export interface FleetInjected {`
 `src/client/contract.ts: export interface FleetSnapshot {`
-`src/client/contract.ts: export type FleetPanelProps = PropsRuntime<'conversation.details.fleet'>`
+`src/client/contract.ts: export type FleetPanelProps = PropsRuntime<'rightbar'>`
 `src/client/contract.ts: export type FleetPillProps = PropsRuntime<'conversation.input.left'>`
 `src/client/contract.ts: export type FleetSidebarProps = PropsRuntime<'rightbar'>`
 `src/client/contract.ts: export type ResumeOutcome = RemoteResult<{ waveId: string }>`
@@ -32,4 +32,5 @@
 `src/client/use-announcements.ts: export function useAnnouncements(snapshot: FleetSnapshot, t: TranslateNS<'fleet'>): string {`
 `src/client/use-stop.ts: export function useEmergencyStop(`
 `src/client/use-stop.ts: export interface EmergencyStop {`
+`src/css-modules.d.ts: export default classes`
 `src/index.ts: export function apply(): void {}`

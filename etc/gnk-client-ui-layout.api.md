@@ -37,4 +37,5 @@
 `src/client/theme-presenter.ts: export class ThemePresenter {`
 `src/client/theme-presenter.ts: export const CONTENT_FONT_SIZE_VARIABLE = '--gnk-content-font-size'`
 `src/client/theme-presenter.ts: export const DARK_ATTRIBUTE = 'data-ds-dark-theme'`
+`src/css-modules.d.ts: export default classes`
 `src/index.ts: export function apply(): void {}`

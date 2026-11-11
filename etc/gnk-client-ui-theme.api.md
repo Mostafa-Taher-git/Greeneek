@@ -34,6 +34,8 @@
 `src/client/settings-store.ts: export interface AppearanceRowState {`
 `src/client/settings-store.ts: export interface FontSizeRowState {`
 `src/client/styles.ts: export function installThemeStyles(ctx: Context): void {`
+`src/css-modules.d.ts: export default classes`
+`src/css-modules.d.ts: export default css`
 `src/index.ts: export function apply(ctx: Context): void {`
 `src/index.ts: export {`
 `src/theme-settings.ts: export const DEFAULT_FONT_SIZE = 14`

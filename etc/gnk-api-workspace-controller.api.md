@@ -42,6 +42,8 @@
 `src/types.ts: export interface WorkspaceInsertBeforeRequest {`
 `src/types.ts: export interface WorkspaceInsertSessionBeforeRequest {`
 `src/types.ts: export interface WorkspaceOrderValue {`
+`src/types.ts: export interface WorkspacePinSessionRequest {`
+`src/types.ts: export interface WorkspacePinSessionValue {`
 `src/types.ts: export interface WorkspaceRenameRequest {`
 `src/types.ts: export interface WorkspaceValue {`
 `src/types.ts: export interface WorkspaceView {`

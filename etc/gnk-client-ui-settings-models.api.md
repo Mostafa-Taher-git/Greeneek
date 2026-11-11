@@ -81,6 +81,7 @@
 `src/client/welcome-store.ts: export function decodeWelcomeSection(section: unknown): WelcomeSection {`
 `src/client/welcome-store.ts: export interface WelcomeNoticeState {`
 `src/client/welcome-store.ts: export type WelcomeSection = Record<string, unknown>`
+`src/css-modules.d.ts: export default classes`
 `src/index.ts: export function apply(): void {}`
 `src/onboarding-copy.ts: export const WELCOME_NOTICE_ACK_FIELD = 'welcomeNoticeVersion'`
 `src/onboarding-copy.ts: export const WELCOME_NOTICE_SETTINGS_NAMESPACE = 'ui-onboarding'`

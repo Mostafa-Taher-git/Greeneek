@@ -37,6 +37,7 @@
 `src/core/menu.ts: export const exactMatch: ExactMatch = (groups, source, name) => {`
 `src/core/menu.ts: export const menuReduce: MenuReduce = (state, ev) => {`
 `src/core/menu.ts: export function seedGroups(`
+`src/css-modules.d.ts: export default classes`
 `src/index.ts: export function apply(): void {}`
 `src/types.ts: export interface CandidateRequest {`
 `src/types.ts: export interface ClientSessionContext {`

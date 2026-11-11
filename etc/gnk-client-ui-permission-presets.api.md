@@ -27,4 +27,5 @@
 `src/client/settings-store.ts: export function permissionDefaultOf(view: SettingsNamespaceView, schema: SettingsSchemaService): {`
 `src/client/settings-store.ts: export interface PermissionDefaultOption {`
 `src/client/settings-store.ts: export interface PermissionSettingsState {`
+`src/css-modules.d.ts: export default classes`
 `src/index.ts: export function apply(): void {}`

@@ -77,10 +77,12 @@
 `src/ansi.ts: export interface AnsiSpan {`
 `src/ansi.ts: export type AnsiLine = readonly AnsiSpan[]`
 `src/clipboard.ts: export async function writeClipboard(text: string): Promise<boolean> {`
+`src/css-modules.d.ts: export default classes`
 `src/head-tail-cap.ts: export function headTailCap(total: number, maxLines: number, expanded: boolean): HeadTailCap {`
 `src/head-tail-cap.ts: export interface HeadTailCap {`
 `src/icons/index.tsx: export const IconAgentPresetOutline16 = ({ size = 16, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconAlarmClockOutline16 = ({ size = 16, className }: IconProps) => (`
+`src/icons/index.tsx: export const IconAndroidStudio16 = ({ size = 16, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconApiOutline14 = ({ size = 14, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconArchiveOutline20 = ({ size = 20, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconBrainCircuit16 = ({ size = 16, className }: IconProps) => (`
@@ -103,6 +105,7 @@
 `src/icons/index.tsx: export const IconContextInjectionOutline16 = ({ size = 16, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconCopyOutline16 = ({ size = 16, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconCordisPluginOutline14 = ({ size = 14, className }: IconProps) => (`
+`src/icons/index.tsx: export const IconCursor16 = ({ size = 16, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconDarkOutline16 = ({ size = 16, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconDashboardOutline16 = ({ size = 16, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconDataOutline16 = ({ size = 16, className }: IconProps) => (`
@@ -118,6 +121,7 @@
 `src/icons/index.tsx: export const IconFolderOpenOutline16 = ({ size = 16, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconFollowsystemOutline16 = ({ size = 16, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconFullscreenOutline16 = ({ size = 16, className }: IconProps) => (`
+`src/icons/index.tsx: export const IconGitHubDesktop16 = ({ size = 16, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconGlobeOutline14 = ({ size = 14, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconGoalOutline16 = ({ size = 16, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconGraduationCap16 = ({ size = 16, className }: IconProps) => (`
@@ -133,9 +137,11 @@
 `src/icons/index.tsx: export const IconNewChatOutline16 = ({ size = 16, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconPalette16 = ({ size = 16, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconPanelLeftOutline16 = ({ size = 16, className }: IconProps) => (`
+`src/icons/index.tsx: export const IconPanelRightOutline16 = ({ size = 16, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconPaperclipOutline16 = ({ size = 16, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconPauseOutline16 = ({ size = 16, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconPersonalizationOutline16 = ({ size = 16, className }: IconProps) => (`
+`src/icons/index.tsx: export const IconPinFill16 = ({ size = 16, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconPlayOutline16 = ({ size = 16, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconPlusOutline16 = ({ size = 16, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconProjectAddOutline16 = ({ size = 16, className }: IconProps) => (`
@@ -161,6 +167,7 @@
 `src/icons/index.tsx: export const IconTreeCorner8x10 = ({ size = 10, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconTriangleRightFill14 = ({ size = 14, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconUserOutline16 = ({ size = 16, className }: IconProps) => (`
+`src/icons/index.tsx: export const IconVSCode16 = ({ size = 16, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconWarningOutline16 = ({ size = 14, className }: IconProps) => (`
 `src/icons/index.tsx: export type { IconProps } from './props.ts'`
 `src/icons/props.ts: export interface IconProps {`
@@ -183,9 +190,11 @@
 `src/index.ts: export type { ReferenceIconKind, ReferenceIconProps } from './ReferenceIcon.tsx'`
 `src/index.ts: export type { RelativeTime, RelativeTimeUnit } from './relative-time.ts'`
 `src/index.ts: export type { RiskConfirmationProps } from './RiskConfirmation.tsx'`
+`src/index.ts: export type { ShortcutParts } from './shortcuts.ts'`
 `src/index.ts: export type { StateDotState } from './StateDot.tsx'`
 `src/index.ts: export type { TerminalBlockProps, TerminalBlockLabels } from './TerminalBlock.tsx'`
 `src/index.ts: export type { TooltipSide } from './Tooltip.tsx'`
+`src/index.ts: export {`
 `src/index.ts: export { BrandWordmark } from './BrandWordmark.tsx'`
 `src/index.ts: export { Button } from './Button.tsx'`
 `src/index.ts: export { ChartContainer, ChartLegendContent, ChartTooltipContent } from './Chart.tsx'`
@@ -289,6 +298,12 @@
 `src/secret-masks.ts: export const MASK = '*'`
 `src/secret-scanner.ts: export class CredentialScanner {`
 `src/secret-scanner.ts: export interface SecretRange {`
+`src/shortcuts.ts: export function formatShortcut(spec: string, mac: boolean = isMacPlatform()): string {`
+`src/shortcuts.ts: export function isEditableTarget(target: EventTarget | null): boolean {`
+`src/shortcuts.ts: export function isMacPlatform(): boolean {`
+`src/shortcuts.ts: export function parseShortcut(spec: string): ShortcutParts {`
+`src/shortcuts.ts: export function shortcutMatches(event: KeyboardEvent, spec: string, mac: boolean = isMacPlatform()): boolean {`
+`src/shortcuts.ts: export interface ShortcutParts {`
 `src/use-copy-feedback.ts: export function useCopyFeedback(text: string): CopyFeedback {`
 `src/use-copy-feedback.ts: export interface CopyFeedback {`
 `src/useAnchoredMaxHeight.ts: export function useAnchoredMaxHeight(ref: RefObject<HTMLElement>, cap: number, signal: unknown): number {`

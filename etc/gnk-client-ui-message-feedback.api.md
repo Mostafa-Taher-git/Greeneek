@@ -19,4 +19,5 @@
 `src/client/locales.ts: export type MessageFeedbackKey = keyof typeof zh`
 `src/client/slots.ts: export interface MessageFeedbackInjected {`
 `src/client/slots.ts: export type MessageFeedbackActionProps =`
+`src/css-modules.d.ts: export default classes`
 `src/index.ts: export function apply(): void {}`

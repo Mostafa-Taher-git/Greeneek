@@ -19,4 +19,5 @@
 `src/client/workflow-definition.ts: export interface WorkflowRunMemberData {`
 `src/client/workflow-definition.ts: export interface WorkflowRunPhaseData {`
 `src/client/workflow-definition.ts: export type WorkflowRunStatus = 'running' | 'completed' | 'failed' | 'cancelled' | 'interrupted'`
+`src/css-modules.d.ts: export default classes`
 `src/index.ts: export function apply(): void {}`

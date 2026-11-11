@@ -6,6 +6,7 @@
 `src/boot-page.ts: export class BootPage {`
 `src/boot.ts: export class AppWebEntry {`
 `src/boot.ts: export type BootSeams = Pick<ClientModuleCreateOptions, 'loadBundle'>`
+`src/css-modules.d.ts: export default classes`
 `src/index.ts: export { AppWebEntry, type BootSeams } from './boot.ts'`
 `src/index.ts: export { PLATFORM_MODULES, PRELOADED_CLIENT_EXTERNALS, type PlatformModule } from './platform.ts'`
 `src/index.ts: export { getStaticModules } from './seed.ts'`

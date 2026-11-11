@@ -54,4 +54,5 @@
 `src/client/status.ts: export function cordisVisibleStatus(`
 `src/client/status.ts: export function packageOf(`
 `src/client/status.ts: export type CordisVisibleStatus = 'idle' | 'client-pending' | 'running'`
+`src/css-modules.d.ts: export default classes`
 `src/index.ts: export function apply(): void {}`

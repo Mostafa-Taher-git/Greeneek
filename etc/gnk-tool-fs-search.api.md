@@ -44,6 +44,7 @@
 `src/presentation.ts: export function groupMatchesByFile(matches: GrepMatch[]): MetaFileMatches[] {`
 `src/presentation.ts: export function searchViewFromMeta(meta: unknown): SearchResultView | undefined {`
 `src/presentation.ts: export type SearchMeta =`
+`src/ripgrep.d.ts: export const rgPath: string`
 `src/search-core.ts: export async function runRipgrep(`
 `src/search-core.ts: export async function trySaveFormattedResult(`
 `src/search-core.ts: export class SearchError extends HarnessError {`

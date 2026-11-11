@@ -23,4 +23,5 @@
 `src/client/labels.ts: export function dropOverlayLabels(`
 `src/client/labels.ts: export function lightboxLabels(t: TranslateNS<'conversation'>): ImageLightboxLabels {`
 `src/client/labels.ts: export function messageImageLabels(t: TranslateNS<'conversation'>): MessageImageLabels {`
+`src/css-modules.d.ts: export default classes`
 `src/index.ts: export function apply(): void {}`

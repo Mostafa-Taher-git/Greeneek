@@ -246,5 +246,6 @@
 `src/client/stores.ts: export function createChatStore(): EngineStoreHandle<ChatStoreState, ChatActions> {`
 `src/client/stores.ts: export function storedTurnProcessEntry(`
 `src/client/transcript-view.ts: export class TranscriptViewPolicy {`
+`src/css-modules.d.ts: export default classes`
 `src/index.ts: export function apply(ctx: Context): void {`
 `src/index.ts: export {`

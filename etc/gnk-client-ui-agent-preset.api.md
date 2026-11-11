@@ -47,4 +47,5 @@
 `src/client/settings-store.ts: export interface AgentPresetSettingsState {`
 `src/client/settings-store.ts: export type RosterPreset = AgentPresetRoster['presets'][number]`
 `src/client/settings-store.ts: export type RosterRead = { ok: true; value: AgentPresetRoster } | { ok: false; error: string }`
+`src/css-modules.d.ts: export default classes`
 `src/index.ts: export function apply(): void {}`

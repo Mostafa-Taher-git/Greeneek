@@ -45,6 +45,7 @@
 `src/client/index.ts: export type {`
 `src/client/index.ts: export type {`
 `src/client/index.ts: export type { AgentContext, AgentScopeHandle } from './scope.ts'`
+`src/client/index.ts: export type { HostPlatform } from '../types.ts'`
 `src/client/index.ts: export type { ISessions } from './contract/sessions.ts'`
 `src/client/index.ts: export type { Session } from './sessions/session.ts'`
 `src/client/index.ts: export type { SessionBinding, SessionListState, SessionSummary } from './sessions/service.ts'`
@@ -148,13 +149,19 @@
 `src/types.ts: export interface SessionCreateRequest {`
 `src/types.ts: export interface SessionCreateValue {`
 `src/types.ts: export interface SessionEventEntry {`
+`src/types.ts: export interface SessionExternalApp {`
+`src/types.ts: export interface SessionExternalAppsValue {`
 `src/types.ts: export interface SessionFollowRequest {`
 `src/types.ts: export interface SessionForkRequest {`
 `src/types.ts: export interface SessionForkValue {`
+`src/types.ts: export interface SessionGitFactsRequest {`
+`src/types.ts: export interface SessionGitFactsValue {`
 `src/types.ts: export interface SessionJob {`
 `src/types.ts: export interface SessionListMetadata {`
 `src/types.ts: export interface SessionListRequest {`
 `src/types.ts: export interface SessionListValue {`
+`src/types.ts: export interface SessionOpenPathRequest {`
+`src/types.ts: export interface SessionOpenPathValue {`
 `src/types.ts: export interface SessionOpenWorkspacePathRequest {`
 `src/types.ts: export interface SessionOpenWorkspacePathValue {`
 `src/types.ts: export interface SessionPage {`
@@ -183,12 +190,14 @@
 `src/types.ts: export interface SkillListRequest {`
 `src/types.ts: export interface SkillListValue {`
 `src/types.ts: export type ChunkRowEvent = {`
+`src/types.ts: export type HostPlatform =`
 `src/types.ts: export type PromptContentPart =`
 `src/types.ts: export type QueueAction =`
 `src/types.ts: export type SessionAddress =`
 `src/types.ts: export type SessionControlFrame =`
 `src/types.ts: export type SessionFollowFrame =`
 `src/types.ts: export type SessionHistoryRecord = SessionEventEntry | SessionChunkRun`
+`src/types.ts: export type SessionPathTarget =`
 `src/types.ts: export type SessionProjectionValue = JsonValue`
 `src/types.ts: export type SessionProjectionValues = Partial<SessionProjectionMap>`
 `src/types.ts: export type SessionRequestId = Branded<'session-request-id'>`

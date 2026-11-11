@@ -25,4 +25,5 @@
 `src/client/locales.ts: export type TeamKey = keyof typeof zh`
 `src/client/mount.ts: export async function mountAgentTeamUi(`
 `src/client/mount.ts: export const inject = ['sessions', 'remote', 'slots', 'locale', 'settingsScope']`
+`src/css-modules.d.ts: export default classes`
 `src/index.ts: export function apply(): void {}`

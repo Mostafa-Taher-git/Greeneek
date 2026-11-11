@@ -28,4 +28,5 @@
 `src/client/settings-mirror.ts: export interface SettingsMirrorSnapshot {`
 `src/client/settings-scope.ts: export class SettingsScopeBinder extends Service {`
 `src/client/settings-scope.ts: export class SettingsScopeController<T> implements SettingsScope<T> {`
+`src/css-modules.d.ts: export default classes`
 `src/index.ts: export function apply(): void {}`

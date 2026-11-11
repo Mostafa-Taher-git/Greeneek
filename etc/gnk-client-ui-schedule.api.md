@@ -16,4 +16,5 @@
 `src/client/locales.ts: export const en: Record<ScheduleCatalogKey, string> = {`
 `src/client/locales.ts: export const zh = {`
 `src/client/locales.ts: export type ScheduleCatalogKey = keyof typeof zh`
+`src/css-modules.d.ts: export default classes`
 `src/index.ts: export function apply(): void {}`

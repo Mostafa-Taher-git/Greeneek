@@ -35,4 +35,5 @@
 `src/client/preview.ts: export interface PreviewModelMetrics {`
 `src/client/service.ts: export class ModelDirectoryResolver extends Service {`
 `src/client/slots.ts: export interface ModelSelectInjected {`
+`src/css-modules.d.ts: export default classes`
 `src/index.ts: export function apply(): void {}`

@@ -21,5 +21,6 @@
 `src/client/turn-deliverables.ts: export function producedForClosing(`
 `src/client/turn-deliverables.ts: export function selectProducedFiles(owner: TurnTailOwnerProps): readonly string[] | null {`
 `src/client/turn-deliverables.ts: export interface DeliverablesTurnData {`
+`src/css-modules.d.ts: export default classes`
 `src/index.ts: export const inject = ['systemPrompt']`
 `src/index.ts: export function apply(ctx: Context): void {`

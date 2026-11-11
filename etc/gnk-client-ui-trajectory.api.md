@@ -84,4 +84,5 @@
 `src/client/trajectory-virtual-rows.ts: export interface TrajectoryVirtualRow<T extends VirtualizableTrajectoryRecord> {`
 `src/client/trajectory-virtual-rows.ts: export interface TrajectoryVirtualRowEntry<T extends VirtualizableTrajectoryRecord> {`
 `src/client/trajectory-virtual-rows.ts: export interface VirtualizableTrajectoryRecord {`
+`src/css-modules.d.ts: export default classes`
 `src/index.ts: export function apply(): void {}`

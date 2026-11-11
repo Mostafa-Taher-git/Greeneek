@@ -23,4 +23,5 @@
 `src/client/locales.ts: export const en = {`
 `src/client/locales.ts: export const zh = {`
 `src/client/locales.ts: export type SidebarKey = keyof typeof zh`
+`src/css-modules.d.ts: export default classes`
 `src/index.ts: export function apply(): void {}`

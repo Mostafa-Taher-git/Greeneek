@@ -3,9 +3,24 @@
 
 # API report: @greeneek/gnk-native-command@1.1.0-alpha.0 (packages/util/native-command)
 
+`src/external-app.ts: export async function launchExternalApp(`
+`src/external-app.ts: export async function revealNativePath(`
+`src/external-app.ts: export const EXTERNAL_APPS: readonly ExternalAppSpec[] = [`
+`src/external-app.ts: export function canRevealNativePath(internals: ExternalAppInternals = {}): boolean {`
+`src/external-app.ts: export function externalAppAvailability(`
+`src/external-app.ts: export interface ExternalAppAvailability {`
+`src/external-app.ts: export interface ExternalAppInternals {`
+`src/external-app.ts: export interface ExternalAppSpec {`
+`src/git-facts.ts: export async function gitFacts(`
+`src/git-facts.ts: export interface GitFacts {`
+`src/git-facts.ts: export interface GitFactsInternals {`
 `src/index.ts: export type {`
+`src/index.ts: export type {`
+`src/index.ts: export type { GitFacts, GitFactsInternals } from './git-facts.ts'`
 `src/index.ts: export type { NativeCommandRunner } from './runner.ts'`
 `src/index.ts: export {`
+`src/index.ts: export {`
+`src/index.ts: export { gitFacts } from './git-facts.ts'`
 `src/index.ts: export { runNativeCommand } from './runner.ts'`
 `src/path-opener.ts: export function canOpenNativePath(internals: PathOpenerInternals = {}): boolean {`
 `src/path-opener.ts: export function openNativePath(`

@@ -13,4 +13,5 @@
 `src/client/locales.ts: export const en: Record<JobKey, string> = {`
 `src/client/locales.ts: export const zh = {`
 `src/client/locales.ts: export type JobKey = keyof typeof zh`
+`src/css-modules.d.ts: export default classes`
 `src/index.ts: export function apply(): void {}`

@@ -35,6 +35,7 @@
 `src/client/locales.ts: export const en: Record<keyof typeof zh, string> = {`
 `src/client/locales.ts: export const zh = {`
 `src/client/locales.ts: export type SessionLogDownloadKey = keyof typeof zh`
+`src/css-modules.d.ts: export default classes`
 `src/index.ts: export const Config: Schema<Config> = Schema.object({`
 `src/index.ts: export const SESSION_LOG_EXPORT_PATH = '/api/session.export'`
 `src/index.ts: export const inject = ['commands', 'connection']`

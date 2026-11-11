@@ -23,4 +23,5 @@
 `src/client/slots.ts: export interface GoalBarActions {`
 `src/client/slots.ts: export interface GoalLocalFailure {`
 `src/client/slots.ts: export type GoalActionResult = RemoteResult<unknown> | GoalLocalFailure`
+`src/css-modules.d.ts: export default classes`
 `src/index.ts: export function apply(): void {}`

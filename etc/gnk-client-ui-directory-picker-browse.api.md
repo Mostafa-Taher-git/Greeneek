@@ -9,4 +9,5 @@
 `src/client/flow.ts: export interface BrowseFlowInjected {`
 `src/client/index.ts: export const inject = ['slots', 'uiWorkspace', 'locale']`
 `src/client/index.ts: export function apply(ctx: ClientContext): void {`
+`src/css-modules.d.ts: export default classes`
 `src/index.ts: export function apply(): void {}`

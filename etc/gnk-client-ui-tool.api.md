@@ -83,4 +83,5 @@
 `src/client/tool/toolviews/todo-row.tsx: export function TodoRow({ toolName, block, inspect, t }: TodoRowProps) {`
 `src/client/tool/toolviews/web-row.tsx: export const webToolview = {`
 `src/client/tool/toolviews/web-row.tsx: export function WebRow({ toolName, block, inspect, t }: WebRowProps) {`
+`src/css-modules.d.ts: export default classes`
 `src/index.ts: export function apply(): void {}`

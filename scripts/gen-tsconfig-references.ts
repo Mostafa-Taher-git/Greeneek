@@ -8,11 +8,10 @@
  * - `packages/client/` is always the client aggregate (split packages name
  *   their `tsconfig.client.json` file).
  * - A package outside `client/` with a `tsconfig.host.json` (resp.
- *   `tsconfig.client.json`) is in the host (resp. client) aggregate under
- *   that file name.
- * - Otherwise its `tsconfig.json` `extends` decides: `tsconfig.base.client.json`
- *   is client-only, `tsconfig.base.json` is host-only, and a solution-style
- *   `files: []` root is in neither (its host/client leaves already cover it).
+ *   `tsconfig.client.json`) contributes that face under its leaf config.
+ * - Its non-solution `tsconfig.json` can contribute another face: extending
+ *   `tsconfig.base.client.json` adds client, and extending `tsconfig.base.json`
+ *   adds host. A solution-style `files: []` root contributes neither.
  * - `vendor/*`, `native/landlock-run/packages/entry`, and `apps/cli` are host;
  *   `apps/web` is client.
  *
@@ -53,18 +52,16 @@ export function facesFor(packageDir: string, group: string, directory: string): 
   if (group === 'client') return ['client']
   const hasHost = existsSync(join(packageDir, 'tsconfig.host.json'))
   const hasClient = existsSync(join(packageDir, 'tsconfig.client.json'))
-  if (hasHost || hasClient) {
-    const faces: Face[] = []
-    if (hasHost) faces.push('host')
-    if (hasClient) faces.push('client')
-    return faces
-  }
-  if (!existsSync(join(packageDir, 'tsconfig.json'))) return []
+  const faces: Face[] = []
+  if (hasHost) faces.push('host')
+  if (hasClient) faces.push('client')
+  if (!existsSync(join(packageDir, 'tsconfig.json'))) return faces
   const text = readTsconfig(packageDir, 'tsconfig.json')
   // Solution roots select faces by indirection, never directly.
-  if (/"files"\s*:\s*\[\s*\]/.test(text)) return []
-  if (text.includes('tsconfig.base.client.json')) return ['client']
-  if (text.includes('tsconfig.base.json')) return ['host']
+  if (/"files"\s*:\s*\[\s*\]/.test(text)) return faces
+  if (text.includes('tsconfig.base.client.json') && !faces.includes('client')) faces.push('client')
+  if (text.includes('tsconfig.base.json') && !faces.includes('host')) faces.push('host')
+  if (faces.length > 0) return faces
   throw new Error(
     `gen-tsconfig-references: packages/${group}/${directory}/tsconfig.json extends neither tsconfig.base.json nor tsconfig.base.client.json; the face filter cannot classify it.`,
   )

@@ -30,6 +30,11 @@ describe('generated aggregate references', () => {
     expect(client).toContain('./packages/typert/registry')
   })
 
+  it('includes a host root config when the package also declares a client face', () => {
+    expect(collectHostReferences(root)).toContain('./packages/preset/agent-presets')
+    expect(collectClientReferences(root)).toContain('./packages/preset/agent-presets/tsconfig.client.json')
+  })
+
   it('extracts and rewrites only the references block', () => {
     const text = [
       '{',

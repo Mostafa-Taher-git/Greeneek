@@ -9,7 +9,7 @@
   ],
   "references": [
     {
-      "path": "../../core/session"
+      "path": "../../core/session/tsconfig.host.json"
     },
     {
       "path": "../../code-runtime/code-runtime"
@@ -27,7 +27,7 @@
       "path": "../../core/system-prompt"
     },
     {
-      "path": "../../core/agent"
+      "path": "../../core/agent/tsconfig.host.json"
     },
     {
       "path": "../../core/scope"

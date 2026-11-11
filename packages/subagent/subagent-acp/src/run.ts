@@ -22,6 +22,7 @@ import type { SessionId } from '@greeneek/gnk-session'
 import { AssistantOutputFold, settleRunResult, subprocessRunHandle } from '@greeneek/gnk-subagent'
 import type { SubagentResult, SubagentRun, SubagentStartRequest, SubagentStopReason } from '@greeneek/gnk-subagent'
 import type { SubprocessHandle, SubprocessOutcome, SubprocessSpawnSpec } from '@greeneek/gnk-subprocess'
+import { acpSelectionRequest, planAcpSelections } from './acp-config.ts'
 
 /** Fixed response to child permission requests: reject by default, or select the first allow option. */
 export type PermissionPolicy = 'allow' | 'reject'
@@ -91,6 +92,7 @@ type AcpFailureCategory =
   | 'protocol'
   | 'configuration'
   | 'transport'
+  | 'capability'
   | 'process-start'
   | 'process-exit'
   | 'remote-limit'
@@ -490,6 +492,21 @@ export async function startAcpRun(request: SubagentStartRequest, spec: AcpRunSpe
           )
         }
         sessionId = returnedSessionId
+        // Apply the requested model and effort before prompting. A setting the
+        // child did not advertise is refused by name and never prompted.
+        const plan = planAcpSelections(session.configOptions, {
+          ...request.agentOptions?.model === undefined ? {} : { model: request.agentOptions.model },
+          ...request.agentOptions?.reasoningEffort === undefined ? {} : { reasoningEffort: String(request.agentOptions.reasoningEffort) },
+        })
+        if (plan.kind === 'unsupported') {
+          throw new AcpRunFailure(
+            { stage: 'new-session', category: 'capability' },
+            new Error(plan.reason),
+          )
+        }
+        for (const selection of plan.selections) {
+          await agent.request(methods.agent.session.setConfigOption, acpSelectionRequest(returnedSessionId, selection))
+        }
         /* v8 ignore next -- cancelSettled wins the startup race before this post-response guard can settle it. */
         if (flags.cancelled) throw new Error('subagent cancelled before the ACP session started')
       })(),

@@ -63,6 +63,7 @@ function mountFrame() {
     if (key === 'sidebar') return <div data-testid="sidebar-content" />
     if (key === 'conversation') return <div data-testid="center-content" />
     if (key === 'details') return <div data-testid="details-content" />
+    if (key === 'rightbar') return <div data-testid="rightbar-content" />
     if (key === 'conversation.empty') return <div data-testid="empty-content" />
     return <div data-testid="other-content" />
   }) as AppFrameProps['renderSlot']
@@ -88,7 +89,7 @@ function mountFrame() {
     return sel(sessionState)
   }) as never
   const workspaceState: WorkspaceSnapshot = {
-    items: [], archivedSessionIds: [], state: 'idle', phase: 'ready', error: null,
+    items: [], archivedSessionIds: [], pinnedSessionIds: [], state: 'idle', phase: 'ready', error: null,
     ...(workspacesReady.current ? {} : { state: 'loading' as const, phase: 'pending' as const }),
   }
   const element = () => (
@@ -293,6 +294,18 @@ describe('AppFrame', () => {
     const handles = frame.querySelectorAll('[class*="handle"]')
     drag(handles[1]!, 920, 930) // shrink by 10 from the rendered width
     expect(instance.getSnapshot().details).toBe(320)
+  })
+
+  it('renders the rightbar occupant over the shared track while open', () => {
+    const { instance, getByTestId, queryByTestId } = mountFrame()
+    expect(queryByTestId('rightbar-content')).toBeNull()
+    expect(getByTestId('details-content')).toBeTruthy()
+    act(() => { instance.actions.openRightbar() })
+    expect(getByTestId('rightbar-content')).toBeTruthy()
+    expect(queryByTestId('details-content')).toBeNull()
+    act(() => { instance.actions.closeRightbar() })
+    expect(queryByTestId('rightbar-content')).toBeNull()
+    expect(getByTestId('details-content')).toBeTruthy()
   })
 
   it('details column stays mounted at zero width', () => {

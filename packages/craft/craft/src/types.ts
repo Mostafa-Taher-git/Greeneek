@@ -241,6 +241,34 @@ export interface CraftHostOpenRequest {
   readonly signal: AbortSignal
 }
 
+/** One app the host OS reports as installed, whether or not a hand-written manifest covers it. */
+export interface CraftDiscoveredApp {
+  /** Canonical app id derived from the launcher key. */
+  readonly id: string
+  /** Human-readable product name. */
+  readonly displayName: string
+  /** Absolute install directory when the source declared one. */
+  readonly installDir?: string
+  /** Installed product version when the source declared one. */
+  readonly version?: string
+  /** CLI executable stem when the source declared one. */
+  readonly cliStem?: string
+  /** Which discovery source names this app. */
+  readonly source: 'launcher-manifest' | 'launcher-state' | 'portable-marker' | 'os-registry' | 'desktop-entry'
+}
+
+/** Capability matrix generated from one live command-registry response. */
+export interface CraftCapabilityMatrix {
+  /** App id the matrix was observed for. */
+  readonly app: string
+  /** Tool descriptors projected from the observed registry. */
+  readonly tools: readonly CraftToolDescriptor[]
+  /** Drift hash of the raw registry response (`sha256:` + hex). */
+  readonly hash: string
+  /** How the registry was observed. */
+  readonly method: 'tools-list' | 'engine-commands' | 'command-list'
+}
+
 /** Host provider contract implemented by a platform adapter. */
 export interface CraftHostProvider {
   /** Unique provider id. */
@@ -249,6 +277,8 @@ export interface CraftHostProvider {
   discover(app: CraftAppManifest, options: { readonly signal: AbortSignal }): Promise<CraftDiscovery>
   /** Spawn and handshake one headless session. */
   open(request: CraftHostOpenRequest): Promise<CraftHostSession>
+  /** Enumerate every installed app without a hand-written manifest. */
+  listInstalled?(options: { readonly signal: AbortSignal }): Promise<readonly CraftDiscoveredApp[]>
   /** Spawn the GUI in connected mode (desktop hosts only). */
   launchConnected?(request: {
     readonly app: CraftAppManifest
@@ -271,6 +301,8 @@ export interface CraftSession {
   readonly tools: readonly CraftToolDescriptor[]
   /** Whether the registry captured at open matched a reviewed trusted hash. */
   readonly registryReviewed: boolean
+  /** Effective manifest for this session, synthesized for auto-detected apps. */
+  readonly manifest?: CraftAppManifest
   /** App wire transport. */
   readonly transport: CraftTransport
   /** Release the session. Idempotent. */
@@ -305,4 +337,50 @@ export interface CraftRuntimeConfig {
   readonly maxActiveApps?: number
   /** Pin one host provider by id; omitted requires exactly one registered provider. */
   readonly provider?: string
+}
+
+/** Provenance of one CV claim. */
+export interface CvClaimTrace {
+  /** Exact claim text as it appears in the draft. */
+  readonly claim: string
+  /** Whether the fact came from the user or from a fetched source. */
+  readonly source: 'user-input' | 'fetched'
+  /** Source URL when `source` is `fetched`. */
+  readonly sourceUrl?: string
+}
+
+/** Result of tracing every draft claim to its provenance. */
+export interface CvTraceReport {
+  /** Whether every claim maps to a trace entry. */
+  readonly ok: boolean
+  /** Claims with no matching trace entry, in draft order. */
+  readonly untracedClaims: readonly string[]
+}
+
+/** User review outcome for the CV draft. */
+export type CvReviewDecision = 'approved' | 'rejected' | 'pending' | 'not-requested'
+
+/** Outcome of the PdfCraft export attempt. */
+export type CvExportOutcome = 'not-attempted' | 'succeeded' | 'failed'
+
+/** Inputs to the CV export gate. */
+export interface CvExportGateInput {
+  /** Whether every draft claim traced to user input or a cited fetch. */
+  readonly traceOk: boolean
+  /** The user's explicit review decision on the draft. */
+  readonly reviewDecision: CvReviewDecision
+  /** Whether the PdfCraft export was attempted and how it ended. */
+  readonly exportOutcome: CvExportOutcome
+  /** Whether the agent reported a PDF artifact to the user. */
+  readonly pdfClaimed: boolean
+}
+
+/** Verdict of the CV export gate. */
+export interface CvExportGateReport {
+  /** Whether the draft may proceed to the PdfCraft export. */
+  readonly mayExport: boolean
+  /** Whether any reported PDF matches an export that actually succeeded. */
+  readonly pdfClaimHonest: boolean
+  /** Actionable reason for the first failing check. */
+  readonly reason: string
 }

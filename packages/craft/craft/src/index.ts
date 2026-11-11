@@ -18,14 +18,19 @@ export {
 } from './manifest.ts'
 export type { ManifestReader } from './manifest.ts'
 export { confineArtifact, controlTokenPath, CONTROL_TOKEN_FILE, craftRoots, resolveWorkspaceRoot } from './paths.ts'
+export { buildCapabilityMatrix, CapabilityCache, hashCapabilityMatrix } from './capability.ts'
+export { cvExportDecision, evaluateCvTrace } from './cv-gate.ts'
 export { hashCommandRegistry } from './registry.ts'
+export { AUTODETECT_PLATFORMS, provisionalManifest, synthesizeManifest } from './synthesize.ts'
 export { Config, CraftRuntime, DEFAULT_MAX_ACTIVE_APPS } from './service.ts'
 export type {
   CraftAppManifest,
   CraftAppState,
   CraftAttachPolicy,
   CraftCallResult,
+  CraftCapabilityMatrix,
   CraftDiscovery,
+  CraftDiscoveredApp,
   CraftHeadlessSpec,
   CraftHostOpenRequest,
   CraftHostProvider,
@@ -43,5 +48,11 @@ export type {
   CraftStatus,
   CraftToolDescriptor,
   CraftTransport,
+  CvClaimTrace,
+  CvExportGateInput,
+  CvExportGateReport,
+  CvExportOutcome,
+  CvReviewDecision,
+  CvTraceReport,
 } from './types.ts'
 export { CraftRuntime as default } from './service.ts'

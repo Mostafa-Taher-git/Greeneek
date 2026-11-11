@@ -33,6 +33,7 @@
   },
   "dependencies": {
     "koffi": "^3.1.0",
+    "@greeneek/gnk-llm": "workspace:^",
     "@greeneek/schemastery": "workspace:^"
   },
   "devDependencies": {

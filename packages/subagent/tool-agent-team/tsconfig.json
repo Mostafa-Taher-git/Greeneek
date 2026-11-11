@@ -9,11 +9,11 @@
     { "path": "../../../vendor/cosmokit" },
     { "path": "../../../vendor/schemastery" },
     { "path": "../../../vendor/cordis" },
-    { "path": "../../core/agent" },
+    { "path": "../../core/agent/tsconfig.host.json" },
     { "path": "../../core/scope" },
-    { "path": "../../core/session" },
+    { "path": "../../core/session/tsconfig.host.json" },
     { "path": "../../core/system-prompt" },
     { "path": "../../core/tools" },
-    { "path": "../agent-team" }
+    { "path": "../agent-team/tsconfig.host.json" }
   ]
 }

@@ -19,10 +19,10 @@
       "path": "../../llm/llm"
     },
     {
-      "path": "../../core/session"
+      "path": "../../core/session/tsconfig.host.json"
     },
     {
-      "path": "../subagent"
+      "path": "../subagent/tsconfig.host.json"
     },
     {
       "path": "../../subprocess/subprocess"

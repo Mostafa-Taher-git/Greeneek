@@ -5,9 +5,6 @@
 - id: headless-runner
   disabled: true
 
-- id: llm-greeneek
-  disabled: true
-
 - id: agent-loop
   config:
     agents:

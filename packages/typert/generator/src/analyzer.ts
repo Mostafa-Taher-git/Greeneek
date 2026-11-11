@@ -733,6 +733,10 @@ class FaceAnalyzer {
       const sourcePath = sourcePathForExport(registration.root, target)
       const sourceFile = this.sourceFiles.get(realPath(sourcePath))
       if (sourceFile === undefined) {
+        // A source that exists but is not part of this face's program belongs
+        // to the other face: a split package publishes its host entry and a
+        // client leaf, and each face analyzes the exports it provides.
+        if (existsSync(sourcePath)) continue
         throw new TypertAnalysisError(
           `typert(${this.face}): ${registration.name} export ${subpath} resolves to missing source ${sourcePath}`,
         )
@@ -2537,8 +2541,15 @@ class FaceAnalyzer {
 
   private registrationForFile(file: string): PackageRegistration | undefined {
     const path = realPath(file)
-    return this.allRegistrations
+    const owned = this.allRegistrations
       .find(registration => registration.face === this.face && isWithin(path, registration.root))
+    if (owned !== undefined) return owned
+    // A package that contributes a Remote generates the artifact the browser
+    // aggregates. That artifact declares the face's merged remote namespace,
+    // so the package that generated it owns the declaration even when the
+    // package itself ships no client face.
+    return this.allRegistrations
+      .find(registration => remoteArtifactTarget(registration) === path)
   }
 
   private packageNameForFile(file: string): string {
@@ -2703,6 +2714,18 @@ function clientExportSubpaths(manifest: Record<string, unknown>): string[] {
   return packageExportTargets(manifest)
     .map(([subpath]) => subpath)
     .filter(subpath => subpath === './client' || subpath.startsWith('./client/'))
+}
+
+/**
+ * The generated Remote artifact a package contributes to the browser.
+ * @param registration - the package registration.
+ * @returns the absolute artifact path, or undefined when the package has none.
+ */
+function remoteArtifactTarget(registration: PackageRegistration): string | undefined {
+  const target = packageExportTargets(registration.manifest)
+    .find(([subpath]) => subpath === './remote')?.[1]
+  if (target === undefined) return undefined
+  return realPath(resolve(registration.root, target))
 }
 
 function packageExportTargets(manifest: Record<string, unknown>): [string, string][] {

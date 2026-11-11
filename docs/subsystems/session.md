@@ -742,6 +742,40 @@ inspect( sessionId: SessionId, signal?: AbortSignal, ): Promise<SessionInspectio
 @Remote('openWorkspacePath') async openWorkspacePath( request: SessionOpenWorkspacePathRequest, signal: AbortSignal, ): Promise<SessionOpenWorkspacePathValue>
 
 /**
+ * Report every external application this Host can hand a path to.
+ *
+ * Availability is probed per call, so an application installed while the
+ * server runs shows up on the next read without a restart.
+ * @returns the catalogue, host platform, and file-manager reveal capability.
+ */
+@Remote('externalApps') externalApps(): SessionExternalAppsValue
+
+/**
+ * Report the read-only git facts of one project directory.
+ *
+ * The read never writes: it reports the checked-out branch, the base branch
+ * the work is compared against, and the size of the change set.
+ * @param request - the project directory to inspect.
+ * @param signal - caller lifetime; abort terminates the native command.
+ * @returns the git facts; a directory outside a repository reports none.
+ */
+@Remote('gitFacts') async gitFacts( request: SessionGitFactsRequest, signal: AbortSignal, ): Promise<SessionGitFactsValue>
+
+/**
+ * Send one path to a Host desktop destination.
+ *
+ * The `default` target hands the path to the operating system handler,
+ * `reveal` selects it in the system file manager, and `app` launches one
+ * catalogued application. Launching never goes through a shell.
+ * @param request - path and destination.
+ * @param signal - caller lifetime; abort terminates the native command.
+ * @returns confirmation after the destination accepted the path.
+ * @throws RemoteError when the request is invalid, the destination is
+ * unavailable, or the native command fails.
+ */
+@Remote('openPath') async openPath( request: SessionOpenPathRequest, signal: AbortSignal, ): Promise<SessionOpenPathValue>
+
+/**
  * Rename one Session after explicitly resuming it.
  * @param request - Session identity and proposed title.
  * @returns the accepted title and durable event sequence.

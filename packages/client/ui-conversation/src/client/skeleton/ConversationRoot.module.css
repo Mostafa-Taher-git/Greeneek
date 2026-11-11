@@ -291,6 +291,13 @@
   flex-direction: column;
   min-height: 0;
   overflow-y: auto;
+  /* Native scroll anchoring would shift scrollTop whenever content above the
+     reading line changes height. Every geometry change must be attributable:
+     a programmatic write records itself in ChatView's observed-top ledger and
+     everything else is reader input, so an unattributed browser adjustment
+     would be misread as the reader scrolling away and stop bottom-follow
+     mid-stream (measured on the Linux browser lane as a 162px gap). */
+  overflow-anchor: none;
   /* Reserved unconditionally: the composer seat rides this box's content box in
      Chat and its padding box under a view's composer overlay, so an `auto`
      gutter moves the input card sideways by the bar's width whenever the two

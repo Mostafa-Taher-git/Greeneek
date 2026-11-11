@@ -12,6 +12,7 @@ export {}
 
 import type { Branded } from '@greeneek/gnk-brand'
 import type { OptionalSessionSeq, SessionSeq } from '@greeneek/gnk-session/types'
+import type {} from '@greeneek/gnk-session-projection/types'
 
 /** Identifies one session-title provider registration. */
 export type SessionTitleProviderId = Branded<'SessionTitleProviderId'>

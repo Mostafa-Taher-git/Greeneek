@@ -19,7 +19,9 @@ const FAVORITE: FleetFavorite = {
     name: 'reviewer',
     description: 'review',
     prompt: 'review the diff',
-    provider: 'spawn',
+    provider: 'greeneek',
+    execution: 'harmony',
+    context: 'fresh',
     model: 'mock',
     reasoningEffort: 'high',
     maxTokens: 4_000,
@@ -28,10 +30,17 @@ const FAVORITE: FleetFavorite = {
 }
 
 const PROVIDERS: FleetProviderAvailability[] = [
-  { name: 'spawn', state: 'ready', oneShot: true, continuable: true },
+  { name: 'greeneek', state: 'ready', oneShot: true, continuable: true },
   { name: 'claude-code', state: 'one-shot', oneShot: true, continuable: false },
   { name: 'absent-cli', state: 'not-installed', oneShot: false, continuable: false },
 ]
+
+/** Live Harness descriptors the host returns: one Greeneek connection, never its strategies. */
+const HARNESSSES = [
+  { harness: 'greeneek', displayName: 'Greeneek', connection: 'greeneek', name: 'greeneek', state: 'ready', models: 'unknown', supportsAgentOptions: true, supportsContextFork: true, contextStrategies: ['fresh', 'fork'], source: 'registration', canProbe: false },
+  { harness: 'claude-code', displayName: 'Claude Code', connection: 'claude-code', name: 'claude-code', state: 'one-shot', models: 'unknown', supportsAgentOptions: false, supportsContextFork: false, contextStrategies: ['fresh'], source: 'registration', canProbe: false },
+  { harness: 'absent-cli', displayName: 'absent-cli', connection: 'absent-cli', name: 'absent-cli', state: 'not-installed', models: 'unknown', supportsAgentOptions: false, supportsContextFork: false, contextStrategies: [], source: 'registration', canProbe: false },
+] as const
 
 /** Starter templates the host catalog returns, in shipped shape. */
 const STARTERS: FleetFavorite[] = [
@@ -39,8 +48,8 @@ const STARTERS: FleetFavorite[] = [
     id: 'development',
     name: 'Development',
     members: [
-      { name: 'implementer', description: 'write the change', prompt: 'Implement it.', provider: 'spawn' },
-      { name: 'verifier', description: 'run the checks', prompt: 'Run the checks.', provider: 'spawn', readOnly: true },
+      { name: 'implementer', description: 'write the change', prompt: 'Implement it.', provider: 'greeneek', execution: 'harmony', context: 'fresh' },
+      { name: 'verifier', description: 'run the checks', prompt: 'Run the checks.', provider: 'greeneek', execution: 'harmony', context: 'fresh', readOnly: true },
     ],
   },
 ]
@@ -66,6 +75,7 @@ function setup(localeId: 'en' | 'ar' = 'en', options: {
   readonly availabilityFailure?: boolean
   readonly canLaunch?: boolean
   readonly providers?: readonly FleetProviderAvailability[]
+  readonly harnesses?: readonly unknown[]
   readonly favorites?: readonly FleetFavorite[]
   readonly emptySnapshot?: boolean
   readonly saveFailure?: unknown
@@ -73,6 +83,8 @@ function setup(localeId: 'en' | 'ar' = 'en', options: {
   readonly starters?: readonly FleetFavorite[]
   readonly startersFailure?: 'error' | 'throw'
   readonly fleetAction?: () => Promise<unknown>
+  readonly harnessesThrow?: boolean
+  readonly probeFailure?: 'error' | 'throw'
 } = {}) {
   let favorites: FleetFavorite[] = [...(options.favorites ?? [FAVORITE])]
   let snapshot: FleetSnapshot = {
@@ -99,9 +111,39 @@ function setup(localeId: 'en' | 'ar' = 'en', options: {
       return () => { listeners.delete(listener) }
     },
     getSnapshot: () => snapshot,
-    loadAvailability: async () => (options.availabilityFailure === true
-      ? { ok: false as const, error: new RemoteError('gateway/internal', 'availability unavailable', {}) }
-      : { ok: true as const, value: options.providers ?? PROVIDERS }),
+    loadHarnesses: async () => {
+      if (options.harnessesThrow === true) throw new Error('inventory socket closed')
+      if (options.availabilityFailure === true) {
+        return { ok: false as const, error: new RemoteError('gateway/internal', 'availability unavailable', {}) }
+      }
+      if (options.providers !== undefined && options.harnesses === undefined) {
+        return {
+          ok: true as const,
+          value: options.providers.map(row => ({
+            harness: row.name,
+            displayName: row.name,
+            connection: row.name,
+            name: row.name,
+            state: row.state,
+            models: 'unknown' as const,
+            supportsAgentOptions: row.continuable,
+            supportsContextFork: row.continuable,
+            contextStrategies: row.continuable ? ['fresh', 'fork'] as const : ['fresh'] as const,
+            source: 'registration' as const,
+            canProbe: false,
+          })),
+        }
+      }
+      return { ok: true as const, value: options.harnesses ?? HARNESSSES }
+    },
+    refreshHarnesses: async () => ({ ok: true as const, value: options.harnesses ?? HARNESSSES }),
+    refreshHarness: vi.fn(async (_connection: string) => {
+      if (options.probeFailure === 'throw') throw new Error('probe socket closed')
+      if (options.probeFailure === 'error') {
+        return { ok: false as const, error: new RemoteError('gateway/internal', 'probe refused', {}) }
+      }
+      return { ok: true as const, value: options.harnesses ?? HARNESSSES }
+    }) as never,
     save,
     launch,
     async loadStarters() {
@@ -125,8 +167,8 @@ const SCOPED: FleetFavorite = {
   id: 'scoped',
   name: 'Scoped fleet',
   members: [
-    { name: 'shared', description: 'shared', prompt: 'share', provider: 'spawn' },
-    { name: 'scoped', description: 'scoped', prompt: 'scope', provider: 'spawn', writeScopes: ['src', 'docs'] },
+    { name: 'shared', description: 'shared', prompt: 'share', provider: 'greeneek' },
+    { name: 'scoped', description: 'scoped', prompt: 'scope', provider: 'greeneek', writeScopes: ['src', 'docs'] },
   ],
 }
 
@@ -134,7 +176,7 @@ describe('fleet settings section', () => {
   it('names each provider by what it is and the run types it really supports', async () => {
     const { view } = setup()
 
-    expect(await view.findByText('Provider availability')).toBeDefined()
+    expect(await view.findByText('Harness connections')).toBeDefined()
     // Harmony and Melody name how a member runs; the distinction is the provider's
     // own capability: the in-process pair holds a lane, a registered external
     // adapter runs one delegation to a result.
@@ -146,57 +188,102 @@ describe('fleet settings section', () => {
     expect(await view.findByText('Review fleet')).toBeDefined()
     expect(await view.findByText('1 member(s)')).toBeDefined()
 
-    // A provider Greeneek ships is named by its product name, and the registry
-    // name it persists stays visible; one the deployment configured is shown by
-    // that name, because the client cannot know what its owner called it.
-    const availability = view.getByRole('list', { name: 'Provider availability' })
-    expect(within(availability).getByText('Greeneek built-in (fresh context)')).toBeTruthy()
-    expect(within(availability).getByText('Claude Code')).toBeTruthy()
-    expect(within(availability).getByText('spawn')).toBeTruthy()
-    expect(within(availability).getByText('claude-code')).toBeTruthy()
-    expect(within(availability).getByText('absent-cli')).toBeTruthy()
+    // The Harness Greeneek ships is one connection named by its product name;
+    // its internal execution strategies never reach the page. One the
+    // deployment configured is shown by that name, because the client cannot
+    // know what its owner called it.
+    const greeneekGroup = view.getByRole('list', { name: 'Greeneek' })
+    expect(within(greeneekGroup).getByText('Greeneek')).toBeTruthy()
+    expect(within(greeneekGroup).getByText('greeneek')).toBeTruthy()
+    const claudeGroup = view.getByRole('list', { name: 'Claude Code' })
+    expect(within(claudeGroup).getByText('Claude Code')).toBeTruthy()
+    expect(within(claudeGroup).getByText('claude-code')).toBeTruthy()
+    expect(within(view.getByRole('list', { name: 'absent-cli' })).getByText('absent-cli')).toBeTruthy()
 
-    // A run type is never offered as a provider, in the list or in the member selector.
-    await view.findByText('Provider availability')
+    // A run type is never offered as a connection, in the list or in the member selector.
+    await view.findByText('Harness connections')
     fireEvent.click(view.getByRole('button', { name: 'New fleet' }))
-    const select = view.getByLabelText('Provider') as HTMLSelectElement
+    const select = view.getByLabelText('Connection') as HTMLSelectElement
     expect(select.querySelector('option[value="Harmony and Melody"]')).toBeNull()
     expect(select.querySelector('option[value="Melody only"]')).toBeNull()
-    expect(select.querySelector('option[value="spawn"]')?.textContent)
-      .toBe('Greeneek built-in (fresh context) (spawn) — Harmony and Melody')
-    expect(select.querySelector('option[value="claude-code"]')?.textContent)
-      .toBe('Claude Code (claude-code) — Melody only')
+    expect(select.querySelector('option[value="fork"]')).toBeNull()
+    expect(select.querySelector('option[value="spawn"]')).toBeNull()
+    expect(select.querySelector('option[value="greeneek"]')?.textContent)
+      .toBe('Greeneek — Harmony and Melody')
+    fireEvent.change(view.getByLabelText('Harness'), { target: { value: 'claude-code' } })
+    const claudeSelect = view.getByLabelText('Connection') as HTMLSelectElement
+    expect(claudeSelect.querySelector('option[value="claude-code"]')?.textContent)
+      .toBe('Claude Code — Melody only')
+    // No internal strategy name is visible anywhere on the page.
+    expect(view.container.textContent).not.toMatch(/\bfork\b|\bspawn\b/iu)
   })
 
   it('offers a one-shot provider as a member and keeps an uninstalled one disabled', async () => {
     const { view } = setup()
-    await view.findByText('Provider availability')
+    await view.findByText('Harness connections')
     fireEvent.click(view.getByRole('button', { name: 'New fleet' }))
 
-    const select = view.getByLabelText('Provider') as HTMLSelectElement
+    // Switch to the one-shot Harness, then its connection is selectable.
+    fireEvent.change(view.getByLabelText('Harness'), { target: { value: 'claude-code' } })
+    const select = view.getByLabelText('Connection') as HTMLSelectElement
     const option = (name: string): HTMLOptionElement | null => select.querySelector(`option[value="${name}"]`)
     // A registered provider without a durable lane can still be a fleet member: it runs
     // one delegation to a result. Only a provider this composition does not register
     // stays unselectable, because the launcher would refuse it.
     expect(option('claude-code')?.disabled).toBe(false)
     expect(option('claude-code')?.textContent).toContain('Melody only')
-    expect(option('absent-cli')?.disabled).toBe(true)
     fireEvent.change(select, { target: { value: 'claude-code' } })
     expect(select.value).toBe('claude-code')
   })
 
-  it('defaults a new member to the first selectable provider when no provider holds a lane', async () => {
-    const { view } = setup('en', { providers: PROVIDERS.filter(provider => provider.state !== 'ready') })
-    await view.findByText('Provider availability')
-    fireEvent.click(view.getByRole('button', { name: 'New fleet' }))
-    expect((view.getByLabelText('Provider') as HTMLSelectElement).value).toBe('claude-code')
+  it('states each member execution type and offers only the context strategies the connection runs', async () => {
+    const { view } = setup()
+    await view.findByText('Harness connections')
+    fireEvent.click(view.getByRole('button', { name: 'Edit' }))
+    expect(view.getByText(/Execution: Harmony — durable teammate lane/u)).toBeTruthy()
+    const context = view.getByLabelText('Context') as HTMLSelectElement
+    expect((context.querySelector('option[value="fresh"]') as HTMLOptionElement).disabled).toBe(false)
+    expect((context.querySelector('option[value="fork"]') as HTMLOptionElement).disabled).toBe(false)
+    fireEvent.change(view.getByLabelText('Harness'), { target: { value: 'claude-code' } })
+    expect(view.getByText(/Execution: Melody — one delegation/u)).toBeTruthy()
+    const claudeContext = view.getByLabelText('Context') as HTMLSelectElement
+    expect((claudeContext.querySelector('option[value="fork"]') as HTMLOptionElement).disabled).toBe(true)
   })
 
-  it('falls back to the composition default provider before availability has loaded', async () => {
-    const { view } = setup('en', { providers: [] })
-    expect(await view.findByText('This composition registers no provider.')).toBeTruthy()
+  it('edits a legacy saved fleet as the Greeneek connection and writes the migrated member back', async () => {
+    const legacy = decodeFleetSettings({
+      favorites: [{
+        id: 'legacy',
+        name: 'Legacy fleet',
+        members: [{ name: 'worker', description: 'work', prompt: 'go', provider: 'fork', model: 'mock' }],
+      }],
+    })
+    if (legacy === undefined) throw new Error('expected a fleet section')
+    const { view, save } = setup('en', { favorites: legacy.favorites })
+    await view.findByText('Legacy fleet')
+    // The summary names the Harness and its execution, never the strategy.
+    expect(view.getByText('Greeneek (Harmony)')).toBeTruthy()
+    fireEvent.click(view.getByRole('button', { name: 'Edit' }))
+    expect((view.getByLabelText('Connection') as HTMLSelectElement).value).toBe('greeneek')
+    expect((view.getByLabelText('Context') as HTMLSelectElement).value).toBe('fork')
+    fireEvent.click(view.getByRole('button', { name: /^Save/ }))
+    await vi.waitFor(() => { expect(save).toHaveBeenCalled() })
+    const saved = save.mock.calls[0]![0] as FleetFavorite[]
+    expect(saved[0]!.members[0]).toMatchObject({ provider: 'greeneek', context: 'fork', execution: 'harmony', model: 'mock' })
+  })
+
+  it('defaults a new member to the first selectable provider when no provider holds a lane', async () => {
+    const { view } = setup('en', { providers: PROVIDERS.filter(provider => provider.state !== 'ready') })
+    await view.findByText('Harness connections')
     fireEvent.click(view.getByRole('button', { name: 'New fleet' }))
-    expect((view.getByLabelText('Provider') as HTMLSelectElement).value).toBe('spawn')
+    expect((view.getByLabelText('Connection') as HTMLSelectElement).value).toBe('claude-code')
+  })
+
+  it('falls back to the Greeneek connection before availability has loaded', async () => {
+    const { view } = setup('en', { providers: [] })
+    expect(await view.findByText('This composition has no registered or configured Harness connection yet.')).toBeTruthy()
+    fireEvent.click(view.getByRole('button', { name: 'New fleet' }))
+    expect((view.getByLabelText('Connection') as HTMLSelectElement).value).toBe('greeneek')
   })
 
   it('echoes each member before launch and starts nothing on cancel', async () => {
@@ -204,7 +291,7 @@ describe('fleet settings section', () => {
     fireEvent.click(await view.findByRole('button', { name: 'Launch' }))
 
     const dialog = await view.findByRole('alertdialog', { name: 'Confirm fleet launch' })
-    expect(dialog.textContent).toContain('reviewer: Greeneek built-in (fresh context) (spawn)')
+    expect(dialog.textContent).toContain('reviewer: Greeneek, Harmony,')
     expect(dialog.textContent).toContain('mock')
     expect(dialog.textContent).toContain('high')
     expect(dialog.textContent).toContain('4000 tokens')
@@ -220,7 +307,7 @@ describe('fleet settings section', () => {
 
   it('creates a fleet through the member editor and derives its id', async () => {
     const { view, save } = setup()
-    await view.findByText('Provider availability')
+    await view.findByText('Harness connections')
     fireEvent.click(view.getByRole('button', { name: 'New fleet' }))
     fireEvent.change(view.getByLabelText(/Fleet id/u), { target: { value: 'my-fleet' } })
     fireEvent.click(view.getByRole('button', { name: 'Add member' }))
@@ -234,7 +321,7 @@ describe('fleet settings section', () => {
     fireEvent.change(view.getByLabelText('Member name'), { target: { value: 'worker' } })
     fireEvent.change(view.getByLabelText('Responsibility'), { target: { value: 'do work' } })
     fireEvent.change(view.getByLabelText('Initial task'), { target: { value: 'start' } })
-    fireEvent.change(view.getByLabelText('Provider'), { target: { value: 'spawn' } })
+    fireEvent.change(view.getByLabelText('Connection'), { target: { value: 'greeneek' } })
     fireEvent.change(view.getByLabelText('Context'), { target: { value: 'fork' } })
     fireEvent.change(view.getByLabelText('Preset'), { target: { value: 'reviewing' } })
     fireEvent.change(view.getByLabelText('Model'), { target: { value: 'mock' } })
@@ -252,7 +339,8 @@ describe('fleet settings section', () => {
       name: 'My Fleet',
       members: [{
         name: 'worker',
-        provider: 'spawn',
+        provider: 'greeneek',
+        execution: 'harmony',
         context: 'fork',
         preset: 'reviewing',
         model: 'mock',
@@ -266,7 +354,7 @@ describe('fleet settings section', () => {
 
   it('edits a favorite, including clearing optional fields and write scopes', async () => {
     const { view, save } = setup()
-    await view.findByText('Provider availability')
+    await view.findByText('Harness connections')
     fireEvent.click(view.getByRole('button', { name: 'Edit' }))
     expect((view.getByLabelText('Fleet name') as HTMLInputElement).value).toBe('Review fleet')
     const readOnly = view.getByLabelText('Read-only') as HTMLInputElement
@@ -320,16 +408,16 @@ describe('fleet settings section', () => {
     })
     fireEvent.click(view.getAllByRole('button', { name: 'Launch' })[1]!)
     const dialog = view.getByRole('alertdialog')
-    expect(dialog.textContent).toContain('shared: Greeneek built-in (fresh context) (spawn)')
+    expect(dialog.textContent).toContain('shared: Greeneek, Harmony,')
     expect(dialog.textContent).toContain('inherited, inherited, inherited, unbounded, shared checkout')
-    expect(dialog.textContent).toContain('scoped: Greeneek built-in (fresh context) (spawn)')
+    expect(dialog.textContent).toContain('scoped: Greeneek, Harmony,')
     expect(dialog.textContent).toContain('scopes src, docs')
     fireEvent.click(view.getByRole('button', { name: 'Cancel' }))
   })
 
   it('clears and restores the optional preset field', async () => {
     const { view, save } = setup()
-    await view.findByText('Provider availability')
+    await view.findByText('Harness connections')
     fireEvent.click(view.getByRole('button', { name: 'New fleet' }))
     fireEvent.change(view.getByLabelText('Fleet name'), { target: { value: 'Preset fleet' } })
     fireEvent.change(view.getByLabelText('Member name'), { target: { value: 'worker' } })
@@ -344,11 +432,26 @@ describe('fleet settings section', () => {
     expect(saved.find(candidate => candidate.id === 'preset-fleet')?.members[0]?.preset).toBe('second')
   })
 
-  it('decodes only a fleet-shaped settings section', () => {
+  it('decodes only a fleet-shaped settings section and migrates legacy strategy members', () => {
     expect(decodeFleetSettings({ favorites: [] })).toEqual({ favorites: [] })
     expect(decodeFleetSettings(null)).toBeUndefined()
     expect(decodeFleetSettings({})).toBeUndefined()
     expect(decodeFleetSettings({ favorites: 'wrong' })).toBeUndefined()
+    // Stored bytes naming an internal strategy read as the Harness connection,
+    // so the editor never shows or writes the strategy name back.
+    expect(decodeFleetSettings({
+      favorites: [{
+        id: 'legacy',
+        name: 'Legacy',
+        members: [{ name: 'worker', description: 'work', prompt: 'go', provider: 'spawn' }],
+      }],
+    })).toEqual({
+      favorites: [{
+        id: 'legacy',
+        name: 'Legacy',
+        members: [{ name: 'worker', description: 'work', prompt: 'go', provider: 'greeneek', context: 'fresh', execution: 'harmony' }],
+      }],
+    })
     expect(errorText(new Error('message'))).toBe('message')
     expect(errorText('plain')).toBe('plain')
   })
@@ -421,16 +524,16 @@ describe('fleet settings section', () => {
 
     const readOnly = setup('en', { writable: false })
     expect(await readOnly.view.findByText('This connection cannot read or write fleet settings.')).toBeDefined()
-    fireEvent.click(readOnly.view.getByRole('button', { name: 'Refresh availability' }))
+    fireEvent.click(readOnly.view.getByRole('button', { name: 'Probe Harness connections' }))
   })
 
-  it('defaults a new member to spawn when no provider is ready', async () => {
+  it('defaults a new member to the Greeneek connection when no provider is ready', async () => {
     const { view } = setup('en', {
       providers: [{ name: 'missing', state: 'not-installed', oneShot: false, continuable: false }],
     })
-    await view.findByText('Provider availability')
+    await view.findByText('Harness connections')
     fireEvent.click(view.getByRole('button', { name: 'New fleet' }))
-    expect((view.getByLabelText('Provider') as HTMLSelectElement).value).toBe('spawn')
+    expect((view.getByLabelText('Connection') as HTMLSelectElement).value).toBe('greeneek')
     fireEvent.click(view.getByRole('button', { name: 'Add member' }))
     fireEvent.click(view.getByRole('button', { name: 'Cancel' }))
   })
@@ -438,8 +541,8 @@ describe('fleet settings section', () => {
   it('refreshes availability from the header and renders an empty favorites list', async () => {
     const { view } = setup('en', { favorites: [], emptySnapshot: true })
     expect(await view.findByText('No saved fleets yet.')).toBeDefined()
-    fireEvent.click(view.getByRole('button', { name: 'Refresh availability' }))
-    expect(await view.findByText('Provider availability')).toBeDefined()
+    fireEvent.click(view.getByRole('button', { name: 'Probe Harness connections' }))
+    expect(await view.findByText('Harness connections')).toBeDefined()
   })
 
   it('disables launch without a session and deletes a favorite', async () => {
@@ -457,7 +560,7 @@ describe('fleet settings section', () => {
     root.setAttribute('dir', 'rtl')
 
     expect(await view.findByText('إعدادات Fleet')).toBeDefined()
-    expect(await view.findByText('توفّر المزوّد')).toBeDefined()
+    expect(await view.findByText('اتصالات Harness')).toBeDefined()
     expect(await view.findByText('Fleets المحفوظة')).toBeDefined()
     expect(root.getAttribute('dir')).toBe('rtl')
   })
@@ -478,13 +581,13 @@ describe('fleet settings section', () => {
 
   it('adds a member on the same default provider the first member got', async () => {
     const { view } = setup('en', { providers: PROVIDERS.filter(provider => provider.state !== 'ready') })
-    await view.findByText('Provider availability')
+    await view.findByText('Harness connections')
     fireEvent.click(view.getByRole('button', { name: 'New fleet' }))
     fireEvent.click(view.getByRole('button', { name: 'Add member' }))
 
     // A fleet over providers that hold no durable lane must not silently pin a lane
     // provider, so both members start on the selectable one.
-    const selects = view.getAllByLabelText('Provider') as HTMLSelectElement[]
+    const selects = view.getAllByLabelText('Connection') as HTMLSelectElement[]
     expect(selects).toHaveLength(2)
     expect(selects[0]!.value).toBe('claude-code')
     expect(selects[1]!.value).toBe('claude-code')
@@ -492,12 +595,12 @@ describe('fleet settings section', () => {
 
   it('previews each starter fleet and installs it as an editable favorite', async () => {
     const { view } = setup()
-    await view.findByText('Provider availability')
+    await view.findByText('Harness connections')
     expect(view.getByText('Starter fleets')).toBeTruthy()
     expect(view.getByText('Development')).toBeTruthy()
     // The preview is the host's own template: exactly what Install would create.
-    expect(view.getByText('implementer — write the change (Greeneek built-in (fresh context) (spawn))')).toBeTruthy()
-    expect(view.getByText('verifier — run the checks (Greeneek built-in (fresh context) (spawn))')).toBeTruthy()
+    expect(view.getByText('implementer — write the change (Greeneek, Harmony)')).toBeTruthy()
+    expect(view.getByText('verifier — run the checks (Greeneek, Harmony)')).toBeTruthy()
 
     fireEvent.click(view.getByRole('button', { name: 'Install' }))
     expect(await view.findByText('Starter installed as an editable fleet.')).toBeTruthy()
@@ -602,5 +705,184 @@ describe('fleet settings section', () => {
     // Returning to 1 stores no key, so the row matches a fleet saved before the
     // field existed instead of carrying a redundant value.
     expect(Object.hasOwn(save.mock.calls[0]![0][0]!, 'concurrency')).toBe(false)
+  })
+
+  /** Two connections of one Harness plus a fully advertising ready connection. */
+  const RICH_HARNESSES = [
+    { harness: 'opencode', displayName: 'OpenCode', connection: 'opencode-work', name: 'opencode-work', state: 'unauthenticated', models: 'unknown', supportsAgentOptions: false, supportsContextFork: false, contextStrategies: ['fresh'], source: 'configuration', canProbe: false, discoveryError: '401 Unauthorized', discoveredAt: '2026-11-08T10:00:00.000Z', prompt: { image: false, audio: false, embeddedContext: false } },
+    { harness: 'opencode', displayName: 'OpenCode', connection: 'opencode-home', name: 'opencode-home', state: 'temporarily-unavailable', models: 'unknown', supportsAgentOptions: false, supportsContextFork: false, contextStrategies: ['fresh'], source: 'acp-initialize', canProbe: true, discoveryError: 'probe timed out', sessions: { new: true } },
+    { harness: 'kilo', displayName: 'KiloCode', connection: 'kilo', name: 'kilo', state: 'ready', models: [{ id: 'kilo/big', name: 'Kilo Big', efforts: [{ id: 'high', name: 'High' }, { id: 'low' }] }, { id: 'kilo/small' }, { id: 'kilo/empty', efforts: [] }, { id: 'kilo/same', name: 'kilo/same' }], supportsAgentOptions: true, supportsContextFork: false, contextStrategies: ['fresh'], source: 'acp-session', canProbe: true, sessions: { new: true, load: true, resume: true, fork: true, list: true, delete: true }, prompt: { image: true, audio: true, embeddedContext: true }, permissions: [{ id: 'default', name: 'Default' }], authMethods: [{ id: 'api-key', name: 'API key' }, { id: 'oauth' }] },
+  ]
+
+  it('groups two connections under one Harness and states how each fact was learned', async () => {
+    const { view } = setup('en', { harnesses: RICH_HARNESSES, favorites: [] })
+    expect(await view.findByText('from configuration')).toBeDefined()
+    expect(view.getByText('from ACP initialize')).toBeDefined()
+    expect(view.getByText('from an ACP session')).toBeDefined()
+    expect(view.getByText('Unauthenticated')).toBeDefined()
+    expect(view.getByText('Temporarily unavailable')).toBeDefined()
+    expect(view.getByText('Probe failed: 401 Unauthorized')).toBeDefined()
+    expect(view.getByText('Probe failed: probe timed out')).toBeDefined()
+    expect(view.getByText(/Probed /u)).toBeDefined()
+    // One group per Harness, with the unbranded connection named beside its product.
+    const group = view.getByRole('list', { name: 'OpenCode' })
+    expect(within(group).getByText('OpenCode (opencode-work)')).toBeTruthy()
+    expect(within(group).getByText('OpenCode (opencode-home)')).toBeTruthy()
+    // Advertised facts render as one compact capability line.
+    expect(view.getByText(/4 model\(s\)/u)).toBeTruthy()
+    expect(view.getByText(/sessions: load, resume, branch session, list, delete/u)).toBeTruthy()
+    expect(view.getByText(/input: image, audio, embeddedContext/u)).toBeTruthy()
+    expect(view.getByText(/permissions: default/u)).toBeTruthy()
+    expect(view.getByText(/auth: API key, oauth/u)).toBeTruthy()
+    expect(view.getAllByText('model catalog unknown').length).toBeGreaterThan(0)
+  })
+
+  it('probes one connection from its row and reports a refused or broken probe', async () => {
+    const ok = setup('en', { harnesses: RICH_HARNESSES, favorites: [] })
+    await ok.view.findByText('Harness connections')
+    fireEvent.click(ok.view.getAllByRole('button', { name: 'Probe' })[0]!)
+    await vi.waitFor(() => { expect(ok.view.getByText('Probe failed: probe timed out')).toBeTruthy() })
+    cleanup()
+
+    const refused = setup('en', { harnesses: RICH_HARNESSES, favorites: [], probeFailure: 'error' })
+    await refused.view.findByText('Harness connections')
+    fireEvent.click(refused.view.getAllByRole('button', { name: 'Probe' })[0]!)
+    expect(await refused.view.findByText('Action failed: probe refused')).toBeDefined()
+    cleanup()
+
+    const broken = setup('en', { harnesses: RICH_HARNESSES, favorites: [], probeFailure: 'throw' })
+    await broken.view.findByText('Harness connections')
+    fireEvent.click(broken.view.getAllByRole('button', { name: 'Probe' })[0]!)
+    expect(await broken.view.findByText('Action failed: probe socket closed')).toBeDefined()
+    cleanup()
+
+    // The read-only settings state still offers the per-connection probe.
+    const readOnly = setup('en', { harnesses: RICH_HARNESSES, writable: false })
+    await readOnly.view.findByText('This connection cannot read or write fleet settings.')
+    fireEvent.click(readOnly.view.getAllByRole('button', { name: 'Probe' })[0]!)
+    cleanup()
+
+    const loadBroken = setup('en', { harnessesThrow: true })
+    expect(await loadBroken.view.findByText('Action failed: inventory socket closed')).toBeDefined()
+  })
+
+  it('renders advertised models and per-model effort levels, refusing nothing silently', async () => {
+    const favorite: FleetFavorite = {
+      id: 'kilo-fleet',
+      name: 'Kilo fleet',
+      members: [
+        { name: 'big', description: 'big model', prompt: 'go', provider: 'kilo', model: 'kilo/big', reasoningEffort: 'high' },
+        { name: 'ghost', description: 'unadvertised effort', prompt: 'go', provider: 'kilo', model: 'kilo/big', reasoningEffort: 'ultra' },
+        { name: 'stray', description: 'unadvertised model', prompt: 'go', provider: 'kilo', model: 'ghost-model' },
+      ],
+    }
+    const { view } = setup('en', { harnesses: RICH_HARNESSES, favorites: [favorite] })
+    await view.findByText('Kilo fleet')
+    fireEvent.click(view.getAllByRole('button', { name: 'Edit' })[0]!)
+    const model = view.getAllByLabelText('Model')[0] as HTMLSelectElement
+    expect(model.value).toBe('kilo/big')
+    expect(model.querySelector('option[value="kilo/big"]')?.textContent).toBe('Kilo Big (kilo/big)')
+    expect(model.querySelector('option[value=""]')?.textContent).toBe('Harness default')
+    const effort = view.getAllByLabelText('Reasoning effort')[0] as HTMLSelectElement
+    expect(effort.querySelector('option[value="high"]')?.textContent).toBe('High (high)')
+    expect(effort.querySelector('option[value="low"]')?.textContent).toBe('low')
+    // An effort the selected model does not advertise stays visible and named.
+    const ghostEffort = view.getAllByLabelText('Reasoning effort')[1] as HTMLSelectElement
+    expect(ghostEffort.querySelector('option[value="ultra"]')?.textContent).toBe('ultra — not advertised')
+    // A model the catalog does not advertise keeps the manual effort field.
+    const strayModel = view.getAllByLabelText('Model')[2] as HTMLSelectElement
+    expect(strayModel.querySelector('option[value="ghost-model"]')?.textContent).toBe('ghost-model — not advertised')
+    expect((view.getAllByLabelText('Reasoning effort')[2] as HTMLInputElement).tagName).toBe('INPUT')
+    // Switching to a model without effort levels falls back to the manual field
+    // and says the value is checked at launch.
+    fireEvent.change(model, { target: { value: 'kilo/small' } })
+    expect((view.getAllByLabelText('Reasoning effort')[0] as HTMLInputElement).tagName).toBe('INPUT')
+    expect(view.getAllByText(/This connection advertises models but no reasoning levels/u).length).toBeGreaterThan(0)
+    // An empty effort catalog is the same unknown, not an empty selector.
+    fireEvent.change(model, { target: { value: 'kilo/empty' } })
+    expect((view.getAllByLabelText('Reasoning effort')[0] as HTMLInputElement).tagName).toBe('INPUT')
+    fireEvent.change(view.getAllByLabelText('Reasoning effort')[0]!, { target: { value: 'high' } })
+    fireEvent.change(model, { target: { value: 'kilo/big' } })
+    fireEvent.change(view.getAllByLabelText('Reasoning effort')[0]!, { target: { value: 'low' } })
+    fireEvent.change(view.getAllByLabelText('Reasoning effort')[0]!, { target: { value: '' } })
+    fireEvent.change(model, { target: { value: '' } })
+  })
+
+  it('keeps an unmounted member editable and saves it without inventing an execution type', async () => {
+    const favorite: FleetFavorite = {
+      id: 'orphan',
+      name: 'Orphan fleet',
+      members: [{ name: 'gone', description: 'gone', prompt: 'go', provider: 'gone-acp' }],
+    }
+    const { view, save } = setup('en', { favorites: [favorite] })
+    await view.findByText('Orphan fleet')
+    expect(view.getByText('gone-acp')).toBeTruthy()
+    fireEvent.click(view.getByRole('button', { name: 'Edit' }))
+    const harness = view.getByLabelText('Harness') as HTMLSelectElement
+    expect(harness.querySelector('option[value="gone-acp"]')?.textContent).toBe('gone-acp — Not installed')
+    const connection = view.getByLabelText('Connection') as HTMLSelectElement
+    expect(connection.querySelector('option[value="gone-acp"]')?.textContent).toBe('gone-acp — Not installed')
+    expect((view.getByLabelText('Model') as HTMLInputElement).tagName).toBe('INPUT')
+    // A disabled Harness group cannot be selected into.
+    fireEvent.change(harness, { target: { value: 'absent-cli' } })
+    expect((view.getByLabelText('Connection') as HTMLSelectElement).value).toBe('gone-acp')
+    fireEvent.click(view.getByRole('button', { name: /^Save/ }))
+    await vi.waitFor(() => { expect(save).toHaveBeenCalled() })
+    const saved = (save.mock.calls[0]![0] as FleetFavorite[]).find(candidate => candidate.id === 'orphan')
+    expect(saved?.members[0]).toEqual(favorite.members[0])
+    // The launch card names the unmounted member without an execution guess.
+    await view.findByText('Fleet saved.')
+    fireEvent.click(view.getByRole('button', { name: 'Launch' }))
+    const dialog = view.getByRole('alertdialog')
+    expect(dialog.textContent).toContain('gone: gone-acp,')
+    expect(dialog.textContent).not.toContain('Harmony')
+    fireEvent.click(view.getByRole('button', { name: 'Cancel' }))
+  })
+
+  it('names a branded connection that is not mounted and echoes Melody members before launch', async () => {
+    const favorite: FleetFavorite = {
+      id: 'external',
+      name: 'External fleet',
+      members: [
+        { name: 'coder', description: 'codes', prompt: 'go', provider: 'claude-code', execution: 'melody' },
+        { name: 'empty-scopes', description: 'empty', prompt: 'go', provider: 'claude-code', writeScopes: [] },
+      ],
+    }
+    const { view } = setup('en', {
+      harnesses: [HARNESSSES[0]],
+      favorites: [favorite],
+    })
+    await view.findByText('External fleet')
+    expect(view.getAllByText(/Claude Code \(claude-code\)/u).length).toBeGreaterThan(0)
+    fireEvent.click(view.getByRole('button', { name: 'Launch' }))
+    const dialog = view.getByRole('alertdialog')
+    expect(dialog.textContent).toContain('coder: Claude Code (claude-code), Melody,')
+    expect(dialog.textContent).toContain('shared checkout')
+    fireEvent.click(view.getByRole('button', { name: 'Cancel' }))
+  })
+
+  it('keeps a supported context when the connection is reselected and previews starters without execution', async () => {
+    const favorite: FleetFavorite = {
+      id: 'inheriting',
+      name: 'Inheriting fleet',
+      members: [{ name: 'heir', description: 'inherits', prompt: 'go', provider: 'greeneek', context: 'fork' }],
+    }
+    const starters: FleetFavorite[] = [{
+      id: 'plain',
+      name: 'Plain starter',
+      members: [
+        { name: 'worker', description: 'works', prompt: 'go', provider: 'gone-acp' },
+        { name: 'delegate', description: 'delegates', prompt: 'go', provider: 'claude-code' },
+      ],
+    }]
+    const { view } = setup('en', { favorites: [favorite], starters })
+    await view.findByText('Inheriting fleet')
+    // A starter member on an unmounted connection previews without an execution
+    // guess; a one-shot connection previews its Melody delegation.
+    expect(view.getByText('worker — works (gone-acp)')).toBeTruthy()
+    expect(view.getByText('delegate — delegates (Claude Code, Melody)')).toBeTruthy()
+    fireEvent.click(view.getByRole('button', { name: 'Edit' }))
+    fireEvent.change(view.getByLabelText('Connection'), { target: { value: 'greeneek' } })
+    expect((view.getByLabelText('Context') as HTMLSelectElement).value).toBe('fork')
   })
 })

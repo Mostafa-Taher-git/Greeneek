@@ -14,9 +14,15 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { SessionId } from '@greeneek/gnk-session'
 import { WorktreeError, WorktreeManager } from '../src/index.ts'
+
+// Every spec here drives real git subprocesses (init, commit, worktree add,
+// worktree remove). On a contended runner those calls alone can exceed the
+// default 5 s budget without any behavioural defect, so the file runs with a
+// budget that covers the git work instead of the wall clock.
+vi.setConfig({ testTimeout: 30_000 })
 
 const SIGNAL = new AbortController().signal
 const SESSION = SessionId('session-one')

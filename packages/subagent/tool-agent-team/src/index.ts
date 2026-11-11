@@ -3,8 +3,8 @@
 import type { Context } from '@greeneek/cordis'
 import z from '@greeneek/schemastery'
 import type { Agent, AgentOptions } from '@greeneek/gnk-agent'
-import { TeamError, TeamTaskId } from '@greeneek/gnk-agent-team'
-import type { SpawnTeammateRequest, TeamMemberView } from '@greeneek/gnk-agent-team'
+import { TeamError, TeamTaskId, userFacingConnection } from '@greeneek/gnk-agent-team'
+import type { FleetProviderAvailability, SpawnTeammateRequest, TeamMemberView } from '@greeneek/gnk-agent-team'
 import { resolveLanePolicy } from '@greeneek/gnk-agent-team'
 import { defineTool } from '@greeneek/gnk-tools'
 import type { InferValue, ValueSchemaSpec } from '@greeneek/gnk-tools'
@@ -39,7 +39,7 @@ Teammates share the Lead checkout unless spawn_teammate declares write_scopes, w
 
 Prefer read/edit/write for file changes. If a file operation returns FS_STALE_VERSION, read the current file, rebase your intended change onto the new content, and retry. Bash, formatters, code generators, and scripts are not fully protected by the filesystem version guard; coordinate them explicitly and have the Lead review the final diff and run tests.
 
-send_message steers a running target at its nearest step boundary, starts an idle target, and cold-resumes an inactive teammate. A delivered peer item starts with its stable message id and sender name. A successful send is already durable even when its result says queued; do not resend it. Shared-task workflow is list, get, claim with the current revision, perform the work, then complete. Task readiness never starts an owner. Before wait_agent, use list_agents and make sure another required member is running or provisioning; use send_message first when the required member is inactive. wait_agent observes only changes after that call starts, never wakes a member, and returns noProgress immediately when no other member can produce a change. Re-list after wakeup or timeout. The Lead must wait for required teammates before giving the final answer.`
+send_message steers a running target at its nearest step boundary, starts an idle target, and cold-resumes an inactive teammate. A delivered peer item starts with its stable message id and sender name. A successful send is already durable even when its result says queued; do not resend it. conduct_debate runs a genuine multi-Harness debate: every participant states an independent position from one topic, then objects, rebuts, and submits evidence across rounds through the durable mailbox, and a dedicated moderator publishes one verdict with unresolved disagreements and any minority evidence; the debate is read-only toward the project, so applying a recommendation needs explicit user authorization; call it only when the user explicitly asks for a debate. Shared-task workflow is list, get, claim with the current revision, perform the work, then complete. Task readiness never starts an owner. Before wait_agent, use list_agents and make sure another required member is running or provisioning; use send_message first when the required member is inactive. wait_agent observes only changes after that call starts, never wakes a member, and returns noProgress immediately when no other member can produce a change. Re-list after wakeup or timeout. The Lead must wait for required teammates before giving the final answer.`
 
 const ACTIVE_WAIT_STATUSES: ReadonlySet<TeamMemberView['status']> = new Set(['running', 'provisioning'])
 const NO_ACTIVE_PEER_MESSAGE = 'No other Team member is running or provisioning. wait_agent cannot make progress or wake inactive teammates. Re-list with list_agents and team_task_list, then use send_message to wake each required inactive teammate before waiting again.'
@@ -195,6 +195,59 @@ const TASK_LIST_VALUE_SCHEMA = {
   },
 } as const
 
+const DEBATE_PARTICIPANT_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    provider: { type: 'string', required: true },
+    name: { type: 'string' },
+  },
+} as const
+
+const DEBATE_ENTRY_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    round: { type: 'integer', required: true },
+    role: { type: 'string', required: true, enum: ['position', 'objection', 'rebuttal', 'evidence', 'synthesis'] },
+    participant: { type: 'string', required: true },
+    sourceHarness: { type: 'string', required: true },
+    text: { type: 'string', required: true },
+  },
+} as const
+
+const DEBATE_VALUE_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    topic: { type: 'string', required: true },
+    entries: { type: 'array', required: true, items: DEBATE_ENTRY_SCHEMA },
+    synthesis: { type: 'string', required: true },
+    verdictMode: {
+      type: 'string',
+      required: true,
+      enum: ['consensus', 'majority', 'evidence-based', 'no-consensus'],
+    },
+    unresolved: { type: 'array', required: true, items: { type: 'string' } },
+    minorityEvidence: { type: 'array', required: true, items: { type: 'string' } },
+    consensus: { type: 'boolean', required: true },
+    moderator: { type: 'string', required: true },
+    moderatorHarness: { type: 'string', required: true },
+    failures: {
+      type: 'array',
+      required: true,
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          participant: { type: 'string', required: true },
+          reason: { type: 'string', required: true },
+        },
+      },
+    },
+  },
+} as const
+
 /**
  * Declare one canonical output schema with compact model-facing JSON. Every
  * Team result is a fixed record, so the declared schema is what makes the
@@ -269,8 +322,11 @@ function providerSelector(
     if (requested === undefined) return context === 'fork' ? config.forkProvider : config.freshProvider
     const rows = ctx.agentTeams.fleetAvailability(caller)
     if (!rows.some(row => row.name === requested)) {
+      // Internal strategy names stay accepted for saved callers, while the
+      // refusal names only the user-facing connections a new caller should use.
+      const names = [...new Set(rows.map(row => userFacingConnection(row.name)))]
       throw new TeamError(
-        `provider "${requested}" is not registered in this composition; this Team can dispatch on ${rows.map(row => row.name).join(', ')}`,
+        `provider "${requested}" is not registered in this composition; this Team can dispatch on ${names.join(', ')}`,
         'TEAM_PROVIDER_UNAVAILABLE',
       )
     }
@@ -326,29 +382,42 @@ function fleetProposals(members: readonly FleetMemberArgs[], selectProvider: Pro
 }
 
 /**
- * Build the confirmation-card text: every member's provider, composition,
- * effort, token budget, and write capability, plus the zero-spend outcome of
- * declining.
+ * Build the confirmation-card text: every member's Harness connection,
+ * execution type, context, composition, effort, token budget, and write
+ * capability, plus the zero-spend outcome of declining. Internal strategy
+ * registry names present as their Harness connection, and the execution type
+ * names the dispatch the connection's capability selects.
  * @param label - optional fleet label.
  * @param proposals - normalized member proposals.
+ * @param rows - current provider availability rows naming each proposal's dispatch.
  * @returns one multi-line approval reason.
  */
-function fleetApprovalReason(label: string | undefined, proposals: readonly FleetProposal[]): string {
+function fleetApprovalReason(
+  label: string | undefined,
+  proposals: readonly FleetProposal[],
+  rows: readonly FleetProviderAvailability[],
+): string {
   const heading = label === undefined || label.trim().length === 0
     ? 'Fleet launch confirmation'
     : `Fleet "${label.trim()}" launch confirmation`
-  const rows = proposals.map((proposal, index) => {
+  const lines = proposals.map((proposal, index) => {
     const lane = proposal.readOnly === true
       ? 'read-only'
       : proposal.writeScopes === undefined
         ? 'shared checkout, no declared write scope'
         : `isolated worktree, write scopes ${proposal.writeScopes.join(', ')}`
-    return `${String(index + 1)}. ${proposal.name} — provider=${proposal.provider}, context=${proposal.context},`
+    const row = rows.find(candidate => candidate.name === proposal.provider)
+    /* v8 ignore next -- proposals were validated against these same availability
+     * rows in the same synchronous turn, so the lookup cannot miss; launch re-validates regardless. */
+    const execution = row?.continuable === true ? 'Harmony' : 'Melody'
+    const context = proposal.context === 'fork' ? 'inherits completed turns' : 'fresh context'
+    return `${String(index + 1)}. ${proposal.name} — harness=${userFacingConnection(proposal.provider)},`
+      + ` execution=${execution}, context=${context},`
       + ` preset=${proposal.agentPreset ?? 'inherited'}, model=${proposal.agentOptions?.model ?? 'inherited'},`
       + ` effort=${proposal.agentOptions?.reasoningEffort ?? 'inherited'},`
       + ` budget=${proposal.maxTokens === undefined ? 'unbounded' : `${proposal.maxTokens} tokens`}; ${lane}`
   })
-  return `${heading}\n\n${rows.join('\n')}\n\nApproving launches ${proposals.length} teammate(s) and creates only the isolated worktrees listed above. Rejecting, cancelling, or timing out creates no children and no worktrees.`
+  return `${heading}\n\n${lines.join('\n')}\n\nApproving launches ${proposals.length} teammate(s) and creates only the isolated worktrees listed above. Rejecting, cancelling, or timing out creates no children and no worktrees.`
 }
 
 /** Recover the exact caller guaranteed by Agent-scoped tool discovery. */
@@ -439,7 +508,7 @@ function install(agent: Agent, ctx: Context, config: Required<Config>): () => vo
 
     register(scoped.tools.register(defineTool({
       name: 'spawn_fleet',
-      description: 'Create several teammates after one explicit user approval card. The card lists every member, preset, model, reasoning effort, token budget, provider, and write capability; a rejection, cancellation, or timeout creates no child and no worktree.',
+      description: 'Create several teammates after one explicit user approval card. The card lists every member’s Harness connection, execution type, context, preset, model, reasoning effort, token budget, and write capability; a rejection, cancellation, or timeout creates no child and no worktree.',
       parameters: {
         label: { type: 'string', description: 'Short display label for the fleet.' },
         members: { type: 'array', required: true, items: FLEET_MEMBER_SCHEMA },
@@ -459,7 +528,7 @@ function install(agent: Agent, ctx: Context, config: Required<Config>): () => vo
           agent,
           toolName: 'spawn_fleet',
           callId: exec.callId,
-          reason: fleetApprovalReason(args.label, proposals),
+          reason: fleetApprovalReason(args.label, proposals, ctx.agentTeams.fleetAvailability(agent)),
           signal: exec.signal,
         })
         if (outcome !== 'allowed-once') {
@@ -725,6 +794,72 @@ function install(agent: Agent, ctx: Context, config: Required<Config>): () => vo
           ...args.write_scopes === undefined ? {} : { writeScopes: args.write_scopes },
           ...args.owner === undefined ? {} : { owner: args.owner },
         })
+      },
+    })))
+
+    register(scoped.tools.register(defineTool({
+      name: 'conduct_debate',
+      description: 'Run a genuine multi-Harness debate in five phases (independent positions, cross-examination, rebuttal, evidence review, synthesis): each participant states an independent position from one topic, then objects, rebuts, and cites evidence across rounds, and a dedicated moderator publishes one verdict (consensus, majority, evidence-based, or no-consensus) with unresolved disagreements and any minority evidence. The debate is read-only toward the project; applying a recommendation needs explicit user authorization. Team Lead only.',
+      parameters: {
+        topic: { type: 'string', required: true, description: 'The shared problem statement every participant receives verbatim.' },
+        participants: {
+          type: 'array',
+          required: true,
+          items: DEBATE_PARTICIPANT_SCHEMA,
+          description: 'Debate seats: a registered provider per seat plus an optional speaking name (defaults to the provider). Two seats on one provider need distinct names.',
+        },
+        moderator: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            provider: { type: 'string', required: true },
+            name: { type: 'string' },
+          },
+          description: 'Dedicated moderator seat for synthesis: a registered provider plus an optional speaking name (defaults to the provider). The moderator is never a participant, and its name must differ from every participant name. Omitted runs as "moderator" on the in-harness connection.',
+        },
+        max_rounds: {
+          type: 'integer',
+          description: 'Rounds of cross-examination after initial positions. Defaults to 1; 0 collects positions only. Multi-round seats must hold a continuable lane.',
+        },
+      },
+      output: jsonOutput(DEBATE_VALUE_SCHEMA),
+      async execute(args, exec) {
+        const agent = callingAgent(exec.agent, 'conduct_debate')
+        const selectProvider = providerSelector(ctx, agent, config)
+        const participants = args.participants.map(participant => ({
+          provider: selectProvider(participant.provider, 'fresh'),
+          ...participant.name === undefined ? {} : { name: participant.name },
+        }))
+        const effectiveNames = new Set(participants.map(participant => participant.name ?? participant.provider))
+        if (effectiveNames.size !== participants.length) {
+          throw new TeamError('debate participants need distinct speaking names', 'TEAM_INVALID_ARGUMENT')
+        }
+        const moderator = args.moderator === undefined ? undefined : {
+          provider: selectProvider(args.moderator.provider, 'fresh'),
+          ...args.moderator.name === undefined ? {} : { name: args.moderator.name },
+        }
+        if (moderator !== undefined && effectiveNames.has(moderator.name ?? moderator.provider)) {
+          throw new TeamError('debate moderator name must differ from every participant name', 'TEAM_INVALID_ARGUMENT')
+        }
+        const result = await ctx.agentTeams.conductDebate(agent, {
+          topic: args.topic,
+          participants,
+          ...moderator === undefined ? {} : { moderator },
+          ...args.max_rounds === undefined ? {} : { maxRounds: args.max_rounds },
+          signal: exec.signal,
+        })
+        return {
+          topic: result.topic,
+          entries: result.entries.map(entry => ({ ...entry })),
+          synthesis: result.synthesis,
+          verdictMode: result.verdictMode,
+          unresolved: [...result.unresolved],
+          minorityEvidence: [...result.minorityEvidence],
+          consensus: result.consensus,
+          moderator: result.moderator,
+          moderatorHarness: result.moderatorHarness,
+          failures: result.failures.map(failure => ({ ...failure })),
+        }
       },
     })))
   } catch (error: unknown) {

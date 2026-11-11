@@ -38,11 +38,11 @@
     "@greeneek/gnk-timeout": "workspace:^"
   },
   "dependencies": {
+    "@earendil-works/pi-ai": "^1.3.0",
     "@greeneek/gnk-brand": "workspace:^",
+    "@greeneek/gnk-egress": "workspace:^",
     "@greeneek/gnk-util-values": "workspace:^",
-    "@greeneek/schemastery": "workspace:^",
-    "@earendil-works/pi-ai": "^0.87.1",
-    "@greeneek/gnk-egress": "workspace:^"
+    "@greeneek/schemastery": "workspace:^"
   },
   "devDependencies": {
     "@greeneek/cordis": "workspace:^",

@@ -43,7 +43,10 @@ const workspace = (id: string, sessionIds: string[], title = id): WorkspaceView 
 const workspaceState = (
   items: readonly WorkspaceView[],
   archivedSessionIds: readonly SessionId[] = [],
-): WorkspaceSnapshot => ({ items, archivedSessionIds, state: 'idle', phase: 'ready', error: null })
+  pinnedSessionIds: readonly SessionId[] = [],
+): WorkspaceSnapshot => ({
+  items, archivedSessionIds, pinnedSessionIds, state: 'idle', phase: 'ready', error: null,
+})
 const noPendingInteraction: SessionPendingInteractionSnapshot = new Map()
 function hook<T>(snapshot: T) {
   return function select<S>(selector: (state: T) => S): S { return selector(snapshot) }
@@ -81,6 +84,13 @@ function mount(overrides: Partial<WorkspaceBrowserProps> = {}) {
     deleteWorkspace: vi.fn(async () => {}),
     archiveSession: vi.fn(async () => {}),
     deleteSession: vi.fn(async () => {}),
+    pinSession: vi.fn(async () => {}),
+    externalApps: vi.fn(async () => ({ platform: 'linux' as const, apps: [], canReveal: true })),
+    openPath: vi.fn(async () => {}),
+    openWorkspacePath: vi.fn(async () => {}),
+    gitFacts: vi.fn(async () => ({
+      isRepository: false, changedFiles: 0, insertions: 0, deletions: 0,
+    })),
     insertWorkspaceBefore: vi.fn(async () => {}),
     insertSessionBefore: vi.fn(async () => {}),
     createWorkspace: vi.fn(async () => workspace('created', [])),

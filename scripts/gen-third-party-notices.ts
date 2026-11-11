@@ -452,6 +452,9 @@ function collectVendored(): VendoredRow[] {
   const onDisk = new Map<string, string>()
   for (const entry of readdirSync(resolve(root, 'vendor'), { withFileTypes: true })) {
     if (!entry.isDirectory()) continue
+    // A dot-directory under `vendor/` is a local store, not a vendored package
+    // (`vendor/.patches` holds the pinned upstream patches).
+    if (entry.name.startsWith('.')) continue
     const manifest = readManifest(`vendor/${entry.name}/package.json`)
     if (manifest.name !== undefined) onDisk.set(manifest.name, entry.name)
   }

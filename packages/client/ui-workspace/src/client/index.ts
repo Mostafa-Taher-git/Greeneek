@@ -13,6 +13,7 @@
 import type { Context } from '@greeneek/cordis'
 import type { RemoteHostFacts } from '@greeneek/gnk-api-remotes/client'
 import type { ISessions } from '@greeneek/gnk-api-session-controller/client'
+import { SessionId } from '@greeneek/gnk-session/types'
 import type { IWorkspaces, WorkspaceSnapshot } from '@greeneek/gnk-api-workspace-controller/client'
 import type { HostObservable, SnapshotSelectorHook } from '@greeneek/gnk-client-ui-slots'
 // Type-only: pulls the Controller service merges.
@@ -35,6 +36,7 @@ import { RecentSessionsSeat } from './RecentSessionsSeat.tsx'
 import { DashboardAction } from './DashboardAction.tsx'
 import { DashboardPage } from './DashboardPage.tsx'
 import { WorkspacePicker } from './WorkspacePicker.tsx'
+import { SessionHeaderUtilities, type SessionHeaderUtilitiesInjected } from './SessionHeaderUtilities.tsx'
 import { ar, en, zh, type WorkspaceKey } from './locales.ts'
 
 export type { UiWorkspace } from './navigation.ts'
@@ -68,7 +70,7 @@ const NS = 'workspace'
  * declaration through `slots.inject()` instead of assuming order.
  */
 export const inject = [
-  'slots', 'sessions', 'workspaces', 'locale', 'remote', 'remote.directoryPicker',
+  'slots', 'sessions', 'workspaces', 'locale', 'remote', 'remote.session', 'remote.directoryPicker',
 ]
 
 /**
@@ -144,6 +146,29 @@ export function apply(ctx: Context): void {
     },
     archiveSession: async (sessionId) => { await uiWorkspace.archiveSession(sessionId) },
     deleteSession: async (sessionId) => { await uiWorkspace.deleteSession(sessionId) },
+    pinSession: async (sessionId, pinned) => { await workspaces.pinSession(sessionId, pinned) },
+    externalApps: async () => {
+      const result = await ctx.remote.session.externalApps()
+      if (!result.ok) throw new Error(result.error.message)
+      return result.value
+    },
+    openPath: async (sessionId, target) => {
+      const cwd = sessions.list.getSnapshot().byId[sessionId]?.cwd
+      if (cwd === undefined || cwd === '') {
+        throw new Error(`session "${sessionId}" has no workspace directory`)
+      }
+      const result = await ctx.remote.session.openPath({ path: cwd, target })
+      if (!result.ok) throw new Error(result.error.message)
+    },
+    openWorkspacePath: async (path, target) => {
+      const result = await ctx.remote.session.openPath({ path, target })
+      if (!result.ok) throw new Error(result.error.message)
+    },
+    gitFacts: async (path) => {
+      const result = await ctx.remote.session.gitFacts({ path })
+      if (!result.ok) throw new Error(result.error.message)
+      return result.value
+    },
     insertSessionBefore: async (workspaceId, sessionId, beforeSessionId) => {
       await workspaces.insertSessionBefore(workspaceId, sessionId, beforeSessionId)
     },
@@ -159,6 +184,39 @@ export function apply(ctx: Context): void {
       layout()?.showConversation()
       sessions.open(sessionId)
     },
+  })
+  const utilitiesInjected = (): SessionHeaderUtilitiesInjected => ({
+    pinSession: async (sessionId, pinned) => { await workspaces.pinSession(sessionId, pinned) },
+    archiveSession: async (sessionId) => { await uiWorkspace.archiveSession(sessionId) },
+    deleteSession: async (sessionId) => { await uiWorkspace.deleteSession(sessionId) },
+    renameSession: async (sessionId, title) => {
+      const session = sessions.binding(sessionId)?.session
+      if (session === undefined) throw new Error(`unknown session "${sessionId}"`)
+      const result = await session.rename(title)
+      if (!result.ok) throw new Error(result.error.message)
+    },
+    forkSession: (sessionId) => {
+      sessions.fork({ sessionId, increaseTitle: true })
+        .then((childId) => {
+          layout()?.showConversation()
+          sessions.open(childId)
+        })
+        .catch(() => {})
+    },
+    externalApps: async () => {
+      const result = await ctx.remote.session.externalApps()
+      if (!result.ok) throw new Error(result.error.message)
+      return result.value
+    },
+    openPath: async (sessionId, target) => {
+      const cwd = sessions.list.getSnapshot().byId[sessionId]?.cwd
+      if (cwd === undefined || cwd === '') {
+        throw new Error(`session "${sessionId}" has no workspace directory`)
+      }
+      const result = await ctx.remote.session.openPath({ path: cwd, target })
+      if (!result.ok) throw new Error(result.error.message)
+    },
+    toggleRightbar: () => { layout()?.toggleRightbar() },
   })
   // The two picker registrations declare their directory-flow child in the
   // same call; the recent-sessions seat has no children. Slot injection
@@ -202,9 +260,24 @@ export function apply(ctx: Context): void {
   ctx.slots.inject('dashboard', () => ctx.slots.register(
     {
       name: 'dashboard',
-      inject: () => ({ close: () => { layout()?.showConversation() } }),
+      inject: () => ({
+        close: () => { layout()?.showConversation() },
+        open: (sessionId: string) => {
+          layout()?.showConversation()
+          sessions.open(sessionId as SessionId)
+        },
+      }),
       locale: NS,
     },
     DashboardPage,
+  ))
+  ctx.slots.inject('conversation.session.header.utilities', () => ctx.slots.register(
+    {
+      name: 'conversation.session.header.utilities',
+      id: 'workspace-utilities',
+      inject: utilitiesInjected,
+      locale: NS,
+    },
+    SessionHeaderUtilities,
   ))
 }

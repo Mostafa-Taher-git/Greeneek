@@ -9,19 +9,33 @@ import { useState } from 'react'
 import clsx from 'clsx'
 import {
   HoverCard, IconAlarmClockOutline16, IconArchiveOutline20, IconBranchOutline16,
-  IconEditOutline16, IconEllipsisOutline16, IconFolderClose16, IconFolderOpen16,
-  IconPlusOutline16, IconTrashOutline16, IconTriangleRightFill14, Menu, relativeTime,
-  StateDot,
+  IconCopyOutline16, IconEditOutline16, IconEllipsisOutline16, IconFolderClose16,
+  IconFolderOpen16, IconFolderOpenOutline16, IconPinFill16, IconPlusOutline16,
+  IconTrashOutline16, IconTriangleRightFill14, Menu, relativeTime,
+  StateDot, formatShortcut,
+  writeClipboard,
+  type MenuEntry,
+  type MenuItem,
 } from '@greeneek/gnk-client-ui-primitives'
 import type { StateDotState } from '@greeneek/gnk-client-ui-primitives'
 import { abbreviateHomePath } from '@greeneek/gnk-util-workspace-path'
-import type { WorkspaceBrowserProps } from '../contract/slots.ts'
+import type { GitFacts, OpenPathTarget, WorkspaceBrowserProps } from '../contract/slots.ts'
+import { openInTarget } from '../openInMenu.tsx'
 import type { GroupNode, SearchResultNode, SessionNode } from '../tree.ts'
 import { timeLabel } from '../time.ts'
 import css from './Rows.module.css'
 
 /** The standard locale seat, prop-passed from the browser root. */
 type RowTranslate = WorkspaceBrowserProps['t']
+
+/**
+ * Group a count in thousands with the ASCII separator.
+ * @param value - the count.
+ * @returns the grouped count.
+ */
+function formatCount(value: number): string {
+  return String(value).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+}
 
 /** Row display title: blank rows show the localized New Session label. */
 function displayTitle(node: SessionNode, t: RowTranslate): string {
@@ -104,13 +118,20 @@ function rowHalf(e: { clientY: number; currentTarget: HTMLElement }): 'before' |
  * @param props.t - the browser root's locale seat.
  * @returns the row element.
  */
-export function ProjectRowItem({ group, onToggle, onCreate, actions, drag, home, t }: {
+export function ProjectRowItem({ group, onToggle, onCreate, actions, openItems, onOpenPath, git, onMenuOpen, drag, home, t }: {
   group: GroupNode
   onToggle: () => void
   onCreate: () => void
   /** Real-Workspace actions; absent for the ungrouped bucket (no menu shown). */
   actions?: { rename: () => void; delete: () => void } | undefined
-  /** Present only for real Workspace rows in the grouped view. */
+  /** Destinations the Host can open this Workspace directory in; absent when the Host offers none. */
+  openItems?: readonly MenuItem[] | undefined
+  /** Hand this Workspace directory to one Host desktop destination. */
+  onOpenPath?: ((target: OpenPathTarget) => void) | undefined
+  /** Read-only git facts of this Workspace directory; absent until they are read. */
+  git?: GitFacts | undefined
+  /** Ask the owner to read this Workspace's git facts before the menu opens. */
+  onMenuOpen?: ((path: string) => void) | undefined  /** Present only for real Workspace rows in the grouped view. */
   drag?: WorkspaceRowDragProps | undefined
   /** Host account home; POSIX home-rooted hover paths display as `~`. */
   home?: string | undefined
@@ -121,7 +142,41 @@ export function ProjectRowItem({ group, onToggle, onCreate, actions, drag, home,
   const label = row.workspaceId === undefined ? t('group.ungrouped') : row.label
   const active = group.expanded && group.containsCurrent
   const [menuOpen, setMenuOpen] = useState(false)
-  const workspaceMenuItems = [
+  const workspaceMenuItems: MenuEntry[] = [
+    ...(openItems !== undefined && openItems.length > 0
+      ? [{
+        id: 'open-in',
+        label: t('openIn.label'),
+        icon: <IconFolderOpen16 />,
+        submenu: openItems,
+      }]
+      : []),
+    ...(git !== undefined && git.isRepository
+      ? [
+        { type: 'separator' as const, id: 'git-separator' },
+        {
+          type: 'label' as const,
+          id: 'git-branch',
+          text: git.branch === undefined
+            ? t('git.detachedHead')
+            : t('git.branch', { branch: git.branch }),
+        },
+        {
+          type: 'label' as const,
+          id: 'git-changes',
+          text: git.baseBranch === undefined
+            ? t('git.changesUnbased', {
+              added: formatCount(git.insertions),
+              removed: formatCount(git.deletions),
+            })
+            : t('git.changes', {
+              base: git.baseBranch,
+              added: formatCount(git.insertions),
+              removed: formatCount(git.deletions),
+            }),
+        },
+      ]
+      : []),
     { id: 'rename', label: t('rename'), icon: <IconEditOutline16 /> },
     { id: 'delete', label: t('delete.workspace'), icon: <IconTrashOutline16 />, danger: true },
   ]
@@ -160,10 +215,11 @@ export function ProjectRowItem({ group, onToggle, onCreate, actions, drag, home,
               setMenuOpen(false)
               // Unknown ids leave before the dispatch: a future menu row must
               // not inherit the destructive branch as an else fallback.
-              /* v8 ignore next -- Menu can emit only the rename and delete rows supplied above. */
-              if (id !== 'rename' && id !== 'delete') return
+              /* v8 ignore next -- Menu can emit only the rows supplied above. */
+              if (id !== 'rename' && id !== 'delete' && !id.startsWith('open-in:')) return
               if (id === 'rename') actions.rename()
-              else actions.delete()
+              else if (id === 'delete') actions.delete()
+              else onOpenPath?.(openInTarget(id))
             }}
             portal
             closeOnPointerLeave
@@ -172,7 +228,15 @@ export function ProjectRowItem({ group, onToggle, onCreate, actions, drag, home,
                 type="button"
                 className={css.iconButton}
                 aria-label={t('actions.workspace.aria', { name: label })}
-                onClick={(e) => { e.stopPropagation(); setMenuOpen(v => !v) }}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setMenuOpen((v) => {
+                    // The git facts are read when the menu opens, so the browser
+                    // never asks the Host about a project nobody opened.
+                    if (!v && row.cwd !== undefined) onMenuOpen?.(row.cwd)
+                    return !v
+                  })
+                }}
               >
                 <IconEllipsisOutline16 />
               </button>
@@ -371,7 +435,9 @@ export function SearchResultItem({ result, currentId, onOpen, t }: {
  * @param props.t - the browser root's locale seat.
  * @returns the session row.
  */
-export function SessionNodeItem({ node, currentId, now, onOpen, onRename, onFork, onArchive, onDelete, drag, flat = false, t }: {
+export function SessionNodeItem({
+  node, currentId, now, onOpen, onRename, onFork, onArchive, onDelete, onPin, onOpenPath, drag, flat = false, t,
+}: {
   node: SessionNode
   currentId: string | undefined
   now: number
@@ -384,6 +450,10 @@ export function SessionNodeItem({ node, currentId, now, onOpen, onRename, onFork
   onArchive: (id: SessionNode['id']) => void
   /** Open the browser-owned session delete-confirmation dialog (row menu action). */
   onDelete: (id: SessionNode['id'], currentTitle: string) => void
+  /** Pin or unpin a session in the registry-global pin set. */
+  onPin?: ((id: SessionNode['id'], pinned: boolean) => void) | undefined
+  /** Open path or reveal in system file manager / external application. */
+  onOpenPath?: ((id: SessionNode['id'], target: OpenPathTarget) => void) | undefined
   /** Present only on draggable rows (workspace-group sessions outside search). */
   drag?: RowDragProps | undefined
   /** The row is rendered without a parent Workspace header. */
@@ -401,10 +471,42 @@ export function SessionNodeItem({ node, currentId, now, onOpen, onRename, onFork
   // touches the session log, so it is not styled as destructive and needs no
   // confirmation dialog.
   const sessionMenuItems = [
-    { id: 'rename', label: t('rename'), icon: <IconEditOutline16 /> },
-    { id: 'fork', label: t('menu.fork'), icon: <IconBranchOutline16 /> },
+    {
+      id: 'pin',
+      label: row.pinned ? t('menu.unpin') : t('menu.pin'),
+      icon: <IconPinFill16 />,
+    },
+    {
+      id: 'rename',
+      label: t('rename'),
+      icon: <IconEditOutline16 />,
+      hint: formatShortcut('mod+alt+g'),
+    },
+    {
+      id: 'fork',
+      label: t('menu.fork'),
+      icon: <IconBranchOutline16 />,
+      hint: formatShortcut('mod+alt+f'),
+    },
+    {
+      id: 'copy-id',
+      label: t('menu.copySessionId'),
+      icon: <IconCopyOutline16 />,
+    },
+    ...(onOpenPath !== undefined
+      ? [{
+        id: 'show-in-folder',
+        label: t('menu.showInFolder'),
+        icon: <IconFolderOpenOutline16 />,
+      }]
+      : []),
     // 20-native glyph in the menu's 16px icon slot (Menu.module.css .itemIcon).
-    { id: 'archive', label: t('menu.archiveSession'), icon: <IconArchiveOutline20 size={16} /> },
+    {
+      id: 'archive',
+      label: t('menu.archiveSession'),
+      icon: <IconArchiveOutline20 size={16} />,
+      hint: formatShortcut('mod+shift+a'),
+    },
     // Delete destroys the stored log, so unlike archive it is danger-styled
     // and opens the browser-owned confirmation dialog instead of committing.
     { id: 'delete', label: t('menu.deleteSession'), icon: <IconTrashOutline16 />, danger: true },
@@ -454,6 +556,16 @@ export function SessionNodeItem({ node, currentId, now, onOpen, onRename, onFork
         </span>
       )}
       <span className={css.title} dir="auto">{title}</span>
+      {row.pinned && (
+        <span
+          className={css.pinIndicator}
+          role="img"
+          aria-label={t('menu.pinned')}
+          title={t('menu.pinned')}
+        >
+          <IconPinFill16 />
+        </span>
+      )}
       {row.hasActiveSchedule && <ActiveScheduleIndicator t={t} />}
       {/* A blank New Session row is a provisional placeholder: nothing has
           happened in it yet, so a "now" timestamp and the row verbs
@@ -468,8 +580,13 @@ export function SessionNodeItem({ node, currentId, now, onOpen, onRename, onFork
             items={sessionMenuItems}
             onSelect={(id) => {
               setMenuOpen(false)
+              if (id === 'pin') onPin?.(node.id, !row.pinned)
               if (id === 'rename') onRename(node.id, row.title)
               if (id === 'fork') onFork(node.id)
+              if (id === 'copy-id') {
+                void writeClipboard(node.id)
+              }
+              if (id === 'show-in-folder') onOpenPath?.(node.id, { kind: 'reveal' })
               if (id === 'archive') onArchive(node.id)
               if (id === 'delete') onDelete(node.id, row.title)
             }}

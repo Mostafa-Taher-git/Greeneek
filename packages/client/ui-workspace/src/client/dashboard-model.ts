@@ -36,6 +36,16 @@ export interface DashboardSession {
   readonly outputTokens: number
   readonly cacheReadTokens: number
   readonly cacheWriteTokens: number
+  /** Summed model wall time on message-assembling steps, ms. */
+  readonly llmMs: number
+  /** Summed matched tool call-to-result wall time, ms. */
+  readonly toolMs: number
+  /** Summed first-token latency over `ttftSteps`, ms. */
+  readonly ttftMs: number
+  /** Steps carrying a recorded first token. */
+  readonly ttftSteps: number
+  /** Summed decode wall time over usage-reporting steps, ms. */
+  readonly decodeMs: number
   /**
    * False when the row carries no projection values yet, so its zeroes mean
    * "not measured" and must not be summed as real work.
@@ -106,10 +116,17 @@ export interface DashboardFacts {
   readonly subagents: number
   readonly turns: number
   readonly steps: number
+  /** One model request per closed step; each step issues exactly one request. */
+  readonly requests: number
   readonly inputTokens: number
   readonly outputTokens: number
   readonly cacheReadTokens: number
   readonly cacheWriteTokens: number
+  readonly llmMs: number
+  readonly toolMs: number
+  readonly ttftMs: number
+  readonly ttftSteps: number
+  readonly decodeMs: number
   /** Breakdowns ranked by {@link DashboardMetric}. */
   readonly metric: DashboardMetric
   readonly models: readonly DashboardModelUsage[]
@@ -125,6 +142,9 @@ export interface DashboardFacts {
   /** Every visible session, newest first; the page filters and paginates it. */
   readonly rows: readonly DashboardSessionRow[]
 }
+
+/** Aggregation budget: the fold is one linear pass plus per-breakdown sorts over visible rows. */
+export const DASHBOARD_AGGREGATION_BUDGET_MS = 50
 
 /** Newest first with the id as a deterministic tiebreak. */
 function byRecency(a: DashboardSession, b: DashboardSession): number {
@@ -269,10 +289,16 @@ export function dashboardFacts(input: {
     subagents: visible.filter(session => session.subagent === true).length,
     turns: measured.reduce((total, session) => total + session.turns, 0),
     steps: measured.reduce((total, session) => total + session.steps, 0),
+    requests: measured.reduce((total, session) => total + session.steps, 0),
     inputTokens: measured.reduce((total, session) => total + session.inputTokens, 0),
     outputTokens: measured.reduce((total, session) => total + session.outputTokens, 0),
     cacheReadTokens: measured.reduce((total, session) => total + session.cacheReadTokens, 0),
     cacheWriteTokens: measured.reduce((total, session) => total + session.cacheWriteTokens, 0),
+    llmMs: measured.reduce((total, session) => total + session.llmMs, 0),
+    toolMs: measured.reduce((total, session) => total + session.toolMs, 0),
+    ttftMs: measured.reduce((total, session) => total + session.ttftMs, 0),
+    ttftSteps: measured.reduce((total, session) => total + session.ttftSteps, 0),
+    decodeMs: measured.reduce((total, session) => total + session.decodeMs, 0),
     metric,
     models: models.map(({ route, count, inputTokens, outputTokens, cacheReadTokens, cacheWriteTokens, tokens, cost: modelCost }) => ({
       route, count, inputTokens, outputTokens, cacheReadTokens, cacheWriteTokens, tokens, cost: modelCost,

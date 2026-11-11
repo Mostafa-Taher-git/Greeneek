@@ -3,6 +3,10 @@
 
 The **core** subsystem is [`packages/core`](../../packages/core/README.md) — the packages every composition boots: the event-sourced session log, system-prompt assembly, the tool registry, the agent types, and the concrete loop that drives them. This page explains what the `agent`/`agent-loop` pair declares — how an agent is created and owned, and the `Agent` handle's delivery, cancellation, and interception contracts — plus the two type patterns every subsystem follows. The group's dedicated pages and the rest of the folder are indexed in the [subsystems README](README.md).
 
+## How to use this page
+
+Scope: the `agent` and `agent-loop` contracts plus repo-wide type patterns. Intended lookup: creation and ownership for `ctx.agents`, the `Agent` handle for delivery and cancellation, interception for `agent/pre-step` decisions, and the generated Cordis API below for exact signatures. Grouping: spine table, then creation, handle, interception, and type-pattern sections. Entry anchors: `#creation-and-ownership`, `#the-agent-handle`, `#interception-decisions`, `#cordis-surface`. Generator: `pnpm run gen-cordis-catalog` (verify with `pnpm run verify-cordis-catalog`); concept companions are [architecture](../architecture.md), [session](session.md), and [tools](tools.md).
+
 ## The spine, package by package
 
 A turn flows through the six packages in one loop: the driver in [`agent-loop`](../../packages/core/agent-loop) claims a queued prompt, opens a turn on the [session log](session.md) (`ctx.sessions`), assembles the request prefix through [system-prompt](system-prompt.md) (`ctx.systemPrompt`) and derives history from the log, streams the model response through the [LLM seam](llm-streaming.md), dispatches tool calls through the [tool registry](tools.md) (`ctx.tools`), and appends every model-visible fact back onto the log before the next step derives from it. The conversation vocabulary the loop moves — `Message`, `ContentBlock`, `StreamChunk`, the model request — is declared by [`packages/llm`](../../packages/llm/README.md) and documented on [llm-streaming.md](llm-streaming.md).
@@ -466,18 +470,11 @@ async compositionInventory(): Promise<AgentPresetComposition[]>
  * unknown default falls back to `standard` with a warning; an explicit id
  * still fails, because silently composing a different preset would
  * misreport what the caller asked for.
- *
- * A resolvable default can also be retired: `ptc` keeps its composition but
- * is no longer a new-session choice (owner plan §3). The unnamed path
- * substitutes `standard` and reports it as `agent-preset/default-sanitized`;
- * an explicit `resolve('ptc')` and a user who re-selects PTC for a session
- * keep composing it.
  * @param id - the preset id, or `undefined` for {@link defaultId}.
- * @returns the resolved preset; the `standard` fallback for an unknown or
- *   retired default when one is supplied.
- * @throws when no configured root supplies an explicit id, when the
- *   unknown default has no `standard` preset to fall back to, or when the
- *   retired default has no `standard` preset to sanitize it to.
+ * @returns the resolved preset; the `standard` fallback for an unknown
+ *   default when one is supplied.
+ * @throws when no configured root supplies an explicit id, or when the
+ *   unknown default has no `standard` preset to fall back to.
  */
 async resolve(id?: string): Promise<AgentPreset>
 
@@ -1165,28 +1162,6 @@ Source: [`packages/core/agent-loop/src/index.ts`](../../packages/core/agent-loop
 <a id="agent-preset-events"></a>
 
 ### `agent-preset/*` events
-
-<a id="agent-presetdefault-sanitized--emit"></a>
-
-#### `agent-preset/default-sanitized` — emit
-
-The unnamed-default path composed the fallback because the stored default named a preset this release retired. Emitted before the session exists, so it is not a session event; the effective composition is recorded in the session header. An explicit pick of the retired preset never triggers it.
-
-```ts cordis-catalog
-/**
- * The unnamed-default path composed the fallback because the stored default
- * named a preset this release retired. Emitted before the session exists,
- * so it is not a session event; the effective composition is recorded in
- * the session header. An explicit pick of the retired preset never
- * triggers it.
- * @param payload.from - the retired default the stored setting named.
- * @param payload.to - the preset composed for new sessions instead.
- * @mode emit
- */
-'agent-preset/default-sanitized'(payload: { from: string; to: string }): void
-```
-
-Source: [`packages/preset/agent-presets/src/types.ts`](../../packages/preset/agent-presets/src/types.ts)
 
 <a id="agent-presetselected--emit"></a>
 

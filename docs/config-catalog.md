@@ -9,6 +9,12 @@ This file is GENERATED from source (`scripts/gen-config-catalog.ts`) and verifie
 
 A `Requires:` line lists the service keys the plugin `inject`s: its `cordis.yml` tree must also load providers for those services. Scope is the harness tier (`packages/`); the vendored cordis plugins a config tree may also load (`hmr`, the console logger, …) are pinned upstream source ([vendoring policy](../vendor/README.md)) and not catalogued here.
 
+## How to use this catalog
+
+Scope: one verbatim config type per loadable harness package. Intended lookup: find the package name below, then jump to its anchor (`#greeneekgnk-<slug>`) for the full pasted declaration and `Source:` pointer. Grouping: configurable plugins first (alphabetical by package), then no-config, seam, and library lists. Related guidance: subsystem pages for wiring, the [tool catalog](tool-catalog.md) for model-facing schemas.
+
+Generated: 16640 words total, 118 config entries, 122 headings, 2013 words in the largest section. Regenerate with `pnpm run gen-config-catalog`; verify with `pnpm run verify-config-catalog`.
+
 <a id="greeneekgnk-acp"></a>
 
 ## `@greeneek/gnk-acp`
@@ -164,7 +170,7 @@ export interface PresetRoot {
 export type PresetTrust = 'system' | 'user'
 ```
 
-Source: [`packages/preset/agent-presets/src/preset.ts:58`](../packages/preset/agent-presets/src/preset.ts)
+Source: [`packages/preset/agent-presets/src/preset.ts:52`](../packages/preset/agent-presets/src/preset.ts)
 
 <a id="greeneekgnk-agent-team"></a>
 
@@ -202,7 +208,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/subagent/agent-team/src/types.ts:189`](../packages/subagent/agent-team/src/types.ts)
+Source: [`packages/subagent/agent-team/src/types.ts:198`](../packages/subagent/agent-team/src/types.ts)
 
 <a id="greeneekgnk-agent-tool-presentation"></a>
 
@@ -262,7 +268,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/api/session-controller/src/index.ts:75`](../packages/api/session-controller/src/index.ts)
+Source: [`packages/api/session-controller/src/index.ts:89`](../packages/api/session-controller/src/index.ts)
 
 <a id="greeneekgnk-api-settings-controller"></a>
 
@@ -846,7 +852,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/hooks/hooks-claude-code/src/index.ts:45`](../packages/hooks/hooks-claude-code/src/index.ts)
+Source: [`packages/hooks/hooks-claude-code/src/index.ts:46`](../packages/hooks/hooks-claude-code/src/index.ts)
 
 <a id="greeneekgnk-hooks-codex"></a>
 
@@ -873,7 +879,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/hooks/hooks-codex/src/index.ts:44`](../packages/hooks/hooks-codex/src/index.ts)
+Source: [`packages/hooks/hooks-codex/src/index.ts:45`](../packages/hooks/hooks-codex/src/index.ts)
 
 <a id="greeneekgnk-host-directory-picker-browse"></a>
 
@@ -980,7 +986,10 @@ Requires: `llm`
  * provider default, and omitted reasoning effort resolves to `high`.
  */
 export interface Config {
-  /** Credential reference (environment-variable name) resolved per request; defaults to `GREENEEK_API_KEY`. */
+  /**
+   * Credential reference (environment-variable name) resolved per request;
+   * defaults to `GREENEEK_API_KEY` — this adapter's own key, not a product requirement.
+   */
   apiKeyEnv?: string
   /** Endpoint base (`/chat/completions` is appended); falls back to `$GREENEEK_BASE_URL`. There is no shipped endpoint. */
   baseURL?: string
@@ -1043,7 +1052,7 @@ export interface GreeneekCatalogModel {
 
 Depends on: [`ModelModality`](../packages/llm/llm/src/index.ts) · [`RetryPolicyConfig`](../packages/llm/llm/src/index.ts)
 
-Source: [`packages/llm/llm-greeneek/src/index.ts:128`](../packages/llm/llm-greeneek/src/index.ts)
+Source: [`packages/llm/llm-greeneek/src/index.ts:130`](../packages/llm/llm-greeneek/src/index.ts)
 
 <a id="greeneekgnk-llm-pi-ai"></a>
 
@@ -1312,7 +1321,8 @@ export interface PiAiCompatProfile {
   supportsMidConvoToolAdditions?: boolean
   /**
    * Whether the endpoint accepts effort-only system messages and thinking
-   * binding controls mid-conversation; `anthropic-messages`.
+   * binding controls mid-conversation; `anthropic-messages`, the three
+   * Responses protocols.
    */
   supportsMidConvoEffort?: boolean
   /**
@@ -1920,7 +1930,7 @@ export interface Config {
 export type JsonlCompression = 'zstd' | 'none'
 ```
 
-Source: [`packages/session/session-persistence-jsonl/src/index.ts:73`](../packages/session/session-persistence-jsonl/src/index.ts)
+Source: [`packages/session/session-persistence-jsonl/src/index.ts:74`](../packages/session/session-persistence-jsonl/src/index.ts)
 
 <a id="greeneekgnk-session-projection-cache"></a>
 
@@ -2340,6 +2350,13 @@ Requires: `subagents` · `subprocess`
 export interface Config {
   /** Provider name on `ctx.subagents` (default `acp`). */
   providerName: string
+  /**
+   * Harness implementation identity shared by every connection of this product.
+   * Defaults to the command basename.
+   */
+  harnessId?: string
+  /** Product display name. Defaults to the `harnessId`. */
+  displayName?: string
   /** The executable to spawn for each run (the child ACP agent). */
   command: string
   /** Arguments passed to {@link command}. */
@@ -2380,7 +2397,7 @@ export interface Config {
 export type PermissionPolicy = 'allow' | 'reject'
 ```
 
-Source: [`packages/subagent/subagent-acp/src/index.ts:27`](../packages/subagent/subagent-acp/src/index.ts)
+Source: [`packages/subagent/subagent-acp/src/index.ts:29`](../packages/subagent/subagent-acp/src/index.ts)
 
 <a id="greeneekgnk-subagent-claude-code"></a>
 
@@ -3188,7 +3205,7 @@ export interface Config {
 export type ToolPresentationMode = 'native' | 'ptc' | 'both'
 ```
 
-Source: [`packages/core/tools/src/index.ts:671`](../packages/core/tools/src/index.ts)
+Source: [`packages/core/tools/src/index.ts:670`](../packages/core/tools/src/index.ts)
 
 <a id="greeneekgnk-typert-loader"></a>
 
@@ -3384,7 +3401,7 @@ Requires: `web`
 export interface Config {
   /** Literal Greeneek API key; prefer {@link apiKeyEnv} so no secret enters configuration files. */
   apiKey?: string
-  /** Credential reference resolved for each search; defaults to `GREENEEK_API_KEY`. */
+  /** Credential reference resolved for each search; defaults to `GREENEEK_API_KEY` — this provider's own key, not a product requirement. */
   apiKeyEnv?: string
   /** Anthropic-compatible endpoint base (`/messages` is appended); there is no shipped default. */
   baseURL?: string
@@ -3488,6 +3505,7 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 - `@greeneek/gnk-authorization` — requires `credentials` ([`packages/credentials/authorization/src/index.ts`](../packages/credentials/authorization/src/index.ts))
 - `@greeneek/gnk-client-locale` ([`packages/client/locale/src/index.ts`](../packages/client/locale/src/index.ts))
 - `@greeneek/gnk-client-modules` — requires `webServer` · `loader` ([`packages/client/modules/src/index.ts`](../packages/client/modules/src/index.ts))
+- `@greeneek/gnk-client-tool-owned-render` ([`packages/client/tool-owned-render/src/index.ts`](../packages/client/tool-owned-render/src/index.ts))
 - `@greeneek/gnk-client-ui-agent-preset` ([`packages/client/ui-agent-preset/src/index.ts`](../packages/client/ui-agent-preset/src/index.ts))
 - `@greeneek/gnk-client-ui-agent-team` ([`packages/client/ui-agent-team/src/index.ts`](../packages/client/ui-agent-team/src/index.ts))
 - `@greeneek/gnk-client-ui-approval` ([`packages/client/ui-approval/src/index.ts`](../packages/client/ui-approval/src/index.ts))

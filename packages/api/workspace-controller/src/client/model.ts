@@ -15,6 +15,8 @@ import type {
   WorkspaceDeleteValue,
   WorkspaceInsertSessionBeforeRequest,
   WorkspaceOrderValue,
+  WorkspacePinSessionRequest,
+  WorkspacePinSessionValue,
   WorkspaceValue,
   WorkspaceId,
   WorkspaceView,
@@ -31,6 +33,8 @@ export interface WorkspaceSnapshot {
   readonly items: readonly WorkspaceView[]
   /** Complete registry-global archive set in Host order. */
   readonly archivedSessionIds: WorkspaceArchiveValue['archivedSessionIds']
+  /** Complete registry-global pin set in Host order. */
+  readonly pinnedSessionIds: WorkspacePinSessionValue['pinnedSessionIds']
   readonly state: 'idle' | 'loading' | 'error'
   readonly phase: WorkspaceListPhase
   readonly error: RemoteFailure | null
@@ -48,6 +52,8 @@ export interface WorkspaceFollowSink {
   replaceOrder(workspaceIds: readonly WorkspaceId[]): void
   /** Replace the complete archived Session set. */
   replaceArchived(sessionIds: WorkspaceArchiveValue['archivedSessionIds']): void
+  /** Replace the complete pinned Session set. */
+  replacePinned(sessionIds: WorkspacePinSessionValue['pinnedSessionIds']): void
 }
 
 /**
@@ -56,6 +62,7 @@ export interface WorkspaceFollowSink {
 export class ClientWorkspaceModel implements WorkspaceFollowSink {
   private items: readonly WorkspaceView[] = []
   private archivedSessionIds: WorkspaceArchiveValue['archivedSessionIds'] = []
+  private pinnedSessionIds: WorkspacePinSessionValue['pinnedSessionIds'] = []
   private state: WorkspaceSnapshot['state'] = 'loading'
   private phase: WorkspaceListPhase = 'pending'
   private error: RemoteFailure | null = null
@@ -186,6 +193,21 @@ export class ClientWorkspaceModel implements WorkspaceFollowSink {
   }
 
   /**
+   * Pin or unpin one Session and install the returned complete pin set.
+   * @param sessionId - Session to pin or unpin.
+   * @param pinned - requested pin state.
+   * @returns generated Remote result.
+   */
+  async pinSession(
+    sessionId: WorkspacePinSessionRequest['sessionId'],
+    pinned: WorkspacePinSessionRequest['pinned'],
+  ): Promise<RemoteResult<WorkspacePinSessionValue>> {
+    const result = await this.remote.pinSession({ sessionId, pinned })
+    if (result.ok) this.installPinned(result.value.pinnedSessionIds)
+    return result
+  }
+
+  /**
    * Replace the projection from one complete stream-generation baseline.
    * @param baseline - complete Workspace and archive projection.
    */
@@ -193,6 +215,7 @@ export class ClientWorkspaceModel implements WorkspaceFollowSink {
     this.orderFrameGeneration++
     this.installViews(baseline.items)
     this.installArchived(baseline.archivedSessionIds)
+    this.installPinned(baseline.pinnedSessionIds)
     this.state = 'idle'
     this.phase = 'ready'
     this.error = null
@@ -221,6 +244,14 @@ export class ClientWorkspaceModel implements WorkspaceFollowSink {
    */
   replaceArchived(archivedSessionIds: WorkspaceArchiveValue['archivedSessionIds']): void {
     this.installArchived(archivedSessionIds)
+  }
+
+  /**
+   * Replace the pinned Session set from the current follow generation.
+   * @param pinnedSessionIds - complete Host-confirmed pin set.
+   */
+  replacePinned(pinnedSessionIds: WorkspacePinSessionValue['pinnedSessionIds']): void {
+    this.installPinned(pinnedSessionIds)
   }
 
   /** Keep the last complete projection visible while a lost carrier reconnects. */
@@ -264,6 +295,7 @@ export class ClientWorkspaceModel implements WorkspaceFollowSink {
     return {
       items: this.items,
       archivedSessionIds: this.archivedSessionIds,
+      pinnedSessionIds: this.pinnedSessionIds,
       state: this.state,
       phase: this.phase,
       error: this.error,
@@ -274,6 +306,23 @@ export class ClientWorkspaceModel implements WorkspaceFollowSink {
     if (archivedSessionIds.length === this.archivedSessionIds.length
       && archivedSessionIds.every((id, index) => id === this.archivedSessionIds[index])) return
     this.archivedSessionIds = [...archivedSessionIds]
+    this.invalidate()
+  }
+
+  /**
+   * Install the pinned Session set.
+   *
+   * A baseline from a Host that predates the pin set carries no field; the
+   * wire boundary treats that as an empty set rather than a failed stream.
+   * @param pinnedSessionIds - complete Host-confirmed pin set, when the Host sends one.
+   */
+  private installPinned(
+    pinnedSessionIds: WorkspacePinSessionValue['pinnedSessionIds'] | undefined,
+  ): void {
+    const next = pinnedSessionIds ?? []
+    if (next.length === this.pinnedSessionIds.length
+      && next.every((id, index) => id === this.pinnedSessionIds[index])) return
+    this.pinnedSessionIds = [...next]
     this.invalidate()
   }
 

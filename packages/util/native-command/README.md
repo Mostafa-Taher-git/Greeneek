@@ -46,6 +46,16 @@ The `NativeCommandRunner` type is the injectable command boundary for host integ
 
 `openNativePath(path, signal)` hands a path to the default application and prefers the named default browser for HTML and SVG where the platform can identify one. `openNativeTextFile(path, signal)` selects text-editor intent; on macOS it uses `open -t`. WSL paths are translated with `wslpath -w` before the Windows desktop receives them. `canOpenNativePath()` reports whether the current Host plausibly has a desktop target.
 
+### Handing a path to another application
+
+`EXTERNAL_APPS` is the fixed catalogue of desktop applications Greeneek offers (`cursor`, `vscode`, `android-studio`, `github-desktop`). `externalAppAvailability(specs)` probes the catalogue per call, so an application installed while the server runs appears on the next read. `launchExternalApp(appId, path, signal)` starts one catalogued application with the path as a single argument — never through a shell. `revealNativePath(path, signal)` opens a directory in the system file manager and selects a file inside its folder, and `canRevealNativePath()` reports whether the Host has a file manager at all.
+
+Every adapter takes an optional seam (`platform`, `env`, `exists`, `run`), so a caller can ask about another platform than the host runs and a test can run the whole surface deterministically.
+
+### Reading a project's git facts
+
+`gitFacts(path, signal)` reports what a project menu shows: whether the directory is inside a git work tree, the checked-out branch, the base branch the change set is compared against, and the size of that change set (changed files, added lines, removed lines). Every command is read-only and runs through git's own `-C` flag, so no shell is involved and the working directory never changes. A directory outside a repository reports `isRepository: false` rather than failing, and a missing git reads the same way.
+
 -----
 
 <a id="understand-the-implementation"></a>
@@ -63,6 +73,8 @@ The command runner is a thin wrapper over Node's `execFile`. The path opener sel
 | [`src/index.ts`](src/index.ts) | Public command-runner and path-opener exports |
 | [`src/runner.ts`](src/runner.ts) | Shell-free `execFile` adapter |
 | [`src/path-opener.ts`](src/path-opener.ts) | Desktop detection, open intents, browser preference, and WSL translation |
+| [`src/external-app.ts`](src/external-app.ts) | External application catalogue, per-call availability, launch, and file-manager reveal |
+| [`src/git-facts.ts`](src/git-facts.ts) | Read-only git facts of one project directory |
 | — | No runtime invariant companion is published; each run is one stateless child-process round trip with no owned event stream or mutable runtime data; behavior is enforced by unit tests. |
 
 ### What execFile gives the runner

@@ -41,8 +41,6 @@
 - list:
   - listitem:
     - button "New Session now"
-- tablist "Details view":
-  - tab "Tool" [selected]
-  - tab "Fleet"
+- text: Details
 - button "Close details"
 - tabpanel "Tool": Click a tool row in the message flow to view its details

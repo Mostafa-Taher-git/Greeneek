@@ -1,6 +1,6 @@
 # AGENTS.md — GitHub Actions
 
-This fork carries two workflows, and they are the whole check surface until
+This fork carries three workflows, and they are the whole check surface until
 another is added here.
 
 `ci.yml` runs on every push to `main`/`master` and every pull request against
@@ -28,6 +28,16 @@ the tagged commit cannot ship installers. Both unpacked trees boot before an
 A dispatch with `dry_run: true` runs every gate and uploads the verified set
 without publishing. Only the `publish` job holds `contents: write`; Windows
 steps use native `pwsh`.
+
+`release-npm.yml` publishes the artifact-first npm baseline. Its `pack-test`
+job runs on pull requests without credentials: it packs the whole baseline
+from one commit through `pnpm run publish:npm-baseline pack --yes`, installs
+the tarballs into an isolated consumer, and uploads the bundle as a workflow
+artifact. Its `publish` job runs only on manual dispatch behind the
+`npm-baseline` environment: it downloads the same artifact, revalidates the
+manifest, and publishes it — never rebuilding. There is no push trigger, so a
+merge to main can never auto-publish. Only the `publish` job sees the registry
+token; Windows steps remain native `pwsh` in the workflows that have them.
 
 Older process notes in this repository describe a master-only `ci-master.yml`,
 a Wine-based pull-request Windows job, self-hosted failover pools, and runner

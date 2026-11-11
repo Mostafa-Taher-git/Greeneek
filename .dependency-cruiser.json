@@ -1,0 +1,36 @@
+{
+  "forbidden": [
+    {
+      "name": "agent-loop-isolation",
+      "severity": "error",
+      "comment": "No src/ outside packages/core/agent-loop may import the concrete loop; bundles compose it via cordis.yml. Tests mount it for real-composition evidence and are out of scope.",
+      "from": { "path": "^packages/(?!core/agent-loop/)" },
+      "to": { "dependency": "@greeneek/gnk-agent-loop" }
+    },
+    {
+      "name": "no-deep-src-imports",
+      "severity": "error",
+      "comment": "Cross-package product imports use public entry points, never a package src/ tree. Experimental and test-support packages are internal and out of scope.",
+      "from": { "path": "^packages/(?!(experimental|test-support)/)" },
+      "to": { "dependency": "^@greeneek/.*\\/src\\/" }
+    },
+    {
+      "name": "no-circular",
+      "severity": "error",
+      "comment": "No import cycle between workspace packages.",
+      "from": { "path": "^packages/" },
+      "to": { "circular": true }
+    },
+    {
+      "name": "vendor-isolation",
+      "severity": "error",
+      "comment": "The vendored framework layer never depends on the harness.",
+      "from": { "path": "^vendor/" },
+      "to": { "dependency": "^@greeneek/gnk-" }
+    }
+  ],
+  "options": {
+    "doNotFollow": { "path": "node_modules" },
+    "tsPreCompilationDeps": true
+  }
+}

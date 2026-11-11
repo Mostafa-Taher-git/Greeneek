@@ -24,10 +24,10 @@
       "path": "../../llm/llm"
     },
     {
-      "path": "../../core/session"
+      "path": "../../core/session/tsconfig.host.json"
     },
     {
-      "path": "../../core/agent"
+      "path": "../../core/agent/tsconfig.host.json"
     },
     {
       "path": "../../core/agent-default-model"
@@ -39,7 +39,7 @@
       "path": "../../interaction/permission-presets"
     },
     {
-      "path": "../../session/session-title"
+      "path": "../../session/session-title/tsconfig.host.json"
     },
     {
       "path": "../../workspace/workspace"

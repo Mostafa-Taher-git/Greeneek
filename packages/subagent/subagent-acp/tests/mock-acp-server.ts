@@ -36,6 +36,17 @@
  *                        an arbitrary timeout (subprocess cold-start is variable).
  * - `MOCK_MISSING_SESSION_ID` — if `1`, return a malformed empty `session/new`
  *                        response to exercise startup rollback.
+ * - `MOCK_CONFIG_OPTIONS` — JSON array returned as `configOptions` from
+ *                        `session/new`, so discovery and model/effort selection
+ *                        run against a child that actually advertises options.
+ * - `MOCK_INITIALIZE_OVERRIDES` — JSON object merged into the `initialize`
+ *                        response, to script `agentCapabilities`, `authMethods`,
+ *                        and `agentInfo`.
+ * - `MOCK_SET_CONFIG_FILE` — path that receives one JSON line per
+ *                        `session/set_config_option` request, so a test can
+ *                        assert exactly which overrides reached the child.
+ * - `MOCK_PROMPT_FILE` — path touched when `prompt` is called, so a discovery
+ *                        test can prove the probe never prompted.
  * - `MOCK_FLUSH_ON_EOF` — if set, on stdin EOF the agent takes an async beat
  *                         (MOCK_FLUSH_DELAY_MS, default 150) simulating the real
  *                         acp-agent's EOF-driven quiesce+flush, then touches this
@@ -59,7 +70,7 @@
  */
 
 import { randomUUID } from 'node:crypto'
-import { existsSync, writeFileSync } from 'node:fs'
+import { appendFileSync, existsSync, writeFileSync } from 'node:fs'
 import { Readable, Writable } from 'node:stream'
 import {
   agent as createAcpAgentApp,
@@ -76,6 +87,8 @@ import {
   type PromptRequest,
   type PromptResponse,
   type RequestPermissionResponse,
+  type SessionConfigOption,
+  type SetSessionConfigOptionRequest,
   type StopReason,
   type ToolKind,
 } from '@agentclientprotocol/sdk'
@@ -101,6 +114,14 @@ const IGNORE_CANCEL = process.env.MOCK_IGNORE_CANCEL === '1'
 const TOOL_KIND = process.env.MOCK_TOOL_KIND as ToolKind | undefined
 const READY_FILE = process.env.MOCK_READY_FILE
 const FLUSH_ON_EOF = process.env.MOCK_FLUSH_ON_EOF
+const PROMPT_FILE = process.env.MOCK_PROMPT_FILE
+const SET_CONFIG_FILE = process.env.MOCK_SET_CONFIG_FILE
+const CONFIG_OPTIONS: SessionConfigOption[] | undefined = process.env.MOCK_CONFIG_OPTIONS === undefined
+  ? undefined
+  : JSON.parse(process.env.MOCK_CONFIG_OPTIONS) as SessionConfigOption[]
+const INITIALIZE_OVERRIDES: Partial<InitializeResponse> = process.env.MOCK_INITIALIZE_OVERRIDES === undefined
+  ? {}
+  : JSON.parse(process.env.MOCK_INITIALIZE_OVERRIDES) as Partial<InitializeResponse>
 // When MOCK_NEWSESSION_READY/GO are set, newSession touches READY then blocks
 // until GO appears — letting a test cancel mid-newSession deterministically.
 const NEWSESSION_GATE = process.env.MOCK_NEWSESSION_READY !== undefined && process.env.MOCK_NEWSESSION_GO !== undefined
@@ -121,6 +142,7 @@ function makeAgent() {
         protocolVersion: PROTOCOL_VERSION,
         agentCapabilities: { promptCapabilities: { image: false, audio: false, embeddedContext: false } },
         authMethods: [],
+        ...INITIALIZE_OVERRIDES,
       })
     },
     async newSession(params: NewSessionRequest): Promise<NewSessionResponse> {
@@ -133,13 +155,26 @@ function makeAgent() {
         while (!existsSync(NEWSESSION_GATE.go)) await new Promise(r => setTimeout(r, 10))
       }
       if (process.env.MOCK_MISSING_SESSION_ID === '1') return {} as NewSessionResponse
-      return { sessionId: process.env.MOCK_SESSION_ID ?? randomUUID() }
+      return {
+        sessionId: process.env.MOCK_SESSION_ID ?? randomUUID(),
+        ...CONFIG_OPTIONS === undefined ? {} : { configOptions: CONFIG_OPTIONS },
+      }
+    },
+    /**
+     * Record one configuration override the client applied.
+     * @param params - the `session/set_config_option` request.
+     * @returns the child's full option list after the change.
+     */
+    setConfigOption(params: SetSessionConfigOptionRequest): Promise<{ configOptions: SessionConfigOption[] }> {
+      if (SET_CONFIG_FILE !== undefined) appendFileSync(SET_CONFIG_FILE, `${JSON.stringify(params)}\n`)
+      return Promise.resolve({ configOptions: CONFIG_OPTIONS ?? [] })
     },
     authenticate(_params: AuthenticateRequest): Promise<void> {
       // No auth methods advertised; nothing to do.
       return Promise.resolve()
     },
     async prompt(params: PromptRequest, conn: AgentContext): Promise<PromptResponse> {
+      if (PROMPT_FILE !== undefined) writeFileSync(PROMPT_FILE, 'prompted')
       if (CRASH_ON_PROMPT) process.exit(1)
       if (WANT_PERMISSION) {
         // Ask the client to approve before answering; honor its decision. Under
@@ -226,6 +261,7 @@ createAcpAgentApp({ name: 'gnk-subagent-acp-test-agent' })
     return {}
   })
   .onRequest(methods.agent.session.new, ({ params }) => implementation.newSession(params))
+  .onRequest(methods.agent.session.setConfigOption, ({ params }) => implementation.setConfigOption(params))
   .onRequest(methods.agent.session.prompt, ({ params, client }) => implementation.prompt(params, client))
   .onNotification(methods.agent.session.cancel, ({ params }) => implementation.cancel(params))
   .connect(ndJsonStream(

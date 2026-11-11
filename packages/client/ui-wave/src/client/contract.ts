@@ -70,10 +70,19 @@ export interface FleetInjected {
   resume: (waveId: WaveId, maxTokensPerMember?: number, maxWaveTokens?: number) => Promise<ResumeOutcome>
   /** Open a member's child transcript through the current Session graph. */
   openChild: (childSessionId: SessionId) => void
+  /** Open the dedicated right sidebar (S5-11a); the sidebar surface calls it on the empty->running edge. */
+  openSidebar: () => void
+  /** Close the right sidebar in one click, collapsing its track. */
+  closeSidebar: () => void
 }
 
-/** Full props of the Fleet tab body, rendered inside the details panel. */
-export type FleetPanelProps = PropsRuntime<'conversation.details.fleet'>
+/** Full props of the reused fleet body (sidebar body and pill overlay). */
+export type FleetPanelProps = PropsRuntime<'rightbar'>
+  & InjectFace<FleetInjected>
+  & PropsLocale<'fleet'>
+
+/** Full props of the dedicated right-sidebar fleet surface (S5-11a). */
+export type FleetSidebarProps = PropsRuntime<'rightbar'>
   & InjectFace<FleetInjected>
   & PropsLocale<'fleet'>
 

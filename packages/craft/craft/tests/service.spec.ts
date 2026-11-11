@@ -351,6 +351,24 @@ describe('open', () => {
     await expect(craft.open({ app: 'pdfcraft', workspaceRoot: workspace })).resolves.toMatchObject({ app: 'pdfcraft' })
   })
 
+  it('reserves the concurrency slot before the provider spawn settles', async () => {
+    const { craft } = mount({ maxActiveApps: 1 })
+    const fake = fakeProvider()
+    craft.registerProvider(fake.provider)
+    const parked = Promise.withResolvers<Awaited<ReturnType<CraftHostProvider['open']>>>()
+    // The second open must reject while the first is still parked in spawn:
+    // the slot is already reserved, so the check does not depend on settlement.
+    fake.open.mockReturnValueOnce(parked.promise)
+    // Two opens race the same slot: only one may reach the provider.
+    const first = craft.open({ app: 'photocraft', workspaceRoot: workspace })
+    const second = craft.open({ app: 'pdfcraft', workspaceRoot: workspace })
+    await expect(second).rejects.toThrow(expect.objectContaining({ code: 'CRAFT_LIMIT_REACHED' }))
+    expect(fake.open).toHaveBeenCalledTimes(1)
+    parked.resolve({ transport: fake.transport, close: async () => {} })
+    const session = await first
+    await session.close()
+  })
+
   it('closes the host when discovery fails or the caller already aborted', async () => {
     const { craft } = mount()
     const failing = fakeProvider()

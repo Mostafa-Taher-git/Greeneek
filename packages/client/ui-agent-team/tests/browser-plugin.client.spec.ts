@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { SessionId } from '@greeneek/gnk-session/types'
 import { LocaleRuntime } from '@greeneek/gnk-client-locale/client'
 import { SlotRegistry } from '@greeneek/gnk-client-ui-renderer/client'
-import type { FleetFavorite, FleetProviderAvailability, FleetSettings, TeamMemberView as TeamRosterMember, TeamTaskId } from '@greeneek/gnk-agent-team/client'
+import type { FleetFavorite, FleetSettings, TeamMemberView as TeamRosterMember, TeamTaskId } from '@greeneek/gnk-agent-team/client'
 import type {} from '@greeneek/gnk-agent-team/remote'
 import { RemoteError } from '@greeneek/gnk-client-test-runtime'
 import type { TypertRemoteContribution } from '@greeneek/gnk-typert-protocol'
@@ -67,9 +67,15 @@ async function bench(options: {
         ? failure
         : { ok: true as const, value: view })
     },
-    fleetAvailability: answer('agentTeams/fleetAvailability', [
-      { name: 'spawn', state: 'ready', oneShot: true, continuable: true },
-    ] satisfies FleetProviderAvailability[]),
+    harnesses: answer('agentTeams/harnesses', [
+      { harness: 'greeneek', displayName: 'Greeneek', connection: 'greeneek', name: 'greeneek', state: 'ready', models: 'unknown', supportsAgentOptions: true, supportsContextFork: true, contextStrategies: ['fresh', 'fork'], source: 'registration', canProbe: false },
+    ]),
+    refreshHarnesses: answer('agentTeams/refreshHarnesses', [
+      { harness: 'greeneek', displayName: 'Greeneek', connection: 'greeneek', name: 'greeneek', state: 'ready', models: 'unknown', supportsAgentOptions: true, supportsContextFork: true, contextStrategies: ['fresh', 'fork'], source: 'registration', canProbe: false },
+    ]),
+    refreshHarness: answer('agentTeams/refreshHarness', [
+      { harness: 'greeneek', displayName: 'Greeneek', connection: 'greeneek', name: 'greeneek', state: 'ready', models: 'unknown', supportsAgentOptions: true, supportsContextFork: true, contextStrategies: ['fresh', 'fork'], source: 'registration', canProbe: false },
+    ]),
     launchFleetFavorite: answer('agentTeams/launchFleetFavorite', {
       ok: true,
       value: { members: [] },
@@ -77,7 +83,7 @@ async function bench(options: {
     fleetStarters: answer('agentTeams/fleetStarters', [{
       id: 'development',
       name: 'Development',
-      members: [{ name: 'implementer', description: 'write', prompt: 'go', provider: 'spawn' }],
+      members: [{ name: 'implementer', description: 'write', prompt: 'go', provider: 'greeneek', execution: 'harmony', context: 'fresh' }],
     }]),
     duplicateFleet: answer('agentTeams/duplicateFleet', {
       ok: true,
@@ -208,10 +214,16 @@ describe('ui-team browser plugin', () => {
     // useSyncExternalStore loops; and must change after a write.
     const beforeSave = fleet.getSnapshot()
     expect(fleet.getSnapshot()).toBe(beforeSave)
-    expect((await fleet.loadAvailability()).ok).toBe(true)
-    expect(b.calls).toContainEqual({ method: 'agentTeams/fleetAvailability', args: [] })
+    expect((await fleet.loadHarnesses()).ok).toBe(true)
+    expect(b.calls).toContainEqual({ method: 'agentTeams/harnesses', args: [] })
+    // Both probe gestures ride the generated namespace: the whole inventory
+    // refresh and the single-connection re-probe.
+    expect((await fleet.refreshHarnesses()).ok).toBe(true)
+    expect(b.calls).toContainEqual({ method: 'agentTeams/refreshHarnesses', args: [] })
+    expect((await fleet.refreshHarness('greeneek')).ok).toBe(true)
+    expect(b.calls).toContainEqual({ method: 'agentTeams/refreshHarness', args: ['greeneek'] })
     const favorite = {
-      id: 'review', name: 'Review', members: [{ name: 'worker', description: 'w', prompt: 'go', provider: 'spawn' }],
+      id: 'review', name: 'Review', members: [{ name: 'worker', description: 'w', prompt: 'go', provider: 'greeneek', execution: 'harmony' as const, context: 'fresh' as const }],
     }
     await fleet.save([favorite])
     expect(fleet.getSnapshot()).not.toBe(beforeSave)

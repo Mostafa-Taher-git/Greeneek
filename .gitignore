@@ -56,6 +56,10 @@ __pycache__/
 Thumbs.db
 .workbuddy-ai
 
+# Local test residue that can carry credentials
+cookies.txt
+.cov-tmp*/
+
 # Coverage and testing
 .coverage
 coverage/

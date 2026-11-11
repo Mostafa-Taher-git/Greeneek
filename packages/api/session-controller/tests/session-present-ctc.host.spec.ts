@@ -6,11 +6,15 @@ import { join } from 'node:path'
 import { Context } from '@greeneek/cordis'
 import AgentRegistry from '@greeneek/gnk-agent'
 import type { Agent, AgentFactory, AgentSetup, AgentStatus } from '@greeneek/gnk-agent'
-import { ToolPresentationLockedError } from '@greeneek/gnk-tools'
+import { CodeRuntime } from '@greeneek/gnk-code-runtime'
+import type { CodeRunRequest, CodeRunResult } from '@greeneek/gnk-code-runtime'
+import SystemPrompt from '@greeneek/gnk-system-prompt'
+import ToolRuntime, { RUN_CODE_NAME, ToolPresentationLockedError, defineTool } from '@greeneek/gnk-tools'
 import type { ToolPresentationMode } from '@greeneek/gnk-tools'
 import SessionStore, { SessionId } from '@greeneek/gnk-session'
 import type { Session } from '@greeneek/gnk-session'
 import { createScope } from '@greeneek/gnk-scope'
+import type { Scope } from '@greeneek/gnk-scope'
 import { describe, expect, it } from 'vitest'
 import { createSessionTestRemote } from './test-remote.ts'
 
@@ -314,5 +318,164 @@ describe('session.presentCtc opt-in', () => {
 
     expect(refused).toMatchObject({ ok: false, error: { code: 'gateway/internal', message: 'registry exploded' } })
     expect(declarations).toEqual([])
+  })
+})
+
+/** A runtime that never runs anything: presentation never dispatches. */
+class StubRegistryRuntime extends CodeRuntime {
+  readonly language = 'typescript'
+  readonly isolation = 'stub'
+
+  run(_request: CodeRunRequest): Promise<CodeRunResult> {
+    return Promise.resolve({ logs: [] })
+  }
+}
+
+/**
+ * A real registry beside the Session Controller: the toggle drives the actual
+ * `ToolRuntime` and `SystemPrompt`, so each state is read back as the model
+ * would receive it. Unlike the stub harness above, this factory mounts no
+ * fake `tools` provider — the agent scope inherits the global registry.
+ */
+async function harnessRealRegistry() {
+  const cwd = realpathSync(mkdtempSync(join(tmpdir(), 'gnk-session-present-real-')))
+  const ctx = new Context()
+  await ctx.plugin(SessionStore)
+  await ctx.plugin(AgentRegistry)
+  await ctx.plugin(SystemPrompt, { persona: '' })
+  await ctx.plugin(ToolRuntime, {})
+  await ctx.plugin(StubRegistryRuntime)
+  ctx.tools.register(defineTool({
+    name: 'echo',
+    description: 'Echo tool.',
+    parameters: { value: { type: 'string', required: true } },
+    output: { schema: { type: 'string' }, render: (_args, value) => [{ type: 'text', text: value }] },
+    execute: args => Promise.resolve(args.value),
+  }))
+
+  const disposals = new Map<SessionId, () => Promise<void>>()
+  const own = async (rawSession: Session, setup?: AgentSetup) => {
+    const agent = stubAgent(rawSession)
+    // Mint the scope under an injecting fiber, the way `gnk-tools` tests do:
+    // the scope's parent must carry `tools`/`systemPrompt` in its store for
+    // `agent.ctx.tools` property access to resolve.
+    let scope!: Scope
+    const fiber = ctx.plugin(Object.assign((inner: Context) => {
+      scope = createScope(inner, agent)
+    }, { inject: ['tools', 'systemPrompt'] }))
+    await fiber.await()
+    const agentCtx = scope.ctx.extend({ agent })
+    ;(agent as { ctx?: Context }).ctx = agentCtx
+    await setup?.(agentCtx)
+    const unregister = ctx.agents.register(agent)
+    const dispose = async (): Promise<void> => {
+      unregister()
+      await scope.dispose()
+    }
+    disposals.set(rawSession.id, dispose)
+    return { agent, dispose }
+  }
+
+  const factory: AgentFactory = {
+    async createAgent(_ownerCtx, options) {
+      const session = ctx.sessions.create(
+        options.sessionId,
+        options.meta === undefined ? {} : { meta: options.meta },
+      )
+      return own(session, options.setup)
+    },
+    async resume(_ownerCtx, options) {
+      const session = ctx.sessions.get(options.resumeSessionId)
+      if (session === undefined) {
+        throw new Error(`test harness resumed session "${options.resumeSessionId}" that the store no longer holds`)
+      }
+      return own(session, options.setup)
+    },
+  }
+  ctx.agents.setFactory(factory)
+  const remote = createSessionTestRemote(ctx, {
+    defaultModelSelection: () => ({ provider: 'test', model: 'test-model' }),
+    cwd,
+  })
+  return {
+    ctx,
+    remote,
+    disposeAgent: async (sessionId: SessionId) => { await disposals.get(sessionId)?.() },
+  }
+}
+
+async function assembled(ctx: Context, sessionId: SessionId) {
+  const agent = ctx.agents.get(sessionId)
+  if (agent === undefined) throw new Error(`expected a live agent for "${sessionId}"`)
+  return await ctx.systemPrompt.assemble({ scope: agent })
+}
+
+describe('session.presentCtc against the real registry', () => {
+  it('carries the run_code schema and the SDK section through the toggle cycle', async () => {
+    const { ctx, remote } = await harnessRealRegistry()
+    await remote.create({ sessionId: SessionId('s-registry') })
+
+    const initial = await assembled(ctx, SessionId('s-registry'))
+    expect(initial.tools.map(tool => tool.name)).toEqual(['echo'])
+    expect(initial.sections.some(section => section.name === 'tools:sdk')).toBe(false)
+
+    const enableResult = await remote.presentCtc({ sessionId: SessionId('s-registry'), enabled: true })
+    expect(enableResult).toMatchObject({ ok: true })
+    const on = await assembled(ctx, SessionId('s-registry'))
+    expect(on.tools.map(tool => tool.name).sort()).toEqual(['echo', RUN_CODE_NAME])
+    const runCode = on.tools.find(tool => tool.name === RUN_CODE_NAME)!
+    expect(runCode.description).toContain('Execute a TypeScript program')
+    expect(runCode.parameters).toMatchObject({
+      properties: { code: expect.anything() as unknown, description: expect.anything() as unknown },
+    })
+    const sdkOn = on.sections.find(section => section.name === 'tools:sdk')?.text ?? ''
+    expect(sdkOn).toContain('declare const tools')
+    expect(sdkOn).toContain('echo')
+
+    await remote.presentCtc({ sessionId: SessionId('s-registry'), enabled: false })
+    const off = await assembled(ctx, SessionId('s-registry'))
+    expect(off.tools.map(tool => tool.name)).toEqual(['echo'])
+    expect(off.sections.some(section => section.name === 'tools:sdk')).toBe(false)
+
+    await remote.presentCtc({ sessionId: SessionId('s-registry'), enabled: true })
+    const again = await assembled(ctx, SessionId('s-registry'))
+    expect(again.tools.map(tool => tool.name).sort()).toEqual(['echo', RUN_CODE_NAME])
+    expect(again.sections.find(section => section.name === 'tools:sdk')?.text ?? '').toContain('declare const tools')
+  })
+
+  it('replays the recorded toggle cycle on resume', async () => {
+    const { ctx, remote, disposeAgent } = await harnessRealRegistry()
+    await remote.create({ sessionId: SessionId('s-replay') })
+    await remote.presentCtc({ sessionId: SessionId('s-replay'), enabled: true })
+    await remote.presentCtc({ sessionId: SessionId('s-replay'), enabled: false })
+    await remote.presentCtc({ sessionId: SessionId('s-replay'), enabled: true })
+
+    const log = await ctx.sessionQuery.readSession(SessionId('s-replay'))
+    expect(log.events.filter(event => event.type === 'tool/present-as')
+      .map(event => (event.data as { to: string }).to)).toEqual(['both', 'native', 'both'])
+    using observed = await ctx.sessionQuery.observeSession(SessionId('s-replay'))
+    expect((observed.projections?.values as Record<string, unknown>).presentAs).toBe('both')
+
+    await disposeAgent(SessionId('s-replay'))
+    // Re-adopting the stored session resumes it and silently re-declares the
+    // recorded presentation, appending no new event.
+    await remote.create({ sessionId: SessionId('s-replay') })
+    const replayed = await assembled(ctx, SessionId('s-replay'))
+    expect(replayed.tools.map(tool => tool.name).sort()).toEqual(['echo', RUN_CODE_NAME])
+    expect(replayed.sections.find(section => section.name === 'tools:sdk')?.text ?? '').toContain('declare const tools')
+    const after = await ctx.sessionQuery.readSession(SessionId('s-replay'))
+    expect(after.events.filter(event => event.type === 'tool/present-as')).toHaveLength(3)
+
+    // A session that ends on `native` resumes without the transport.
+    await remote.create({ sessionId: SessionId('s-replay-native') })
+    await remote.presentCtc({ sessionId: SessionId('s-replay-native'), enabled: true })
+    await remote.presentCtc({ sessionId: SessionId('s-replay-native'), enabled: false })
+    await disposeAgent(SessionId('s-replay-native'))
+    await remote.create({ sessionId: SessionId('s-replay-native') })
+    const replayedNative = await assembled(ctx, SessionId('s-replay-native'))
+    expect(replayedNative.tools.map(tool => tool.name)).toEqual(['echo'])
+    expect(replayedNative.sections.some(section => section.name === 'tools:sdk')).toBe(false)
+    using nativeObserved = await ctx.sessionQuery.observeSession(SessionId('s-replay-native'))
+    expect((nativeObserved.projections?.values as Record<string, unknown>).presentAs).toBe('native')
   })
 })

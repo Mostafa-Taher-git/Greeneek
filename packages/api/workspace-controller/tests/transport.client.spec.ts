@@ -31,6 +31,8 @@ import type {
   WorkspaceInsertBeforeRequest,
   WorkspaceInsertSessionBeforeRequest,
   WorkspaceOrderValue,
+  WorkspacePinSessionRequest,
+  WorkspacePinSessionValue,
   WorkspaceRenameRequest,
   WorkspaceId,
   WorkspaceValue,
@@ -108,6 +110,7 @@ function accepts(overrides: Partial<WorkspaceFollowSink> = {}): WorkspaceFollowS
     removeView: ignore,
     replaceOrder: ignore,
     replaceArchived: ignore,
+    replacePinned: ignore,
     ...overrides,
   }
 }
@@ -143,6 +146,10 @@ class ScriptedWorkspaceRemote implements WorkspaceRemote {
   }
 
   deleteSession(_request: WorkspaceDeleteSessionRequest): Promise<RemoteResult<WorkspaceDeleteSessionValue>> {
+    throw new Error('unused')
+  }
+
+  pinSession(_request: WorkspacePinSessionRequest): Promise<RemoteResult<WorkspacePinSessionValue>> {
     throw new Error('unused')
   }
 
@@ -188,6 +195,10 @@ class CommandWorkspaceRemote implements WorkspaceRemote {
 
   readonly deleteSession = vi.fn<WorkspaceRemote['deleteSession']>(_request => Promise.resolve(remoteOk({
     archivedSessionIds: [],
+  })))
+
+  readonly pinSession = vi.fn<WorkspaceRemote['pinSession']>(request => Promise.resolve(remoteOk({
+    pinnedSessionIds: [request.sessionId],
   })))
 
   async *follow(_signal?: AbortSignal): AsyncIterable<WorkspaceFollowFrame> {}

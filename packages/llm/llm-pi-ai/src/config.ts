@@ -243,7 +243,11 @@ const thinkingBudgets = z.object({
  * thinking state, which makes a template-driven gateway configurable without
  * restating its template.
  */
-const chatTemplateKwarg: z<ChatTemplateKwargValue> = z.union([
+// pi-ai 1.5 models `$var` as required and `omitWhenOff` as optional; schemastery's
+// object keys are nullable-optional, which is wider than that target under
+// exactOptionalPropertyTypes. The cast keeps the runtime validation (required
+// `$var`, boolean `omitWhenOff`) while parking the wider static type at this boundary.
+const chatTemplateKwarg = z.union([
   z.string(),
   z.number(),
   z.boolean(),
@@ -252,7 +256,7 @@ const chatTemplateKwarg: z<ChatTemplateKwargValue> = z.union([
     $var: z.union(CHAT_TEMPLATE_VARS).required(),
     omitWhenOff: z.boolean(),
   }),
-])
+]) as unknown as z<ChatTemplateKwargValue>
 
 const compatProfile: z<PiAiCompatProfile> = z.object({
   supportsStore: z.boolean(),

@@ -24,7 +24,7 @@
       "path": "../../interaction/commands"
     },
     {
-      "path": "../../core/session"
+      "path": "../../core/session/tsconfig.host.json"
     },
     {
       "path": "../../runtime-diagnostics/invariants"

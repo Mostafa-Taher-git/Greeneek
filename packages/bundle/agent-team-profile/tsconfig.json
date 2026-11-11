@@ -12,7 +12,7 @@
       "path": "../../../vendor/cordis"
     },
     {
-      "path": "../../subagent/agent-team"
+      "path": "../../subagent/agent-team/tsconfig.host.json"
     },
     {
       "path": "../../subagent/tool-agent-team"

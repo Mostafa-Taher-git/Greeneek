@@ -387,6 +387,34 @@ describe('FleetMirror sampling', () => {
     expect(remote.list).not.toHaveBeenCalled()
     mirror.dispose()
   })
+
+  it('holds the idle cadence when an attention poll collapses onto a settled in-flight sample', async () => {
+    const { mirror, remote } = bench()
+    remote.list.mockResolvedValue({ ok: true, value: [wave({ closed: true })] })
+    mirror.subscribe(() => {})
+    await vi.advanceTimersByTimeAsync(0)
+    await flushWindow()
+    expect(mirror.getSnapshot().stoppable).toBe(false)
+
+    let resolveList: ((value: { ok: true; value: readonly WaveView[] }) => void) | undefined
+    remote.list.mockImplementationOnce(() => new Promise((resolve) => { resolveList = resolve }))
+    mirror.refresh()
+    await vi.advanceTimersByTimeAsync(0)
+    mirror.refresh()
+    await vi.advanceTimersByTimeAsync(0)
+    resolveList?.({ ok: true, value: [wave({ closed: true })] })
+    await flushWindow()
+    const samples = remote.list.mock.calls.length
+    await vi.advanceTimersByTimeAsync(1_000)
+    await flushWindow()
+    // A settled fleet keeps the idle cadence (5s), not the live one (1s):
+    // no follow-up sample may appear after only 1s.
+    expect(remote.list.mock.calls.length).toBe(samples)
+    await vi.advanceTimersByTimeAsync(5_000)
+    await flushWindow()
+    expect(remote.list.mock.calls.length).toBeGreaterThan(samples)
+    mirror.dispose()
+  })
 })
 
 describe('FleetMirror control verbs', () => {

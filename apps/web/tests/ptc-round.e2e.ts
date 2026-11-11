@@ -1,6 +1,10 @@
-// PTC mode browser round trip with nested sub-calls and details selection.
-// Record: GNK_SNAPSHOT=record rewrites session.jsonl, then a keyless
-// GNK_SNAPSHOT=refresh regenerates ui.expected.md.
+// Standard composition with the CTC presentation (`both`) browser round trip
+// with nested sub-calls and details selection. S1-20 repoints this scenario
+// from the deleted `ptc` preset to Standard + CTC; its committed fixture still
+// records the pre-repoint composition, so replay stays BLOCKED until a POSIX
+// re-record refreshes it. Record (POSIX): GNK_SNAPSHOT=record rewrites
+// session.jsonl, then a keyless GNK_SNAPSHOT=refresh regenerates
+// ui.expected.md.
 import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import type { Browser, Page } from 'playwright'
@@ -21,7 +25,7 @@ const MODE = webSnapshotMode()
 const PROMPT = 'Using ONE run_code program: run bash `echo CODE_ROUND_OK`, then read the file missing.txt '
   + 'catching its error in the program. Return an object with both outcomes. Then reply DONE and stop.'
 
-describe('web e2e: PTC mode round renders nested sub-calls', () => {
+describe('web e2e: CTC round renders nested sub-calls', () => {
   let scaffold: WebScaffold
   let browser: Browser
   let page: Page
@@ -30,7 +34,8 @@ describe('web e2e: PTC mode round renders nested sub-calls', () => {
 
   beforeAll(async () => {
     scaffold = await launchWebScaffold({
-      agentPresets: { roots: [], default: 'ptc' },
+      agentPresets: { roots: [], default: 'standard' },
+      toolsMode: 'both',
       compareReplaySession: true,
       ...(MODE === 'record' ? {} : { replayFixture: FIXTURE, paceMs: 15 }),
     })

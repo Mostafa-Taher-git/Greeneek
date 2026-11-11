@@ -11,7 +11,7 @@ import { AsyncLocalStorage } from 'node:async_hooks'
 import { isPromise } from 'node:util/types'
 import { scopeTarget } from '@greeneek/gnk-scope'
 import type { Scoped } from '@greeneek/gnk-scope'
-import type { SessionEvent, SessionId, SessionLogOffset } from '@greeneek/gnk-session'
+import type { SessionEvent, SessionId, SessionLogOffset } from '@greeneek/gnk-session/types'
 import type { Agent } from './types.ts'
 import type { AgentOptions } from './runtime-types.ts'
 

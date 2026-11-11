@@ -232,6 +232,13 @@ Host service backing the generated `ctx.remote.workspace` namespace.
 @Remote('archiveSession') archiveSession(request: WorkspaceArchiveSessionRequest): Promise<WorkspaceArchiveValue>
 
 /**
+ * Pin or unpin one known Session.
+ * @param request - Session identity and requested pin state.
+ * @returns the complete resulting pin set.
+ */
+@Remote('pinSession') pinSession(request: WorkspacePinSessionRequest): Promise<WorkspacePinSessionValue>
+
+/**
  * Delete one known Session permanently with its stored log.
  * @param request - Session identity to delete.
  * @returns the complete resulting archive set.
@@ -310,6 +317,18 @@ insertBefore(id: WorkspaceId, beforeId?: WorkspaceId): Promise<readonly Workspac
  * @returns resolution after durability.
  */
 archiveSession(sessionId: SessionId): Promise<void>
+
+/**
+ * Pin or unpin one session durably.
+ *
+ * The session must exist (live or in session persistence); its workspace
+ * accounting — or lack of one — is irrelevant. A request that already
+ * matches the stored state resolves without writing.
+ * @param sessionId - The session to pin or unpin.
+ * @param pinned - The requested pin state.
+ * @returns resolution after durability.
+ */
+setSessionPinned(sessionId: SessionId, pinned: boolean): Promise<void>
 
 /**
  * Delete one session durably: its stored log (plus never-materialized

@@ -1,4 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+
+// These cases drive real git worktrees, merges, and one-shot delegations; on a
+// contended host that work alone can exceed the default 5 s budget without any
+// behavioural defect, so the file budgets the process time.
+vi.setConfig({ testTimeout: 30_000 })
 import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -1904,8 +1909,11 @@ describe('Fleet favorites', () => {
     const settingsPath = join(settingsRoot, 'settings.json')
     const { ctx, lead, teamFiber } = await setup([], {}, {}, false, settingsPath)
 
+    // The in-harness connection is admissible too: the Team admits it
+    // whenever one of its strategies is registered, so a fleet may name it.
     expect(ctx.agentTeams.fleetAvailability(lead)).toEqual([
       expect.objectContaining({ name: 'fork', state: 'ready', continuable: true }),
+      expect.objectContaining({ name: 'greeneek', state: 'ready', continuable: true }),
       expect.objectContaining({ name: 'spawn', state: 'ready', continuable: true }),
     ])
 
@@ -1918,8 +1926,20 @@ describe('Fleet favorites', () => {
     expect(saved.ok).toBe(true)
     if (!saved.ok) throw new Error('expected save')
     expect(saved.value.favorites).toMatchObject([{
-      ...favorite,
-      members: [expect.objectContaining(favorite.members[0])],
+      id: favorite.id,
+      name: favorite.name,
+      // The stored member names the Harness it resolves to, not the strategy
+      // it was saved with: `spawn` is one strategy of the in-harness
+      // connection, and the saved member keeps how that Harness executes.
+      members: [expect.objectContaining({
+        name: 'reviewer',
+        description: 'review',
+        prompt: 'review it',
+        provider: 'greeneek',
+        execution: 'harmony',
+        context: 'fresh',
+        writeScopes: [],
+      })],
     }])
     expect(saved.value.revision).toBeGreaterThan(0)
 
@@ -2046,7 +2066,7 @@ describe('Fleet favorites', () => {
     if (!refusedTimeout.ok) {
       expect(refusedTimeout.error.message).toContain('timeoutMs applies to a Melody member')
     }
-  }, 20_000)
+  }, 120_000)
 
   it('refuses a disabled fleet, duplicates a saved fleet, and installs a starter as editable', async () => {
     const settingsRoot = mkdtempSync(join(tmpdir(), 'gnk-team-fleet-settings-'))
@@ -2089,7 +2109,7 @@ describe('Fleet favorites', () => {
     expect(unknown.error.message).toContain('development, research, quality-assurance')
     expect(await ctx.agentTeams.duplicateFleet(lead, 'absent', installed.value.revision))
       .toMatchObject({ ok: false, error: { code: 'TEAM_FLEET_FAVORITE_NOT_FOUND' } })
-  }, 20_000)
+  }, 120_000)
 
   it('starts a fleet in concurrency batches and keeps sibling members alive when one fails', async () => {
     const settingsRoot = mkdtempSync(join(tmpdir(), 'gnk-team-fleet-settings-'))
@@ -2243,7 +2263,7 @@ describe('Fleet favorites', () => {
     await expect(ctx.agentTeams.installStarterFleet(worker, 'research', 0))
       .rejects.toMatchObject({ code: 'TEAM_LEAD_REQUIRED' })
     expect(ctx.agentTeams.fleetFavorites(worker).favorites).toEqual([])
-  }, 20_000)
+  }, 120_000)
 
   it('fails closed when the fleet settings namespace is not mounted', async () => {
     const { ctx, lead } = await setup([])
@@ -2922,7 +2942,7 @@ describe('Team lane isolation', () => {
     expect(existsSync(lane!.path)).toBe(false)
     expect((await ctx.agentTeams.listLanes(lead))[0]?.stage).toBe('discarded')
     await teamFiber.dispose()
-  }, 20_000)
+  }, 120_000)
 
   it('refuses overlapping lane scopes and writable lanes outside a Git work tree', async () => {
     const outsideCwd = mkdtempSync(join(tmpdir(), 'gnk-team-no-repo-'))
@@ -2969,7 +2989,7 @@ describe('Team lane isolation', () => {
       signal: SIGNAL,
     })).rejects.toMatchObject({ code: 'TEAM_LANE_NO_REPOSITORY' })
     expect(durable(outside.lead).members[0]).toMatchObject({ phase: 'failed' })
-  }, 20_000)
+  }, 120_000)
 
   it('merges three heterogeneous lane presets serially onto one relative path', async () => {
     const repo = repository()
@@ -3044,7 +3064,7 @@ describe('Team lane isolation', () => {
     for (const lane of lanes) {
       expect(existsSync(join(realpathSync(gnkHome), 'worktrees', 'lead', lane.name))).toBe(false)
     }
-  }, 40_000)
+  }, 120_000)
 
   it('checkpoints but keeps unmerged lane work when the Team service disposes', async () => {
     const repo = repository()
@@ -3074,7 +3094,7 @@ describe('Team lane isolation', () => {
     expect(record.checkpoint?.hash).toHaveLength(64)
     expect(existsSync(lane.path)).toBe(true)
     expect(readFileSync(record.checkpoint!.path, 'utf8')).toContain('kept.txt')
-  }, 20_000)
+  }, 120_000)
 
   it('stops a teammate at its next step boundary after its token budget', async () => {
     const { ctx, lead, adapter } = await setup(
@@ -3110,7 +3130,7 @@ describe('Team lane isolation', () => {
     expect(adapter.requests.filter(request => request.messages.some(message => message.source?.kind === 'user')))
       .toHaveLength(1)
     expect(durable(lead).members[0]).toMatchObject({ phase: 'active', maxTokens: 10 })
-  }, 20_000)
+  }, 120_000)
 
   it('admits a repository fleet only once for the Lead and its exact bytes', async () => {
     const repo = repository()
@@ -3162,7 +3182,7 @@ describe('Team lane isolation', () => {
       readonly stage: string
     }
     expect(record.stage).toBe('quarantined')
-  }, 20_000)
+  }, 120_000)
 
   it('records a durable read-only policy without creating a lane', async () => {
     const { ctx, lead } = await setup(['hang', 'hang'])

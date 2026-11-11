@@ -196,7 +196,7 @@ export class FleetMirror implements HostObservable<FleetSnapshot> {
    */
   private async poll(): Promise<void> {
     if (this.inFlight) {
-      this.schedule(LIVE_POLL_MS)
+      this.schedule(this.latest.stoppable ? LIVE_POLL_MS : IDLE_POLL_MS)
       return
     }
     this.inFlight = true

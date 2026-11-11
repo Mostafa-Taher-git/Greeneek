@@ -1,7 +1,7 @@
 import { PassThrough, Writable } from 'node:stream'
 import { describe, expect, it, vi } from 'vitest'
 import { CraftError } from '@greeneek/gnk-craft'
-import { JsonRpcCraftTransport } from '../src/transport.ts'
+import { JsonRpcCraftTransport, MAX_LINE_CHARS } from '../src/transport.ts'
 import type { CraftTransportOptions } from '../src/transport.ts'
 
 const baseOptions: CraftTransportOptions = {
@@ -176,12 +176,12 @@ describe('JsonRpcCraftTransport', () => {
     await transport.close()
   })
 
-  it('lists tools and fills safe defaults for omitted fields', async () => {
+  it('lists tools from the serve registry and fills safe defaults', async () => {
     const app = createProcess((request, respond) => {
       respond(success(request.id, {
-        tools: [
-          { name: 'render_preview', description: 'Render a preview', inputSchema: { type: 'object' } },
-          { name: 'screenshot' },
+        commands: [
+          { id: 'render_preview', description: 'Render a preview', input: { type: 'object' } },
+          { id: 'screenshot' },
         ],
       }))
     })
@@ -193,7 +193,8 @@ describe('JsonRpcCraftTransport', () => {
       { name: 'render_preview', description: 'Render a preview', inputSchema: { type: 'object' } },
       { name: 'screenshot', description: '', inputSchema: { type: 'object' } },
     ])
-    expect(JSON.parse(app.writes[0] as string)).toMatchObject({ method: 'command_list', params: {} })
+    // The serve protocol answers engine.commands; command_list is never sent.
+    expect(JSON.parse(app.writes[0] as string)).toMatchObject({ method: 'engine.commands', params: {} })
   })
 
   it('reads the raw serve-shaped command registry without an MCP tools envelope', async () => {
@@ -205,6 +206,66 @@ describe('JsonRpcCraftTransport', () => {
 
     await expect(transport.readCommandRegistry()).resolves.toEqual(registry)
     expect(JSON.parse(app.writes[0] as string)).toMatchObject({ method: 'engine.commands', params: {} })
+  })
+
+  it('keeps the legacy direct list call when no registry method was observed', async () => {
+    const app = createProcess((request, respond) => {
+      respond(success(request.id, { tools: [{ name: 'legacy', description: 'Legacy', inputSchema: { type: 'object' } }] }))
+    })
+    const transport = new JsonRpcCraftTransport(app.process, { ...baseOptions, registryMethod: null })
+    await expect(transport.listTools()).resolves.toEqual([
+      { name: 'legacy', description: 'Legacy', inputSchema: { type: 'object' } },
+    ])
+    expect(JSON.parse(app.writes[0] as string)).toMatchObject({ method: 'command_list', params: {} })
+  })
+
+  it('rejects a legacy list response without a tools array', async () => {
+    const app = createProcess((request, respond) => {
+      respond(success(request.id, {}))
+    })
+    const transport = new JsonRpcCraftTransport(app.process, { ...baseOptions, registryMethod: null })
+    await expect(transport.listTools()).rejects.toThrow(/no tool catalog/)
+  })
+
+  it('rejects an MCP list response without a tools array', async () => {
+    const app = createProcess((request, respond) => {
+      if (request.method === 'initialize') { respond(success(request.id, { protocolVersion: '2024-11-05' })); return }
+      respond(success(request.id, {}))
+    })
+    const transport = new JsonRpcCraftTransport(app.process, { ...baseOptions, protocol: 'mcp', registryMethod: null })
+    await expect(transport.listTools()).rejects.toThrow(/no tool catalog/)
+  })
+
+  it('rejects a legacy list entry that is not a named tool', async () => {
+    const app = createProcess((request, respond) => {
+      respond(success(request.id, { tools: [null] }))
+    })
+    const transport = new JsonRpcCraftTransport(app.process, { ...baseOptions, registryMethod: null })
+    await expect(transport.listTools()).rejects.toThrow(/invalid tool at index 0/)
+  })
+
+  it('rejects a non-object list result on both transports', async () => {
+    const legacy = createProcess((request, respond) => {
+      respond(success(request.id, 42))
+    })
+    await expect(new JsonRpcCraftTransport(legacy.process, { ...baseOptions, registryMethod: null }).listTools())
+      .rejects.toThrow(/no tool catalog/)
+    const mcp = createProcess((request, respond) => {
+      if (request.method === 'initialize') { respond(success(request.id, { protocolVersion: '2024-11-05' })); return }
+      respond(success(request.id, 42))
+    })
+    await expect(new JsonRpcCraftTransport(mcp.process, { ...baseOptions, protocol: 'mcp', registryMethod: null }).listTools())
+      .rejects.toThrow(/no tool catalog/)
+  })
+
+  it('fills safe defaults for non-string description and schema', async () => {
+    const app = createProcess((request, respond) => {
+      respond(success(request.id, { tools: [{ name: 'odd', description: 42, inputSchema: 'bad' }] }))
+    })
+    const transport = new JsonRpcCraftTransport(app.process, { ...baseOptions, registryMethod: null })
+    await expect(transport.listTools()).resolves.toEqual([
+      { name: 'odd', description: '', inputSchema: { type: 'object' } },
+    ])
   })
 
   it('rejects a registry read when no method was observed', async () => {
@@ -219,13 +280,13 @@ describe('JsonRpcCraftTransport', () => {
       respond(success(request.id, {}))
     })
     const transport = new JsonRpcCraftTransport(app.process, baseOptions)
-    await expect(transport.listTools()).rejects.toThrow(/no tool catalog/)
+    await expect(transport.listTools()).rejects.toThrow(/carries no tools or commands array/)
 
     const nonObject = createProcess((request, respond) => {
       respond(success(request.id, null))
     })
     await expect(new JsonRpcCraftTransport(nonObject.process, baseOptions).listTools())
-      .rejects.toThrow(/no tool catalog/)
+      .rejects.toThrow(/is not a JSON value/)
   })
 
   it('rejects catalog entries that are not named tools', async () => {
@@ -233,13 +294,13 @@ describe('JsonRpcCraftTransport', () => {
       respond(success(request.id, { tools: [null] }))
     })
     await expect(new JsonRpcCraftTransport(app.process, baseOptions).listTools())
-      .rejects.toThrow(/invalid tool at index 0/)
+      .rejects.toThrow(/invalid command at index 0/)
 
     const emptyName = createProcess((request, respond) => {
       respond(success(request.id, { tools: [{ name: '   ' }] }))
     })
     await expect(new JsonRpcCraftTransport(emptyName.process, baseOptions).listTools())
-      .rejects.toThrow(/invalid tool at index 0/)
+      .rejects.toThrow(/invalid command at index 0/)
   })
 
   it('calls a tool with its raw name and projects content, artifacts, and isError', async () => {
@@ -488,5 +549,30 @@ describe('JsonRpcCraftTransport', () => {
     app.push(payload.subarray(split))
 
     await expect(pending).resolves.toEqual([expect.objectContaining({ name: 'café' })])
+  })
+
+  it('fails the transport when an app line outgrows the bound', async () => {
+    const app = createProcess()
+    const transport = new JsonRpcCraftTransport(app.process, baseOptions)
+    const pending = transport.listTools()
+    await tick()
+    const rejection = expect(pending).rejects.toThrow(/line bound/)
+    // A line with no newline past the bound must fail rather than buffer forever.
+    app.push('x'.repeat(MAX_LINE_CHARS + 1))
+    await rejection
+    expect(app.terminate).toHaveBeenCalled()
+  })
+
+  it('still serves a line that ends just at the bound', async () => {
+    const app = createProcess()
+    const transport = new JsonRpcCraftTransport(app.process, baseOptions)
+    const pending = transport.listTools()
+    await tick()
+    const request = JSON.parse(app.writes[0] as string) as WireRequest
+    const base = JSON.stringify({ jsonrpc: '2.0', id: request.id, result: { tools: [] }, pad: '' })
+    const padding = MAX_LINE_CHARS - base.length - 1
+    app.push(`${JSON.stringify({ jsonrpc: '2.0', id: request.id, result: { tools: [] }, pad: 'y'.repeat(padding) })}\n`)
+
+    await expect(pending).resolves.toEqual([])
   })
 })

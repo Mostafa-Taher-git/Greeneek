@@ -222,11 +222,12 @@ describe('the shipped Web composition', () => {
   it('supplies the shipped presets, and only those, from the system root', async () => {
     const listed = await ctx.agentPresets.list()
 
-    // The shipped system root carries seven presets: `army` and `maestro`
-    // joined `standard`/`ptc`/`cordis`/`instructor`/`pixels-designer` when the
-    // delegation presets shipped, and the roster is platform-independent.
+    // The shipped system root carries six presets: `army` and `maestro`
+    // joined `standard`/`cordis`/`instructor`/`pixels-designer` when the
+    // delegation presets shipped, and the `ptc` preset is deleted. The roster
+    // is platform-independent.
     expect(listed.filter(preset => preset.trust === 'system').map(preset => preset.id).sort())
-      .toEqual(['army', 'cordis', 'instructor', 'maestro', 'pixels-designer', 'ptc', 'standard'])
+      .toEqual(['army', 'cordis', 'instructor', 'maestro', 'pixels-designer', 'standard'])
     expect(listed.find(preset => preset.id === 'narrow')?.trust).toBe('user')
     expect(ctx.agentPresets.defaultId).toBe('standard')
   })
@@ -360,49 +361,46 @@ describe('the shipped Web composition', () => {
     }
   })
 
-  it('presents `ptc` as PTC mode without disturbing a native session beside it', async () => {
-    const coded = await ctx.agents.create({
-      sessionId: SessionId('preset-ptc'),
-      setup: agentCtx => ctx.agentPresets.mount(agentCtx, 'ptc').then(() => undefined),
+  it('presents CTC without disturbing a native session beside it', async () => {
+    const ctc = await ctx.agents.create({
+      sessionId: SessionId('preset-ctc-isolated'),
+      setup: async (agentCtx) => {
+        await ctx.agentPresets.mount(agentCtx, 'standard')
+        agentCtx.tools.presentAs('both')
+      },
     })
     const native = await ctx.agents.create({
-      sessionId: SessionId('preset-ptc-native'),
+      sessionId: SessionId('preset-ctc-native'),
       setup: agentCtx => ctx.agentPresets.mount(agentCtx, 'standard').then(() => undefined),
     })
     try {
-      // One tool reaches the MODEL: the transport. The registry's catalog for
-      // this agent is unchanged — PTC mode collapses the presentation, not
-      // the capabilities — so the assembly is what carries the claim.
-      const assembly = await ctx.systemPrompt.assemble({ scope: coded.agent })
-      expect(assembly.tools.map(tool => tool.name)).toEqual(['run_code'])
-      expect(toolNames(ctx, coded.agent)).not.toContain('str_replace_editor')
-      expect(ctx.commands.find(coded.agent, 'goal')).toBeDefined()
+      // CTC adds the transport beside every ordinary tool; the registry's
+      // catalog never changes — presentation only — so the assembly carries
+      // the claim.
+      const assembly = await ctx.systemPrompt.assemble({ scope: ctc.agent })
+      expect(assembly.tools.map(tool => tool.name)).toContain('run_code')
+      expect(assembly.tools.map(tool => tool.name)).toContain('read')
       const sdk = assembly.sections.find(section => section.name === 'tools:sdk')?.text ?? ''
-      expect(sdk).not.toContain('str_replace_editor')
       expect(sdk).toContain('web_search')
 
       // The presentation is this agent's alone: the deployment default is
       // native, and the session composed from `standard` still sees it.
       const nativeAssembly = await ctx.systemPrompt.assemble({ scope: native.agent })
-      expect(nativeAssembly.tools.map(tool => tool.name)).toContain('bash')
+      expect(nativeAssembly.tools.map(tool => tool.name)).toContain('read')
       expect(nativeAssembly.tools.map(tool => tool.name)).not.toContain('run_code')
       expect(nativeAssembly.sections.some(section => section.name === 'tools:sdk')).toBe(false)
     } finally {
       await native.dispose()
-      await coded.dispose()
+      await ctc.dispose()
     }
   })
 
-  it('carries the whole `ptc` surface plus the ordinary catalog when CTC is declared', async () => {
+  it('carries the transport plus the ordinary catalog when CTC is declared', async () => {
     // The parity claim for the per-session opt-in: `presentAs('both')` on a
-    // `standard` composition must reach every tool the `ptc` preset sends and
-    // keep the tools that preset gives up. Read at the assembly, which is what
-    // the model receives; `ctx.tools.schemas` is the capability catalog and
-    // presentation never changes it.
-    const coded = await ctx.agents.create({
-      sessionId: SessionId('preset-ctc-parity-ptc'),
-      setup: agentCtx => ctx.agentPresets.mount(agentCtx, 'ptc').then(() => undefined),
-    })
+    // `standard` composition reaches the model with the whole capability
+    // catalog plus `run_code` and its generated SDK. Read at the assembly,
+    // which is what the model receives; `ctx.tools.schemas` is the capability
+    // catalog and presentation never changes it.
     const ctc = await ctx.agents.create({
       sessionId: SessionId('preset-ctc-parity'),
       setup: async (agentCtx) => {
@@ -413,38 +411,20 @@ describe('the shipped Web composition', () => {
       },
     })
     try {
-      const ptcAssembly = await ctx.systemPrompt.assemble({ scope: coded.agent })
       const ctcAssembly = await ctx.systemPrompt.assemble({ scope: ctc.agent })
-      // PTC mode sends the model one tool.
-      expect(ptcAssembly.tools.map(tool => tool.name)).toEqual(['run_code'])
-
-      // CTC sends the session's whole capability catalog, and that catalog
-      // already carries the transport: `run_code` reaches the model beside
-      // every ordinary tool, so nothing the `ptc` preset could do is lost.
       const ctcNames = ctcAssembly.tools.map(tool => tool.name)
       expect([...ctcNames].sort()).toEqual(toolNames(ctx, ctc.agent).sort())
       expect(ctcNames).toContain('run_code')
-
-      // The one capability difference the owner must see: `ptc` disables
-      // `workflow` because `run_code` is its composition surface, and it denies
-      // a model-direct native call. CTC keeps both.
       expect(ctcNames).toContain('workflow')
-      expect(toolNames(ctx, coded.agent)).not.toContain('workflow')
-      // The generated SDK is built from each scope's own catalog, so CTC's
-      // names the tool PTC's omits.
       const ctcSdk = ctcAssembly.sections.find(section => section.name === 'tools:sdk')?.text ?? ''
-      const ptcSdk = ptcAssembly.sections.find(section => section.name === 'tools:sdk')?.text ?? ''
       expect(ctcSdk).toContain('web_search')
-      expect(ptcSdk).toContain('web_search')
       expect(ctcSdk).toContain('workflow')
-      expect(ptcSdk).not.toContain('workflow')
       // CTC carries no PTC-only rule text: the collapse section a non-native
       // presentation registers renders empty for `both`, and the prompt renderer
       // drops it from what the model reads.
       expect(ctcAssembly.sections.find(section => section.name === 'tools:ptc-only')?.text ?? '').toBe('')
     } finally {
       await ctc.dispose()
-      await coded.dispose()
     }
   })
 
@@ -983,11 +963,12 @@ describe('a composition that configures its own preset roots', () => {
     // A workspace-shared root beside the deployment: one preset of its own,
     // plus a directory that claims a shipped id.
     teamRoot = join(home, 'team-presets')
-    const ptcComposition = await readFile(join(SHIPPED_PRESET_ROOT, 'ptc', 'agent.cordis.yml'), 'utf8')
-    for (const id of ['team-spec', 'ptc']) {
-      await mkdir(join(teamRoot, id), { recursive: true })
-      await writeFile(join(teamRoot, id, 'agent.cordis.yml'), ptcComposition)
-    }
+    const narrowComposition = await readFile(join(NARROW_ROOT, 'narrow', 'agent.cordis.yml'), 'utf8')
+    await mkdir(join(teamRoot, 'team-spec'), { recursive: true })
+    await writeFile(join(teamRoot, 'team-spec', 'agent.cordis.yml'), narrowComposition)
+    const standardComposition = await readFile(join(SHIPPED_PRESET_ROOT, 'standard', 'agent.cordis.yml'), 'utf8')
+    await mkdir(join(teamRoot, 'standard'), { recursive: true })
+    await writeFile(join(teamRoot, 'standard', 'agent.cordis.yml'), standardComposition)
     // The user layer of the reported regression: a profile's cordis.patch.yml
     // configuring a shared preset root. The plugin must EXTEND it with its
     // own shipped root, never lose it.
@@ -1012,11 +993,11 @@ describe('a composition that configures its own preset roots', () => {
     ])
 
     const listed = await rootsCtx.agentPresets.list()
-    expect(listed.map(preset => preset.id).sort()).toEqual(['cordis', 'instructor', 'pixels-designer', 'ptc', 'standard', 'team-spec'])
+    expect(listed.map(preset => preset.id).sort()).toEqual(['army', 'cordis', 'instructor', 'maestro', 'pixels-designer', 'standard', 'team-spec'])
     expect(listed.every(preset => preset.broken === undefined)).toBe(true)
     // The shipped root comes first: a configured directory claiming a shipped
     // id is shadowed, never the other way around.
-    expect(listed.find(preset => preset.id === 'ptc')?.trust).toBe('system')
+    expect(listed.find(preset => preset.id === 'standard')?.trust).toBe('system')
     expect(listed.find(preset => preset.id === 'team-spec')?.trust).toBe('user')
   })
 
@@ -1026,7 +1007,9 @@ describe('a composition that configures its own preset roots', () => {
       setup: agentCtx => rootsCtx.agentPresets.mount(agentCtx, 'team-spec').then(() => undefined),
     })
     try {
-      expect(toolNames(rootsCtx, handle.agent)).toEqual(['bash', 'str_replace_editor'])
+      // The narrow composition mounts one shell: `bash` on POSIX, `pwsh` on Windows.
+      const shell = process.platform === 'win32' ? 'pwsh' : 'bash'
+      expect(toolNames(rootsCtx, handle.agent)).toEqual([shell, 'str_replace_editor'])
     } finally {
       await handle.dispose()
     }

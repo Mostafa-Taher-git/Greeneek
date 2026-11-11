@@ -94,12 +94,12 @@ export const en = {
 /** Arabic dictionary, checked complete against the zh key set. */
 export const ar = {
   'command.description': 'اختر النموذج لهذه المحادثة',
-  'option.loadError': 'تعذّر تحميل الدليل: {message}',
+  'option.loadError': 'تعذّر تحميل كتالوج النماذج: {message}',
   'trigger.fallback': 'اختر نموذجًا',
   'trigger.loading': 'جارٍ تحميل النماذج…',
   'trigger.selectAria': 'اختر نموذجًا',
-  'trigger.aria': 'اختر نموذجًا، الحالي {model}',
-  'trigger.ariaEffort': 'اختر نموذجًا، الحالي {model}، جهد الاستدلال {effort}',
+  'trigger.aria': 'اختر نموذجًا، النموذج الحالي {model}',
+  'trigger.ariaEffort': 'اختر نموذجًا، النموذج الحالي {model}، جهد الاستدلال {effort}',
   'menu.aria': 'النموذج والجهد',
   'menu.model': 'النموذج',
   'menu.effort': 'الجهد',

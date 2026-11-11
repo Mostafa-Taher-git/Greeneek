@@ -230,6 +230,10 @@ declare module '@greeneek/gnk-typert-protocol' {
     'session/steer-unavailable': { readonly itemId: MessageId }
     'session/title-invalid': { readonly sessionId: SessionId }
     'session/fork-unavailable': { readonly sessionId: SessionId }
+    /** The named external application is not installed on this host. */
+    'session/path-app-unavailable': { readonly appId: string }
+    /** The Host cannot reveal paths on this platform. */
+    'session/path-reveal-unsupported': { readonly platform: string }
     'subagent/not-found': {
       readonly parentSessionId: SessionId
       readonly childSessionId: SessionId
@@ -390,6 +394,90 @@ export interface SessionOpenWorkspacePathRequest {
 /** Confirmation that the Host handed a workspace path to its native opener. */
 export interface SessionOpenWorkspacePathValue {
   readonly opened: true
+}
+
+/**
+ * Where the Host should send one path.
+ *
+ * `default` uses the operating system's own handler, `reveal` selects the path
+ * inside the system file manager, and `app` names one external application
+ * from the Host's catalogue.
+ */
+export type SessionPathTarget =
+  | { readonly kind: 'default' }
+  | { readonly kind: 'reveal' }
+  | { readonly kind: 'app'; readonly appId: string }
+
+/** Request to send one path to the Host desktop. */
+export interface SessionOpenPathRequest {
+  /** Path after best-effort Session workspace resolution, in Host filesystem syntax. */
+  readonly path: string
+  /** Destination the Host hands the path to. */
+  readonly target: SessionPathTarget
+}
+
+/** Confirmation that the Host handed a path to its requested destination. */
+export interface SessionOpenPathValue {
+  readonly opened: true
+}
+
+/** One external application the Host can launch on this machine. */
+export interface SessionExternalApp {
+  /** Stable application identity the Client localizes. */
+  readonly id: string
+  /** True when the application is installed and launchable here. */
+  readonly available: boolean
+}
+
+/**
+ * Host platform identity.
+ *
+ * The names mirror Node's platform identifiers, listed here so browser code
+ * can name a platform without the Host type definitions.
+ */
+export type HostPlatform =
+  | 'aix'
+  | 'android'
+  | 'cygwin'
+  | 'darwin'
+  | 'freebsd'
+  | 'haiku'
+  | 'linux'
+  | 'netbsd'
+  | 'openbsd'
+  | 'sunos'
+  | 'win32'
+
+/** The Host's external application catalogue and the platform it runs on. */
+export interface SessionExternalAppsValue {
+  /** Host platform, so the Client can name the system file manager. */
+  readonly platform: HostPlatform
+  /** One row per catalogue application, in catalogue order. */
+  readonly apps: readonly SessionExternalApp[]
+  /** True when the Host can reveal a path in the system file manager. */
+  readonly canReveal: boolean
+}
+
+/** Request for the git facts of one project directory. */
+export interface SessionGitFactsRequest {
+  /** Absolute path of the project directory. */
+  readonly path: string
+}
+
+/** Read-only git facts of one project directory. */
+export interface SessionGitFactsValue {
+  /** True when the directory is inside a git work tree. */
+  readonly isRepository: boolean
+  /** Checked-out branch, absent on a detached HEAD. */
+  readonly branch?: string
+  /** Branch the change set is compared against, absent when unknown. */
+  readonly baseBranch?: string
+  /** Files that differ from the base branch. */
+  readonly changedFiles: number
+  /** Lines added against the base branch. */
+  readonly insertions: number
+  /** Lines removed against the base branch. */
+  readonly deletions: number
 }
 
 /** Client-minted prompt identity used to reconcile optimistic and durable messages. */

@@ -1,0 +1,5 @@
+Modification 17: @greeneek rescope
+Tree-hash: 3f6a88a91e110b7daa28b30cc1218a8095ce72ae80be7dbaad4891489332c95e
+Upstream manifest: see vendor/README.md manifest table for this package's SHA.
+
+every vendored manifest `name`, every internal dependency entry among the vendored set, and every module specifier that reaches them use the scoped names in the manifest table's `npm name` column. Directory names, version numbers, and dependency ranges are unchanged, and no upstream runtime identifier is renamed — `Symbol.for('schemastery')` and Schemastery's `vendor:` metadata field keep their upstream values. Re-apply with `pnpm run rescope-vendor --apply` after a sync; the table's two name columns are the mapping, restated for consumers in [docs/rescope.md](../docs/rescope.md).

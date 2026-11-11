@@ -7,7 +7,7 @@
     { "path": "../../../vendor/cordis" },
     { "path": "../../../vendor/schemastery" },
     { "path": "../../llm/llm" },
-    { "path": "../session-title" },
+    { "path": "../session-title/tsconfig.host.json" },
     { "path": "../session-title-llm" }
   ]
 }

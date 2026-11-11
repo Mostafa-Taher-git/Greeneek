@@ -18,7 +18,7 @@
       "path": "../../../vendor/schemastery"
     },
     {
-      "path": "../../core/agent"
+      "path": "../../core/agent/tsconfig.host.json"
     },
     {
       "path": "../../core/scope"

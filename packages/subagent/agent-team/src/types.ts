@@ -17,7 +17,14 @@ export function TeamId(id: SessionId | string): TeamId {
   return id as TeamId
 }
 
-export type { HarnessDescriptor } from './harness-descriptor.ts'
+export type {
+  HarnessDescriptor,
+  HarnessEffort,
+  HarnessModel,
+  HarnessRefusalCode,
+  HarnessSelectionRequest,
+  HarnessSelectionResult,
+} from './harness-descriptor.ts'
 
 /** Stable identifier for one task in a Team. */
 export type TeamTaskId = Branded<'TeamTaskId'>

@@ -49,7 +49,9 @@ export interface PluginEntry {
  */
 export function classify(group: string, dir: string): PluginKind[] {
   const kinds: PluginKind[] = []
-  if (dir.startsWith('tool-')) kinds.push('Tool')
+  // A browser-side `tool-*` package registers renderers, not model-facing
+  // tools, so the Tool kind keeps the tool catalog's Host scope.
+  if (dir.startsWith('tool-') && group !== 'client') kinds.push('Tool')
   if (group === 'skill') kinds.push('Skill')
   if (COMMAND_PACKAGES.has(`${group}/${dir}`)) kinds.push('Command')
   if (dir.startsWith('ui-')) kinds.push('UI')
@@ -171,7 +173,7 @@ function generate(entries: PluginEntry[]): string {
     '',
     '| Kind | What it is | How the generator detects it |',
     '| --- | --- | --- |',
-    '| Tool | Model-facing tools on `ctx.tools` | directory starts with `tool-` (same scope as the tool catalog) |',
+    '| Tool | Model-facing tools on `ctx.tools` | directory starts with `tool-` outside the client group (same scope as the tool catalog) |',
     '| Skill | Skill registry, providers, and consumer on `ctx.skills` | `packages/skill/*` |',
     '| Command | Client slash/popup commands (`ctx.commandUi`, input trigger sources) | curated set, guarded: every command-seam marker in source must resolve into it |',
     '| UI | Browser surfaces | directory starts with `ui-` |',

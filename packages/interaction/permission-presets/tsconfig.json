@@ -18,7 +18,7 @@
       "path": "../../../vendor/schemastery"
     },
     {
-      "path": "../../core/session"
+      "path": "../../core/session/tsconfig.host.json"
     },
     {
       "path": "../../sandbox/sandbox"
@@ -36,7 +36,7 @@
       "path": "../../runtime-diagnostics/invariants"
     },
     {
-      "path": "../../session/session-projection"
+      "path": "../../session/session-projection/tsconfig.host.json"
     },
     {
       "path": "../../settings/settings"

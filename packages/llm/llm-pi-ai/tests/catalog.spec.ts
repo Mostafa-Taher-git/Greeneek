@@ -1078,7 +1078,8 @@ describe('compat switches', () => {
   it('serves the Responses compat type on every protocol pi-ai gives it to', () => {
     // pi-ai types azure-openai-responses and openai-codex-responses with the
     // same OpenAIResponsesCompat, so a switch settable on one is settable on all.
-    for (const route of ['azure-openai-responses', 'openai-codex']) {
+    // The Azure provider route was renamed azure-openai-responses -> azure in pi-ai 1.1.
+    for (const route of ['azure', 'openai-codex']) {
       const models = modelsOf({ [route]: { compat: { supportsDeveloperRole: false } } }, route)
       const [first] = [...models.values()]
       expect((first?.compat as { supportsDeveloperRole?: boolean }).supportsDeveloperRole).toBe(false)
@@ -1244,13 +1245,13 @@ describe('configurable-provider directory', () => {
     // `declared` answers catalog membership, so a profile stored against a
     // route pi-ai ships is not mislabelled as one this deployment invented.
     // The profile sets no display name, so the row inherits the catalog's.
-    const ctx = await harness({ providers: { 'openai-codex': { apiKeyEnv: KEY_ENV } } })
+    const ctx = await harness({ providers: { openai: { apiKeyEnv: KEY_ENV } } })
 
     expect(ctx.llm.listConfigurableProviders()).toContainEqual({
-      provider: 'openai-codex',
-      displayName: 'OpenAI Codex',
+      provider: 'openai',
+      displayName: 'OpenAI',
       settingsNs: 'llm-pi-ai',
-      settingsPath: ['providers', 'openai-codex'],
+      settingsPath: ['providers', 'openai'],
       declared: false,
     })
   })

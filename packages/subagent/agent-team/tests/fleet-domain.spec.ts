@@ -58,6 +58,16 @@ describe('starter fleets', () => {
     }
   })
 
+  it('names the Greeneek Harness connection and Harmony execution on every member', () => {
+    for (const template of FLEET_STARTER_TEMPLATES) {
+      for (const member of template.members) {
+        expect(member.provider).toBe('greeneek')
+        expect(member.execution).toBe('harmony')
+        expect(member.context).toBe('fresh')
+      }
+    }
+  })
+
   it('installs under its own id when free and under a copy id when taken', () => {
     expect(starterFleet('research', new Set()).id).toBe('research')
     expect(starterFleet('research', new Set(['research'])).id).toBe('research-copy')

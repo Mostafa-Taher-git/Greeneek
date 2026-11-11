@@ -45,7 +45,7 @@
       "path": "../ui-slots"
     },
     {
-      "path": "../../core/session"
+      "path": "../../core/session/tsconfig.client.json"
     },
     {
       "path": "../../api/session-controller/tsconfig.client.json"

@@ -11,7 +11,7 @@
     { "path": "../../../vendor/schemastery" },
     { "path": "../../llm/llm" },
     { "path": "../../llm/token-meter" },
-    { "path": "../../core/session" },
+    { "path": "../../core/session/tsconfig.host.json" },
     { "path": "../compaction" }
   ]
 }

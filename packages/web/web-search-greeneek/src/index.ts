@@ -1,7 +1,7 @@
 /**
  * Register a Greeneek-backed provider in `ctx.web`. It calls the Anthropic-compatible Messages API
- * with native `web_search_20250305`. The provider reuses `GREENEEK_API_KEY` but not
- * `GREENEEK_BASE_URL`, because search and chat-completions use different bases. The
+ * with native `web_search_20250305`. The provider reuses `GREENEEK_API_KEY` — this provider's own
+ * credential, not a product requirement — but not `GREENEEK_BASE_URL`, because search and chat-completions use different bases. The
  * endpoint always comes from the deployment: no shipped endpoint exists, and without
  * one the provider stays unavailable and fails typed `WEB_PROVIDER_ENDPOINT_MISSING`.
  * @module @greeneek/gnk-web-search-greeneek
@@ -47,7 +47,7 @@ const DEFAULT_API_KEY_ENV = 'GREENEEK_API_KEY'
 export interface Config {
   /** Literal Greeneek API key; prefer {@link apiKeyEnv} so no secret enters configuration files. */
   apiKey?: string
-  /** Credential reference resolved for each search; defaults to `GREENEEK_API_KEY`. */
+  /** Credential reference resolved for each search; defaults to `GREENEEK_API_KEY` — this provider's own key, not a product requirement. */
   apiKeyEnv?: string
   /** Anthropic-compatible endpoint base (`/messages` is appended); there is no shipped default. */
   baseURL?: string

@@ -30,9 +30,17 @@ async function bench() {
   const runtime = await SlotTestRuntime.create()
   runtime.releaseWorkspaceSource()
   const directoryPicker = {}
-  const remote = new TestRemote(runtime.ctx)
+  const remote = new TestRemote(runtime.ctx, {
+    directoryPicker,
+    session: {
+      externalApps: async () => ({
+        ok: true as const,
+        value: { platform: 'linux' as const, apps: [], canReveal: true },
+      }),
+      openPath: async () => ({ ok: true as const, value: { opened: true as const } }),
+    },
+  })
   Object.assign(remote, { directoryPicker })
-  runtime.ctx.provide('remote.directoryPicker', directoryPicker as never)
   const locale = new LocaleRuntime(runtime.ctx)
   runtime.ctx.provide('locale', locale)
   runtime.slots.installLocale(locale)

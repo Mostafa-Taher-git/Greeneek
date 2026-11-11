@@ -425,6 +425,54 @@ class ReleaseBundle {
   }
 }
 
+/** Packages whose published `bin` entries carry a package-owned installed smoke. */
+export const PACKAGE_BIN_SMOKE_PACKAGES: readonly string[] = ['@greeneek/gnk', '@greeneek/cordis']
+
+/**
+ * The install directory of one package inside the isolated consumer.
+ * @param consumerRoot - the isolated consumer root.
+ * @param packageName - the packed package name.
+ * @returns The package-manager install path for the package.
+ */
+export function installedPackagePath(consumerRoot: string, packageName: string): string {
+  return resolve(consumerRoot, 'node_modules', ...packageName.split('/'))
+}
+
+/**
+ * The `bin` entries one packed manifest declares, normalized to name and entry paths.
+ * @param packageName - the packed package name, read for the string-`bin` name default.
+ * @param manifest - the packed package manifest.
+ * @returns Bin names with their payload-relative entry paths, sorted by name.
+ */
+export function binEntries(packageName: string, manifest: unknown): Array<{ name: string; entry: string }> {
+  if (!isRecord(manifest)) return []
+  const bin = manifest.bin
+  if (typeof bin === 'string') {
+    const fallback = packageName.split('/').pop() ?? packageName
+    return [{ name: fallback, entry: bin }]
+  }
+  if (!isRecord(bin)) return []
+  return Object.entries(bin)
+    .filter((entry): entry is [string, string] => typeof entry[1] === 'string')
+    .map(([name, entry]) => ({ name, entry }))
+    .sort((left, right) => left.name.localeCompare(right.name))
+}
+
+/**
+ * The installed smoke registered for one package's published bins.
+ * @param packageName - the packed package name.
+ * @returns The smoke identifier for the package.
+ */
+export function resolveBinSmoke(packageName: string): 'gnk' | 'cordis' {
+  if (packageName === '@greeneek/gnk') return 'gnk'
+  if (packageName === '@greeneek/cordis') return 'cordis'
+  throw new Error(`package ${packageName} declares bins with no package-owned smoke; add one before publishing`)
+}
+
+// Marks of the shipped web profile tree the dump smoke expects.
+const DUMP_LAYER_MARK = '# == @greeneek/gnk-base'
+const DUMP_WEB_MARK = "name: '@greeneek/gnk-host-webserver'"
+
 /** Installs one complete bundle outside the workspace and probes the shipped gnk entry. */
 class InstalledBundleSmoke {
   constructor(
@@ -457,8 +505,8 @@ class InstalledBundleSmoke {
         `--registry=${this.bundle.manifest.registry}`,
       ], consumerRoot, npmClientEnvironment())
 
-      const bin = resolve(consumerRoot, 'node_modules/@greeneek/gnk/lib/bin.js')
-      assertPathWithin(consumerRoot, bin, 'installed gnk bin')
+      this.assertInstallLayout(consumerRoot)
+      const bin = this.gnkBin(consumerRoot)
       const environment = installedArtifactEnvironment(consumerRoot)
       const version = this.runner.capture(
         process.execPath,
@@ -472,11 +520,97 @@ class InstalledBundleSmoke {
           + `expected ${this.bundle.manifest.version}`,
         )
       }
+      this.probeDumpConfig(bin, consumerRoot, environment)
+      this.probeCordisBin(consumerRoot, environment)
       this.probeWeb(bin, consumerRoot, environment)
-      console.log('publish-npm-baseline: installed gnk entry and Web startup probes passed')
+      console.log('publish-npm-baseline: installed entry, dump, bin, and Web startup probes passed')
     } finally {
       rmSync(consumerRoot, { recursive: true, force: true })
     }
+  }
+
+  /**
+   * Every tarball file must exist in the installed tree and every package
+   * directory must resolve inside the isolated consumer, so a workspace link
+   * or a monorepo fallback can never stand in for an installed payload.
+   * Declared bins without a registered smoke fail here, which is what makes a
+   * newly added bin force a package-owned probe instead of shipping untested.
+   */
+  private assertInstallLayout(consumerRoot: string): void {
+    for (const pkg of this.bundle.manifest.packages) {
+      const packageRoot = installedPackagePath(consumerRoot, pkg.name)
+      if (!existsSync(packageRoot)) {
+        throw new Error(`installed ${pkg.name} directory is missing in the isolated consumer`)
+      }
+      assertPathWithin(consumerRoot, packageRoot, `installed ${pkg.name} directory`)
+      const artifact = inspectTarball(this.bundle.tarballPath(pkg), this.runner)
+      for (const member of artifact.files) {
+        if (!member.startsWith('package/')) continue
+        const relative = member.slice('package/'.length)
+        if (relative === '' || relative.endsWith('/')) continue
+        const installed = join(packageRoot, ...relative.split('/'))
+        if (!existsSync(installed)) {
+          throw new Error(`installed ${pkg.name} is missing tarball file ${relative}`)
+        }
+        assertPathWithin(consumerRoot, installed, `installed ${pkg.name} file ${relative}`)
+      }
+      for (const entry of binEntries(pkg.name, artifact.manifest)) {
+        const binFile = join(packageRoot, ...entry.entry.replace(/^\.\//, '').split('/'))
+        if (!existsSync(binFile)) {
+          throw new Error(`installed ${pkg.name} is missing bin ${entry.name} (${entry.entry})`)
+        }
+        resolveBinSmoke(pkg.name)
+      }
+    }
+  }
+
+  /** The installed gnk executable, from the packed manifest's own bin entry. */
+  private gnkBin(consumerRoot: string): string {
+    const entryPackage = this.bundle.manifest.packages.find(pkg => pkg.name === '@greeneek/gnk')
+    if (entryPackage === undefined) throw new Error('@greeneek/gnk is not among the packed tarballs')
+    const artifact = inspectTarball(this.bundle.tarballPath(entryPackage), this.runner)
+    const [gnk] = binEntries(entryPackage.name, artifact.manifest)
+    if (gnk === undefined) throw new Error('installed @greeneek/gnk declares no bin entry')
+    const bin = resolve(installedPackagePath(consumerRoot, entryPackage.name), gnk.entry.replace(/^\.\//, ''))
+    assertPathWithin(consumerRoot, bin, 'installed gnk bin')
+    return bin
+  }
+
+  /** The dump composes the shipped web tree without booting it. */
+  private probeDumpConfig(bin: string, consumerRoot: string, environment: NodeJS.ProcessEnv): void {
+    const dump = this.runner.capture(
+      process.execPath,
+      [bin, '--profile', 'web', '--dump-default-config'],
+      consumerRoot,
+      environment,
+    )
+    for (const mark of [DUMP_LAYER_MARK, DUMP_WEB_MARK]) {
+      if (!dump.includes(mark)) {
+        throw new Error(`installed gnk dump is missing ${JSON.stringify(mark)}`)
+      }
+    }
+  }
+
+  /**
+   * The vendored cordis bin loads `./cordis.yml` from the working directory,
+   * so it has no `--help`-style smoke. This probe proves the shipped entry
+   * parses and that the public runtime entry imports from the installation.
+   */
+  private probeCordisBin(consumerRoot: string, environment: NodeJS.ProcessEnv): void {
+    const entryPackage = this.bundle.manifest.packages.find(pkg => pkg.name === '@greeneek/cordis')
+    if (entryPackage === undefined) return
+    const artifact = inspectTarball(this.bundle.tarballPath(entryPackage), this.runner)
+    const [cordis] = binEntries(entryPackage.name, artifact.manifest)
+    if (cordis === undefined) return
+    const binFile = resolve(installedPackagePath(consumerRoot, entryPackage.name), cordis.entry.replace(/^\.\//, ''))
+    assertPathWithin(consumerRoot, binFile, 'installed cordis bin')
+    this.runner.run(process.execPath, ['--check', binFile], consumerRoot, environment)
+    this.runner.run(
+      process.execPath,
+      ['--input-type=module', '-e', "await import('@greeneek/cordis')"],
+      consumerRoot,
+      environment,
+    )
   }
 
   private probeWeb(bin: string, consumerRoot: string, environment: NodeJS.ProcessEnv): void {

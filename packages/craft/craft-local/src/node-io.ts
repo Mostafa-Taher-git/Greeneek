@@ -8,11 +8,11 @@
  */
 
 import { execFileSync } from 'node:child_process'
-import { mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import type { CraftAppManifest } from '@greeneek/gnk-craft'
 import type { SubprocessHandle, SubprocessSpawnSpec } from '@greeneek/gnk-subprocess'
-import { parseRegistryInstallDir } from './platform.ts'
+import { parseRegistryInstallDir, parseRegistryInstallDirs } from './platform.ts'
 import type { CraftDiscoveryIo, CraftLocalIo } from './types.ts'
 
 /** Registry query deadline: a missing hive fails fast instead of stalling startup. */
@@ -70,6 +70,38 @@ export function queryRegistryInstallDir(app: CraftAppManifest, exec: ExecText): 
 }
 
 /**
+ * The Windows MSI `InstallDir` query for one display name.
+ * @param displayName - registry subkey name.
+ * @param exec - command runner.
+ * @returns the raw `reg.exe` output.
+ */
+export function queryRegistryInstallDirFor(displayName: string, exec: ExecText): string {
+  return exec('reg.exe', ['query', `HKLM\\Software\\${displayName}`, '/v', 'InstallDir'])
+}
+
+/**
+ * List every Windows MSI `InstallDir` value.
+ * @param exec - command runner.
+ * @returns the raw `reg.exe` output.
+ */
+export function queryRegistryInstallDirs(exec: ExecText): string {
+  return exec('reg.exe', ['query', 'HKLM\\Software', '/f', 'InstallDir', '/s'])
+}
+
+/**
+ * List one directory, containing every filesystem failure.
+ * @param path - absolute directory path.
+ * @returns entry names, or empty when absent/unreadable.
+ */
+export function listDirectory(path: string): readonly string[] {
+  try {
+    return readdirSync(path)
+  } catch {
+    return []
+  }
+}
+
+/**
  * Build the default Node discovery seam.
  * @param options - overrides used by tests.
  * @returns the discovery boundary.
@@ -77,6 +109,14 @@ export function queryRegistryInstallDir(app: CraftAppManifest, exec: ExecText): 
 export function createNodeDiscoveryIo(options: NodeIoOptions = {}): CraftDiscoveryIo {
   const platform = options.platform ?? process.platform
   const exec = options.exec ?? defaultExec
+  const lookup = (displayName: string): string | undefined => {
+    if (platform !== 'win32') return undefined
+    try {
+      return parseRegistryInstallDir(queryRegistryInstallDirFor(displayName, exec))
+    } catch {
+      return undefined
+    }
+  }
   return {
     platform,
     env: options.env ?? process.env,
@@ -84,11 +124,16 @@ export function createNodeDiscoveryIo(options: NodeIoOptions = {}): CraftDiscove
     readText: readTextFile,
     isFile: isRegularFile,
     registryInstallDir(app) {
-      if (platform !== 'win32') return undefined
+      return lookup(app.displayName)
+    },
+    registryInstallDirFor: lookup,
+    listDir: listDirectory,
+    registryInstallDirs() {
+      if (platform !== 'win32') return {}
       try {
-        return parseRegistryInstallDir(queryRegistryInstallDir(app, exec))
+        return parseRegistryInstallDirs(queryRegistryInstallDirs(exec))
       } catch {
-        return undefined
+        return {}
       }
     },
   }

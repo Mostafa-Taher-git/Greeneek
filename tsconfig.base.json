@@ -158,6 +158,7 @@
       "@greeneek/gnk-client-ui-attachment": ["./packages/client/ui-attachment/src"],
       "@greeneek/gnk-client-ui-primitives": ["./packages/client/ui-primitives/src"],
       "@greeneek/gnk-client-store": ["./packages/client/store/src/index.ts"],
+      "@greeneek/gnk-client-tool-owned-render": ["./packages/client/tool-owned-render/src"],
       "@greeneek/gnk-client-ui-renderer": ["./packages/client/ui-renderer/src"],
       "@greeneek/gnk-client-ui-renderer/client": ["./packages/client/ui-renderer/src/client"],
       "@greeneek/gnk-client-ui-renderer/invariant": ["./packages/client/ui-renderer/src/invariant.ts"],
@@ -241,6 +242,7 @@
       // generated region cannot map it; this alias stays hand-written.
       "@greeneek/gnk-subagent-wave": ["./packages/subagent/wave/src"],
       "@greeneek/gnk-subagent-wave/client": ["./packages/subagent/wave/src/client.ts"],
+      "@greeneek/gnk-llm/conformance": ["./packages/llm/llm/src/conformance.ts"],
       // BEGIN generated package aliases — pnpm run gen-tsconfig-paths
       "@greeneek/gnk-acp": ["./packages/acp/acp/src"],
       "@greeneek/gnk-acp-app": ["./packages/bundle/acp-app/src"],

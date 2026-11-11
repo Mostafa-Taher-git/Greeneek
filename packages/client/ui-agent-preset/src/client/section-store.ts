@@ -191,7 +191,7 @@ export class AgentPresetSectionController {
       error: null,
       authorable,
       hasDocument,
-      rows: presets.filter(preset => preset.retired !== true).map(preset => ({ ...preset })),
+      rows: presets.map(preset => ({ ...preset })),
       revealedPaths: kept,
     })
   }

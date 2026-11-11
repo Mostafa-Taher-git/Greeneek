@@ -5,10 +5,21 @@
  * @module @greeneek/gnk-craft-local/discovery
  */
 
-import type { CraftAppManifest, CraftDiscovery, CraftPlatform } from '@greeneek/gnk-craft'
+import type { CraftAppManifest, CraftDiscovery, CraftDiscoveredApp, CraftPlatform } from '@greeneek/gnk-craft'
 import {
-  cliExecutableName, launcherRonPath, launcherRoots, meetsVersionFloor, parseInstalledJson, parseLauncherAppRon, platformPath,
+  cliExecutableName,
+  launcherRonPath,
+  launcherRoots,
+  meetsVersionFloor,
+  normalizeArtCraftId,
+  parseDesktopFile,
+  parseInstalledJson,
+  parseInstalledJsonAll,
+  parseLauncherAppRon,
+  parseLauncherAppRonAll,
+  platformPath,
 } from './platform.ts'
+import type { CraftInstallEntry } from './platform.ts'
 import type { CraftDiscoveryIo, CraftInstallRecord } from './types.ts'
 
 /** Shared launcher manifest file name. */
@@ -84,6 +95,106 @@ export function discoverApp(app: CraftAppManifest, io: CraftDiscoveryIo): CraftD
     state: 'app-installed-cli-missing',
     detail: `${app.displayName} is installed but its headless CLI is missing (expected ${expected as string})`,
   }
+}
+
+/**
+ * Enumerate every installed ArtCraft app without a hand-written manifest.
+ *
+ * Sources merge in priority order: the launcher `installed.json` app map, the
+ * launcher `app.ron` `per_app` map, `<id>.portable.txt` markers, the OS
+ * registry (Windows MSI `InstallDir` values), and Linux `.desktop` entries.
+ * The first source naming an id wins; later sources fill missing fields.
+ * @param io - discovery seam.
+ * @returns every discovered app, deduplicated by canonical id, in discovery order.
+ */
+export function listInstalledApps(io: CraftDiscoveryIo): readonly CraftDiscoveredApp[] {
+  const path = platformPath(io.platform)
+  const merged = new Map<string, CraftDiscoveredApp>()
+  const add = (entry: CraftInstallEntry, source: CraftDiscoveredApp['source']): void => {
+    const existing = merged.get(entry.id)
+    if (existing === undefined) {
+      merged.set(entry.id, {
+        id: entry.id,
+        displayName: entry.displayName ?? titleCase(entry.id),
+        ...entry.installDir === undefined ? {} : { installDir: entry.installDir },
+        ...entry.version === undefined ? {} : { version: entry.version },
+        ...entry.cliStem === undefined ? {} : { cliStem: entry.cliStem },
+        source,
+      })
+      return
+    }
+    const next: { installDir?: string; version?: string; cliStem?: string } = {}
+    if (existing.installDir === undefined && entry.installDir !== undefined) next.installDir = entry.installDir
+    if (existing.version === undefined && entry.version !== undefined) next.version = entry.version
+    if (existing.cliStem === undefined && entry.cliStem !== undefined) next.cliStem = entry.cliStem
+    merged.set(entry.id, { ...existing, ...next })
+  }
+  const ronPath = launcherRonPath(io.platform, io.env, io.home)
+  if (ronPath !== undefined) {
+    const ron = io.readText(ronPath)
+    if (ron !== undefined) {
+      for (const entry of parseLauncherAppRonAll(ron)) add(entry, 'launcher-state')
+    }
+  }
+  for (const root of launcherRoots(io.platform, io.env, io.home)) {
+    const installed = io.readText(path.join(root, INSTALLED_FILE))
+    if (installed !== undefined) {
+      for (const entry of parseInstalledJsonAll(installed)) add(entry, 'launcher-manifest')
+    }
+    for (const name of io.listDir?.(root) ?? []) {
+      if (!name.endsWith('.portable.txt')) continue
+      const id = normalizeArtCraftId(name.slice(0, -'.portable.txt'.length))
+      if (id === undefined) continue
+      const portable = io.readText(path.join(root, name))
+      const installDir = portable?.trim()
+      if (installDir !== undefined && installDir !== '') add({ id, installDir }, 'portable-marker')
+    }
+  }
+  for (const entry of listOsRegistryApps(io)) add(entry, 'os-registry')
+  for (const entry of listDesktopApps(io)) add(entry, 'desktop-entry')
+  return [...merged.values()].sort((a, b) => a.id.localeCompare(b.id))
+}
+
+/** Enumerate Windows MSI installs, one entry per registry subkey with InstallDir. */
+function listOsRegistryApps(io: CraftDiscoveryIo): readonly CraftInstallEntry[] {
+  if (io.registryInstallDirs !== undefined) {
+    return Object.entries(io.registryInstallDirs()).flatMap(([displayName, installDir]) => {
+      const id = normalizeArtCraftId(displayName)
+      if (id === undefined || installDir.trim() === '') return []
+      return [{ id, displayName, installDir: installDir.trim() }]
+    })
+  }
+  // Without a listing primitive the registry still resolves one app at a time
+  // through `registryInstallDir`; enumeration stays manifest-driven.
+  return []
+}
+
+/** Enumerate Linux `.desktop` entries under the XDG applications directories. */
+function listDesktopApps(io: CraftDiscoveryIo): readonly CraftInstallEntry[] {
+  if (io.platform !== 'linux') return []
+  const path = platformPath(io.platform)
+  const xdg = io.env.XDG_DATA_HOME
+  const dataHome = xdg !== undefined && xdg !== '' ? xdg : path.join(io.home, '.local', 'share')
+  const dirs = [
+    path.join(dataHome, 'applications'),
+    path.join('/usr', 'share', 'applications'),
+  ]
+  const entries: CraftInstallEntry[] = []
+  for (const dir of dirs) {
+    for (const name of io.listDir?.(dir) ?? []) {
+      if (!name.endsWith('.desktop') || !name.toLowerCase().includes('artcraft')) continue
+      const text = io.readText(path.join(dir, name))
+      if (text === undefined) continue
+      const entry = parseDesktopFile(text, name)
+      if (entry !== undefined) entries.push(entry)
+    }
+  }
+  return entries
+}
+
+/** Capitalize the first letter of one id for display when no name was reported. */
+function titleCase(id: string): string {
+  return `${id.charAt(0).toUpperCase()}${id.slice(1)}`
 }
 
 /**

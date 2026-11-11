@@ -8,7 +8,7 @@
  * the two cannot drift silently.
  *
  * The links are vendor placeholders pending the real-app Windows E2E; the
- * manifests' `sources[].verified` stays false for the same reason.
+ * manifests' row-level `verified` stays false for the same reason.
  */
 import type { CraftAppView, CraftSettingsSource } from './contract.ts'
 

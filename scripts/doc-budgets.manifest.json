@@ -1,7 +1,7 @@
 {
   "AGENTS.md": 1950,
-  "docs/AGENTS.md": 1320,
-  "docs/architecture.md": 2400,
+  "docs/AGENTS.md": { "target": 1320, "ceiling": 1320 },
+  "docs/architecture.md": { "target": 1800, "ceiling": 2400 },
   "docs/cordis-primer.md": 600,
   "docs/defensive-patterns.md": 550,
   "docs/testing.md": 1380,

@@ -5,9 +5,6 @@
 - id: headless-runner
   disabled: true
 
-- id: llm-greeneek
-  disabled: true
-
 - id: agent-instructions
   config:
     maxBytes: 65536

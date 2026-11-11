@@ -9,7 +9,7 @@
  */
 
 import { stat } from 'node:fs/promises'
-import type { SessionHeader, SessionId } from '@greeneek/gnk-session'
+import type { SessionHeader, SessionId } from '@greeneek/gnk-session/types'
 import type { KvTable } from '@greeneek/gnk-storage-domain'
 import type { WorkspaceRecord } from './spec.ts'
 import type { Workspace, WorkspaceId } from './types.ts'

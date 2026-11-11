@@ -5,6 +5,7 @@
  */
 
 import type { SessionSeq } from '@greeneek/gnk-session/types'
+import type {} from '@greeneek/gnk-session-projection/types'
 
 /** Durable active-turn timing for one descriptor-backed child session. */
 export interface SubagentTimingProjection {

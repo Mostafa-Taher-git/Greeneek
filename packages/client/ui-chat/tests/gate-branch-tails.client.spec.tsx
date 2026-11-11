@@ -74,7 +74,7 @@ function sessionSnapshot(): SessionSnapshot {
 
 function emptyWorkspaces() {
   return createSnapshotStore<WorkspaceSnapshot>({
-    items: [], archivedSessionIds: [], state: 'idle', phase: 'ready', error: null,
+    items: [], archivedSessionIds: [], pinnedSessionIds: [], state: 'idle', phase: 'ready', error: null,
   })
 }
 

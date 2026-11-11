@@ -88,6 +88,7 @@ const SENTENCE_MODEL_EXPERIENCE: Readonly<Record<string, SentenceContract>> = {
   'packages/client/ui-chat': { kind: 'none', reason: 'Browser-side Chat presentation; registers nothing model-facing.' },
   'packages/client/ui-message-feedback': { kind: 'none', reason: 'Browser-side controls over the message-feedback sidecar; ratings and notes never enter the Session log, model context, or telemetry.' },
   'packages/client/ui-tool': { kind: 'none', reason: 'Browser-side Tool presentation layer; renders logged calls without changing model context.' },
+  'packages/client/tool-owned-render': { kind: 'none', reason: 'Browser-side tool-owned presentation layer; renders logged calls without changing model context.' },
   'packages/client/ui-jobs': { kind: 'none', reason: 'Browser-side read-only projection of ctx.jobs records; gnk-tool-jobs owns the model-facing behavior.' },
   'packages/client/ui-wave': { kind: 'none', reason: 'Browser-side read-only projection of ctx.waves fleet views; gnk-tool-wave owns the model-facing fleet behavior.' },
   'packages/client/ui-craft': { kind: 'none', reason: 'Browser-side projection of durable Craft bridge results and host-reported installation state; gnk-tool-craft owns the model-facing surface.' },

@@ -18,6 +18,8 @@ import type {
   WorkspaceInsertBeforeRequest,
   WorkspaceInsertSessionBeforeRequest,
   WorkspaceOrderValue,
+  WorkspacePinSessionRequest,
+  WorkspacePinSessionValue,
   WorkspaceRenameRequest,
   WorkspaceValue,
 } from './types.ts'
@@ -109,6 +111,16 @@ export class WorkspaceController extends TypertRemoteService {
   @Remote('archiveSession')
   archiveSession(request: WorkspaceArchiveSessionRequest): Promise<WorkspaceArchiveValue> {
     return this.commands.archiveSession(request)
+  }
+
+  /**
+   * Pin or unpin one known Session.
+   * @param request - Session identity and requested pin state.
+   * @returns the complete resulting pin set.
+   */
+  @Remote('pinSession')
+  pinSession(request: WorkspacePinSessionRequest): Promise<WorkspacePinSessionValue> {
+    return this.commands.pinSession(request)
   }
 
   /**

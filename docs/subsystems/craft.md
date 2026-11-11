@@ -70,6 +70,8 @@ interface CraftHostProvider {
   discover(app: CraftAppManifest, options: { readonly signal: AbortSignal }): Promise<CraftDiscovery>
   /** Spawn and handshake one headless session. */
   open(request: CraftHostOpenRequest): Promise<CraftHostSession>
+  /** Enumerate every installed app without a hand-written manifest. */
+  listInstalled?(options: { readonly signal: AbortSignal }): Promise<readonly CraftDiscoveredApp[]>
   /** Spawn the GUI in connected mode (desktop hosts only). */
   launchConnected?(request: {
     readonly app: CraftAppManifest
@@ -79,7 +81,47 @@ interface CraftHostProvider {
 }
 ```
 
-One provider is registered per platform surface; the service selects the configured pin or requires exactly one registration. `discover` measures the installation, `open` spawns and handshakes one headless session, and optional `launchConnected` starts the GUI against the current workspace. In-memory fake providers are the entire CI strategy: no Craft app is ever installed on the test host.
+One provider is registered per platform surface; the service selects the configured pin or requires exactly one registration. `discover` measures the installation, `open` spawns and handshakes one headless session, optional `listInstalled` enumerates every installed app without a hand-written manifest, and optional `launchConnected` starts the GUI against the current workspace. In-memory fake providers are the entire CI strategy: no Craft app is ever installed on the test host.
+
+## `CraftDiscoveredApp`
+
+```ts type-equiv
+/** One app the host OS reports as installed, whether or not a hand-written manifest covers it. */
+interface CraftDiscoveredApp {
+  /** Canonical app id derived from the launcher key. */
+  readonly id: string
+  /** Human-readable product name. */
+  readonly displayName: string
+  /** Absolute install directory when the source declared one. */
+  readonly installDir?: string
+  /** Installed product version when the source declared one. */
+  readonly version?: string
+  /** CLI executable stem when the source declared one. */
+  readonly cliStem?: string
+  /** Which discovery source names this app. */
+  readonly source: 'launcher-manifest' | 'launcher-state' | 'portable-marker' | 'os-registry' | 'desktop-entry'
+}
+```
+
+Inventory never names an app in code: `listInstalledApps()` merges the launcher map, launcher state, portable markers, the OS registry, and Linux desktop entries, deduplicated by canonical id.
+
+## `CraftCapabilityMatrix`
+
+```ts type-equiv
+/** Capability matrix generated from one live command-registry response. */
+interface CraftCapabilityMatrix {
+  /** App id the matrix was observed for. */
+  readonly app: string
+  /** Tool descriptors projected from the observed registry. */
+  readonly tools: readonly CraftToolDescriptor[]
+  /** Drift hash of the raw registry response (`sha256:` + hex). */
+  readonly hash: string
+  /** How the registry was observed. */
+  readonly method: 'tools-list' | 'engine-commands' | 'command-list'
+}
+```
+
+`buildCapabilityMatrix()` projects the MCP `tools/list`, `serve` `engine.commands`, or bare `command_list` response into descriptors. `CapabilityCache` keeps the first observed hash per app as the drift baseline; only a manifest `trustedRegistryHash` ever sets `registryReviewed`.
 
 ## `CraftOpenRequest`
 
@@ -116,6 +158,8 @@ interface CraftSession {
   readonly tools: readonly CraftToolDescriptor[]
   /** Whether the registry captured at open matched a reviewed trusted hash. */
   readonly registryReviewed: boolean
+  /** Effective manifest for this session, synthesized for auto-detected apps. */
+  readonly manifest?: CraftAppManifest
   /** App wire transport. */
   readonly transport: CraftTransport
   /** Release the session. Idempotent. */
@@ -199,6 +243,13 @@ listApps(): readonly CraftAppManifest[]
 app(app: string): CraftAppManifest
 
 /**
+ * Find one app id or alias without failing.
+ * @param app - id or alias.
+ * @returns the manifest, or undefined when it is not in the catalog.
+ */
+findApp(app: string): CraftAppManifest | undefined
+
+/**
  * Whether attach mode may be published for an app.
  * @param app - id, alias, or manifest.
  * @returns `attach.supported && attach.enabled`.
@@ -211,6 +262,22 @@ attachEnabled(app: string | CraftAppManifest): boolean
  * @returns the recipe skill content.
  */
 recipe(app: string): CraftRecipe
+
+/**
+ * Every installed app the host reports, catalog and auto-detected alike.
+ * Catalog apps keep their hand-written manifests; auto-detected ids are
+ * synthesized from launcher facts without any hand-written adapter.
+ * @param signal - cancellation for inventory.
+ * @returns status per discovered app, plus every catalog app when no inventory exists.
+ */
+async discoveredApps(signal: AbortSignal = new AbortController().signal): Promise<readonly CraftStatus[]>
+
+/**
+ * Last observed capability hash for one app.
+ * @param app - id or alias.
+ * @returns the hash, or undefined when never observed.
+ */
+observedCapabilityHash(app: string): string | undefined
 
 /**
  * Measure one app installation. An active session always reports `running`,

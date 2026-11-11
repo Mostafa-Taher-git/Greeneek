@@ -67,6 +67,57 @@ describe('queryRegistryInstallDir', () => {
   })
 })
 
+describe('registry listing queries', () => {
+  it('queries one display name and the recursive InstallDir scan', async () => {
+    const { queryRegistryInstallDirFor, queryRegistryInstallDirs } = await import('../src/node-io.ts')
+    const exec = vi.fn(() => 'output')
+    expect(queryRegistryInstallDirFor('FigCraft', exec)).toBe('output')
+    expect(exec).toHaveBeenCalledWith('reg.exe', ['query', 'HKLM\\Software\\FigCraft', '/v', 'InstallDir'])
+    expect(queryRegistryInstallDirs(exec)).toBe('output')
+    expect(exec).toHaveBeenCalledWith('reg.exe', ['query', 'HKLM\\Software', '/f', 'InstallDir', '/s'])
+  })
+
+  it('lists directories and contains failures', async () => {
+    const { listDirectory } = await import('../src/node-io.ts')
+    const directory = temporaryDirectory()
+    writeFileSync(join(directory, 'installed.json'), '{}', 'utf8')
+    expect(listDirectory(directory)).toEqual(['installed.json'])
+    expect(listDirectory(join(directory, 'missing'))).toEqual([])
+  })
+
+  it('exposes the registry listing primitives on the discovery seam', () => {
+    const io = createNodeDiscoveryIo({
+      platform: 'win32',
+      env: {},
+      home: 'C:\\Users\\u',
+      exec: (file, args) => {
+        void file
+        return args.includes('/f')
+          ? 'HKEY_LOCAL_MACHINE\\Software\\FigCraft\r\n    InstallDir    REG_SZ    C:\\Apps\\FigCraft'
+          : '    InstallDir    REG_SZ    C:\\Apps\\FigCraft'
+      },
+    })
+    expect(io.registryInstallDirFor?.('FigCraft')).toBe('C:\\Apps\\FigCraft')
+    expect(io.registryInstallDirs?.()).toEqual({ FigCraft: 'C:\\Apps\\FigCraft' })
+    expect(io.listDir?.('/definitely-missing-craft-local-dir')).toEqual([])
+  })
+
+  it('contains a failed registry listing', () => {
+    const io = createNodeDiscoveryIo({
+      platform: 'win32',
+      exec: () => { throw new Error('missing hive') },
+    })
+    expect(io.registryInstallDirFor?.('FigCraft')).toBeUndefined()
+    expect(io.registryInstallDirs?.()).toEqual({})
+  })
+
+  it('returns no listing off Windows', () => {
+    const io = createNodeDiscoveryIo({ platform: 'linux', exec: () => 'output' })
+    expect(io.registryInstallDirs?.()).toEqual({})
+    expect(io.registryInstallDirFor?.('FigCraft')).toBeUndefined()
+  })
+})
+
 describe('createNodeDiscoveryIo', () => {
   it('uses the injected platform, environment, and home', () => {
     const io = createNodeDiscoveryIo({ platform: 'linux', env: { XDG_DATA_HOME: '/data' }, home: '/home/u' })

@@ -2,7 +2,12 @@ import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+
+// These cases drive real git subprocesses against a real repository; on a
+// contended host that work alone can exceed the default 5 s budget without any
+// behavioural defect, so the file budgets the process time.
+vi.setConfig({ testTimeout: 30_000 })
 
 import { renderChangeScope } from './change-scope.ts'
 

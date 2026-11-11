@@ -59,7 +59,7 @@ function fireDrag(row: HTMLElement, kind: 'dragOver' | 'drop', clientY: number):
 describe('workspace browser rows', () => {
   it('omits only an empty leading status slot in the hierarchy-free flat list', () => {
     const idle: SessionNode = {
-      id: sid('flat'), title: 'Flat Session', blank: false, running: false,
+      id: sid('flat'), title: 'Flat Session', blank: false, running: false, pinned: false,
       runningSubagentCount: 0, completed: false, hasActiveSchedule: false, updatedAt: 0,
     }
     const view = render(<SessionNodeItem node={idle} currentId={undefined} now={0} onOpen={vi.fn()}
@@ -152,7 +152,7 @@ describe('workspace browser rows', () => {
 
   it('renders and opens a selected running Session row', () => {
     const node: SessionNode = {
-      id: sid('session'), title: 'Session', blank: false, running: true,
+      id: sid('session'), title: 'Session', blank: false, running: true, pinned: false,
       runningSubagentCount: 0, completed: false, hasActiveSchedule: false, updatedAt: 0,
     }
     const onOpen = vi.fn()
@@ -172,7 +172,7 @@ describe('workspace browser rows', () => {
   it('keeps the active-Schedule marker between the title and time in grouped and flat rows', () => {
     const onOpen = vi.fn()
     const node: SessionNode = {
-      id: sid('scheduled-session'), title: 'Scheduled Session', blank: false, running: false,
+      id: sid('scheduled-session'), title: 'Scheduled Session', blank: false, running: false, pinned: false,
       runningSubagentCount: 0, completed: false, hasActiveSchedule: true, updatedAt: 0,
     }
     const view = render(
@@ -205,7 +205,7 @@ describe('workspace browser rows', () => {
     const renderRow = (over: Partial<SessionNode>) => render(
       <SessionNodeItem
         node={{
-          id: sid('s1'), title: 'One', blank: false, running: false,
+          id: sid('s1'), title: 'One', blank: false, running: false, pinned: false,
           runningSubagentCount: 0, completed: false, hasActiveSchedule: false, updatedAt: 0, ...over,
         }}
         currentId={undefined} now={0} onOpen={vi.fn()}
@@ -237,7 +237,7 @@ describe('workspace browser rows', () => {
     vi.useFakeTimers()
     try {
       const node: SessionNode = {
-        id: sid('owner'), title: 'Delegating', blank: false, running: false,
+        id: sid('owner'), title: 'Delegating', blank: false, running: false, pinned: false,
         runningSubagentCount: 2, completed: false, hasActiveSchedule: false, updatedAt: 0,
       }
       render(<SessionNodeItem node={node} currentId={undefined} now={0} onOpen={vi.fn()}
@@ -259,7 +259,7 @@ describe('workspace browser rows', () => {
     vi.useFakeTimers()
     try {
       const node: SessionNode = {
-        id: sid('owner'), title: 'Delegating', blank: false, running: true,
+        id: sid('owner'), title: 'Delegating', blank: false, running: true, pinned: false,
         runningSubagentCount: 1, completed: false, hasActiveSchedule: false, updatedAt: 0,
       }
       render(<SessionNodeItem node={node} currentId={undefined} now={0} onOpen={vi.fn()}
@@ -280,7 +280,7 @@ describe('workspace browser rows', () => {
 
   it('keeps child activity as a secondary status while user attention is primary', () => {
     const node: SessionNode = {
-      id: sid('owner'), title: 'Needs input', blank: false, pendingInteraction: 'question',
+      id: sid('owner'), title: 'Needs input', blank: false, pendingInteraction: 'question', pinned: false,
       running: false, runningSubagentCount: 1, completed: false, hasActiveSchedule: false, updatedAt: 0,
     }
     render(<SessionNodeItem node={node} currentId={undefined} now={0} onOpen={vi.fn()}
@@ -333,8 +333,162 @@ describe('workspace browser rows', () => {
     expect(screen.queryByRole('menu')).toBeNull()
   })
 
-  it('workspace hover card shows its details and copies the full directory path', async () => {
-    vi.useFakeTimers()
+  it('workspace row menu offers the host open-in destinations', () => {
+    const onOpenPath = vi.fn()
+    const group: GroupNode = {
+      key: 'project', workspaceId: wid('project'), cwd: '/projects/project', createdAt: 0, label: 'Project',
+      sessionCount: 0, expanded: false, containsCurrent: false, sessions: [],
+    }
+    render(<ProjectRowItem
+      group={group} onToggle={vi.fn()} onCreate={vi.fn()}
+      actions={{ rename: vi.fn(), delete: vi.fn() }}
+      openItems={[
+        { id: 'open-in:default', label: '文件 (默认)' },
+        { id: 'open-in:app:cursor', label: 'Cursor' },
+      ]}
+      onOpenPath={onOpenPath} t={t}
+    />)
+    fireEvent.click(screen.getByRole('button', { name: '工作区“Project”的操作' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: '在应用中打开…' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Cursor' }))
+    expect(onOpenPath).toHaveBeenCalledWith({ kind: 'app', appId: 'cursor' })
+  })
+
+  it('workspace row menu reports the git branch and the change size', () => {
+    const onMenuOpen = vi.fn()
+    const group: GroupNode = {
+      key: 'project', workspaceId: wid('project'), cwd: '/projects/project', createdAt: 0, label: 'Project',
+      sessionCount: 0, expanded: false, containsCurrent: false, sessions: [],
+    }
+    render(<ProjectRowItem
+      group={group} onToggle={vi.fn()} onCreate={vi.fn()}
+      actions={{ rename: vi.fn(), delete: vi.fn() }}
+      git={{
+        isRepository: true,
+        branch: 'feature/header',
+        baseBranch: 'main',
+        changedFiles: 3,
+        insertions: 30469,
+        deletions: 2435,
+      }}
+      onMenuOpen={onMenuOpen} t={t}
+    />)
+    fireEvent.click(screen.getByRole('button', { name: '工作区“Project”的操作' }))
+    expect(onMenuOpen).toHaveBeenCalledWith('/projects/project')
+    expect(screen.getByText('分支：feature/header')).toBeTruthy()
+    expect(screen.getByText('相对 main 的改动：+30,469 −2,435')).toBeTruthy()
+  })
+
+  it('workspace row menu stays free of git rows outside a repository', () => {
+    const group: GroupNode = {
+      key: 'project', workspaceId: wid('project'), cwd: '/projects/project', createdAt: 0, label: 'Project',
+      sessionCount: 0, expanded: false, containsCurrent: false, sessions: [],
+    }
+    render(<ProjectRowItem
+      group={group} onToggle={vi.fn()} onCreate={vi.fn()}
+      actions={{ rename: vi.fn(), delete: vi.fn() }}
+      git={{ isRepository: false, changedFiles: 0, insertions: 0, deletions: 0 }}
+      t={t}
+    />)
+    fireEvent.click(screen.getByRole('button', { name: '工作区“Project”的操作' }))
+    expect(screen.queryByText(/分支/)).toBeNull()
+  })
+
+  it('workspace row menu names a detached head and an unbased change set', () => {
+    const group: GroupNode = {
+      key: 'project', workspaceId: wid('project'), cwd: '/projects/project', createdAt: 0, label: 'Project',
+      sessionCount: 0, expanded: false, containsCurrent: false, sessions: [],
+    }
+    render(<ProjectRowItem
+      group={group} onToggle={vi.fn()} onCreate={vi.fn()}
+      actions={{ rename: vi.fn(), delete: vi.fn() }}
+      git={{ isRepository: true, changedFiles: 2, insertions: 1500, deletions: 20 }}
+      t={t}
+    />)
+    fireEvent.click(screen.getByRole('button', { name: '工作区“Project”的操作' }))
+    expect(screen.getByText('分离头指针（未检出版本）')).toBeTruthy()
+    expect(screen.getByText('未提交改动：+1,500 −20')).toBeTruthy()
+  })
+
+  it('pinned session rows show a marker and offer to unpin', () => {
+    const onPin = vi.fn()
+    const node: SessionNode = {
+      id: sid('s1'), title: 'Pinned', blank: false, running: false, pinned: true,
+      runningSubagentCount: 0, completed: false, hasActiveSchedule: false, updatedAt: 0,
+    }
+    render(<SessionNodeItem node={node} currentId={undefined} now={0} onOpen={vi.fn()}
+      onRename={vi.fn()} onFork={vi.fn()} onArchive={vi.fn()} onDelete={vi.fn()}
+      onPin={onPin} t={t} />)
+    expect(screen.getByLabelText('已固定')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: '会话“Pinned”的操作' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: '取消固定' }))
+    expect(onPin).toHaveBeenCalledWith(node.id, false)
+  })
+
+  it('session row menu copies the id and reveals the folder', async () => {
+    const writeText = vi.fn(async () => {})
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    const onOpenPath = vi.fn()
+    const node: SessionNode = {
+      id: sid('s1'), title: 'One', blank: false, running: false, pinned: false,
+      runningSubagentCount: 0, completed: false, hasActiveSchedule: false, updatedAt: 0,
+    }
+    render(<SessionNodeItem node={node} currentId={undefined} now={0} onOpen={vi.fn()}
+      onRename={vi.fn()} onFork={vi.fn()} onArchive={vi.fn()} onDelete={vi.fn()}
+      onOpenPath={onOpenPath} t={t} />)
+    fireEvent.click(screen.getByRole('button', { name: '会话“One”的操作' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: '复制会话 ID' }))
+    expect(writeText).toHaveBeenCalledWith('s1')
+    fireEvent.click(screen.getByRole('button', { name: '会话“One”的操作' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: '在文件夹中显示' }))
+    expect(onOpenPath).toHaveBeenCalledWith('s1', { kind: 'reveal' })
+  })
+
+  it('session row menu pins an unpinned session', () => {
+    const onPin = vi.fn()
+    const node: SessionNode = {
+      id: sid('s1'), title: 'One', blank: false, running: false, pinned: false,
+      runningSubagentCount: 0, completed: false, hasActiveSchedule: false, updatedAt: 0,
+    }
+    render(<SessionNodeItem node={node} currentId={undefined} now={0} onOpen={vi.fn()}
+      onRename={vi.fn()} onFork={vi.fn()} onArchive={vi.fn()} onDelete={vi.fn()}
+      onPin={onPin} t={t} />)
+    fireEvent.click(screen.getByRole('button', { name: '会话“One”的操作' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: '固定会话' }))
+    expect(onPin).toHaveBeenCalledWith(node.id, true)
+  })
+
+  it('session row menu deletes a session', () => {
+    const onDelete = vi.fn()
+    const node: SessionNode = {
+      id: sid('s1'), title: 'One', blank: false, running: false, pinned: false,
+      runningSubagentCount: 0, completed: false, hasActiveSchedule: false, updatedAt: 0,
+    }
+    render(<SessionNodeItem node={node} currentId={undefined} now={0} onOpen={vi.fn()}
+      onRename={vi.fn()} onFork={vi.fn()} onArchive={vi.fn()} onDelete={onDelete} t={t} />)
+    fireEvent.click(screen.getByRole('button', { name: '会话“One”的操作' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: '删除会话' }))
+    expect(onDelete).toHaveBeenCalledWith(node.id, 'One')
+  })
+
+  it('workspace row menu reads the git facts once per opening', () => {
+    const onMenuOpen = vi.fn()
+    const group: GroupNode = {
+      key: 'project', workspaceId: wid('project'), cwd: '/projects/project', createdAt: 0, label: 'Project',
+      sessionCount: 0, expanded: false, containsCurrent: false, sessions: [],
+    }
+    render(<ProjectRowItem
+      group={group} onToggle={vi.fn()} onCreate={vi.fn()}
+      actions={{ rename: vi.fn(), delete: vi.fn() }}
+      onMenuOpen={onMenuOpen} t={t}
+    />)
+    const button = screen.getByRole('button', { name: '工作区“Project”的操作' })
+    fireEvent.click(button)
+    fireEvent.click(button)
+    expect(onMenuOpen).toHaveBeenCalledTimes(1)
+  })
+
+  it('workspace hover card shows its details and copies the full directory path', async () => {    vi.useFakeTimers()
     const writeText = vi.fn(async () => {})
     const restoreClipboard = installClipboard(writeText)
     try {
@@ -427,7 +581,7 @@ describe('workspace browser rows', () => {
     vi.useFakeTimers()
     try {
       const node: SessionNode = {
-        id: sid('s-blank'), title: 'ignored', blank: true, running: false,
+        id: sid('s-blank'), title: 'ignored', blank: true, running: false, pinned: false,
         runningSubagentCount: 0, completed: false, hasActiveSchedule: false, updatedAt: 0,
       }
       render(<SessionNodeItem node={node} currentId={node.id} now={0} onOpen={vi.fn()}
@@ -455,7 +609,7 @@ describe('workspace browser rows', () => {
     const onArchive = vi.fn()
     const onDelete = vi.fn()
     const node: SessionNode = {
-      id: sid('s1'), title: 'One', blank: false, running: false,
+      id: sid('s1'), title: 'One', blank: false, running: false, pinned: false,
       runningSubagentCount: 0, completed: false, hasActiveSchedule: false, updatedAt: 0,
     }
     render(<SessionNodeItem node={node} currentId={undefined} now={0} onOpen={onOpen}
@@ -489,7 +643,7 @@ describe('workspace browser rows', () => {
     vi.useFakeTimers()
     try {
       const node: SessionNode = {
-        id: sid('s1'), title: 'Hovered', blank: false, running: true,
+        id: sid('s1'), title: 'Hovered', blank: false, running: true, pinned: false,
         runningSubagentCount: 0, completed: false, hasActiveSchedule: false, updatedAt: 0,
       }
       render(<SessionNodeItem node={node} currentId={undefined} now={60_000} onOpen={vi.fn()}
@@ -520,7 +674,7 @@ describe('workspace browser rows', () => {
     vi.useFakeTimers()
     try {
       const node: SessionNode = {
-        id: sid(pendingInteraction), title: 'Needs input', blank: false,
+        id: sid(pendingInteraction), title: 'Needs input', blank: false, pinned: false,
         pendingInteraction, running: true, runningSubagentCount: 0, completed: false,
         hasActiveSchedule: false, updatedAt: 0,
       }
@@ -548,7 +702,7 @@ describe('workspace browser rows', () => {
     vi.useFakeTimers()
     try {
       const node: SessionNode = {
-        id: sid('s1'), title: 'Quiet', blank: false, running: false,
+        id: sid('s1'), title: 'Quiet', blank: false, running: false, pinned: false,
         runningSubagentCount: 0, completed: false, hasActiveSchedule: false, updatedAt: 0,
       }
       render(<SessionNodeItem node={node} currentId={undefined} now={0} onOpen={vi.fn()}
@@ -566,7 +720,7 @@ describe('workspace browser rows', () => {
     vi.useFakeTimers()
     try {
       const node: SessionNode = {
-        id: sid('s1'), title: 'Done', blank: false, running: false,
+        id: sid('s1'), title: 'Done', blank: false, running: false, pinned: false,
         runningSubagentCount: 0, completed: true, hasActiveSchedule: false, updatedAt: 0,
       }
       render(<SessionNodeItem node={node} currentId={undefined} now={0} onOpen={vi.fn()}
@@ -582,7 +736,7 @@ describe('workspace browser rows', () => {
 
   it('draggable row wires start/end and gates hover/drop on an active same-group drag', () => {
     const node: SessionNode = {
-      id: sid('s1'), title: 'Drag me', blank: false, running: false,
+      id: sid('s1'), title: 'Drag me', blank: false, running: false, pinned: false,
       runningSubagentCount: 0, completed: false, hasActiveSchedule: false, updatedAt: 0,
     }
     const inactive = dragProps()

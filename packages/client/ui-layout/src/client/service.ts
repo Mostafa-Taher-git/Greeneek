@@ -27,6 +27,12 @@ export interface ILayout {
   openDetails(): void
   /** Close the details panel. */
   closeDetails(): void
+  /** Open the right sidebar (dedicated live-work surface) over the details track. */
+  openRightbar(): void
+  /** Close the right sidebar and collapse its track. */
+  closeRightbar(): void
+  /** Toggle the right sidebar open/closed in one call. */
+  toggleRightbar(): void
   /**
    * Open Settings in the main column, optionally selecting a section.
    * @param section - Settings section id to select, or undefined to keep the current section.
@@ -71,6 +77,21 @@ export class LayoutController implements ILayout {
   /** Close the details panel. */
   closeDetails(): void {
     this.#require().closeDetails()
+  }
+
+  /** Open the right sidebar (dedicated live-work surface) over the details track. */
+  openRightbar(): void {
+    this.#require().openRightbar()
+  }
+
+  /** Close the right sidebar and collapse its track. */
+  closeRightbar(): void {
+    this.#require().closeRightbar()
+  }
+
+  /** Toggle the right sidebar open/closed in one call. */
+  toggleRightbar(): void {
+    this.#require().toggleRightbar()
   }
 
   openSettings(section?: string): void {

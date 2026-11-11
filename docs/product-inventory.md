@@ -1,4 +1,4 @@
-# Product inventory for desktop-v0.3.7
+# Product inventory for desktop-v0.3.9
 
 This inventory names every shipped surface group, the authoritative file that lists its members, and the evidence that exists on this release. It is a *group* inventory on purpose: per-row membership lives in the generated catalogs, which `pnpm run verify-generated-artifacts` keeps current, so a count copied here would rot while the catalogs stay correct.
 
@@ -20,7 +20,6 @@ This inventory names every shipped surface group, the authoritative file that li
 | Preset | Listed in | Evidence | Disposition |
 |---|---|---|---|
 | `standard`, `army`, `maestro`, `pixels-designer`, `instructor`, and the plugin-authoring preset | `packages/preset/agent-presets/presets/*/preset.yml` with `agent.cordis.yml` | `apps/cli/tests/preset-plugins.spec.ts` rejects a shipped preset whose packages are missing from the bundle closure; the live dev app switches all six | verified |
-| `ptc` | same | `retired: true`; hidden from creation surfaces, explicit resume preserved (`packages/preset/agent-presets/tests`) | implemented — retirement marker only; deletion needs owner approval |
 | Pixels Designer flagship export | `docs/flagships/pixels-designer.md` | five deterministic fixtures at the real Craft gateway | implemented — real PhotoCraft export blocked (no installed app, no key) |
 | Instructor CV export | `docs/flagships/instructor.md` | rubric only | blocked — PdfCraft not installed, no key, no anti-fabrication proof |
 
@@ -71,7 +70,7 @@ Every section below registers on the `settings.section` slot and is reached thro
 |---|---|---|---|
 | PTC code-tools presentation | Per-session opt-in, off by default | `packages/client/ui-chat` tests; the PTC retirement note | verified |
 | `ARTCRAFT_SMOKE` repository variable | Gates the real Craft serve smoke | `release-desktop.yml`, craft-local tests | verified |
-| `GREENEEK_API_KEY` presence | Live lanes self-skip without it | `docs/testing.md` | verified |
+| Greeneek-endpoint key presence (`GREENEEK_API_KEY`) | Greeneek-endpoint live lanes self-skip without it; Greeneek starts without it | `docs/testing.md` | verified |
 | Dry-run dispatch (`dry_run`) | Builds and uploads without publishing | `scripts/ci-workflow.spec.ts` | verified |
 
 ## Dashboard

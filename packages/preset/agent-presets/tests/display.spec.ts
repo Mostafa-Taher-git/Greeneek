@@ -16,14 +16,10 @@ describe('presetDisplayText', () => {
     })
   })
 
-  it('keeps PTC copy for the preset after its new-session pill retires', () => {
-    // Removing the pill leaves the preset a legal composition: Settings and
-    // custom presets still start it, and recorded sessions still name it, so
-    // its dictionary copy stays.
-    expect(presetDisplayText({ id: 'ptc', trust: 'system' }, t)).toEqual({
-      name: 't:presetPtcName',
-      description: 't:presetPtcDescription',
-    })
+  it('falls back to the id for a removed shipped preset', () => {
+    // The deleted `ptc` preset has no dictionary copy: a session that still
+    // names it shows its id rather than inventing copy.
+    expect(presetDisplayText({ id: 'ptc', trust: 'system' }, t)).toEqual({ name: 'ptc' })
   })
 
   it('keeps user-authored metadata untranslated', () => {

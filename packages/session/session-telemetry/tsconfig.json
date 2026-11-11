@@ -15,10 +15,10 @@
       "path": "../../../vendor/cordis"
     },
     {
-      "path": "../../core/session"
+      "path": "../../core/session/tsconfig.host.json"
     },
     {
-      "path": "../../core/agent"
+      "path": "../../core/agent/tsconfig.host.json"
     }
   ]
 }

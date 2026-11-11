@@ -27,7 +27,7 @@ import type { HostObservable, PropsHooks, PropsLocale, PropsRenderSlots, PropsRu
 // runtime shares below.
 import type {} from '@greeneek/gnk-client-ui-sidebar/client'
 import type {} from '@greeneek/gnk-client-ui-conversation/client'
-import type { SessionSearchResultItem } from '@greeneek/gnk-api-session-controller/client'
+import type { HostPlatform, SessionSearchResultItem } from '@greeneek/gnk-api-session-controller/client'
 import type { RemoteHostFacts } from '@greeneek/gnk-api-remotes/client'
 import type { WorkspaceId, WorkspaceView } from '@greeneek/gnk-api-workspace-controller/client'
 import type { SessionId } from '@greeneek/gnk-session/types'
@@ -64,6 +64,46 @@ declare module '@greeneek/gnk-client-ui-slots' {
 export type DirectoryFlowSlotName =
   | 'conversation.hero.workspace.directoryFlow'
   | 'sidebar.workspaces.directoryFlow'
+
+/** One external application the Host can launch for a workspace path. */
+export interface ExternalAppEntry {
+  /** Stable application identity, localized by the Client. */
+  readonly id: string
+  /** True when the application is installed and launchable on this Host. */
+  readonly available: boolean
+}
+
+/** Host platform and the external application catalogue for the "Open in…" picker. */
+export interface ExternalAppsShare {
+  /** Host platform; names the system file manager for the default entry. */
+  readonly platform: HostPlatform
+  /** Catalogue rows in Host order. */
+  readonly apps: readonly ExternalAppEntry[]
+  /** True when the Host can reveal a path in the system file manager. */
+  readonly canReveal: boolean
+}
+
+/** Where the Host hands one workspace path. */
+export type OpenPathTarget =
+  | { readonly kind: 'default' }
+  | { readonly kind: 'reveal' }
+  | { readonly kind: 'app'; readonly appId: string }
+
+/** Read-only git facts about one project directory. */
+export interface GitFacts {
+  /** True when the directory is inside a git work tree. */
+  readonly isRepository: boolean
+  /** Checked-out branch, absent on a detached HEAD. */
+  readonly branch?: string
+  /** Branch the change set is compared against, absent when unknown. */
+  readonly baseBranch?: string
+  /** Files that differ from the base branch. */
+  readonly changedFiles: number
+  /** Lines added against the base branch. */
+  readonly insertions: number
+  /** Lines removed against the base branch. */
+  readonly deletions: number
+}
 
 /**
  * Directory-picking share both trigger surfaces consume. Occupancy rides the
@@ -139,6 +179,31 @@ export type WorkspaceBrowserInjected = {
    * current session clears the selection into the New Session view state.
    */
   deleteSession: (sessionId: SessionId) => Promise<void>
+  /**
+   * Pin or unpin a Session in the registry-global pin set. A pinned row stays
+   * visible while its Workspace group is folded.
+   */
+  pinSession: (sessionId: SessionId, pinned: boolean) => Promise<void>
+  /**
+   * Read the Host's external application catalogue and platform facts. The
+   * picker omits applications the Host cannot launch.
+   */
+  externalApps: () => Promise<ExternalAppsShare>
+  /**
+   * Hand one Session's workspace path to a Host desktop destination.
+   * Rejects when the Session has no directory or the destination is absent.
+   */
+  openPath: (sessionId: SessionId, target: OpenPathTarget) => Promise<void>
+  /**
+   * Hand one Workspace directory to a Host desktop destination.
+   * Rejects when the destination is absent on this Host.
+   */
+  openWorkspacePath: (path: string, target: OpenPathTarget) => Promise<void>
+  /**
+   * Read the read-only git facts of one project directory.
+   * Resolves with `isRepository: false` when the directory is not a repository.
+   */
+  gitFacts: (path: string) => Promise<GitFacts>
   /**
    * Reorder a session inside its Workspace account (DOM-insertBefore
    * semantics: omitted anchor appends to the end). The view refreshes from

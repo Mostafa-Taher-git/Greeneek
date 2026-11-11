@@ -12,7 +12,7 @@
 import type { Agent, AgentOptions } from '@greeneek/gnk-agent'
 import type { Branded } from '@greeneek/gnk-brand'
 import type { ContentBlock } from '@greeneek/gnk-llm'
-import type { SessionEvent, SessionId } from '@greeneek/gnk-session'
+import type { SessionEvent, SessionId } from '@greeneek/gnk-session/types'
 import type { ObjectJsonSchema, ToolRestriction } from '@greeneek/gnk-tools'
 import type { SubagentDescriptorData } from './descriptor.ts'
 
@@ -314,6 +314,22 @@ export interface SubagentRun {
   dispose(): Promise<void>
 }
 
+export type {
+  HarnessAuthMethod,
+  HarnessCapabilities,
+  HarnessDiscovery,
+  HarnessDiscoveryRequest,
+  HarnessEffortLevel,
+  HarnessModelInfo,
+  HarnessPermissionMode,
+  HarnessPromptCapabilities,
+  HarnessSessionCapabilities,
+} from './harness-types.ts'
+import type {
+  HarnessCapabilities,
+  HarnessDiscovery,
+} from './harness-types.ts'
+
 /**
  * One registered transport for running child agents. Providers are trusted
  * same-process implementations; callers treat descriptors and returned values
@@ -345,7 +361,11 @@ export interface SubagentProvider {
    * a provider can honestly describe its models, effort levels, context
    * strategies, and permissions at registration time. Absent means unknown.
    */
-  readonly harnessCapabilities?: unknown
+  readonly harnessCapabilities?: HarnessCapabilities
+  /**
+   * Optional live discovery surface.
+   */
+  readonly discoverHarness?: HarnessDiscovery
   /**
    * Establish a ONE-SHOT child and return its handle after publication.
    * The service has already validated that every requested start-time

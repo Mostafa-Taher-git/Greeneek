@@ -40,9 +40,8 @@ interface OpenArguments {
 export function apply(ctx: Context): void {
   const active = new Map<string, ActiveApp>()
 
-  const closeApp = async (app: string): Promise<boolean> => {
-    const entry = active.get(app)
-    if (entry === undefined) return false
+  const closeApp = async (app: string): Promise<void> => {
+    const entry = active.get(app) as ActiveApp
     active.delete(app)
     for (const dispose of [...entry.disposers].reverse()) dispose()
     try {
@@ -50,7 +49,6 @@ export function apply(ctx: Context): void {
     } catch (error: unknown) {
       ctx.logger.warn(`tool-craft: failed to close ${entry.displayName}: ${String(error)}`)
     }
-    return true
   }
 
   const closeAll = async (): Promise<void> => {
@@ -64,23 +62,40 @@ export function apply(ctx: Context): void {
   }, 'tool-craft.sessions')
 
   const openApp = async (args: OpenArguments, exec: ToolExecution): Promise<CraftOpenSummary> => {
-    const manifest = ctx.craft.app(args.app)
+    // Auto-detected apps have no hand-written manifest; resolution goes
+    // through `ctx.craft.open`, which synthesizes the effective manifest.
     if (args.mode === 'close') {
-      const closed = await closeApp(manifest.id)
-      return {
-        app: manifest.id,
-        displayName: manifest.displayName,
-        state: closed ? 'closed' : 'not-open',
+      const app = args.app.trim().toLowerCase()
+      const activeEntry = active.get(app)
+      if (activeEntry !== undefined) {
+        await closeApp(activeEntry.app)
+        return {
+          app: activeEntry.app,
+          displayName: activeEntry.displayName,
+          state: 'closed',
+        }
       }
+      const known = ctx.craft.findApp(app)
+      if (known !== undefined) {
+        return { app: known.id, displayName: known.displayName, state: 'not-open' }
+      }
+      const statuses = await ctx.craft.discoveredApps(exec.signal)
+      const reported = statuses.find(status => status.app === app)
+      if (reported !== undefined) {
+        return { app: reported.app, displayName: reported.displayName, state: 'not-open' }
+      }
+      const manifest = ctx.craft.app(args.app)
+      return { app: manifest.id, displayName: manifest.displayName, state: 'not-open' }
     }
-    const existing = active.get(manifest.id)
+    const existing = active.get(args.app.trim().toLowerCase())
     if (existing !== undefined) return summary(existing)
     const session = await ctx.craft.open({
-      app: manifest.id,
+      app: args.app,
       mode: args.mode,
       workspaceRoot: workspaceRoot(exec),
       signal: exec.signal,
     })
+    const manifest = session.manifest as import('@greeneek/gnk-craft').CraftAppManifest
     let bridge: CraftAppBridge | undefined
     const disposers: Array<() => void> = []
     try {
@@ -174,9 +189,7 @@ function listDefinition(ctx: Context): ToolDefinition {
       },
     },
     async execute(_args: unknown, exec: ToolExecution): Promise<JsonValue> {
-      const apps = await Promise.all(
-        ctx.craft.listApps().map(manifest => ctx.craft.status(manifest.id, exec.signal)),
-      )
+      const apps = await ctx.craft.discoveredApps(exec.signal)
       return { apps } as unknown as JsonValue
     },
   }

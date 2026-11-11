@@ -4,14 +4,20 @@ import { Context } from '@greeneek/cordis'
 import z from '@greeneek/schemastery'
 import type { Agent } from '@greeneek/gnk-agent'
 import { resolveGnkHome } from '@greeneek/gnk-home-paths'
+import type { SessionEvent, TurnEndReason } from '@greeneek/gnk-session'
+import type { SessionId } from '@greeneek/gnk-session/types'
 import type {} from '@greeneek/gnk-session-persistence'
 import type { SettingsProvider, SettingsScope } from '@greeneek/gnk-settings'
 import { Remote, TypertRemoteService } from '@greeneek/gnk-typert-protocol'
 import { TeamActivity } from './activity.ts'
+import { runDebate } from './debate.ts'
+import type { DebatePorts, DebateRequest, DebateResult } from './debate.ts'
 import { errorMessage, TeamError } from './error.ts'
+import { HarnessRegistry } from './harness-registry.ts'
 import type { HarnessDescriptor } from './harness-descriptor.ts'
 import { RepoFleetConfigStore } from './fleet-config.ts'
 import type { RepoFleetSnapshot } from './fleet-config.ts'
+import { GREENEEK_HARNESS, migrateFleetSettings } from './fleet-migration.ts'
 import {
   assertFavoriteProviderReady,
   duplicateFleetFavorite,
@@ -42,6 +48,7 @@ import type { LaneCheckpoint, LaneRecord } from './lane-lifecycle.ts'
 import type { LanePolicy } from './lane-policy.ts'
 import { TeamRuntimeLifecycle } from './lifecycle.ts'
 import { TeamMailbox } from './mailbox.ts'
+import { readPersistedSession } from './persisted.ts'
 import { teamProjectionDefinition } from './projection.ts'
 import { TeamRoster } from './roster.ts'
 import type { TeamMembership } from './roster.ts'
@@ -54,6 +61,7 @@ import type {
   SendTeamMessageResult,
   SpawnTeammateRequest,
   SpawnTeammateResult,
+  TeamMemberSettled,
   TeamMemberView,
   TeamTaskMutationResult,
   TeamTaskView,
@@ -68,6 +76,13 @@ export { TeamId, TeamMessageId, TeamTaskId } from './types.ts'
 export { TeamError } from './error.ts'
 export { RepoFleetConfigStore } from './fleet-config.ts'
 export type { RepoFleetConfig, RepoFleetConfigOptions, RepoFleetMember, RepoFleetSnapshot } from './fleet-config.ts'
+export {
+  GREENEEK_HARNESS,
+  LEGACY_GREENEEK_STRATEGIES,
+  migrateFleetMember,
+  migrateFleetSettings,
+  userFacingConnection,
+} from './fleet-migration.ts'
 export {
   assertFavoriteProviderReady,
   FLEET_SETTINGS_NAMESPACE,
@@ -137,6 +152,32 @@ function positiveLimit(name: string, value: number): number {
   return value
 }
 
+/**
+ * Describe one turn's terminal reason for a named debate seat failure.
+ * @param reason - the terminal reason recorded on the child's `turn/end`.
+ * @returns a short phrase naming the stop condition.
+ */
+function describeTurnEnd(reason: TurnEndReason): string {
+  switch (reason.kind) {
+    case 'completed':
+      return 'completed'
+    case 'max-tokens':
+      return 'reached the output-token limit'
+    case 'aborted':
+      return 'was aborted'
+    case 'blocked':
+      return 'was blocked'
+    case 'interrupted':
+      return 'was interrupted'
+    case 'error':
+      return `failed: ${reason.error.message}`
+    // TurnEndReasonMap is merge-extensible; an unknown ending must not read
+    // as a completed reply.
+    default:
+      return 'ended before a reply'
+  }
+}
+
 /** Agent Teams service backed by the exact live Lead Session log. */
 export class TeamService extends TypertRemoteService {
   static inject = ['agents', 'sessions', 'sessionPersistence', 'sessionProjections', 'subagents']
@@ -173,6 +214,7 @@ export class TeamService extends TypertRemoteService {
   private readonly roster: TeamRoster
   private readonly mailbox: TeamMailbox
   private readonly tasks: TeamTaskBoard
+  private readonly harnessesRegistry: HarnessRegistry
 
   constructor(ctx: Context, config: Config = {}) {
     super(ctx, 'agentTeams')
@@ -251,6 +293,7 @@ export class TeamService extends TypertRemoteService {
       this.config.maxMessageBytes,
     )
     this.tasks = new TeamTaskBoard(this.journal, this.config.maxTasks)
+    this.harnessesRegistry = new HarnessRegistry(ctx, this.config.fleetProviders)
 
     ctx.on('session/event', (session, event) => { this.mailbox.observeSessionEvent(session, event) })
     ctx.on('agent/pre-step', async ({ agent }, next) => {
@@ -295,12 +338,25 @@ export class TeamService extends TypertRemoteService {
 
   /**
    * Create one named, continuable direct child of the Team Lead.
+   *
+   * The request may name the Greeneek Harness connection; the registry resolves
+   * it to the internal execution strategy that honors the requested context
+   * before the roster records the child under that strategy's registry name.
    * @param caller - exact live Lead Agent.
    * @param request - immutable name, description, prompt, context mode, provider, and cancellation.
    * @returns the active roster row.
    */
   async spawnTeammate(caller: Agent, request: SpawnTeammateRequest): Promise<SpawnTeammateResult> {
-    return await this.roster.spawn(caller, request)
+    const selection = this.harnessesRegistry.select(request.provider, {
+      ...request.agentOptions?.model === undefined ? {} : { model: request.agentOptions.model },
+      ...request.agentOptions?.reasoningEffort === undefined ? {} : { reasoningEffort: String(request.agentOptions.reasoningEffort) },
+      context: request.context,
+    })
+    if (selection.kind === 'refused') {
+      throw new TeamError(selection.reason, selection.code)
+    }
+    const provider = this.harnessesRegistry.resolveConnection(request.provider, request.context)
+    return await this.roster.spawn(caller, { ...request, provider })
   }
 
   /**
@@ -372,6 +428,261 @@ export class TeamService extends TypertRemoteService {
    */
   interrupt(caller: Agent, targetName: string): { previousStatus: 'running' | 'idle' | 'inactive' } {
     return this.roster.interrupt(caller, targetName)
+  }
+
+  /**
+   * Run a genuine multi-Harness debate: spawn seats over roster lanes,
+   * feed each round's transcript through the durable mailbox, collect each
+   * seat's next full reply from its own Session log, and synthesize the
+   * transcript with the dedicated moderator seat. The run covers Independent
+   * Proposals, Cross-Examination, Rebuttal, Evidence Review, and Final
+   * Synthesis, and publishes one of four verdicts with unresolved
+   * disagreements and any minority evidence a majority must not certify away.
+   * Every seat name, the moderator name, the roster seats the debate needs,
+   * and the registered provider are checked before the first seat exists, so
+   * a refused debate leaves no half-populated roster behind. A seat's reply is
+   * the turn that answers the prompt the debate queued for it: an inherited
+   * fork prefix and a reply that settled earlier cannot answer it.
+   * @param caller - exact live Team Lead Agent.
+   * @param request - topic, seats, moderator, rounds, and caller cancellation.
+   * @returns full transcript, synthesis, verdict, and per-seat failures.
+   */
+  async conductDebate(caller: Agent, request: DebateRequest): Promise<DebateResult> {
+    const membership = this.roster.membership(caller)
+    if (membership.role !== 'lead') {
+      throw new TeamError('only the Team Lead can conduct a debate', 'TEAM_LEAD_REQUIRED')
+    }
+    if (request.participants.length === 0) {
+      throw new TeamError('debate requires at least one participant', 'TEAM_INVALID_ARGUMENT')
+    }
+    const maxRounds = request.maxRounds ?? 1
+    if (!Number.isSafeInteger(maxRounds) || maxRounds < 0) {
+      throw new TeamError('debate maxRounds must be a non-negative integer', 'TEAM_INVALID_ARGUMENT')
+    }
+    const participantNames = request.participants.map(seat => seat.name ?? seat.provider)
+    const repeatedName = participantNames.find((candidate, index) => participantNames.indexOf(candidate) !== index)
+    if (repeatedName !== undefined) {
+      throw new TeamError(
+        `debate participants need distinct speaking names; "${repeatedName}" is used twice`,
+        'TEAM_INVALID_ARGUMENT',
+      )
+    }
+    const moderatorSpec = request.moderator ?? { provider: 'spawn', name: 'moderator' }
+    const moderatorName = moderatorSpec.name ?? moderatorSpec.provider
+    if (participantNames.includes(moderatorName)) {
+      throw new TeamError(
+        `debate moderator name "${moderatorName}" must differ from every participant name`,
+        'TEAM_INVALID_ARGUMENT',
+      )
+    }
+    // A debate consumes one immutable roster seat per participant plus one for
+    // the moderator. Refuse reuse and exhaustion before the first seat exists,
+    // so a failed debate leaves no half-populated roster behind.
+    const rosterNames = new Set(
+      this.roster.list(membership).filter(row => row.role === 'teammate').map(row => row.name),
+    )
+    const reused = [...participantNames, moderatorName].find(name => rosterNames.has(name))
+    if (reused !== undefined) {
+      throw new TeamError(
+        `debate seat "${reused}" reuses a teammate name already in this Team; give each debate distinct speaking names`,
+        'TEAM_MEMBER_NAME_TAKEN',
+      )
+    }
+    const debateSeats = participantNames.length + 1
+    if (rosterNames.size + debateSeats > this.config.maxMembers) {
+      throw new TeamError(
+        `debate needs ${debateSeats} new roster seats but this Team has ${rosterNames.size} of ${this.config.maxMembers} members; run the debate in a new session or raise maxMembers`,
+        'TEAM_MEMBER_LIMIT',
+      )
+    }
+    // Multi-round debate needs continuable lanes per seat; one-shot members
+    // settle once and cannot receive follow-ups. Refuse upfront by name,
+    // before spawning anything, rather than fail mid-debate.
+    if (maxRounds > 0) {
+      const lanes = this.continuableProviders()
+      for (const seat of request.participants) {
+        const name = seat.name ?? seat.provider
+        const resolved = this.harnessesRegistry.resolveConnection(seat.provider, 'fresh')
+        if (!lanes.has(resolved)) {
+          throw new TeamError(
+            `debate seat "${name}" names provider "${seat.provider}", which cannot hold a continuable lane for multi-round debate`,
+            'TEAM_DEBATE_NOT_CONTINUABLE',
+          )
+        }
+      }
+    }
+    const childIds = new Map<string, SessionId>()
+    // Persisted log length observed immediately before each prompt is queued.
+    // Collection reads the turn that starts at or after this offset, so a
+    // fast reply or a fork prefix appended after the request can never stand
+    // in for the reply to this prompt.
+    const boundaries = new Map<string, number>()
+    const ports: DebatePorts = {
+      spawn: async (provider, name, prompt, signal) => {
+        if (childIds.has(name)) {
+          throw new TeamError(`teammate name "${name}" was already used in this Team`, 'TEAM_MEMBER_NAME_TAKEN')
+        }
+        boundaries.set(name, 0)
+        const view = await this.spawnTeammate(caller, {
+          name,
+          description: 'debate participant',
+          prompt: [{ type: 'text', text: prompt }],
+          context: 'fresh',
+          provider,
+          signal,
+        })
+        childIds.set(name, view.member.id)
+      },
+      send: async (target, content, signal) => {
+        const childId = childIds.get(target)
+        if (childId === undefined) {
+          throw new TeamError(`debate seat "${target}" has no live member`, 'TEAM_MEMBER_NOT_FOUND')
+        }
+        const before = await readPersistedSession(this.ctx.sessionPersistence, childId, signal)
+        boundaries.set(target, before.events.length)
+        await this.sendMessage(caller, {
+          target,
+          content: [{ type: 'text', text: content }],
+          signal,
+        })
+      },
+      collect: async (name, signal) => {
+        const childId = childIds.get(name)
+        if (childId === undefined) {
+          throw new TeamError(`debate seat "${name}" has no live member`, 'TEAM_MEMBER_NOT_FOUND')
+        }
+        return await this.collectSeatReplies(caller, name, childId, boundaries.get(name) ?? 0, signal)
+      },
+      dispose: async (name) => {
+        const childId = childIds.get(name)
+        if (childId === undefined) return
+        await this.roster.stopTeammates(caller, [childId])
+      },
+    }
+    return await runDebate(ports, request)
+  }
+
+  /**
+   * Collect the reply to the prompt queued at `boundary`. Only a turn that
+   * starts at or after that persisted offset can answer the prompt, so an
+   * inherited fork prefix or a reply that settled before collection began
+   * cannot stand in for the current turn.
+   * @param caller - exact live Team Lead in whose Team the debate runs.
+   * @param name - participant member name.
+   * @param childId - child session holding the ongoing conversation.
+   * @param boundary - persisted log length observed immediately before the prompt was queued.
+   * @param signal - caller cancellation for the whole wait.
+   * @returns the participant's full reply text for the requested turn.
+   */
+  private async collectSeatReplies(
+    caller: Agent,
+    name: string,
+    childId: SessionId,
+    boundary: number,
+    signal: AbortSignal,
+  ): Promise<string> {
+    const state = this.journal.state(caller)
+    const row = state.members.find(candidate => candidate.id === childId)
+    if (row === undefined) {
+      throw new TeamError(`debate seat "${name}" has no live member`, 'TEAM_MEMBER_NOT_FOUND')
+    }
+    if (row.phase === 'failed') {
+      throw new TeamError(`debate seat "${name}" failed mid-debate: ${row.error ?? 'unknown error'}`, 'TEAM_DEBATE_MEMBER_FAILED')
+    }
+    const replyText = (events: readonly SessionEvent[], turn: number, base: number): string | undefined => {
+      const parts: string[] = []
+      for (const event of events) {
+        if (event.type !== 'assistant/message') continue
+        if (event.data.turn !== turn || event.seq < base) continue
+        for (const block of event.data.message.content) {
+          if (block.type === 'text') parts.push(block.text)
+        }
+      }
+      const text = parts.join('\n').trim()
+      return text.length === 0 ? undefined : text
+    }
+    // Bound for a lane that is idle with no new assistant reply: persistence
+    // lag needs a grace of several seconds, but an indefinitely idle lane
+    // must fail named rather than hang the round until caller abort.
+    const IDLE_POLL_LIMIT = 100
+    let idleStreak = 0
+    while (true) {
+      signal.throwIfAborted()
+      const stateNow = this.journal.state(caller)
+      const current = stateNow.members.find(candidate => candidate.id === childId)
+      if (current?.phase === 'failed') {
+        throw new TeamError(
+          `debate seat "${name}" failed mid-debate: ${current.error ?? 'unknown error'}`,
+          'TEAM_DEBATE_MEMBER_FAILED',
+        )
+      }
+      const live = this.ctx.agents.get(childId)
+      if (live !== undefined && live.status === 'running') {
+        idleStreak = 0
+        // Turn still active: wait for the driver to go idle before judging
+        // the turn's terminal record.
+        await new Promise<void>(resolve => setTimeout(resolve, 50))
+        continue
+      }
+      const stored = await readPersistedSession(this.ctx.sessionPersistence, childId, signal)
+      // A fork child records its inherited prefix before its own turns; those
+      // prefix events carry the parent's turn numbers and assistant messages,
+      // so both the captured request boundary and the durable inheritance
+      // boundary must be excluded from this turn's reply.
+      const base = Math.max(boundary, stored.inheritedEventCount)
+      const start = stored.events.find(
+        (event): event is SessionEvent<'turn/start'> => event.type === 'turn/start' && event.seq >= base,
+      )
+      if (start !== undefined) {
+        const turn = start.data.turn
+        const end = stored.events.find(
+          (event): event is SessionEvent<'turn/end'> => event.type === 'turn/end' && event.data.turn === turn,
+        )
+        if (end !== undefined) {
+          const text = replyText(stored.events, turn, base)
+          if (text !== undefined) {
+            if (end.data.reason.kind === 'completed' || end.data.reason.kind === 'max-tokens') return text
+            throw new TeamError(
+              `debate seat "${name}" produced text then ${describeTurnEnd(end.data.reason)} in turn ${turn}`,
+              'TEAM_DEBATE_MEMBER_FAILED',
+            )
+          }
+          if (end.data.reason.kind === 'error') {
+            throw new TeamError(
+              `debate seat "${name}" failed in turn ${turn}: ${end.data.reason.error.message}`,
+              'TEAM_DEBATE_MEMBER_FAILED',
+            )
+          }
+          throw new TeamError(
+            `debate seat "${name}" produced no text in turn ${turn} (${describeTurnEnd(end.data.reason)})`,
+            'TEAM_DEBATE_EMPTY_TURN',
+          )
+        }
+      }
+      if (live === undefined) {
+        // A one-shot seat settles without a live Agent. Its journal result is
+        // the durable record of that single turn; a lane that lost its Agent
+        // has no later turn to read and fails named.
+        const mode = current?.mode ?? row.mode ?? 'lane'
+        if (mode === 'one-shot' && current !== undefined && current.phase === 'completed') {
+          const completedText = (current as TeamMemberSettled).result.output
+            ?.filter((block): block is { type: 'text'; text: string } => block.type === 'text')
+            .map(block => block.text)
+            .join('\n')
+            .trim()
+          if (completedText !== undefined && completedText.length > 0) return completedText
+        }
+        throw new TeamError(`debate seat "${name}" produced no output for the latest turn`, 'TEAM_DEBATE_EMPTY_TURN')
+      }
+      // Lane is live but idle with no new turn yet: allow a grace of
+      // consecutive idle polls for message delivery and persistence lag, then
+      // fail named so the round records the failure rather than looping forever.
+      idleStreak += 1
+      if (idleStreak >= IDLE_POLL_LIMIT) {
+        throw new TeamError(`debate seat "${name}" produced no output for the latest turn`, 'TEAM_DEBATE_EMPTY_TURN')
+      }
+      await new Promise<void>(resolve => setTimeout(resolve, 30))
+    }
   }
 
   /**
@@ -527,11 +838,14 @@ export class TeamService extends TypertRemoteService {
    * Providers a fleet member may name. The roster dispatches a continuable provider
    * as a durable lane and every other registered provider as one delegation that
    * settles with a result, so registration alone admits a provider to a fleet.
-   * `Config.fleetProviders` narrows this set when a deployment pins one.
+   * The Greeneek Harness connection is admitted whenever one of its strategies
+   * is registered. `Config.fleetProviders` narrows this set when a deployment pins one.
    * @returns the provider names admitted for fleet use in the current composition.
    */
   private admittedProviders(): ReadonlySet<string> {
-    return new Set(this.ctx.subagents.list())
+    const names = new Set(this.ctx.subagents.list())
+    if (this.harnessesRegistry.greeneekConnection() !== undefined) names.add(GREENEEK_HARNESS)
+    return names
   }
 
   /**
@@ -545,39 +859,60 @@ export class TeamService extends TypertRemoteService {
     )))
   }
 
-  /** Build Harness descriptors from the live provider registry. */
-  private harnesses(): Array<{
-    readonly name: string
-    readonly state: 'ready' | 'one-shot' | 'not-installed' | 'unauthenticated' | 'temporarily-unavailable'
-    readonly models: readonly { readonly id: string; readonly efforts?: readonly { readonly id: string }[] }[] | 'unknown'
-    readonly supportsAgentOptions: boolean
-    readonly supportsContextFork: boolean
-  }> {
-    return this.ctx.subagents.list().map((name) => {
-      const provider = this.ctx.subagents.getProvider(name)
-      const continuable = provider?.prepareContinuable !== undefined
-      const route = provider?.agentRouteDefaults
-      return {
-        name,
-        state: continuable ? 'ready' : 'one-shot',
-        models: route === undefined ? 'unknown' : [{ id: route.model }],
-        supportsAgentOptions: provider?.capabilities.agentOptions ?? false,
-        supportsContextFork: provider?.inheritsParentContext ?? false,
-      }
-    })
+  /** Build Harness descriptors from the live provider registry and cached probes. */
+  private harnesses(): HarnessDescriptor[] {
+    return this.harnessesRegistry.list()
   }
 
+  /**
+   * List current Harness descriptors without probing.
+   * @returns one descriptor per connection.
+   */
   @Remote('harnesses')
   remoteHarnesses(): HarnessDescriptor[] {
     return this.harnesses()
   }
 
-  /** Build provider availability from the live registry and configured names. */
+  /**
+   * Probe every Harness that supports live discovery and return the refreshed
+   * descriptors. A Harness without a probe keeps its registration facts; its
+   * `canProbe` flag is false rather than a fabricated catalog.
+   * @returns the refreshed descriptors.
+   */
+  @Remote('refreshHarnesses')
+  async remoteRefreshHarnesses(): Promise<HarnessDescriptor[]> {
+    return await this.harnessesRegistry.refresh()
+  }
+
+  /**
+   * Probe one connection, so a user who just installed or authenticated a CLI can
+   * re-read only that Harness instead of every other connection.
+   * @param connection - the provider registration name the Fleet stores.
+   * @returns the full refreshed descriptor list.
+   */
+  @Remote('refreshHarness')
+  async remoteRefreshHarness(connection: string): Promise<HarnessDescriptor[]> {
+    const refreshed = await this.harnessesRegistry.refreshOne(connection)
+    if (refreshed === undefined) {
+      throw new TeamError(`harness connection "${connection}" is not registered or configured`, 'TEAM_HARNESS_UNKNOWN')
+    }
+    return this.harnesses()
+  }
+
+  /**
+   * Build provider availability from the live registry and configured names.
+   * The Greeneek Harness connection joins the internal strategy rows whenever
+   * one of its strategies is registered, so a fleet member may name the
+   * connection while existing dispatch keeps its registry names.
+   */
   private providerAvailability(): FleetProviderAvailability[] {
+    const greeneek = this.harnessesRegistry.greeneekConnection()
+    const registered = this.ctx.subagents.list()
+    const continuable = this.continuableProviders()
     return fleetProviderAvailability(
       this.config.fleetProviders,
-      this.ctx.subagents.list(),
-      this.continuableProviders(),
+      greeneek === undefined ? registered : [...registered, GREENEEK_HARNESS],
+      greeneek?.state === 'ready' ? new Set([...continuable, GREENEEK_HARNESS]) : continuable,
     )
   }
 
@@ -722,7 +1057,17 @@ export class TeamService extends TypertRemoteService {
       const providers = this.fleetAvailability(caller)
       // Validate every provider before the first child exists, so an
       // unavailable later member cannot leave a partially launched fleet.
-      for (const member of favorite.members) assertFavoriteProviderReady(member, providers)
+      for (const member of favorite.members) {
+        assertFavoriteProviderReady(member, providers)
+        const selection = this.harnessesRegistry.select(member.provider, {
+          ...member.model === undefined ? {} : { model: member.model },
+          ...member.reasoningEffort === undefined ? {} : { reasoningEffort: member.reasoningEffort },
+          ...member.context === undefined ? {} : { context: member.context },
+        })
+        if (selection.kind === 'refused') {
+          return { ok: false, error: { code: selection.code, message: selection.reason } }
+        }
+      }
       const members: TeamMemberView[] = []
       // Members start in batches of the fleet's concurrency. Every member of a
       // batch reaches its own outcome before the launch reports, so one member's
@@ -806,13 +1151,18 @@ export class TeamService extends TypertRemoteService {
     await provider.update(FLEET_SETTINGS_NAMESPACE, { favorites: [...favorites] }, expectedRevision)
   }
 
-  /** Build the current favorites view from the registered settings owner. */
+  /**
+   * Build the current favorites view from the registered settings owner. Stored
+   * members naming internal Greeneek strategies read as the Harness connection;
+   * the settings bytes keep their legacy values until a user save writes the
+   * migrated view back.
+   */
   private favoritesView(): FleetFavoritesView {
     const { provider, scope } = this.fleetOwner()
     const descriptor = provider.describe().find(candidate => candidate.ns === FLEET_SETTINGS_NAMESPACE)
     return {
       providers: this.providerAvailability(),
-      favorites: scope.get().favorites,
+      favorites: migrateFleetSettings(scope.get()).favorites,
       /* v8 ignore next -- a registered fleet owner always appears in its own describe snapshot. */
       revision: descriptor?.revision ?? 0,
     }

@@ -8,6 +8,8 @@ export { DisclosureRow } from './DisclosureRow.tsx'
 export type { DisclosureRowProps } from './DisclosureRow.tsx'
 export { Button } from './Button.tsx'
 export type { ButtonVariant } from './Button.tsx'
+export { ChartContainer, ChartLegendContent, ChartTooltipContent } from './Chart.tsx'
+export type { ChartConfig, ChartRow } from './Chart.tsx'
 export { Pill } from './Pill.tsx'
 export { Input } from './Input.tsx'
 export { Menu } from './Menu.tsx'
@@ -33,6 +35,14 @@ export { Tooltip } from './Tooltip.tsx'
 export type { TooltipSide } from './Tooltip.tsx'
 export { Toast } from './Toast.tsx'
 export { writeClipboard } from './clipboard.ts'
+export {
+  formatShortcut,
+  isEditableTarget,
+  isMacPlatform,
+  parseShortcut,
+  shortcutMatches,
+} from './shortcuts.ts'
+export type { ShortcutParts } from './shortcuts.ts'
 export { relativeTime } from './relative-time.ts'
 export type { RelativeTime, RelativeTimeUnit } from './relative-time.ts'
 export { JsonTree } from './JsonTree.tsx'

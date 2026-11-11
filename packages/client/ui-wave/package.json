@@ -1,6 +1,6 @@
 {
   "name": "@greeneek/gnk-client-ui-wave",
-  "description": "Army fleet surfaces: the details-panel Fleet tab and the sub-1220 fallback pill, polled from the wave remote faces",
+  "description": "Army fleet surfaces: the dedicated right-sidebar fleet panel and the sub-1220 fallback pill, polled from the wave remote faces",
   "version": "1.1.0-alpha.0",
   "publishConfig": {
     "access": "public"
@@ -31,8 +31,8 @@
         "@greeneek/gnk-api-remotes",
         "@greeneek/gnk-api-session-controller",
         "@greeneek/gnk-client-locale",
-        "@greeneek/gnk-client-ui-chat",
         "@greeneek/gnk-client-ui-conversation",
+        "@greeneek/gnk-client-ui-layout",
         "@greeneek/gnk-client-ui-renderer",
         "@greeneek/gnk-client-ui-session"
       ],
@@ -54,8 +54,8 @@
     "@greeneek/gnk-client-locale": "workspace:^",
     "@greeneek/gnk-client-store": "workspace:^",
     "@greeneek/gnk-client-test-runtime": "workspace:^",
-    "@greeneek/gnk-client-ui-chat": "workspace:^",
     "@greeneek/gnk-client-ui-conversation": "workspace:^",
+    "@greeneek/gnk-client-ui-layout": "workspace:^",
     "@greeneek/gnk-client-ui-primitives": "workspace:^",
     "@greeneek/gnk-client-ui-renderer": "workspace:^",
     "@greeneek/gnk-client-ui-session": "workspace:^",

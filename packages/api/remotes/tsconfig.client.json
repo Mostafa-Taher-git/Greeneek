@@ -55,7 +55,7 @@
       "path": "../../settings/settings"
     },
     {
-      "path": "../../subagent/subagent"
+      "path": "../../subagent/subagent/tsconfig.client.json"
     },
     {
       "path": "../../subagent/wave"

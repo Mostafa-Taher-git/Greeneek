@@ -47,9 +47,13 @@ Mount this package along with a host provider (`@greeneek/gnk-craft-local`) and 
 
 ### Registry review and root confinement
 
-A manifest may declare an observed `headless.registryMethod` and a reviewed `headless.trustedRegistryHash`. Open hashes the raw registry with recursively sorted object keys and significant array order; a mismatch closes the host and later status reads report `drifted` from the process-local observation. Recipes require a reviewed match, so a missing baseline never becomes trusted by first use. A later open may re-measure and recover.
+A manifest may declare an observed `headless.registryMethod` and a reviewed `headless.trustedRegistryHash`. Open builds the capability matrix from the live registry with recursively sorted object keys and significant array order; a mismatch closes the host and later status reads report `drifted` from the process-local observation. `CapabilityCache` keeps the first observed hash per app as the drift baseline; a later differing open throws and reports `drifted`, while a return to the baseline recovers. Recipes require a reviewed match, so a missing baseline never becomes trusted by first use. Auto-detected apps without a manifest open through a synthesized ephemeral manifest whose filter is the observed catalog.
 
 The service bounds concurrent active headless applications (default: 2, configurable via `maxActiveApps`). Every open session receives isolated job directories under the workspace root (`craft/io` and `craft/out`), and writes a one-time control token file verified by the headless process.
+
+### The CV export gate
+
+`evaluateCvTrace` traces every draft claim to user input or a cited fetched fact before export, and `cvExportDecision` allows export only for a traced draft with an explicit approved review; a failed or absent export makes any PDF claim dishonest. Both are pure functions over caller-supplied records, so the Instructor eval fixtures assert them against the draft and review decision the composed agent produced rather than trusting the persona text alone.
 
 -----
 
@@ -65,6 +69,7 @@ The service mounts onto the root context as `ctx.craft`. Providers register via 
 |---|---|
 | [`src/service.ts`](src/service.ts) | `CraftRuntime` service definition and session lifecycle |
 | [`src/manifest.ts`](src/manifest.ts) | Manifest loading and JSON schema validation |
+| [`src/cv-gate.ts`](src/cv-gate.ts) | Deterministic CV export gate (traceability, review, PDF honesty) |
 | [`src/paths.ts`](src/paths.ts) | Root confinement, token path, and artifact path resolution |
 | [`src/types.ts`](src/types.ts) | Typed service, manifest, and provider contracts |
 | [`src/error.ts`](src/error.ts) | Typed `CraftError` codes |
@@ -98,9 +103,9 @@ None of its own; only the tool consumer's mount and dispose of bridge tools chan
 <a id="known-limitations-and-deferred-work"></a>
 
 - **Live GUI attach gated** — Live attach mode is disabled by default in pilot manifests until upstream authenticated control channel protocols are hardened.
-- **Pilot applications** — Bundles manifests for PhotoCraft and PdfCraft; remaining ArtCraft suite applications are added in follow-on milestones once their facts are observed rather than inferred.
-- **Unverified manifest facts** — Both rows keep the row-level `verified: false` claim, which the loader allows only alongside a proven `sources` entry; the real-host smoke flips it with recorded runs. PdfCraft's manifest is entirely unproven (its serve template states the bridge launch contract proven on PhotoCraft's CLI). PhotoCraft's `launch.connected`, `headless.listMethod`, `headless.toolFilter`, `headless.artifactTools`, `riskyCommandClasses`, and attach facts remain unproven against an installed app; only the serve handshake, the `convert` run, and the `*.webp` artifact pattern it produced are proven.
-- **PhotoCraft headless entry and catalog** — `launch.headless` is `{cli} serve --automation-read-root {readRoot} --automation-write-root {writeRoot} --control-token-file {controlTokenFile}`, proven against `photocraft-cli.exe` 0.15.1 (build 60c87b988): one `{"id":1,"method":"methods","params":{}}` line answered `{"id":1,"ok":true,"result":[18 methods]}`, `engine.commands` answered with its command registry, and closing stdin exited 0 with no surviving process. The same build refuses `photocraft-cli --headless` with exit 2, and `serve` knows no `command_list` method, so the first catalog call cannot list tools yet (mechanism: [local provider](../craft-local/README.md)).
+- **Pilot applications** — Bundles manifests for PhotoCraft and PdfCraft; any other installed ArtCraft app is auto-detected from the launcher and opened through a synthesized ephemeral manifest without a hand-written adapter, with `verified: false` and no recipe until a reviewed registry baseline exists.
+- **Unverified manifest facts** — Both rows keep the row-level `verified: false` claim while each manifest still carries an unverified provenance marker: PhotoCraft's `launch.connected`, `headless.listMethod`, `headless.toolFilter`, `headless.artifactTools`, `riskyCommandClasses`, and attach facts remain unproven against an installed app, and PdfCraft's headless launch contract remains unproven there; only the recorded runs in `sources[].verified: true` (the serve handshakes, the `convert` run and its `*.webp` pattern, the 0.16.0 stdio/MCP runs, and PdfCraft's 0.14.0 CLI/MCP conversions) are proven. The flag was corrected from `true` to `false` so the row does not claim what its own marker still calls unproven; it flips only when those marker facts are proven.
+- **PhotoCraft headless entry and catalog** — `launch.headless` is `{cli} serve --automation-read-root {readRoot} --automation-write-root {writeRoot} --control-token-file {controlTokenFile}`, proven against `photocraft-cli.exe` 0.15.1 (build 60c87b988): one `{"id":1,"method":"methods","params":{}}` line answered `{"id":1,"ok":true,"result":[18 methods]}`, `engine.commands` answered with its command registry, and closing stdin exited 0 with no surviving process. The same build refuses `photocraft-cli --headless` with exit 2, and `serve` knows no `command_list` method, so the `serve` transport projects `engine.commands` into the capability matrix instead of sending `command_list` (mechanism: [local provider](../craft-local/README.md)).
 - **Windows-only pilot** — Both manifests document `win32` only; discovery on any other host reports `not-installed` with a platform detail before probing launcher state or the registry.
 - **Unversioned discovery records bypass the version floor** — `minVersion` is 0.15.1, the ProductVersion whose `serve` entry was proven, but discovery compares only a version the installation source reported; the Windows registry `InstallDir` value carries none, so that path accepts any build.
 

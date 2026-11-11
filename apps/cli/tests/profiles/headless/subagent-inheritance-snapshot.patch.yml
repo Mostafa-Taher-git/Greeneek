@@ -6,9 +6,6 @@
 - id: headless-runner
   disabled: true
 
-- id: llm-greeneek
-  disabled: true
-
 - id: sandbox-policy
   config:
     mode: workspace-write

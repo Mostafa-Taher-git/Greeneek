@@ -18,10 +18,10 @@
       "path": "../../llm/llm"
     },
     {
-      "path": "../../core/session"
+      "path": "../../core/session/tsconfig.host.json"
     },
     {
-      "path": "../session-projection"
+      "path": "../session-projection/tsconfig.host.json"
     }
   ]
 }

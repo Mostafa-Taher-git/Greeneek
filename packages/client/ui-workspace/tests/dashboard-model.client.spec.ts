@@ -3,7 +3,7 @@
 // reported through a sourced, effective-dated price.
 
 import { describe, expect, it } from 'vitest'
-import { dashboardFacts, type DashboardSession } from '../src/client/dashboard-model.ts'
+import { DASHBOARD_AGGREGATION_BUDGET_MS, dashboardFacts, type DashboardSession } from '../src/client/dashboard-model.ts'
 import type { DashboardPricingCatalog } from '../src/client/dashboard-pricing.ts'
 
 function session(overrides: Partial<DashboardSession> & { id: string }): DashboardSession {
@@ -18,6 +18,11 @@ function session(overrides: Partial<DashboardSession> & { id: string }): Dashboa
     outputTokens: 0,
     cacheReadTokens: 0,
     cacheWriteTokens: 0,
+    llmMs: 0,
+    toolMs: 0,
+    ttftMs: 0,
+    ttftSteps: 0,
+    decodeMs: 0,
     recorded: true,
     ...overrides,
   }
@@ -266,5 +271,35 @@ describe('dashboard facts', () => {
     })
     expect(facts.cost).toEqual({ kind: 'unknown', reason: 'mixed-currency' })
     expect(facts.catalogVersion).toBe('9')
+  })
+
+  it('sums latency only over measured rows and mirrors steps as requests', () => {
+    const facts = dashboardFacts({
+      sessions: [
+        session({ id: 'a', steps: 4, llmMs: 100, toolMs: 40, ttftMs: 200, ttftSteps: 2, decodeMs: 80 }),
+        session({ id: 'b', recorded: false, steps: 99, llmMs: 999, toolMs: 999, ttftMs: 999, ttftSteps: 99, decodeMs: 999 }),
+      ],
+      workspaces: [],
+      archivedSessionIds: [],
+    })
+    expect(facts.requests).toBe(4)
+    expect(facts.llmMs).toBe(100)
+    expect(facts.toolMs).toBe(40)
+    expect(facts.ttftMs).toBe(200)
+    expect(facts.ttftSteps).toBe(2)
+    expect(facts.decodeMs).toBe(80)
+  })
+
+  it('publishes a positive aggregation budget in milliseconds', () => {
+    expect(DASHBOARD_AGGREGATION_BUDGET_MS).toBeGreaterThan(0)
+  })
+
+  it('folds a large visible set within the budget', () => {
+    const sessions = Array.from({ length: 2000 }, (_, index) =>
+      session({ id: `s${index}`, updatedAt: index, provider: `p${index % 10}`, model: `m${index % 10}` }))
+    const started = performance.now()
+    const facts = dashboardFacts({ sessions, workspaces: [], archivedSessionIds: [] })
+    expect(facts.sessions).toBe(2000)
+    expect(performance.now() - started).toBeLessThan(DASHBOARD_AGGREGATION_BUDGET_MS)
   })
 })

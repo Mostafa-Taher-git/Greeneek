@@ -65,10 +65,12 @@ function workspaceState(
   items: WorkspaceSnapshot['items'] = [],
   archivedSessionIds: readonly SessionId[] = [],
   phase: WorkspaceSnapshot['phase'] = 'ready',
+  pinnedSessionIds: readonly SessionId[] = [],
 ): WorkspaceSnapshot {
   return {
     items,
     archivedSessionIds,
+    pinnedSessionIds,
     phase,
     state: phase === 'ready' ? 'idle' : 'loading',
     error: null,
@@ -145,6 +147,21 @@ class FakeWorkspaces implements IWorkspaces {
   archiveSession(sessionId: SessionId): Promise<void> {
     this.archiveCalls.push(sessionId)
     return this.onArchive(sessionId)
+  }
+
+  readonly pinCalls: Array<{ sessionId: SessionId; pinned: boolean }> = []
+  onPin: IWorkspaces['pinSession'] = async (sessionId, pinned) => {
+    this.list.update(state => ({
+      ...state,
+      pinnedSessionIds: pinned
+        ? [...state.pinnedSessionIds, sessionId]
+        : state.pinnedSessionIds.filter(id => id !== sessionId),
+    }))
+  }
+
+  pinSession(sessionId: SessionId, pinned: boolean): Promise<void> {
+    this.pinCalls.push({ sessionId, pinned })
+    return this.onPin(sessionId, pinned)
   }
 
   readonly deleteCalls: SessionId[] = []

@@ -1,0 +1,117 @@
+.utilitiesRoot {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+}
+
+.openInSplit {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  background: var(--dsw-alias-bg-layer-2);
+  border: 0.5px solid var(--dsw-alias-border-l2);
+  border-radius: 6px;
+}
+
+.openInSplit:hover {
+  background: var(--dsw-alias-bg-layer-3);
+}
+
+.openInMenu {
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+}
+
+.splitMain {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+  height: 100%;
+  border: none;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  cursor: pointer;
+  border-radius: 5px 0 0 5px;
+}
+
+.folderIcon {
+  color: var(--dsw-alias-state-warn-primary);
+}
+
+.splitDivider {
+  width: 0.5px;
+  height: 14px;
+  background: var(--dsw-alias-border-l2);
+}
+
+.splitArrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 100%;
+  border: none;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  cursor: pointer;
+  border-radius: 0 5px 5px 0;
+}
+
+.splitArrow:hover,
+.splitMain:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+}
+
+.headerBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 0.5px solid transparent;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.headerBtn:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+}
+
+.pinnedActive {
+  color: var(--dsw-alias-state-business-primary);
+}
+
+.renameInput {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--dsw-alias-bg-layer-2);
+  border: 0.5px solid var(--dsw-alias-border-l2);
+  border-radius: 6px;
+  color: var(--dsw-alias-label-primary);
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.renameInput:focus {
+  border-color: var(--dsw-alias-brand-primary);
+}
+
+.renameError {
+  margin-top: 8px;
+  color: var(--dsw-alias-state-error-primary);
+  font-size: 12px;
+}
+
+.deleteAction:not(:disabled) {
+  color: var(--dsw-alias-state-error-primary);
+}

@@ -12,7 +12,7 @@
  * @module @greeneek/gnk-agent/consumed-work
  */
 
-import type { SessionEvent, TurnEndReason } from '@greeneek/gnk-session'
+import type { SessionEvent, TurnEndReason } from '@greeneek/gnk-session/types'
 
 /** How one agent log accounts for the work it consumed. */
 export interface ConsumedWork {

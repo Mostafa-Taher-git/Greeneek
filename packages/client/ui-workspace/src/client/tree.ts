@@ -40,6 +40,10 @@ export interface SessionNode {
   completed: boolean
   /** The current list projection contains at least one active Schedule record. */
   hasActiveSchedule: boolean
+  /** Registry-global pin set membership; pinned rows stay visible in a folded group. */
+  pinned: boolean
+  /** Session directory, when the Session carries one. */
+  cwd?: string
   updatedAt: number
 }
 
@@ -249,6 +253,7 @@ function sessionNode(
   s: SessionSummary,
   descendants: ReadonlyMap<SessionId, SubagentDescendantSummary>,
   pendingInteractions: SessionPendingInteractions,
+  pinned: ReadonlySet<SessionId>,
 ): SessionNode {
   const pendingInteraction = visiblePendingKind(pendingInteractions.get(s.id)?.kind)
   return {
@@ -259,6 +264,8 @@ function sessionNode(
     runningSubagentCount: descendants.get(s.id)?.runningCount ?? 0,
     completed: s.completed === true,
     hasActiveSchedule: hasActiveSchedule(s),
+    pinned: pinned.has(s.id),
+    ...(s.cwd === undefined ? {} : { cwd: s.cwd }),
     updatedAt: s.updatedAt,
     ...(pendingInteraction === undefined ? {} : { pendingInteraction }),
   }
@@ -277,6 +284,7 @@ function sessionNode(
  * @param archivedSessionIds - registry-global archive set.
  * @param pendingInteractions - pending UI interactions by Session.
  * @param view - local expansion arrays.
+ * @param pinnedSessionIds - registry-global pin set (row marker + fold visibility).
  * @returns group sections in render order.
  */
 export function deriveGroups(
@@ -285,8 +293,10 @@ export function deriveGroups(
   archivedSessionIds: readonly SessionId[],
   pendingInteractions: SessionPendingInteractions,
   view: TreeView,
+  pinnedSessionIds: readonly SessionId[] = [],
 ): GroupNode[] {
   const archived = new Set(archivedSessionIds)
+  const pinned = new Set(pinnedSessionIds)
   const expandedGroups = new Set(view.expandedGroups)
   const descendants = indexSubagentDescendants(list.byId)
   const currentGroup = list.current === undefined
@@ -306,8 +316,10 @@ export function deriveGroups(
       expanded,
       containsCurrent: g.key === currentGroup,
       sessions: expanded
-        ? g.sessions.map(session => sessionNode(session, descendants, pendingInteractions))
-        : [],
+        ? g.sessions.map(session => sessionNode(session, descendants, pendingInteractions, pinned))
+        : g.sessions
+          .filter(session => pinned.has(session.id))
+          .map(session => sessionNode(session, descendants, pendingInteractions, pinned)),
     })
   }
   return groups
@@ -321,14 +333,17 @@ export function deriveGroups(
  * @param list - sessions list snapshot.
  * @param archivedSessionIds - registry-global archive set.
  * @param pendingInteractions - pending UI interactions by Session.
+ * @param pinnedSessionIds - registry-global pin set (row marker only; flat order stays recency).
  * @returns flat rows in render order.
  */
 export function deriveFlat(
   list: SessionListState,
   archivedSessionIds: readonly SessionId[],
   pendingInteractions: SessionPendingInteractions,
+  pinnedSessionIds: readonly SessionId[] = [],
 ): SessionNode[] {
   const archived = new Set(archivedSessionIds)
+  const pinned = new Set(pinnedSessionIds)
   const descendants = indexSubagentDescendants(list.byId)
   const rows: SessionSummary[] = []
   for (const id of list.ids) {
@@ -337,7 +352,7 @@ export function deriveFlat(
     rows.push(s)
   }
   rows.sort(byRecency)
-  return rows.map(session => sessionNode(session, descendants, pendingInteractions))
+  return rows.map(session => sessionNode(session, descendants, pendingInteractions, pinned))
 }
 
 /**

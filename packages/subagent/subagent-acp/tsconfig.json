@@ -21,10 +21,10 @@
       "path": "../../llm/llm"
     },
     {
-      "path": "../../core/agent"
+      "path": "../../core/agent/tsconfig.host.json"
     },
     {
-      "path": "../subagent"
+      "path": "../subagent/tsconfig.host.json"
     },
     {
       "path": "../../subprocess/subprocess"

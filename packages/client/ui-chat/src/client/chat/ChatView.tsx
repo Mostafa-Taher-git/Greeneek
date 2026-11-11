@@ -568,7 +568,10 @@ export function ChatView({
     const position = isAtBottom ? null : scrollPosition(local, el)
     if (isAtBottom) {
       anchorRef.current = null
-    } else if (anchorRef.current !== null && position !== null) {
+    } else if (position !== null) {
+      // A reader who leaves the bottom owns the row they stopped on: hold it
+      // so a later height change above it can be compensated instead of
+      // sliding the row on screen.
       anchorRef.current = { key: position.anchorKey, top: position.anchorTop }
     }
     // Continuous save (unmount happens after ref detach, so saving there is
@@ -615,12 +618,40 @@ export function ChatView({
   followRef.current = () => {
     if (scrollSamplePendingRef.current) return
     const local = listRef.current
-    if (local !== null && atBottomRef.current) {
-      const el = scrollerOf(local)
-      el.scrollTop = el.scrollHeight
-      observedTopRef.current = el.scrollTop
-      chatScroll.save(null)
-    }
+    if (local === null || !atBottomRef.current) return
+    const el = scrollerOf(local)
+    // The compositor can move raw scrollTop up (away from the bottom) before
+    // it delivers the scroll event that updates atBottomRef. Content growth
+    // while pinned leaves scrollTop at the OLD floor, so only a position above
+    // the last delivered pinned top can mean the reader scrolled away. Never
+    // snap that reader back to the new floor.
+    const floor = Math.max(0, el.scrollHeight - el.clientHeight)
+    if (el.scrollTop < Math.min(observedTopRef.current, floor) - 0.5) return
+    el.scrollTop = el.scrollHeight
+    observedTopRef.current = el.scrollTop
+    chatScroll.save(null)
+  }
+  // A reader who scrolled away keeps the row they were reading where they left
+  // it. The browser clamps scrollTop when the content above that row shrinks
+  // (a folded process, a collapsed disclosure), and no app write compensates
+  // it: the row slides on screen while the reader is reading something else.
+  // This restores the held row's screen position after such a change.
+  const reanchorRef = useRef<(() => void) | null>(null)
+  reanchorRef.current = () => {
+    if (scrollSamplePendingRef.current) return
+    const anchor = anchorRef.current
+    if (anchor === null) return
+    const local = listRef.current
+    if (local === null) return
+    const el = scrollerOf(local)
+    // A pinned reader belongs to the follow, not to the held row.
+    if (el.scrollHeight - el.scrollTop - el.clientHeight <= FOLLOW_THRESHOLD + 1) return
+    const row = anchorElement(local, anchor.key)
+    if (row === null) return
+    const drift = flowTop(row, el) - anchor.top
+    if (Math.abs(drift) < 0.5) return
+    el.scrollTop += drift
+    observedTopRef.current = el.scrollTop
   }
   // Streaming, tool disclosures, and other flow changes resize the column;
   // the sticky composer resizes outside it. This observer owns ChatView's
@@ -636,6 +667,9 @@ export function ChatView({
     const observer = new ResizeObserver(() => {
       followRef.current?.()
       activeTurnRef.current?.()
+      // A height change above a reader's held row moves that row on screen
+      // unless the owner restores it.
+      reanchorRef.current?.()
     })
     observer.observe(column)
     if (composer !== null) observer.observe(composer)

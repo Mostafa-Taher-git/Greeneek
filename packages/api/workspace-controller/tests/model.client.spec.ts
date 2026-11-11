@@ -15,6 +15,8 @@ import type {
   WorkspaceInsertBeforeRequest,
   WorkspaceInsertSessionBeforeRequest,
   WorkspaceOrderValue,
+  WorkspacePinSessionRequest,
+  WorkspacePinSessionValue,
   WorkspaceRenameRequest,
   WorkspaceValue,
   WorkspaceId,
@@ -90,6 +92,10 @@ class FakeWorkspaceRemote implements WorkspaceRemote {
     request: WorkspaceDeleteSessionRequest,
   ) => Promise<RemoteResult<WorkspaceDeleteSessionValue>> = _request =>
     Promise.resolve(remoteOk({ archivedSessionIds: [] }))
+  onPinSession: (
+    request: WorkspacePinSessionRequest,
+  ) => Promise<RemoteResult<WorkspacePinSessionValue>> = request =>
+    Promise.resolve(remoteOk({ pinnedSessionIds: [request.sessionId] }))
 
   create(request: WorkspaceCreateRequest): Promise<RemoteResult<WorkspaceCreateValue>> {
     this.record('create', request)
@@ -124,6 +130,11 @@ class FakeWorkspaceRemote implements WorkspaceRemote {
   deleteSession(request: WorkspaceDeleteSessionRequest): Promise<RemoteResult<WorkspaceDeleteSessionValue>> {
     this.record('deleteSession', request)
     return this.onDeleteSession(request)
+  }
+
+  pinSession(request: WorkspacePinSessionRequest): Promise<RemoteResult<WorkspacePinSessionValue>> {
+    this.record('pinSession', request)
+    return this.onPinSession(request)
   }
 
   async *follow(_signal?: AbortSignal): AsyncGenerator<WorkspaceFollowFrame> {}
@@ -317,6 +328,29 @@ describe('ClientWorkspaceModel', () => {
     remote.onArchiveSession = request => Promise.resolve(remoteOk({ archivedSessionIds: [request.sessionId] }))
     await expect(model.archiveSession(sid('fresh'))).resolves.toMatchObject({ ok: true })
     expect(model.getSnapshot().archivedSessionIds).toEqual(['fresh'])
+  })
+
+  it('installs the pin set a pin command confirms and keeps the set on a refusal', async () => {
+    const remote = new FakeWorkspaceRemote()
+    const model = modelFor(remote)
+    baseline(model)
+
+    await expect(model.pinSession(sid('pinned'), true)).resolves.toMatchObject({ ok: true })
+    expect(model.getSnapshot().pinnedSessionIds).toEqual(['pinned'])
+    expect(remote.calls).toContainEqual({
+      method: 'pinSession',
+      request: { sessionId: 'pinned', pinned: true },
+    })
+
+    remote.onPinSession = () => Promise.resolve(workspaceError(
+      new RemoteError('session/not-found', 'missing', { sessionId: sid('missing') }),
+    ))
+    await expect(model.pinSession(sid('missing'), true)).resolves.toMatchObject({ ok: false })
+    expect(model.getSnapshot().pinnedSessionIds).toEqual(['pinned'])
+
+    // A baseline from a Host without the pin set reads as an empty set.
+    model.replaceBaseline({ items: [], archivedSessionIds: [] })
+    expect(model.getSnapshot().pinnedSessionIds).toEqual([])
   })
 
   it('keeps the newest row and places Workspaces missing from partial orders last', async () => {

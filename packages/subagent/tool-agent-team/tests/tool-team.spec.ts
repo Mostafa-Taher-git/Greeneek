@@ -35,6 +35,7 @@ const TOOL_NAMES = [
   'list_agents',
   'wait_agent',
   'interrupt_agent',
+  'conduct_debate',
   'team_task_create',
   'team_task_list',
   'team_task_get',
@@ -604,7 +605,9 @@ describe('gnk-tool-team provider selection', () => {
     })
     expect(refused.isError).toBe(true)
     expect(text(refused)).toContain('provider "no-such-cli" is not registered in this composition')
-    expect(text(refused)).toContain('spawn')
+    // The refusal names user-facing connections, never the internal strategies.
+    expect(text(refused)).toContain('greeneek')
+    expect(text(refused)).not.toMatch(/\bspawn\b|\bfork\b/u)
     expect(spawn).not.toHaveBeenCalled()
     expect(ctx.agentTeams.listMembers(lead)).toHaveLength(1)
   })
@@ -621,10 +624,74 @@ describe('gnk-tool-team provider selection', () => {
     })
     expect(result.isError, text(result)).toBe(false)
     expect(requests).toHaveLength(1)
-    expect(requests[0]?.reason).toContain('native — provider=spawn')
-    expect(requests[0]?.reason).toContain('coder — provider=fork')
+    expect(requests[0]?.reason).toContain('native — harness=greeneek, execution=Harmony, context=fresh context')
+    expect(requests[0]?.reason).toContain('coder — harness=greeneek, execution=Harmony, context=fresh context')
     expect(ctx.agentTeams.listMembers(lead).filter(member => member.role === 'teammate').map(member => `${member.name}:${member.provider}`))
       .toEqual(['native:spawn', 'coder:fork'])
+  })
+
+  it('forwards conduct_debate to the TeamService with resolved seat providers', async () => {
+    const { ctx, lead } = await setup([textResponse('unused')])
+    const debate = vi.spyOn(ctx.agentTeams, 'conductDebate').mockResolvedValue({
+      topic: 'ship or refine',
+      entries: [{
+        round: 0,
+        role: 'position',
+        participant: 'alpha',
+        sourceHarness: 'spawn',
+        text: 'refine first',
+      }],
+      synthesis: 'VERDICT: consensus\nCONSENSUS: yes',
+      verdictMode: 'consensus',
+      unresolved: [],
+      minorityEvidence: [],
+      consensus: true,
+      moderator: 'moderator',
+      moderatorHarness: 'spawn',
+      failures: [],
+    } as never)
+
+    const result = await execute(ctx, lead, 'conduct_debate', {
+      topic: 'ship or refine',
+      participants: [{ provider: 'greeneek', name: 'alpha' }],
+      max_rounds: 0,
+    })
+    expect(result.isError, text(result)).toBe(false)
+    expect(debate).toHaveBeenCalledWith(lead, expect.objectContaining({
+      topic: 'ship or refine',
+      participants: [{ provider: 'greeneek', name: 'alpha' }],
+      maxRounds: 0,
+    }))
+    expect(text(result)).toContain('refine first')
+  })
+
+  it('refuses duplicate debate speaking names before any seat spawns', async () => {
+    const { ctx, lead } = await setup([textResponse('unused')])
+    const debate = vi.spyOn(ctx.agentTeams, 'conductDebate')
+
+    const refused = await execute(ctx, lead, 'conduct_debate', {
+      topic: 'ship or refine',
+      participants: [
+        { provider: 'spawn', name: 'alpha' },
+        { provider: 'fork', name: 'alpha' },
+      ],
+    })
+    expect(refused.isError).toBe(true)
+    expect(text(refused)).toContain('debate participants need distinct speaking names')
+    expect(debate).not.toHaveBeenCalled()
+  })
+
+  it('refuses a debate provider this composition does not register before any seat spawns', async () => {
+    const { ctx, lead } = await setup([textResponse('unused')])
+    const debate = vi.spyOn(ctx.agentTeams, 'conductDebate')
+
+    const refused = await execute(ctx, lead, 'conduct_debate', {
+      topic: 'ship or refine',
+      participants: [{ provider: 'no-such-cli', name: 'ghost' }],
+    })
+    expect(refused.isError).toBe(true)
+    expect(text(refused)).toContain('provider "no-such-cli" is not registered in this composition')
+    expect(debate).not.toHaveBeenCalled()
   })
 })
 
@@ -657,7 +724,8 @@ describe('gnk-tool-team fleet confirmation', () => {
     expect(requests).toHaveLength(1)
     expect(requests[0]?.reason).toContain('review fleet')
     expect(requests[0]?.reason).toContain('lane-alpha')
-    expect(requests[0]?.reason).toContain('provider=spawn')
+    expect(requests[0]?.reason).toContain('harness=greeneek')
+    expect(requests[0]?.reason).toContain('execution=Harmony')
     expect(requests[0]?.reason).toContain('preset=standard')
     expect(requests[0]?.reason).toContain('model=mock')
     expect(requests[0]?.reason).toContain('effort=high')
@@ -665,7 +733,7 @@ describe('gnk-tool-team fleet confirmation', () => {
     expect(requests[0]?.reason).toContain('write scopes src')
     expect(requests[0]?.reason).toContain('read-only')
     expect(requests[0]?.reason).toContain('shared checkout, no declared write scope')
-    expect(requests[0]?.reason).toContain('forked — provider=fork')
+    expect(requests[0]?.reason).toContain('forked — harness=greeneek, execution=Harmony, context=inherits completed turns')
     expect(requests[0]?.reason).toContain('creates no children and no worktrees')
     expect(ctx.agentTeams.listMembers(lead)).toHaveLength(1)
     expect(await ctx.agentTeams.listLanes(lead)).toEqual([])

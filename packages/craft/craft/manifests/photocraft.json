@@ -9,7 +9,7 @@
   ],
   "headlessSupported": true,
   "minVersion": "0.15.1",
-  "verified": true,
+  "verified": false,
   "attach": {
     "supported": false,
     "enabled": false,

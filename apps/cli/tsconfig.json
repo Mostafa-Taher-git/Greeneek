@@ -39,7 +39,7 @@
       "path": "../../packages/host/frontend-static"
     },
     {
-      "path": "../../packages/core/session"
+      "path": "../../packages/core/session/tsconfig.host.json"
     },
     {
       "path": "../../packages/core/system-prompt"

@@ -19,6 +19,7 @@ import { pathToFileURL } from 'node:url'
 
 /** Repository-root dotfiles that are project configuration, not scratch. */
 export const ROOT_DOTFILE_ALLOWLIST: ReadonlySet<string> = new Set([
+  '.dependency-cruiser.json',
   '.editorconfig',
   '.gitattributes',
   '.gitignore',

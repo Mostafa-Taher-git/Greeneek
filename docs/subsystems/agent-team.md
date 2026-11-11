@@ -86,13 +86,17 @@ A write-scoped teammate starts in a lane worktree at `<gnkHome>/worktrees/<LeadS
 
 Lane records are durable JSON validated at the file boundary. `preparing` and `closing` records are the only stages startup recovery mutates; `ready` lanes keep unmerged work across idle, cold resume, and Team disposal. Disposal checkpoints ready lanes without deleting them.
 
-Named fleet favorites live in the `fleet` settings namespace. A favorite holds an id, a display name, and members with provider, context, preset, model, reasoning effort, read-only flag, write scopes, token ceiling, and one-shot timeout. The settings owner fences writes by revision; a launch revalidates every provider and never substitutes one. Availability is derived from the live provider registry: `ready` for a provider with a continuable start, `one-shot` for a registered provider without one, and `not-installed` for a configured provider that is absent. Each row carries facts only — name, state, and the `oneShot`/`continuable` flags — because the Settings page renders its reasons from the client's locale dictionaries, and no probe launches a paid or state-changing run. Fleet Settings labels a usable provider by the run types it supports instead of by those internal state names: **Harmony** is the continuable lane and **Melody** is one delegation that settles with a result, so a `ready` row reads "Harmony and Melody", a `one-shot` row reads "Melody only", and a row that is not usable states why. Neither name is presented as a mode anywhere a reader meets it, because the modes are the agent presets the composer stages; the Fleet page states that distinction in its own help line. The same rows name each provider by the client dictionary's product name for its registry name - `spawn` reads "Greeneek built-in (fresh context)", `claude-code` reads "Claude Code" - and keep the registry name visible beside it, because that is the value a saved fleet stores and cordis.yml configures; a registry name with no shipped product label, such as a deployment-configured ACP adapter, is shown as that name alone. The names are user-facing vocabulary in every surface that mentions one: the Fleet Settings row and member editor, the `TEAM_MEMBER_NOT_INTERACTIVE` and lane-shape refusals the Lead reads as tool errors, the `spawn_teammate` provider description, the settled member's report, and the subagent header's run-type column in `en`, `zh`, and `ar`. `TeamMemberMode` and the stored `mode` values keep their identifiers, and the durable `team/member` schema accepts only `lane` and `one-shot`, so the labels never reach a Session log. A teammate's provider is selectable by the Lead: `spawn_teammate` and each `spawn_fleet` member accept a provider name that must be registered in this composition, an omitted name keeps the context's configured default, and an unregistered name is refused before any child exists. Save, delete, duplicate, and starter install all require the Team Lead and fence on the settings revision, since each writes the shared section; an absent `enabled` or `concurrency` is the launcher's default, so a fleet saved before either field existed keeps launching one member at a time. A launch runs in batches of `concurrency` and names every failed member of a batch in one `fleet-member-failed` message. `packages/subagent/agent-team/tests/opencode-acp-fleet.e2e.ts` runs one native lane member beside a real OpenCode member dispatched through `@greeneek/gnk-subagent-acp`, and asserts the settled answer, its single report to the Lead, sibling failure isolation, and cancellation reaching the child process; the suite skips with a printed reason when no OpenCode executable resolves.
+Named fleet favorites live in the `fleet` settings namespace. A favorite holds an id, a display name, and members with a connection, an execution type, context, preset, model, reasoning effort, read-only flag, write scopes, token ceiling, and one-shot timeout. The settings owner fences writes by revision; a launch revalidates every provider and never substitutes one. Availability is derived from the live provider registry: `ready` for a provider with a continuable start, `one-shot` for a registered provider without one, and `not-installed` for a configured provider that is absent. Each row carries facts only — name, state, and the `oneShot`/`continuable` flags — because the Settings page renders its reasons from the client's locale dictionaries, and no probe launches a paid or state-changing run. Fleet Settings labels a usable connection by the run types it supports instead of by those internal state names: **Harmony** is the continuable lane and **Melody** is one delegation that settles with a result, so a `ready` row reads "Harmony and Melody", a `one-shot` row reads "Melody only", and a row that is not usable states why. Neither name is presented as a mode anywhere a reader meets it, because the modes are the agent presets the composer stages; the Fleet page states that distinction in its own help line. The page presents Harness connections, never internal execution strategies: the registered Greeneek strategies read as one `greeneek` connection whose context strategies and durable-lane state aggregate what its mounted strategies execute, and each external adapter is its own connection named by the client dictionary's product name with the registry name beside it; a registry name with no shipped product label, such as a deployment-configured ACP adapter, is shown as that name alone. A member's stored execution type is `harmony` when its connection dispatches a durable lane and `melody` when it dispatches one delegation. Saved members naming the shipped `fork` or `spawn` strategies read as the `greeneek` connection with the context that preserves their run: `fork` reads as `fork` context because that backend seeds completed turns whenever they exist, and `spawn` keeps its stored context, absent reading as `fresh`; the settings bytes keep their legacy values until a user save writes the migrated view back. A launch resolves the `greeneek` connection to the registered strategy that honors the member's context, records that strategy's registry name on the durable roster row, and refuses a stored execution type that disagrees with the connection's dispatch (`TEAM_FLEET_EXECUTION_MISMATCH`) rather than changing how the member runs. The names are user-facing vocabulary in every surface that mentions one: the Fleet Settings row and member editor, the `TEAM_MEMBER_NOT_INTERACTIVE` and lane-shape refusals the Lead reads as tool errors, the `spawn_teammate` provider description, the settled member's report, and the subagent header's run-type column in `en`, `zh`, and `ar`. `TeamMemberMode` and the stored `mode` values keep their identifiers, and the durable `team/member` schema accepts only `lane` and `one-shot`, so the labels never reach a Session log. A teammate's provider is selectable by the Lead: `spawn_teammate` and each `spawn_fleet` member accept a provider name that must be registered in this composition, an omitted name keeps the context's configured default, and an unregistered name is refused before any child exists. Save, delete, duplicate, and starter install all require the Team Lead and fence on the settings revision, since each writes the shared section; an absent `enabled` or `concurrency` is the launcher's default, so a fleet saved before either field existed keeps launching one member at a time. A launch runs in batches of `concurrency` and names every failed member of a batch in one `fleet-member-failed` message. `packages/subagent/agent-team/tests/opencode-acp-fleet.e2e.ts` runs one native lane member beside a real OpenCode member dispatched through `@greeneek/gnk-subagent-acp`, and asserts the settled answer, its single report to the Lead, sibling failure isolation, and cancellation reaching the child process; the suite skips with a printed reason when no OpenCode executable resolves.
 
 A repository may declare `.gnk/fleet.json` with a strict `version` and `fleet.members` array. Parsing is size-capped, and each member's provider must be admitted: by default that means every provider the composition registers, because the roster lanes a continuable provider and dispatches any other provider as one delegation that settles with a result, so one fleet may mix in-harness agents with external CLI agents, and `fleetProviders` narrows the set explicitly. Launching requires a one-time approval keyed by the canonical repository path and the SHA-256 of the exact file bytes; changed bytes require fresh approval, and an admitted approval is removed.
 
 ## Replay
 
 `foldTeam()` replays one root Session into the roster, task board, and queued-minus-delivered mailbox that every Team operation reads. It selects records by `TeamId`, so events inherited by an ordinary fork retain the ancestor id and never enter the new root's state. Session event `seq` and `time` remain the ordering and timing record; Team snapshots do not duplicate them. Roster and task reads reach callers as views; pending mail stays internal to delivery and recovery. The package [README](../../packages/subagent/agent-team/README.md) owns operation, authorization, recovery, and limit behavior.
+
+## Debate
+
+`conductDebate` runs one multi-Harness debate over roster lanes in five phases: Independent Proposals, Cross-Examination, Rebuttal, Evidence Review, and Final Synthesis. [`DebateRequest`](../../packages/subagent/agent-team/src/debate.ts) carries the shared `topic`, one `participants` seat per named connection (`provider` plus an optional member `name`), an optional dedicated `moderator` seat (`provider` plus an optional member `name`, never a participant, defaulting to `moderator` on the `spawn` connection), `maxRounds` of cross-examination after the initial positions (default 1), and the caller `signal`. A seat whose connection cannot hold a continuable lane is refused by name before anything spawns when rounds remain. [`DebateResult`](../../packages/subagent/agent-team/src/debate.ts) publishes the `topic`, every verbatim `entries` turn in round order with its speaker and source connection, the moderator's `synthesis`, its `verdictMode` (`consensus`, `majority`, `evidence-based`, or `no-consensus`), the `unresolved` disagreements it named, its `consensus` flag, any `minorityEvidence` a majority must not certify away, the `moderator` and `moderatorHarness` identities, and per-seat `failures` that did not stop the debate. Round messages travel through the durable mailbox, so each turn keeps its participant and source identity in the Session log. The debate is read-only toward the project; applying a recommendation needs explicit user authorization.
 
 <!-- BEGIN GENERATED cordis-surface (gen-cordis-catalog.ts) — do not edit between markers -->
 
@@ -125,6 +129,10 @@ listMembers(agent: Agent): TeamMemberView[]
 
 /**
  * Create one named, continuable direct child of the Team Lead.
+ *
+ * The request may name the Greeneek Harness connection; the registry resolves
+ * it to the internal execution strategy that honors the requested context
+ * before the roster records the child under that strategy's registry name.
  * @param caller - exact live Lead Agent.
  * @param request - immutable name, description, prompt, context mode, provider, and cancellation.
  * @returns the active roster row.
@@ -186,6 +194,25 @@ async waitForChange(caller: Agent, timeoutMs: number, signal: AbortSignal): Prom
  * @returns the target status sampled before cancellation.
  */
 interrupt(caller: Agent, targetName: string): { previousStatus: 'running' | 'idle' | 'inactive' }
+
+/**
+ * Run a genuine multi-Harness debate: spawn seats over roster lanes,
+ * feed each round's transcript through the durable mailbox, collect each
+ * seat's next full reply from its own Session log, and synthesize the
+ * transcript with the dedicated moderator seat. The run covers Independent
+ * Proposals, Cross-Examination, Rebuttal, Evidence Review, and Final
+ * Synthesis, and publishes one of four verdicts with unresolved
+ * disagreements and any minority evidence a majority must not certify away.
+ * Every seat name, the moderator name, the roster seats the debate needs,
+ * and the registered provider are checked before the first seat exists, so
+ * a refused debate leaves no half-populated roster behind. A seat's reply is
+ * the turn that answers the prompt the debate queued for it: an inherited
+ * fork prefix and a reply that settled earlier cannot answer it.
+ * @param caller - exact live Team Lead Agent.
+ * @param request - topic, seats, moderator, rounds, and caller cancellation.
+ * @returns full transcript, synthesis, verdict, and per-seat failures.
+ */
+async conductDebate(caller: Agent, request: DebateRequest): Promise<DebateResult>
 
 /**
  * Resolve a caller without throwing, used by scoped-tool installation and observers.
@@ -281,6 +308,28 @@ async admitRepoFleet(caller: Agent, signal: AbortSignal): Promise<RepoFleetSnaps
  * @returns one row per provider: `ready` holds a durable lane, `one-shot` runs one delegation to a result.
  */
 fleetAvailability(caller: Agent): FleetProviderAvailability[]
+
+/**
+ * List current Harness descriptors without probing.
+ * @returns one descriptor per connection.
+ */
+@Remote('harnesses') remoteHarnesses(): HarnessDescriptor[]
+
+/**
+ * Probe every Harness that supports live discovery and return the refreshed
+ * descriptors. A Harness without a probe keeps its registration facts; its
+ * `canProbe` flag is false rather than a fabricated catalog.
+ * @returns the refreshed descriptors.
+ */
+@Remote('refreshHarnesses') async remoteRefreshHarnesses(): Promise<HarnessDescriptor[]>
+
+/**
+ * Probe one connection, so a user who just installed or authenticated a CLI can
+ * re-read only that Harness instead of every other connection.
+ * @param connection - the provider registration name the Fleet stores.
+ * @returns the full refreshed descriptor list.
+ */
+@Remote('refreshHarness') async remoteRefreshHarness(connection: string): Promise<HarnessDescriptor[]>
 
 /**
  * Copy one saved fleet under a fresh identity, ready for editing.

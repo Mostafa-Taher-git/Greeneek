@@ -5,7 +5,7 @@
  */
 
 import type { Agent } from '@greeneek/gnk-agent'
-import type { SessionId } from '@greeneek/gnk-session'
+import type { SessionId } from '@greeneek/gnk-session/types'
 import type { JobId } from './brand.ts'
 
 export { JobId } from './brand.ts'

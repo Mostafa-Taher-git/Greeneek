@@ -189,6 +189,18 @@
   color: var(--dsw-alias-label-primary);
 }
 
+/* Trailing shortcut hint: small tertiary text, never squeezed by the label. */
+.hint {
+  flex: none;
+  margin-inline-start: auto;
+  padding-inline-start: 12px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--dsw-alias-label-tertiary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 /* Selected cell keeps the plain fill (marker is the trailing check); the
  * class remains as a hook for owner-side emphasis. */
 .selected {

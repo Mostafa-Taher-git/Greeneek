@@ -35,11 +35,11 @@ Compose this package alongside `@greeneek/gnk-craft` and `@greeneek/gnk-subproce
 
 | Platform | Primary Discovery Path | Fallback Path |
 |---|---|---|
-| Windows | `%LOCALAPPDATA%\ArtCraft Launcher\installed.json` | Registry `HKLM\Software\<App>\InstallDir` |
+| Windows | `%LOCALAPPDATA%\ArtCraft Launcher\installed.json` | Registry `HKLM\Software\<App>\InstallDir` via one recursive `reg query /f InstallDir /s` |
 | macOS | `~/Library/Application Support/ArtCraft Launcher/installed.json` | — |
-| Linux | `~/.local/share/artcraft-launcher/installed.json` | — |
+| Linux | `~/.local/share/artcraft-launcher/installed.json` | XDG `applications/artcraft-*.desktop` entries |
 
-The provider strictly rejects bare executables on the ambient system `PATH`: only verified absolute paths inside recognized installation roots are accepted.
+`listInstalledApps()` enumerates every app in the launcher map, the `app.ron` `per_app` map, `*.portable.txt` markers, the OS registry, and Linux desktop entries; the first source naming an id wins and later sources fill missing fields. No app id or install path is hard-coded. The provider strictly rejects bare executables on the ambient system `PATH`: only verified absolute paths inside recognized installation roots are accepted.
 
 ### Discovery and serve smoke
 
@@ -95,7 +95,7 @@ None of its own; the provider plane is host-only and the tool consumer owns the 
 <a id="known-limitations-and-deferred-work"></a>
 
 - **Connected GUI mode** — Desktop GUI launching with `--control` loopback is marked desktop-only; live attach is gated. `launch.connected` stays display data: the connected argv is fixed in this provider.
-- **Catalog projection** — `JsonRpcCraftTransport.readCommandRegistry` returns the raw observed `engine.commands` payload for drift hashing. Separately, `listTools` sends the manifest's `headless.listMethod` and requires an MCP-style `{ tools: [...] }` result, and `callTool` requires a `{ content: [...] }` result. The `serve` server rejects `command_list`, so a session's catalog call still fails until that projection is redone.
+- **Serve catalog projection** — `JsonRpcCraftTransport.readCommandRegistry` returns the raw observed `engine.commands` payload for drift hashing, and `listTools` projects it into descriptors via `buildCapabilityMatrix` so the `serve` server is never sent the rejected `command_list`. Manifests with no observed registry method keep the legacy direct list call. `callTool` requires a `{ content: [...] }` result.
 - **Auto-installation** — Does not invoke external installers automatically; missing applications must be installed by the user via ArtCraft Launcher.
 
 <a id="dev-note"></a>

@@ -13,7 +13,7 @@ Two foundations already existed. the terminal service itself (`ctx.terminals` re
 
 ## Decision
 
-A model-facing persistent `pwsh` tool ships on Windows with the same contract as `tool-bash-persistent`: one owner-scoped persistent shell per Agent, marker-detected command completion, exact native exit codes, bounded output, and timeout/cancel/`exit` semantics that reset the shell and tell the model. Three pieces deliver it: a Windows substrate in `subprocess-local`, a shell-dialect option in `terminal-bash`, and the new `tool-pwsh-persistent` package with the minimal-preset composition rows.
+A model-facing persistent `pwsh` tool ships on Windows with the same contract as `tool-bash-persistent`: one owner-scoped persistent shell per Agent, marker-detected command completion, exact native exit codes, bounded output, and timeout/cancel/`exit` semantics that reset the shell and tell the model. Three pieces deliver it: a Windows substrate in `subprocess-local`, a shell-dialect option in `terminal-bash`, and the new `tool-pwsh-persistent` package, whose composition rows the former `minimal` preset and now the standalone `sdk-minimal` bundle and narrow fixture enumerate.
 
 ### Windows substrate in `@greeneek/gnk-subprocess-local`
 
@@ -27,7 +27,7 @@ One backend, two dialects: `shellDialect: 'bash' | 'pwsh'` (default `'bash'`; th
 
 ### `@greeneek/gnk-tool-pwsh-persistent`
 
-A new package mirroring `tool-bash-persistent`: same `Config` (`backendType` default `shell`, `timeoutMs`, `maxOutputChars`, `description`), same owner-scoped shell registry and serialized per-owner queue, same timeout/abort/exit/reset paths. The tool name is `pwsh`; it never co-mounts with the one-shot `tool-pwsh` because the preset rows are mutually exclusive per platform.
+A new package mirroring `tool-bash-persistent`: same `Config` (`backendType` default `shell`, `timeoutMs`, `maxOutputChars`, `description`), same owner-scoped shell registry and serialized per-owner queue, same timeout/abort/exit/reset paths. The tool name is `pwsh`; it never co-mounts with the one-shot `tool-pwsh` because the `sdk-minimal` and narrow-fixture rows are mutually exclusive per platform.
 
 Commands run through a wrapper that resets `$LASTEXITCODE` (assignable, verified), invokes the body via `Invoke-Expression` in a backtick-escaped double-quoted string (`quoteForPwsh`: backtick, quote, `$`, CRLF, and ESC escapes, so no raw control characters ride the input line and the wrapper survives ConstrainedLanguage), and reports the exact native exit code, `1` for a terminating PowerShell error, or `0` for success. PSReadLine echoes the submitted wrapper back into the stream — there is no `stty -echo` equivalent — so the extraction strips the wrapper source from captured output; the echo can never fabricate completion because the status regex needs digits immediately after the END nonce and the echo continues with quote characters. The prompt function installs the tool's own prompt (`__GNK_PERSISTENT_PWSH_PROMPT__ `) over the backend bootstrap value, the same two-layer structure as bash.
 

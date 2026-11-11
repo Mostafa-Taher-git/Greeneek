@@ -47,8 +47,16 @@ class SpawnInProcessProvider implements SubagentProvider {
     persona: true,
     agentPreset: true,
   }
-  // Context contract: a spawned child starts fresh — it never sees the parent conversation.
+  // Context contract: a spawned child starts fresh - it never sees the parent conversation.
   readonly inheritsParentContext = false
+  readonly harnessCapabilities = {
+    id: 'greeneek',
+    displayName: 'Greeneek',
+    models: 'unknown' as const,
+    supportsAgentOptions: true,
+    contextStrategies: ['fresh'] as const,
+    source: 'registration' as const,
+  }
 
   constructor(readonly name: string) {}
 

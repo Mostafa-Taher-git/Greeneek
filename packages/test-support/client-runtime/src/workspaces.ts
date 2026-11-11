@@ -144,6 +144,26 @@ export class TestWorkspaces implements IWorkspaces {
   }
 
   /**
+   * Pin or unpin a session (recorded). The default mirrors the production
+   * face's observable effect: the id joins or leaves the pin set.
+   * @param sessionId - session to pin or unpin.
+   * @param pinned - requested pin state.
+   */
+  async pinSession(sessionId: SessionId, pinned: boolean): Promise<void> {
+    this.calls.push({ method: 'pinSession', args: [sessionId, pinned] })
+    const stub = this.stubs.get('pinSession')
+    if (stub !== undefined) {
+      await (stub(sessionId, pinned) as Promise<void>)
+      return
+    }
+    await this.update((draft) => {
+      draft.pinnedSessionIds = pinned
+        ? [...draft.pinnedSessionIds, sessionId]
+        : draft.pinnedSessionIds.filter(id => id !== sessionId)
+    })
+  }
+
+  /**
    * Delete a session (recorded). The default mirrors the production face's
    * observable effect: the id leaves the archive set and every account.
    * @param sessionId - session to delete.
@@ -157,6 +177,7 @@ export class TestWorkspaces implements IWorkspaces {
     }
     await this.update((draft) => {
       draft.archivedSessionIds = draft.archivedSessionIds.filter(id => id !== sessionId)
+      draft.pinnedSessionIds = draft.pinnedSessionIds.filter(id => id !== sessionId)
       draft.items = draft.items.map(workspace => ({
         ...workspace,
         sessionIds: workspace.sessionIds.filter(id => id !== sessionId),

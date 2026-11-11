@@ -5,18 +5,23 @@
  * per-launch control token, and the concurrency cap. It never spawns a process
  * itself — a {@link CraftHostProvider} implementation owns the platform wire —
  * so discovery, open, and cancellation are testable without any Craft app.
+ * Auto-detected apps (no hand-written manifest) are synthesized from launcher
+ * facts and opened through the same path with an observed tool filter.
  * @module @greeneek/gnk-craft/service
  */
 
 import { randomUUID } from 'node:crypto'
 import { Context, Service } from '@greeneek/cordis'
 import z from '@greeneek/schemastery'
+import { buildCapabilityMatrix, CapabilityCache } from './capability.ts'
 import { CraftError } from './error.ts'
 import { CraftCatalog, loadPilotCatalog } from './manifest.ts'
 import { craftRoots, resolveWorkspaceRoot } from './paths.ts'
 import { hashCommandRegistry } from './registry.ts'
+import { provisionalManifest, synthesizeManifest } from './synthesize.ts'
 import type {
   CraftAppManifest,
+  CraftDiscoveredApp,
   CraftHostProvider,
   CraftOpenRequest,
   CraftRecipe,
@@ -49,7 +54,10 @@ export class CraftRuntime extends Service {
   private readonly catalog: CraftCatalog
   private readonly providers = new Map<string, CraftHostProvider>()
   private readonly sessions = new Map<string, CraftSession>()
+  /** In-flight opens, reserved synchronously so the concurrency cap holds under concurrent `open()` calls. */
+  private pendingOpens = 0
   private readonly observedRegistryHashes = new Map<string, string>()
+  private readonly capabilityCache = new CapabilityCache()
   private readonly maxActiveApps: number
   private readonly pinnedProvider: string
 
@@ -122,6 +130,15 @@ export class CraftRuntime extends Service {
   }
 
   /**
+   * Find one app id or alias without failing.
+   * @param app - id or alias.
+   * @returns the manifest, or undefined when it is not in the catalog.
+   */
+  findApp(app: string): CraftAppManifest | undefined {
+    return this.catalog.find(app)
+  }
+
+  /**
    * Whether attach mode may be published for an app.
    * @param app - id, alias, or manifest.
    * @returns `attach.supported && attach.enabled`.
@@ -141,6 +158,50 @@ export class CraftRuntime extends Service {
   }
 
   /**
+   * Every installed app the host reports, catalog and auto-detected alike.
+   * Catalog apps keep their hand-written manifests; auto-detected ids are
+   * synthesized from launcher facts without any hand-written adapter.
+   * @param signal - cancellation for inventory.
+   * @returns status per discovered app, plus every catalog app when no inventory exists.
+   */
+  async discoveredApps(signal: AbortSignal = new AbortController().signal): Promise<readonly CraftStatus[]> {
+    const provider = this.selectProvider()
+    let inventory: readonly CraftDiscoveredApp[] | undefined
+    try {
+      inventory = provider.listInstalled === undefined
+        ? undefined
+        : await provider.listInstalled({ signal })
+    } catch {
+      signal.throwIfAborted()
+      inventory = undefined
+    }
+    const ids = new Set<string>()
+    const statuses: CraftStatus[] = []
+    for (const manifest of this.catalog.apps()) {
+      ids.add(manifest.id)
+      statuses.push(await this.status(manifest.id, signal))
+    }
+    if (inventory !== undefined) {
+      for (const entry of inventory) {
+        if (ids.has(entry.id)) continue
+        ids.add(entry.id)
+        statuses.push(await this.status(entry.id, signal))
+      }
+    }
+    return statuses
+  }
+
+  /**
+   * Last observed capability hash for one app.
+   * @param app - id or alias.
+   * @returns the hash, or undefined when never observed.
+   */
+  observedCapabilityHash(app: string): string | undefined {
+    const manifest = this.catalog.find(app)
+    return this.observedRegistryHashes.get(manifest?.id ?? app)
+  }
+
+  /**
    * Measure one app installation. An active session always reports `running`,
    * and a discovery error reports `failed` with its message instead of failing
    * the whole roster read. Caller cancellation still rejects.
@@ -149,22 +210,23 @@ export class CraftRuntime extends Service {
    * @returns the published status.
    */
   async status(app: string, signal: AbortSignal = new AbortController().signal): Promise<CraftStatus> {
-    const manifest = this.catalog.require(app)
+    const { manifest } = await this.resolveManifest(app, signal)
     if (this.isRunning(manifest.id)) {
       return { app: manifest.id, displayName: manifest.displayName, state: 'running' }
     }
     const provider = this.selectProvider()
     try {
       const discovery = await provider.discover(manifest, { signal })
-      const trustedHash = manifest.headless.trustedRegistryHash
-      const observedHash = this.observedRegistryHashes.get(manifest.id)
-      if (discovery.state === 'ready' && trustedHash !== null && observedHash !== undefined && observedHash !== trustedHash) {
-        return {
-          app: manifest.id,
-          displayName: manifest.displayName,
-          ...discovery,
-          state: 'drifted',
-          detail: registryDriftDetail(manifest, trustedHash, observedHash),
+      if (discovery.state === 'ready') {
+        const peer = this.driftBaseline(manifest)
+        if (peer !== undefined) {
+          return {
+            app: manifest.id,
+            displayName: manifest.displayName,
+            ...discovery,
+            state: 'drifted',
+            detail: peer,
+          }
         }
       }
       return { app: manifest.id, displayName: manifest.displayName, ...discovery }
@@ -190,12 +252,13 @@ export class CraftRuntime extends Service {
    * @returns the live session.
    */
   async open(request: CraftOpenRequest): Promise<CraftSession> {
-    const manifest = this.catalog.require(request.app)
+    const signal = request.signal ?? new AbortController().signal
+    const { manifest: catalogOrProvisional, synthesized } = await this.resolveManifest(request.app, signal)
     const mode = request.mode ?? 'headless'
     if (mode === 'attach') {
-      if (!this.attachEnabled(manifest)) {
+      if (!this.attachEnabled(catalogOrProvisional)) {
         throw new CraftError(
-          `attach mode is disabled for "${manifest.id}": ${manifest.attach.reason}`,
+          `attach mode is disabled for "${catalogOrProvisional.id}": ${catalogOrProvisional.attach.reason}`,
           'CRAFT_ATTACH_DISABLED',
         )
       }
@@ -203,39 +266,92 @@ export class CraftRuntime extends Service {
       // pilot: the authenticated wire is explicitly out of scope until the
       // upstream channel ships.
       throw new CraftError(
-        `attach mode for "${manifest.id}" is published but not implemented in the v0.3.4 pilot`,
+        `attach mode for "${catalogOrProvisional.id}" is published but not implemented in the v0.3.4 pilot`,
         'CRAFT_ATTACH_DISABLED',
       )
     }
-    if (!manifest.headlessSupported) {
-      throw new CraftError(`"${manifest.id}" does not support headless jobs`, 'CRAFT_HEADLESS_UNSUPPORTED')
+    if (!catalogOrProvisional.headlessSupported) {
+      throw new CraftError(`"${catalogOrProvisional.id}" does not support headless jobs`, 'CRAFT_HEADLESS_UNSUPPORTED')
     }
     const workspaceRoot = resolveWorkspaceRoot(request.workspaceRoot)
     const roots = craftRoots(workspaceRoot)
-    if (this.sessions.size >= this.maxActiveApps) {
+    if (this.sessions.size + this.pendingOpens >= this.maxActiveApps) {
       throw new CraftError(
         `Craft session limit reached (${String(this.maxActiveApps)}); close an app before opening another`,
         'CRAFT_LIMIT_REACHED',
       )
     }
+    this.selectProvider()
+    this.pendingOpens += 1
+    try {
+      return await this.openInner(catalogOrProvisional, synthesized, workspaceRoot, roots, signal)
+    } finally {
+      this.pendingOpens -= 1
+    }
+  }
+
+  /**
+   * Open one session through the validated provider path.
+   * @param manifest - catalog or provisional synthesized manifest.
+   * @param synthesized - discovered entry when the manifest was synthesized.
+   * @param workspaceRoot - validated workspace root.
+   * @param roots - confined job roots.
+   * @param signal - caller cancellation.
+   * @returns the live session.
+   */
+  private async openInner(
+    manifest: CraftAppManifest,
+    synthesized: CraftDiscoveredApp | undefined,
+    workspaceRoot: string,
+    roots: { readonly read: string; readonly write: string },
+    signal: AbortSignal,
+  ): Promise<CraftSession> {
     const provider = this.selectProvider()
-    const signal = request.signal ?? new AbortController().signal
     const controlToken = randomUUID()
     const host = await provider.open({ app: manifest, workspaceRoot, roots, controlToken, signal })
-    let tools
+    let tools: Awaited<ReturnType<typeof host.transport.listTools>>
+    let effective = manifest
     let registryReviewed = false
     try {
       signal.throwIfAborted()
       if (manifest.headless.registryMethod !== null) {
-        const observedHash = hashCommandRegistry(await host.transport.readCommandRegistry())
-        this.observedRegistryHashes.set(manifest.id, observedHash)
+        const raw = await host.transport.readCommandRegistry()
+        const matrix = buildCapabilityMatrix(manifest.id, raw)
+        this.observedRegistryHashes.set(manifest.id, matrix.hash)
+        const drifted = this.capabilityCache.remember(manifest.id, matrix.hash)
         const trustedHash = manifest.headless.trustedRegistryHash
-        if (trustedHash !== null && observedHash !== trustedHash) {
-          throw new CraftError(registryDriftDetail(manifest, trustedHash, observedHash), 'CRAFT_APP_NOT_READY')
+        if (trustedHash !== null && matrix.hash !== trustedHash) {
+          throw new CraftError(registryDriftDetail(manifest, trustedHash, matrix.hash), 'CRAFT_APP_NOT_READY')
         }
-        registryReviewed = observedHash === trustedHash
+        if (trustedHash === null && drifted) {
+          throw new CraftError(
+            registryDriftDetail(manifest, this.capabilityCache.baselineHash(manifest.id) as string, matrix.hash),
+            'CRAFT_APP_NOT_READY',
+          )
+        }
+        registryReviewed = matrix.hash === trustedHash
       }
       tools = await host.transport.listTools()
+      if (synthesized !== undefined) {
+        const matrix = buildCapabilityMatrix(manifest.id, { tools })
+        this.observedRegistryHashes.set(manifest.id, matrix.hash)
+        const drifted = this.capabilityCache.remember(manifest.id, matrix.hash)
+        if (drifted) {
+          throw new CraftError(
+            registryDriftDetail(manifest, this.capabilityCache.baselineHash(manifest.id) as string, matrix.hash),
+            'CRAFT_APP_NOT_READY',
+          )
+        }
+        effective = synthesizeManifest(synthesized, tools)
+        registryReviewed = false
+      } else if (manifest.headless.registryMethod === null) {
+        // MCP and serve fallback sessions cache their live catalog so a later
+        // open can drift-hash against the first observation without ever
+        // treating first use as a review.
+        const hash = hashCommandRegistry({ tools })
+        this.observedRegistryHashes.set(manifest.id, hash)
+        this.capabilityCache.remember(manifest.id, hash)
+      }
     } catch (error: unknown) {
       await host.close()
       throw error
@@ -255,6 +371,7 @@ export class CraftRuntime extends Service {
       roots,
       tools,
       registryReviewed,
+      manifest: effective,
       transport: host.transport,
       close,
     }
@@ -294,6 +411,42 @@ export class CraftRuntime extends Service {
       if (session.app === id) return true
     }
     return false
+  }
+
+  /**
+   * Resolve one app id to its catalog manifest or a synthesized provisional.
+   * @param app - id or alias.
+   * @param signal - cancellation for inventory.
+   * @returns the manifest and the discovered entry when synthesized.
+   */
+  private async resolveManifest(
+    app: string,
+    signal: AbortSignal,
+  ): Promise<{ readonly manifest: CraftAppManifest; readonly synthesized: CraftDiscoveredApp | undefined }> {
+    const known = this.catalog.find(app)
+    if (known !== undefined) return { manifest: known, synthesized: undefined }
+    const provider = this.selectProvider()
+    if (provider.listInstalled !== undefined) {
+      const inventory = await provider.listInstalled({ signal })
+      const hit = inventory.find(entry => entry.id === app.trim().toLowerCase())
+      if (hit !== undefined) return { manifest: provisionalManifest(hit), synthesized: hit }
+    }
+    return { manifest: this.catalog.require(app), synthesized: undefined }
+  }
+
+  /** Drift detail when the last observation disagrees with the baseline, else undefined. */
+  private driftBaseline(manifest: CraftAppManifest): string | undefined {
+    const observed = this.observedRegistryHashes.get(manifest.id)
+    if (observed === undefined) return undefined
+    const trusted = manifest.headless.trustedRegistryHash
+    if (trusted !== null) {
+      return observed === trusted ? undefined : registryDriftDetail(manifest, trusted, observed)
+    }
+    const baseline = this.capabilityCache.baselineHash(manifest.id)
+    if (baseline !== undefined && observed !== baseline) {
+      return registryDriftDetail(manifest, baseline, observed)
+    }
+    return undefined
   }
 
   /** Resolve exactly one provider (or the pinned one). */

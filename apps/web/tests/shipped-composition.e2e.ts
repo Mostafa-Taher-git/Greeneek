@@ -11,7 +11,7 @@ import { ToolCallId } from '@greeneek/gnk-llm'
 import { canonicalPath, writableRoots } from '@greeneek/gnk-sandbox'
 import { SessionId } from '@greeneek/gnk-session'
 // These imports carry the tools/sandboxPolicy/approval Context merges.
-import { RUN_CODE_NAME } from '@greeneek/gnk-tools'
+import type {} from '@greeneek/gnk-tools'
 import type {} from '@greeneek/gnk-sandbox-policy'
 import type {} from '@greeneek/gnk-user-approval'
 import type {} from '@greeneek/gnk-permission-presets'
@@ -198,24 +198,6 @@ it('assembles the shipped Web transport, catalog, guidance, and defaults', async
     })
   } finally {
     await commandHandle.dispose()
-  }
-}, 120_000)
-
-it('ships PTC with run_code but without the general workflow SDK binding', async () => {
-  scaffold = await launchWebScaffold({ greeneekMissingCredential: true })
-  const ctx = scaffold.ctx
-  const handle = await ctx.agents.create({
-    sessionId: SessionId('shipped-ptc-composition'),
-    setup: agentCtx => ctx.agentPresets.mount(agentCtx, 'ptc').then(() => undefined),
-  })
-  try {
-    const assembly = await ctx.systemPrompt.assemble({ scope: handle.agent })
-    expect(assembly.tools.map(tool => tool.name)).toEqual([RUN_CODE_NAME])
-    const sdk = assembly.sections.find(section => section.name === 'tools:sdk')?.text ?? ''
-    expect(sdk).toContain('  ralph: {')
-    expect(sdk).not.toContain('  workflow: {')
-  } finally {
-    await handle.dispose()
   }
 }, 120_000)
 

@@ -169,6 +169,8 @@ describe('parseVendoredRows', () => {
     const parsed = new Set(parseVendoredRows(readFileSync(resolve(root, 'vendor/README.md'), 'utf8')).map(row => row.npmName))
     const onDisk = readdirSync(resolve(root, 'vendor'), { withFileTypes: true })
       .filter(entry => entry.isDirectory())
+      // A dot-directory is a local store, not a vendored package.
+      .filter(entry => !entry.name.startsWith('.'))
       .map(entry => (JSON.parse(readFileSync(resolve(root, 'vendor', entry.name, 'package.json'), 'utf8')) as Manifest).name)
 
     expect([...onDisk].sort()).toEqual([...parsed].sort())

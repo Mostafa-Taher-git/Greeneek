@@ -225,9 +225,10 @@ function parseTransport(value: unknown): 'serve' | 'mcp' {
 function parseLaunch(value: unknown, transport: 'serve' | 'mcp', requireControlToken: boolean): CraftLaunchTemplates {
   const record = strictRecord(value, 'launch', ['headless', 'connected'])
   const headless = stringField(record.headless, 'launch.headless')
-  const violations = transport === 'mcp'
-    ? headless.includes('{cli}') ? [] : ['must open with {cli} for the MCP transport']
-    : headlessTemplateViolations(headless, requireControlToken)
+  // Both transports share the placeholder grammar; an MCP launch still owes
+  // the confined roots and only the control-token file is transport-conditional.
+  void transport
+  const violations = headlessTemplateViolations(headless, requireControlToken)
   if (violations.length > 0) invalid('launch.headless', violations.join('; '))
   return {
     headless,

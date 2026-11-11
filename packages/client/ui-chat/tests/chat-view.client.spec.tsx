@@ -200,7 +200,7 @@ function emptySessions() {
 
 function emptyWorkspaces() {
   const store = createSnapshotStore<WorkspaceSnapshot>({
-    items: [], archivedSessionIds: [], state: 'idle', phase: 'ready', error: null,
+    items: [], archivedSessionIds: [], pinnedSessionIds: [], state: 'idle', phase: 'ready', error: null,
   })
   return bindSnapshotSelector(store)
 }
@@ -2371,6 +2371,43 @@ describe('ChatView', () => {
     act(() => { notify?.() })
     expect(scroller.scrollTop).toBe(200)
     expect(observe).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not re-anchor a reader whose compositor scroll has not been delivered yet', () => {
+    let notify: (() => void) | undefined
+    class ResizeObserverStub {
+      constructor(callback: ResizeObserverCallback) {
+        notify = () => { callback([], this as unknown as ResizeObserver) }
+      }
+
+      observe = vi.fn()
+      disconnect = vi.fn()
+    }
+    vi.stubGlobal('ResizeObserver', ResizeObserverStub)
+    const h = makeHarness({ nodes: [user(1, 'q'), assistant(2, 'a')] })
+    const view = render(<h.ChatView {...h.props} />)
+    const scroller = view.container.querySelector('[class*="scroll"]') as HTMLDivElement
+    const metrics = installScrollMetrics(scroller, 1_000, 300)
+    // Pinned at the bottom: the ownership ledger records the delivered top.
+    scroller.scrollTop = 700
+    fireEvent.scroll(scroller)
+    fireEvent(scroller, new Event('scrollend'))
+    expect(scroller.scrollTop).toBe(700)
+
+    // Chromium moves compositor geometry before the scroll event is delivered.
+    // No `scroll` or `scrollend` fires here, so the sampled ownership flag is
+    // still pinned while raw scrollTop already left the ledger.
+    metrics.setLayout(1_200, 200)
+    expect(scroller.scrollTop).toBe(200)
+    act(() => { notify?.() })
+    expect(scroller.scrollTop, 'growth must not snap a scrolled-away reader to the new floor').toBe(200)
+
+    // A delivered reader scroll still updates ownership, and a pinned reader
+    // keeps following later growth.
+    readerScroll(scroller, 150)
+    metrics.setHeight(1_400)
+    act(() => { notify?.() })
+    expect(scroller.scrollTop).toBe(150)
   })
 
   it('pinned dynamic-height updates select the latest Turn without reading row geometry', () => {

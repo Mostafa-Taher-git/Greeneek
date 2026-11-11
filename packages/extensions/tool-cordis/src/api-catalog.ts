@@ -161,10 +161,10 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
       },
       {
         signature: 'async resolve(id?: string): Promise<AgentPreset>',
-        description: 'Resolve one preset by id.\n\nA broken preset resolves — deleting one, reading one, and reporting one all need the row — and the mounting paths refuse it AFTER resolution through resolveMountable.\n\nAn unnamed request is the default pick for a session about to be created, and its id comes from a setting or a composition row that can outlive the preset: a deleted preset, a renamed directory, a settings document copied from another deployment. That pick must never brick a new session, so an unknown default falls back to `standard` with a warning; an explicit id still fails, because silently composing a different preset would misreport what the caller asked for.\n\nA resolvable default can also be retired: `ptc` keeps its composition but is no longer a new-session choice (owner plan §3). The unnamed path substitutes `standard` and reports it as `agent-preset/default-sanitized`; an explicit `resolve(\'ptc\')` and a user who re-selects PTC for a session keep composing it.',
+        description: 'Resolve one preset by id.\n\nA broken preset resolves — deleting one, reading one, and reporting one all need the row — and the mounting paths refuse it AFTER resolution through resolveMountable.\n\nAn unnamed request is the default pick for a session about to be created, and its id comes from a setting or a composition row that can outlive the preset: a deleted preset, a renamed directory, a settings document copied from another deployment. That pick must never brick a new session, so an unknown default falls back to `standard` with a warning; an explicit id still fails, because silently composing a different preset would misreport what the caller asked for.',
         parameters: [{ name: 'id', description: 'the preset id, or `undefined` for {@link defaultId}.' }],
-        returns: 'the resolved preset; the `standard` fallback for an unknown or retired default when one is supplied.',
-        throws: ['when no configured root supplies an explicit id, when the unknown default has no `standard` preset to fall back to, or when the retired default has no `standard` preset to sanitize it to.'],
+        returns: 'the resolved preset; the `standard` fallback for an unknown default when one is supplied.',
+        throws: ['when no configured root supplies an explicit id, or when the unknown default has no `standard` preset to fall back to.'],
       },
       {
         signature: 'async mount(agentCtx: Context, id?: string): Promise<AgentPreset>',
@@ -369,7 +369,7 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
       },
       {
         signature: 'async spawnTeammate(caller: Agent, request: SpawnTeammateRequest): Promise<SpawnTeammateResult>',
-        description: 'Create one named, continuable direct child of the Team Lead.',
+        description: 'Create one named, continuable direct child of the Team Lead.\n\nThe request may name the Greeneek Harness connection; the registry resolves it to the internal execution strategy that honors the requested context before the roster records the child under that strategy\'s registry name.',
         parameters: [{ name: 'caller', description: 'exact live Lead Agent.' }, { name: 'request', description: 'immutable name, description, prompt, context mode, provider, and cancellation.' }],
         returns: 'the active roster row.',
       },
@@ -414,6 +414,12 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Interrupt one live teammate turn without clearing its pending inbox.',
         parameters: [{ name: 'caller', description: 'exact live Lead Agent.' }, { name: 'targetName', description: 'durable teammate name.' }],
         returns: 'the target status sampled before cancellation.',
+      },
+      {
+        signature: 'async conductDebate(caller: Agent, request: DebateRequest): Promise<DebateResult>',
+        description: 'Run a genuine multi-Harness debate: spawn seats over roster lanes, feed each round\'s transcript through the durable mailbox, collect each seat\'s next full reply from its own Session log, and synthesize the transcript with the dedicated moderator seat. The run covers Independent Proposals, Cross-Examination, Rebuttal, Evidence Review, and Final Synthesis, and publishes one of four verdicts with unresolved disagreements and any minority evidence a majority must not certify away. Every seat name, the moderator name, the roster seats the debate needs, and the registered provider are checked before the first seat exists, so a refused debate leaves no half-populated roster behind. A seat\'s reply is the turn that answers the prompt the debate queued for it: an inherited fork prefix and a reply that settled earlier cannot answer it.',
+        parameters: [{ name: 'caller', description: 'exact live Team Lead Agent.' }, { name: 'request', description: 'topic, seats, moderator, rounds, and caller cancellation.' }],
+        returns: 'full transcript, synthesis, verdict, and per-seat failures.',
       },
       {
         signature: 'tryMembership(agent: Agent): TeamMembership | undefined',
@@ -485,6 +491,24 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Report honest availability for every configured or registered fleet provider without launching a paid or state-changing probe.',
         parameters: [{ name: 'caller', description: 'exact live Team member.' }],
         returns: 'one row per provider: `ready` holds a durable lane, `one-shot` runs one delegation to a result.',
+      },
+      {
+        signature: '@Remote(\'harnesses\') remoteHarnesses(): HarnessDescriptor[]',
+        description: 'List current Harness descriptors without probing.',
+        parameters: [],
+        returns: 'one descriptor per connection.',
+      },
+      {
+        signature: '@Remote(\'refreshHarnesses\') async remoteRefreshHarnesses(): Promise<HarnessDescriptor[]>',
+        description: 'Probe every Harness that supports live discovery and return the refreshed descriptors. A Harness without a probe keeps its registration facts; its `canProbe` flag is false rather than a fabricated catalog.',
+        parameters: [],
+        returns: 'the refreshed descriptors.',
+      },
+      {
+        signature: '@Remote(\'refreshHarness\') async remoteRefreshHarness(connection: string): Promise<HarnessDescriptor[]>',
+        description: 'Probe one connection, so a user who just installed or authenticated a CLI can re-read only that Harness instead of every other connection.',
+        parameters: [{ name: 'connection', description: 'the provider registration name the Fleet stores.' }],
+        returns: 'the full refreshed descriptor list.',
       },
       {
         signature: 'async duplicateFleet(caller: Agent, id: string, expectedRevision: number): Promise<FleetFavoriteResult>',
@@ -865,6 +889,12 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'the manifest.',
       },
       {
+        signature: 'findApp(app: string): CraftAppManifest | undefined',
+        description: 'Find one app id or alias without failing.',
+        parameters: [{ name: 'app', description: 'id or alias.' }],
+        returns: 'the manifest, or undefined when it is not in the catalog.',
+      },
+      {
         signature: 'attachEnabled(app: string | CraftAppManifest): boolean',
         description: 'Whether attach mode may be published for an app.',
         parameters: [{ name: 'app', description: 'id, alias, or manifest.' }],
@@ -875,6 +905,18 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Read one app\'s recipe.',
         parameters: [{ name: 'app', description: 'id or alias.' }],
         returns: 'the recipe skill content.',
+      },
+      {
+        signature: 'async discoveredApps(signal: AbortSignal = new AbortController().signal): Promise<readonly CraftStatus[]>',
+        description: 'Every installed app the host reports, catalog and auto-detected alike. Catalog apps keep their hand-written manifests; auto-detected ids are synthesized from launcher facts without any hand-written adapter.',
+        parameters: [{ name: 'signal', description: 'cancellation for inventory.' }],
+        returns: 'status per discovered app, plus every catalog app when no inventory exists.',
+      },
+      {
+        signature: 'observedCapabilityHash(app: string): string | undefined',
+        description: 'Last observed capability hash for one app.',
+        parameters: [{ name: 'app', description: 'id or alias.' }],
+        returns: 'the hash, or undefined when never observed.',
       },
       {
         signature: 'async status(app: string, signal: AbortSignal = new AbortController().signal): Promise<CraftStatus>',
@@ -1628,6 +1670,25 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         parameters: [{ name: 'request', description: 'path after best-effort Session workspace resolution.' }, { name: 'signal', description: 'caller lifetime; abort terminates the native command.' }],
         returns: 'confirmation after the native opener accepts the path.',
         throws: ['RemoteError when the request is invalid, cancelled, or the opener fails.'],
+      },
+      {
+        signature: '@Remote(\'externalApps\') externalApps(): SessionExternalAppsValue',
+        description: 'Report every external application this Host can hand a path to.\n\nAvailability is probed per call, so an application installed while the server runs shows up on the next read without a restart.',
+        parameters: [],
+        returns: 'the catalogue, host platform, and file-manager reveal capability.',
+      },
+      {
+        signature: '@Remote(\'gitFacts\') async gitFacts( request: SessionGitFactsRequest, signal: AbortSignal, ): Promise<SessionGitFactsValue>',
+        description: 'Report the read-only git facts of one project directory.\n\nThe read never writes: it reports the checked-out branch, the base branch the work is compared against, and the size of the change set.',
+        parameters: [{ name: 'request', description: 'the project directory to inspect.' }, { name: 'signal', description: 'caller lifetime; abort terminates the native command.' }],
+        returns: 'the git facts; a directory outside a repository reports none.',
+      },
+      {
+        signature: '@Remote(\'openPath\') async openPath( request: SessionOpenPathRequest, signal: AbortSignal, ): Promise<SessionOpenPathValue>',
+        description: 'Send one path to a Host desktop destination.\n\nThe `default` target hands the path to the operating system handler, `reveal` selects it in the system file manager, and `app` launches one catalogued application. Launching never goes through a shell.',
+        parameters: [{ name: 'request', description: 'path and destination.' }, { name: 'signal', description: 'caller lifetime; abort terminates the native command.' }],
+        returns: 'confirmation after the destination accepted the path.',
+        throws: ['RemoteError when the request is invalid, the destination is unavailable, or the native command fails.'],
       },
       {
         signature: '@Remote(\'rename\') rename(request: SessionRenameRequest): Promise<SessionRenameValue>',
@@ -3093,6 +3154,12 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'the complete resulting archive set.',
       },
       {
+        signature: '@Remote(\'pinSession\') pinSession(request: WorkspacePinSessionRequest): Promise<WorkspacePinSessionValue>',
+        description: 'Pin or unpin one known Session.',
+        parameters: [{ name: 'request', description: 'Session identity and requested pin state.' }],
+        returns: 'the complete resulting pin set.',
+      },
+      {
         signature: '@Remote(\'deleteSession\') deleteSession(request: WorkspaceDeleteSessionRequest): Promise<WorkspaceDeleteSessionValue>',
         description: 'Delete one known Session permanently with its stored log.',
         parameters: [{ name: 'request', description: 'Session identity to delete.' }],
@@ -3148,6 +3215,12 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'resolution after durability.',
       },
       {
+        signature: 'setSessionPinned(sessionId: SessionId, pinned: boolean): Promise<void>',
+        description: 'Pin or unpin one session durably.\n\nThe session must exist (live or in session persistence); its workspace accounting — or lack of one — is irrelevant. A request that already matches the stored state resolves without writing.',
+        parameters: [{ name: 'sessionId', description: 'The session to pin or unpin.' }, { name: 'pinned', description: 'The requested pin state.' }],
+        returns: 'resolution after durability.',
+      },
+      {
         signature: 'deleteSession(sessionId: SessionId): Promise<void>',
         description: 'Delete one session durably: its stored log (plus never-materialized pending state), its archive entry, its workspace accounting slots, and its cached headers/paths. A session with a live agent refuses — archive stays the way to hide those. Unknown ids reject like archive.',
         parameters: [{ name: 'sessionId', description: 'The session to delete.' }],
@@ -3172,14 +3245,6 @@ export const EVENT_API: readonly EventApiEntry[] = [
     summary: 'A declarative agent entry failed before it could publish a live agent.',
     description: 'A declarative agent entry failed before it could publish a live agent. Consumers that buffer work for the configured identity use this transient signal to reject that work instead of waiting forever. Normal factory teardown suppresses failures from the cancelled startup attempt.',
     parameters: [{ name: 'payload', description: '.error - persistence, setup, or publication failure.' }],
-  },
-  {
-    name: 'agent-preset/default-sanitized',
-    mode: 'emit',
-    signature: '\'agent-preset/default-sanitized\'(payload: { from: string; to: string }): void',
-    summary: 'The unnamed-default path composed the fallback because the stored default named a preset this release retired.',
-    description: 'The unnamed-default path composed the fallback because the stored default named a preset this release retired. Emitted before the session exists, so it is not a session event; the effective composition is recorded in the session header. An explicit pick of the retired preset never triggers it.',
-    parameters: [{ name: 'payload', description: '.to - the preset composed for new sessions instead.' }],
   },
   {
     name: 'agent-preset/selected',
@@ -3731,7 +3796,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'AgentPreset',
-    declaration: 'export interface AgentPreset {\n    readonly id: string;\n    readonly trust: PresetTrust;\n    readonly path: string;\n    readonly name?: string;\n    readonly description?: string;\n    readonly order?: number;\n    readonly broken?: string;\n    readonly retired?: boolean;\n}',
+    declaration: 'export interface AgentPreset {\n    readonly id: string;\n    readonly trust: PresetTrust;\n    readonly path: string;\n    readonly name?: string;\n    readonly description?: string;\n    readonly order?: number;\n    readonly broken?: string;\n}',
   },
   {
     name: 'AgentPresetComposition',
@@ -3755,7 +3820,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'AgentPresetRow',
-    declaration: 'export interface AgentPresetRow {\n    readonly id: string;\n    readonly trust: PresetTrust;\n    readonly isDefault: boolean;\n    readonly name?: string;\n    readonly description?: string;\n    readonly broken?: string;\n    readonly retired?: boolean;\n}',
+    declaration: 'export interface AgentPresetRow {\n    readonly id: string;\n    readonly trust: PresetTrust;\n    readonly isDefault: boolean;\n    readonly name?: string;\n    readonly description?: string;\n    readonly broken?: string;\n}',
   },
   {
     name: 'AgentSetup',
@@ -4174,6 +4239,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface CraftCallResult {\n    readonly content: readonly Readonly<Record<string, unknown>>[];\n    readonly artifacts?: readonly string[];\n    readonly isError?: boolean;\n}',
   },
   {
+    name: 'CraftDiscoveredApp',
+    declaration: 'export interface CraftDiscoveredApp {\n    readonly id: string;\n    readonly displayName: string;\n    readonly installDir?: string;\n    readonly version?: string;\n    readonly cliStem?: string;\n    readonly source: \'launcher-manifest\' | \'launcher-state\' | \'portable-marker\' | \'os-registry\' | \'desktop-entry\';\n}',
+  },
+  {
     name: 'CraftDiscovery',
     declaration: 'export interface CraftDiscovery {\n    readonly state: CraftAppState;\n    readonly executable?: string;\n    readonly version?: string;\n    readonly detail?: string;\n}',
   },
@@ -4187,7 +4256,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'CraftHostProvider',
-    declaration: 'export interface CraftHostProvider {\n    readonly id: string;\n    discover(app: CraftAppManifest, options: {\n        readonly signal: AbortSignal;\n    }): Promise<CraftDiscovery>;\n    open(request: CraftHostOpenRequest): Promise<CraftHostSession>;\n    launchConnected?(request: {\n        readonly app: CraftAppManifest;\n        readonly workspaceRoot: string;\n        readonly roots: CraftRoots;\n    }): Promise<void>;\n}',
+    declaration: 'export interface CraftHostProvider {\n    readonly id: string;\n    discover(app: CraftAppManifest, options: {\n        readonly signal: AbortSignal;\n    }): Promise<CraftDiscovery>;\n    open(request: CraftHostOpenRequest): Promise<CraftHostSession>;\n    listInstalled?(options: {\n        readonly signal: AbortSignal;\n    }): Promise<readonly CraftDiscoveredApp[]>;\n    launchConnected?(request: {\n        readonly app: CraftAppManifest;\n        readonly workspaceRoot: string;\n        readonly roots: CraftRoots;\n    }): Promise<void>;\n}',
   },
   {
     name: 'CraftHostSession',
@@ -4227,7 +4296,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'CraftSession',
-    declaration: 'export interface CraftSession {\n    readonly id: string;\n    readonly app: string;\n    readonly mode: \'headless\';\n    readonly roots: CraftRoots;\n    readonly tools: readonly CraftToolDescriptor[];\n    readonly registryReviewed: boolean;\n    readonly transport: CraftTransport;\n    close(): Promise<void>;\n}',
+    declaration: 'export interface CraftSession {\n    readonly id: string;\n    readonly app: string;\n    readonly mode: \'headless\';\n    readonly roots: CraftRoots;\n    readonly tools: readonly CraftToolDescriptor[];\n    readonly registryReviewed: boolean;\n    readonly manifest?: CraftAppManifest;\n    readonly transport: CraftTransport;\n    close(): Promise<void>;\n}',
   },
   {
     name: 'CraftStatus',
@@ -4284,6 +4353,34 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'CredentialRef',
     declaration: 'export type CredentialRef = Branded<\'CredentialRef\'>;',
+  },
+  {
+    name: 'DebateEntry',
+    declaration: 'export interface DebateEntry {\n    readonly round: number;\n    readonly role: DebateRole;\n    readonly participant: string;\n    readonly sourceHarness: string;\n    readonly text: string;\n}',
+  },
+  {
+    name: 'DebateFailure',
+    declaration: 'export interface DebateFailure {\n    readonly participant: string;\n    readonly reason: string;\n}',
+  },
+  {
+    name: 'DebateParticipantSpec',
+    declaration: 'export interface DebateParticipantSpec {\n    readonly provider: string;\n    readonly name?: string;\n}',
+  },
+  {
+    name: 'DebateRequest',
+    declaration: 'export interface DebateRequest {\n    readonly topic: string;\n    readonly participants: readonly DebateParticipantSpec[];\n    readonly moderator?: DebateParticipantSpec;\n    readonly maxRounds?: number;\n    readonly signal: AbortSignal;\n}',
+  },
+  {
+    name: 'DebateResult',
+    declaration: 'export interface DebateResult {\n    readonly topic: string;\n    readonly entries: readonly DebateEntry[];\n    readonly synthesis: string;\n    readonly verdictMode: DebateVerdictMode;\n    readonly consensus: boolean;\n    readonly unresolved: readonly string[];\n    readonly minorityEvidence: readonly string[];\n    readonly moderator: string;\n    readonly moderatorHarness: string;\n    readonly failures: readonly DebateFailure[];\n}',
+  },
+  {
+    name: 'DebateRole',
+    declaration: 'export type DebateRole = \'position\' | \'objection\' | \'rebuttal\' | \'evidence\' | \'synthesis\';',
+  },
+  {
+    name: 'DebateVerdictMode',
+    declaration: 'export type DebateVerdictMode = \'consensus\' | \'majority\' | \'evidence-based\' | \'no-consensus\';',
   },
   {
     name: 'DiffCallView',
@@ -4423,7 +4520,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'FleetFavoriteMember',
-    declaration: 'export interface FleetFavoriteMember {\n    readonly name: string;\n    readonly description: string;\n    readonly prompt: string;\n    readonly provider: string;\n    readonly context?: \'fresh\' | \'fork\';\n    readonly preset?: string;\n    readonly model?: string;\n    readonly reasoningEffort?: string;\n    readonly readOnly?: boolean;\n    readonly writeScopes?: string[];\n    readonly maxTokens?: number;\n    readonly timeoutMs?: number;\n}',
+    declaration: 'export interface FleetFavoriteMember {\n    readonly name: string;\n    readonly description: string;\n    readonly prompt: string;\n    readonly provider: string;\n    readonly execution?: \'harmony\' | \'melody\';\n    readonly context?: \'fresh\' | \'fork\';\n    readonly preset?: string;\n    readonly model?: string;\n    readonly reasoningEffort?: string;\n    readonly readOnly?: boolean;\n    readonly writeScopes?: string[];\n    readonly maxTokens?: number;\n    readonly timeoutMs?: number;\n}',
   },
   {
     name: 'FleetFavoriteResult',
@@ -4564,6 +4661,58 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'GreeneekLlmApiJson',
     declaration: 'export type GreeneekLlmApiJson = null | boolean | number | string | GreeneekLlmApiJson[] | {\n    [key: string]: GreeneekLlmApiJson;\n};',
+  },
+  {
+    name: 'HarnessAuthMethod',
+    declaration: 'export interface HarnessAuthMethod {\n    readonly id: string;\n    readonly name?: string;\n    readonly description?: string;\n}',
+  },
+  {
+    name: 'HarnessCapabilities',
+    declaration: 'export interface HarnessCapabilities {\n    readonly id: string;\n    readonly displayName?: string;\n    readonly models: readonly HarnessModelInfo[] | \'unknown\';\n    readonly supportsAgentOptions: boolean;\n    readonly contextStrategies: readonly (\'fresh\' | \'fork\')[];\n    readonly authMethods?: readonly HarnessAuthMethod[];\n    readonly sessions?: HarnessSessionCapabilities;\n    readonly prompt?: HarnessPromptCapabilities;\n    readonly permissions?: readonly HarnessPermissionMode[];\n    readonly source: \'registration\' | \'configuration\' | \'acp-initialize\' | \'acp-session\';\n    readonly version?: string;\n}',
+  },
+  {
+    name: 'HarnessDescriptor',
+    declaration: 'export interface HarnessDescriptor {\n    readonly harness: string;\n    readonly displayName: string;\n    readonly connection: string;\n    readonly name: string;\n    readonly state: FleetProviderState;\n    readonly models: readonly HarnessModel[] | \'unknown\';\n    readonly supportsAgentOptions: boolean;\n    readonly supportsContextFork: boolean;\n    readonly contextStrategies: readonly (\'fresh\' | \'fork\')[];\n    readonly authMethods?: readonly {\n        readonly id: string;\n        readonly name?: string;\n        readonly description?: string;\n    }[];\n    readonly sessions?: {\n        readonly new: boolean;\n        readonly load?: boolean;\n        readonly resume?: boolean;\n        readonly fork?: boolean;\n        readonly list?: boolean;\n        readonly delete?: boolean;\n    };\n    readonly prompt?: {\n        readonly image: boolean;\n        readonly audio: boolean;\n        readonly embeddedContext: boolean;\n    };\n    readonly permissions?: readonly {\n        readonly id: string;\n        readonly name?: string;\n        readonly description?: string;\n    }[];\n    readonly version?: string;\n    readonly source: \'registration\' | \'configuration\' | \'acp-initialize\' | \'acp-session\';\n    readonly canProbe: boolean;\n    readonly discoveredAt?: string;\n    readonly discoveryError?: string;\n}',
+  },
+  {
+    name: 'HarnessDiscovery',
+    declaration: 'export type HarnessDiscovery = (request: HarnessDiscoveryRequest) => Promise<HarnessCapabilities>;',
+  },
+  {
+    name: 'HarnessDiscoveryRequest',
+    declaration: 'export interface HarnessDiscoveryRequest {\n    readonly signal?: AbortSignal;\n}',
+  },
+  {
+    name: 'HarnessEffort',
+    declaration: 'export interface HarnessEffort {\n    readonly id: string;\n    readonly name?: string;\n}',
+  },
+  {
+    name: 'HarnessEffortLevel',
+    declaration: 'export interface HarnessEffortLevel {\n    readonly id: string;\n    readonly name?: string;\n    readonly description?: string;\n}',
+  },
+  {
+    name: 'HarnessModel',
+    declaration: 'export interface HarnessModel {\n    readonly id: string;\n    readonly name?: string;\n    readonly description?: string;\n    readonly contextWindow?: number;\n    readonly efforts?: readonly HarnessEffort[];\n    readonly defaultEffort?: string;\n}',
+  },
+  {
+    name: 'HarnessModelInfo',
+    declaration: 'export interface HarnessModelInfo {\n    readonly id: string;\n    readonly name?: string;\n    readonly description?: string;\n    readonly efforts?: readonly HarnessEffortLevel[];\n    readonly defaultEffort?: string;\n    readonly variants?: readonly string[];\n}',
+  },
+  {
+    name: 'HarnessPermissionMode',
+    declaration: 'export interface HarnessPermissionMode {\n    readonly id: string;\n    readonly name?: string;\n    readonly description?: string;\n}',
+  },
+  {
+    name: 'HarnessPromptCapabilities',
+    declaration: 'export interface HarnessPromptCapabilities {\n    readonly image: boolean;\n    readonly audio: boolean;\n    readonly embeddedContext: boolean;\n}',
+  },
+  {
+    name: 'HarnessSessionCapabilities',
+    declaration: 'export interface HarnessSessionCapabilities {\n    readonly new: boolean;\n    readonly load?: boolean;\n    readonly resume?: boolean;\n    readonly fork?: boolean;\n    readonly list?: boolean;\n    readonly delete?: boolean;\n}',
+  },
+  {
+    name: 'HostPlatform',
+    declaration: 'export type HostPlatform = \'aix\' | \'android\' | \'cygwin\' | \'darwin\' | \'freebsd\' | \'haiku\' | \'linux\' | \'netbsd\' | \'openbsd\' | \'sunos\' | \'win32\';',
   },
   {
     name: 'ImageAttachmentLimits',
@@ -5282,6 +5431,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface SendTeamMessageResult {\n    readonly messageId: TeamMessageId;\n    readonly status: \'accepted\' | \'queued\';\n}',
   },
   {
+    name: 'ServerResponse',
+    declaration: 'export class ServerResponse {\n}',
+  },
+  {
     name: 'Session',
     declaration: 'export class Session {\n    get surface(): SessionSurface;\n    readonly header: SessionHeader;\n    readonly inheritedEventCount: SessionLogOffset;\n    get id(): SessionId;\n    readonly firstLiveSeq: SessionLogOffset;\n    static create(id: SessionId, seed?: readonly SessionEvent[], header?: SessionHeader, inheritedEventCount?: SessionLogOffset): Session;\n    static fromRestore(id: SessionId, seed: readonly SessionEvent[], header: SessionHeader, inheritedEventCount: SessionLogOffset): Session;\n    eventAt(seq: SessionSeq): SessionEvent | undefined;\n    snapshotEvents(fromSeq: SessionLogOffset = SessionLogOffset(0), toSeqExclusive: SessionLogOffset = this.seq): readonly SessionEvent[];\n    ownEvents(): readonly SessionEvent[];\n    isOwnSeq(seq: SessionSeq): boolean;\n    get seq(): SessionLogOffset;\n    append<T extends SessionEventType>(type: T, data: SessionEventMap[T], ...opts: T extends SurfaceEventType ? [\n        opts: SurfaceIntent\n    ] : [\n    ]): SessionEvent<T>;\n    requestHeader(): EpochHeader | undefined;\n    requestContext(): RequestContext | undefined;\n    deriveMessages(): Message[];\n    deriveEventMessage(event: SessionEvent): Message | null;\n}',
   },
@@ -5402,6 +5555,14 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface SessionEventWindow {\n    session: SessionHeader;\n    inheritedEventCount: SessionLogOffset;\n    target: SessionEvent;\n    events: SessionEvent[];\n    startSeq: SessionSeq;\n    endSeq: SessionSeq;\n}',
   },
   {
+    name: 'SessionExternalApp',
+    declaration: 'export interface SessionExternalApp {\n    readonly id: string;\n    readonly available: boolean;\n}',
+  },
+  {
+    name: 'SessionExternalAppsValue',
+    declaration: 'export interface SessionExternalAppsValue {\n    readonly platform: HostPlatform;\n    readonly apps: readonly SessionExternalApp[];\n    readonly canReveal: boolean;\n}',
+  },
+  {
     name: 'SessionFollowFrame',
     declaration: 'export type SessionFollowFrame = {\n    readonly type: \'snapshot\';\n    readonly header: SessionWireHeader;\n    readonly cursor: number;\n    readonly records: readonly SessionHistoryRecord[];\n    readonly hasMore: boolean;\n    readonly projections: SessionProjectionBaseline;\n} | SessionEventEntry;',
   },
@@ -5420,6 +5581,14 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'SessionForkValue',
     declaration: 'export interface SessionForkValue {\n    readonly sessionId: SessionId;\n}',
+  },
+  {
+    name: 'SessionGitFactsRequest',
+    declaration: 'export interface SessionGitFactsRequest {\n    readonly path: string;\n}',
+  },
+  {
+    name: 'SessionGitFactsValue',
+    declaration: 'export interface SessionGitFactsValue {\n    readonly isRepository: boolean;\n    readonly branch?: string;\n    readonly baseBranch?: string;\n    readonly changedFiles: number;\n    readonly insertions: number;\n    readonly deletions: number;\n}',
   },
   {
     name: 'SessionHandle',
@@ -5490,6 +5659,14 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface SessionObservationOptions {\n    readonly signal?: AbortSignal;\n    readonly projectionMode?: \'all\' | \'none\';\n}',
   },
   {
+    name: 'SessionOpenPathRequest',
+    declaration: 'export interface SessionOpenPathRequest {\n    readonly path: string;\n    readonly target: SessionPathTarget;\n}',
+  },
+  {
+    name: 'SessionOpenPathValue',
+    declaration: 'export interface SessionOpenPathValue {\n    readonly opened: true;\n}',
+  },
+  {
     name: 'SessionOpenWorkspacePathRequest',
     declaration: 'export interface SessionOpenWorkspacePathRequest {\n    readonly path: string;\n}',
   },
@@ -5504,6 +5681,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'SessionPageRequest',
     declaration: 'export interface SessionPageRequest {\n    readonly address: SessionAddress;\n    readonly throughSeq: number;\n    readonly beforeSeq?: number;\n    readonly maxMessages?: number;\n}',
+  },
+  {
+    name: 'SessionPathTarget',
+    declaration: 'export type SessionPathTarget = {\n    readonly kind: \'default\';\n} | {\n    readonly kind: \'reveal\';\n} | {\n    readonly kind: \'app\';\n    readonly appId: string;\n};',
   },
   {
     name: 'SessionPersistenceCreateOptions',
@@ -5979,7 +6160,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'SubagentProvider',
-    declaration: 'export interface SubagentProvider {\n    readonly name: string;\n    readonly capabilities: SubagentCapabilities;\n    readonly inheritsParentContext: boolean;\n    readonly agentRouteDefaults?: Readonly<{\n        provider: string;\n        model: string;\n    }>;\n    start(request: ResolvedSubagentStartRequest): Promise<SubagentRun>;\n    prepareContinuable?(request: ContinuableCreateRequest): Promise<ContinuableCreateSpec>;\n}',
+    declaration: 'export interface SubagentProvider {\n    readonly name: string;\n    readonly capabilities: SubagentCapabilities;\n    readonly inheritsParentContext: boolean;\n    readonly agentRouteDefaults?: Readonly<{\n        provider: string;\n        model: string;\n    }>;\n    readonly harnessCapabilities?: HarnessCapabilities;\n    readonly discoverHarness?: HarnessDiscovery;\n    start(request: ResolvedSubagentStartRequest): Promise<SubagentRun>;\n    prepareContinuable?(request: ContinuableCreateRequest): Promise<ContinuableCreateSpec>;\n}',
   },
   {
     name: 'SubagentResult',
@@ -5987,7 +6168,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'SubagentRun',
-    declaration: 'export interface SubagentRun {\n    readonly id: SessionId;\n    readonly localAgent: Agent | undefined;\n    readonly result: Promise<SubagentResult>;\n    dispose(): Promise<void>;\n}',
+    declaration: 'export interface SubagentRun {\n    readonly id: SessionId;\n    readonly localAgent: Agent | undefined;\n    readonly result: Promise<SubagentResult>;\n    readonly acpInitializeResult?: unknown;\n    dispose(): Promise<void>;\n}',
   },
   {
     name: 'SubagentRunEndInfo',
@@ -6695,7 +6876,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'WorkspaceBaseline',
-    declaration: 'export interface WorkspaceBaseline {\n    readonly items: readonly WorkspaceView[];\n    readonly archivedSessionIds: readonly SessionId[];\n}',
+    declaration: 'export interface WorkspaceBaseline {\n    readonly items: readonly WorkspaceView[];\n    readonly archivedSessionIds: readonly SessionId[];\n    readonly pinnedSessionIds?: readonly SessionId[];\n}',
   },
   {
     name: 'WorkspaceCreateRequest',
@@ -6727,7 +6908,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'WorkspaceFollowIncrement',
-    declaration: 'export type WorkspaceFollowIncrement = {\n    readonly type: \'upsert\';\n    readonly workspace: WorkspaceView;\n} | {\n    readonly type: \'remove\';\n    readonly workspaceId: WorkspaceId;\n} | {\n    readonly type: \'order\';\n    readonly workspaceIds: readonly WorkspaceId[];\n} | {\n    readonly type: \'archived\';\n    readonly archivedSessionIds: readonly SessionId[];\n};',
+    declaration: 'export type WorkspaceFollowIncrement = {\n    readonly type: \'upsert\';\n    readonly workspace: WorkspaceView;\n} | {\n    readonly type: \'remove\';\n    readonly workspaceId: WorkspaceId;\n} | {\n    readonly type: \'order\';\n    readonly workspaceIds: readonly WorkspaceId[];\n} | {\n    readonly type: \'archived\';\n    readonly archivedSessionIds: readonly SessionId[];\n} | {\n    readonly type: \'pinned\';\n    readonly pinnedSessionIds: readonly SessionId[];\n};',
   },
   {
     name: 'WorkspaceInsertBeforeRequest',
@@ -6740,6 +6921,14 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'WorkspaceOrderValue',
     declaration: 'export interface WorkspaceOrderValue {\n    readonly workspaceIds: readonly WorkspaceId[];\n}',
+  },
+  {
+    name: 'WorkspacePinSessionRequest',
+    declaration: 'export interface WorkspacePinSessionRequest {\n    readonly sessionId: SessionId;\n    readonly pinned: boolean;\n}',
+  },
+  {
+    name: 'WorkspacePinSessionValue',
+    declaration: 'export interface WorkspacePinSessionValue {\n    readonly pinnedSessionIds: readonly SessionId[];\n}',
   },
   {
     name: 'WorkspaceRenameRequest',

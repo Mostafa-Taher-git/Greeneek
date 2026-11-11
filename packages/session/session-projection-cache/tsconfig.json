@@ -18,7 +18,7 @@
       "path": "../../../vendor/schemastery"
     },
     {
-      "path": "../../core/session"
+      "path": "../../core/session/tsconfig.host.json"
     },
     {
       "path": "../../storage/storage"
@@ -30,7 +30,7 @@
       "path": "../../storage/storage-json"
     },
     {
-      "path": "../session-projection"
+      "path": "../session-projection/tsconfig.host.json"
     }
   ]
 }

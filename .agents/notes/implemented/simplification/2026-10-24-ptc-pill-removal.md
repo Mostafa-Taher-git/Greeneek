@@ -15,7 +15,7 @@ Removing the preset outright would break every one of those recorded sessions. T
 
 Everything else about PTC is deliberately untouched:
 
-- `packages/preset/agent-presets/presets/ptc/` still ships, still mounts, and remains in `BUILT_IN_PRESET_KEYS` in `display.ts` with its locale copy.
+- `the retired PTC preset directory/` still ships, still mounts, and remains in `BUILT_IN_PRESET_KEYS` in `display.ts` with its locale copy.
 - `ToolPresentationMode = 'native' | 'ptc' | 'both'`, the `run_code` composition, and `gnk-code-runtime` remain as they were.
 - The `GNK_TOOLS_MODE=ptc` demo script and the `test:snapshot` replay fixtures are unchanged, so a session recorded under PTC resolves its preset and replays its composition exactly as before.
 - Settings and custom presets reach `ptc`: the management section lists it, and a copy of it is a normal custom preset. The hero row simply no longer advertises it.

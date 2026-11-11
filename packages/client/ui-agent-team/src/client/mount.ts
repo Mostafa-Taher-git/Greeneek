@@ -110,11 +110,14 @@ function registerUi(ctx: ClientContext): void {
   const fleet: FleetSettingsInjected = {
     subscribe: listener => fleetScope.subscribe(listener),
     getSnapshot: fleetSnapshot,
-    async loadAvailability() {
-      return await ctx.remote.agentTeams.fleetAvailability()
-    },
     async loadHarnesses() {
       return await ctx.remote.agentTeams.harnesses()
+    },
+    async refreshHarnesses() {
+      return await ctx.remote.agentTeams.refreshHarnesses()
+    },
+    async refreshHarness(connection: string) {
+      return await ctx.remote.agentTeams.refreshHarness(connection)
     },
     async loadStarters() {
       return await ctx.remote.agentTeams.fleetStarters()

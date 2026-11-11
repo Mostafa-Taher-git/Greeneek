@@ -9,7 +9,7 @@
   ],
   "references": [
     {
-      "path": "../../core/session"
+      "path": "../../core/session/tsconfig.host.json"
     },
     {
       "path": "../../../vendor/cosmokit"

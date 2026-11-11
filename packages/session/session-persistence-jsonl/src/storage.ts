@@ -29,6 +29,7 @@ import type {
   SessionHandleFlushOptions,
   SessionHandleReadOptions,
 } from '@greeneek/gnk-session-persistence'
+import type { SessionWriteLease } from './lease.ts'
 
 /** Maximum intentional wait before a routed live session batch starts writing. */
 export const LIVE_WRITE_BATCH_MAX_DELAY_MS = 200
@@ -52,6 +53,8 @@ export interface JsonlHandleStorage {
   readStoredLog(path: string, expectedId: SessionId, signal?: AbortSignal): Promise<{ events: SessionEvent[] }>
   /** Whether the id is still a created-but-unmaterialized session here. */
   hasPendingSession(id: SessionId): boolean
+  /** Acquire the session directory's cross-process write lease for this handle. */
+  acquireWriteLease(header: SessionHeader): Promise<SessionWriteLease>
   /** Drop the handle's bookkeeping on close. */
   releaseHandle(handle: JsonlSessionHandle, materialized: boolean): void
 }
@@ -88,6 +91,8 @@ export class JsonlSessionHandle implements SessionHandle {
   /** Set when a drain failed; the automatic timer stays quiet until the next drain. */
   private drainPaused = false
   private draining: Promise<void> | undefined
+  /** Cross-process write lease, acquired before the first durable write. */
+  private lease: SessionWriteLease | undefined
 
   constructor(
     private readonly storage: JsonlHandleStorage,
@@ -166,6 +171,7 @@ export class JsonlSessionHandle implements SessionHandle {
       options?.signal?.throwIfAborted()
       if (this.access !== 'write') throw new SessionReadOnlyError(this.id, 'flush')
       if (this.state.materialized) return // appends are durable on resolution
+      await this.ensureLease()
       await this.storage.persistHeader(this.header, this.state.inheritedEventCount)
       this.state.materialized = true
     })
@@ -199,6 +205,11 @@ export class JsonlSessionHandle implements SessionHandle {
       // After a drain failure the chain may still hold in-flight mutations.
       await this.chain
       this.storage.releaseHandle(this, this.state.materialized)
+      try {
+        this.lease?.release()
+      } catch (error: unknown) {
+        drainFailure ??= error
+      }
       if (drainFailure !== undefined) {
         throw drainFailure instanceof Error ? drainFailure : new Error(errorChain(drainFailure))
       }
@@ -261,11 +272,17 @@ export class JsonlSessionHandle implements SessionHandle {
     }
   }
 
+  /** Hold the cross-process write lease before the first durable write. */
+  private async ensureLease(): Promise<void> {
+    this.lease ??= await this.storage.acquireWriteLease(this.header)
+  }
+
   /** The shared durable-append body: contiguity, torn-tail repair, storage write, state advance. */
   private async persistContiguous(batch: readonly SessionEvent[]): Promise<void> {
     if (this.access !== 'write') throw new SessionReadOnlyError(this.id, 'append')
     if (batch.length === 0) return
     assertContiguous(this.id, batch, this.state.cursor)
+    await this.ensureLease()
     // Commit any pending torn-tail repair first, clearing each step's state
     // only once it lands so a failed step retries on the next mutation:
     // truncate the torn bytes, then durably rewrite the complete events

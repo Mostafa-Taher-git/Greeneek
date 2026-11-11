@@ -63,6 +63,12 @@ export interface IWorkspaces {
    */
   archiveSession(sessionId: SessionId): Promise<void>
   /**
+   * Pin or unpin a Session in the registry-global pin set.
+   * @param sessionId - Session to pin or unpin.
+   * @param pinned - requested pin state.
+   */
+  pinSession(sessionId: SessionId, pinned: boolean): Promise<void>
+  /**
    * Delete a Session permanently with its stored log.
    * @param sessionId - Session to delete.
    */
@@ -119,6 +125,11 @@ export class WorkspaceController extends Service implements IWorkspaces {
   async archiveSession(sessionId: SessionId): Promise<void> {
     const result = await this.model.archiveSession(sessionId)
     if (!result.ok) throw commandError('session archive', result.error)
+  }
+
+  async pinSession(sessionId: SessionId, pinned: boolean): Promise<void> {
+    const result = await this.model.pinSession(sessionId, pinned)
+    if (!result.ok) throw commandError('session pin', result.error)
   }
 
   async deleteSession(sessionId: SessionId): Promise<void> {

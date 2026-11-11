@@ -8,7 +8,7 @@
   "references": [
     { "path": "../../../vendor/cordis" },
     { "path": "../../../vendor/schemastery" },
-    { "path": "../../core/agent" },
+    { "path": "../../core/agent/tsconfig.host.json" },
     { "path": "../../core/tools" },
     { "path": "../../terminal/terminal" },
     { "path": "../../util/timeout" }

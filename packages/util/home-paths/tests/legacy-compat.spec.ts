@@ -1,6 +1,6 @@
 import { mkdtemp, readFile, rm, writeFile, mkdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { LEGACY_HOME_DIR_NAMES, LEGACY_HOME_ENV, legacyHomeConfig, migrateGnkHome, resolveGnkHome } from '@greeneek/gnk-home-paths'
 
@@ -15,12 +15,12 @@ describe('legacy home compatibility (rebrand shim, ends v1.0)', () => {
   })
 
   it('lets the legacy env var select the home when the canonical one is unset', () => {
-    expect(resolveGnkHome(undefined, { DSH_HOME: '/legacy-home' })).toBe('/legacy-home') // rebrand:keep
+    expect(resolveGnkHome(undefined, { DSH_HOME: '/legacy-home' })).toBe(resolve('/legacy-home')) // rebrand:keep
   })
 
   it('never lets the legacy env var shadow a canonical value', () => {
-    expect(resolveGnkHome(undefined, { GNK_HOME: '/gnk-home', DSH_HOME: '/legacy-home' })).toBe('/gnk-home') // rebrand:keep
-    expect(resolveGnkHome('/configured', { GNK_HOME: '/gnk-home', DSH_HOME: '/legacy-home' })).toBe('/configured') // rebrand:keep
+    expect(resolveGnkHome(undefined, { GNK_HOME: '/gnk-home', DSH_HOME: '/legacy-home' })).toBe(resolve('/gnk-home')) // rebrand:keep
+    expect(resolveGnkHome('/configured', { GNK_HOME: '/gnk-home', DSH_HOME: '/legacy-home' })).toBe(resolve('/configured')) // rebrand:keep
   })
 
   it('reads the legacy config key without touching the current one', () => {

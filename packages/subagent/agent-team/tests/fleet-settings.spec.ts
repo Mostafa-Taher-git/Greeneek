@@ -3,6 +3,7 @@ import {
   assertFavoriteProviderReady,
   favoriteMemberRequest,
   fleetProviderAvailability,
+  FleetSettingsSchema,
   validateFleetFavorite,
   validateFleetSettings,
   type FleetFavorite,
@@ -147,5 +148,46 @@ describe('fleet favorite validation', () => {
     for (const [favorite, message] of cases) {
       expect(() => { validateFleetFavorite(favorite) }, message).toThrow(message)
     }
+  })
+})
+
+describe('fleet execution type', () => {
+  const rows: FleetProviderAvailability[] = [
+    { name: 'greeneek', state: 'ready', oneShot: true, continuable: true },
+    { name: 'claude-code', state: 'one-shot', oneShot: true, continuable: false },
+  ]
+  const member = FAVORITE.members[0]!
+
+  it('admits a stored execution type that matches the connection dispatch', () => {
+    expect(() => {
+      assertFavoriteProviderReady({ ...member, provider: 'greeneek', execution: 'harmony' }, rows)
+    }).not.toThrow()
+    expect(() => {
+      assertFavoriteProviderReady({ ...member, provider: 'claude-code', execution: 'melody' }, rows)
+    }).not.toThrow()
+  })
+
+  it('refuses a stored execution type the connection cannot dispatch', () => {
+    expect(() => {
+      assertFavoriteProviderReady({ ...member, provider: 'claude-code', execution: 'harmony' }, rows)
+    }).toThrow('asks for harmony, but connection "claude-code" runs melody')
+    expect(() => {
+      assertFavoriteProviderReady({ ...member, provider: 'greeneek', execution: 'melody' }, rows)
+    }).toThrow('asks for melody, but connection "greeneek" runs harmony')
+  })
+
+  it('derives dispatch for members saved before the execution type existed', () => {
+    expect(() => { assertFavoriteProviderReady({ ...member, provider: 'greeneek' }, rows) }).not.toThrow()
+    expect(() => { assertFavoriteProviderReady({ ...member, provider: 'claude-code' }, rows) }).not.toThrow()
+  })
+
+  it('stores only the two execution types in the settings schema', () => {
+    const favorite: FleetFavorite = { ...FAVORITE, members: [{ ...member, execution: 'harmony' }] }
+    expect(FleetSettingsSchema({ favorites: [favorite] })).toMatchObject({
+      favorites: [{ members: [{ execution: 'harmony' }] }],
+    })
+    // The invalid value is the point: the durable parser must refuse it.
+    const invalid = { ...FAVORITE, members: [{ ...member, execution: 'lane' }] } as unknown as FleetFavorite
+    expect(() => FleetSettingsSchema({ favorites: [invalid] })).toThrow()
   })
 })

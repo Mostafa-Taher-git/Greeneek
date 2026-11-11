@@ -45,6 +45,9 @@ export const zh = {
   'pill.label.degraded': '{label} · 视图过时',
   'pill.stop.aria': '紧急停止全部舰队',
   'pill.close.aria': '关闭舰队面板',
+  'sidebar.title': '实时舰队',
+  'sidebar.close.aria': '关闭舰队侧栏',
+  'sidebar.open.aria': '打开舰队侧栏',
 } satisfies Record<string, string>
 
 /** The fleet namespace key union. */
@@ -92,6 +95,9 @@ export const en = {
   'pill.label.degraded': '{label} · view stale',
   'pill.stop.aria': 'Emergency-stop the whole fleet',
   'pill.close.aria': 'Close the fleet panel',
+  'sidebar.title': 'Live fleet',
+  'sidebar.close.aria': 'Close the fleet sidebar',
+  'sidebar.open.aria': 'Open the fleet sidebar',
 } satisfies Record<FleetKey, string>
 
 /** Arabic dictionary, checked complete against the zh key set; Army and tok stay verbatim. */
@@ -136,4 +142,7 @@ export const ar = {
   'pill.label.degraded': '{label} · العرض قديم',
   'pill.stop.aria': 'إيقاف طارئ للأسطول بأكمله',
   'pill.close.aria': 'إغلاق لوحة الأسطول',
+  'sidebar.title': 'الأسطول الحي',
+  'sidebar.close.aria': 'إغلاق الشريط الجانبي للأسطول',
+  'sidebar.open.aria': 'فتح الشريط الجانبي للأسطول',
 } satisfies Record<FleetKey, string>

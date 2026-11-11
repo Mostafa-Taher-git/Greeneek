@@ -10,8 +10,17 @@
 
 import type { Readable, Writable } from 'node:stream'
 import { StringDecoder } from 'node:string_decoder'
-import { CraftError } from '@greeneek/gnk-craft'
+import { buildCapabilityMatrix, CraftError } from '@greeneek/gnk-craft'
 import type { CraftCallResult, CraftToolDescriptor, CraftTransport } from '@greeneek/gnk-craft'
+
+/**
+ * Bound on one buffered stdout line in characters. The app process is
+ * trusted to speak JSON-RPC, but a runaway or compromised app must not
+ * grow the host's buffering without limit: a line that outgrows the bound
+ * fails the transport instead of buffering forever. Sized well above any
+ * pilot tool catalog or command registry payload.
+ */
+export const MAX_LINE_CHARS = 8 * 1024 * 1024
 
 /** The process surface the transport needs. */
 export interface CraftTransportProcess {
@@ -102,10 +111,27 @@ export class JsonRpcCraftTransport implements CraftTransport {
 
   /** {@inheritDoc CraftTransport.listTools} */
   async listTools(): Promise<readonly CraftToolDescriptor[]> {
-    if (this.isMcp()) await this.ensureInitialized()
-    const result = this.isMcp()
-      ? await this.request('tools/list', {})
-      : await this.request(this.options.listMethod, {})
+    if (this.isMcp()) {
+      await this.ensureInitialized()
+      const result = await this.request('tools/list', {})
+      const tools = isRecord(result) ? result.tools : undefined
+      if (!Array.isArray(tools)) {
+        throw new CraftError(
+          `the Craft app returned no tool catalog from "${this.options.listMethod}"`,
+          'CRAFT_APP_ERROR',
+        )
+      }
+      return tools.map((entry, index) => parseToolDescriptor(entry, index))
+    }
+    // The flat `serve` protocol answers `methods` + `engine.commands` and
+    // rejects `command_list`. Project the live registry instead of sending a
+    // method the app does not speak; only manifests with no observed registry
+    // method keep the legacy direct list call.
+    if (this.options.registryMethod !== null) {
+      const raw = await this.readCommandRegistry()
+      return buildCapabilityMatrix('serve', raw).tools
+    }
+    const result = await this.request(this.options.listMethod, {})
     const tools = isRecord(result) ? result.tools : undefined
     if (!Array.isArray(tools)) {
       throw new CraftError(
@@ -235,6 +261,13 @@ export class JsonRpcCraftTransport implements CraftTransport {
       this.buffer = this.buffer.slice(index + 1)
       if (line.trim() !== '') this.handleLine(line)
       index = this.buffer.indexOf('\n')
+    }
+    if (this.buffer.length > MAX_LINE_CHARS && !this.closed) {
+      this.buffer = ''
+      this.fail(new CraftError(
+        `the Craft app exceeded the ${String(MAX_LINE_CHARS)}-character line bound`,
+        'CRAFT_TRANSPORT_CLOSED',
+      ))
     }
   }
 

@@ -7,7 +7,7 @@
  */
 
 import { globSync, readFileSync, writeFileSync } from 'node:fs'
-import { basename, resolve } from 'node:path'
+import { basename, resolve, sep } from 'node:path'
 import { Context } from '@greeneek/cordis'
 import LlmRuntime from '@greeneek/gnk-llm'
 import type { ToolSchema } from '@greeneek/gnk-llm'
@@ -654,7 +654,13 @@ export type ToolCatalog = CatalogPackage[]
  * `scanRoot` defaults to the repo root; a test may point it at a fixture tree.
  */
 export function assertManifestComplete(packages: ToolPackage[] = TOOL_PACKAGES, scanRoot: string = root): void {
-  const onDisk = globSync('packages/*/tool-*', { cwd: scanRoot }).map(p => basename(p)).sort()
+  // The client group holds browser-side packages whose names begin with `tool-`
+  // (`tool-owned-render`); this catalog boots Host tool packages, so the
+  // browser half is not a missing manifest entry.
+  const onDisk = globSync('packages/*/tool-*', { cwd: scanRoot })
+    .map(path => path.split(sep).join('/'))
+    .filter(path => !path.startsWith('packages/client/'))
+    .map(path => basename(path)).sort()
   const listed = new Set(packages.map(p => p.dir))
   const missing = onDisk.filter(dir => !listed.has(dir))
   if (missing.length > 0) {

@@ -12,7 +12,7 @@
       "path": "../../../vendor/cordis"
     },
     {
-      "path": "../../subagent/agent-team"
+      "path": "../../subagent/agent-team/tsconfig.client.json"
     },
     {
       "path": "../../api/remotes/tsconfig.client.json"
@@ -39,7 +39,7 @@
       "path": "../../client/ui-slots"
     },
     {
-      "path": "../../core/session"
+      "path": "../../core/session/tsconfig.client.json"
     },
     {
       "path": "../../typert/protocol"

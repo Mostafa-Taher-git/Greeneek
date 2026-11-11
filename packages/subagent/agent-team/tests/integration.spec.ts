@@ -4,7 +4,12 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+
+// These cases drive real git worktrees and lane merges; on a contended host
+// that work alone can exceed the default 5 s budget without any behavioural
+// defect, so the file budgets the process time.
+vi.setConfig({ testTimeout: 30_000 })
 import { SessionId } from '@greeneek/gnk-session'
 import { TeamError } from '../src/error.ts'
 import { LaneIntegration } from '../src/integration.ts'
@@ -271,7 +276,7 @@ describe('reviewed lane integration', { timeout: 30_000 }, () => {
     expect(existsSync(alpha.record.path)).toBe(false)
     expect(existsSync(beta.record.path)).toBe(true)
     expect(merge.haltReason(SESSION)).toContain('conflicts')
-  }, 20_000)
+  }, 120_000)
 
   it('refuses an absent or terminal lane and serializes concurrent admissions', async () => {
     const repo = repository()

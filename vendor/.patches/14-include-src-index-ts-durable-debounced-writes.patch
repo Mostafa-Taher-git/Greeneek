@@ -1,0 +1,5 @@
+Modification 14: include/src/index.ts durable debounced writes
+Tree-hash: 3f6a88a91e110b7daa28b30cc1218a8095ce72ae80be7dbaad4891489332c95e
+Upstream manifest: see vendor/README.md manifest table for this package's SHA.
+
+serialized and tracked config-file writes, retried transient `EACCES`/`EBUSY`/`EPERM` rename failures with a bounded backoff, observed asynchronous timer rejections, and drained the latest write during Include teardown. Windows can briefly retain a destination handle after a Loader child disposes; the upstream fire-and-forget rename escaped as an unhandled rejection and could lose the persisted `disabled` state. A terminal failure is logged by the asynchronous writer and remains on the queue so `Include.stop()` rethrows it instead of silently declaring persistence complete; Cordis's ordinary fiber teardown retains its separate error-containment contract. Covered by `packages/host/directory-picker-auto/tests/loader-composition.spec.ts` with injected transient and terminal rename failures.

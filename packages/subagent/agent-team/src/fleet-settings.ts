@@ -8,6 +8,7 @@
 
 import z from '@greeneek/schemastery'
 import { errorMessage, TeamError } from './error.ts'
+import { GREENEEK_HARNESS } from './fleet-migration.ts'
 import { resolveLanePolicy } from './lane-policy.ts'
 import type { SpawnAgentOptions, SpawnTeammateRequest, TeamMemberView } from './types.ts'
 
@@ -43,7 +44,15 @@ export interface FleetFavoriteMember {
   readonly name: string
   readonly description: string
   readonly prompt: string
+  /** Connection identity: the Greeneek Harness connection or a configured registry name. */
   readonly provider: string
+  /**
+   * How the member executes: `harmony` holds a durable teammate lane, `melody`
+   * runs one delegation that settles with a result. Absent on members saved
+   * before the execution type was stored; the launcher derives it from the
+   * connection's registered capability and refuses a stored value that disagrees.
+   */
+  readonly execution?: 'harmony' | 'melody'
   readonly context?: 'fresh' | 'fork'
   readonly preset?: string
   readonly model?: string
@@ -105,6 +114,7 @@ const memberSchema = z.object({
   description: z.string().required(),
   prompt: z.string().required(),
   provider: z.string().required(),
+  execution: z.union(['harmony', 'melody'] as const),
   context: z.union(['fresh', 'fork'] as const),
   preset: z.string(),
   model: z.string(),
@@ -249,30 +259,32 @@ export function duplicateFleetFavorite(favorite: FleetFavorite, existingIds: Rea
 /**
  * Starter fleets, shipped as editable copies rather than fixed configuration:
  * installing one returns a favorite the user can rename, re-member, and delete.
+ * Every member names the Greeneek Harness connection and runs Harmony with a
+ * fresh context, the durable-lane execution the in-harness runtime provides.
  */
 export const FLEET_STARTER_TEMPLATES: readonly FleetFavorite[] = [
   {
     id: 'development',
     name: 'Development',
     members: [
-      { name: 'implementer', description: 'write the change', prompt: 'Implement the requested change in the workspace.', provider: 'spawn' },
-      { name: 'verifier', description: 'run the checks', prompt: 'Run the tests and checks for the change just made and report the exact output.', provider: 'spawn', readOnly: true },
+      { name: 'implementer', description: 'write the change', prompt: 'Implement the requested change in the workspace.', provider: GREENEEK_HARNESS, execution: 'harmony', context: 'fresh' },
+      { name: 'verifier', description: 'run the checks', prompt: 'Run the tests and checks for the change just made and report the exact output.', provider: GREENEEK_HARNESS, execution: 'harmony', context: 'fresh', readOnly: true },
     ],
   },
   {
     id: 'research',
     name: 'Research',
     members: [
-      { name: 'investigator', description: 'read the codebase', prompt: 'Investigate the question and cite the files that answer it.', provider: 'spawn', readOnly: true },
-      { name: 'synthesiser', description: 'summarise findings', prompt: 'Summarise the investigation into the decisions it constrains.', provider: 'spawn', readOnly: true },
+      { name: 'investigator', description: 'read the codebase', prompt: 'Investigate the question and cite the files that answer it.', provider: GREENEEK_HARNESS, execution: 'harmony', context: 'fresh', readOnly: true },
+      { name: 'synthesiser', description: 'summarise findings', prompt: 'Summarise the investigation into the decisions it constrains.', provider: GREENEEK_HARNESS, execution: 'harmony', context: 'fresh', readOnly: true },
     ],
   },
   {
     id: 'quality-assurance',
     name: 'QA',
     members: [
-      { name: 'test-author', description: 'write tests', prompt: 'Write the tests that cover the requested behaviour.', provider: 'spawn' },
-      { name: 'test-runner', description: 'execute tests', prompt: 'Execute the test suite and report every failure with its output.', provider: 'spawn', readOnly: true },
+      { name: 'test-author', description: 'write tests', prompt: 'Write the tests that cover the requested behaviour.', provider: GREENEEK_HARNESS, execution: 'harmony', context: 'fresh' },
+      { name: 'test-runner', description: 'execute tests', prompt: 'Execute the test suite and report every failure with its output.', provider: GREENEEK_HARNESS, execution: 'harmony', context: 'fresh', readOnly: true },
     ],
   },
 ]
@@ -382,9 +394,12 @@ export function favoriteMemberRequest(member: FleetFavoriteMember): Omit<SpawnTe
  * another provider. A one-shot provider is admitted: the roster settles its run
  * and refuses interactive operations on it. An isolated write scope needs the
  * durable lane that only a continuable provider has, so that shape is refused.
+ * A stored execution type must match the dispatch the connection's capability
+ * selects, so a saved fleet never changes how it runs without a named refusal.
  * @param member - favorite member being launched.
  * @param providers - current availability rows.
  * @throws {TeamError} `TEAM_FLEET_PROVIDER_UNAVAILABLE` naming the provider, its state, and the reason.
+ * @throws {TeamError} `TEAM_FLEET_EXECUTION_MISMATCH` when the stored execution type disagrees with the connection.
  */
 export function assertFavoriteProviderReady(
   member: FleetFavoriteMember,
@@ -396,6 +411,15 @@ export function assertFavoriteProviderReady(
       `fleet member "${member.name}" provider "${member.provider}" is ${provider?.state ?? 'not-installed'}; refusing to substitute another provider`,
       'TEAM_FLEET_PROVIDER_UNAVAILABLE',
     )
+  }
+  if (member.execution !== undefined) {
+    const dispatch = provider.continuable ? 'harmony' : 'melody'
+    if (member.execution !== dispatch) {
+      throw new TeamError(
+        `fleet member "${member.name}" asks for ${member.execution}, but connection "${member.provider}" runs ${dispatch}; refusing to change its execution type`,
+        'TEAM_FLEET_EXECUTION_MISMATCH',
+      )
+    }
   }
   if (provider.continuable || member.writeScopes === undefined || member.writeScopes.length === 0) return
   throw new TeamError(

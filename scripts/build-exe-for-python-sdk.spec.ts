@@ -22,6 +22,11 @@ function run(env: NodeJS.ProcessEnv, ...args: string[]) {
   })
 }
 
+/** Render one command segment as the builder logs it: quote segments with a space. */
+function quoted(part: string): string {
+  return part.includes(' ') ? JSON.stringify(part) : part
+}
+
 describe('Python runtime executable builder CLI', () => {
   it('runs pnpm through its JavaScript entrypoint without a command shell', () => {
     const result = run(
@@ -32,9 +37,9 @@ describe('Python runtime executable builder CLI', () => {
     )
 
     expect(result.status).toBe(0)
-    expect(result.stdout).toContain(`${process.execPath} C:\\tools\\pnpm.cjs run verify-runtime-closure`)
-    expect(result.stdout).toContain(`${process.execPath} C:\\tools\\pnpm.cjs --filter gnk-python-runtime-closure deploy`)
-    expect(result.stdout).toContain(`${process.execPath} C:\\tools\\pnpm.cjs dlx @yao-pkg/pkg@6.21.0`)
+    expect(result.stdout).toContain(`${quoted(process.execPath)} C:\\tools\\pnpm.cjs run verify-runtime-closure`)
+    expect(result.stdout).toContain(`${quoted(process.execPath)} C:\\tools\\pnpm.cjs --filter gnk-python-runtime-closure deploy`)
+    expect(result.stdout).toContain(`${quoted(process.execPath)} C:\\tools\\pnpm.cjs dlx @yao-pkg/pkg@6.21.0`)
     expect(result.stdout).not.toMatch(/pnpm\.cmd/i)
   })
 
@@ -55,7 +60,7 @@ describe('Python runtime executable builder CLI', () => {
     )
 
     expect(result.status).toBe(0)
-    expect(result.stdout).toContain(`${process.execPath} ${entrypoint} run verify-runtime-closure`)
+    expect(result.stdout).toContain(`${quoted(process.execPath)} ${quoted(entrypoint)} run verify-runtime-closure`)
     expect(result.stdout).not.toMatch(/pnpm\.cmd/i)
   })
 

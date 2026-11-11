@@ -8,7 +8,7 @@ kind: "package-reference"
 
 ## Summary
 
-`gnk-tool-agent-team` gives the model a team toolset on top of the team domain package: create named teammates or a confirmed fleet, give writable teammates isolated lanes, checkpoint and integrate their reviewed patches, steer messages, wait for progress, interrupt a stuck teammate, and manage a shared task board — thirteen tools in total. A short policy section in every member's prompt teaches the model when to form a team (only when you ask for one) and how to coordinate on isolated or shared workspaces. Mounting it replaces legacy subagent controls with the same tool names, so a composition that wants both must disable the legacy definitions. It is experimental: excluded from official releases, carries no stability promise, and creates teammates only when you explicitly ask for a team or fleet.
+`gnk-tool-agent-team` gives the model a team toolset on top of the team domain package: create named teammates or a confirmed fleet, give writable teammates isolated lanes, checkpoint and integrate their reviewed patches, steer messages, wait for progress, interrupt a stuck teammate, manage a shared task board, and conduct a multi-Harness debate — fourteen tools in total. A short policy section in every member's prompt teaches the model when to form a team (only when you ask for one) and how to coordinate on isolated or shared workspaces. Mounting it replaces legacy subagent controls with the same tool names, so a composition that wants both must disable the legacy definitions. It is experimental: excluded from official releases, carries no stability promise, and creates teammates only when you explicitly ask for a team or fleet.
 
 ## Table of Contents
 
@@ -53,14 +53,15 @@ Try it by asking the Lead model: "create a teammate named reviewer to check the 
 
 ### What the model can do
 
-The thirteen tools group into six capabilities:
+The fourteen tools group into seven capabilities:
 
 - **Create a teammate** — `spawn_teammate` takes a name, a description, and the initial task, with optional provider, preset, model, reasoning effort, checkout, read-only flag, write scopes, and token ceiling; only the Lead can call it. The provider must be registered in this composition. A provider with a continuable start holds a Harmony lane, which takes messages, follow-up, and interruption; a provider without one runs one Melody delegation that settles with a result, so it takes no messages, no follow-up, no interruption, and no write scopes.
-- **Create a fleet** — `spawn_fleet` validates every member, shows one approval card that echoes each member's provider, context, preset, model, effort, token budget, and write capability, then spawns only after an `allowed-once` decision. A rejection, cancellation, timeout, or missing approval capability creates zero children and zero worktrees.
+- **Create a fleet** — `spawn_fleet` validates every member, shows one approval card that echoes each member's Harness connection, execution type, context, preset, model, effort, token budget, and write capability, then spawns only after an `allowed-once` decision. Internal strategy registry names present as their Harness connection on the card. A rejection, cancellation, timeout, or missing approval capability creates zero children and zero worktrees.
 - **Lanes** — `checkpoint_lane` stores the exact reviewed patch and hash; `integrate_lane` applies that patch to a clean primary checkout, runs gates, commits, and removes the lane; `discard_lane` checkpoints then removes a lane. Only the Lead can call them, and a failed merge halts the queue.
 - **Send messages** — `send_message` steers a running member at its nearest step boundary, starts an idle member, and cold-resumes an inactive teammate.
 - **See and wait** — `list_agents` shows the roster with live status; `wait_agent` waits for the next team change; `interrupt_agent` stops a teammate's current turn (Lead only).
 - **Manage the task board** — `team_task_create`, `team_task_list`, `team_task_get`, and `team_task_update` add, browse, read, and update shared tasks.
+- **Run a debate** — `conduct_debate` spawns one seat per participant over the same topic, collects independent positions, crosses objections and rebuttals, and reviews evidence through the durable mailbox across rounds, then a dedicated moderator publishes one verdict with unresolved disagreements and any minority evidence; the debate is read-only toward the project, per-seat failures are isolated and reported.
 
 Any member can message any other member and use the task board; only the Lead creates, integrates, discards, and interrupts teammates. Task updates keep the domain's owner and revision checks, so an outdated edit is rejected instead of overwriting newer work. The lane guard denies commit, merge, push, tag, and ref mutation through shell tools; it is a refusal, not a sandbox, and integration independently verifies the lane HEAD.
 
@@ -92,13 +93,13 @@ The [Agent Teams Agent Note](../../../.agents/notes/implemented/feature/2026-08-
 
 | File | Role |
 |---|---|
-| [`src/index.ts`](src/index.ts) | Plugin entry: config, the fixed policy text, and the thirteen scoped tool registrations |
+| [`src/index.ts`](src/index.ts) | Plugin entry: config, the fixed policy text, and the fourteen scoped tool registrations |
 | [`src/lane-guard.ts`](src/lane-guard.ts) | Teammate Git-mutation guard and read-only file-tool denial |
 | — | No runtime invariant companion is published; the Team service owns durable and authorization relations. |
 
 ### Policy and tools
 
-One `team:policy` section on the member scope teaches each member its role and the coordination rules; the fixed text and the nine tool registrations are declared in [`src/index.ts`](src/index.ts). The nine tool schemas appear only in Team member scopes, so non-Team subagents keep the default catalog. Scoped registrations with the same names as the legacy global continuable-subagent controls shadow those globals for team members only.
+One `team:policy` section on the member scope teaches each member its role and the coordination rules; the fixed text and the fourteen tool registrations are declared in [`src/index.ts`](src/index.ts). The fourteen tool schemas appear only in Team member scopes, so non-Team subagents keep the default catalog. Scoped registrations with the same names as the legacy global continuable-subagent controls shadow those globals for team members only.
 
 ### Scoped registration and teardown
 
@@ -127,7 +128,7 @@ Read these pages when the package-level contract is not enough. They move from t
 
 #### What the model sees
 
-One stable policy section states the exact Team role/name/id, the explicit-delegation requirement, isolated versus shared lanes, the teammate Git-mutation denial, reviewed Lead integration and queue halt, filesystem stale-version recovery, Bash/formatter/codegen risk, task and write-scope coordination, Steer delivery, the no-retry mailbox rule, and the Lead's duty to wait before answering. The thirteen Team schemas from `spawn_teammate` through `team_task_update`, including `spawn_fleet`, `checkpoint_lane`, `integrate_lane`, and `discard_lane`, appear only in Team member scopes.
+One stable policy section states the exact Team role/name/id, the explicit-delegation requirement, isolated versus shared lanes, the teammate Git-mutation denial, reviewed Lead integration and queue halt, filesystem stale-version recovery, Bash/formatter/codegen risk, task and write-scope coordination, Steer delivery, the no-retry mailbox rule, debate delegation, and the Lead's duty to wait before answering. The fourteen Team schemas from `spawn_teammate` through `team_task_update`, including `spawn_fleet`, `checkpoint_lane`, `integrate_lane`, `discard_lane`, and `conduct_debate`, appear only in Team member scopes.
 
 #### Token effect
 

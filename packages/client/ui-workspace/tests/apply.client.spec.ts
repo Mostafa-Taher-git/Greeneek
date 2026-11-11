@@ -63,8 +63,15 @@ async function bench() {
   } as never)
   const pickDirectory = vi.fn(() => Promise.resolve({ ok: true as const, value: '/projects/picked' }))
   const directoryPicker = { pick: pickDirectory }
-  Object.assign(new TestRemote(ctx), { directoryPicker })
-  ctx.provide('remote.directoryPicker', directoryPicker as never)
+  // The open-in catalogue and the path handoff live on the Session namespace.
+  const sessionRemote = {
+    externalApps: vi.fn(async () => ({
+      ok: true as const,
+      value: { platform: 'linux' as const, apps: [], canReveal: true },
+    })),
+    openPath: vi.fn(async () => ({ ok: true as const, value: { opened: true as const } })),
+  }
+  new TestRemote(ctx, { directoryPicker, session: sessionRemote })
   const locale = new LocaleRuntime(ctx)
   // These specs assert the shipped Chinese copy. There is no jsdom `window`
   // in this lane, so browser-language detection never runs and the locale
@@ -96,7 +103,7 @@ describe('ui-workspace apply', () => {
 
   it('declares the services it drives', () => {
     expect(inject).toEqual([
-      'slots', 'sessions', 'workspaces', 'locale', 'remote', 'remote.directoryPicker',
+      'slots', 'sessions', 'workspaces', 'locale', 'remote', 'remote.session', 'remote.directoryPicker',
     ])
   })
 

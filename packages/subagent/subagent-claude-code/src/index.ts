@@ -73,6 +73,14 @@ type ResolvedConfig = Omit<Required<Config>, 'model'> & Pick<Config, 'model'>
 class ClaudeCodeProvider implements SubagentProvider {
   readonly capabilities: SubagentCapabilities = NO_START_CAPABILITIES
   readonly inheritsParentContext = false
+  readonly harnessCapabilities = {
+    id: 'claude-code',
+    displayName: 'Claude Code',
+    models: 'unknown' as const,
+    supportsAgentOptions: false,
+    contextStrategies: ['fresh'] as const,
+    source: 'registration' as const,
+  }
 
   constructor(
     readonly name: string,

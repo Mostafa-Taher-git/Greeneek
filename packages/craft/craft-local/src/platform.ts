@@ -157,6 +157,138 @@ export function parseInstalledJson(text: string, app: CraftAppManifest): CraftIn
 }
 
 /**
+ * Normalize one launcher key into a Craft app id.
+ * @param value - raw key such as `PhotoCraft` or `Office Craft`.
+ * @returns the kebab-case id, or undefined when no usable id remains.
+ */
+export function normalizeArtCraftId(value: string): string | undefined {
+  const id = value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+  return /^[a-z][a-z0-9-]{1,31}$/.test(id) ? id : undefined
+}
+
+/**
+ * Parse every app entry in the shared launcher manifest.
+ * @param text - raw `installed.json` content.
+ * @returns one record per app id, or empty when absent/malformed.
+ */
+export function parseInstalledJsonAll(text: string): readonly CraftInstallEntry[] {
+  let decoded: unknown
+  try {
+    decoded = JSON.parse(text)
+  } catch {
+    return []
+  }
+  if (typeof decoded !== 'object' || decoded === null || Array.isArray(decoded)) return []
+  const record = decoded as Record<string, unknown>
+  const apps = record.apps
+  if (typeof apps === 'object' && apps !== null && !Array.isArray(apps)) {
+    return Object.entries(apps as Record<string, unknown>).flatMap(([key, entry]) => {
+      const id = normalizeArtCraftId(key)
+      if (id === undefined || typeof entry !== 'object' || entry === null || Array.isArray(entry)) return []
+      const fields = entry as Record<string, unknown>
+      const parsed = installEntry(id, fields)
+      return parsed === undefined ? [] : [parsed]
+    })
+  }
+  if (typeof record.id === 'string') {
+    const id = normalizeArtCraftId(record.id)
+    if (id !== undefined) {
+      const parsed = installEntry(id, record)
+      if (parsed !== undefined) return [parsed]
+    }
+  }
+  return []
+}
+
+/**
+ * Parse every entry in the launcher's Rust `per_app` map.
+ * @param text - raw `app.ron` content.
+ * @returns one record per app id, or empty when absent/malformed.
+ */
+export function parseLauncherAppRonAll(text: string): readonly CraftInstallEntry[] {
+  const normalized = text.replaceAll('\\"', '"')
+  const section = /per_app:\s*\{([^}]*)\}/u.exec(normalized)?.[1]
+  if (section === undefined) return []
+  const entries: CraftInstallEntry[] = []
+  const pattern = /"([^"]+)"\s*:\s*"((?:[^"\\]|\\.)*)"/gu
+  let match = pattern.exec(section)
+  while (match !== null) {
+    const id = normalizeArtCraftId(match[1] as string)
+    const installDir = (match[2] as string).replace(/\\\\/gu, '\\').trim()
+    if (id !== undefined && installDir !== '') entries.push({ id, installDir })
+    match = pattern.exec(section)
+  }
+  return entries
+}
+
+/** One generic install entry read from a launcher source. */
+export interface CraftInstallEntry {
+  /** Canonical app id. */
+  readonly id: string
+  /** Human-readable product name when declared. */
+  readonly displayName?: string
+  /** Absolute install directory when declared. */
+  readonly installDir?: string
+  /** Installed product version when declared. */
+  readonly version?: string
+  /** CLI executable stem when declared. */
+  readonly cliStem?: string
+}
+
+/** Build one entry from untrusted record fields. */
+function installEntry(id: string, fields: Record<string, unknown>): CraftInstallEntry | undefined {
+  const installDir = nonEmptyString(fields.installDir) ?? nonEmptyString(fields.path)
+  const version = nonEmptyString(fields.version)
+  const displayName = nonEmptyString(fields.displayName) ?? normalizeDisplayName(id)
+  const cliStem = nonEmptyString(fields.cliStem) ?? nonEmptyString(fields.cli)
+  if (installDir === undefined && version === undefined) return undefined
+  return {
+    id,
+    displayName,
+    ...installDir === undefined ? {} : { installDir },
+    ...version === undefined ? {} : { version },
+    ...cliStem === undefined ? {} : { cliStem },
+  }
+}
+
+/** Default display name from one app id (`pdfcraft` -> `PdfCraft`). */
+function normalizeDisplayName(id: string): string {
+  return `${id.charAt(0).toUpperCase()}${id.slice(1)}`
+}
+
+/**
+ * Parse a desktop application directory entry for one ArtCraft app file.
+ * @param text - raw desktop file content.
+ * @param fileName - desktop file name such as `artcraft-photo.desktop`.
+ * @returns the install entry, or undefined when not an ArtCraft app.
+ */
+export function parseDesktopFile(text: string, fileName: string): CraftInstallEntry | undefined {
+  const base = fileName.toLowerCase()
+  if (!base.startsWith('artcraft-') && !base.includes('artcraft')) return undefined
+  const stem = base.replace(/\.desktop$/u, '').replace(/^artcraft-/, '').replace(/^artcraft/, '')
+  const id = normalizeArtCraftId(stem)
+  if (id === undefined) return undefined
+  let displayName: string | undefined
+  let installDir: string | undefined
+  for (const line of text.split(/\r?\n/u)) {
+    const trimmed = line.trim()
+    if (trimmed.startsWith('Name=') && displayName === undefined) {
+      const value = trimmed.slice(5).trim()
+      if (value !== '') displayName = value
+    }
+    if (trimmed.startsWith('Exec=') && installDir === undefined) {
+      const exec = trimmed.slice(5).trim().split(/\s+/u)[0] as string
+      if (exec !== '') installDir = exec.slice(0, exec.lastIndexOf('/') + 1).replace(/\/$/u, '') || undefined
+    }
+  }
+  return {
+    id,
+    ...displayName === undefined ? {} : { displayName },
+    ...installDir === undefined ? {} : { installDir },
+  }
+}
+
+/**
  * Extract the `InstallDir` value from `reg.exe query` output.
  * @param text - raw registry output.
  * @returns the trimmed directory, or undefined when the value is absent.
@@ -165,6 +297,30 @@ export function parseRegistryInstallDir(text: string): string | undefined {
   const match = /InstallDir\s+REG_(?:SZ|EXPAND_SZ)\s+(.+)$/im.exec(text)
   if (match === null) return undefined
   return nonEmptyString(match[1])
+}
+
+/**
+ * Parse every `InstallDir` block from one recursive registry query.
+ * @param text - raw `reg query HKLM\Software /f InstallDir /s` output.
+ * @returns display name to install directory, keyed by registry subkey name.
+ */
+export function parseRegistryInstallDirs(text: string): Readonly<Record<string, string>> {
+  const result: Record<string, string> = {}
+  let current: string | undefined
+  for (const line of text.split(/\r?\n/u)) {
+    const header = /^HKEY_LOCAL_MACHINE\\Software\\([^\\]+)$/u.exec(line.trim())
+    if (header !== null) {
+      current = header[1]
+      continue
+    }
+    if (current === undefined) continue
+    const value = /^\s*InstallDir\s+REG_(?:SZ|EXPAND_SZ)\s+(.+)$/u.exec(line)
+    if (value !== null) {
+      const dir = nonEmptyString(value[1])
+      if (dir !== undefined) result[current] = dir
+    }
+  }
+  return result
 }
 
 /**

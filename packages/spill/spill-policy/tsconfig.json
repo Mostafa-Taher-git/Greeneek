@@ -22,7 +22,7 @@
       "path": "../../llm/llm"
     },
     {
-      "path": "../../core/session"
+      "path": "../../core/session/tsconfig.host.json"
     },
     {
       "path": "../spill"

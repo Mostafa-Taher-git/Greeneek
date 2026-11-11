@@ -480,6 +480,16 @@
       "source": "packages/craft/craft/src/types.ts"
     },
     {
+      "doc": "docs/subsystems/craft.md",
+      "symbol": "CraftDiscoveredApp",
+      "source": "packages/craft/craft/src/types.ts"
+    },
+    {
+      "doc": "docs/subsystems/craft.md",
+      "symbol": "CraftCapabilityMatrix",
+      "source": "packages/craft/craft/src/types.ts"
+    },
+    {
       "doc": "docs/subsystems/session.md",
       "symbol": "UserMessage",
       "source": "packages/llm/llm/src/message.ts"

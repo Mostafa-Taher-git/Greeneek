@@ -24,10 +24,10 @@
       "path": "../../llm/llm"
     },
     {
-      "path": "../../core/session"
+      "path": "../../core/session/tsconfig.host.json"
     },
     {
-      "path": "../../core/agent"
+      "path": "../../core/agent/tsconfig.host.json"
     },
     {
       "path": "../../compaction/compaction"
@@ -36,13 +36,13 @@
       "path": "../../session-query/session-query"
     },
     {
-      "path": "../../session/session-projection"
+      "path": "../../session/session-projection/tsconfig.host.json"
     },
     {
       "path": "../../session/session-projection-cache"
     },
     {
-      "path": "../../session/session-title"
+      "path": "../../session/session-title/tsconfig.host.json"
     }
   ]
 }

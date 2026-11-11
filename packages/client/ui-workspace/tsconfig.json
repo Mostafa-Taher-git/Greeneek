@@ -36,7 +36,7 @@
       "path": "../store"
     },
     {
-      "path": "../../core/session"
+      "path": "../../core/session/tsconfig.client.json"
     },
     {
       "path": "../../session/session-stats"

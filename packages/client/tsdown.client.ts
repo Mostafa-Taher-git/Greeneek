@@ -58,7 +58,7 @@ function styleInjectionModule(
  * Everything else under @greeneek/* is either a module-table entry
  * (external) or a leak the purity gate rejects.
  */
-export const INLINE_SAFE = /^(?:@greeneek\/gnk-(?:file-reference|session|llm|tools|brand|deque|typert-protocol|util-crypto|util-values|util-workspace-path)(?:\/|$)|@greeneek\/gnk-token-meter\/client$|@greeneek\/gnk-agent-presets\/display$)/
+export const INLINE_SAFE = /^(?:@greeneek\/gnk-(?:file-reference|session|llm|tools|brand|deque|typert-protocol|util-crypto|util-values|util-workspace-path)(?:\/|$)|@greeneek\/gnk-token-meter\/client$|@greeneek\/gnk-agent-presets\/display$|@greeneek\/gnk-agent-team\/client$)/
 
 /**
  * Vendored framework libraries: rescoped into @greeneek, so the gate below

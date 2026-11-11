@@ -1,0 +1,37 @@
+{
+  "extends": "../../../tsconfig.base.client.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "lib/types",
+    "tsBuildInfoFile": "lib/tsconfig.client.tsbuildinfo"
+  },
+  "include": [
+    "src/client.ts",
+    "src/control-types.ts",
+    "src/projection-types.ts",
+    "src/harness-types.ts"
+  ],
+  "references": [
+    {
+      "path": "../../../vendor/cordis"
+    },
+    {
+      "path": "../../attachment/attachment"
+    },
+    {
+      "path": "../../util/brand"
+    },
+    {
+      "path": "../../llm/llm"
+    },
+    {
+      "path": "../../core/session/tsconfig.client.json"
+    },
+    {
+      "path": "../../session/session-projection/tsconfig.client.json"
+    },
+    {
+      "path": "../../typert/protocol"
+    }
+  ]
+}

@@ -136,20 +136,19 @@ describe('the new-session mode dropdown', () => {
     expect(rows.map(glyphCount)).toEqual([1, 1, 1, 2, 1])
   })
 
-  it('retires the PTC row while the roster keeps supplying the preset', () => {
+  it('lists a user-authored preset reusing a removed shipped id', () => {
     const options = [
       { id: 'mine', trust: 'user' as const },
       { id: 'cordis', trust: 'system' as const },
-      { id: 'ptc', trust: 'system' as const, retired: true },
+      { id: 'ptc', trust: 'user' as const },
       { id: 'standard', trust: 'system' as const },
       { id: 'army', trust: 'system' as const },
       { id: 'maestro', trust: 'system' as const },
     ]
     renderSeat({ current: 'ptc', options })
 
-    // PTC still composes sessions — Settings and custom presets start it, and
-    // recorded PTC sessions keep replaying — but v0.3.4 retires its row, so the
-    // menu offers the shipped modes and appends only `mine`.
+    // The shipped `ptc` preset is deleted, but the id is free: a user-authored
+    // `ptc` is an ordinary authored preset and keeps its row.
     const rows = openMenu()
     expect(options.map(option => option.id)).toContain('ptc')
     expect(rows.map(row => row.textContent)).toEqual([
@@ -158,10 +157,10 @@ describe('the new-session mode dropdown', () => {
       `${en.presetMaestroName}${en.presetMaestroDescription}`,
       `${en.presetCordisName}${en.presetCordisDescription}`,
       `mine${en.noDescription}`,
+      `ptc${en.noDescription}`,
     ])
-    expect(rows.map(row => row.textContent).join('\n')).not.toContain(en.presetPtcName)
-    // A session already on PTC keeps naming PTC on the trigger, so the control
-    // never displays a mode the session is not running.
+    // A session already on `ptc` keeps naming it on the trigger, so the
+    // control never displays a mode the session is not running.
     expect(trigger().textContent).toBe('ptc')
   })
 

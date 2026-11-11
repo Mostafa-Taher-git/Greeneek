@@ -102,7 +102,7 @@ describe('bundled pilot catalog', () => {
 
   it('keeps a pilot row unverified until the real-host smoke proves it', () => {
     for (const manifest of loadPilotCatalog().apps()) {
-      expect(manifest.verified).toBe(manifest.sources.some(source => source.verified))
+      expect(manifest.verified).toBe(manifest.sources.every(source => source.verified))
       for (const source of manifest.sources) {
         expect(source.date).toMatch(/^\d{4}-\d{2}-\d{2}$/)
       }

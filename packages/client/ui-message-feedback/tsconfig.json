@@ -18,7 +18,7 @@
       "path": "../../feedback/message-feedback"
     },
     {
-      "path": "../../core/session"
+      "path": "../../core/session/tsconfig.client.json"
     },
     {
       "path": "../../typert/protocol"

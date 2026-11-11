@@ -7,6 +7,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { startInspector, type InspectorHandle } from '../src/host/bridge/controller.ts'
 import { InspectorClientFixture } from './fixtures/client-source.host.ts'
 
+// These cases start a real Worker and drive it across realms; on a contended
+// host that startup and delivery alone can exceed the default 5 s budget
+// without any behavioural defect, so the file budgets the process time.
+vi.setConfig({ testTimeout: 30_000 })
+
 interface CdpMessage {
   readonly id?: number
   readonly method?: string

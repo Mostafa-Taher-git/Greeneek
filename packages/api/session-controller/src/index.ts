@@ -3,7 +3,16 @@
 import { Context } from '@greeneek/cordis'
 import z from '@greeneek/schemastery'
 import { errorChain } from '@greeneek/gnk-llm'
-import { canOpenNativePath, openNativePath } from '@greeneek/gnk-native-command'
+import {
+  canOpenNativePath,
+  canRevealNativePath,
+  EXTERNAL_APPS,
+  externalAppAvailability,
+  gitFacts,
+  launchExternalApp,
+  openNativePath,
+  revealNativePath,
+} from '@greeneek/gnk-native-command'
 import type { SessionId } from '@greeneek/gnk-session'
 import type { SessionInspection } from '@greeneek/gnk-session-persistence'
 import type { SessionObservation } from '@greeneek/gnk-session-query'
@@ -41,6 +50,11 @@ import type {
   SessionForkValue,
   SessionListRequest,
   SessionListValue,
+  SessionExternalAppsValue,
+  SessionGitFactsRequest,
+  SessionGitFactsValue,
+  SessionOpenPathRequest,
+  SessionOpenPathValue,
   SessionOpenWorkspacePathRequest,
   SessionOpenWorkspacePathValue,
   SessionPage,
@@ -87,6 +101,16 @@ export interface SessionControllerInternals {
   readonly openPath?: (path: string, signal: AbortSignal) => Promise<void>
   /** Native handoff availability probe. */
   readonly canOpenPath?: () => boolean
+  /** Native file-manager reveal. */
+  readonly revealPath?: (path: string, signal: AbortSignal) => Promise<void>
+  /** Native file-manager reveal availability probe. */
+  readonly canRevealPath?: () => boolean
+  /** External application launcher. */
+  readonly launchApp?: (appId: string, path: string, signal: AbortSignal) => Promise<void>
+  /** External application catalogue and reachability for this host. */
+  readonly externalApps?: () => SessionExternalAppsValue
+  /** Read-only git facts of one project directory. */
+  readonly gitFacts?: (path: string, signal: AbortSignal) => Promise<SessionGitFactsValue>
 }
 
 /** Host service backing the generated `ctx.remote.session` namespace. */
@@ -114,8 +138,13 @@ export class SessionController extends TypertRemoteService {
   private readonly controlState: SessionControlController
   private readonly history: SessionHistoryController
   private readonly listState: ApiSessionList
-  private readonly openPath: (path: string, signal: AbortSignal) => Promise<void>
-  private readonly canOpenPath: () => boolean
+  private readonly openDefaultPath: (path: string, signal: AbortSignal) => Promise<void>
+  private readonly canOpenDefaultPath: () => boolean
+  private readonly revealInFileManager: (path: string, signal: AbortSignal) => Promise<void>
+  private readonly canRevealPath: () => boolean
+  private readonly launchExternalApplication: (appId: string, path: string, signal: AbortSignal) => Promise<void>
+  private readonly readExternalApps: () => SessionExternalAppsValue
+  private readonly readGitFacts: (path: string, signal: AbortSignal) => Promise<SessionGitFactsValue>
   private readonly promotions = new Set<Promise<void>>()
 
   /**
@@ -140,9 +169,19 @@ export class SessionController extends TypertRemoteService {
       coldBlankProbeMaxEvents: config.coldBlankProbeMaxEvents ?? DEFAULT_COLD_BLANK_PROBE_MAX_EVENTS,
       coldBlankProbeMaxBytes: config.coldBlankProbeMaxBytes ?? DEFAULT_COLD_BLANK_PROBE_MAX_BYTES,
     })
-    this.openPath = internals.openPath ?? openNativePath
-    this.canOpenPath = internals.canOpenPath
+    this.openDefaultPath = internals.openPath ?? openNativePath
+    this.canOpenDefaultPath = internals.canOpenPath
       ?? (() => config.nativeOpen ?? (internals.openPath !== undefined || canOpenNativePath()))
+    this.revealInFileManager = internals.revealPath ?? revealNativePath
+    this.canRevealPath = internals.canRevealPath
+      ?? (() => config.nativeOpen ?? (internals.revealPath !== undefined || canRevealNativePath()))
+    this.launchExternalApplication = internals.launchApp ?? launchExternalApp
+    this.readExternalApps = internals.externalApps ?? (() => ({
+      platform: process.platform,
+      apps: externalAppAvailability(EXTERNAL_APPS),
+      canReveal: this.canRevealPath(),
+    }))
+    this.readGitFacts = internals.gitFacts ?? gitFacts
     ctx.plugin(SessionFileReferences)
     ctx.plugin(SessionSkillCatalog)
 
@@ -285,7 +324,7 @@ export class SessionController extends TypertRemoteService {
    */
   @Remote
   canOpenWorkspacePath(): boolean {
-    return this.canOpenPath()
+    return this.canOpenDefaultPath()
   }
 
   /**
@@ -309,9 +348,112 @@ export class SessionController extends TypertRemoteService {
     }
     signal.throwIfAborted()
     try {
-      await this.openPath(request.path, signal)
+      await this.openDefaultPath(request.path, signal)
       return { opened: true }
     } catch (error: unknown) {
+      if (signal.aborted) throw new RemoteError('gateway/cancelled', 'path open was aborted', {})
+      throw new RemoteError(
+        'gateway/internal',
+        `path open failed: ${error instanceof Error ? error.message : String(error)}`,
+        {},
+      )
+    }
+  }
+
+  /**
+   * Report every external application this Host can hand a path to.
+   *
+   * Availability is probed per call, so an application installed while the
+   * server runs shows up on the next read without a restart.
+   * @returns the catalogue, host platform, and file-manager reveal capability.
+   */
+  @Remote('externalApps')
+  externalApps(): SessionExternalAppsValue {
+    return this.readExternalApps()
+  }
+
+  /**
+   * Report the read-only git facts of one project directory.
+   *
+   * The read never writes: it reports the checked-out branch, the base branch
+   * the work is compared against, and the size of the change set.
+   * @param request - the project directory to inspect.
+   * @param signal - caller lifetime; abort terminates the native command.
+   * @returns the git facts; a directory outside a repository reports none.
+   */
+  @Remote('gitFacts')
+  async gitFacts(
+    request: SessionGitFactsRequest,
+    signal: AbortSignal,
+  ): Promise<SessionGitFactsValue> {
+    if (request.path.length === 0) {
+      throw new RemoteError('gateway/bad-request', 'session.gitFacts requires a non-empty path', {})
+    }
+    signal.throwIfAborted()
+    return await this.readGitFacts(request.path, signal)
+  }
+
+  /**
+   * Send one path to a Host desktop destination.
+   *
+   * The `default` target hands the path to the operating system handler,
+   * `reveal` selects it in the system file manager, and `app` launches one
+   * catalogued application. Launching never goes through a shell.
+   * @param request - path and destination.
+   * @param signal - caller lifetime; abort terminates the native command.
+   * @returns confirmation after the destination accepted the path.
+   * @throws RemoteError when the request is invalid, the destination is
+   * unavailable, or the native command fails.
+   */
+  @Remote('openPath')
+  async openPath(
+    request: SessionOpenPathRequest,
+    signal: AbortSignal,
+  ): Promise<SessionOpenPathValue> {
+    if (request.path.length === 0) {
+      throw new RemoteError('gateway/bad-request', 'session.openPath requires a non-empty path', {})
+    }
+    signal.throwIfAborted()
+    const target = request.target
+    try {
+      switch (target.kind) {
+        case 'default':
+          await this.openDefaultPath(request.path, signal)
+          return { opened: true }
+        case 'reveal': {
+          const catalogue = this.readExternalApps()
+          if (!catalogue.canReveal) {
+            throw new RemoteError(
+              'session/path-reveal-unsupported',
+              `session.openPath cannot reveal paths on ${catalogue.platform}`,
+              { platform: catalogue.platform },
+            )
+          }
+          await this.revealInFileManager(request.path, signal)
+          return { opened: true }
+        }
+        case 'app': {
+          const app = this.readExternalApps().apps.find(candidate => candidate.id === target.appId)
+          if (app === undefined || !app.available) {
+            throw new RemoteError(
+              'session/path-app-unavailable',
+              `external application "${target.appId}" is not installed on this host`,
+              { appId: target.appId },
+            )
+          }
+          await this.launchExternalApplication(target.appId, request.path, signal)
+          return { opened: true }
+        }
+        default:
+          // Wire input can carry a target kind this build does not know.
+          throw new RemoteError(
+            'gateway/bad-request',
+            `session.openPath received an unknown target: ${JSON.stringify(target)}`,
+            {},
+          )
+      }
+    } catch (error: unknown) {
+      if (error instanceof RemoteError) throw error
       if (signal.aborted) throw new RemoteError('gateway/cancelled', 'path open was aborted', {})
       throw new RemoteError(
         'gateway/internal',

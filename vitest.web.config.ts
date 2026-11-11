@@ -5,7 +5,7 @@ import { standardDecoratorPlugin, vitestExecArgv } from './vitest.shared.ts'
 // Web browser lane: real host entry points, built-client interaction snapshots,
 // and replayed keyless e2e scenarios outside the unit/e2e includes. Linux PR CI
 // pins GNK_SNAPSHOT=replay and compares committed goldens; record/refresh remain
-// explicit local workflows. Real-model cases self-skip without GREENEEK_API_KEY.
+// explicit local workflows. Greeneek-endpoint model cases self-skip without GREENEEK_API_KEY; other providers gate on their own keys.
 try {
   // Node >= 21.7 native; throws when the file does not exist.
   process.loadEnvFile(new URL('.env', import.meta.url).pathname)

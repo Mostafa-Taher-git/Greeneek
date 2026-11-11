@@ -5,7 +5,6 @@ export type AgentPresetSettingsKey =
   | 'error' | 'userTrust' | 'headerHint'
   | 'nav' | 'sectionIntro' | 'builtIn' | 'setDefault' | 'view'
   | 'presetStandardName' | 'presetStandardDescription'
-  | 'presetPtcName' | 'presetPtcDescription'
   | 'presetCordisName' | 'presetCordisDescription'
   | 'presetPixelsDesignerName' | 'presetPixelsDesignerDescription'
   | 'presetInstructorName' | 'presetInstructorDescription'
@@ -37,9 +36,6 @@ export const en: Record<AgentPresetSettingsKey, string> = {
   presetStandardName: 'Standard mode',
   presetStandardDescription:
     'Full coding agent with file editing, shell, file and web search, skills, planning, goals, subagents, and workflows.',
-  presetPtcName: 'PTC mode',
-  presetPtcDescription:
-    'Full coding agent without the workflow tool; other tools are exposed through the PTC mode SDK so the model can combine multi-step operations in one TypeScript program.',
   presetCordisName: 'Creator mode',
   presetCordisDescription:
     'Built for creating custom agent presets, with all Standard mode capabilities plus runtime inspection, plugin experiments, and preset-authoring guidance.',
@@ -108,8 +104,6 @@ export const zh: Record<AgentPresetSettingsKey, string> = {
   view: '查看',
   presetStandardName: '标准模式',
   presetStandardDescription: '功能完整的编码 Agent，支持文件编辑、Shell、文件与网页检索、Skills、计划、目标、子代理和工作流。',
-  presetPtcName: 'PTC 模式',
-  presetPtcDescription: '功能完整的编码 Agent，但默认不提供 workflow 工具；其他工具通过 PTC 模式 SDK 呈现，让模型用一个 TypeScript 程序组合多步操作。',
   presetCordisName: '创造模式',
   presetCordisDescription: '用于创建自定义 Agent preset：具备标准模式的全部能力，并提供运行时检查、插件实验和 preset 创作指导。',
   presetPixelsDesignerName: '像素设计师（预览）',
@@ -162,22 +156,20 @@ export const zh: Record<AgentPresetSettingsKey, string> = {
 export const ar = {
   error: 'تعذّر تحميل الإعدادات المسبقة للوكيل.',
   userTrust: 'مخصّص',
-  headerHint: 'الإعداد المسبق الذي تشغّله هذه الجلسة، ويُثبَّت عند بدئها',
+  headerHint: 'الإعداد المسبق الذي تشغّله هذه الجلسة، ويُثبَت عند بدء الجلسة',
   nav: 'الإعدادات المسبقة',
   sectionIntro: 'الإعداد المسبق هو تركيب الإضافات الذي يشغّله وكيل الجلسة: أدواتها وموجّهها وقدراتها. انسخ أحد الإعدادات الموجودة وعدّلها كما تريد، أو دَع الوكيل يصوغ واحدًا لك في وضع الإنشاء.',
   builtIn: 'مدمج',
   setDefault: 'تعيين كافتراضي',
   view: 'عرض',
   presetStandardName: 'الوضع القياسي',
-  presetStandardDescription: 'وكيل برمجة متكامل يوفّر تحرير الملفات وshell والبحث في الملفات والويب والمهارات والتخطيط والأهداف والوكلاء الفرعيين وسير العمل.',
-  presetPtcName: 'وضع PTC',
-  presetPtcDescription: 'وكيل برمجة متكامل بلا أداة workflow؛ تُعرض الأدوات الأخرى عبر SDK وضع PTC ليتمكّن النموذج من دمج العمليات متعددة الخطوات في برنامج TypeScript واحد.',
+  presetStandardDescription: 'وكيل برمجة متكامل يوفّر تحرير الملفات وأوامر الطرفية والبحث في الملفات والويب والمهارات والتخطيط والأهداف والوكلاء الفرعيين وسير العمل.',
   presetCordisName: 'وضع الإنشاء',
   presetCordisDescription: 'مُهيَّأ لإنشاء إعدادات مسبقة مخصّصة للوكيل، ويجمع قدرات الوضع القياسي كاملة مع فحص وقت التشغيل وتجارب الإضافات وإرشاد صياغة الإعدادات المسبقة.',
   presetPixelsDesignerName: 'Pixels Designer (معاينة)',
   presetPixelsDesignerDescription: 'وكيل تصميم يقود تطبيقات الإبداع المثبَّتة عبر بوابة Craft، ويوفّر تحرير الملفات والبحث والمقابلات وقوائم المهام والتخطيط.',
   presetInstructorName: 'المدرِّب (معاينة)',
-  presetInstructorDescription: 'وكيل تعليمي يجري المقابلات ويصيغ الدروس والشروحات والسير الذاتية بصيغة markdown، ثم يصدّرها عبر تطبيقات المستندات في بوابة Craft.',
+  presetInstructorDescription: 'وكيل تعليمي يجري المقابلات ويصيغ الدروس والشروحات والسير الذاتية بصيغة ماركداون، ثم يصدّرها عبر تطبيقات المستندات في بوابة Craft.',
   // The Maestro name keeps the Latin product spelling in Arabic, as in English.
   presetArmyName: 'وضع Army',
   presetArmyDescription: 'وكيل برمجة يعمل بأسطول: يوزّع العمل المستقل على وكلاء فرعيين متوازيين بنمط Melody، ويحتفظ بنتائجهم المهيكلة فقط، ويبلّغ عن الموجة المكتملة جزئيًا كما هي.',

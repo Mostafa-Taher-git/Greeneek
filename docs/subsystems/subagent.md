@@ -397,6 +397,12 @@ interface SubagentRun {
    */
   readonly result: Promise<SubagentResult>
   /**
+   * The raw ACP `initialize` response, retained (S8-23) so a Harness descriptor
+   * can be derived from the child's advertised capabilities instead of being
+   * discarded at the protocol boundary.
+   */
+  readonly acpInitializeResult?: unknown
+  /**
    * Cancel remaining work, reach child quiescence, and release resources.
    * Idempotent.
    */
@@ -437,6 +443,16 @@ interface SubagentProvider {
    * is detached immutable data and requires `agentOptions` support.
    */
   readonly agentRouteDefaults?: Readonly<{ provider: string; model: string }>
+  /**
+   * Optional Harness-level capability advertisement (S8-22). Present only when
+   * a provider can honestly describe its models, effort levels, context
+   * strategies, and permissions at registration time. Absent means unknown.
+   */
+  readonly harnessCapabilities?: HarnessCapabilities
+  /**
+   * Optional live discovery surface.
+   */
+  readonly discoverHarness?: HarnessDiscovery
   /**
    * Establish a ONE-SHOT child and return its handle after publication.
    * The service has already validated that every requested start-time
@@ -485,7 +501,7 @@ A durable reader can rely on three ordering facts. The admission record precedes
 
 The engine never reads these records back: membership, budget enforcement, and the fleet views stay process-local, and the only write coupling is admission ordering — `startWave` rejects when the admission record cannot be written, so a wave is never admitted without its record. Same-repo readers accept the vocabulary through the regenerated `KNOWN_SESSION_EVENT_TYPES` in the persistence event catalog (`pnpm run gen-persistence-catalog`), since first-party writers do not set the envelope's `ignorable` skip marker — it is reserved for out-of-repo session events. A resume of a closed budget-interrupted wave admits a linked wave carrying its own three records, joined to the interrupted run by the new admission record's `resumedFromWaveId`; the link is a same-process admission from the retained map, so a restart mid-wave still cancels the running members by teardown, and the fleet UI keeps polling the remote faces rather than deriving its display from the log.
 
-Army composition splits the same way the subagent seam does. [`packages/bundle/base/cordis.patch.yml`](../../packages/bundle/base/cordis.patch.yml) mounts the engine beside `subagents` in the host plane, because Typert Gateway discovers `@Remote` bindings from the root context and the browser control face is addressed by Lead session id; an `isolate` realm would hide it from the gateway. The `army` preset contributes the model-facing pair through [`@greeneek/gnk-tool-wave`](../../packages/subagent/tool-wave/README.md) with `provider: spawn`, and the browser side reads the same service through [`@greeneek/gnk-client-ui-wave`](../../packages/client/ui-wave/README.md) — its `conversation.details.fleet` body and composer pill poll `waves/list` rather than subscribing, since member progress has no Remote event. The details panel opens the Fleet tab once when the conversation's loaded window first contains `wave_dispatch`; a Tool click or manual tab choice outranks that one-shot pick. Member rows are disclosure buttons over one drawer carrying provenance, artifact pointers, diagnostic, and the child-transcript action, and a polite hidden live region announces wave and terminal-member transitions.
+Army composition splits the same way the subagent seam does. [`packages/bundle/base/cordis.patch.yml`](../../packages/bundle/base/cordis.patch.yml) mounts the engine beside `subagents` in the host plane, because Typert Gateway discovers `@Remote` bindings from the root context and the browser control face is addressed by Lead session id; an `isolate` realm would hide it from the gateway. The `army` preset contributes the model-facing pair through [`@greeneek/gnk-tool-wave`](../../packages/subagent/tool-wave/README.md) with `provider: spawn`, and the browser side reads the same service through [`@greeneek/gnk-client-ui-wave`](../../packages/client/ui-wave/README.md) — its `rightbar` fleet surface and composer pill poll `waves/list` rather than subscribing, since member progress has no Remote event. The right sidebar opens once on the empty→running edge; a manual close outranks auto-open until a new fleet starts. Member rows are disclosure buttons over one drawer carrying provenance, artifact pointers, diagnostic, and the child-transcript action, and a polite hidden live region announces wave and terminal-member transitions.
 
 <!-- BEGIN GENERATED cordis-surface (gen-cordis-catalog.ts) — do not edit between markers -->
 

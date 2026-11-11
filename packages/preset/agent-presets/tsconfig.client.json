@@ -1,0 +1,23 @@
+{
+  "extends": "../../../tsconfig.base.client.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "lib/types",
+    "tsBuildInfoFile": "lib/tsconfig.client.tsbuildinfo"
+  },
+  "include": [
+    "src/preset.ts",
+    "src/types.ts"
+  ],
+  "references": [
+    {
+      "path": "../../core/session/tsconfig.client.json"
+    },
+    {
+      "path": "../../session/session-projection/tsconfig.client.json"
+    },
+    {
+      "path": "../../typert/protocol"
+    }
+  ]
+}

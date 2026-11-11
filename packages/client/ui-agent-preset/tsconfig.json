@@ -51,7 +51,7 @@
       "path": "../../preset/agent-presets"
     },
     {
-      "path": "../../core/session"
+      "path": "../../core/session/tsconfig.client.json"
     }
   ]
 }

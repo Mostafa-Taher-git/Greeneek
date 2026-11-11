@@ -19,7 +19,7 @@ beforeEach(() => { localStorage.clear() })
 describe('createLayoutStore', () => {
   it('initializes the sidebar at its default width, details closed, wide viewport assumed', () => {
     const { store } = createLayoutStore().create()
-    expect(store.getSnapshot()).toEqual({ sidebar: SIDEBAR_DEFAULT, details: 0, narrow: false, narrowExpanded: false, mainPage: 'conversation' })
+    expect(store.getSnapshot()).toEqual({ sidebar: SIDEBAR_DEFAULT, details: 0, narrow: false, narrowExpanded: false, mainPage: 'conversation', rightbarOpen: false })
   })
 
   it('each create() is an independent instance (factory is not a singleton)', () => {
@@ -55,7 +55,7 @@ describe('createLayoutStore', () => {
     actions.setSidebar(400)
     actions.setNarrow(true)
     actions.toggleSidebar()
-    expect(store.getSnapshot()).toEqual({ sidebar: 400, details: 0, narrow: true, narrowExpanded: true, mainPage: 'conversation' })
+    expect(store.getSnapshot()).toEqual({ sidebar: 400, details: 0, narrow: true, narrowExpanded: true, mainPage: 'conversation', rightbarOpen: false })
     actions.toggleSidebar()
     expect(store.getSnapshot().narrowExpanded).toBe(false)
     expect(store.getSnapshot().sidebar).toBe(400)
@@ -85,6 +85,21 @@ describe('createLayoutStore', () => {
     expect(store.getSnapshot().details).toBe(0)
   })
 
+  it('opens and closes the rightbar over the shared details track', () => {
+    const { store, actions } = createLayoutStore().create()
+    actions.openRightbar()
+    expect(store.getSnapshot().rightbarOpen).toBe(true)
+    expect(store.getSnapshot().details).toBe(DETAILS_DEFAULT)
+    actions.closeRightbar()
+    expect(store.getSnapshot().rightbarOpen).toBe(false)
+    expect(store.getSnapshot().details).toBe(0)
+    actions.toggleRightbar()
+    expect(store.getSnapshot().rightbarOpen).toBe(true)
+    actions.toggleRightbar()
+    expect(store.getSnapshot().rightbarOpen).toBe(false)
+    expect(store.getSnapshot().details).toBe(0)
+  })
+
   it('opens Settings at a requested section and returns to conversation', () => {
     const { store, actions } = createLayoutStore().create()
     actions.openSettings('models')
@@ -109,6 +124,7 @@ describe('createLayoutStore', () => {
       narrow: false,
       narrowExpanded: false,
       mainPage: 'conversation',
+      rightbarOpen: false,
     })
   })
 })

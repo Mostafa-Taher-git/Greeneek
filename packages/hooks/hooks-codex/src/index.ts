@@ -30,6 +30,7 @@ import {
   matchesMatcher,
   mergeHookOutputs,
   runHook,
+  StopLoopGuard,
   type HookOutput,
   type MatcherGroup,
   type MergedHookOutcome,
@@ -253,14 +254,20 @@ export function apply(ctx: Context, config: Config): void {
   })
 
   // A blocking Stop hook steers at the stopping boundary, which makes the
-  // machine observe pending input and run another step.
-  // TODO(stop-loop-guard): Codex supplies `stop_hook_active` so a Stop hook can
-  // avoid continuing the same turn indefinitely. It is always false here, so an
-  // unconditionally blocking hook force-continues every step until it self-limits.
+  // machine observe pending input and run another step. Codex supplies
+  // `stop_hook_active` so a Stop hook can avoid continuing the same turn
+  // indefinitely, but it is always false here; the shared guard applies the
+  // same eight-block cap as the Claude Code bridge so an unconditionally
+  // blocking hook cannot force-continue every step forever.
+  const stopGuard = new StopLoopGuard()
   ctx.on('agent/turn-stopping', async ({ agent, turn, signal }): Promise<void> => {
     const merged = await runPoint('Stop', '', { ...turnBase(ctx, agent, 'Stop', model), stop_hook_active: false, last_assistant_message: null }, { agent, turn, signal })
     /* jscpd:ignore-end */
     if (merged.decision === 'deny') {
+      if (!stopGuard.shouldContinue(agent, turn)) {
+        ctx.logger.warn('hooks-codex: Stop hook block limit reached for this turn; letting the turn stop')
+        return
+      }
       // A blocking Stop hook forces continuation; a block with no reason (exit 2,
       // empty stderr) still forces it — fall back to a generic steering line
       // rather than letting the turn stop.

@@ -1404,11 +1404,11 @@ describe('gnk-subagent-acp', () => {
     }
   })
 
-  it('advertises no start-time capabilities (out-of-process child)', async () => {
+  it('advertises only model/effort overrides among start-time capabilities', async () => {
     const ctx = await setup()
     const provider = ctx.subagents.getProvider('acp')!
     expect(provider.capabilities).toEqual({
-      agentOptions: false,
+      agentOptions: true,
       outputSchema: false,
       depthLimit: false,
       toolFilter: false,

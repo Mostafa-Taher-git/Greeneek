@@ -34,6 +34,10 @@
       "types": "./lib/types/message.d.ts",
       "default": "./lib/types/message.js"
     },
+    "./conformance": {
+      "types": "./lib/types/conformance.d.ts",
+      "default": "./lib/conformance.js"
+    },
     "./typert": {
       "types": "./lib/typert.host.d.ts",
       "default": "./lib/typert.host.js"
@@ -48,6 +52,8 @@
   "files": [
     "lib/index.js",
     "lib/invariant.js",
+    "lib/conformance.js",
+    "lib/magic-string.es-*.js",
     "lib/types/**/*.js",
     "lib/types/**/*.d.ts",
     "lib/typert.host.js",

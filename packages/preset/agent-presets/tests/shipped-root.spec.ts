@@ -86,19 +86,13 @@ describe('the shipped preset root', () => {
     const ctx = await roster({ includeUserRoot: false })
 
     const listed = await ctx.agentPresets.list()
-    // PTC stays on the roster after v0.3.4 retires its new-session pill: the
-    // composition, `run_code`, the demo script, and the replay fixtures all
-    // still name it. Only the hero row's ordering dropped it. The preview
-    // presets join the shipped set as pilot surfaces of the Craft seam, and
-    // `army` as the wave-engine composition and `maestro` as the durable lane
-    // composition.
+    // The preview presets join the shipped set as pilot surfaces of the Craft
+    // seam, and `army` as the wave-engine composition and `maestro` as the
+    // durable lane composition. The `ptc` preset is deleted; CTC covers its
+    // capability per session.
     expect(listed.map(preset => preset.id).sort())
-      .toEqual(['army', 'cordis', 'instructor', 'maestro', 'pixels-designer', 'ptc', 'standard'])
+      .toEqual(['army', 'cordis', 'instructor', 'maestro', 'pixels-designer', 'standard'])
     expect(listed.every(preset => preset.trust === 'system')).toBe(true)
-    expect(listed.find(preset => preset.id === 'ptc')?.retired).toBe(true)
-    expect(listed.filter(preset => preset.retired === true).map(preset => preset.id)).toEqual(['ptc'])
-    const rows = await ctx.agentPresets.remoteExportList()
-    expect(rows.presets.find(preset => preset.id === 'ptc')?.retired).toBe(true)
     // Not `broken === undefined`: health asks whether each row's package is
     // installed above the base, and the shipped rows name packages the
     // deployment installs beside the roster. This fixture base is not that
@@ -108,43 +102,42 @@ describe('the shipped preset root', () => {
       .filter(reason => reason !== undefined && !reason.includes('cannot be resolved'))).toEqual([])
   })
 
-  it('sanitizes a stored PTC default to standard and reports the substitution', async () => {
+  it('falls back to standard with a warning when the stored default names no shipped preset', async () => {
     const ctx = await roster({ default: 'ptc', includeUserRoot: false })
-    const sanitized: Array<{ from: string; to: string }> = []
-    ctx.on('agent-preset/default-sanitized', (payload) => { sanitized.push(payload) })
     const warn = vi.spyOn(ctx.logger, 'warn').mockImplementation(() => {})
 
-    // The pill is gone and so is PTC as a new-session default: a deployment or
-    // settings document that still stores it composes `standard`, loudly.
+    // The `ptc` preset is deleted: a deployment or settings document that
+    // still stores it as the default composes `standard` for new sessions,
+    // loudly, rather than bricking creation.
     expect((await ctx.agentPresets.resolve()).id).toBe('standard')
-    expect(sanitized).toEqual([{ from: 'ptc', to: 'standard' }])
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('"ptc"'))
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('"standard"'))
   })
 
-  it('keeps PTC explicitly resolvable and readable after its default is sanitized', async () => {
-    const ctx = await roster({ default: 'ptc', includeUserRoot: false })
-    const sanitized: Array<{ from: string; to: string }> = []
-    ctx.on('agent-preset/default-sanitized', (payload) => { sanitized.push(payload) })
+  it('fails loud on an explicit id the roster no longer supplies', async () => {
+    const ctx = await roster({ default: 'standard', includeUserRoot: false })
+    const warn = vi.spyOn(ctx.logger, 'warn').mockImplementation(() => {})
 
-    // Only the unnamed-default path substitutes. An explicit id still reads
-    // and mounts PTC, and a session that recorded it composes it.
-    expect((await ctx.agentPresets.resolve('ptc')).id).toBe('ptc')
-    expect((await ctx.agentPresets.resolve('ptc')).trust).toBe('system')
-    expect((await ctx.agentPresets.readDocument('ptc')).agentPreset).toBe('ptc')
-    expect(sanitized).toEqual([])
+    // Only the unnamed-default path falls back. A stored session that names
+    // the deleted preset resolves it explicitly, and substituting `standard`
+    // would misreport what the session ran: the failure is loud, with no
+    // warning and no silent composition.
+    await expect(ctx.agentPresets.resolve('ptc')).rejects.toMatchObject({
+      code: 'agent-preset/not-found',
+      details: { agentPreset: 'ptc' },
+    })
+    expect(warn).not.toHaveBeenCalled()
   })
 
-  it('leaves a stored default that is not the retired preset untouched', async () => {
+  it('leaves a stored default that exists untouched', async () => {
     const ctx = await roster({ default: 'cordis', includeUserRoot: false })
-    const sanitized: Array<{ from: string; to: string }> = []
-    ctx.on('agent-preset/default-sanitized', (payload) => { sanitized.push(payload) })
+    const warn = vi.spyOn(ctx.logger, 'warn').mockImplementation(() => {})
 
     expect((await ctx.agentPresets.resolve()).id).toBe('cordis')
-    expect(sanitized).toEqual([])
+    expect(warn).not.toHaveBeenCalled()
   })
 
-  it('leaves a user-authored preset that reuses the retired id alone', async () => {
+  it('lets a user-authored preset reuse a removed shipped id', async () => {
     const root = await mkdtemp(join(tmpdir(), 'gnk-preset-custom-ptc-'))
     await mkdir(join(root, 'ptc'))
     await writeFile(join(root, 'ptc', 'agent.cordis.yml'), '- id: alpha\n  name: ./missing.js\n')
@@ -154,19 +147,17 @@ describe('the shipped preset root', () => {
       includeUserRoot: false,
       roots: [{ path: root, trust: 'user' }],
     })
-    const sanitized: Array<{ from: string; to: string }> = []
-    ctx.on('agent-preset/default-sanitized', (payload) => { sanitized.push(payload) })
 
-    // Retirement removed the shipped PTC's pill, not the id: a deployment that
-    // omits the shipped root and authors its own `ptc` keeps its default.
+    // The shipped `ptc` directory is gone, but the id is free: a deployment
+    // that omits the shipped root and authors its own `ptc` keeps it.
     expect((await ctx.agentPresets.resolve()).id).toBe('ptc')
-    expect(sanitized).toEqual([])
+    expect((await ctx.agentPresets.resolve('ptc')).trust).toBe('user')
   })
 
-  it('fails loud when a retired default has no standard preset to sanitize to', async () => {
+  it('fails loud when an unknown default has no standard preset to fall back to', async () => {
     const root = await mkdtemp(join(tmpdir(), 'gnk-preset-no-standard-'))
-    await mkdir(join(root, 'ptc'))
-    await writeFile(join(root, 'ptc', 'agent.cordis.yml'), '- id: alpha\n  name: ./missing.js\n')
+    await mkdir(join(root, 'legacy'))
+    await writeFile(join(root, 'legacy', 'agent.cordis.yml'), '- id: alpha\n  name: ./missing.js\n')
     const ctx = await roster({
       default: 'ptc',
       includeShippedRoot: false,
@@ -174,12 +165,11 @@ describe('the shipped preset root', () => {
       roots: [{ path: root, trust: 'system' }],
     })
 
-    // Composing the retired default silently would defeat the retirement, and
-    // the sanitizer has no substitute to name: report the misconfiguration at
-    // the first point the roster can observe it.
+    // With no `standard` to name, the misconfiguration surfaces at the first
+    // point the roster can observe it rather than composing something else.
     await expect(ctx.agentPresets.resolve()).rejects.toMatchObject({
       code: 'agent-preset/not-found',
-      details: { agentPreset: 'standard' },
+      details: { agentPreset: 'ptc' },
     })
   })
 
@@ -212,7 +202,7 @@ describe('the shipped preset root', () => {
   })
 
   it('enables web_fetch in each tool-bearing Web app preset', async () => {
-    for (const id of ['army', 'cordis', 'instructor', 'maestro', 'pixels-designer', 'ptc', 'standard']) {
+    for (const id of ['army', 'cordis', 'instructor', 'maestro', 'pixels-designer', 'standard']) {
       const entries = await shippedEntries(id)
       const toolWeb: unknown = entries.find((entry: unknown) =>
         typeof entry === 'object' && entry !== null && 'id' in entry && entry.id === 'tool-web')
@@ -225,7 +215,7 @@ describe('the shipped preset root', () => {
   })
 
   it('supplies the required fs-search sampling choice in every preset that mounts it', async () => {
-    for (const id of ['army', 'cordis', 'instructor', 'maestro', 'pixels-designer', 'ptc', 'standard']) {
+    for (const id of ['army', 'cordis', 'instructor', 'maestro', 'pixels-designer', 'standard']) {
       const entry = findEntry(await shippedEntries(id), 'tool-fs-search')
       if (entry === undefined) continue
       expect(entry.config, `${id} must configure tool-fs-search`).toMatchObject({
@@ -234,14 +224,4 @@ describe('the shipped preset root', () => {
     }
   })
 
-  it('omits the general workflow tool only from PTC while retaining Ralph infrastructure', async () => {
-    const ptc = await shippedEntries('ptc')
-    expect(findEntry(ptc, 'tool-workflow')?.disabled).toBe(true)
-    expect(findEntry(ptc, 'workflow-worker-thread')?.disabled).not.toBe(true)
-    expect(findEntry(ptc, 'tool-ralph')?.disabled).not.toBe(true)
-
-    for (const id of ['standard', 'cordis']) {
-      expect(findEntry(await shippedEntries(id), 'tool-workflow')?.disabled, id).not.toBe(true)
-    }
-  })
 })

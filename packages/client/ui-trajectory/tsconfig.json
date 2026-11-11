@@ -33,10 +33,10 @@
       "path": "../../api/session-controller/tsconfig.client.json"
     },
     {
-      "path": "../../core/agent"
+      "path": "../../core/agent/tsconfig.client.json"
     },
     {
-      "path": "../../core/session"
+      "path": "../../core/session/tsconfig.client.json"
     },
     {
       "path": "../../core/tools"

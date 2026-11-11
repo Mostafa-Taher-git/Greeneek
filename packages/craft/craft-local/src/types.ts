@@ -49,6 +49,23 @@ export interface CraftDiscoveryIo {
    * @returns the install directory, or undefined when absent/unsupported.
    */
   registryInstallDir(app: CraftAppManifest): string | undefined
+  /**
+   * Read one Windows MSI `InstallDir` value by display name.
+   * @param displayName - registry subkey name.
+   * @returns the install directory, or undefined when absent/unsupported.
+   */
+  registryInstallDirFor?(displayName: string): string | undefined
+  /**
+   * List directory entry names.
+   * @param path - absolute directory path.
+   * @returns entry names, or empty when the directory is absent/unreadable.
+   */
+  listDir?(path: string): readonly string[]
+  /**
+   * List every Windows MSI `InstallDir` value.
+   * @returns display name to install directory; empty off Windows.
+   */
+  registryInstallDirs?(): Readonly<Record<string, string>>
 }
 
 /** Local provider boundary beyond discovery. */

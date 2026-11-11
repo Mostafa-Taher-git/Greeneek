@@ -91,8 +91,7 @@ describe('hooks-codex bridge', () => {
 
   it('a Stop hook (exit 2) forces the turn to continue with the reason as steering', async () => {
     const dir = configDir()
-    // Stop ignores its malformed matcher field. Block once with a marker;
-    // until the loop guard lands, an always-blocking hook would never finish.
+    // Stop ignores its malformed matcher field. Block once with a marker.
     const marker = join(dir, 'fired')
     const cont = script(dir, 'cont.sh', `#!/usr/bin/env bash\nif [ -e "${marker}" ]; then exit 0; fi\ntouch "${marker}"\necho "keep going: address the goal" >&2\nexit 2\n`)
     writeHooks(dir, { Stop: [{ matcher: '[', hooks: [{ type: 'command', command: cont }] }] })
@@ -106,6 +105,22 @@ describe('hooks-codex bridge', () => {
     expect(adapter.requests).toHaveLength(2)
     expect(JSON.stringify(adapter.requests[1]!.messages)).toContain('keep going: address the goal')
   }, 15_000) // Two real hook subprocesses and agent steps need startup and teardown headroom under load.
+
+  it('an unconditionally blocking Stop hook stops forcing after the shared cap', async () => {
+    const dir = configDir()
+    const block = script(dir, 'block.sh', '#!/usr/bin/env bash\necho "never stop" >&2\nexit 2\n')
+    writeHooks(dir, { Stop: [{ hooks: [{ type: 'command', command: block }] }] })
+    // One initial answer plus the eight forced continuations the guard admits.
+    const adapter = new MockAdapter(Array.from({ length: 9 }, (_, index) => textResponse(`answer ${String(index + 1)}`)))
+    const ctx = await harness(dir, adapter)
+    const warn = vi.fn()
+    ctx.logger.warn = warn as never
+    const agent = await ctx.agentLoop.create(SessionId('a1'), { provider: 'mock', model: 'mock' })
+    agent.followup(createUserMessage({ content: [{ type: 'text', text: 'go' }], source: { kind: 'user' } }))
+    await waitForIdle(ctx, agent)
+    expect(adapter.requests).toHaveLength(9)
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('Stop hook block limit reached'))
+  }, 30_000) // Nine real hook subprocesses and agent steps need headroom under load.
 
   it('turn cancellation aborts and reaps a running UserPromptSubmit hook before idle', async () => {
     const dir = configDir()

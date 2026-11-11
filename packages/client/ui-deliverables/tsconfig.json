@@ -42,7 +42,7 @@
       "path": "../../core/system-prompt"
     },
     {
-      "path": "../../core/session"
+      "path": "../../core/session/tsconfig.client.json"
     }
   ]
 }

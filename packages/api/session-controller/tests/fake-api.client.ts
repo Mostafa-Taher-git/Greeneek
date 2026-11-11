@@ -11,8 +11,10 @@ import type {
   SessionAddress,
   SessionControlBaseline,
   SessionControlFrame,
+  SessionExternalAppsValue,
   SessionFollowFrame,
   SessionFollowRequest,
+  SessionGitFactsValue,
   SessionPage,
   SessionPageRequest,
   SessionProjectionBaseline,
@@ -147,6 +149,14 @@ export class FakeApiClient {
   onCancel: (payload: unknown) => Promise<RemoteResult<{ accepted: true }>> = () => Promise.resolve(ok({ accepted: true as const }))
   onOpenWorkspacePath: (payload: unknown) => Promise<RemoteResult<{ opened: true }>> =
     () => Promise.resolve(ok({ opened: true as const }))
+  onExternalApps: (_payload: unknown) => Promise<RemoteResult<SessionExternalAppsValue>> =
+    () => Promise.resolve(ok({ platform: 'linux', apps: [], canReveal: true }))
+  onOpenPath: (payload: unknown) => Promise<RemoteResult<{ opened: true }>> =
+    () => Promise.resolve(ok({ opened: true as const }))
+  onGitFacts: (payload: unknown) => Promise<RemoteResult<SessionGitFactsValue>> =
+    () => Promise.resolve(ok({
+      isRepository: false, changedFiles: 0, insertions: 0, deletions: 0,
+    }))
 
   private readonly followConns = new Map<SessionId, ValueStreamConn<SessionFollowFrame>[]>()
   private readonly controlConns: ValueStreamConn<SessionControlFrame>[] = []
@@ -192,6 +202,9 @@ export class FakeApiClient {
 
   onWorkspaceDeleteSession: (_payload: unknown) => Promise<RemoteResult<{ archivedSessionIds: SessionId[] }>> =
     () => Promise.resolve(ok({ archivedSessionIds: [] }))
+
+  onWorkspacePinSession: (payload: unknown) => Promise<RemoteResult<{ pinnedSessionIds: SessionId[] }>> =
+    payload => Promise.resolve(ok({ pinnedSessionIds: [(payload as { sessionId: SessionId }).sessionId] }))
 
   /** Remote namespaces bound to this fake's programmable unary slots and stream pumps. */
   sessionRemotes(): RuntimeRemotes {
@@ -240,6 +253,21 @@ export class FakeApiClient {
           payload,
           this.onOpenWorkspacePath(payload),
         ),
+        externalApps: () => this.record(
+          'session.externalApps',
+          undefined,
+          this.onExternalApps(undefined),
+        ),
+        openPath: payload => this.record(
+          'session.openPath',
+          payload,
+          this.onOpenPath(payload),
+        ),
+        gitFacts: payload => this.record(
+          'session.gitFacts',
+          payload,
+          this.onGitFacts(payload),
+        ),
         page: request => this.page(request),
         follow: (request, signal) => this.openFollow(request, signal),
         control: signal => this.openControl(signal),
@@ -280,6 +308,11 @@ export class FakeApiClient {
           'workspace.deleteSession',
           payload,
           this.onWorkspaceDeleteSession(payload),
+        ),
+        pinSession: payload => this.record(
+          'workspace.pinSession',
+          payload,
+          this.onWorkspacePinSession(payload),
         ),
         follow: signal => this.openWorkspace(signal),
       },

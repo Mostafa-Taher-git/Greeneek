@@ -185,16 +185,18 @@ describe('serve handshake over a real child process', () => {
     expect(spec?.stdio.stdout).toBe('pipe')
     expect(readFileSync(tokenPath, 'utf8')).toBe(TOKEN)
 
-    // The raw registry read matches the observed serve protocol. The separate
-    // MCP catalog projection remains honestly unsupported by this serve peer.
+    // The capability matrix is generated from the live `engine.commands`
+    // registry; the gateway never asks `serve` for `command_list`.
     await expect(session.transport.readCommandRegistry()).resolves.toEqual({
       commands: [{ id: 'convert', input: { type: 'object' } }],
     })
-    await expect(session.transport.listTools()).rejects.toThrow('unknown method command_list')
+    await expect(session.transport.listTools()).resolves.toEqual([
+      { name: 'convert', description: '', inputSchema: { type: 'object' } },
+    ])
     const frames = readFileSync(join(workspace, 'requests.ndjson'), 'utf8').trim().split('\n')
     expect(frames.map(frame => JSON.parse(frame) as unknown)).toEqual([
       { jsonrpc: '2.0', id: 1, method: 'engine.commands', params: {} },
-      { jsonrpc: '2.0', id: 2, method: 'command_list', params: {} },
+      { jsonrpc: '2.0', id: 2, method: 'engine.commands', params: {} },
     ])
     expect(real?.stderr()).toBe('')
 

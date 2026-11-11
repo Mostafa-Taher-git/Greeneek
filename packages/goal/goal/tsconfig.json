@@ -24,16 +24,16 @@
       "path": "../../llm/llm"
     },
     {
-      "path": "../../core/session"
+      "path": "../../core/session/tsconfig.host.json"
     },
     {
       "path": "../../core/scope"
     },
     {
-      "path": "../../core/agent"
+      "path": "../../core/agent/tsconfig.host.json"
     },
     {
-      "path": "../../session/session-projection"
+      "path": "../../session/session-projection/tsconfig.host.json"
     },
     {
       "path": "../../typert/protocol"

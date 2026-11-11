@@ -94,6 +94,8 @@ export function fleetSource(initial: FleetSnapshot): FleetSource {
 /** Verbs a spec scripts, each recording its call and answer. */
 export interface FleetVerbSpies {
   refresh: Mock<() => void>
+  openSidebar: Mock<() => void>
+  closeSidebar: Mock<() => void>
   stopAll: Mock<() => Promise<StopAllOutcome>>
   stopWave: Mock<(waveId: WaveId) => Promise<StopOutcome>>
   stopMember: Mock<(waveId: WaveId, memberId: WaveMemberId) => Promise<StopOutcome>>
@@ -105,6 +107,8 @@ export interface FleetVerbSpies {
 export function fleetVerbs(): FleetVerbSpies {
   return {
     refresh: vi.fn<() => void>(),
+    openSidebar: vi.fn<() => void>(),
+    closeSidebar: vi.fn<() => void>(),
     stopAll: vi.fn<() => Promise<StopAllOutcome>>()
       .mockResolvedValue({ ok: true, value: { waveIds: [WAVE] } }),
     stopWave: vi.fn<(waveId: WaveId) => Promise<StopOutcome>>()
@@ -121,7 +125,7 @@ export function fleetVerbs(): FleetVerbSpies {
 export const t = makeTranslate(en) as unknown as PropsLocale<'fleet'>['t']
 
 /**
- * Compose the props both fleet surfaces read.
+ * Compose the props every fleet surface reads.
  * @param source - the mutable mirror the spec drives.
  * @param verbs - the scripted stop verbs.
  * @returns props assignable to either surface.

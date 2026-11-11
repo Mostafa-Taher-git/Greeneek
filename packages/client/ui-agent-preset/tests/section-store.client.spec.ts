@@ -13,7 +13,7 @@ import { AgentPresetSectionController, draftBlocker } from '../src/client/sectio
 import { presetOptions } from '../src/client/settings-store.ts'
 import type { CopyDraft, PresetRow } from '../src/client/section-store.ts'
 
-interface FakePreset { trust: 'system' | 'user'; content: string; name?: string; retired?: boolean }
+interface FakePreset { trust: 'system' | 'user'; content: string; name?: string }
 interface Recorded { method: string; payload: unknown }
 
 interface FakeOptions {
@@ -69,7 +69,6 @@ function fakeCtx(
             presets: [...presets].map(([id, preset]) => ({
               id, trust: preset.trust, isDefault: id === defaultId.id,
               ...preset.name === undefined ? {} : { name: preset.name },
-              ...preset.retired === true ? { retired: true } : {},
             })),
             authorable: options.authorable ?? true,
           })
@@ -168,23 +167,14 @@ function copyOf(controller: AgentPresetSectionController): CopyDraft {
 }
 
 describe('loading the roster', () => {
-  it('carries the retired marker into selectable options', () => {
+  it('carries every healthy preset into selectable options', () => {
     expect(presetOptions([
-      { id: 'ptc', trust: 'system', retired: true },
+      { id: 'custom', trust: 'user' },
       { id: 'standard', trust: 'system' },
     ])).toEqual([
-      { id: 'ptc', trust: 'system', retired: true },
+      { id: 'custom', trust: 'user' },
       { id: 'standard', trust: 'system' },
     ])
-  })
-
-  it('hides retired presets from the settings rows', async () => {
-    const { controller, presets } = harness()
-    presets.set('ptc', { trust: 'system', content: '- id: tool-bash\n', retired: true })
-
-    await controller.load()
-
-    expect(controller.store.getSnapshot().rows.map(row => row.id)).toEqual(['standard', 'mine'])
   })
 
   it('still lists the roster when the opener capability is refused', async () => {

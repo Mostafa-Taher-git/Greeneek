@@ -1,0 +1,5 @@
+Modification 9: hmr/src/index.ts exact config watching
+Tree-hash: 3f6a88a91e110b7daa28b30cc1218a8095ce72ae80be7dbaad4891489332c95e
+Upstream manifest: see vendor/README.md manifest table for this package's SHA.
+
+`registerConfig()` watches one absolute config path outside module roots, including a path under missing parents, serializes and coalesces refreshes, and returns an async disposer that closes the watcher and drains active work. Module watches realpath their existing base directory, attach change listeners before declaring the service ready, and use that spelling for Node module-cache identity; exact config watches realpath the deepest existing watch ancestor and restore the missing suffix. Those native paths prevent Windows short-name aliases from colliding with long-form libuv event paths while exact-config callbacks keep the requested filename. Refresh failures are normalized to `Error`, logged, and broadcast through the parallel `hmr/config-update-failed` event; observer failures are contained. Config-file changes discovered by the ordinary HMR watcher use the same serialized path. Covered by `packages/boot/app-boot/tests/hmr-config.spec.ts`.

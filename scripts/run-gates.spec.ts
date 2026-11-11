@@ -188,8 +188,10 @@ describe('gate graph validation', () => {
     const ids = withPnpmEntrypoint(() => gatesForMode('hygiene').map(subject => subject.id))
 
     expect(ids).toEqual([
-      'rescope-vendor', 'publint', 'constraints', 'package-dependencies', 'application-entrypoints',
-      'gnk-package-licenses', 'package-invariants', 'built-package-invariants', 'node-next-types',
+      'rescope-vendor', 'vendor-drift', 'publint', 'constraints', 'package-dependencies',
+      'dependency-rules', 'application-entrypoints',
+      'gnk-package-licenses', 'license-inventory', 'api-reports',
+      'package-invariants', 'tsconfig-references', 'built-package-invariants', 'node-next-types',
       'optional-dependency-imports', 'client-packages', 'client-ui-i18n', 'theme-contrast', 'logical-css', 'source-plane',
       'cordis-config', 'runtime-closure', 'vendored-links',
     ])

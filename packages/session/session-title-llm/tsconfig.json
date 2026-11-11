@@ -11,6 +11,6 @@
     { "path": "../../../vendor/schemastery" },
     { "path": "../../llm/llm" },
     { "path": "../../util/timeout" },
-    { "path": "../session-title" }
+    { "path": "../session-title/tsconfig.host.json" }
   ]
 }

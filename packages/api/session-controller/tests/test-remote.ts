@@ -40,6 +40,11 @@ import type {
   SessionFollowRequest,
   SessionListRequest,
   SessionListValue,
+  SessionExternalAppsValue,
+  SessionGitFactsRequest,
+  SessionGitFactsValue,
+  SessionOpenPathRequest,
+  SessionOpenPathValue,
   SessionOpenWorkspacePathRequest,
   SessionOpenWorkspacePathValue,
   SessionPage,
@@ -79,6 +84,15 @@ export interface TestSessionRemote {
     request: SessionOpenWorkspacePathRequest,
     signal?: AbortSignal,
   ): Promise<RemoteResult<SessionOpenWorkspacePathValue>>
+  externalApps(): Promise<RemoteResult<SessionExternalAppsValue>>
+  openPath(
+    request: SessionOpenPathRequest,
+    signal?: AbortSignal,
+  ): Promise<RemoteResult<SessionOpenPathValue>>
+  gitFacts(
+    request: SessionGitFactsRequest,
+    signal?: AbortSignal,
+  ): Promise<RemoteResult<SessionGitFactsValue>>
   page(request: SessionPageRequest, signal?: AbortSignal): Promise<RemoteResult<SessionPage>>
   follow(request: SessionFollowRequest, signal?: AbortSignal): AsyncIterable<SessionFollowFrame>
   control(signal?: AbortSignal): AsyncIterable<SessionControlFrame>
@@ -94,6 +108,11 @@ export interface TestSessionRemoteDefaults {
   readonly saveDefaultModelSelection?: (selection: AgentModelSelection) => void | Promise<void>
   readonly openPath?: (path: string, signal: AbortSignal) => Promise<void>
   readonly canOpenPath?: () => boolean
+  readonly revealPath?: (path: string, signal: AbortSignal) => Promise<void>
+  readonly canRevealPath?: () => boolean
+  readonly launchApp?: (appId: string, path: string, signal: AbortSignal) => Promise<void>
+  readonly externalApps?: () => SessionExternalAppsValue
+  readonly gitFacts?: (path: string, signal: AbortSignal) => Promise<SessionGitFactsValue>
 }
 
 const installed = new WeakMap<Context, SessionController>()
@@ -262,6 +281,11 @@ function installControllers(
       {
         ...defaults.openPath === undefined ? {} : { openPath: defaults.openPath },
         ...defaults.canOpenPath === undefined ? {} : { canOpenPath: defaults.canOpenPath },
+        ...defaults.revealPath === undefined ? {} : { revealPath: defaults.revealPath },
+        ...defaults.canRevealPath === undefined ? {} : { canRevealPath: defaults.canRevealPath },
+        ...defaults.launchApp === undefined ? {} : { launchApp: defaults.launchApp },
+        ...defaults.externalApps === undefined ? {} : { externalApps: defaults.externalApps },
+        ...defaults.gitFacts === undefined ? {} : { gitFacts: defaults.gitFacts },
       },
     )
   } finally {
@@ -330,6 +354,15 @@ export function createSessionTestRemote(
     cancel: request => remoteResult(() => direct.cancel(request)),
     openWorkspacePath: (request, signal = new AbortController().signal) => remoteResult(
       () => direct.openWorkspacePath(request, signal),
+      signal,
+    ),
+    externalApps: () => remoteResult(() => direct.externalApps()),
+    openPath: (request, signal = new AbortController().signal) => remoteResult(
+      () => direct.openPath(request, signal),
+      signal,
+    ),
+    gitFacts: (request, signal = new AbortController().signal) => remoteResult(
+      () => direct.gitFacts(request, signal),
       signal,
     ),
     page: (request, signal = new AbortController().signal) => remoteResult(

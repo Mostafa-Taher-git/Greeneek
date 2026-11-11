@@ -21,19 +21,19 @@
       "path": "../../llm/llm-greeneek"
     },
     {
-      "path": "../../core/agent"
+      "path": "../../core/agent/tsconfig.host.json"
     },
     {
       "path": "../../attachment/attachment"
     },
     {
-      "path": "../../core/session"
+      "path": "../../core/session/tsconfig.host.json"
     },
     {
       "path": "../protocol"
     },
     {
-      "path": "../../subagent/subagent"
+      "path": "../../subagent/subagent/tsconfig.host.json"
     }
   ]
 }

@@ -2,14 +2,17 @@
  * Display projection of reference forms in sent user text (bubble and queue
  * rows). The logged model text remains the single truth; this is presentation
  * only, and every part renders inline so a single-line message never breaks
- * across lines. Three decoration sources, by precedence: the wire session form
+ * across lines. Four decoration sources, by precedence: the wire session form
  * `@[label](gnk-session:...)` folds to its label; exact session labels
- * supplied by an adjacent recall decorate their bare `@label` mention; and
- * plain `/name` / `@name` word-boundary tokens decorate by shape alone (sent
- * tokens were validated at compose time).
+ * supplied by an adjacent recall decorate their bare `@label` mention; plain
+ * `/name` / `@name` word-boundary tokens decorate by shape alone; and
+ * recognized credentials render masked (see `secret-mask.ts`, ported from
+ * DeepSeek Harness `ui-secret-mask`, MIT). Sent tokens were validated at
+ * compose time; masking never alters the logged text.
  */
 import type { ReactNode } from 'react'
 import { ReferenceIcon } from './ReferenceIcon.tsx'
+import { findSecretRanges } from './secret-mask.ts'
 import css from './user-text.module.css'
 
 /** The wire form a session chip serializes to; label is the display text. */
@@ -65,10 +68,24 @@ export function projectUserText(text: string, sessionLabels: readonly string[]):
   }
   const rankOf = (range: DecorationRange): number => range.kind === 'session' ? 0 : 1
   ranges.sort((a, b) => a.start - b.start || rankOf(a) - rankOf(b) || b.end - a.end)
+  const secrets = findSecretRanges(text)
   const parts: ReactNode[] = []
   let cursor = 0
   const pushPlain = (from: number, to: number): void => {
-    parts.push(<span key={`t${from}`} className={css.plainRun}>{text.slice(from, to)}</span>)
+    let at = from
+    for (const secret of secrets) {
+      if (secret.end <= from || secret.start >= to) continue
+      const maskStart = Math.max(secret.start, from)
+      const maskEnd = Math.min(secret.end, to)
+      if (maskStart > at) {
+        parts.push(<span key={`t${at}`} className={css.plainRun}>{text.slice(at, maskStart)}</span>)
+      }
+      // Line breaks stay in place inside the masked form.
+      const masked = secret.masked.slice(maskStart - secret.start, maskEnd - secret.start)
+      parts.push(<span key={`s${maskStart}`} className={css.plainRun} data-secret="">{masked}</span>)
+      at = maskEnd
+    }
+    if (at < to) parts.push(<span key={`t${at}`} className={css.plainRun}>{text.slice(at, to)}</span>)
   }
   for (const range of ranges) {
     if (range.start < cursor) continue
@@ -100,7 +117,11 @@ export function projectUserText(text: string, sessionLabels: readonly string[]):
     )
     cursor = end
   }
-  if (parts.length === 0) return <span className={css.plainRun}>{text}</span>
+  if (parts.length === 0 && secrets.length === 0) return <span className={css.plainRun}>{text}</span>
+  if (ranges.length === 0 && secrets.length > 0) {
+    pushPlain(0, text.length)
+    return <>{parts}</>
+  }
   if (cursor < text.length) pushPlain(cursor, text.length)
   return <>{parts}</>
 }

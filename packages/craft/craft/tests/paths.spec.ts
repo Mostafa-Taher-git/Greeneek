@@ -36,8 +36,14 @@ describe('artifact confinement', () => {
       .toBe(resolve(roots.write, 'nested', 'page-1.png'))
   })
 
+  it('accepts dot-prefixed filenames inside the write root', () => {
+    // Only a complete `..` segment escapes; `..data` is an ordinary filename.
+    expect(confineArtifact(roots, '..data')).toBe(resolve(roots.write, '..data'))
+    expect(confineArtifact(roots, '.hidden')).toBe(resolve(roots.write, '.hidden'))
+  })
+
   it('rejects escapes, empty paths, and the write root itself', () => {
-    for (const artifact of ['../escape.png', 'nested/../../escape.png', resolve('elsewhere', 'x.png'), '', '  ', roots.write]) {
+    for (const artifact of ['../escape.png', 'nested/../../escape.png', '..', resolve('elsewhere', 'x.png'), '', '  ', roots.write]) {
       expect(() => confineArtifact(roots, artifact)).toThrow(expect.objectContaining({ code: 'CRAFT_ROOT_INVALID' }))
     }
     expect(() => confineArtifact(roots, 42 as unknown as string)).toThrow(expect.objectContaining({ code: 'CRAFT_ROOT_INVALID' }))

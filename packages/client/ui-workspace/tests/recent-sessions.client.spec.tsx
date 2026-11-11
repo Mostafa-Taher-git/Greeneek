@@ -24,7 +24,7 @@ const sessionState = (items: readonly SessionSummary[]): SessionListState => ({
   subagentsByParent: {}, jobsBySession: {}, currentAddress: undefined,
 })
 const workspaceState = (items: readonly WorkspaceView[]): WorkspaceSnapshot =>
-  ({ items, archivedSessionIds: [], state: 'idle', phase: 'ready', error: null })
+  ({ items, archivedSessionIds: [], pinnedSessionIds: [], state: 'idle', phase: 'ready', error: null })
 const workspace = (
   id: string,
   sessionIds: readonly SessionId[],

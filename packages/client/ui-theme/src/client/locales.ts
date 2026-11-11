@@ -34,7 +34,7 @@ export const ar = {
   'appearance.title': 'المظهر',
   'appearance.light': 'فاتح',
   'appearance.dark': 'داكن',
-  'appearance.system': 'اتباع النظام',
+  'appearance.system': 'اتّباع النظام',
   'fontSize.title': 'حجم الخط',
   'fontSize.description': 'يؤثر في حجم خط محتوى المحادثة فقط',
   'fontSize.unit': 'px',

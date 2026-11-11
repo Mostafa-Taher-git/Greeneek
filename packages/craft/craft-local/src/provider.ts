@@ -21,7 +21,7 @@ import type {
   CraftRoots,
 } from '@greeneek/gnk-craft'
 import type { SubprocessHandle, SubprocessSpawnSpec } from '@greeneek/gnk-subprocess'
-import { discoverApp } from './discovery.ts'
+import { discoverApp, listInstalledApps } from './discovery.ts'
 import { expandHeadlessLaunch } from './launch.ts'
 import { guiExecutableName, platformPath } from './platform.ts'
 import { JsonRpcCraftTransport } from './transport.ts'
@@ -70,6 +70,13 @@ export class CraftLocalProvider implements CraftHostProvider {
     await Promise.resolve() // require-await: async guard keeps synchronous throws as rejections
     options.signal.throwIfAborted()
     return Promise.resolve(discoverApp(app, this.io.discovery))
+  }
+
+  /** {@inheritDoc CraftHostProvider.listInstalled} */
+  async listInstalled(options: { readonly signal: AbortSignal }): Promise<readonly import('@greeneek/gnk-craft').CraftDiscoveredApp[]> {
+    await Promise.resolve() // require-await: async guard keeps synchronous throws as rejections
+    options.signal.throwIfAborted()
+    return Promise.resolve(listInstalledApps(this.io.discovery))
   }
 
   /** {@inheritDoc CraftHostProvider.open} */

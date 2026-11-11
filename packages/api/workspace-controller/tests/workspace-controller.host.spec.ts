@@ -217,6 +217,23 @@ describe('WorkspaceController commands', () => {
     await expect(controller.archiveSession({ sessionId: SessionId('unknown') }))
       .rejects.toMatchObject({ code: 'session/not-found' })
   })
+
+  it('pins and unpins known Sessions only', async () => {
+    const { controller, ctx, root } = await harness()
+    const created = await controller.create({ path: stageDir(root, 'pinned') })
+    const session = ctx.sessions.create(SessionId('pinned-session'), {
+      meta: { cwd: created.workspace.path },
+    })
+
+    await expect(controller.pinSession({ sessionId: session.id, pinned: true }))
+      .resolves.toEqual({ pinnedSessionIds: [session.id] })
+    await expect(controller.pinSession({ sessionId: session.id, pinned: true }))
+      .resolves.toEqual({ pinnedSessionIds: [session.id] })
+    await expect(controller.pinSession({ sessionId: session.id, pinned: false }))
+      .resolves.toEqual({ pinnedSessionIds: [] })
+    await expect(controller.pinSession({ sessionId: SessionId('unknown'), pinned: true }))
+      .rejects.toMatchObject({ code: 'session/not-found' })
+  })
 })
 
 describe('WorkspaceController follow', () => {
@@ -249,7 +266,7 @@ describe('WorkspaceController follow', () => {
     const iterator = controller.follow(abort.signal)[Symbol.asyncIterator]()
     await expect(nextFrame(iterator)).resolves.toEqual({
       type: 'baseline',
-      value: { items: [], archivedSessionIds: [] },
+      value: { items: [], archivedSessionIds: [], pinnedSessionIds: [] },
     })
 
     const first = await controller.create({ path: stageDir(root, 'first') })
@@ -286,6 +303,14 @@ describe('WorkspaceController follow', () => {
     await controller.archiveSession({ sessionId: session.id })
     await expect(nextFrame(iterator)).resolves.toEqual({
       type: 'archived', archivedSessionIds: [session.id],
+    })
+    await controller.pinSession({ sessionId: session.id, pinned: true })
+    await expect(nextFrame(iterator)).resolves.toEqual({
+      type: 'pinned', pinnedSessionIds: [session.id],
+    })
+    await controller.pinSession({ sessionId: session.id, pinned: false })
+    await expect(nextFrame(iterator)).resolves.toEqual({
+      type: 'pinned', pinnedSessionIds: [],
     })
     await controller.delete({ workspaceId: second.workspace.workspaceId })
     await expect(nextFrame(iterator)).resolves.toEqual({

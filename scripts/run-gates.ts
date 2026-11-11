@@ -312,7 +312,10 @@ function ciSharedStaticGates(): Gate[] {
     pnpmScript('desktop-version', 'verify-desktop-version', { label: 'desktop version' }),
     pnpmScript('constraints', 'constraints'),
     pnpmScript('package-dependencies', 'verify-package-dependencies', { label: 'package dependencies' }),
+    pnpmScript('dependency-rules', 'verify-dependency-rules', { label: 'dependency rules' }),
     pnpmScript('gnk-package-licenses', 'verify-gnk-package-licenses', { label: 'GNK package licenses' }),
+    pnpmScript('license-inventory', 'verify-license-inventory', { label: 'license inventory' }),
+    pnpmScript('api-reports', 'verify-api-reports', { label: 'API reports' }),
     pnpmScript('package-invariants', 'verify-package-invariants', { label: 'package invariants' }),
     pnpmScript('cordis-config', 'verify-cordis-config', { label: 'Cordis config' }),
     ...clientSurfaceGates(),
@@ -695,12 +698,17 @@ function hygieneLeafGates(options: { artifactNeeds?: string[] } = {}): Gate[] {
   const artifactOptions = options.artifactNeeds === undefined ? {} : { needs: options.artifactNeeds }
   return [
     pnpmScript('rescope-vendor', 'rescope-vendor:check', { label: 'vendor rescope' }),
+    pnpmScript('vendor-drift', 'verify-vendor-drift', { label: 'vendor drift' }),
     pnpmScript('publint', 'publint', artifactOptions),
     pnpmScript('constraints', 'constraints'),
     pnpmScript('package-dependencies', 'verify-package-dependencies', { label: 'package dependencies' }),
+    pnpmScript('dependency-rules', 'verify-dependency-rules', { label: 'dependency rules' }),
     pnpmScript('application-entrypoints', 'verify-application-entrypoints', { label: 'application entrypoints' }),
     pnpmScript('gnk-package-licenses', 'verify-gnk-package-licenses', { label: 'GNK package licenses' }),
+    pnpmScript('license-inventory', 'verify-license-inventory', { label: 'license inventory' }),
+    pnpmScript('api-reports', 'verify-api-reports', { label: 'API reports' }),
     pnpmScript('package-invariants', 'verify-package-invariants', { label: 'package invariants' }),
+    pnpmScript('tsconfig-references', 'verify-tsconfig-references', { label: 'tsconfig references' }),
     builtPackageInvariantsGate(options.artifactNeeds),
     pnpmScript('node-next-types', 'verify-node-next-types', {
       label: 'node-next types',
@@ -761,6 +769,10 @@ function docSyncLeafGates(options: {
     pnpmScript('package-readme-limitations', 'verify-package-readme-limitations', { label: 'package README limitations', quick: true }),
     pnpmExec('ds-skill-pack', ['vitest', 'run', 'scripts/ds-skill-pack.spec.ts'], {
       label: 'ds skill pack inventory',
+      quick: true,
+    }),
+    pnpmExec('published-chunks', ['vitest', 'run', 'scripts/published-chunks.spec.ts'], {
+      label: 'published runtime chunks',
       quick: true,
     }),
   ]

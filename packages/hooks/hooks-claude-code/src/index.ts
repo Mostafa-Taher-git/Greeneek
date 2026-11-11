@@ -27,6 +27,7 @@ import {
   matchesMatcher,
   mergeHookOutputs,
   runHook,
+  StopLoopGuard,
   type HookOutput,
   type MatcherGroup,
   type MergedHookOutcome,
@@ -265,11 +266,17 @@ export function apply(ctx: Context, config: Config): void {
   })
 
   // A blocking Stop hook steers at the stopping boundary, which makes the
-  // machine observe pending input and run another step.
-  // TODO(stop-loop-guard): cap consecutive forced continuations; hooks must self-limit meanwhile.
+  // machine observe pending input and run another step. The shared guard caps
+  // consecutive forced continuations per turn (Claude Code's eight-block
+  // override), so an unconditionally blocking hook cannot loop forever.
+  const stopGuard = new StopLoopGuard()
   ctx.on('agent/turn-stopping', async ({ agent, turn, signal }): Promise<void> => {
     const merged = await runPoint('Stop', '', stopPayload(agent), { agent, turn, signal })
     if (merged.decision === 'deny') {
+      if (!stopGuard.shouldContinue(agent, turn)) {
+        ctx.logger.warn('hooks-claude-code: Stop hook block limit reached for this turn; letting the turn stop')
+        return
+      }
       // A blocking Stop hook forces continuation.
       const text = merged.reason ?? 'continue: blocked by Stop hook'
       agent.steer(createUserMessage({ content: [{ type: 'text', text }], source: PLUGIN_SOURCE }))

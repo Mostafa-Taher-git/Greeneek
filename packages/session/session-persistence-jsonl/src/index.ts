@@ -26,6 +26,7 @@ import {
   type SessionPersistenceRevision as PersistenceRevision,
 } from '@greeneek/gnk-session-persistence'
 import { JsonlBackendTracker, JsonlSessionHandle } from './storage.ts'
+import { SessionWriteLease } from './lease.ts'
 import { SessionLogOffset } from '@greeneek/gnk-session'
 import type { SessionEvent, SessionId, SessionHeader, SessionLogOffset as SessionLogOffsetType } from '@greeneek/gnk-session'
 import {
@@ -538,6 +539,15 @@ class JsonlSessionPersistence extends SessionPersistence {
    */
   hasPendingSession(id: SessionId): boolean {
     return this.tracker.hasPending(id)
+  }
+
+  /**
+   * Acquire the session's cross-process write lease for one handle.
+   * @param header - the session whose artifact directory carries the lease file.
+   * @returns the held lease, released by the handle on close.
+   */
+  acquireWriteLease(header: SessionHeader): Promise<SessionWriteLease> {
+    return Promise.resolve(SessionWriteLease.acquire(sessionDir(this.root, header.cwd, header.id), header.id))
   }
 
   /**

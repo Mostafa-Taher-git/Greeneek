@@ -21,7 +21,7 @@
       "path": "../../llm/llm"
     },
     {
-      "path": "../../core/session"
+      "path": "../../core/session/tsconfig.host.json"
     },
     {
       "path": "../../core/tools"
@@ -36,10 +36,10 @@
       "path": "../../util/timeout"
     },
     {
-      "path": "../../session/session-projection"
+      "path": "../../session/session-projection/tsconfig.host.json"
     },
     {
-      "path": "../../core/agent"
+      "path": "../../core/agent/tsconfig.host.json"
     }
   ]
 }

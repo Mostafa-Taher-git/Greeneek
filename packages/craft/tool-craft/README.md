@@ -103,7 +103,7 @@ Append-only; newly visible content follows the reusable request prefix.
 
 - **Attach mode refuses in the pilot** - `craft_open_app` with `mode: 'attach'` throws even for an attach-enabled manifest until the upstream authenticated control channel ships.
 - **Recipes require registry review** - manifests without a reviewed matching registry hash still permit curated tool sessions, but their recipe skill remains disabled; drift rejects the open before either registration.
-- **Pilot roster only** - only the apps present in `@greeneek/gnk-craft`'s bundled manifests (PhotoCraft, PdfCraft) are addressable.
+- **Auto-detected roster** - `craft_list_apps` also reports every installed app the host enumerates without a bundled manifest, and `craft_open_app` opens it through a synthesized manifest with the observed tool filter; its recipe stays disabled until a reviewed baseline exists.
 - **Workspace roots from the calling agent** - the job roots derive from the agent session's `cwd`; a tool call outside an agent session falls back to the process directory.
 
 <a id="dev-note"></a>

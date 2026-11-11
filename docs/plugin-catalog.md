@@ -9,14 +9,14 @@ Every workspace package (`packages/<family>/<name>`), categorized by what it con
 
 | Kind | What it is | How the generator detects it |
 | --- | --- | --- |
-| Tool | Model-facing tools on `ctx.tools` | directory starts with `tool-` (same scope as the tool catalog) |
+| Tool | Model-facing tools on `ctx.tools` | directory starts with `tool-` outside the client group (same scope as the tool catalog) |
 | Skill | Skill registry, providers, and consumer on `ctx.skills` | `packages/skill/*` |
 | Command | Client slash/popup commands (`ctx.commandUi`, input trigger sources) | curated set, guarded: every command-seam marker in source must resolve into it |
 | UI | Browser surfaces | directory starts with `ui-` |
 | LLM | Model routes and provider adapters | `packages/llm/*` |
 | Capability | Every other plugin, grouped by family directory | fallback: anything unmatched |
 
-Scope: 259 workspace packages; every package appears under each of its kinds (24 Tool, 4 Skill, 6 Command, 42 UI, 7 LLM, 183 Capability rows). A package with several kinds (e.g. a tool that also contributes a command) appears in each section.
+Scope: 260 workspace packages; every package appears under each of its kinds (24 Tool, 4 Skill, 6 Command, 42 UI, 7 LLM, 184 Capability rows). A package with several kinds (e.g. a tool that also contributes a command) appears in each section.
 
 ## Tools
 
@@ -109,7 +109,7 @@ Scope: 259 workspace packages; every package appears under each of its kinds (24
 | `@greeneek/gnk-client-ui-tool` | Client Tool presentation plugin for the gnk web client: whole-call tree composition, the keyed per-tool view slot, and the built-in atomic tool cards. |
 | `@greeneek/gnk-client-ui-trajectory` | Trajectory view for the gnk web client: a turn-aware event ledger with an interactive timing overview, registered into the conversation view ring. |
 | `@greeneek/gnk-client-ui-user-questions` | Web ask_user_question feature for the gnk web client: the composer-takeover question UI and the plan-review approval card. |
-| `@greeneek/gnk-client-ui-wave` | Web Army fleet surfaces: the details-panel Fleet tab and the composer pill, polled from the wave engine's browser control face; for users and maintainers of fleet delegation. |
+| `@greeneek/gnk-client-ui-wave` | Web Army fleet surfaces: the dedicated right-sidebar fleet panel and the composer pill, polled from the wave engine's browser control face; for users and maintainers of fleet delegation. |
 | `@greeneek/gnk-client-ui-workflow-run` | Durable workflow-run Conversation Node for the gnk web client: reconstructs top-level workflow runs as independent chat nodes with nested member disclosure. |
 | `@greeneek/gnk-client-ui-workspace` | Shared Workspace browser and picker plugin for the gnk web client: grouped or flat session rows, add/rename/reorder, search, fork, archive, and the directory-flow picking hole. |
 | `@greeneek/gnk-client-ui-cordis` | Cordis dynamic-plugin browser surfaces for users and maintainers choosing, composing, or debugging the panel, tool cards, and @pluginId input. |
@@ -180,6 +180,7 @@ Scope: 259 workspace packages; every package appears under each of its kinds (24
 | `@greeneek/gnk-client-locale` | Localization for the web GUI: the stored locale preference, browser-derived fallback, typed namespace dictionaries, the framework translation seat, and document language and direction, for users and plugin authors. |
 | `@greeneek/gnk-client-modules` | Client module system for the web GUI: the host composes the boot graph and serves plugin bundles, and the browser loads them lazily, for users and maintainers composing or debugging client plugins. |
 | `@greeneek/gnk-client-store` | Observable browser state stores with explicit snapshots, subscriptions, and lifecycle ownership. |
+| `@greeneek/gnk-client-tool-owned-render` | Tool-owned render registrants for read, bash, write/edit, grep/glob, web_search/web_fetch, and read_image. |
 | `@greeneek/gnk-client-web` | Web boot kernel for the web GUI: two-stage boot of the client plugin tree, the framework-free boot page, and the shared module table, for users and maintainers composing or debugging the browser application. |
 
 ### `code-runtime/`

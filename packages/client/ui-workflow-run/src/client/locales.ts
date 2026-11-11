@@ -64,7 +64,7 @@ export const ar = {
   'statusCount.cancelled': 'ملغى {count}',
   'statusCount.interrupted': 'مقاطَع {count}',
   'member.empty': 'اسم عضو فارغ',
-  'member.open': 'فتح {name}',
+  'member.open': 'فتح العضو {name}',
   'status.running': 'قيد التشغيل',
   'status.completed': 'مكتمل',
   'status.failed': 'فشل',

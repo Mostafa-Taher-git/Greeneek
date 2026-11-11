@@ -24,6 +24,8 @@ import type {
   WorkspaceInsertBeforeRequest,
   WorkspaceInsertSessionBeforeRequest,
   WorkspaceOrderValue,
+  WorkspacePinSessionRequest,
+  WorkspacePinSessionValue,
   WorkspaceRenameRequest,
   WorkspaceValue,
 } from './types.ts'
@@ -175,6 +177,21 @@ export class WorkspaceCommands {
       throw new RemoteError('session/not-found', error.message, { sessionId: request.sessionId }, { cause: error })
     }
     return { archivedSessionIds: [...this.ctx.workspaceRegistry.archivedSessionIds] }
+  }
+
+  /**
+   * Pin or unpin one Session in the registry-global pin set.
+   * @param request - Session identity and requested pin state.
+   * @returns the complete resulting pin set.
+   */
+  async pinSession(request: WorkspacePinSessionRequest): Promise<WorkspacePinSessionValue> {
+    try {
+      await this.ctx.workspaceRegistry.setSessionPinned(request.sessionId, request.pinned)
+    } catch (error) {
+      if (!(error instanceof WorkspaceUnknownSessionError)) throw error
+      throw new RemoteError('session/not-found', error.message, { sessionId: request.sessionId }, { cause: error })
+    }
+    return { pinnedSessionIds: [...this.ctx.workspaceRegistry.pinnedSessionIds] }
   }
 
   /**

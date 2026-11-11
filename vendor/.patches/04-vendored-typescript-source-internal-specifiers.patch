@@ -1,0 +1,5 @@
+Modification 4: Vendored TypeScript source internal specifiers
+Tree-hash: 3f6a88a91e110b7daa28b30cc1218a8095ce72ae80be7dbaad4891489332c95e
+Upstream manifest: see vendor/README.md manifest table for this package's SHA.
+
+changed local relative imports/exports from upstream's specifier shape to explicit `.ts` specifiers so TypeScript rewrites emitted JS to `.js` while declarations keep explicit, NodeNext-safe `.ts` specifiers. This includes `loader/src/config/isolate.ts` using `declare module './entry.ts'`.

@@ -14,7 +14,7 @@
     { "path": "../../../vendor/schemastery" },
     { "path": "../../attachment/attachment" },
     { "path": "../../util/brand" },
-    { "path": "../../core/session" },
+    { "path": "../../core/session/tsconfig.host.json" },
     { "path": "../../interaction/commands" },
     { "path": "../../session/session-persistence" },
     { "path": "../session-query" }

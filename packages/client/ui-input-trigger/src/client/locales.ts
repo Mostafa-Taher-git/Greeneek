@@ -43,5 +43,5 @@ export const ar = {
   'drill.hint': 'تصفّح المجلد',
   'drill.key': 'Tab',
   'crumbs.aria': 'التنقل في المجلدات',
-  'suggestions.aria': 'اقتراحات المُشغِّل',
+  'suggestions.aria': 'اقتراحات المشغّلات',
 } satisfies Record<MenuKey, string>

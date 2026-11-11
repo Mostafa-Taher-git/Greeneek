@@ -1,0 +1,5 @@
+Modification 18: Entry disabled interpolation in loader/src/config/entry.ts
+Tree-hash: 3f6a88a91e110b7daa28b30cc1218a8095ce72ae80be7dbaad4891489332c95e
+Upstream manifest: see vendor/README.md manifest table for this package's SHA.
+
+a `disabled: !!js` expression evaluates against the loader context at every mount decision; the raw node stays in the options, so write-back keeps the `!!js` form. `disabled` is the only interpolated metadata field. Covered by `packages/boot/app-boot/tests/user-patches.spec.ts` and `apps/cli/tests/windows-shell.spec.ts`.

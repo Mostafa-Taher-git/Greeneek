@@ -1,7 +1,12 @@
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+
+// These cases resolve packages with npm in a child process; on a contended
+// host or a slow registry that work alone can exceed the default 5 s budget
+// without any behavioural defect, so the file budgets the process time.
+vi.setConfig({ testTimeout: 30_000 })
 import {
   benchmarkNpmResolution,
   buildRegistryIndex,

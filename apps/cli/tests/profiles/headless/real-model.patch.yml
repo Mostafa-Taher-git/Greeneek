@@ -6,16 +6,6 @@
 - id: headless-runner
   disabled: true
 
-- id: llm-greeneek
-  config:
-    thinking: enabled
-    reasoningEffort: max
-    models:
-      - id: greeneek-v4-pro
-        contextWindow: 128000
-      - id: greeneek-v4-flash
-        contextWindow: 128000
-
 - id: agent-loop
   config:
     agents:

@@ -1,0 +1,31 @@
+name: Vendor drift
+
+# Vendor drift is checked nightly, plus on any pull request touching
+# `vendor/`. Upstream reconstruction from manifest SHAs needs credentials CI
+# does not have; the offline patch-file check always runs and fails loud.
+# Full upstream reconstruction belongs to a local scheduled agent task (see
+# `scripts/verify-vendor-drift.ts`); CI never silently skips the offline half.
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'vendor/**'
+      - 'scripts/verify-vendor-drift.ts'
+
+permissions:
+  contents: read
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run verify-vendor-drift

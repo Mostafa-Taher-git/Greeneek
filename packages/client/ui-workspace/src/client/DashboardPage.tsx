@@ -3,14 +3,14 @@
  * the browser already holds. Spend is reported only through the versioned
  * pricing catalog, so an unpriced route stays visibly unknown.
  */
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@greeneek/gnk-client-ui-slots'
 import type { SessionListState, SessionSummary } from '@greeneek/gnk-api-session-controller/client'
 import type { WorkspaceSnapshot } from '@greeneek/gnk-api-workspace-controller/client'
 // Type-only: merges the sessionStats, modelSelection, tokenUsage, and agentPreset projection keys.
 import type {} from '@greeneek/gnk-session-stats/client'
 import type {} from '@greeneek/gnk-token-meter/client'
-import { IconCloseOutline16 } from '@greeneek/gnk-client-ui-primitives'
+import { ChartContainer, IconCloseOutline16 } from '@greeneek/gnk-client-ui-primitives'
 import { dashboardFacts, type DashboardMetric, type DashboardSession } from './dashboard-model.ts'
 import { SHIPPED_PRICING_CATALOG, type DashboardPricingCatalog } from './dashboard-pricing.ts'
 import { timeLabel } from './time.ts'
@@ -20,6 +20,8 @@ import css from './DashboardPage.module.css'
 export interface DashboardPageInjected {
   /** Close the Dashboard page. */
   close: () => void
+  /** Open one session from a detail-table row. */
+  open: (sessionId: string) => void
   /**
    * Price catalog the page reports spend against. The registration omits it,
    * so the shipped (empty, therefore always-honest) catalog applies.
@@ -67,7 +69,17 @@ function dashboardSession(session: SessionSummary, workspace: string): Dashboard
     outputTokens: usage?.outputTokens ?? stats?.decodeTokens ?? 0,
     cacheReadTokens: usage?.cacheReadTokens ?? 0,
     cacheWriteTokens: usage?.cacheWriteTokens ?? 0,
+    llmMs: stats?.llmMs ?? 0,
+    toolMs: stats?.toolMs ?? 0,
+    ttftMs: stats?.ttftMs ?? 0,
+    ttftSteps: stats?.ttftSteps ?? 0,
+    decodeMs: stats?.decodeMs ?? 0,
   }
+}
+
+/** Whole seconds shown without fractional precision; sub-second stays visible in the table. */
+function secondsLabel(ms: number, unit: string): string {
+  return `${NUMBERS.format(Math.round(ms / 1000))} ${unit}`
 }
 
 /**
@@ -75,31 +87,36 @@ function dashboardSession(session: SessionSummary, workspace: string): Dashboard
  * @param props - standard session/workspace hooks, dictionary, and the close action.
  * @returns the full-height local summary.
  */
-export function DashboardPage({ useSessions, useWorkspaces, t, close, pricing }: DashboardPageProps) {
+export function DashboardPage({ useSessions, useWorkspaces, t, close, open, pricing }: DashboardPageProps) {
   const list: SessionListState = useSessions(state => state)
   const workspaces: WorkspaceSnapshot = useWorkspaces(state => state)
   const [metric, setMetric] = useState<DashboardMetric>('count')
   const [routeFilter, setRouteFilter] = useState('')
   const [page, setPage] = useState(0)
-  const workspaceBySession = new Map<string, string>()
-  for (const workspace of workspaces.items) {
-    for (const sessionId of workspace.sessionIds) workspaceBySession.set(sessionId, workspace.title)
-  }
-  const sessions = list.ids
-    .map(id => list.byId[id])
-    .filter((session): session is SessionSummary => session !== undefined && !session.blank)
-    .map(session => dashboardSession(session, workspaceBySession.get(session.id) ?? session.cwd ?? t('dashboard.unknown')))
-  const facts = dashboardFacts({
-    sessions,
-    workspaces: workspaces.items.map(workspace => ({
-      id: workspace.workspaceId,
-      title: workspace.title,
-      sessionIds: workspace.sessionIds,
-    })),
-    archivedSessionIds: workspaces.archivedSessionIds,
-    pricing: pricing ?? SHIPPED_PRICING_CATALOG,
-    metric,
-  })
+  const facts = useMemo(() => {
+    const workspaceBySession = new Map<string, string>()
+    for (const workspace of workspaces.items) {
+      for (const sessionId of workspace.sessionIds) workspaceBySession.set(sessionId, workspace.title)
+    }
+    return dashboardFacts({
+      sessions: list.ids
+        .map(id => list.byId[id])
+        .filter((session): session is SessionSummary => session !== undefined && !session.blank)
+        .map(session => dashboardSession(session, workspaceBySession.get(session.id) ?? session.cwd ?? t('dashboard.unknown'))),
+      workspaces: workspaces.items.map(workspace => ({
+        id: workspace.workspaceId,
+        title: workspace.title,
+        sessionIds: workspace.sessionIds,
+      })),
+      archivedSessionIds: workspaces.archivedSessionIds,
+      pricing: pricing ?? SHIPPED_PRICING_CATALOG,
+      metric,
+    })
+  }, [list, workspaces, pricing, metric, t])
+  const listPhase = (list as unknown as { phase?: string }).phase
+  const loading = listPhase !== undefined && listPhase !== 'ready'
+  const workspaceState = (workspaces as unknown as { state?: string }).state
+  const workspaceError = workspaceState === 'error'
   const costValue = facts.cost.kind === 'known'
     ? t('dashboard.costKnown', {
       amount: MONETARY.format(facts.cost.amount),
@@ -120,9 +137,12 @@ export function DashboardPage({ useSessions, useWorkspaces, t, close, pricing }:
     { key: 'subagents', label: t('dashboard.subagents'), value: NUMBERS.format(facts.subagents) },
     { key: 'turns', label: t('dashboard.turns'), value: NUMBERS.format(facts.turns) },
     { key: 'steps', label: t('dashboard.steps'), value: NUMBERS.format(facts.steps) },
+    { key: 'requests', label: t('dashboard.requests'), value: NUMBERS.format(facts.requests) },
     { key: 'inputTokens', label: t('dashboard.inputTokens'), value: NUMBERS.format(facts.inputTokens) },
-    { key: 'outputTokens', label: t('dashboard.outputTokens'), value: NUMBERS.format(facts.outputTokens) },
+    { key: 'outputTokens', label: t('dashboard.outputTokens'), value: NUMBERS.format(facts.outputTokens), detail: t('dashboard.reasoningNote') },
     { key: 'cacheRead', label: t('dashboard.cacheRead'), value: NUMBERS.format(facts.cacheReadTokens) },
+    { key: 'cacheWrite', label: t('dashboard.cacheWrite'), value: NUMBERS.format(facts.cacheWriteTokens) },
+    { key: 'latency', label: t('dashboard.latency'), value: secondsLabel(facts.llmMs + facts.toolMs, t('dashboard.durationUnit')), detail: `${t('dashboard.llmMs')} ${secondsLabel(facts.llmMs, t('dashboard.durationUnit'))} · ${t('dashboard.toolMs')} ${secondsLabel(facts.toolMs, t('dashboard.durationUnit'))} · ${t('dashboard.ttft')} ${secondsLabel(facts.ttftSteps === 0 ? 0 : facts.ttftMs / facts.ttftSteps, t('dashboard.durationUnit'))} · ${t('dashboard.decodeMs')} ${secondsLabel(facts.decodeMs, t('dashboard.durationUnit'))}` },
     {
       key: 'cost',
       label: t('dashboard.cost'),
@@ -131,12 +151,12 @@ export function DashboardPage({ useSessions, useWorkspaces, t, close, pricing }:
       unknown: facts.cost.kind === 'unknown',
     },
   ]
-  const metricValue = (entry: { readonly count: number; readonly tokens: number }): string =>
-    NUMBERS.format(metric === 'tokens' ? entry.tokens : entry.count)
-  const scaleOf = (entry: { readonly count: number; readonly tokens: number }): number =>
-    metric === 'tokens' ? entry.tokens : entry.count
-  const topModel = facts.models[0]
-  const scale = Math.max(1, topModel === undefined ? 1 : scaleOf(topModel))
+  const healthData = facts.dataState === 'complete'
+    ? t('dashboard.healthComplete')
+    : facts.dataState === 'partial' ? t('dashboard.healthPartial') : t('dashboard.healthEmpty')
+  const healthPricing = facts.cost.kind === 'known'
+    ? t('dashboard.catalog', { version: facts.catalogVersion })
+    : t('dashboard.healthUnknown')
   const routeOptions = facts.models.map(model => model.route)
   const filteredRows = routeFilter === ''
     ? facts.rows
@@ -173,6 +193,8 @@ export function DashboardPage({ useSessions, useWorkspaces, t, close, pricing }:
           </button>
         </header>
 
+        {loading ? <p className={css.notice} role="status">{t('dashboard.loading')}</p> : null}
+        {workspaceError ? <p className={css.notice} role="alert">{t('dashboard.error')}</p> : null}
         {facts.dataState === 'partial'
           ? (
             <p className={css.notice} role="status">
@@ -226,20 +248,16 @@ export function DashboardPage({ useSessions, useWorkspaces, t, close, pricing }:
                 {facts.models.length === 0
                   ? <p className={css.empty}>{t('dashboard.modelsEmpty')}</p>
                   : (
-                    <ul className={css.models} aria-label={t('dashboard.usageAria')}>
-                      {facts.models.map(usage => (
-                        <li className={css.modelRow} key={usage.route}>
-                          <span className={css.modelRoute} dir="ltr">{usage.route}</span>
-                          <span className={css.modelCount}>{metricValue(usage)}</span>
-                          <span className={css.modelTrack} aria-hidden="true">
-                            <span
-                              className={css.modelFill}
-                              style={{ inlineSize: `${Math.max(4, Math.round((scaleOf(usage) / scale) * 100))}%` }}
-                            />
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
+                    <ChartContainer
+                      config={{ usage: { label: t('dashboard.usageAria') } }}
+                      label={t('dashboard.usageAria')}
+                      rows={facts.models.map(usage => ({
+                        id: usage.route,
+                        label: usage.route,
+                        value: metric === 'tokens' ? usage.tokens : usage.count,
+                        max: metric === 'tokens' ? usage.tokens : usage.count,
+                      }))}
+                    />
                   )}
               </section>
 
@@ -249,14 +267,16 @@ export function DashboardPage({ useSessions, useWorkspaces, t, close, pricing }:
                   {facts.providers.length === 0
                     ? <p className={css.empty}>{t('dashboard.providersEmpty')}</p>
                     : (
-                      <ul className={css.plainList} aria-label={t('dashboard.providers')}>
-                        {facts.providers.map(entry => (
-                          <li className={css.plainRow} key={entry.provider}>
-                            <bdi dir="ltr">{entry.provider}</bdi>
-                            <span className={css.plainCount}>{metricValue(entry)}</span>
-                          </li>
-                        ))}
-                      </ul>
+                      <ChartContainer
+                        config={{ usage: { label: t('dashboard.providers') } }}
+                        label={t('dashboard.providers')}
+                        rows={facts.providers.map(entry => ({
+                          id: entry.provider,
+                          label: entry.provider,
+                          value: metric === 'tokens' ? entry.tokens : entry.count,
+                          max: metric === 'tokens' ? entry.tokens : entry.count,
+                        }))}
+                      />
                     )}
                 </section>
 
@@ -265,17 +285,32 @@ export function DashboardPage({ useSessions, useWorkspaces, t, close, pricing }:
                   {facts.presets.length === 0
                     ? <p className={css.empty}>{t('dashboard.presetsEmpty')}</p>
                     : (
-                      <ul className={css.plainList} aria-label={t('dashboard.presets')}>
-                        {facts.presets.map(entry => (
-                          <li className={css.plainRow} key={entry.preset}>
-                            <bdi dir="ltr">{entry.preset}</bdi>
-                            <span className={css.plainCount}>{metricValue(entry)}</span>
-                          </li>
-                        ))}
-                      </ul>
+                      <ChartContainer
+                        config={{ usage: { label: t('dashboard.presets') } }}
+                        label={t('dashboard.presets')}
+                        rows={facts.presets.map(entry => ({
+                          id: entry.preset,
+                          label: entry.preset,
+                          value: metric === 'tokens' ? entry.tokens : entry.count,
+                          max: metric === 'tokens' ? entry.tokens : entry.count,
+                        }))}
+                      />
                     )}
                 </section>
               </div>
+
+              <p className={css.note}>{t('dashboard.sourceNote')}</p>
+
+              <section className={css.section}>
+                <h2 className={css.sectionTitle}>{t('dashboard.health')}</h2>
+                <ul className={css.plainList}>
+                  <li className={css.plainRow}><span>{t('dashboard.healthData')}</span><span className={css.plainCount}>{healthData}</span></li>
+                  <li className={css.plainRow}><span>{t('dashboard.healthPricing')}</span><span className={css.plainCount}>{healthPricing}</span></li>
+                  <li className={css.plainRow}><span>{t('dashboard.plan')}</span><span className={css.plainCount}>{t('dashboard.planUnknown')}</span></li>
+                  <li className={css.plainRow}><span>{t('dashboard.outcomes')}</span><span className={css.plainCount}>{t('dashboard.outcomesUnknown')}</span></li>
+                  <li className={css.plainRow}><span>{t('dashboard.recovery')}</span><span className={css.plainCount}>{t('dashboard.retry')}</span></li>
+                </ul>
+              </section>
 
               <section className={css.section}>
                 <div className={css.sectionHead}>
@@ -304,6 +339,7 @@ export function DashboardPage({ useSessions, useWorkspaces, t, close, pricing }:
                         <th className={css.number}>{t('dashboard.steps')}</th>
                         <th className={css.number}>{t('dashboard.inputTokens')}</th>
                         <th className={css.number}>{t('dashboard.outputTokens')}</th>
+                        <th>{t('dashboard.openSession')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -324,6 +360,15 @@ export function DashboardPage({ useSessions, useWorkspaces, t, close, pricing }:
                           </td>
                           <td className={css.number}>
                             {row.recorded ? NUMBERS.format(row.outputTokens) : t('dashboard.unknown')}
+                          </td>
+                          <td>
+                            <button
+                              type="button"
+                              className={css.openButton}
+                              onClick={() => { open(row.id) }}
+                            >
+                              {t('dashboard.openSession')}
+                            </button>
                           </td>
                         </tr>
                       ))}

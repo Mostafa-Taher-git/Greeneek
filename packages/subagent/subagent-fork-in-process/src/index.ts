@@ -70,6 +70,14 @@ class ForkInProcessProvider implements SubagentProvider {
   }
   // Context contract: a forked child IS seeded with the parent's completed-turn prefix.
   readonly inheritsParentContext = true
+  readonly harnessCapabilities = {
+    id: 'greeneek',
+    displayName: 'Greeneek',
+    models: 'unknown' as const,
+    supportsAgentOptions: true,
+    contextStrategies: ['fresh', 'fork'] as const,
+    source: 'registration' as const,
+  }
 
   constructor(readonly name: string) {}
 

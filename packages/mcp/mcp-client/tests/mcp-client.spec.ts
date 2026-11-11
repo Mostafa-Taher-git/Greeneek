@@ -374,6 +374,19 @@ describe('syncTools', () => {
     expect(ctx.tools.get('mcp__srv__page2')).toBeDefined()
   })
 
+  it('rejects a repeated tools/list continuation cursor and keeps the previous generation', async () => {
+    const client = createMockClient([])
+    client.listTools
+      .mockResolvedValueOnce({ tools: [{ name: 'page1', inputSchema: { type: 'object' } }], nextCursor: 'cursor1' })
+      .mockResolvedValueOnce({ tools: [{ name: 'page2', inputSchema: { type: 'object' } }], nextCursor: 'cursor1' })
+      .mockResolvedValueOnce({ tools: [{ name: 'page3', inputSchema: { type: 'object' } }], nextCursor: undefined })
+
+    await expect(syncTools(client as never, ctx, defaultOpts, new Map()))
+      .rejects.toThrow(/repeated a tools\/list continuation cursor/)
+    expect(ctx.tools.get('mcp__srv__page1')).toBeUndefined()
+    expect(ctx.tools.get('mcp__srv__page2')).toBeUndefined()
+  })
+
   it('owns output validation independently of the SDK per-page cache', async () => {
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
     serverTransport.onmessage = (message) => {

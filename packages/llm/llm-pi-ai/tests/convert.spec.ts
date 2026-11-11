@@ -6,7 +6,7 @@ import { createUserMessage, ToolCallId, CONTEXT_WINDOW_EXCEEDED_CODE, EMPTY_RESP
 import type { ContentBlock, StreamChunk } from '@greeneek/gnk-llm'
 import type { AssistantMessage, AssistantMessageEvent, Usage } from '@earendil-works/pi-ai'
 import { toPiContext } from '../src/context.ts'
-import { INVALID_TOOL_ARGUMENTS_CODE, toPiReplayState } from '../src/replay.ts'
+import { INVALID_TOOL_ARGUMENTS_CODE, toPiAssistant, toPiReplayState } from '../src/replay.ts'
 import { mapStopReason, mapUsage, toStreamChunks } from '../src/stream.ts'
 
 function usage(input = 0, output = 0, cacheRead = 0, cacheWrite = 0): Usage {
@@ -266,6 +266,43 @@ describe('toPiContext', () => {
     })
     const message = context.messages[0] as AssistantMessage
     expect(message.content[0]).toEqual({ type: 'toolCall', id: 'c1', name: 'f', arguments: {} })
+  })
+
+  it('round-trips providerThinkingLevel and tool-call namespace through replay state', () => {
+    const source = assistant({
+      content: [{
+        type: 'toolCall',
+        id: 'c1',
+        name: 'f',
+        arguments: {},
+        namespace: 'ns1',
+      }],
+      providerThinkingLevel: 'high',
+    })
+    const state = toPiReplayState(source) as {
+      response?: { providerThinkingLevel?: string }
+      blocks?: unknown[]
+    }
+    expect(state.response?.providerThinkingLevel).toBe('high')
+    expect(state.blocks?.[0]).toEqual({ type: 'tool-call', namespace: 'ns1' })
+    const restored = toPiAssistant(createMessage({
+      role: 'assistant',
+      content: [{ type: 'tool-call', id: ToolCallId('c1'), name: 'f', arguments: '{}' }],
+      source: {
+        kind: 'model',
+        provider: 'deepseek',
+        model: 'deepseek-flash',
+        replayState: state,
+      },
+    }))
+    expect(restored.providerThinkingLevel).toBe('high')
+    expect(restored.content[0]).toEqual({
+      type: 'toolCall',
+      id: 'c1',
+      name: 'f',
+      arguments: {},
+      namespace: 'ns1',
+    })
   })
 
   it('rejects non-object argument JSON (arrays, scalars, null) with a typed error', () => {

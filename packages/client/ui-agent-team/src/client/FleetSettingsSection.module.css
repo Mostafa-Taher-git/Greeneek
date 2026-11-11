@@ -110,6 +110,25 @@
   font-size: 12px;
 }
 
+.harnessGroups {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.harnessGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.harnessName {
+  margin: 0;
+  color: var(--dsw-alias-label-primary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
 .starters {
   display: flex;
   flex-direction: column;

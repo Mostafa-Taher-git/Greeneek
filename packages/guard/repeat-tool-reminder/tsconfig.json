@@ -21,7 +21,7 @@
       "path": "../../core/tools"
     },
     {
-      "path": "../../core/agent"
+      "path": "../../core/agent/tsconfig.host.json"
     },
     {
       "path": "../../llm/llm"

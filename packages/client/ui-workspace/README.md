@@ -38,6 +38,18 @@ Collapsed search is one header action beside the view and add actions: activatin
 
 The Session row's Rename action opens a dialog prefilled with the row's display title; confirming an unchanged title is deliberately allowed — it pins the current automatic title against regeneration. Archive commits without a confirmation dialog and the row disappears from every grouping surface when the archive-set echo lands. Fork forks at the source's last completed turn, increments the inherited persisted title on the client, and then opens the child. Workspace Delete opens a confirmation that states the retention boundary; success removes the group while its Sessions remain under Ungrouped.
 
+### Pinning sessions
+
+A Session can be pinned from the Session header or from the row menu. The pin is a registry-global set, not a per-row flag: it survives a restart, it keeps the Session's place in its Workspace account, and a pinned row shows a pin marker. While a Workspace group is folded, only its pinned Sessions stay visible, so a pinned Session is never hidden by the five-row fold. Unpinning removes the marker and the folded-group visibility together.
+
+### Session header utilities
+
+The conversation header carries the Session's own utilities: a split **open in** button whose folder half hands the Session directory to the desktop's default application and whose chevron half lists the applications the Host reports as installed (Cursor, VS Code, Android Studio, GitHub Desktop) plus **Show in folder**; a pin toggle; an archive button; an overflow menu with rename, fork, copy session id, show in folder, archive, and delete; and the right-sidebar toggle when the composition has one. The applications list comes from the Host, so the browser never offers an application that cannot start; a failed catalogue read leaves the default application working on its own. Rename and delete use the same confirmations as the sidebar row, and the keyboard shortcuts follow the platform command key: rename, fork, and archive are reachable without the mouse.
+
+The Workspace row offers the same destinations for the Workspace directory itself, through an **Open in…** submenu next to rename and delete. The catalogue is read from the Host on mount, so an application installed while the app runs appears in the next menu without a restart.
+
+When the Workspace is a git repository, the same menu also names the checked-out branch and the size of the change set against the base branch (`+30,469 −2,435`). The facts are read from the Host when the menu opens — the browser never asks about a project nobody opened — and a directory that is not a repository shows no git rows at all.
+
 ### Dashboard
 
 The entry directly under **New Session** opens a full-page summary: session, workspace, and running counts; whole-session turns, steps, and recorded output tokens; model usage grouped by provider/model; and the newest sessions with their workspace and model. Every figure comes from the `sessionStats`/`modelSelection` projections or a list fact. Input tokens and cost are not recorded locally, so they are shown as unknown rather than estimated, and no prompt, raw output, path, or key material is displayed.

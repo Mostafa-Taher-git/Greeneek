@@ -23,7 +23,7 @@ This package provides the browser halves of the Craft bridge pilot: a Settings s
 <a id="use-this-package"></a>
 ## Use this package
 
-Mount it beside the settings and tool surfaces; `inject` names the locale, renderer, settings, and tool packages it needs. The section takes the `settings.section` seat `craft-suite` (order 40). The artifact card takes the keyed `tool.call.toolview` seats for exactly the bridge tools whose results carry artifact paths (`mcp__<app>__render_preview`, `mcp__<app>__screenshot`); a wildcard seat would claim bridge tools that have no artifact section. All copy lives in the `craft` locale namespace with complete en and zh dictionaries.
+Mount it beside the settings and tool surfaces; `inject` names the locale, renderer, settings, and tool packages it needs. The section takes the `settings.section` seat `craft-suite` (order 40). The artifact card takes the keyed `tool.call.toolview` seats for exactly the bridge tools whose results carry artifact paths (`mcp__<app>__render_preview`, `mcp__<app>__screenshot`); a wildcard seat would claim bridge tools that have no artifact section. All copy lives in the `craft` locale namespace with complete en, zh, and ar dictionaries.
 
 ### The Settings section
 
@@ -52,7 +52,7 @@ The card is collapsed by default: a state dot, the artifact title, the file coun
 | [`src/client/settings/CraftSection.tsx`](src/client/settings/CraftSection.tsx) | The Settings section component |
 | [`src/client/artifact/model.ts`](src/client/artifact/model.ts) | Replay-stable card model from the durable result slice |
 | [`src/client/artifact/CraftArtifactRow.tsx`](src/client/artifact/CraftArtifactRow.tsx) | The artifact card component |
-| [`src/client/locales.ts`](src/client/locales.ts) | `craft` namespace en/zh dictionaries |
+| [`src/client/locales.ts`](src/client/locales.ts) | `craft` namespace en/zh/ar dictionaries |
 
 </details>
 

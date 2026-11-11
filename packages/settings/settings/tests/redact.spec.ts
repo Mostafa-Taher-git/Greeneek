@@ -101,6 +101,72 @@ describe('redactSecrets', () => {
     expect(redactSecrets({ type: 'object' } as never, { k: 'v' })).toEqual({ value: { k: 'v' }, secrets: [] })
     expect(redactSecrets({ type: 'array' } as never, ['v'])).toEqual({ value: ['v'], secrets: [] })
   })
+
+  it('preserves schema-external keys named like Object.prototype members as own properties', () => {
+    const input = JSON.parse('{"toString":"kept","constructor":"kept","__proto__":{"kept":true},"baseURL":"https://x"}') as Record<string, unknown>
+    const { value } = redactSecrets(Profile as z<never>, input)
+    expect(value).toEqual(input)
+    expect(Object.hasOwn(value as Record<string, unknown>, 'toString')).toBe(true)
+    expect(Object.hasOwn(value as Record<string, unknown>, 'constructor')).toBe(true)
+    expect(Object.hasOwn(value as Record<string, unknown>, '__proto__')).toBe(true)
+    // The detached value keeps the standard prototype: the entry is data, not a mutation target.
+    expect(Object.getPrototypeOf(value)).toBe(Object.prototype)
+  })
+
+  it('never pollutes the prototype through a dict entry named "__proto__"', () => {
+    const Tokens = z.object({ tokens: z.dict(z.object({ url: z.string() })) })
+    const input = JSON.parse('{"tokens":{"__proto__":{"url":"https://x"}}}') as Record<string, unknown>
+    const { value } = redactSecrets(Tokens as z<never>, input)
+    expect(value).toEqual(input)
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined()
+    expect(Object.getPrototypeOf(value)).toBe(Object.prototype)
+  })
+
+  it('fails closed when a secret is reachable only inside a union, intersection, or transform', () => {
+    const SECRET = 'union-secret-value'
+    const cases: Array<{ schema: z<never>; value: unknown }> = [
+      {
+        schema: z.object({
+          credential: z.union([
+            z.object({ apiKey: z.string().role('secret') }),
+            z.string(),
+          ]),
+        }) as z<never>,
+        value: { credential: { apiKey: SECRET } },
+      },
+      {
+        schema: z.object({
+          credential: z.intersect([
+            z.object({ apiKey: z.string().role('secret') }),
+            z.object({ baseURL: z.string() }),
+          ]),
+        }) as z<never>,
+        value: { credential: { apiKey: SECRET, baseURL: 'https://x' } },
+      },
+      {
+        schema: z.object({
+          credential: z.transform(z.object({ apiKey: z.string().role('secret') }), value => value),
+        }) as z<never>,
+        value: { credential: { apiKey: SECRET } },
+      },
+    ]
+    for (const { schema, value } of cases) {
+      let caught: unknown
+      try {
+        redactSecrets(schema, value)
+      } catch (error) {
+        caught = error
+      }
+      expect(caught).toBeInstanceOf(Error)
+      // No output is produced on failure, and the refusal must not echo the secret.
+      expect((caught as Error).message).toContain('redactSecrets')
+      expect((caught as Error).message).not.toContain(SECRET)
+      expect(JSON.stringify(value)).toContain(SECRET)
+    }
+    // A union without a secret is still walked through untouched.
+    expect(redactSecrets(z.object({ theme: z.union(['dark', 'light']) }) as z<never>, { theme: 'dark' }))
+      .toEqual({ value: { theme: 'dark' }, secrets: [] })
+  })
 })
 
 describe('describe() layers and redaction', () => {

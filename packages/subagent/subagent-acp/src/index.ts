@@ -12,6 +12,7 @@ import { isAbsolute, resolve } from 'node:path'
 import type { Context } from '@greeneek/cordis'
 import z from '@greeneek/schemastery'
 import type {
+  HarnessCapabilities,
   ResolvedSubagentStartRequest,
   SubagentCapabilities,
   SubagentProvider,
@@ -19,6 +20,7 @@ import type {
 } from '@greeneek/gnk-subagent'
 import { MAX_TIMER_DELAY_MS } from '@greeneek/gnk-timeout'
 import { acpConfigurationFailure, type AcpRunSpec, DEFAULT_DISPOSE_EOF_GRACE_MS, DEFAULT_DISPOSE_GRACE_MS, type PermissionPolicy, startAcpRun } from './run.ts'
+import { discoverAcpHarness } from './discover.ts'
 
 export const name = 'subagent-acp'
 export const inject = ['subagents', 'subprocess']
@@ -27,6 +29,13 @@ export const inject = ['subagents', 'subprocess']
 export interface Config {
   /** Provider name on `ctx.subagents` (default `acp`). */
   providerName: string
+  /**
+   * Harness implementation identity shared by every connection of this product.
+   * Defaults to the command basename.
+   */
+  harnessId?: string
+  /** Product display name. Defaults to the `harnessId`. */
+  displayName?: string
   /** The executable to spawn for each run (the child ACP agent). */
   command: string
   /** Arguments passed to {@link command}. */
@@ -65,6 +74,8 @@ export interface Config {
 
 export const Config: z<Config> = z.object({
   providerName: z.string().default('acp'),
+  harnessId: z.string(),
+  displayName: z.string(),
   command: z.string().required(),
   args: z.array(z.string()).default([]),
   cwd: z.string(),
@@ -82,7 +93,30 @@ function assertPositiveFinite(name: string, value: number): void {
 }
 
 /** The shape after schemastery applied the defaults (cwd has none). */
-type ResolvedConfig = Required<Omit<Config, 'cwd'>> & Pick<Config, 'cwd'>
+type ResolvedConfig = Required<Omit<Config, 'cwd' | 'harnessId' | 'displayName'>> & Pick<Config, 'cwd'> & {
+  readonly harnessId: string
+  readonly displayName: string
+}
+
+/**
+ * Derive Harness identity from deployment configuration. The id defaults to the
+ * command basename; the display name defaults to the id.
+ * @param resolved - config after schemastery defaults.
+ * @returns the resolved identity.
+ */
+function resolveIdentity(resolved: ResolvedConfig & { readonly harnessId?: string; readonly displayName?: string }): {
+  readonly harnessId: string
+  readonly displayName: string
+} {
+  const configuredId = (resolved as { readonly harnessId?: string }).harnessId
+  if (configuredId !== undefined) {
+    const configuredName = (resolved as { readonly displayName?: string }).displayName
+    return { harnessId: configuredId, displayName: configuredName ?? configuredId }
+  }
+  const basename = resolved.command.replace(/^.*[/\\]/u, '').replace(/\.(exe|cmd|com|bat)$/iu, '')
+  const harnessId = basename === '' ? resolved.providerName : basename
+  return { harnessId, displayName: harnessId }
+}
 
 /**
  * Whether `path` names an existing directory the harness can ENTER. The
@@ -139,13 +173,13 @@ function resolveCwd(configured: string | undefined, request: SubagentStartReques
 }
 
 /**
- * The ACP provider. Advertises NO start-time capabilities: an out-of-process
- * child cannot honor `agentOptions`/`outputSchema`/`maxDepth`/`toolFilter`/
- * `persona` (the service rejects a request needing any before `start` runs).
+ * The ACP provider. An out-of-process child advertises model and
+ * reasoning-effort overrides through `session/set_config_option`; provider
+ * routing and token budgets have no ACP equivalent and are refused by name.
  */
 class AcpProvider implements SubagentProvider {
   readonly capabilities: SubagentCapabilities = {
-    agentOptions: false,
+    agentOptions: true,
     outputSchema: false,
     depthLimit: false,
     toolFilter: false,
@@ -154,12 +188,54 @@ class AcpProvider implements SubagentProvider {
   }
   // Context contract: an out-of-process ACP child starts fresh — no parent conversation crosses the process boundary.
   readonly inheritsParentContext = false
+  readonly harnessCapabilities: HarnessCapabilities
+  private readonly identity: { readonly harnessId: string; readonly displayName: string }
 
-  constructor(readonly name: string, private readonly ctx: Context, private readonly config: ResolvedConfig) {}
+  constructor(readonly name: string, private readonly ctx: Context, private readonly config: ResolvedConfig) {
+    this.identity = resolveIdentity(config)
+    this.harnessCapabilities = {
+      id: this.identity.harnessId,
+      displayName: this.identity.displayName,
+      models: 'unknown',
+      supportsAgentOptions: true,
+      contextStrategies: ['fresh'],
+      source: 'configuration',
+    }
+  }
+
+  async discoverHarness(request: { readonly signal?: AbortSignal }): Promise<HarnessCapabilities> {
+    const cwd = this.resolveDiscoveryCwd()
+    return await discoverAcpHarness({
+      harnessId: this.identity.harnessId,
+      displayName: this.identity.displayName,
+      command: this.config.command,
+      args: this.config.args,
+      cwd,
+      env: this.config.env,
+      disposeEofGraceMs: this.config.disposeEofGraceMs,
+      disposeGraceMs: this.config.disposeGraceMs,
+      spawn: spec => this.ctx.subprocess.spawn(spec),
+      signal: request.signal ?? new AbortController().signal,
+    })
+  }
+
+  /** Workspace for a probe: configured cwd or the harness process cwd. */
+  private resolveDiscoveryCwd(): string {
+    if (this.config.cwd !== undefined) return this.config.cwd
+    return process.cwd()
+  }
 
   start(request: ResolvedSubagentStartRequest) {
     if (request.signal.aborted) {
       throw new Error('subagent request was aborted before the ACP child started')
+    }
+    // ACP applies model and effort through session configuration. Provider
+    // routing and token budgets have no ACP equivalent here; refuse them by
+    // name instead of accepting a setting the child would never see.
+    if (request.agentOptions?.provider !== undefined || request.agentOptions?.maxTokens !== undefined) {
+      throw new Error(
+        'subagent-acp: the ACP Harness supports model and reasoning-effort overrides only; provider routing and maxTokens are unsupported',
+      )
     }
     let cwd: string
     try {

@@ -7,7 +7,9 @@
  * base URL, catalog, or key reaches the very next request without restarting
  * anything, while an in-flight stream keeps the facts it started with. The
  * one registration-captured fact — the retry policy — re-registers the route
- * in place when it changes.
+ * in place when it changes. `GREENEEK_API_KEY` names this adapter's own
+ * credential reference, not a product requirement: Greeneek boots without it
+ * and other adapters resolve their own references.
  * @module @greeneek/gnk-llm-greeneek
  */
 
@@ -126,7 +128,10 @@ const MODEL_MODALITIES = ['text', 'image'] as const satisfies readonly ModelModa
  * provider default, and omitted reasoning effort resolves to `high`.
  */
 export interface Config {
-  /** Credential reference (environment-variable name) resolved per request; defaults to `GREENEEK_API_KEY`. */
+  /**
+   * Credential reference (environment-variable name) resolved per request;
+   * defaults to `GREENEEK_API_KEY` — this adapter's own key, not a product requirement.
+   */
   apiKeyEnv?: string
   /** Endpoint base (`/chat/completions` is appended); falls back to `$GREENEEK_BASE_URL`. There is no shipped endpoint. */
   baseURL?: string

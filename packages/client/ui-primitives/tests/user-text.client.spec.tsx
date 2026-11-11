@@ -81,4 +81,17 @@ describe('projectUserText', () => {
     expect(host.querySelectorAll('[data-ref-chip]').length).toBe(0)
     expect(host.textContent).toBe('纯文本，无引用')
   })
+
+  it('masks recognized credentials in sent text while keeping the logged text intact', () => {
+    const key = `sk-${'a1'.repeat(15)}9`
+    const host = project(`key is ${key} ok`)
+    expect(host.querySelector('[data-secret]')).not.toBeNull()
+    expect(host.textContent).not.toContain(key)
+    expect(host.textContent).toContain('key is sk-')
+    expect(host.textContent).toContain(' ok')
+    // Plain prose without a credential is untouched.
+    const plain = project('plain prose with no credentials at all')
+    expect(plain.querySelector('[data-secret]')).toBeNull()
+    expect(plain.textContent).toBe('plain prose with no credentials at all')
+  })
 })

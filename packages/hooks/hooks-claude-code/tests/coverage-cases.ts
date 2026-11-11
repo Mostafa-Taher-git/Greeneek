@@ -227,6 +227,25 @@ export function defineCoverageCases(group: CoverageGroup): void {
       expect(JSON.stringify(adapter.requests[1]!.messages)).toContain('blocked by Stop hook')
     })
 
+    it('an unconditionally blocking Stop hook stops forcing after the shared cap', async () => {
+      const d = dir()
+      const s = sh(d, 'stop.sh', '#!/usr/bin/env bash\necho "always block" >&2\nexit 2\n')
+      const path = hooks(d, { Stop: [{ hooks: [{ type: 'command', command: s }] }] })
+      // One initial answer plus the eight forced continuations the guard admits.
+      const adapter = new MockAdapter(Array.from({ length: 9 }, (_, index) => textResponse(`answer ${String(index + 1)}`)))
+      const ctx = await harness(path, adapter)
+      const warn = vi.fn()
+      ctx.logger.warn = warn as never
+      const agent = await ctx.agentLoop.create(SessionId('a1'), { provider: 'mock', model: 'mock' })
+      agent.followup(createUserMessage({ content: [{ type: 'text', text: 'go' }], source: { kind: 'user' } }))
+      await waitForIdle(ctx, agent)
+      // The ninth block hit the cap: the turn ended instead of requesting again.
+      expect(adapter.requests).toHaveLength(9)
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('Stop hook block limit reached'))
+      const turnEnd = events(agent).filter(e => e.type === 'turn/end').at(-1)
+      expect(turnEnd?.type === 'turn/end' && turnEnd.data.reason.kind).toBe('completed')
+    }, 30_000) // Nine real hook subprocesses and agent steps need headroom under load.
+
     it('SubagentStart additionalContext is injected into a REGISTERED live child', async () => {
       const d = dir()
       const s = sh(d, 'sa.sh', '#!/usr/bin/env bash\necho \'{"hookSpecificOutput":{"hookEventName":"SubagentStart","additionalContext":"child guidance"}}\'\n')

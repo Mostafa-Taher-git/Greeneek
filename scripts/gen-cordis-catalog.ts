@@ -295,11 +295,16 @@ export const LINK_MAP: Readonly<Record<string, string>> = {
   LanePolicy: 'agent-team.md',
   LaneRecord: 'agent-team.md',
   RepoFleetSnapshot: 'agent-team.md',
+  DebateRequest: 'agent-team.md',
+  DebateResult: 'agent-team.md',
   FleetFavorite: 'agent-team.md',
   FleetFavoriteResult: 'agent-team.md',
   FleetFavoritesView: 'agent-team.md',
   FleetLaunchResult: 'agent-team.md',
   FleetProviderAvailability: 'agent-team.md',
+  HarnessDescriptor: 'agent-team.md',
+  HarnessModel: 'agent-team.md',
+  HarnessEffort: 'agent-team.md',
   PreStepDecision: 'core.md',
   PreStepContext: 'core.md',
   RequestErrorAction: 'core.md',
@@ -331,6 +336,12 @@ export const LINK_MAP: Readonly<Record<string, string>> = {
   ModelCatalog: 'session.md',
   SessionOpenWorkspacePathRequest: 'session.md',
   SessionOpenWorkspacePathValue: 'session.md',
+  SessionOpenPathRequest: 'session.md',
+  SessionOpenPathValue: 'session.md',
+  SessionExternalApp: 'session.md',
+  SessionExternalAppsValue: 'session.md',
+  SessionGitFactsRequest: 'session.md',
+  SessionGitFactsValue: 'session.md',
   SessionModels: 'session.md',
   SessionModelsRequest: 'session.md',
   SessionPage: 'session.md',
@@ -624,6 +635,8 @@ export const LINK_MAP: Readonly<Record<string, string>> = {
   WorkspaceInsertBeforeRequest: 'workspace.md',
   WorkspaceInsertSessionBeforeRequest: 'workspace.md',
   WorkspaceOrderValue: 'workspace.md',
+  WorkspacePinSessionRequest: 'workspace.md',
+  WorkspacePinSessionValue: 'workspace.md',
   WorkspaceRenameRequest: 'workspace.md',
   WorkspaceValue: 'workspace.md',
   ClientArtifactBaseline: 'client-modules.md',
@@ -1043,6 +1056,24 @@ export function main(): void {
     ...computeOutputs(),
     ...renderCordisCoreApiPages(),
   ]
+  const core = outputs.find(([out]) => out === 'docs/subsystems/core.md')?.[1] ?? ''
+  if (core !== '') {
+    const words = core.split(/\s+/).filter(Boolean).length
+    const entries = core.split('\n').filter(line => line.startsWith('## ')).length
+    const headings = core.split('\n').filter(line => line.startsWith('##') || line.startsWith('###')).length
+    let largest = 0
+    let current = 0
+    for (const line of core.split('\n')) {
+      if (line.startsWith('## ')) {
+        largest = Math.max(largest, current)
+        current = 0
+      } else {
+        current += line.split(/\s+/).filter(Boolean).length
+      }
+    }
+    largest = Math.max(largest, current)
+    console.log(`gen-cordis-catalog: docs/subsystems/core.md — ${words} words / ${entries} sections / ${headings} headings / ${largest} words largest section`)
+  }
   if (process.argv.includes('--check')) {
     const stale: string[] = []
     for (const [out, content] of outputs) {

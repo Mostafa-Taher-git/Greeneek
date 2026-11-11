@@ -21,7 +21,7 @@
       "path": "../../attachment/attachment"
     },
     {
-      "path": "../../core/session"
+      "path": "../../core/session/tsconfig.client.json"
     },
     {
       "path": "../../typert/protocol"
@@ -51,7 +51,7 @@
       "path": "../../client/ui-settings"
     },
     {
-      "path": "../../subagent/subagent"
+      "path": "../../subagent/subagent/tsconfig.client.json"
     }
   ]
 }

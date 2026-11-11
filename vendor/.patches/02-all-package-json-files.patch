@@ -1,0 +1,5 @@
+Modification 2: All package.json files
+Tree-hash: 3f6a88a91e110b7daa28b30cc1218a8095ce72ae80be7dbaad4891489332c95e
+Upstream manifest: see vendor/README.md manifest table for this package's SHA.
+
+regenerated — added `private: true`, added precise `files` entries for bundled runtime files and `lib/types/**/*.d.ts` / `.d.ts.map`, preserved `src` in `files` only for packages whose previous file list already shipped it, added a `./src/*` export where missing, pointed declaration metadata at `lib/types`, and removed upstream `devDependencies`/`scripts`/`repository` fields. Dependency and peer-dependency ranges are preserved except that `hmr` declares `esbuild` as a direct dev dependency because its source imports the `BuildFailure` type and pnpm's strict workspace resolution requires the owner package to name that dependency, and `loader` requires `node-addon-require-builtin@^0.1.4` to match the runtime used by published app packages.

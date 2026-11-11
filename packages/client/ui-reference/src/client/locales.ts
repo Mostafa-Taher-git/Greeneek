@@ -58,7 +58,7 @@ export const ar = {
   'time.now': 'الآن',
   'time.minutes': '{n} د',
   'time.hours': '{n} س',
-  'time.days': '{n} ي',
-  'time.months': '{n} ش',
-  'time.years': '{n} ن',
+  'time.days': '{n} يوم',
+  'time.months': '{n} شهر',
+  'time.years': '{n} سنة',
 } satisfies Record<ReferenceKey, string>

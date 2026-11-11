@@ -1,0 +1,161 @@
+/**
+ * Produce a diffable API report per published package in `etc/<short>.api.md`
+ * (adopted per OWN-05). The publication set is the npm release families
+ * (`scripts/release/families.ts`): `packages/!(experimental)/*` plus
+ * `apps/!(desktop|landing)/*` (gnk), and `vendor/*` (vendor). Private
+ * deployment roots carry no family version and are excluded by the family
+ * patterns themselves.
+ *
+ * Each report is the normalized public surface of the package's `src/`:
+ * every `export` line, sorted, with package name and version in the header.
+ * A change to any exported name, type, or value changes the report, so CI
+ * fails when regeneration differs. Run `pnpm run gen-api-reports` to
+ * regenerate; `--check` instead fails on a stale copy. Reading `src` keeps
+ * the gate build-free and boring (manifests in, sorted export lines out).
+ * @module scripts/gen-api-reports
+ */
+import { existsSync, globSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
+import { join, resolve } from 'node:path'
+
+const ROOT = resolve(import.meta.dirname, '..')
+const ETC = 'etc'
+const PUBLISHED_PATTERNS = [
+  'vendor/*/package.json',
+  'packages/!(experimental)/*/package.json',
+  'apps/!(desktop|landing)/package.json',
+] as const
+
+/** One published package's report inputs. */
+export interface PublishedPackage {
+  /** Workspace-relative manifest path, e.g. `packages/llm/llm/package.json`. */
+  manifest: string
+  /** npm name, e.g. `@greeneek/gnk-llm`. */
+  name: string
+  /** Unscoped short name used for the report file: `gnk-llm`. */
+  shortName: string
+  directory: string
+  version: string
+}
+
+/**
+ * Discover the npm publication set.
+ * @param root - absolute repository root.
+ * @returns published packages sorted by name.
+ */
+export function collectPublishedPackages(root: string): PublishedPackage[] {
+  const out: PublishedPackage[] = []
+  const seen = new Set<string>()
+  for (const pattern of PUBLISHED_PATTERNS) {
+    for (const manifestPath of globSync([pattern], { cwd: root }).sort()) {
+      const normalized = manifestPath.replaceAll('\\', '/')
+      const manifest = JSON.parse(readFileSync(join(root, normalized), 'utf8')) as {
+        name?: unknown
+        version?: unknown
+        private?: unknown
+      }
+      if (typeof manifest.name !== 'string' || typeof manifest.version !== 'string') {
+        throw new Error(`gen-api-reports: ${normalized} must declare string name and version.`)
+      }
+      if (manifest.private === true) continue
+      if (seen.has(manifest.name)) throw new Error(`gen-api-reports: duplicate published package ${manifest.name}.`)
+      seen.add(manifest.name)
+      const shortName = manifest.name.startsWith('@greeneek/') ? manifest.name.slice('@greeneek/'.length) : manifest.name
+      if (shortName.includes('/')) throw new Error(`gen-api-reports: cannot derive a report file name for ${manifest.name}.`)
+      out.push({
+        manifest: normalized,
+        name: manifest.name,
+        shortName,
+        directory: normalized.slice(0, normalized.length - '/package.json'.length),
+        version: manifest.version,
+      })
+    }
+  }
+  if (out.length === 0) throw new Error('gen-api-reports: publication set is empty; patterns are stale.')
+  return out.sort((a, b) => a.name.localeCompare(b.name))
+}
+
+function walkSrc(dir: string, out: string[] = []): string[] {
+  let entries: string[]
+  try {
+    entries = readdirSync(dir)
+  } catch {
+    return out
+  }
+  for (const entry of entries.sort()) {
+    const path = join(dir, entry)
+    let isDir = false
+    try {
+      isDir = statSync(path).isDirectory()
+    } catch {
+      continue
+    }
+    if (isDir) {
+      if (entry === 'node_modules' || entry === 'lib') continue
+      walkSrc(path, out)
+    } else if (/\.tsx?$/.test(entry) && !entry.endsWith('.d.ts')) out.push(path)
+  }
+  return out
+}
+
+/**
+ * Render one package's report.
+ * @param root - absolute repository root.
+ * @param pkg - published package.
+ * @returns the exact bytes `etc/<short>.api.md` must hold.
+ */
+export function renderReport(root: string, pkg: PublishedPackage): string {
+  const exports: string[] = []
+  const src = join(root, pkg.directory, 'src')
+  if (!existsSync(src)) {
+    // App packages without a src/ tree still publish an entry point; record the entry.
+    const manifest = JSON.parse(readFileSync(join(root, pkg.manifest), 'utf8')) as { exports?: unknown }
+    exports.push(`// no src/ tree; exports: ${JSON.stringify(manifest.exports ?? null)}`)
+  } else {
+    for (const file of walkSrc(src).sort()) {
+      const relative = file.slice(join(root, pkg.directory).length + 1).replaceAll('\\', '/')
+      const text = readFileSync(file, 'utf8')
+      for (const line of text.split('\n')) {
+        const trimmed = line.trim()
+        if (trimmed.startsWith('export ')) exports.push(`${relative}: ${trimmed}`)
+      }
+    }
+  }
+  exports.sort()
+  return [
+    '<!-- Generated by scripts/gen-api-reports.ts — do not edit by hand.',
+    '     Run `pnpm run gen-api-reports` to regenerate. -->',
+    '',
+    `# API report: ${pkg.name}@${pkg.version} (${pkg.directory})`,
+    '',
+    ...exports.map(line => `\`${line}\``),
+    '',
+  ].join('\n')
+}
+
+if (process.argv[1] && import.meta.filename === resolve(process.argv[1])) {
+  const check = process.argv.includes('--check')
+  const packages = collectPublishedPackages(ROOT)
+  process.stdout.write(`gen-api-reports: ${String(packages.length)} published package(s): ${packages.map(p => p.shortName).join(', ')}\n`)
+  let stale = 0
+  for (const pkg of packages) {
+    const outPath = join(ROOT, ETC, `${pkg.shortName}.api.md`)
+    const expected = renderReport(ROOT, pkg)
+    let committed: string | null = null
+    try {
+      committed = readFileSync(outPath, 'utf8')
+    } catch {
+      committed = null
+    }
+    if (committed === expected) continue
+    stale++
+    if (check) {
+      process.stderr.write(`gen-api-reports: etc/${pkg.shortName}.api.md is stale or missing; run \`pnpm run gen-api-reports\`.\n`)
+    } else {
+      mkdirSync(join(ROOT, ETC), { recursive: true })
+      writeFileSync(outPath, expected)
+    }
+  }
+  if (stale > 0 && check) process.exitCode = 1
+  else if (stale > 0) process.stdout.write(`gen-api-reports: rewrote ${String(stale)} report(s).\n`)
+  else process.stdout.write('gen-api-reports: all reports are current.\n')
+}

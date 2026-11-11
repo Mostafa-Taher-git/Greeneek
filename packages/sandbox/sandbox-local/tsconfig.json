@@ -30,7 +30,7 @@
       "path": "../sandbox-windows-acl"
     },
     {
-      "path": "../../core/session"
+      "path": "../../core/session/tsconfig.host.json"
     }
   ]
 }

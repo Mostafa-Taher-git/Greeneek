@@ -86,6 +86,30 @@ describe('deriveGroups', () => {
     expect(groups[1]!.sessions.map(session => session.id)).toEqual([sid('loose')])
   })
 
+  it('marks pinned Sessions and keeps them visible inside a folded group', () => {
+    const sessions = list(summary('pinned', 10), summary('plain', 20))
+    const workspaces = [workspace('project', ['pinned', 'plain'])]
+
+    const folded = deriveGroups(
+      sessions, workspaces, noArchive, noAttention, view([]), [sid('pinned')],
+    )
+    expect(folded[0]!.sessions.map(session => session.id)).toEqual([sid('pinned')])
+    expect(folded[0]!.sessions[0]!.pinned).toBe(true)
+
+    const expanded = deriveGroups(
+      sessions, workspaces, noArchive, noAttention, view(['project']), [sid('pinned')],
+    )
+    expect(expanded[0]!.sessions.map(session => session.id)).toEqual([sid('pinned'), sid('plain')])
+    expect(expanded[0]!.sessions.map(session => session.pinned)).toEqual([true, false])
+  })
+
+  it('marks pinned rows in the flat list without changing their recency order', () => {
+    const sessions = list(summary('newer', 20), summary('older', 10))
+    const rows = deriveFlat(sessions, noArchive, noAttention, [sid('older')])
+    expect(rows.map(row => row.id)).toEqual([sid('newer'), sid('older')])
+    expect(rows.map(row => row.pinned)).toEqual([false, true])
+  })
+
   it('applies stored Ungrouped order and appends new loose Sessions by recency', () => {
     const sessions = list(summary('one', 3), summary('two', 2), summary('new', 4))
     const groups = deriveGroups(

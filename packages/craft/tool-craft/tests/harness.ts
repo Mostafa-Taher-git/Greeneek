@@ -74,16 +74,24 @@ export class FakeProvider implements CraftHostProvider {
   readonly opens: CraftHostOpenRequest[] = []
   readonly transports: FakeTransport[] = []
 
+  installed: readonly import('@greeneek/gnk-craft').CraftDiscoveredApp[] = []
+
   constructor(options: {
     readonly discovery?: CraftDiscovery
     readonly tools?: readonly CraftToolDescriptor[]
     readonly respond?: (name: string) => CraftCallResult
     readonly registry?: unknown
+    readonly installed?: readonly import('@greeneek/gnk-craft').CraftDiscoveredApp[]
   } = {}) {
     this.discovery = options.discovery ?? { state: 'ready', executable: '/apps/photocraft-cli' }
     this.tools = options.tools ?? defaultTools()
     this.respond = options.respond ?? (name => ({ content: [{ type: 'text', text: `ran ${name}` }] }))
     this.registry = options.registry ?? DEFAULT_REGISTRY
+    this.installed = options.installed ?? []
+  }
+
+  listInstalled(): Promise<readonly import('@greeneek/gnk-craft').CraftDiscoveredApp[]> {
+    return Promise.resolve(this.installed)
   }
 
   discover(): Promise<CraftDiscovery> {

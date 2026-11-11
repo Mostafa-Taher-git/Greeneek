@@ -230,6 +230,17 @@
   color: var(--dsw-alias-label-tertiary);
 }
 
+.pinIndicator {
+  display: inline-flex;
+  flex: none;
+  width: 16px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  margin-inline-end: 4px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
 .searchScheduleIndicator {
   margin-inline-end: 0;
   margin-inline-start: 4px;

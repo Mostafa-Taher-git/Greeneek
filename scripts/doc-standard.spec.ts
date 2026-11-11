@@ -160,6 +160,22 @@ describe('gnk-doc skill consolidation', () => {
     expect(source).not.toContain('sectionOrder')
   })
 
+  it('reads the live docs-site sidebar values from the publication manifest', async () => {
+    const manifest = readFileSync(resolve(root, 'website/docs.ts'), 'utf8')
+    expect(manifest).toContain("export const collections: readonly DocsSidebar[] = ['guide', 'develop', 'reference']")
+    expect(manifest).toContain("'guide'")
+    expect(manifest).toContain("'develop'")
+    expect(manifest).toContain("'reference'")
+    expect(manifest).not.toContain('en-docs')
+    expect(manifest).not.toContain('sectionOrder')
+    const { collections, docsPages, sectionSpec } = await import('../website/docs.ts')
+    expect([...collections]).toEqual(['guide', 'develop', 'reference'])
+    for (const page of docsPages) {
+      if (page.sidebar === null) continue
+      expect(() => sectionSpec(page.section), page.route).not.toThrow()
+    }
+  })
+
   it('keeps the reference example linked from the skill', () => {
     const skill = readFileSync(resolve(root, '.agents/skills/gnk-doc/SKILL.md'), 'utf8')
     expect(skill).toContain('session-persistence-jsonl/README.md')

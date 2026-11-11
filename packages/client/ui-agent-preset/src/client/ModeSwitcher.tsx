@@ -37,7 +37,7 @@ export interface ModeSwitcherEntry {
  * `selectedId`, and `aria-expanded` plus `aria-haspopup="menu"` describe the open
  * state to assistive technology in place of a native select's popup.
  *
- * A staged id the roster no longer offers — a retired preset a session still runs —
+ * A staged id the roster no longer offers — a preset a session still runs —
  * keeps its own id as the trigger name and gets no row and no check, so the control
  * never claims a mode the person could not have picked.
  * @param props - group label, ordered entries, staged id, selection, and busy state.

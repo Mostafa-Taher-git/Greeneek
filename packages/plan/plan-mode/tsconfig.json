@@ -18,10 +18,10 @@
       "path": "../../core/tools"
     },
     {
-      "path": "../../core/agent"
+      "path": "../../core/agent/tsconfig.host.json"
     },
     {
-      "path": "../../core/session"
+      "path": "../../core/session/tsconfig.host.json"
     },
     {
       "path": "../../core/system-prompt"
@@ -33,7 +33,7 @@
       "path": "../../interaction/commands"
     },
     {
-      "path": "../../session/session-projection"
+      "path": "../../session/session-projection/tsconfig.host.json"
     },
     {
       "path": "../../runtime-diagnostics/invariants"

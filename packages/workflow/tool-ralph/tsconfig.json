@@ -18,13 +18,13 @@
       "path": "../../../vendor/schemastery"
     },
     {
-      "path": "../../core/agent"
+      "path": "../../core/agent/tsconfig.host.json"
     },
     {
       "path": "../../llm/llm"
     },
     {
-      "path": "../../subagent/subagent"
+      "path": "../../subagent/subagent/tsconfig.host.json"
     },
     {
       "path": "../../core/system-prompt"

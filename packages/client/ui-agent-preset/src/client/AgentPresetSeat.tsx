@@ -60,11 +60,9 @@ export interface AgentPresetSeatInjected {
 const REFUSAL_HOLD_MS = 8000
 
 /**
- * Shipped modes in row order. PTC is deliberately absent since v0.3.4: its
- * preset still composes sessions and stays on the roster, but the new-session
- * row offers the shipped modes instead. Working modes come before the preview
- * presets, which keep their `(preview)` copy so a pilot surface is never
- * mistaken for a promise.
+ * Shipped modes in row order. Working modes come before the preview presets,
+ * which keep their `(preview)` copy so a pilot surface is never mistaken for a
+ * promise.
  */
 const MODE_ORDER = ['standard', 'army', 'maestro', 'pixels-designer', 'instructor', 'cordis'] as const
 
@@ -79,12 +77,8 @@ const MODE_ICONS: Readonly<Record<(typeof MODE_ORDER)[number], ReactNode>> = {
 }
 
 /**
- * Roster presets the row never appends. Membership in {@link MODE_ORDER} only
- * decides the shipped positions; everything else is appended as an authored
- * preset, so retiring a pill means hiding it here as well.
- *
- * PTC remains a legal preset: Settings and custom presets still start it, and
- * sessions recorded under it keep replaying their composition.
+ * Every roster preset outside {@link MODE_ORDER} is appended as an authored
+ * preset; the shipped positions decide the leading rows.
  */
 /** Full component props. */
 export type AgentPresetSeatProps =
@@ -133,11 +127,9 @@ export function AgentPresetSeat({ load, select, introduced, useAgentPresetSeat, 
       }]
     }),
     // Authored presets keep a live pill after the shipped set: hiding them
-    // would strand sessions their owners can still start elsewhere. A retired
-    // shipped preset is the one exception — its row lives in Settings now.
+    // would strand sessions their owners can still start elsewhere.
     ...state.options
-      .filter(option =>
-        !(MODE_ORDER as readonly string[]).includes(option.id) && option.retired !== true)
+      .filter(option => !(MODE_ORDER as readonly string[]).includes(option.id))
       .map((option) => {
         const text = presetDisplayText(option, t)
         return {

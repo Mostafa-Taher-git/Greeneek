@@ -14,13 +14,15 @@ import clsx from 'clsx'
 import {
   Button, IconCloseFill14, IconPersonalizationOutline16,
   IconProjectAddOutline16, IconSearchOutline16, Menu, Modal, Tooltip,
+  type MenuItem,
 } from '@greeneek/gnk-client-ui-primitives'
 import type {
   SessionListState, SessionSearchResultItem,
 } from '@greeneek/gnk-api-session-controller/client'
 import type { WorkspaceId, WorkspaceView } from '@greeneek/gnk-api-workspace-controller/client'
 import type { SessionId } from '@greeneek/gnk-session/types'
-import type { WorkspaceBrowserProps } from '../contract/slots.ts'
+import type { ExternalAppsShare, GitFacts, OpenPathTarget, WorkspaceBrowserProps } from '../contract/slots.ts'
+import { openInMenuItems } from '../openInMenu.tsx'
 import type { SessionNode, SessionOrderBy } from '../tree.ts'
 import { deriveFlat, deriveGroups, deriveSearchResults, UNGROUPED_KEY } from '../tree.ts'
 import { ProjectRowItem, SearchResultItem, SessionNodeItem } from './Rows.tsx'
@@ -252,6 +254,8 @@ type SessionTreeProps = Pick<
   setSessionOrder: (accountKey: string, order: string[]) => void
   /** Registry-global archive set (hidden rows). */
   archivedSessionIds: readonly SessionNode['id'][]
+  /** Registry-global pinned session set (pinned row badge + fold visibility). */
+  pinnedSessionIds: readonly SessionNode['id'][]
   /** Open the browser-owned rename dialog for a real Workspace group. */
   onRenameRequest: (workspaceId: WorkspaceId, currentTitle: string) => void
   /** Open the browser-owned delete-confirmation dialog for a real Workspace group. */
@@ -262,6 +266,18 @@ type SessionTreeProps = Pick<
   onSessionArchive: (sessionId: SessionNode['id']) => void
   /** Open the browser-owned session delete-confirmation dialog. */
   onSessionDelete: (sessionId: SessionNode['id'], currentTitle: string) => void
+  /** Pin or unpin a session in the registry-global pin set. */
+  onPinSession?: ((id: SessionNode['id'], pinned: boolean) => void) | undefined
+  /** Open path or reveal in system file manager / external application. */
+  onOpenPath?: ((id: SessionNode['id'], target: OpenPathTarget) => void) | undefined
+  /** Destinations the Host can open a Workspace directory in. */
+  openItems?: readonly MenuItem[] | undefined
+  /** Hand one Workspace directory to a Host desktop destination. */
+  onOpenWorkspacePath?: ((path: string, target: OpenPathTarget) => void) | undefined
+  /** Read-only git facts per project directory. */
+  gitFactsByPath?: Readonly<Record<string, GitFacts>> | undefined
+  /** Read the git facts of one project directory. */
+  onReadGitFacts?: ((path: string) => void) | undefined
   /** Session order behavior: fixed after edits, or additionally promoted by user activity. */
   orderBy: SessionOrderBy
 }
@@ -269,6 +285,8 @@ type SessionTreeProps = Pick<
 /** The scrolling session tree; unmounting drops the sessions subscription and expand-all state. */
 function SessionTree({
   useSessions, useSessionPendingInteraction, startSession, open, forkSession, workspaces, archivedSessionIds,
+  pinnedSessionIds, onPinSession, onOpenPath, openItems, onOpenWorkspacePath,
+  gitFactsByPath, onReadGitFacts,
   onRenameRequest, onDeleteRequest, onSessionRename, onSessionArchive, onSessionDelete,
   insertWorkspaceBefore, insertSessionBefore, orderBy,
   groupExpansion, setGroupExpanded,
@@ -346,8 +364,8 @@ function SessionTree({
       ...(sessionOrderByAccount[UNGROUPED_KEY] === undefined
         ? {}
         : { ungroupedOrder: sessionOrderByAccount[UNGROUPED_KEY] }),
-    }),
-    [list, orderedWorkspaces, archivedSessionIds, pendingInteractions, expandedGroups, sessionOrderByAccount],
+    }, pinnedSessionIds),
+    [list, orderedWorkspaces, archivedSessionIds, pinnedSessionIds, pendingInteractions, expandedGroups, sessionOrderByAccount],
   )
   const now = Date.now()
   const commitSessionDrag = (activeDrag: DragState, over: NonNullable<DragState['over']>): void => {
@@ -440,6 +458,7 @@ function SessionTree({
         )}
         {groups.map((group) => {
           const workspaceId = group.workspaceId
+          const groupCwd = group.cwd
           const collapsed = collapsedSessionRows(group.sessions)
           const sessionsExpanded = expandedSessionGroups.includes(group.key)
           const workspaceMarker = workspaceId !== undefined && workspaceDrag?.over?.id === workspaceId
@@ -514,6 +533,12 @@ function SessionTree({
                   }
                 }}
                 drag={workspaceDragProps}
+                openItems={openItems}
+                onOpenPath={groupCwd === undefined
+                  ? undefined
+                  : (target) => { onOpenWorkspacePath?.(groupCwd, target) }}
+                git={groupCwd === undefined ? undefined : gitFactsByPath?.[groupCwd]}
+                onMenuOpen={onReadGitFacts}
                 actions={group.workspaceId === undefined
                   ? undefined
                   : {
@@ -567,6 +592,8 @@ function SessionTree({
                     onFork={forkSession}
                     onArchive={onSessionArchive}
                     onDelete={onSessionDelete}
+                    onPin={onPinSession}
+                    onOpenPath={onOpenPath}
                     drag={dragProps}
                     t={t}
                   />
@@ -596,7 +623,7 @@ function SessionTree({
 /** The flat "In one list" body: every session is one draggable top-level row. */
 function FlatList({
   useSessions, useSessionPendingInteraction, open, forkSession, onSessionRename, onSessionArchive, onSessionDelete,
-  archivedSessionIds,
+  archivedSessionIds, pinnedSessionIds, onPinSession, onOpenPath,
   orderBy, sessionOrderByAccount, sessionUpdatedAtByAccount, syncSessionOrderAccount, setSessionOrder, t,
 }: Pick<
   SessionTreeProps,
@@ -608,6 +635,9 @@ function FlatList({
   | 'onSessionArchive'
   | 'onSessionDelete'
   | 'archivedSessionIds'
+  | 'pinnedSessionIds'
+  | 'onPinSession'
+  | 'onOpenPath'
   | 'orderBy'
   | 'sessionOrderByAccount'
   | 'sessionUpdatedAtByAccount'
@@ -618,8 +648,8 @@ function FlatList({
   const list = useSessions(s => s)
   const pendingInteractions = useSessionPendingInteraction(s => s)
   const baseRows = useMemo(
-    () => deriveFlat(list, archivedSessionIds, pendingInteractions),
-    [list, archivedSessionIds, pendingInteractions],
+    () => deriveFlat(list, archivedSessionIds, pendingInteractions, pinnedSessionIds),
+    [list, archivedSessionIds, pinnedSessionIds, pendingInteractions],
   )
   const sessionIds = useMemo(() => baseRows.map(row => row.id), [baseRows])
   const previousOrderBy = useRef(orderBy)
@@ -688,6 +718,8 @@ function FlatList({
               onFork={forkSession}
               onArchive={onSessionArchive}
               onDelete={onSessionDelete}
+              onPin={onPinSession}
+              onOpenPath={onOpenPath}
               flat
               drag={{
                 start: () => {
@@ -821,6 +853,11 @@ export function WorkspaceBrowser({
   insertWorkspaceBefore,
   archiveSession,
   deleteSession,
+  pinSession,
+  openPath,
+  openWorkspacePath,
+  externalApps,
+  gitFacts,
   insertSessionBefore,
   createWorkspace,
   searchSessions,
@@ -834,6 +871,33 @@ export function WorkspaceBrowser({
   const workspaces = useWorkspaces(state => state.items)
   const workspacePhase = useWorkspaces(state => state.phase)
   const archivedSessionIds = useWorkspaces(state => state.archivedSessionIds)
+  const pinnedSessionIds = useWorkspaces(state => state.pinnedSessionIds)
+  // The Host owns the external application catalogue: the row menu offers
+  // only destinations this machine can start.
+  const [appsShare, setAppsShare] = useState<ExternalAppsShare | undefined>(undefined)
+  useEffect(() => {
+    let cancelled = false
+    externalApps()
+      .then((share) => {
+        if (!cancelled) setAppsShare(share)
+      })
+      .catch((reason: unknown) => {
+        // The catalogue is advisory: the Workspace row keeps its other verbs.
+        console.warn('external application catalogue unavailable:', reason)
+      })
+    return () => { cancelled = true }
+  }, [externalApps])
+  const workspaceOpenItems = useMemo(() => openInMenuItems(appsShare, t), [appsShare, t])
+  // Git facts are read per project when its menu opens, and kept per path so
+  // reopening the menu shows the last read.
+  const [gitFactsByPath, setGitFactsByPath] = useState<Record<string, GitFacts>>({})
+  const readGitFacts = (path: string): void => {
+    gitFacts(path).then((facts) => {
+      setGitFactsByPath(current => ({ ...current, [path]: facts }))
+    }).catch((reason: unknown) => {
+      console.warn('git facts unavailable:', reason)
+    })
+  }
   // Live occupancy of this surface's directory-flow hole (the same source the
   // flow reads): a composition without a picking affordance can add nothing.
   const directoryFlowAvailable = useDirectoryFlow(occupied => occupied)
@@ -1272,6 +1336,17 @@ export function WorkspaceBrowser({
                 onSessionRename={onSessionRename} onSessionArchive={onSessionArchive}
                 onSessionDelete={onSessionDeleteRequest}
                 archivedSessionIds={archivedSessionIds}
+                pinnedSessionIds={pinnedSessionIds}
+                onPinSession={(id, pinned) => {
+                  pinSession(id, pinned).catch((reason: unknown) => {
+                    console.warn('session pin rejected:', reason)
+                  })
+                }}
+                onOpenPath={(id, target) => {
+                  openPath(id, target).catch((reason: unknown) => {
+                    console.warn('session path open rejected:', reason)
+                  })
+                }}
                 orderBy={orderBy}
                 sessionOrderByAccount={sessionOrderByAccount}
                 sessionUpdatedAtByAccount={sessionUpdatedAtByAccount}
@@ -1296,6 +1371,25 @@ export function WorkspaceBrowser({
                 syncSessionOrderAccount={actions.syncSessionOrderAccount}
                 setSessionOrder={actions.setSessionOrder}
                 archivedSessionIds={archivedSessionIds}
+                pinnedSessionIds={pinnedSessionIds}
+                onPinSession={(id, pinned) => {
+                  pinSession(id, pinned).catch((reason: unknown) => {
+                    console.warn('session pin rejected:', reason)
+                  })
+                }}
+                onOpenPath={(id, target) => {
+                  openPath(id, target).catch((reason: unknown) => {
+                    console.warn('session path open rejected:', reason)
+                  })
+                }}
+                openItems={workspaceOpenItems}
+                onOpenWorkspacePath={(path, target) => {
+                  openWorkspacePath(path, target).catch((reason: unknown) => {
+                    console.warn('workspace path open rejected:', reason)
+                  })
+                }}
+                gitFactsByPath={gitFactsByPath}
+                onReadGitFacts={readGitFacts}
                 startSession={startSession}
                 open={open}
                 insertWorkspaceBefore={insertWorkspaceBefore}

@@ -1,0 +1,122 @@
+name: npm baseline release
+
+# One pipeline owns publishing the artifact-first baseline. The pack-and-test
+# job runs on pull requests without registry credentials: it packs the whole
+# baseline from one commit, installs the tarballs into an isolated consumer,
+# and uploads the release bundle as a workflow artifact. Publication lives in
+# a separate protected job that runs only on manual dispatch, downloads that
+# same artifact, revalidates it, and publishes it — never rebuilding. There
+# is no push trigger, so a merge to main can never auto-publish.
+#
+# The registry token is injected only into the publish job, which is governed
+# by the `npm-baseline` environment (required reviewers and allowed branches
+# are configured there, not in this file). The pack-and-test job cannot read
+# publication credentials.
+
+on:
+  pull_request:
+    branches: [main, master]
+    paths:
+      - '.github/workflows/release-npm.yml'
+      - 'scripts/publish-npm-baseline.ts'
+      - 'scripts/publication-payload.ts'
+      - 'packages/**'
+      - 'apps/**'
+      - 'vendor/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Commit to pack (default: HEAD)'
+        required: false
+        default: 'HEAD'
+        type: string
+      registry:
+        description: 'npm registry (default: https://registry.npm.harnessment.com)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: npm-baseline-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  pack-test:
+    name: Pack and test the release bundle (credential-free)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Pack the release bundle (credential-free)
+        env:
+          PACK_REF: ${{ inputs.ref || 'HEAD' }}
+          REGISTRY: ${{ inputs.registry || 'https://registry.npm.harnessment.com' }}
+        run: pnpm run publish:npm-baseline pack --ref "$PACK_REF" --registry "$REGISTRY" --yes
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: npm-baseline-bundle
+          path: .artifacts/npm-baseline/**
+          retention-days: 14
+
+  publish:
+    name: Publish the tested bundle (protected)
+    needs: pack-test
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    # Dist-tags are shared registry state: publishes serialize globally.
+    concurrency: npm-baseline-publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: npm-baseline
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: https://registry.npm.harnessment.com/
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: npm-baseline-bundle
+          path: npm-baseline-bundle
+      - name: Revalidate the downloaded bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          manifest=$(find npm-baseline-bundle -name manifest.json -print -quit)
+          if [ -z "$manifest" ]; then
+            echo "::error::no release manifest in npm-baseline-bundle" >&2
+            exit 1
+          fi
+          pnpm run publish:npm-baseline verify --manifest "$manifest"
+      - name: Publish the revalidated bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          manifest=$(find npm-baseline-bundle -name manifest.json -print -quit)
+          if [ -z "$manifest" ]; then
+            echo "::error::no release manifest in npm-baseline-bundle" >&2
+            exit 1
+          fi
+          pnpm run publish:npm-baseline publish --manifest "$manifest" --yes

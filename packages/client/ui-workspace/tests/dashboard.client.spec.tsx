@@ -69,6 +69,7 @@ function props(
     useWorkspaces: (selector: (state: WorkspaceSnapshot) => unknown) => selector(workspaceState),
     t,
     close: vi.fn(),
+    open: vi.fn(),
   } as unknown as DashboardPageProps
 }
 
@@ -135,7 +136,7 @@ describe('DashboardPage', () => {
     )
     expect(screen.getByText('Spend').parentElement?.textContent).toContain('USD')
     expect(screen.getByText('Spend').parentElement?.textContent).not.toContain('Unknown')
-    expect(screen.getByText('Price catalog v3')).toBeTruthy()
+    expect(screen.getAllByText('Price catalog v3').length).toBeGreaterThan(0)
     // A projected provider and preset both appear in their breakdowns.
     expect(screen.getAllByText('openrouter').length).toBeGreaterThan(0)
     expect(screen.getAllByText('standard').length).toBeGreaterThan(0)
@@ -230,7 +231,11 @@ describe('DashboardPage', () => {
       },
     }
     render(<DashboardPage {...props({ ...list, byId: usage })} />)
-    const modelRow = () => within(screen.getByRole('list', { name: 'Model usage distribution' })).getByText('openrouter · one').closest('li')?.textContent ?? ''
+    const modelRow = (): string => {
+      const figure = screen.getByRole('figure', { name: 'Model usage distribution' })
+      const first = within(figure).getAllByText('openrouter · one')[0]
+      return first?.closest('tr')?.textContent ?? first?.parentElement?.parentElement?.textContent ?? ''
+    }
     expect(modelRow()).toContain('2')
     fireEvent.click(screen.getByRole('button', { name: 'By tokens' }))
     expect(screen.getByRole('button', { name: 'By tokens' }).getAttribute('aria-pressed')).toBe('true')
@@ -291,5 +296,27 @@ describe('DashboardPage', () => {
     expect(close).not.toHaveBeenCalled()
     fireEvent.keyDown(document, { key: 'Escape' })
     expect(close).toHaveBeenCalledOnce()
+  })
+
+  it('drills through to a session from a detail row', () => {
+    const open = vi.fn()
+    render(<DashboardPage {...props()} open={open} />)
+    fireEvent.click(screen.getAllByRole('button', { name: 'Open' })[0] as HTMLElement)
+    expect(open).toHaveBeenCalledOnce()
+  })
+
+  it('shows latency, operational health, and the plan and outcome unknown states', () => {
+    render(<DashboardPage {...props()} />)
+    expect(screen.getByText('Operational health')).toBeTruthy()
+    expect(screen.getByText('Complete')).toBeTruthy()
+    expect(screen.getByText(/No non-secret plan reference is recorded locally/)).toBeTruthy()
+    expect(screen.getByText(/Steps do not record success, failure, or cancellation/)).toBeTruthy()
+    expect(screen.getByText(/Reasoning tokens are included in output tokens/)).toBeTruthy()
+  })
+
+  it('exposes a table alternative for each chart figure', () => {
+    render(<DashboardPage {...props()} />)
+    expect(screen.getByRole('figure', { name: 'Model usage distribution' })).toBeTruthy()
+    expect(screen.getAllByText('openrouter · one').length).toBeGreaterThan(0)
   })
 })

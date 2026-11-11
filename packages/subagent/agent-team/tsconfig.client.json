@@ -1,0 +1,27 @@
+{
+  "extends": "../../../tsconfig.base.client.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "lib/types",
+    "tsBuildInfoFile": "lib/tsconfig.client.tsbuildinfo",
+    "types": ["client-build-environment", "node"]
+  },
+  "include": [
+    "src/client.ts",
+    "src/types.ts",
+    "src/fleet-settings.ts",
+    "src/fleet-migration.ts",
+    "src/harness-descriptor.ts",
+    "src/error.ts",
+    "src/lane-policy.ts",
+    "src/validation.ts"
+  ],
+  "references": [
+    { "path": "../../../vendor/cordis" },
+    { "path": "../../util/brand" },
+    { "path": "../../llm/llm" },
+    { "path": "../../core/session/tsconfig.client.json" },
+    { "path": "../../subagent/subagent/tsconfig.client.json" },
+    { "path": "../../typert/protocol" }
+  ]
+}

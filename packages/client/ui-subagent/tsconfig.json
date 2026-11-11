@@ -42,10 +42,10 @@
       "path": "../../llm/token-meter"
     },
     {
-      "path": "../../core/session"
+      "path": "../../core/session/tsconfig.client.json"
     },
     {
-      "path": "../../subagent/subagent"
+      "path": "../../subagent/subagent/tsconfig.client.json"
     }
   ]
 }

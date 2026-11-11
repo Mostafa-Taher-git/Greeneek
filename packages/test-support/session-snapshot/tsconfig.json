@@ -15,7 +15,7 @@
       "path": "../loader-smoke"
     },
     {
-      "path": "../../core/session"
+      "path": "../../core/session/tsconfig.host.json"
     }
   ]
 }

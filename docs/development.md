@@ -10,7 +10,7 @@ The setup tutorial takes a new contributor from prerequisites to a checked check
 - Node.js supports 22.19+ and 24+. CI covers 22.19, 24, and 26; see the [Node engine floor Agent Note](../.agents/notes/implemented/process/2026-07-06-node-engine-floor.md).
 - Corepack-enabled pnpm. The repo pins `pnpm@11.7.0` in `package.json`; run `corepack enable` if `pnpm --version` does not resolve through Corepack.
 - Git 2.26 or newer; hook setup enables Git's worktree-specific configuration extension.
-- Optional: a Greeneek API key for the Web, headless, and ACP automation demos and real-API e2e tests.
+- Optional: a provider key for live model demos and real-API e2e tests (GREENEEK_API_KEY for the Greeneek endpoint).
 
 ### First-time setup
 
@@ -90,14 +90,14 @@ pnpm run build
 
 ### Environment variables
 
-The real Greeneek adapter and key-backed agent demos read credentials from the environment or from a gitignored `.env` at the repo root:
+The real Greeneek adapter and key-backed agent demos read their lane's provider credential from the environment or from a gitignored `.env` at the repo root. Greeneek-endpoint lanes use:
 
 ```sh
 GREENEEK_API_KEY=sk-...
 GREENEEK_BASE_URL=https://... # optional
 ```
 
-`GREENEEK_BASE_URL` is optional and defaults to the public API. Never commit real credentials. The real-API e2e suites self-skip when `GREENEEK_API_KEY` is not set.
+`GREENEEK_BASE_URL` is optional and defaults to the public API. Greeneek starts and non-AI features run without any key; each provider lane needs its own key via Settings. Never commit real credentials. The real-API e2e suites self-skip when their lane's key is not set.
 
 lefthook is configured in `lefthook.yml` as a fast local checkpoint:
 
@@ -131,7 +131,7 @@ Run the repository build separately before using these source-checkout demos:
 pnpm run build
 ```
 
-The one-shot Headless coding agent needs `GREENEEK_API_KEY` in the environment or repo-root `.env`:
+The one-shot Headless coding agent needs a provider key configured via Settings, or in the environment or repo-root `.env` (GREENEEK_API_KEY for the Greeneek endpoint):
 
 ```sh
 pnpm gnk --profile headless "summarize this workspace"

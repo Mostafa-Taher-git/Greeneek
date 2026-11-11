@@ -1,14 +1,16 @@
-/** Fleet favorites and honest provider availability inside Web Settings. */
+/** Harness connections and fleet favorites inside Web Settings. */
 
 import { useEffect, useSyncExternalStore, useState, type FormEvent, type ReactNode } from 'react'
+import { GREENEEK_HARNESS, migrateFleetSettings } from '@greeneek/gnk-agent-team/client'
 import type {
   FleetFavorite,
   FleetFavoriteMember,
   FleetFavoriteResult,
   FleetLaunchResult,
-  FleetProviderAvailability,
   FleetProviderState,
   FleetSettings,
+  HarnessDescriptor,
+  HarnessModel,
 } from '@greeneek/gnk-agent-team/client'
 import type { RemoteResult } from '@greeneek/gnk-api-remotes/client'
 import { Button } from '@greeneek/gnk-client-ui-primitives'
@@ -28,8 +30,9 @@ export interface FleetSnapshot {
 export interface FleetSettingsInjected {
   readonly subscribe: (listener: () => void) => () => void
   readonly getSnapshot: () => FleetSnapshot
-  readonly loadAvailability: () => Promise<RemoteResult<FleetProviderAvailability[]>>
   readonly loadHarnesses: () => Promise<RemoteResult<HarnessDescriptor[]>>
+  readonly refreshHarnesses: () => Promise<RemoteResult<HarnessDescriptor[]>>
+  readonly refreshHarness: (connection: string) => Promise<RemoteResult<HarnessDescriptor[]>>
   readonly loadStarters: () => Promise<RemoteResult<readonly FleetFavorite[]>>
   readonly save: (favorites: readonly FleetFavorite[]) => Promise<void>
   readonly launch: (favoriteId: string) => Promise<RemoteResult<FleetLaunchResult>>
@@ -54,34 +57,153 @@ type MemberPatch = { [K in keyof FleetFavoriteMember]?: FleetFavoriteMember[K] |
  */
 const SELECTABLE_STATES: ReadonlySet<FleetProviderState> = new Set(['ready', 'one-shot'])
 
+/** One Harness implementation and the named connections that mount it. */
+interface HarnessGroup {
+  /** Implementation identity shared by every connection of the product. */
+  readonly id: string
+  /** Product display name. */
+  readonly displayName: string
+  /** Connections in registry order. */
+  readonly connections: readonly HarnessDescriptor[]
+}
+
 /**
- * Provider a newly added member starts on, preferring one that holds a durable lane.
- * @param providers - availability rows loaded for this composition.
- * @returns a selectable provider name, or the composition's `spawn` default.
+ * Group the registry's connections under the Harness implementation each mounts.
+ * @param harnesses - live descriptors from the host.
+ * @returns one group per Harness, in first-registered order.
  */
-function defaultProvider(providers: readonly FleetProviderAvailability[]): string {
-  return providers.find(provider => provider.state === 'ready')?.name
-    ?? providers.find(provider => SELECTABLE_STATES.has(provider.state))?.name
-    ?? 'spawn'
+function harnessGroups(harnesses: readonly HarnessDescriptor[]): HarnessGroup[] {
+  const groups: HarnessGroup[] = []
+  for (const descriptor of harnesses) {
+    const index = groups.findIndex(candidate => candidate.id === descriptor.harness)
+    const existing = groups[index]
+    if (existing === undefined) {
+      groups.push({
+        id: descriptor.harness,
+        displayName: descriptor.displayName,
+        connections: [descriptor],
+      })
+    } else {
+      groups[index] = { ...existing, connections: [...existing.connections, descriptor] }
+    }
+  }
+  return groups
+}
+
+/**
+ * Find the connection a saved member names.
+ * @param harnesses - live descriptors from the host.
+ * @param connection - the registry name the member stores.
+ * @returns that connection's descriptor, or undefined when it is not mounted.
+ */
+function connectionOf(
+  harnesses: readonly HarnessDescriptor[],
+  connection: string,
+): HarnessDescriptor | undefined {
+  return harnesses.find(candidate => candidate.connection === connection)
+}
+
+/**
+ * Connection a newly added member starts on, preferring one that holds a
+ * durable lane.
+ * @param harnesses - live descriptors from the host.
+ * @returns a selectable connection name, or the Greeneek Harness connection.
+ */
+function defaultConnection(harnesses: readonly HarnessDescriptor[]): string {
+  return harnesses.find(entry => entry.state === 'ready')?.connection
+    ?? harnesses.find(entry => SELECTABLE_STATES.has(entry.state))?.connection
+    ?? GREENEEK_HARNESS
+}
+
+/**
+ * Execution type one connection's dispatch selects: a durable lane is Harmony,
+ * a one-shot delegation is Melody, and an unusable connection names neither.
+ * @param descriptor - the connection's descriptor, when mounted.
+ * @returns the execution type the roster would dispatch, or undefined.
+ */
+function executionOf(descriptor: HarnessDescriptor | undefined): 'harmony' | 'melody' | undefined {
+  if (descriptor?.state === 'ready') return 'harmony'
+  if (descriptor?.state === 'one-shot') return 'melody'
+  return undefined
+}
+
+/**
+ * Display name for one connection: the Harness product name beside the
+ * connection name, because two connections of one Harness are different.
+ * @param harness - that connection's descriptor, when mounted.
+ * @param connection - the registry name the member stores.
+ * @param t - section dictionary.
+ * @returns the display text for one connection.
+ */
+function connectionLabel(
+  harness: HarnessDescriptor | undefined,
+  connection: string,
+  t: FleetSettingsSectionProps['t'],
+): string {
+  if (harness === undefined) return providerName(connection, t)
+  if (harness.displayName === harness.connection) return harness.displayName
+  // A registry name Greeneek ships a product name for leads the label, so the
+  // connection reads as the Harness product rather than its command keyword.
+  const productName = providerLabel(connection, t)
+  return productName === connection ? `${harness.displayName} (${harness.connection})` : productName
+}
+
+/**
+ * Name the way a connection's capabilities were learned, so the page never
+ * presents a configured fact as live discovery.
+ * @param descriptor - one connection descriptor.
+ * @returns the locale key naming its discovery source.
+ */
+function sourceKey(descriptor: HarnessDescriptor): TeamKey {
+  switch (descriptor.source) {
+    case 'registration': return 'fleet.source.registration'
+    case 'configuration': return 'fleet.source.configuration'
+    case 'acp-initialize': return 'fleet.source.initialize'
+    case 'acp-session': return 'fleet.source.session'
+  }
+}
+
+/**
+ * Label one connection row carries: the run types it supports when usable, or
+ * the reason it is not.
+ * @param descriptor - one connection descriptor.
+ * @returns the locale key to render for that row.
+ */
+function connectionStateKey(descriptor: HarnessDescriptor): TeamKey {
+  switch (descriptor.state) {
+    case 'ready': return 'fleet.execution.both'
+    case 'one-shot': return 'fleet.execution.melody'
+    case 'not-installed': return 'fleet.state.notInstalled'
+    case 'unauthenticated': return 'fleet.state.unauthenticated'
+    case 'temporarily-unavailable': return 'fleet.state.unavailable'
+  }
+}
+
+/**
+ * Models a connection advertises as options for one member field.
+ * @param descriptor - one connection descriptor.
+ * @returns the advertised catalog, or undefined when it is unknown.
+ */
+function advertisedModels(descriptor: HarnessDescriptor | undefined): readonly HarnessModel[] | undefined {
+  return descriptor === undefined || descriptor.models === 'unknown' ? undefined : descriptor.models
+}
+
+/**
+ * Effort levels one advertised model accepts.
+ * @param model - the selected model, when the connection advertises a catalog.
+ * @returns the model's levels, or undefined when it advertises none.
+ */
+function advertisedEfforts(model: HarnessModel | undefined): readonly { id: string; name?: string }[] | undefined {
+  const efforts = model?.efforts
+  return efforts === undefined || efforts.length === 0 ? undefined : efforts
 }
 
 const EMPTY_MEMBER: FleetFavoriteMember = {
   name: '',
   description: '',
   prompt: '',
-  provider: 'spawn',
+  provider: GREENEEK_HARNESS,
 }
-
-/**
- * Status label for the provider states that are not usable. A `ready` or `one-shot`
- * row is labelled by the run types it supports instead, so no provider ever shows
- * both a run-type claim and a status for the same fact.
- */
-const STATE_KEYS = {
-  'not-installed': 'fleet.state.notInstalled',
-  unauthenticated: 'fleet.state.unauthenticated',
-  'temporarily-unavailable': 'fleet.state.unavailable',
-} as const satisfies Record<Exclude<FleetProviderState, 'ready' | 'one-shot'>, TeamKey>
 
 /**
  * Registry names whose product name Greeneek's own dictionaries carry. A provider
@@ -89,8 +211,7 @@ const STATE_KEYS = {
  * shown by that name, because the client cannot know what its owner called it.
  */
 const PROVIDER_NAME_KEYS: Readonly<Record<string, TeamKey>> = {
-  fork: 'fleet.provider.fork',
-  spawn: 'fleet.provider.spawn',
+  [GREENEEK_HARNESS]: 'fleet.provider.greeneek',
   'claude-code': 'fleet.provider.claudeCode',
   codex: 'fleet.provider.codex',
 }
@@ -107,50 +228,20 @@ function providerLabel(name: string, t: FleetSettingsSectionProps['t']): string 
 }
 
 /**
- * Provider as a single line names it: the product name with the registry name
- * beside it, or the registry name alone when Greeneek ships no product name, so
- * an unbranded provider is never written twice.
+ * Provider as a single line names it: the product name alone when the registry
+ * name is that product's own identity, the product name with the registry name
+ * beside it for a branded external connection, or the registry name alone when
+ * Greeneek ships no product name, so an unbranded provider is never written twice.
  * @param name - registry name, which is what a saved fleet and cordis.yml carry.
  * @param t - section dictionary.
  * @returns the display text for one provider.
  */
 function providerName(name: string, t: FleetSettingsSectionProps['t']): string {
   const label = providerLabel(name, t)
-  return label === name ? name : `${label} (${name})`
+  if (label === name) return name
+  return label.toLocaleLowerCase() === name ? label : `${label} (${name})`
 }
 
-/**
- * Run types a provider genuinely supports, in Greeneek's own names.
- *
- * Harmony is the durable continuable Agent Lane and Melody is a single delegation
- * that ends with its result; neither is a provider, and neither is an agent mode -
- * those are the presets beside the composer. The pair comes from the capability the
- * adapter implements: a session id or an ACP handshake never sets Harmony, and a
- * continuable start always also answers a single delegation, because the lane is
- * built on that same start path.
- * @param provider - one registered provider's availability row.
- * @returns the locale key naming that row's supported run types.
- */
-function executionKey(provider: FleetProviderAvailability): TeamKey {
-  return provider.continuable ? 'fleet.execution.both' : 'fleet.execution.melody'
-}
-
-/**
- * Label one provider row carries.
- *
- * A usable provider is distinguished by the run types it supports, because that is
- * the difference a fleet editor decision turns on; any other row states why it is
- * not usable instead, so status and run type never repeat each other.
- * @param provider - one availability row from the live registry.
- * @returns the locale key to render for that row.
- */
-function rowKey(provider: FleetProviderAvailability): TeamKey {
-  return provider.state === 'ready' || provider.state === 'one-shot'
-    ? executionKey(provider)
-    : STATE_KEYS[provider.state]
-}
-
-/** Render one caught value as a message for an inline notice. */
 /**
  * One fleet mutation's outcome after both failure layers are read: the remote
  * call itself, then the business result it returns. Callers turn the message
@@ -177,15 +268,22 @@ function readFleetOutcome<T>(
     : { ok: false, message: result.value.error.message }
 }
 
+/**
+ * Render one caught value as a message for an inline notice.
+ * @param error - the caught value.
+ * @returns its message, or its string form when it is not an Error.
+ */
 export function errorText(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
 }
 
-/** Narrow one settings section to the fleet shape. */
+/** Narrow one settings section to the fleet shape, migrating stored members
+ * that name internal Greeneek strategies to the Harness connection so the page
+ * edits and writes back the current vocabulary. */
 export function decodeFleetSettings(section: unknown): FleetSettings | undefined {
   if (typeof section !== 'object' || section === null || !('favorites' in section)) return undefined
   const favorites = (section as { readonly favorites?: unknown }).favorites
-  return Array.isArray(favorites) ? section as FleetSettings : undefined
+  return Array.isArray(favorites) ? migrateFleetSettings(section as FleetSettings) : undefined
 }
 
 /** Derive a stable lower-kebab id from a display name. */
@@ -224,16 +322,167 @@ function withConcurrency(favorite: FleetFavorite, members: number): FleetFavorit
   return rest
 }
 
+/**
+ * Facts a connection advertises about itself, in one compact line. Every
+ * descriptor states its model catalog, so the line is never empty.
+ * @param descriptor - one connection descriptor.
+ * @param t - section dictionary.
+ * @returns the advertising facts the descriptor carries.
+ */
+function capabilityText(
+  descriptor: HarnessDescriptor,
+  t: FleetSettingsSectionProps['t'],
+): string {
+  const facts: string[] = []
+  if (descriptor.models === 'unknown') facts.push(t('fleet.capability.modelsUnknown'))
+  else facts.push(t('fleet.capability.models', { count: descriptor.models.length }))
+  if (descriptor.sessions !== undefined) {
+    const parts = [
+      descriptor.sessions.load ? 'load' : undefined,
+      descriptor.sessions.resume ? 'resume' : undefined,
+      descriptor.sessions.fork ? t('fleet.capability.sessionFork') : undefined,
+      descriptor.sessions.list ? 'list' : undefined,
+      descriptor.sessions.delete ? 'delete' : undefined,
+    ].filter((part): part is string => part !== undefined)
+    if (parts.length > 0) facts.push(`${t('fleet.capability.sessions')}: ${parts.join(', ')}`)
+  }
+  if (descriptor.prompt !== undefined) {
+    const parts = [
+      descriptor.prompt.image ? 'image' : undefined,
+      descriptor.prompt.audio ? 'audio' : undefined,
+      descriptor.prompt.embeddedContext ? 'embeddedContext' : undefined,
+    ].filter((part): part is string => part !== undefined)
+    if (parts.length > 0) facts.push(`${t('fleet.capability.prompt')}: ${parts.join(', ')}`)
+  }
+  if (descriptor.permissions !== undefined && descriptor.permissions.length > 0) {
+    facts.push(`${t('fleet.capability.permissions')}: ${descriptor.permissions.map(mode => mode.id).join(', ')}`)
+  }
+  if (descriptor.authMethods !== undefined && descriptor.authMethods.length > 0) {
+    facts.push(`${t('fleet.capability.auth')}: ${descriptor.authMethods.map(method => method.name ?? method.id).join(', ')}`)
+  }
+  return facts.join(' · ')
+}
+
+/**
+ * Harness connections the host knows, grouped by the Harness implementation each
+ * mounts. A row states how its facts were learned and, when a probe failed, what
+ * the failure was — registration facts are never dressed up as live discovery.
+ */
+function HarnessInventory({ harnesses, busy, t, onProbe }: {
+  readonly harnesses: readonly HarnessDescriptor[]
+  readonly busy: boolean
+  readonly t: FleetSettingsSectionProps['t']
+  readonly onProbe: (connection: string) => void
+}): ReactNode {
+  return (
+    <div className={css.harnessGroups}>
+      {harnessGroups(harnesses).map(group => (
+        <section key={group.id} className={css.harnessGroup}>
+          <h4 className={css.harnessName}>{group.displayName}</h4>
+          <ul className={css.providers} aria-label={group.displayName}>
+            {group.connections.map((connection) => {
+              const capability = capabilityText(connection, t)
+              return (
+                <li key={connection.connection} data-state={connection.state}>
+                  <div className={css.providerName}>
+                    <strong>{connectionLabel(connection, connection.connection, t)}</strong>
+                    {/* The connection name is the value the fleet stores and
+                        cordis.yml configures, so a branded row still states it. */}
+                    {connection.displayName === connection.connection
+                      ? null
+                      : <code dir="ltr">{connection.connection}</code>}
+                  </div>
+                  <span>{t(connectionStateKey(connection))}</span>
+                  <span className={css.tag}>{t(sourceKey(connection))}</span>
+                  {connection.discoveredAt === undefined
+                    ? null
+                    : (
+                      <span className={css.tag}>
+                        {t('fleet.discoveredAt', {
+                          time: new Date(connection.discoveredAt).toLocaleString(),
+                        })}
+                      </span>
+                    )}
+                  <p className={css.description}>{capability}</p>
+                  {connection.discoveryError === undefined
+                    ? null
+                    : (
+                      <p className={css.notice} role="status">
+                        {t('fleet.discoveryError', { message: connection.discoveryError })}
+                      </p>
+                    )}
+                  {connection.canProbe
+                    ? (
+                      <Button variant="outline" disabled={busy} onClick={() => { onProbe(connection.connection) }}>
+                        {t('fleet.discover')}
+                      </Button>
+                    )
+                    : null}
+                </li>
+              )
+            })}
+          </ul>
+        </section>
+      ))}
+    </div>
+  )
+}
+
 /** One member field editor. */
-function MemberEditor({ index, member, providers, t, onChange, onRemove }: {
+function MemberEditor({ index, member, harnesses, t, onChange, onRemove }: {
   readonly index: number
   readonly member: FleetFavoriteMember
-  readonly providers: readonly FleetProviderAvailability[]
+  readonly harnesses: readonly HarnessDescriptor[]
   readonly t: FleetSettingsSectionProps['t']
   readonly onChange: (patch: MemberPatch) => void
   readonly onRemove: () => void
 }): ReactNode {
   const scopes = member.writeScopes?.join(', ') ?? ''
+  const groups = harnessGroups(harnesses)
+  const connection = connectionOf(harnesses, member.provider)
+  const harnessId = connection?.harness ?? member.provider
+  const connections = groups.find(group => group.id === harnessId)?.connections ?? []
+  const models = advertisedModels(connection)
+  const selectedModel = models?.find(model => model.id === member.model)
+  const efforts = advertisedEfforts(selectedModel)
+  const capability = connection === undefined ? undefined : capabilityText(connection, t)
+
+  /**
+   * Move the member to one Harness, keeping only settings the new connection can honor.
+   * @param id - the Harness implementation identity.
+   */
+  const selectHarness = (id: string): void => {
+    const next = groups.find(group => group.id === id)?.connections
+      .find(candidate => SELECTABLE_STATES.has(candidate.state))
+    if (next === undefined) return
+    onChange({
+      provider: next.connection,
+      model: undefined,
+      reasoningEffort: undefined,
+      context: next.contextStrategies[0],
+      execution: executionOf(next),
+    })
+  }
+
+  /**
+   * Move the member to one connection of the current Harness.
+   * @param name - the connection's registry name.
+   */
+  const selectConnection = (name: string): void => {
+    const next = connectionOf(harnesses, name)
+    onChange({
+      provider: name,
+      model: undefined,
+      reasoningEffort: undefined,
+      context: member.context !== undefined && next?.contextStrategies.includes(member.context) === true
+        ? member.context
+        : next?.contextStrategies[0],
+      execution: executionOf(next),
+    })
+  }
+
+  const execution = member.execution ?? executionOf(connection)
+
   return (
     <fieldset className={css.member}>
       <legend>{t('fleet.member', { index: index + 1 })}</legend>
@@ -263,31 +512,71 @@ function MemberEditor({ index, member, providers, t, onChange, onRemove }: {
         />
       </label>
       <label className={css.field}>
-        <span>{t('fleet.provider')}</span>
+        <span>{t('fleet.harness')}</span>
         <select
-          value={member.provider}
-          onChange={(event) => { onChange({ provider: event.target.value }) }}
+          value={harnessId}
+          onChange={(event) => { selectHarness(event.target.value) }}
         >
-          {providers.some(provider => provider.name === member.provider)
+          {groups.some(group => group.id === harnessId)
             ? null
-            : <option value={member.provider}>{providerName(member.provider, t)} — {t('fleet.state.notInstalled')}</option>}
-          {providers.map(provider => (
-            <option key={provider.name} value={provider.name} disabled={!SELECTABLE_STATES.has(provider.state)}>
-              {providerName(provider.name, t)} — {t(rowKey(provider))}
+            : <option value={harnessId}>{providerName(harnessId, t)} — {t('fleet.state.notInstalled')}</option>}
+          {groups.map(group => (
+            <option
+              key={group.id}
+              value={group.id}
+              disabled={!group.connections.some(candidate => SELECTABLE_STATES.has(candidate.state))}
+            >
+              {group.displayName}
             </option>
           ))}
         </select>
       </label>
+      <label className={css.field}>
+        <span>{t('fleet.connection')}</span>
+        <select
+          value={member.provider}
+          onChange={(event) => { selectConnection(event.target.value) }}
+        >
+          {connections.some(candidate => candidate.connection === member.provider)
+            ? null
+            : (
+              <option value={member.provider}>
+                {connectionLabel(connection, member.provider, t)} — {t('fleet.state.notInstalled')}
+              </option>
+            )}
+          {connections.map(candidate => (
+            <option
+              key={candidate.connection}
+              value={candidate.connection}
+              disabled={!SELECTABLE_STATES.has(candidate.state)}
+            >
+              {connectionLabel(candidate, candidate.connection, t)} — {t(connectionStateKey(candidate))}
+            </option>
+          ))}
+        </select>
+      </label>
+      {capability === undefined ? null : <p className={css.description}>{capability}</p>}
+      {execution !== undefined && (
+        <p className={css.description}>
+          {t('fleet.executionType')}: {t(execution === 'harmony' ? 'fleet.execution.harmony' : 'fleet.execution.melodyName')}
+          {' — '}{t(execution === 'harmony' ? 'fleet.execution.harmonyDetail' : 'fleet.execution.melodyDetail')}
+        </p>
+      )}
       <label className={css.field}>
         <span>{t('fleet.context')}</span>
         <select
           value={member.context ?? 'fresh'}
           onChange={(event) => { onChange({ context: event.target.value as 'fresh' | 'fork' }) }}
         >
-          <option value="fresh">{t('fleet.context.fresh')}</option>
-          <option value="fork">{t('fleet.context.fork')}</option>
+          <option value="fresh" disabled={connection !== undefined && !connection.contextStrategies.includes('fresh')}>
+            {t('fleet.context.fresh')}
+          </option>
+          <option value="fork" disabled={connection?.supportsContextFork !== true}>{t('fleet.context.fork')}</option>
         </select>
       </label>
+      {connection !== undefined && !connection.supportsContextFork
+        ? <p className={css.description}>{t('fleet.contextForkUnavailable')}</p>
+        : null}
       <label className={css.field}>
         <span>{t('fleet.preset')}</span>
         <input
@@ -297,18 +586,65 @@ function MemberEditor({ index, member, providers, t, onChange, onRemove }: {
       </label>
       <label className={css.field}>
         <span>{t('fleet.model')}</span>
-        <input
-          value={member.model ?? ''}
-          onChange={(event) => { onChange({ model: event.target.value || undefined }) }}
-        />
+        {models === undefined
+          ? (
+            <input
+              value={member.model ?? ''}
+              placeholder={t('fleet.inherited')}
+              onChange={(event) => { onChange({ model: event.target.value || undefined }) }}
+            />
+          )
+          : (
+            <select
+              value={member.model ?? ''}
+              onChange={(event) => { onChange({ model: event.target.value || undefined, reasoningEffort: undefined }) }}
+            >
+              <option value="">{t('fleet.harnessDefault')}</option>
+              {models.some(model => model.id === member.model)
+                ? null
+                : <option value={member.model ?? ''}>{member.model} — {t('fleet.modelNotAdvertised')}</option>}
+              {models.map(model => (
+                <option key={model.id} value={model.id}>
+                  {model.name === undefined || model.name === model.id ? model.id : `${model.name} (${model.id})`}
+                </option>
+              ))}
+            </select>
+          )}
       </label>
       <label className={css.field}>
         <span>{t('fleet.effort')}</span>
-        <input
-          value={member.reasoningEffort ?? ''}
-          onChange={(event) => { onChange({ reasoningEffort: event.target.value || undefined }) }}
-        />
+        {efforts === undefined
+          ? (
+            <input
+              value={member.reasoningEffort ?? ''}
+              placeholder={t('fleet.inherited')}
+              onChange={(event) => { onChange({ reasoningEffort: event.target.value || undefined }) }}
+            />
+          )
+          : (
+            <select
+              value={member.reasoningEffort ?? ''}
+              onChange={(event) => { onChange({ reasoningEffort: event.target.value || undefined }) }}
+            >
+              <option value="">{t('fleet.harnessDefault')}</option>
+              {efforts.some(level => level.id === member.reasoningEffort)
+                ? null
+                : (
+                  <option value={member.reasoningEffort ?? ''}>
+                    {member.reasoningEffort} — {t('fleet.effortNotAdvertised')}
+                  </option>
+                )}
+              {efforts.map(level => (
+                <option key={level.id} value={level.id}>
+                  {level.name === undefined || level.name === level.id ? level.id : `${level.name} (${level.id})`}
+                </option>
+              ))}
+            </select>
+          )}
       </label>
+      {models === undefined || efforts !== undefined
+        ? null
+        : <p className={css.description}>{t('fleet.effortHelp')}</p>}
       <label className={css.field}>
         <span>{t('fleet.budget')}</span>
         <input
@@ -360,15 +696,16 @@ function MemberEditor({ index, member, providers, t, onChange, onRemove }: {
 }
 
 /**
- * Render provider availability and the named favorite editor.
+ * Render Harness connections and the named favorite editor.
  * @param props - settings section runtime, localized copy, and injected fleet actions.
  * @returns the fleet settings page.
  */
 export function FleetSettingsSection({
-  t, subscribe, getSnapshot, loadAvailability, loadHarnesses, loadStarters, save, launch, duplicate, installStarter, canLaunch,
+  t, subscribe, getSnapshot, loadHarnesses, refreshHarnesses, refreshHarness, loadStarters, save, launch, duplicate,
+  installStarter, canLaunch,
 }: FleetSettingsSectionProps): ReactNode {
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
-  const [providers, setProviders] = useState<readonly FleetProviderAvailability[]>([])
+  const [harnesses, setHarnesses] = useState<readonly HarnessDescriptor[]>([])
   const [starters, setStarters] = useState<readonly FleetFavorite[]>([])
   const [draft, setDraft] = useState<FleetFavorite | null>(null)
   // The id the open draft was loaded from. Editing `favorite.id` renames that row
@@ -380,18 +717,34 @@ export function FleetSettingsSection({
   const favorites = snapshot.value?.favorites ?? []
   const writable = snapshot.writable && snapshot.status === 'ready'
 
-  const refreshAvailability = async (): Promise<void> => {
-    const result = await loadAvailability()
-    if (result.ok) setProviders(result.value)
-    else setNotice(t('fleet.error', { message: result.error.message }))
-  }
-
-  const refreshHarnesses = async (): Promise<void> => {
+  /**
+   * Read the connections the host already knows. This never probes, so opening
+   * Settings cannot start ten subprocesses; discovery is a user gesture.
+   */
+  const loadInventory = async (): Promise<void> => {
     try {
       const result = await loadHarnesses()
-      if (result.ok) void result.value
+      if (result.ok) setHarnesses(result.value)
+      else setNotice(t('fleet.error', { message: result.error.message }))
     } catch (error: unknown) {
       setNotice(t('fleet.error', { message: errorText(error) }))
+    }
+  }
+
+  /**
+   * Probe connections and publish what each one answered.
+   * @param connection - one connection to re-probe, or omitted to probe every probeable connection.
+   */
+  const probeInventory = async (connection?: string): Promise<void> => {
+    setBusy(true)
+    try {
+      const result = connection === undefined ? await refreshHarnesses() : await refreshHarness(connection)
+      if (result.ok) setHarnesses(result.value)
+      else setNotice(t('fleet.error', { message: result.error.message }))
+    } catch (error: unknown) {
+      setNotice(t('fleet.error', { message: errorText(error) }))
+    } finally {
+      setBusy(false)
     }
   }
 
@@ -409,15 +762,14 @@ export function FleetSettingsSection({
   }
 
   useEffect(() => {
-    void refreshAvailability()
-    void refreshHarnesses()
+    void loadInventory()
     void refreshStarters()
   }, [])
 
   /**
    * Run one host-side fleet mutation (duplicate, starter install) and report its
    * outcome in the page's own notice line, then re-read the derived rows so a refused
-   * provider or a stale revision is visible instead of swallowed.
+   * connection or a stale revision is visible instead of swallowed.
    * @param action - the mutation to attempt.
    * @param saved - locale key naming what a successful mutation did.
    */
@@ -429,7 +781,7 @@ export function FleetSettingsSection({
         setNotice(t('fleet.error', { message: outcome.message }))
       } else {
         setNotice(t(saved))
-        await refreshAvailability()
+        await loadInventory()
       }
     } catch (error: unknown) {
       setNotice(t('fleet.error', { message: errorText(error) }))
@@ -439,7 +791,7 @@ export function FleetSettingsSection({
   }
 
   const openNew = (): void => {
-    setDraft({ id: '', name: '', members: [{ ...EMPTY_MEMBER, provider: defaultProvider(providers) }] })
+    setDraft({ id: '', name: '', members: [{ ...EMPTY_MEMBER, provider: defaultConnection(harnesses) }] })
     setEditingId(null)
     setNotice(null)
   }
@@ -457,6 +809,13 @@ export function FleetSettingsSection({
     const favorite: FleetFavorite = {
       ...draft,
       id: draft.id.trim() === '' ? slug(draft.name) : draft.id.trim(),
+      // Every saved member states its execution type, derived from the live
+      // connection when the draft predates the field, so a later launch can
+      // refuse a semantic drift instead of silently changing how it runs.
+      members: draft.members.map((member) => {
+        const execution = member.execution ?? executionOf(connectionOf(harnesses, member.provider))
+        return execution === undefined ? member : { ...member, execution }
+      }),
     }
     setBusy(true)
     try {
@@ -503,7 +862,7 @@ export function FleetSettingsSection({
     } finally {
       setBusy(false)
       setPendingLaunch(null)
-      await refreshAvailability()
+      await loadInventory()
     }
   }
 
@@ -513,19 +872,10 @@ export function FleetSettingsSection({
       <section className={css.root}>
         <h2 className={css.title}>{t('fleet.title')}</h2>
         <p className={css.status}>{t('fleet.unavailable')}</p>
-        <Button variant="outline" onClick={() => { void refreshAvailability() }}>{t('fleet.refresh')}</Button>
-        {providers.length > 0
-          ? (
-            <ul className={css.providers}>
-              {providers.map(provider => (
-                <li key={provider.name} data-state={provider.state}>
-                  <strong>{providerLabel(provider.name, t)}</strong>
-                  <span>{t(rowKey(provider))}</span>
-                </li>
-              ))}
-            </ul>
-          )
-          : <p className={css.status}>{t('fleet.providersEmpty')}</p>}
+        <Button variant="outline" disabled={busy} onClick={() => { void probeInventory() }}>{t('fleet.refreshHarnesses')}</Button>
+        {harnesses.length > 0
+          ? <HarnessInventory harnesses={harnesses} busy={busy} t={t} onProbe={(connection) => { void probeInventory(connection) }} />
+          : <p className={css.status}>{t('fleet.harnessesEmpty')}</p>}
       </section>
     )
   }
@@ -537,31 +887,14 @@ export function FleetSettingsSection({
           <h2 className={css.title}>{t('fleet.title')}</h2>
           <p className={css.description}>{t('fleet.description')}</p>
         </div>
-        <Button variant="outline" onClick={() => { void refreshAvailability() }}>{t('fleet.refresh')}</Button>
+        <Button variant="outline" disabled={busy} onClick={() => { void probeInventory() }}>{t('fleet.refreshHarnesses')}</Button>
       </header>
 
       <h3 className={css.subtitle}>{t('fleet.availability')}</h3>
       <p className={css.description}>{t('fleet.execution.help')}</p>
-      {providers.length === 0
-        ? <p className={css.status}>{t('fleet.providersEmpty')}</p>
-        : (
-          <ul className={css.providers} aria-label={t('fleet.availability')}>
-            {providers.map((provider) => {
-              const label = providerLabel(provider.name, t)
-              return (
-                <li key={provider.name} data-state={provider.state}>
-                  <div className={css.providerName}>
-                    <strong>{label}</strong>
-                    {/* The registry name is the value the fleet stores and cordis.yml
-                        configures, so a branded row still states it. */}
-                    {label === provider.name ? null : <code dir="ltr">{provider.name}</code>}
-                  </div>
-                  <span>{t(rowKey(provider))}</span>
-                </li>
-              )
-            })}
-          </ul>
-        )}
+      {harnesses.length === 0
+        ? <p className={css.status}>{t('fleet.harnessesEmpty')}</p>
+        : <HarnessInventory harnesses={harnesses} busy={busy} t={t} onProbe={(connection) => { void probeInventory(connection) }} />}
 
       <div className={css.favoriteHeader}>
         <h3 className={css.subtitle}>{t('fleet.favorites')}</h3>
@@ -587,7 +920,14 @@ export function FleetSettingsSection({
                     )}
                     <span>{t('fleet.memberCount', { count: favorite.members.length })}</span>
                     <span className={css.memberSummary}>
-                      {favorite.members.map(member => providerLabel(member.provider, t)).join(', ')}
+                      {favorite.members.map((member) => {
+                        const descriptor = connectionOf(harnesses, member.provider)
+                        const label = connectionLabel(descriptor, member.provider, t)
+                        const execution = member.execution ?? executionOf(descriptor)
+                        return execution === undefined
+                          ? label
+                          : `${label} (${t(execution === 'harmony' ? 'fleet.execution.harmony' : 'fleet.execution.melodyName')})`
+                      }).join(', ')}
                     </span>
                   </div>
                   <div className={css.actions}>
@@ -627,9 +967,18 @@ export function FleetSettingsSection({
                   <span>{t('fleet.memberCount', { count: starter.members.length })}</span>
                 </div>
                 <ul className={css.starterMembers}>
-                  {starter.members.map(member => (
-                    <li key={member.name}>{member.name} — {member.description} ({providerName(member.provider, t)})</li>
-                  ))}
+                  {starter.members.map((member) => {
+                    const descriptor = connectionOf(harnesses, member.provider)
+                    const execution = member.execution ?? executionOf(descriptor)
+                    return (
+                      <li key={member.name}>
+                        {member.name} — {member.description} ({connectionLabel(descriptor, member.provider, t)}
+                        {execution === undefined
+                          ? null
+                          : `, ${t(execution === 'harmony' ? 'fleet.execution.harmony' : 'fleet.execution.melodyName')}`})
+                      </li>
+                    )
+                  })}
                 </ul>
                 <Button
                   variant="outline"
@@ -649,19 +998,27 @@ export function FleetSettingsSection({
           <h3>{t('fleet.confirmTitle')}</h3>
           <p>{t('fleet.confirmBody', { name: pendingLaunch.name })}</p>
           <ul>
-            {pendingLaunch.members.map(member => (
-              <li key={member.name}>
-                {member.name}: {providerName(member.provider, t)}, {member.preset ?? t('fleet.inherited')},
-                {' '}{member.model ?? t('fleet.inherited')},
-                {' '}{member.reasoningEffort ?? t('fleet.inherited')},
-                {' '}{member.maxTokens === undefined ? t('fleet.unbounded') : t('fleet.tokens', { count: member.maxTokens })},
-                {' '}{member.readOnly === true
-                  ? t('fleet.readOnly')
-                  : member.writeScopes === undefined || member.writeScopes.length === 0
-                    ? t('fleet.sharedCheckout')
-                    : t('fleet.scopes', { scopes: member.writeScopes.join(', ') })}
-              </li>
-            ))}
+            {pendingLaunch.members.map((member) => {
+              const descriptor = connectionOf(harnesses, member.provider)
+              const execution = member.execution ?? executionOf(descriptor)
+              return (
+                <li key={member.name}>
+                  {member.name}: {connectionLabel(descriptor, member.provider, t)},
+                  {execution === undefined
+                    ? null
+                    : ` ${t(execution === 'harmony' ? 'fleet.execution.harmony' : 'fleet.execution.melodyName')},`}
+                  {' '}{member.preset ?? t('fleet.inherited')},
+                  {' '}{member.model ?? t('fleet.inherited')},
+                  {' '}{member.reasoningEffort ?? t('fleet.inherited')},
+                  {' '}{member.maxTokens === undefined ? t('fleet.unbounded') : t('fleet.tokens', { count: member.maxTokens })},
+                  {' '}{member.readOnly === true
+                    ? t('fleet.readOnly')
+                    : member.writeScopes === undefined || member.writeScopes.length === 0
+                      ? t('fleet.sharedCheckout')
+                      : t('fleet.scopes', { scopes: member.writeScopes.join(', ') })}
+                </li>
+              )
+            })}
           </ul>
           <div className={css.actions}>
             <Button variant="outline" disabled={busy} onClick={() => { setPendingLaunch(null) }}>{t('fleet.cancel')}</Button>
@@ -727,7 +1084,7 @@ export function FleetSettingsSection({
               key={index}
               index={index}
               member={member}
-              providers={providers}
+              harnesses={harnesses}
               t={t}
               onChange={(patch) => {
                 const members = draft.members.map((candidate, memberIndex) => {
@@ -749,7 +1106,7 @@ export function FleetSettingsSection({
               onClick={() => {
                 setDraft({
                   ...draft,
-                  members: [...draft.members, { ...EMPTY_MEMBER, provider: defaultProvider(providers) }],
+                  members: [...draft.members, { ...EMPTY_MEMBER, provider: defaultConnection(harnesses) }],
                 })
               }}
             >

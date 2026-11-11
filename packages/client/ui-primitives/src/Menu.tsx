@@ -15,6 +15,8 @@ export interface MenuItem {
   icon?: ReactNode
   /** Destructive row: error-colored text/icon and danger hover fill. */
   danger?: boolean
+  /** Trailing hint, typically the keyboard shortcut that runs this row. */
+  hint?: ReactNode
   /** Nested card opened to the right on hover/focus. */
   submenu?: readonly MenuItem[]
 }
@@ -227,6 +229,10 @@ export function Menu({ open, anchor, items, selectedId, selectedIds, onSelect, o
         >
           {entry.icon !== undefined && <span className={css.itemIcon}>{entry.icon}</span>}
           <span className={css.itemLabel}>{entry.label}</span>
+          {/* Trailing hint stays outside the label so a long label ellipsizes
+              without ever clipping the shortcut. It is decorative: the row's
+              accessible name stays the label alone. */}
+          {entry.hint !== undefined && <span className={css.hint} aria-hidden="true">{entry.hint}</span>}
           {/* Selection marker is a trailing check (figma .Menu_cell), not a fill. */}
           {selected && <IconCheckOutline16 className={css.check} />}
         </button>
@@ -243,6 +249,7 @@ export function Menu({ open, anchor, items, selectedId, selectedIds, onSelect, o
               >
                 {sub.icon !== undefined && <span className={css.itemIcon}>{sub.icon}</span>}
                 <span className={css.itemLabel}>{sub.label}</span>
+                {sub.hint !== undefined && <span className={css.hint} aria-hidden="true">{sub.hint}</span>}
               </button>
             ))}
           </div>

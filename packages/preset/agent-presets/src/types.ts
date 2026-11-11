@@ -1,5 +1,10 @@
 /** Client-safe payloads and event declarations owned by the agent-preset domain. */
 import type { SessionId } from '@greeneek/gnk-session/types'
+// The augmented modules are imported so every program that compiles this file
+// carries them; an augmentation of a module the program does not contain is
+// rejected.
+import type {} from '@greeneek/gnk-session-projection/types'
+import type {} from '@greeneek/gnk-typert-protocol'
 import type { PresetTrust } from './preset.ts'
 
 export type { PresetTrust } from './preset.ts'
@@ -21,8 +26,6 @@ export interface AgentPresetRow {
   readonly description?: string
   /** Why this preset cannot compose a session; absent when it can. */
   readonly broken?: string
-  /** Whether the preset is retired from creation and settings surfaces. */
-  readonly retired?: boolean
 }
 
 /** The roster one deployment currently supplies, with its authoring capability. */
@@ -72,17 +75,6 @@ declare module '@greeneek/gnk-session-projection/types' {
 
 declare module '@greeneek/cordis' {
   interface Events {
-    /**
-     * The unnamed-default path composed the fallback because the stored default
-     * named a preset this release retired. Emitted before the session exists,
-     * so it is not a session event; the effective composition is recorded in
-     * the session header. An explicit pick of the retired preset never
-     * triggers it.
-     * @param payload.from - the retired default the stored setting named.
-     * @param payload.to - the preset composed for new sessions instead.
-     * @mode emit
-     */
-    'agent-preset/default-sanitized'(payload: { from: string; to: string }): void
     /**
      * One session committed a different agent preset to its durable log.
      * Consumers invalidate only state derived from that session's composition.

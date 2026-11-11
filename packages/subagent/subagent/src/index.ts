@@ -82,6 +82,17 @@ export * from './out-of-process.ts'
 export { AssistantOutputFold, finalAssistantOutput } from './assistant-output.ts'
 export { SubagentRunId } from './types.ts'
 export type {
+  HarnessAuthMethod,
+  HarnessCapabilities,
+  HarnessDiscovery,
+  HarnessDiscoveryRequest,
+  HarnessEffortLevel,
+  HarnessModelInfo,
+  HarnessPermissionMode,
+  HarnessPromptCapabilities,
+  HarnessSessionCapabilities,
+} from './types.ts'
+export type {
   ContinuableCreateRequest,
   ContinuableCreateSpec,
   ResolvedSubagentStartRequest,

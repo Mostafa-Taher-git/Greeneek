@@ -22,7 +22,7 @@
  */
 
 import { snapshotJsonValue } from '@greeneek/gnk-util-values'
-import type { SessionEvent } from '@greeneek/gnk-session'
+import type { SessionEvent } from '@greeneek/gnk-session/types'
 import type { ReasoningEffortId } from '@greeneek/gnk-llm'
 import type { ToolRestriction } from '@greeneek/gnk-tools'
 

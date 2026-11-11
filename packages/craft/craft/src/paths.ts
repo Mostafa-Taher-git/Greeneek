@@ -7,7 +7,7 @@
  * @module @greeneek/gnk-craft/paths
  */
 
-import { isAbsolute, join, relative, resolve } from 'node:path'
+import { isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { CraftError } from './error.ts'
 import type { CraftRoots } from './types.ts'
 
@@ -61,7 +61,11 @@ export function confineArtifact(roots: CraftRoots, artifact: string): string {
   const writeRoot = resolve(roots.write)
   const candidate = resolve(writeRoot, artifact)
   const inside = relative(writeRoot, candidate)
-  if (inside === '' || inside.startsWith('..') || isAbsolute(inside)) {
+  // A bare `..` prefix is only an escape when it is a complete path segment:
+  // `..data` is a file inside the root, while `../escape` and a bare `..`
+  // leave it. The separator is platform-local, so POSIX filenames containing
+  // backslashes are unaffected on POSIX and Windows keeps its `..\` form.
+  if (inside === '' || inside === '..' || inside.startsWith(`..${sep}`) || isAbsolute(inside)) {
     throw new CraftError(
       `Craft artifact ${JSON.stringify(artifact)} escapes the job output root`,
       'CRAFT_ROOT_INVALID',

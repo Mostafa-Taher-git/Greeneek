@@ -289,6 +289,7 @@ const RESPONSES_COMPAT_GATE = {
   supportsLongCacheRetention: 'offer',
   supportsMidConvoSystemMessages: 'offer',
   supportsMaxOutputTokens: 'offer',
+  supportsMidConvoEffort: 'offer',
   sessionAffinityFormat: 'withhold',
   supportsOpenAIGrammarTools: 'withhold',
   supportsAdditionalTools: 'withhold',
@@ -473,7 +474,8 @@ export interface PiAiCompatProfile {
   supportsMidConvoToolAdditions?: boolean
   /**
    * Whether the endpoint accepts effort-only system messages and thinking
-   * binding controls mid-conversation; `anthropic-messages`.
+   * binding controls mid-conversation; `anthropic-messages`, the three
+   * Responses protocols.
    */
   supportsMidConvoEffort?: boolean
   /**
@@ -511,6 +513,12 @@ type AssertTrue<T extends true> = T
 type UpstreamCompat = OpenAICompletionsCompat & OpenAIResponsesCompat & AnthropicMessagesCompat & BedrockCompat & MistralConversationsCompat
 
 /**
+ * One profile's field value types: the optional marker and the `undefined`
+ * spelling drop out, so two profiles are compared by the values they accept.
+ */
+type FieldValues<T> = { [K in keyof T]-?: NonNullable<T[K]> }
+
+/**
  * Proof that each documented field carries its upstream type, not a hand-copied
  * restatement of it. The name gates above pin *which* fields exist; this pins
  * their types, in both directions because each catches a different drift. A
@@ -518,12 +526,20 @@ type UpstreamCompat = OpenAICompletionsCompat & OpenAIResponsesCompat & Anthropi
  * `resolveModelCompat`'s cast to `ModelCompat` would hide it; a narrower one
  * refuses a value the provider accepts, which is how an upgrade that widens a
  * union would otherwise leave configuration silently behind.
+ *
+ * The comparison reads each field's value type, so the optional spelling does
+ * not decide it: pi-ai states an optional field as `T | undefined`, while the
+ * profile states the value it accepts (`T`) and marks the field optional.
  */
 export type EveryProfileFieldMatchesUpstream = AssertTrue<
-  PiAiCompatProfile extends Partial<Pick<UpstreamCompat, OfferedCompatField>>
-    ? Partial<Pick<UpstreamCompat, OfferedCompatField>> extends PiAiCompatProfile ? true : false
+  FieldValues<PiAiCompatProfile> extends FieldValues<Partial<Pick<UpstreamCompat, OfferedCompatField>>>
+    ? FieldValues<Partial<Pick<UpstreamCompat, OfferedCompatField>>> extends FieldValues<PiAiCompatProfile>
+      ? true
+      : false
     : false
 >
+
+
 
 /**
  * The compat entries a profile actually set.

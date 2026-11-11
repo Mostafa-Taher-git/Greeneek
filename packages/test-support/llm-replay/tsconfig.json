@@ -24,7 +24,7 @@
       "path": "../../llm/greeneek-llm-api-extensions"
     },
     {
-      "path": "../../core/session"
+      "path": "../../core/session/tsconfig.host.json"
     }
   ]
 }

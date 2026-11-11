@@ -898,6 +898,17 @@ export function WorkspaceBrowser({
       console.warn('git facts unavailable:', reason)
     })
   }
+  // A refused destination keeps the surface alive; the reason belongs in the log.
+  const openSessionPath = (id: SessionId, target: OpenPathTarget): void => {
+    openPath(id, target).catch((reason: unknown) => {
+      console.warn('session path open rejected:', reason)
+    })
+  }
+  const openWorkspaceDirectory = (path: string, target: OpenPathTarget): void => {
+    openWorkspacePath(path, target).catch((reason: unknown) => {
+      console.warn('workspace path open rejected:', reason)
+    })
+  }
   // Live occupancy of this surface's directory-flow hole (the same source the
   // flow reads): a composition without a picking affordance can add nothing.
   const directoryFlowAvailable = useDirectoryFlow(occupied => occupied)
@@ -1180,6 +1191,25 @@ export function WorkspaceBrowser({
     })
   }
 
+  // The flat list and the grouped tree read the same Session facts and run the
+  // same Session verbs; one prop set keeps the two views identical.
+  const sessionTreeProps = {
+    useSessions,
+    useSessionPendingInteraction,
+    open,
+    forkSession,
+    onSessionRename,
+    onSessionArchive,
+    onSessionDelete: onSessionDeleteRequest,
+    archivedSessionIds,
+    pinnedSessionIds,
+    onPinSession: (id: SessionId, pinned: boolean) => {
+      pinSession(id, pinned).catch((reason: unknown) => {
+        console.warn('session pin rejected:', reason)
+      })
+    },
+    onOpenPath: (id: SessionId, target: OpenPathTarget) => { openSessionPath(id, target) },
+  }
   return (
     <div className={clsx(css.root, !wide && css.rail)}>
       <div className={css.sectionHeader}>
@@ -1331,22 +1361,7 @@ export function WorkspaceBrowser({
           : groupBy === 'flat'
             ? (
               <FlatList
-                useSessions={useSessions} useSessionPendingInteraction={useSessionPendingInteraction}
-                open={open} forkSession={forkSession}
-                onSessionRename={onSessionRename} onSessionArchive={onSessionArchive}
-                onSessionDelete={onSessionDeleteRequest}
-                archivedSessionIds={archivedSessionIds}
-                pinnedSessionIds={pinnedSessionIds}
-                onPinSession={(id, pinned) => {
-                  pinSession(id, pinned).catch((reason: unknown) => {
-                    console.warn('session pin rejected:', reason)
-                  })
-                }}
-                onOpenPath={(id, target) => {
-                  openPath(id, target).catch((reason: unknown) => {
-                    console.warn('session path open rejected:', reason)
-                  })
-                }}
+                {...sessionTreeProps}
                 orderBy={orderBy}
                 sessionOrderByAccount={sessionOrderByAccount}
                 sessionUpdatedAtByAccount={sessionUpdatedAtByAccount}
@@ -1357,12 +1372,7 @@ export function WorkspaceBrowser({
             )
             : (
               <SessionTree
-                useSessions={useSessions}
-                useSessionPendingInteraction={useSessionPendingInteraction}
-                onSessionRename={onSessionRename}
-                onSessionArchive={onSessionArchive}
-                onSessionDelete={onSessionDeleteRequest}
-                forkSession={forkSession}
+                {...sessionTreeProps}
                 workspaces={workspaces}
                 groupExpansion={groupExpansion}
                 setGroupExpanded={actions.setGroupExpanded}
@@ -1370,24 +1380,8 @@ export function WorkspaceBrowser({
                 sessionUpdatedAtByAccount={sessionUpdatedAtByAccount}
                 syncSessionOrderAccount={actions.syncSessionOrderAccount}
                 setSessionOrder={actions.setSessionOrder}
-                archivedSessionIds={archivedSessionIds}
-                pinnedSessionIds={pinnedSessionIds}
-                onPinSession={(id, pinned) => {
-                  pinSession(id, pinned).catch((reason: unknown) => {
-                    console.warn('session pin rejected:', reason)
-                  })
-                }}
-                onOpenPath={(id, target) => {
-                  openPath(id, target).catch((reason: unknown) => {
-                    console.warn('session path open rejected:', reason)
-                  })
-                }}
                 openItems={workspaceOpenItems}
-                onOpenWorkspacePath={(path, target) => {
-                  openWorkspacePath(path, target).catch((reason: unknown) => {
-                    console.warn('workspace path open rejected:', reason)
-                  })
-                }}
+                onOpenWorkspacePath={(path, target) => { openWorkspaceDirectory(path, target) }}
                 gitFactsByPath={gitFactsByPath}
                 onReadGitFacts={readGitFacts}
                 startSession={startSession}

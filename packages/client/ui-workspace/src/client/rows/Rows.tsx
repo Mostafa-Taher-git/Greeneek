@@ -8,8 +8,7 @@
 import { useState } from 'react'
 import clsx from 'clsx'
 import {
-  HoverCard, IconAlarmClockOutline16, IconArchiveOutline20, IconBranchOutline16,
-  IconCopyOutline16, IconEditOutline16, IconEllipsisOutline16, IconFolderClose16,
+  HoverCard, IconAlarmClockOutline16, IconArchiveOutline20,   IconEditOutline16, IconEllipsisOutline16, IconFolderClose16,
   IconFolderOpen16, IconFolderOpenOutline16, IconPinFill16, IconPlusOutline16,
   IconTrashOutline16, IconTriangleRightFill14, Menu, relativeTime,
   StateDot, formatShortcut,
@@ -21,6 +20,7 @@ import type { StateDotState } from '@greeneek/gnk-client-ui-primitives'
 import { abbreviateHomePath } from '@greeneek/gnk-util-workspace-path'
 import type { GitFacts, OpenPathTarget, WorkspaceBrowserProps } from '../contract/slots.ts'
 import { openInTarget } from '../openInMenu.tsx'
+import { sharedSessionMenuItems } from '../sessionMenuItems.tsx'
 import type { GroupNode, SearchResultNode, SessionNode } from '../tree.ts'
 import { timeLabel } from '../time.ts'
 import css from './Rows.module.css'
@@ -476,23 +476,7 @@ export function SessionNodeItem({
       label: row.pinned ? t('menu.unpin') : t('menu.pin'),
       icon: <IconPinFill16 />,
     },
-    {
-      id: 'rename',
-      label: t('rename'),
-      icon: <IconEditOutline16 />,
-      hint: formatShortcut('mod+alt+g'),
-    },
-    {
-      id: 'fork',
-      label: t('menu.fork'),
-      icon: <IconBranchOutline16 />,
-      hint: formatShortcut('mod+alt+f'),
-    },
-    {
-      id: 'copy-id',
-      label: t('menu.copySessionId'),
-      icon: <IconCopyOutline16 />,
-    },
+    ...sharedSessionMenuItems(t),
     ...(onOpenPath !== undefined
       ? [{
         id: 'show-in-folder',

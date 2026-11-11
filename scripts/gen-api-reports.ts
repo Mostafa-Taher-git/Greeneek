@@ -14,7 +14,7 @@
  * the gate build-free and boring (manifests in, sorted export lines out).
  * @module scripts/gen-api-reports
  */
-import { existsSync, globSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, globSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 
 const ROOT = resolve(import.meta.dirname, '..')
@@ -74,28 +74,7 @@ export function collectPublishedPackages(root: string): PublishedPackage[] {
   return out.sort((a, b) => a.name.localeCompare(b.name))
 }
 
-function walkSrc(dir: string, out: string[] = []): string[] {
-  let entries: string[]
-  try {
-    entries = readdirSync(dir)
-  } catch {
-    return out
-  }
-  for (const entry of entries.sort()) {
-    const path = join(dir, entry)
-    let isDir = false
-    try {
-      isDir = statSync(path).isDirectory()
-    } catch {
-      continue
-    }
-    if (isDir) {
-      if (entry === 'node_modules' || entry === 'lib') continue
-      walkSrc(path, out)
-    } else if (/\.tsx?$/.test(entry) && !entry.endsWith('.d.ts')) out.push(path)
-  }
-  return out
-}
+import { walkFiles as walkSrc } from './lib/workspace-files.ts'
 
 /**
  * Render one package's report.

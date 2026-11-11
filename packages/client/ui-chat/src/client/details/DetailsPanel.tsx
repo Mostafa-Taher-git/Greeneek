@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useRef } from 'react'
-import { CodeBlock } from '@greeneek/gnk-client-ui-primitives'
+import { CodeBlock, IconCloseOutline16 } from '@greeneek/gnk-client-ui-primitives'
 import { shallowEqual } from '@greeneek/gnk-client-store'
 import type { DetailsSlotProps } from '../contract/slots.ts'
 import type { ChatSnapshot, RunningToolCall, ToolCallBlock, ToolResultNode } from '../contract/snapshot.ts'
@@ -105,9 +105,7 @@ export function DetailsPanel({
           type="button" className={css.close} aria-label={t('details.close')}
           onClick={() => { closeDetails() }}
         >
-          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden>
-            <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
+          <IconCloseOutline16 size={14} />
         </button>
       </div>
       <div

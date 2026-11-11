@@ -19,6 +19,7 @@
  */
 
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { largestSectionWords } from './lib/catalog-stats.ts'
 import { dirname, resolve } from 'node:path'
 import {
   projectCordisCatalog,
@@ -1061,17 +1062,7 @@ export function main(): void {
     const words = core.split(/\s+/).filter(Boolean).length
     const entries = core.split('\n').filter(line => line.startsWith('## ')).length
     const headings = core.split('\n').filter(line => line.startsWith('##') || line.startsWith('###')).length
-    let largest = 0
-    let current = 0
-    for (const line of core.split('\n')) {
-      if (line.startsWith('## ')) {
-        largest = Math.max(largest, current)
-        current = 0
-      } else {
-        current += line.split(/\s+/).filter(Boolean).length
-      }
-    }
-    largest = Math.max(largest, current)
+    const largest = largestSectionWords(core)
     console.log(`gen-cordis-catalog: docs/subsystems/core.md — ${words} words / ${entries} sections / ${headings} headings / ${largest} words largest section`)
   }
   if (process.argv.includes('--check')) {

@@ -8,6 +8,7 @@
  */
 
 import { globSync, readFileSync, writeFileSync } from 'node:fs'
+import { largestSectionWords } from './lib/catalog-stats.ts'
 import { dirname, resolve, sep } from 'node:path'
 import ts from 'typescript'
 import { LINK_MAP } from './gen-cordis-catalog.ts'
@@ -878,17 +879,7 @@ function main(): void {
   const content = render(entries)
   const words = content.split(/\s+/).filter(Boolean).length
   const headings = content.split('\n').filter(line => line.startsWith('## ')).length
-  let largest = 0
-  let current = 0
-  for (const line of content.split('\n')) {
-    if (line.startsWith('## ')) {
-      largest = Math.max(largest, current)
-      current = 0
-    } else {
-      current += line.split(/\s+/).filter(Boolean).length
-    }
-  }
-  largest = Math.max(largest, current)
+  const largest = largestSectionWords(content)
   const stats = `gen-config-catalog: ${words} words / ${entries.filter(e => e.kind === 'config').length} config entries / ${headings} headings / ${largest} words largest section`
   if (process.argv.includes('--check')) {
     let committed: string | null = null

@@ -23,8 +23,9 @@
  * resolved package count and import count, and fails loud on any violation.
  * @module scripts/verify-dependency-rules
  */
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join, resolve } from 'node:path'
+import { readJsonObject } from './lib/workspace-files.ts'
 
 const ROOT = resolve(import.meta.dirname, '..')
 const AGENT_LOOP = '@greeneek/gnk-agent-loop'
@@ -45,11 +46,7 @@ export interface DependencyRulesReport {
 }
 
 function readJson(root: string, file: string): Record<string, unknown> {
-  const parsed: unknown = JSON.parse(readFileSync(join(root, file), 'utf8'))
-  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-    throw new Error(`verify-dependency-rules: ${file} must contain a JSON object.`)
-  }
-  return parsed as Record<string, unknown>
+  return readJsonObject(root, file, 'verify-dependency-rules')
 }
 
 function manifestDeps(manifest: Record<string, unknown>): Set<string> {
@@ -62,28 +59,7 @@ function manifestDeps(manifest: Record<string, unknown>): Set<string> {
   return names
 }
 
-function walkFiles(dir: string, out: string[] = []): string[] {
-  let entries: string[]
-  try {
-    entries = readdirSync(dir)
-  } catch {
-    return out
-  }
-  for (const entry of entries.sort()) {
-    const path = join(dir, entry)
-    let isDirectory = false
-    try {
-      isDirectory = statSync(path).isDirectory()
-    } catch {
-      continue
-    }
-    if (isDirectory) {
-      if (entry === 'node_modules' || entry === 'lib') continue
-      walkFiles(path, out)
-    } else if (/\.tsx?$/.test(entry) && !entry.endsWith('.d.ts')) out.push(path)
-  }
-  return out
-}
+import { walkFiles as walkFiles } from './lib/workspace-files.ts'
 
 interface WorkspacePackage {
   directory: string

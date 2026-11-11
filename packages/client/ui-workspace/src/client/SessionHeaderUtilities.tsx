@@ -16,10 +16,7 @@ import {
   Button,
   formatShortcut,
   IconArchiveOutline20,
-  IconBranchOutline16,
   IconChevronDownOutline14,
-  IconCopyOutline16,
-  IconEditOutline16,
   IconEllipsisOutline16,
   IconFolderOpen16,
   IconPanelRightOutline16,
@@ -35,6 +32,8 @@ import {
 } from '@greeneek/gnk-client-ui-primitives'
 import type { ExternalAppsShare, OpenPathTarget } from './contract/slots.ts'
 import { fileManagerLabel, openInMenuItems, openInTarget } from './openInMenu.tsx'
+import { sharedSessionMenuItems } from './sessionMenuItems.tsx'
+import { useExternalApps } from './useExternalApps.ts'
 import css from './SessionHeaderUtilities.module.css'
 
 /** Injected capability face for session header utilities. */
@@ -85,7 +84,7 @@ export function SessionHeaderUtilities({
   const title = useSessions(state => state.byId[sessionId]?.title ?? '')
   const pinnedSessionIds = useWorkspaces(state => state.pinnedSessionIds)
   const isPinned = pinnedSessionIds.includes(sessionId)
-  const [appsShare, setAppsShare] = useState<ExternalAppsShare | undefined>(undefined)
+  const appsShare = useExternalApps(externalApps)
   const [appsMenuOpen, setAppsMenuOpen] = useState(false)
   const [actionsMenuOpen, setActionsMenuOpen] = useState(false)
   const [renameOpen, setRenameOpen] = useState(false)
@@ -96,19 +95,6 @@ export function SessionHeaderUtilities({
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [openError, setOpenError] = useState<string | null>(null)
-
-  useEffect(() => {
-    let cancelled = false
-    externalApps()
-      .then((share) => {
-        if (!cancelled) setAppsShare(share)
-      })
-      .catch((reason: unknown) => {
-        // The catalogue is advisory: the default file-manager entry works alone.
-        console.warn('external application catalogue unavailable:', reason)
-      })
-    return () => { cancelled = true }
-  }, [externalApps])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
@@ -154,23 +140,7 @@ export function SessionHeaderUtilities({
   // are always visible, and the open-in split carries the file-manager entry.
   // The overflow menu therefore holds only the verbs with no visible button.
   const sessionMenuItems: MenuItem[] = [
-    {
-      id: 'rename',
-      label: t('rename'),
-      icon: <IconEditOutline16 />,
-      hint: formatShortcut('mod+alt+g'),
-    },
-    {
-      id: 'fork',
-      label: t('menu.fork'),
-      icon: <IconBranchOutline16 />,
-      hint: formatShortcut('mod+alt+f'),
-    },
-    {
-      id: 'copy-id',
-      label: t('menu.copySessionId'),
-      icon: <IconCopyOutline16 />,
-    },
+    ...sharedSessionMenuItems(t),
     {
       id: 'delete',
       label: t('menu.deleteSession'),

@@ -28,6 +28,7 @@ import type {} from '@greeneek/gnk-client-ui-session/client'
 // Type-only: pulls the layout service merge (ctx.layout) and slot declarations.
 import type { ILayout } from '@greeneek/gnk-client-ui-layout/client'
 import type { WorkspaceBrowserInjected, WorkspacePickerInjected } from './contract/slots.ts'
+import type { OpenPathTarget } from './contract/slots.ts'
 import type { RecentSessionsInjected } from './RecentSessionsSeat.tsx'
 import { UiWorkspaceService } from './navigation.ts'
 import { createWorkspaceViewStore } from './stores.ts'
@@ -107,6 +108,41 @@ export function apply(ctx: Context): void {
     subscribe: listener => ctx.on('connection/reset', listener),
   }
   const pickerFlowSource = flowSource('conversation.hero.workspace.directoryFlow')
+  // The Session verbs the sidebar row and the conversation header share: one
+  // implementation, so a verb never means two things in one product.
+  const sharedSessionInjected = () => ({
+    renameSession: async (sessionId: SessionId, title: string) => {
+      // Row → session-face hop: rename is a per-session verb (ISession), not
+      // a list-service verb; the binding resolves any listed session.
+      const session = sessions.binding(sessionId)?.session
+      if (session === undefined) throw new Error(`unknown session "${sessionId}"`)
+      const result = await session.rename(title)
+      if (!result.ok) throw new Error(result.error.message)
+    },
+    forkSession: (sessionId: SessionId) => {
+      sessions.fork({ sessionId, increaseTitle: true })
+        .then((childId) => {
+          layout()?.showConversation()
+          sessions.open(childId)
+        })
+        .catch(() => {
+          // Fork or child-rename failure keeps the current selection.
+        })
+    },
+    externalApps: async () => {
+      const result = await ctx.remote.session.externalApps()
+      if (!result.ok) throw new Error(result.error.message)
+      return result.value
+    },
+    openPath: async (sessionId: SessionId, target: OpenPathTarget) => {
+      const cwd = sessions.list.getSnapshot().byId[sessionId]?.cwd
+      if (cwd === undefined || cwd === '') {
+        throw new Error(`session "${sessionId}" has no workspace directory`)
+      }
+      const result = await ctx.remote.session.openPath({ path: cwd, target })
+      if (!result.ok) throw new Error(result.error.message)
+    },
+  })
   const browserInjected = (): WorkspaceBrowserInjected => ({
     // Opening or starting a Session is a navigation intent: a full-page
     // destination (Settings, Dashboard) must yield to the conversation it
@@ -121,24 +157,7 @@ export function apply(ctx: Context): void {
     },
     searchSessions,
     searchResultLimit: sessions.searchResultLimit,
-    renameSession: async (sessionId, title) => {
-      // Row → session-face hop: rename is a per-session verb (ISession), not
-      // a list-service verb; the binding resolves any listed session.
-      const session = sessions.binding(sessionId)?.session
-      if (session === undefined) throw new Error(`unknown session "${sessionId}"`)
-      const result = await session.rename(title)
-      if (!result.ok) throw new Error(result.error.message)
-    },
-    forkSession: (sessionId) => {
-      sessions.fork({ sessionId, increaseTitle: true })
-        .then((childId) => {
-          layout()?.showConversation()
-          sessions.open(childId)
-        })
-        .catch(() => {
-          // Fork or child-rename failure keeps the current selection.
-        })
-    },
+    ...sharedSessionInjected(),
     renameWorkspace: async (workspaceId, title) => { await workspaces.rename(workspaceId, title) },
     deleteWorkspace: async (workspaceId) => { await workspaces.delete(workspaceId) },
     insertWorkspaceBefore: async (workspaceId, beforeWorkspaceId) => {
@@ -147,19 +166,6 @@ export function apply(ctx: Context): void {
     archiveSession: async (sessionId) => { await uiWorkspace.archiveSession(sessionId) },
     deleteSession: async (sessionId) => { await uiWorkspace.deleteSession(sessionId) },
     pinSession: async (sessionId, pinned) => { await workspaces.pinSession(sessionId, pinned) },
-    externalApps: async () => {
-      const result = await ctx.remote.session.externalApps()
-      if (!result.ok) throw new Error(result.error.message)
-      return result.value
-    },
-    openPath: async (sessionId, target) => {
-      const cwd = sessions.list.getSnapshot().byId[sessionId]?.cwd
-      if (cwd === undefined || cwd === '') {
-        throw new Error(`session "${sessionId}" has no workspace directory`)
-      }
-      const result = await ctx.remote.session.openPath({ path: cwd, target })
-      if (!result.ok) throw new Error(result.error.message)
-    },
     openWorkspacePath: async (path, target) => {
       const result = await ctx.remote.session.openPath({ path, target })
       if (!result.ok) throw new Error(result.error.message)
@@ -189,33 +195,7 @@ export function apply(ctx: Context): void {
     pinSession: async (sessionId, pinned) => { await workspaces.pinSession(sessionId, pinned) },
     archiveSession: async (sessionId) => { await uiWorkspace.archiveSession(sessionId) },
     deleteSession: async (sessionId) => { await uiWorkspace.deleteSession(sessionId) },
-    renameSession: async (sessionId, title) => {
-      const session = sessions.binding(sessionId)?.session
-      if (session === undefined) throw new Error(`unknown session "${sessionId}"`)
-      const result = await session.rename(title)
-      if (!result.ok) throw new Error(result.error.message)
-    },
-    forkSession: (sessionId) => {
-      sessions.fork({ sessionId, increaseTitle: true })
-        .then((childId) => {
-          layout()?.showConversation()
-          sessions.open(childId)
-        })
-        .catch(() => {})
-    },
-    externalApps: async () => {
-      const result = await ctx.remote.session.externalApps()
-      if (!result.ok) throw new Error(result.error.message)
-      return result.value
-    },
-    openPath: async (sessionId, target) => {
-      const cwd = sessions.list.getSnapshot().byId[sessionId]?.cwd
-      if (cwd === undefined || cwd === '') {
-        throw new Error(`session "${sessionId}" has no workspace directory`)
-      }
-      const result = await ctx.remote.session.openPath({ path: cwd, target })
-      if (!result.ok) throw new Error(result.error.message)
-    },
+    ...sharedSessionInjected(),
     toggleRightbar: () => { layout()?.toggleRightbar() },
   })
   // The two picker registrations declare their directory-flow child in the

@@ -113,15 +113,7 @@ export class JsonRpcCraftTransport implements CraftTransport {
   async listTools(): Promise<readonly CraftToolDescriptor[]> {
     if (this.isMcp()) {
       await this.ensureInitialized()
-      const result = await this.request('tools/list', {})
-      const tools = isRecord(result) ? result.tools : undefined
-      if (!Array.isArray(tools)) {
-        throw new CraftError(
-          `the Craft app returned no tool catalog from "${this.options.listMethod}"`,
-          'CRAFT_APP_ERROR',
-        )
-      }
-      return tools.map((entry, index) => parseToolDescriptor(entry, index))
+      return await this.readToolCatalog('tools/list', this.options.listMethod)
     }
     // The flat `serve` protocol answers `methods` + `engine.commands` and
     // rejects `command_list`. Project the live registry instead of sending a
@@ -131,11 +123,24 @@ export class JsonRpcCraftTransport implements CraftTransport {
       const raw = await this.readCommandRegistry()
       return buildCapabilityMatrix('serve', raw).tools
     }
-    const result = await this.request(this.options.listMethod, {})
+    return await this.readToolCatalog(this.options.listMethod, this.options.listMethod)
+  }
+
+  /**
+   * Read the tool catalog the app answers one list method with.
+   * @param requestMethod - the method sent to the app.
+   * @param label - the method named in the failure message.
+   * @returns the parsed tool descriptors.
+   */
+  private async readToolCatalog(
+    requestMethod: string,
+    label: string,
+  ): Promise<readonly CraftToolDescriptor[]> {
+    const result = await this.request(requestMethod, {})
     const tools = isRecord(result) ? result.tools : undefined
     if (!Array.isArray(tools)) {
       throw new CraftError(
-        `the Craft app returned no tool catalog from "${this.options.listMethod}"`,
+        `the Craft app returned no tool catalog from "${label}"`,
         'CRAFT_APP_ERROR',
       )
     }

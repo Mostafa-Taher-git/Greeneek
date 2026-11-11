@@ -1,25 +1,12 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
+import { cleanupTempWorkspaces, createTempWorkspace, writeWorkspaceFile } from './lib/temp-workspace.ts'
 import { bareWorkspaceImports, inspectDependencyRules } from './verify-dependency-rules.ts'
 
-const roots: string[] = []
-
-afterEach(() => {
-  for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true })
-})
-
-function writeFile(root: string, file: string, content: string): void {
-  const path = join(root, file)
-  mkdirSync(dirname(path), { recursive: true })
-  writeFileSync(path, content)
-}
+afterEach(cleanupTempWorkspaces)
 
 function createRoot(): string {
-  const root = mkdtempSync(join(tmpdir(), 'gnk-dep-rules-'))
-  roots.push(root)
-  writeFile(root, 'vendor/README.md', '# Vendored\n')
+  const root = createTempWorkspace('gnk-dep-rules-')
+  writeWorkspaceFile(root, 'vendor/README.md', '# Vendored\n')
   return root
 }
 
@@ -34,8 +21,8 @@ function writePackage(
     name,
     dependencies: Object.fromEntries(deps.map(dep => [dep, 'workspace:^'])),
   }
-  writeFile(root, `${directory}/package.json`, `${JSON.stringify(manifest, null, 2)}\n`)
-  writeFile(root, `${directory}/src/index.ts`, srcSource)
+  writeWorkspaceFile(root, `${directory}/package.json`, `${JSON.stringify(manifest, null, 2)}\n`)
+  writeWorkspaceFile(root, `${directory}/src/index.ts`, srcSource)
 }
 
 describe('dependency rules gate', () => {
@@ -74,15 +61,15 @@ describe('dependency rules gate', () => {
     const root = createRoot()
     writePackage(root, 'packages/core/agent-loop', '@greeneek/gnk-agent-loop', [])
     writePackage(root, 'packages/core/agent', '@greeneek/gnk-agent', ['@greeneek/gnk-agent-loop'])
-    writeFile(root, 'packages/core/agent/tests/loop.spec.ts', "import AgentLoop from '@greeneek/gnk-agent-loop'\n")
+    writeWorkspaceFile(root, 'packages/core/agent/tests/loop.spec.ts', "import AgentLoop from '@greeneek/gnk-agent-loop'\n")
     expect(inspectDependencyRules(root).failures).toEqual([])
   })
 
   it('fails a vendor import of a harness package', () => {
     const root = createRoot()
     writePackage(root, 'packages/llm/llm', '@greeneek/gnk-llm', [])
-    writeFile(root, 'vendor/cordis/package.json', `${JSON.stringify({ name: '@greeneek/cordis' }, null, 2)}\n`)
-    writeFile(root, 'vendor/cordis/src/index.ts', "import { x } from '@greeneek/gnk-llm'\nexport {}\n")
+    writeWorkspaceFile(root, 'vendor/cordis/package.json', `${JSON.stringify({ name: '@greeneek/cordis' }, null, 2)}\n`)
+    writeWorkspaceFile(root, 'vendor/cordis/src/index.ts', "import { x } from '@greeneek/gnk-llm'\nexport {}\n")
     expect(inspectDependencyRules(root).failures.some(f => f.rule === 'vendor-isolation')).toBe(true)
   })
 

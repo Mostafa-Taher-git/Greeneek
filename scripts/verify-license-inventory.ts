@@ -12,6 +12,7 @@
  */
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join, resolve } from 'node:path'
+import { readJsonObject } from './lib/workspace-files.ts'
 import { parseVendoredRows } from './gen-third-party-notices.ts'
 
 const ROOT = resolve(import.meta.dirname, '..')
@@ -25,11 +26,7 @@ export interface LicenseInventoryReport {
 }
 
 function readJson(root: string, file: string): Record<string, unknown> {
-  const parsed: unknown = JSON.parse(readFileSync(join(root, file), 'utf8'))
-  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-    throw new Error(`verify-license-inventory: ${file} must contain a JSON object.`)
-  }
-  return parsed as Record<string, unknown>
+  return readJsonObject(root, file, 'verify-license-inventory')
 }
 
 function readText(root: string, file: string): string {

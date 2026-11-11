@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import type { FleetSidebarProps } from './contract.ts'
+import { IconCloseOutline16 } from '@greeneek/gnk-client-ui-primitives'
 import { FleetPanel } from './FleetPanel.tsx'
 import css from './FleetSidebar.module.css'
 
@@ -32,9 +33,7 @@ export function FleetSidebar(props: FleetSidebarProps) {
           aria-label={t('sidebar.close.aria')}
           onClick={() => { closeSidebar() }}
         >
-          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden>
-            <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
+          <IconCloseOutline16 size={14} />
         </button>
       </div>
       <div className={css.body}>

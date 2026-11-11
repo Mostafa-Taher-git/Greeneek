@@ -109,6 +109,35 @@ function formatEntry(entry: DebateEntry): string {
 }
 
 /**
+ * The brief every living seat reads: the latest turn of every other seat.
+ * @param participants - every seat in the debate, with its resolved name.
+ * @param failed - the seats that already failed.
+ * @param entries - the transcript so far.
+ * @returns the brief per living seat.
+ */
+function briefsFor(
+  participants: readonly { readonly provider: string; readonly name: string }[],
+  failed: ReadonlySet<string>,
+  entries: readonly DebateEntry[],
+): Map<string, string> {
+  const alive = participants.filter(seat => !failed.has(seat.name))
+  const latest = alive.map(seat =>
+    [...entries].reverse().find(entry => entry.participant === seat.name),
+  )
+  const briefs = new Map<string, string>()
+  for (const seat of alive) {
+    const others = alive
+      .filter(other => other.name !== seat.name)
+      .map(other => latest.find(entry => entry?.participant === other.name))
+    briefs.set(
+      seat.name,
+      others.map(entry => (entry === undefined ? '' : formatEntry(entry))).join('\n'),
+    )
+  }
+  return briefs
+}
+
+/**
  * Render the shared transcript one participant reads before its next turn.
  * @param entries - recorded turns so far.
  * @returns the transcript block in round order.
@@ -275,19 +304,13 @@ export async function runDebate(ports: DebatePorts, request: DebateRequest): Pro
     // seat that produced no output for a round is skipped rather than holding
     // the round.
     for (let round = 1; round <= maxRounds; round += 1) {
-      const alive = participants.filter(seat => !failed.has(seat.name))
-      const latest = alive.map(seat =>
-        [...entries].reverse().find(entry => entry.participant === seat.name),
-      )
-      for (const seat of alive) {
-        const others = alive
-          .filter(other => other.name !== seat.name)
-          .map(other => latest.find(entry => entry?.participant === other.name))
-        const brief = others.map(entry => (entry === undefined ? '' : formatEntry(entry))).join('\n')
+      const briefs = briefsFor(participants, failed, entries)
+      for (const seat of participants.filter(seat => !failed.has(seat.name))) {
+        const brief = briefs.get(seat.name) ?? ''
         const role: DebateRole = round % 2 === 1 ? 'objection' : 'rebuttal'
         await ports.send(seat.name, `ROUND ${round} — ${role.toUpperCase()}\n${brief}`, signal)
       }
-      for (const seat of alive) {
+      for (const seat of participants.filter(seat => !failed.has(seat.name))) {
         const text = await collectSeat(seat, signal)
         if (text !== undefined) {
           entries.push({ round, role: round % 2 === 1 ? 'objection' : 'rebuttal', participant: seat.name, sourceHarness: seat.provider, text })
@@ -301,22 +324,16 @@ export async function runDebate(ports: DebatePorts, request: DebateRequest): Pro
     // above a majority that carries none.
     const evidenceRound = maxRounds + 1
     if (maxRounds > 0) {
-      const alive = participants.filter(seat => !failed.has(seat.name))
-      const latest = alive.map(seat =>
-        [...entries].reverse().find(entry => entry.participant === seat.name),
-      )
-      for (const seat of alive) {
-        const others = alive
-          .filter(other => other.name !== seat.name)
-          .map(other => latest.find(entry => entry?.participant === other.name))
-        const brief = others.map(entry => (entry === undefined ? '' : formatEntry(entry))).join('\n')
+      const briefs = briefsFor(participants, failed, entries)
+      for (const seat of participants.filter(seat => !failed.has(seat.name))) {
+        const brief = briefs.get(seat.name) ?? ''
         await ports.send(
           seat.name,
           `ROUND ${evidenceRound} — EVIDENCE\nCite code, tests, or references for and against each claim in the transcript. A claim without evidence stays a claim.\n${brief}`,
           signal,
         )
       }
-      for (const seat of alive) {
+      for (const seat of participants.filter(seat => !failed.has(seat.name))) {
         const text = await collectSeat(seat, signal)
         if (text !== undefined) {
           entries.push({ round: evidenceRound, role: 'evidence', participant: seat.name, sourceHarness: seat.provider, text })

@@ -1,79 +1,19 @@
 /** Structural pins for the artifact-first npm baseline workflow. */
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import yaml from 'js-yaml'
-import { describe, expect, it } from 'vitest'
 
 const root = resolve(import.meta.dirname, '..')
+import { describe, expect, it } from 'vitest'
+import {
+  assertWorkflowActionsPinned,
+  isRecord,
+  jobNamed,
+  jobSteps,
+  loadWorkflow,
+  runText,
+} from './lib/workflow-assertions.ts'
 
-const CURRENT_ACTION_MAJORS: Record<string, string> = {
-  'actions/checkout': 'v7',
-  'actions/setup-node': 'v7',
-  'pnpm/action-setup': 'v6',
-  'actions/upload-artifact': 'v7',
-  'actions/download-artifact': 'v8',
-}
 
-function loadWorkflow(path: string): Record<string, unknown> {
-  const workflow: unknown = yaml.load(readFileSync(resolve(root, path), 'utf8'))
-  if (!isRecord(workflow)) throw new TypeError(`${path} must define a workflow`)
-  return workflow
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-function assertWorkflowActionsPinned(path: string): void {
-  for (const use of rawActionUses(path)) assertCurrentActionMajor(use)
-}
-
-function rawActionUses(path: string): readonly string[] {
-  return readFileSync(resolve(root, path), 'utf8').split('\n').flatMap((line) => {
-    const match = line.match(/^\s*-?\s*uses:\s*(\S.*)$/)
-    return match === null || match[1] === undefined ? [] : [match[1].trim()]
-  })
-}
-
-function assertCurrentActionMajor(use: string): void {
-  if (use.startsWith('./') || use.startsWith('docker://')) return
-  const pin = use.match(/^(\S+)@([0-9a-f]{40})\s*#\s*(v\S+)$/)
-  if (pin === null) {
-    throw new Error(`"${use}" must pin a full commit SHA with a "# vN" version comment`)
-  }
-  const expected = CURRENT_ACTION_MAJORS[pin[1] ?? '']
-  if (expected !== undefined && pin[3] !== expected) {
-    throw new Error(`${pin[1]} must use ${expected}, found ${pin[3]}`)
-  }
-}
-
-function workflowJobs(workflow: Record<string, unknown>): Record<string, unknown> {
-  if (!isRecord(workflow.jobs)) throw new TypeError('workflow must define jobs')
-  return workflow.jobs
-}
-
-function jobNamed(workflow: Record<string, unknown>, name: string): Record<string, unknown> {
-  const job = workflowJobs(workflow)[name]
-  if (!isRecord(job)) throw new TypeError(`workflow must define the ${name} job`)
-  return job
-}
-
-function jobSteps(workflow: Record<string, unknown>, name: string): Record<string, unknown>[] {
-  const steps = jobNamed(workflow, name).steps
-  if (!Array.isArray(steps)) throw new TypeError(`${name} must define steps`)
-  return steps.map((step, index) => {
-    if (!isRecord(step)) throw new TypeError(`${name} step ${index} must be a mapping`)
-    return step
-  })
-}
-
-function runText(job: Record<string, unknown>): string {
-  if (!Array.isArray(job.steps)) return ''
-  return job.steps
-    .filter(isRecord)
-    .map(step => (typeof step.run === 'string' ? step.run : ''))
-    .join('\n')
-}
 
 describe('npm baseline release workflow', () => {
   const workflow = loadWorkflow('.github/workflows/release-npm.yml')

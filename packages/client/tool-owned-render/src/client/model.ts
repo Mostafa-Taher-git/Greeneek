@@ -55,6 +55,10 @@ const SUMMARY_KEYS: Readonly<Record<string, readonly string[]>> = {
   web_fetch: ['url', 'path'],
 }
 
+/* jscpd:ignore-start -- the tool-call derivation is mirrored deliberately: the
+   owner-render package and the tool panel each derive the presentation from
+   the call blocks, and neither client feature package may import the other's
+   values (packages/client/AGENTS.md). */
 /**
  * Flatten a settled result's content blocks to display text.
  * @param node - the settled result node.
@@ -96,6 +100,7 @@ function pickString(args: Record<string, unknown>, keys: readonly string[]): str
 function argsRawOf(block: ToolCallBlock): string {
   return 'kind' in block ? (block.call?.argsRaw ?? '') : block.argsRaw
 }
+/* jscpd:ignore-end */
 
 function summaryOf(toolName: string, argsRaw: string, callId: string): string {
   if (argsRaw === '') return callId

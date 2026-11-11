@@ -23,6 +23,7 @@ vendor/*/lib/
 .recore/
 .tmp-gnk-home/
 apps/desktop/.staging/
+.pnpm-store/
 
 # Generator-test scratch workspaces (created under packages/typert/generator/tests, cleaned after each test)
 packages/typert/generator/tests/.typert-*/

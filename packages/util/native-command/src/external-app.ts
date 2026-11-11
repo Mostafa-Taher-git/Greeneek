@@ -9,7 +9,7 @@
  */
 
 import { existsSync, statSync } from 'node:fs'
-import { delimiter, join } from 'node:path'
+import { win32 } from 'node:path'
 import { runNativeCommand, type NativeCommandRunner } from './runner.ts'
 
 /**
@@ -109,7 +109,7 @@ function isPathLike(name: string): boolean {
  * @returns the joined path.
  */
 function joinFor(platform: NodeJS.Platform, ...segments: string[]): string {
-  if (platform === 'win32') return join(...segments)
+  if (platform === 'win32') return win32.join(...segments)
   return segments.filter(segment => segment !== '').join('/')
 }
 
@@ -129,7 +129,8 @@ function resolveExecutable(
 ): string | undefined {
   if (isPathLike(name)) return exists(name) ? name : undefined
   const pathValue = env.PATH ?? env.Path ?? ''
-  const directories = pathValue.split(delimiter).filter(entry => entry !== '')
+  const pathDelimiter = platform === 'win32' ? win32.delimiter : ':'
+  const directories = pathValue.split(pathDelimiter).filter(entry => entry !== '')
   const suffixes = platform === 'win32' ? WINDOWS_EXTENSIONS : ['']
   for (const directory of directories) {
     for (const suffix of suffixes) {

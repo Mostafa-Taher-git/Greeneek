@@ -7,7 +7,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join, delimiter } from 'node:path'
+import { join } from 'node:path'
 import {
   canRevealNativePath,
   EXTERNAL_APPS,
@@ -40,11 +40,20 @@ describe('external application catalogue', () => {
   it('finds a PATH command on the host platform', () => {
     const rows = externalAppAvailability(EXTERNAL_APPS, {
       platform: 'linux',
-      env: { PATH: ['/usr/bin', '/usr/local/bin'].join(delimiter) },
+      env: { PATH: '/usr/bin:/usr/local/bin' },
       exists: present('/usr/local/bin/cursor'),
     })
     expect(rows.find(row => row.id === 'cursor')?.available).toBe(true)
     expect(rows.find(row => row.id === 'vscode')?.available).toBeFalsy()
+  })
+
+  it('splits POSIX PATH entries when the adapter targets Linux', () => {
+    const rows = externalAppAvailability(EXTERNAL_APPS, {
+      platform: 'linux',
+      env: { PATH: '/bin:/opt/tools' },
+      exists: present('/opt/tools/cursor'),
+    })
+    expect(rows.find(row => row.id === 'cursor')?.available).toBe(true)
   })
 
   it('resolves a Windows command through the executable suffixes', () => {

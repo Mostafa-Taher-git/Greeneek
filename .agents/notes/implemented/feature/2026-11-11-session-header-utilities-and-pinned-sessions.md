@@ -51,7 +51,7 @@ The reference project menu also carries **Commit & push**, **Add project script*
 
 ## Verification
 
-- `packages/util/native-command/tests/external-app.spec.ts` (32 cases): catalogue probing per platform, launch, reveal, and refusal paths; per-file coverage of `external-app.ts` is 100%.
+- `packages/util/native-command/tests/external-app.spec.ts` (33 cases): catalogue probing per platform, launch, reveal, and refusal paths; per-file coverage of `external-app.ts` is 100%. The Windows PATH spelling, delimiter, and executable-suffix resolution follow the requested platform, so the ubuntu lane answers the `win32` cases the same way this host does.
 - `packages/api/session-controller/tests/session-open-path.host.spec.ts` (10 cases): the two new remotes through the generated unary semantics, including the refusal and cancellation codes.
 - `packages/api/workspace-controller/tests/workspace-controller.host.spec.ts`: pin command, `pinned` increment, and the baseline that now carries the pin set.
 - `packages/workspace/workspace/tests/workspace.spec.ts`: the durable pin set, its idempotence, the delete interaction, and the version-2 media upgrade.

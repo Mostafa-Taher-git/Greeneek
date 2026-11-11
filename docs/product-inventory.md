@@ -71,7 +71,7 @@ Every section below registers on the `settings.section` slot and is reached thro
 | PTC code-tools presentation | Per-session opt-in, off by default | `packages/client/ui-chat` tests; the PTC retirement note | verified |
 | `ARTCRAFT_SMOKE` repository variable | Gates the real Craft serve smoke | `release-desktop.yml`, craft-local tests | verified |
 | Greeneek-endpoint key presence (`GREENEEK_API_KEY`) | Greeneek-endpoint live lanes self-skip without it; Greeneek starts without it | `docs/testing.md` | verified |
-| Dry-run dispatch (`dry_run`) | Builds and uploads without publishing | `scripts/ci-workflow.spec.ts` | verified |
+| Dry-run dispatch (`dry_run`) and pre-release tag | Build, verify, and upload without publishing | `scripts/ci-workflow.spec.ts` | verified |
 
 ## Dashboard
 

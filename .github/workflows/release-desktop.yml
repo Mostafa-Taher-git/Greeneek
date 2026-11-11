@@ -315,7 +315,11 @@ jobs:
   publish:
     name: Publish one GitHub Release
     needs: [gate, assemble]
-    if: ${{ inputs.dry_run != true }}
+    # A pre-release tag builds and verifies, then stops here. An `rc` exists so a
+    # broken build burns a throwaway version instead of the release version, and a
+    # published pre-release would take over `releases/latest`. Only a final
+    # `desktop-vX.Y.Z` tag, or a dispatch without `dry_run`, creates a Release.
+    if: ${{ inputs.dry_run != true && !contains(needs.gate.outputs.version, '-') }}
     runs-on: ubuntu-latest
     permissions:
       contents: write

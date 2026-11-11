@@ -26,7 +26,9 @@ run of the whole `CI` workflow and no failed `ci` check run, so a red suite on
 the tagged commit cannot ship installers. Both unpacked trees boot before an
 `assemble` job writes and re-verifies `SHA256SUMS` and `release-manifest.json`.
 A dispatch with `dry_run: true` runs every gate and uploads the verified set
-without publishing. Only the `publish` job holds `contents: write`; Windows
+without publishing, and a tag whose version carries a pre-release suffix
+(`desktop-v0.3.9-rc.1`) runs the same gates and stops before `publish`, so a
+rehearsal never takes over `releases/latest`. Only the `publish` job holds `contents: write`; Windows
 steps use native `pwsh`.
 
 `release-npm.yml` publishes the artifact-first npm baseline. Its `pack-test`

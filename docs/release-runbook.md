@@ -25,7 +25,7 @@ Pushing a `desktop-v<semver>` tag runs `.github/workflows/release-desktop.yml`, 
 3. `scripts/prepare-release-assets.mjs` copies versioned artifacts to stable `Greeneek-Desktop-latest-*` aliases for human links; the updater never reads the aliases, only the versioned filenames referenced inside `latest*.yml`.
 4. `publish` needs both build jobs, refuses a partial set, and attaches everything to the tag's GitHub Release in one `softprops/action-gh-release` step with `fail_on_unmatched_files`. `concurrency: release-<ref>` keeps two tag pushes from interleaving, and only this job holds `contents: write`.
 
-Manual dispatch takes an existing tag name, so a release can be rebuilt without moving the tag. Never move or delete a `desktop-*` tag: its commit is what users installed.
+Manual dispatch takes an existing tag name, so a release can be rebuilt without moving the tag. A dispatch with `dry_run: true` and any tag whose version carries a pre-release suffix (`desktop-v0.3.9-rc.1`) build and verify the whole set, then stop before `publish`; that rehearsal is how a build is proven on a version that can still be burned. Never move or delete a `desktop-*` tag: its commit is what users installed.
 
 Published artifacts today: Linux `deb` + `AppImage`, Windows NSIS `exe` + portable `zip`. All are unsigned; the download links in `docs/user/guide/desktop.md` point at `releases/latest/download/<alias>` and stay stable across versions. Adding code signing or notarization means adding a signing job whose success gates the publish job, plus regenerating the Windows blockmap and `latest.yml` after signing so delta updates keep working.
 

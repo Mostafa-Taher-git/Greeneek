@@ -146,7 +146,10 @@ describe('Desktop release workflow', () => {
 
     expect(dispatch.inputs.tag).toMatchObject({ required: true, type: 'string' })
     expect(dispatch.inputs.dry_run).toMatchObject({ required: false, default: false, type: 'boolean' })
-    expect(jobNamed(workflow, 'publish').if).toBe('${{ inputs.dry_run != true }}')
+    // A tag carrying a pre-release suffix rehearses the release on a burnable
+    // version, so publishing it would pin `releases/latest` to that rehearsal.
+    expect(jobNamed(workflow, 'publish').if)
+      .toBe('${{ inputs.dry_run != true && !contains(needs.gate.outputs.version, \'-\') }}')
   })
 
   it('gates on a successful complete CI workflow run', () => {

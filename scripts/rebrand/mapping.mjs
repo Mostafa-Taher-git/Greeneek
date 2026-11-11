@@ -196,6 +196,13 @@ export const RESIDUE_ALLOWLIST = [
   { file: /^(\.\/)?apps\/web\/tests\/expected\/onboarding-usable-provider\//, why: 'D16: recorded aria snapshots name the deepseek catalog option like every other external model provider' },
   { file: /^(\.\/)?apps\/web\/tests\/expected\/onboarding-greeneek-config\//, why: 'D16: recorded aria snapshot of the same provider dropdown the onboarding dialog renders from the pi-ai upstream catalog — deepseek is a catalog id like cerebras/fireworks, not a brand claim' },
   { file: /^(\.\/)?packages\/client\/ui-settings-models\/tests\/sign-in-dialog\.client\.spec\.tsx$/, why: 'D16: the spec drives the provider catalog (deepseek id + DEEPSEEK_API_KEY env) to assert its dismissal path' },
+  { file: /^(\.\/)?\.agents\/skills\/ds-/, why: 'the adopted upstream skill pack keeps its upstream provenance and MIT attribution (the UPSTREAM.md files and the skill descriptions name the upstream project)' },
+  { file: /^(\.\/)?scripts\/ds-skill-pack\.spec\.ts$/, why: 'the pack inventory spec asserts the upstream provenance string the skills carry' },
+  { file: /^(\.\/)?docs\/subsystems\/skills\.md$/, why: 'the skill provenance page names the upstream pack the project adopted, with its license and commit' },
+  { file: /^(\.\/)?packages\/client\/ui-primitives\/src\/(secret-mask|user-text)\.tsx?$/, why: 'the ported upstream files keep their MIT attribution header' },
+  { file: /^(\.\/)?packages\/session\/session-persistence-jsonl\/src\/lease\.ts$/, why: 'the adapted upstream file keeps its MIT attribution header' },
+  { file: /^(\.\/)?\.agents\/notes\/proposed\/process\/2026-11-01-v0\.3\.9-master-release-plan\.md$/, why: 'the release ledger names the upstream reference the owner asked the work to follow' },
+  { file: /^(\.\/)?\.agents\/notes\/implemented\/process\/2026-11-09-upstream-p0-ports\.md$/, why: 'the port ledger records the upstream fork point, the upstream commit, and the MIT attribution of every reused file' },
 ];
 
 /**

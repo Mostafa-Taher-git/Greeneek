@@ -4,7 +4,7 @@ Status: implemented
 
 ## Problem
 
-The conversation header offered the Session title and the sidebar listed Sessions, but the product had no way to open a Session's directory on the desktop, no way to keep a Session in view, and no place to reach the per-Session verbs (rename, fork, archive, delete, copy id). The DeepSeek harness reference surface the owner asked for groups those verbs in the Session header and opens the workspace folder from the same place.
+The conversation header offered the Session title and the sidebar listed Sessions, but the product had no way to open a Session's directory on the desktop, no way to keep a Session in view, and no place to reach the per-Session verbs (rename, fork, archive, delete, copy id). The upstream harness reference surface the owner asked for groups those verbs in the Session header and opens the workspace folder from the same place.
 
 Opening a path needs Host facts the browser cannot know: which applications are installed, which platform the Host runs on, and whether a file manager exists. The Session also needs a durable "pinned" state that survives a restart and survives grouping, so a pinned Session stays visible while its Workspace group is folded.
 

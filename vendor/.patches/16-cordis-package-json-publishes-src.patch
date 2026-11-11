@@ -1,5 +1,5 @@
 Modification 16: cordis/package.json publishes src
-Tree-hash: 3f6a88a91e110b7daa28b30cc1218a8095ce72ae80be7dbaad4891489332c95e
+Tree-hash: 26471147939e34b3035af0ea91c6d9d6c95303fac7515aa829dcc74db9fcabcd
 Upstream manifest: see vendor/README.md manifest table for this package's SHA.
 
 added `src` to the `files` list, joining the other eight vendored packages. Cordis declares `"./src/*": "./src/*"` in its exports, so a tarball without `src` publishes an export map pointing at absent files; the release change judgement also reads `files` to decide whether a diff reaches the payload, and a package whose only published paths are build output has no tracked path to match.

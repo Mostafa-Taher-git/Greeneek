@@ -149,6 +149,12 @@ export const GENERIC_SKIPS: readonly GenericSkip[] = [
   { file: 'packages/extensions/ui-cordis/src/client/CordisPanel.tsx', upstream: ['cordis'] },
   { file: 'packages/extensions/ui-cordis/src/client/CordisRunRow.tsx', upstream: ['cordis'] },
   { file: 'packages/extensions/ui-cordis/src/client/locales.ts', upstream: ['cordis'] },
+  // The published cordis package exposes a binary named `cordis`; publish
+  // rehearsal and license fixtures use that binary id and upstream name.
+  { file: 'scripts/publish-npm-baseline.spec.ts', upstream: ['cordis'] },
+  { file: 'scripts/publish-npm-baseline.ts', upstream: ['cordis'] },
+  { file: 'scripts/verify-license-inventory.spec.ts', upstream: ['cordis'] },
+  { file: 'scripts/verify-vendor-drift.spec.ts', upstream: ['cordis'] },
 ]
 
 /** A string that must appear exactly `count` times once the rescope has run. */
@@ -259,7 +265,7 @@ export const EXACT_EDITS: readonly ExactEdit[] = [
     id: 'root-agents-vendored-name-contract',
     file: 'AGENTS.md',
     find: 'vendored packages keep upstream names and are `private: true`. `cordis` is a peerDependency (+ dev) of every harness package.',
-    replace: 'vendored packages are rescoped ([mapping](docs/rescope.md)) and `private: true`. `@greeneek/cordis` is a peerDependency (+ dev) of every harness package.',
+    replace: 'vendored packages are rescoped ([mapping](docs/rescope.md)) and `private: true`. Every harness package declares `@greeneek/cordis` as a peer and development dependency.',
     expect: 1,
   },
   {

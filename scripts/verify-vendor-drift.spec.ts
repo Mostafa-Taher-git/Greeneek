@@ -36,6 +36,13 @@ describe('vendor drift gate', () => {
     expect(inspectVendorDrift(root).failures.some(f => f.includes('missing patch file'))).toBe(true)
   })
 
+  it('ignores the root CLAUDE compatibility link in the vendored-source hash', () => {
+    const root = createRoot()
+    const hash = vendorTreeHash(root)
+    writeWorkspaceFile(root, 'vendor/CLAUDE.md', 'AGENTS.md')
+    expect(vendorTreeHash(root)).toBe(hash)
+  })
+
   it('fails when the tree changed without regenerating patches', () => {
     const root = createRoot()
     const hash = vendorTreeHash(root)

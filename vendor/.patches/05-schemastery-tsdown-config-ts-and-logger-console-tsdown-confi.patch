@@ -1,5 +1,5 @@
 Modification 5: schemastery/tsdown.config.ts and logger-console/tsdown.config.ts
-Tree-hash: 3f6a88a91e110b7daa28b30cc1218a8095ce72ae80be7dbaad4891489332c95e
+Tree-hash: 26471147939e34b3035af0ea91c6d9d6c95303fac7515aa829dcc74db9fcabcd
 Upstream manifest: see vendor/README.md manifest table for this package's SHA.
 
 ours, not upstream files — per-package build-shape overrides (dual ESM+CJS output; separate node/browser entries) for the repo-root tsdown build. They read the JS emitted under `lib/types` and then write the publish runtime entries under `lib/`. Like the regenerated tsconfigs, they are not part of the upstream sync surface.

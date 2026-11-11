@@ -63,13 +63,14 @@ export function patchFileName(entry: ModificationEntry): string {
   return `${String(entry.number).padStart(2, '0')}-${slug}.patch`
 }
 
-/** sha256 of the vendor tree (src, manifests, tsconfigs; build output excluded). */
+/** sha256 of vendored package sources, manifests, and tsconfigs; generated files and the root CLAUDE link are excluded. */
 export function vendorTreeHash(root: string): string {
   const hash = createHash('sha256')
   const vendorDir = join(root, 'vendor')
   const visit = (dir: string): void => {
     for (const entry of readdirSync(dir).sort()) {
       if (entry === 'node_modules' || entry === 'lib' || entry === 'patches' || entry === '.patches') continue
+      if (dir === vendorDir && entry === 'CLAUDE.md') continue
       const path = join(dir, entry)
       const stat = statSync(path)
       if (stat.isDirectory()) visit(path)

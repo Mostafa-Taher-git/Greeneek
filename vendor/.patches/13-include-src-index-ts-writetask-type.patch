@@ -1,5 +1,5 @@
 Modification 13: include/src/index.ts writeTask type
-Tree-hash: 3f6a88a91e110b7daa28b30cc1218a8095ce72ae80be7dbaad4891489332c95e
+Tree-hash: 26471147939e34b3035af0ea91c6d9d6c95303fac7515aa829dcc74db9fcabcd
 Upstream manifest: see vendor/README.md manifest table for this package's SHA.
 
 widened the optional `writeTask?: NodeJS.Timeout` property to `NodeJS.Timeout | undefined` — the debounced writer assigns `undefined` on flush, which `exactOptionalPropertyTypes` rejects on a plain optional. Type-only; no behavior change.

@@ -1,5 +1,8 @@
 import { strict as assert } from 'node:assert'
 import { describe, it } from 'node:test'
+import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import {
   buildGnkArgs,
   buildSpawnEnvironment,
@@ -7,6 +10,7 @@ import {
   extractReadyUrl,
   isProbeHealthy,
   resolveEnvironmentPathKey,
+  resolveGnkEntry,
   updateReadyStability,
   ENTRY_FAILURE_MARKER,
   READY_PATTERN,
@@ -29,6 +33,27 @@ describe('gnk-service', () => {
   it('exposes the readiness pattern and entry-failure marker', () => {
     assert.ok(READY_PATTERN instanceof RegExp)
     assert.equal(ENTRY_FAILURE_MARKER, 'GNK entry failed')
+  })
+
+  it('runs the workspace build in a source checkout and the staged CLI in a package', () => {
+    const checkoutRoot = mkdtempSync(join(tmpdir(), 'gnk-desktop-'))
+    const checkout = join(checkoutRoot, 'apps', 'desktop')
+    mkdirSync(checkout, { recursive: true })
+    mkdirSync(join(checkoutRoot, 'apps', 'cli', 'lib'), { recursive: true })
+    writeFileSync(join(checkoutRoot, 'apps', 'cli', 'lib', 'bin.js'), '')
+    assert.equal(
+      resolveGnkEntry(checkout),
+      join(checkoutRoot, 'apps', 'cli', 'lib', 'bin.js'),
+    )
+
+    const packageRoot = mkdtempSync(join(tmpdir(), 'gnk-desktop-'))
+    const packaged = join(packageRoot, 'resources', 'app')
+    mkdirSync(join(packaged, 'node_modules', '@greeneek', 'gnk', 'lib'), { recursive: true })
+    writeFileSync(join(packaged, 'node_modules', '@greeneek', 'gnk', 'lib', 'bin.js'), '')
+    assert.equal(
+      resolveGnkEntry(packaged),
+      join(packaged, 'node_modules', '@greeneek', 'gnk', 'lib', 'bin.js'),
+    )
   })
 
   it('extracts the launch token, robust to format drift', () => {

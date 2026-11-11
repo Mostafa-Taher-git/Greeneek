@@ -53,10 +53,17 @@ export function resolveNodeEntry(appDir) {
 
 /**
  * The built CLI the wrapper imports.
+ *
+ * A source checkout runs the workspace build (`<repo>/apps/cli/lib/bin.js`),
+ * so a development launch serves the code the developer just built instead of
+ * the injected copy pnpm made at install time. A packaged app has no
+ * workspace beside it and uses the CLI staged next to it.
  * @param appDir - the staged app directory.
  * @returns the CLI entry path; throws naming it when absent.
  */
 export function resolveGnkEntry(appDir) {
+  const workspaceEntry = join(appDir, '..', '..', 'apps', 'cli', 'lib', 'bin.js')
+  if (existsSync(workspaceEntry)) return workspaceEntry
   const entry = join(appDir, 'node_modules', '@greeneek', 'gnk', 'lib', 'bin.js')
   if (!existsSync(entry)) {
     throw new Error(`Built gnk CLI is missing: ${entry} (run \`pnpm run build\` before staging)`)

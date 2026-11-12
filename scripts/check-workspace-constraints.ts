@@ -192,6 +192,10 @@ const packageFileExtras: Readonly<Record<string, readonly string[]>> = {
   // resolve at install time, before the build produces lib/bin.js.
   '@greeneek/gnk-experimental-webworker-packer': ['bin.js', 'lib/repository-*.js'],
   '@greeneek/gnk-subprocess-local': ['scripts/ensure-spawn-helper.mjs'],
+  // The conformance entry bundles vitest's inline-snapshot helper, whose dynamic
+  // `import('magic-string')` rolldown keeps as a build-named chunk; a shared
+  // chunk is published because the two entries stay split.
+  '@greeneek/gnk-llm': ['lib/magic-string.es-*.js'],
 }
 
 function sameStringList(actual: readonly string[] | undefined, expected: readonly string[]): boolean {

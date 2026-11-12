@@ -7117,6 +7117,9 @@ importers:
       '@greeneek/gnk-client-store':
         specifier: workspace:^
         version: link:../../client/store
+      '@greeneek/gnk-client-ui-chat':
+        specifier: workspace:^
+        version: link:../../client/ui-chat
       '@greeneek/gnk-client-ui-commands':
         specifier: workspace:^
         version: link:../../client/ui-commands

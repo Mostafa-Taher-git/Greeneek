@@ -711,38 +711,8 @@ describe('web e2e: long Chat scroll contract', () => {
           top: flow.getBoundingClientRect().top - host.getBoundingClientRect().top,
         }
       })
-      const diagBefore = await liveRow.evaluate((row) => {
-        const flow = row.closest<HTMLElement>('[data-chat-anchor-key]')
-        const host = row.closest<HTMLElement>('[data-conversation-scroll]')
-        return {
-          flowTop: flow?.getBoundingClientRect().top,
-          flowHeight: flow?.getBoundingClientRect().height,
-          hostTop: host?.getBoundingClientRect().top,
-          hostHeight: host?.getBoundingClientRect().height,
-          scrollTop: host?.scrollTop,
-          scrollHeight: host?.scrollHeight,
-          rowTop: row.getBoundingClientRect().top,
-          rowBottom: row.getBoundingClientRect().bottom,
-        }
-      })
       await liveRow.click()
       await expect.poll(() => liveRow.getAttribute('aria-expanded'), { timeout: 10_000 }).toBe('true')
-      const diag = await liveRow.evaluate((row) => {
-        const flow = row.closest<HTMLElement>('[data-chat-anchor-key]')
-        const host = row.closest<HTMLElement>('[data-conversation-scroll]')
-        return {
-          flowTop: flow?.getBoundingClientRect().top,
-          flowHeight: flow?.getBoundingClientRect().height,
-          hostTop: host?.getBoundingClientRect().top,
-          hostHeight: host?.getBoundingClientRect().height,
-          scrollTop: host?.scrollTop,
-          scrollHeight: host?.scrollHeight,
-          rowTop: row.getBoundingClientRect().top,
-          rowBottom: row.getBoundingClientRect().bottom,
-        }
-      })
-      console.log('DIAG-BEFORE', JSON.stringify(diagBefore))
-      console.log('DIAG', JSON.stringify(diag), 'anchor', JSON.stringify(toolAnchor))
       await expectSameFlowTop(world.page, toolAnchor)
       await wheelToHistoryStart(world.page)
       await world.page.getByRole('button', { name: 'Back to bottom', exact: true }).click()

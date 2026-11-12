@@ -33,13 +33,13 @@
    overflow: a marker wider than `padding-inline-start` loses its leading digits with no
    way to scroll them back. Markers are right-aligned to the content edge, so the
    padding must fit the widest one the list can produce. `searchMaxResults` is an
-   unbounded positive integer, so the padding is sized in `em` — against this
-   element's own font, the one a marker inherits — to hold a three-digit marker
-   (`999. ` measures 2.35em in the app font stack) plus the gap the one-digit
-   case already had. */
+   unbounded positive integer, so the padding is sized in `ch` — the element's own
+   font's digit width, the unit a marker inherits — to hold a three-digit marker
+   (`999. ` needs about 4.3ch in the app font stack and less in a wider one) plus
+   the gap the one-digit case already had. */
 .sources {
   margin: 0;
-  padding-inline-start: 2.5em;
+  padding-inline-start: 4.5ch;
   display: flex;
   flex-direction: column;
   gap: 10px;

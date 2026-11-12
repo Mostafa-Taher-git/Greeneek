@@ -256,6 +256,15 @@
   min-width: 0;
 }
 
+/* The left groups keep their content width. A shrunk group lets the plan
+   chip's box overflow into the trailing group, where it overlaps the model
+   trigger's click area (external:107); with no shrinkable item the row
+   wraps the trailing group onto its own line instead. */
+.tools,
+.modes {
+  flex: none;
+}
+
 /* figma 75:8208 drew 16 between + and the mode chips and 4 between Plan /
    Read-only; the chip gap widened to 12 so the pill chips read as separate
    controls. */

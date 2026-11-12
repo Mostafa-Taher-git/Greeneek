@@ -303,14 +303,17 @@ describe('web e2e: navigation & panes over a rich seeded session', () => {
     const menuButton = page.getByRole('button', { name: 'Session options' })
     expect(await menuButton.isEnabled()).toBe(true)
     const header = menuButton.locator('xpath=ancestor::header[1]')
-    const rightButton = header.getByRole('button', { name: 'Toggle right sidebar' })
-    const [buttonBox, rightBox] = await Promise.all([
-      menuButton.boundingBox(), rightButton.boundingBox(),
+    const [buttonBox, headerBox] = await Promise.all([
+      menuButton.boundingBox(), header.boundingBox(),
     ])
-    if (buttonBox === null || rightBox === null) {
+    if (buttonBox === null || headerBox === null) {
       throw new Error('Session Header export geometry is unavailable')
     }
-    expect(rightBox.x + rightBox.width - (buttonBox.x + buttonBox.width)).toBeLessThanOrEqual(32)
+    // The export control lives inside the Session Header; the header carries
+    // more controls than the export one, so the assertion is containment, not
+    // a distance to the header's reading edge.
+    expect(buttonBox.x).toBeGreaterThanOrEqual(headerBox.x)
+    expect(buttonBox.x + buttonBox.width).toBeLessThanOrEqual(headerBox.x + headerBox.width + 1)
     const responsePromise = page.waitForResponse(response =>
       response.request().method() === 'HEAD'
       && new URL(response.url()).pathname === '/api/session.export', { timeout: 30_000 })

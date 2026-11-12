@@ -42,6 +42,18 @@
   - listitem:
     - button "New Session now"
 - text: Details
+- button "Copy Session as Markdown": Copy
+- button "Download session log": Log
+- button "Trajectory"
 - button "Close details":
   - img
-- tabpanel "Tool": Click a tool row in the message flow to view its details
+- text: Click a tool row in the message flow to view its details Live fleet
+- button "Close the fleet sidebar":
+  - img
+- navigation "Session lineage":
+  - button "workspace"
+- region "Previous agents":
+  - heading "Previous agents" [level=3]
+  - paragraph: No agent ran under this Session.
+- status
+- text: No active Army waves for this session.

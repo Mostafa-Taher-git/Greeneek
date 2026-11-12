@@ -9,8 +9,6 @@
 - button "Agent Team":
   - img
   - text: Agent Team
-- button "Session options":
-  - img
 - button "Files (default)":
   - img
 - button "Open in external application or file manager":
@@ -21,5 +19,9 @@
   - img
 - button "More session actions":
   - img
-- button "Toggle right sidebar":
+- button "Toggle thread details":
+  - img
+- button "Toggle terminal drawer":
+  - img
+- button "Toggle right panel":
   - img

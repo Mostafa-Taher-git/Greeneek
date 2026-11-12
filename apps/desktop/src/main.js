@@ -27,6 +27,13 @@ import {
 } from './paths.js'
 import { secureWindow } from './security.js'
 import { ensurePinnedStore } from './store-pin.js'
+import {
+  describeMissingInterface,
+  diagnosticReport,
+  interfaceFailureScript,
+  rendererDiagnostic,
+  waitForInterface,
+} from './interface-watch.js'
 import { createUpdateManager, resolveAutoUpdater } from './updater.js'
 import { createTrayMenuTemplate, shouldHideWindowOnClose } from './window-lifecycle.js'
 import { createWindowOptions } from './window-options.js'
@@ -58,6 +65,8 @@ let isQuitting = false
 let service
 let serviceUrl
 let updateManager
+/** Renderer diagnostics collected for the interface failure report. */
+const rendererDiagnostics = []
 
 async function showMainWindow() {
   if (!mainWindow) {
@@ -96,6 +105,24 @@ function createWindow() {
 
   mainWindow.webContents.on('did-finish-load', () => {
     if (frameless) void applyFramelessTitleBar(mainWindow.webContents)
+  })
+  // The renderer is the only place that knows why the interface stayed blank.
+  // Its console output and its crashes are recorded in the same log the
+  // service writes, so the next blank window explains itself.
+  mainWindow.webContents.on('console-message', (event) => {
+    const diagnostic = rendererDiagnostic(event)
+    if (diagnostic === undefined) return
+    rendererDiagnostics.push(diagnostic)
+    if (diagnostic.level !== 'error' && diagnostic.level !== 'warning') return
+    console.warn(`[renderer] ${diagnostic.level}: ${diagnostic.message}`)
+  })
+  mainWindow.webContents.on('render-process-gone', (_event, details) => {
+    rendererDiagnostics.push({ level: 'error', message: `renderer gone: ${details.reason}` })
+    console.error(`[renderer] render process gone: ${details.reason}`)
+  })
+  mainWindow.webContents.on('preload-error', (_event, preloadPath, error) => {
+    rendererDiagnostics.push({ level: 'error', message: `preload failed (${preloadPath}): ${error.message}` })
+    console.error(`[renderer] preload failed (${preloadPath}): ${error.message}`)
   })
   mainWindow.on('maximize', () => {
     if (frameless) void syncFramelessMaximizeIcon(mainWindow.webContents, true)
@@ -171,6 +198,18 @@ async function launch() {
     await startupReady
     await clearStaleGnkAuthCookies(mainWindow.webContents.session.cookies, serviceUrl)
     await mainWindow?.loadURL(serviceUrl)
+    // A page that loads but paints nothing is the blank window the user
+    // reports. The shell waits for the application to render and, when it
+    // never does, shows the reason over the page instead of a white window.
+    const outcome = await waitForInterface({ window: mainWindow })
+    if (outcome.ready) return
+    const reason = await describeMissingInterface(serviceUrl)
+    const diagnostics = diagnosticReport(rendererDiagnostics)
+    console.error(`[renderer] ${reason}\n${diagnostics.join('\n')}`)
+    await mainWindow?.webContents.executeJavaScript(interfaceFailureScript({ reason, diagnostics }))
+      .catch((error) => {
+        console.error(`[renderer] the failure page could not be shown: ${error instanceof Error ? error.message : String(error)}`)
+      })
   }
 
   const failBoot = async (message) => {

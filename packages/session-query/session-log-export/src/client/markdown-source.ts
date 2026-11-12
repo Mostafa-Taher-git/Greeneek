@@ -13,8 +13,9 @@ type Fetch = (input: string | URL, init?: RequestInit) => Promise<Response>
 /** The archive entry holding the Session's own log. */
 const LOG_ENTRY = 'session.jsonl'
 
-/** The local file header signature every ZIP entry starts with. */
-const ZIP_LOCAL_HEADER = 0x04034b50
+/** The ZIP record signatures the reader needs. */
+const ZIP_END_OF_CENTRAL_DIRECTORY = 0x06054b50
+const ZIP_CENTRAL_HEADER = 0x02014b50
 
 /** The ZIP compression methods this reader understands. */
 const ZIP_STORED = 0
@@ -23,6 +24,11 @@ const ZIP_DEFLATED = 8
 /**
  * Read one stored entry from a ZIP archive.
  *
+ * The Host streams the archive, so a local file header carries no sizes:
+ * they follow the data in a descriptor, and the central directory at the end
+ * of the archive holds the real ones. The reader therefore walks the central
+ * directory and reads the data from the local header it points at.
+ *
  * The browser's own inflate does the work: `DecompressionStream` reads raw
  * deflate, which is exactly what a ZIP entry carries. Nothing outside the
  * browser platform is needed, so the browser half carries no archive library.
@@ -30,26 +36,47 @@ const ZIP_DEFLATED = 8
  * @param wanted - the entry's file name.
  * @returns the entry's bytes, or undefined when the archive has no such entry.
  */
-async function readZipEntry(
+export async function readZipEntry(
   archive: Uint8Array,
   wanted: string,
 ): Promise<Uint8Array | undefined> {
   const view = new DataView(archive.buffer, archive.byteOffset, archive.byteLength)
-  if (view.getUint32(0, true) !== ZIP_LOCAL_HEADER) return undefined
-  const method = view.getUint16(8, true)
-  const compressedSize = view.getUint32(18, true)
-  const nameLength = view.getUint16(26, true)
-  const extraLength = view.getUint16(28, true)
-  const name = new TextDecoder().decode(archive.slice(30, 30 + nameLength))
-  if (name !== wanted) return undefined
-  const start = 30 + nameLength + extraLength
-  const data = archive.slice(start, start + compressedSize)
-  if (method === ZIP_STORED) return data
-  if (method !== ZIP_DEFLATED) {
-    throw new Error(`unsupported ZIP compression method ${method}`)
+  let end = -1
+  for (let offset = archive.length - 22; offset >= 0; offset -= 1) {
+    if (view.getUint32(offset, true) === ZIP_END_OF_CENTRAL_DIRECTORY) {
+      end = offset
+      break
+    }
   }
-  const stream = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))
-  return new Uint8Array(await new Response(stream).arrayBuffer())
+  if (end < 0) return undefined
+  const entries = view.getUint16(end + 10, true)
+  let cursor = view.getUint32(end + 16, true)
+  const decoder = new TextDecoder()
+  for (let index = 0; index < entries; index += 1) {
+    if (view.getUint32(cursor, true) !== ZIP_CENTRAL_HEADER) return undefined
+    const method = view.getUint16(cursor + 10, true)
+    const compressedSize = view.getUint32(cursor + 20, true)
+    const nameLength = view.getUint16(cursor + 28, true)
+    const extraLength = view.getUint16(cursor + 30, true)
+    const commentLength = view.getUint16(cursor + 32, true)
+    const localOffset = view.getUint32(cursor + 42, true)
+    const name = decoder.decode(archive.slice(cursor + 46, cursor + 46 + nameLength))
+    if (name === wanted) {
+      // The local header repeats the name and extra lengths; the data follows them.
+      const localNameLength = view.getUint16(localOffset + 26, true)
+      const localExtraLength = view.getUint16(localOffset + 28, true)
+      const start = localOffset + 30 + localNameLength + localExtraLength
+      const data = archive.slice(start, start + compressedSize)
+      if (method === ZIP_STORED) return data
+      if (method !== ZIP_DEFLATED) {
+        throw new Error(`unsupported ZIP compression method ${method}`)
+      }
+      const stream = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))
+      return new Uint8Array(await new Response(stream).arrayBuffer())
+    }
+    cursor += 46 + nameLength + extraLength + commentLength
+  }
+  return undefined
 }
 
 /** Resolve the browser's Host base with the connection carrier's null-origin fallback. */

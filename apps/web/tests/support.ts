@@ -39,7 +39,9 @@ export async function newEnglishPage(browser: Browser, height = 1000): Promise<P
  */
 export async function expandTurnProcesses(page: Page): Promise<void> {
   const controls = page.locator('[data-turn-process]')
-  await controls.first().waitFor({ state: 'visible', timeout: 10_000 })
+  // A loaded CI runner needs longer than a local one to mount the group; the
+  // wait is bounded so a missing control still fails the scenario.
+  await controls.first().waitFor({ state: 'visible', timeout: 60_000 })
   const count = await controls.count()
   for (let index = 0; index < count; index++) {
     const control = controls.nth(index)

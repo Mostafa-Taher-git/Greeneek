@@ -156,7 +156,9 @@ describe.skipIf(MODE === 'record')('web e2e: durable workflow run in Chat', () =
     await page.setViewportSize({ width: 1280, height: 800 })
 
     await member.click()
-    await page.getByText(CHILD_PROMPT, { exact: true }).waitFor({ timeout: 15_000 })
+    // The child session opens on its own turn; a loaded CI runner needs more
+    // than a local one to mount it, and the wait stays bounded.
+    await page.getByText(CHILD_PROMPT, { exact: true }).waitFor({ timeout: 60_000 })
 
     const sessions = page.getByRole('tree', { name: 'Sessions' })
     await sessions.getByRole('treeitem', { name: /Use the workflow tool exactly/ }).click()

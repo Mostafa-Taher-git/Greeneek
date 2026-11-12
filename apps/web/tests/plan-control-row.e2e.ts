@@ -93,48 +93,36 @@ describe('web e2e: plan chip click area at the narrow viewport', () => {
     // trigger would fit beside the chip even on the pre-fix layout. The
     // directory loads asynchronously, so poll for the real label.
     await expect.poll(() => trigger.getAttribute('aria-label'), { timeout: 10_000 }).toContain('Greeneek-V4-Flash')
-    const chipBox = await chip.boundingBox()
-    const triggerBox = await trigger.boundingBox()
-    expect(chipBox).not.toBeNull()
-    expect(triggerBox).not.toBeNull()
-    const planGeometry = await page.evaluate(() => {
-      const chip = document.querySelector('[aria-label="Plan mode on, press to turn off"]')
-      const trigger = document.querySelector('[aria-label^="Select model"]')
-      const chain = (element: Element | null): unknown[] => {
-        const rows: unknown[] = []
-        let current = element
-        while (current instanceof HTMLElement && rows.length < 6) {
-          const box = current.getBoundingClientRect()
-          rows.push({
-            tag: current.tagName,
-            className: current.className,
-            display: getComputedStyle(current).display,
-            position: getComputedStyle(current).position,
-            flex: getComputedStyle(current).flex,
-            width: box.width,
-            height: box.height,
-            x: box.x,
-            y: box.y,
-          })
-          current = current.parentElement
-        }
-        return rows
+    // Both boxes are read in one layout pass. The model directory and the
+    // fonts load asynchronously, so two separate reads can straddle a reflow
+    // and compare a chip from one layout with a trigger from the next.
+    const boxes = await page.evaluate(() => {
+      const chipElement = document.querySelector('[aria-label="Plan mode on, press to turn off"]')
+      const triggerElement = document.querySelector('[aria-label^="Select model"]')
+      if (!(chipElement instanceof HTMLElement) || !(triggerElement instanceof HTMLElement)) {
+        throw new Error('the plan chip or the model trigger is not mounted')
       }
-      return { chip: chain(chip), trigger: chain(trigger) }
+      const chipRect = chipElement.getBoundingClientRect()
+      const triggerRect = triggerElement.getBoundingClientRect()
+      return {
+        chip: { x: chipRect.x, y: chipRect.y, width: chipRect.width, height: chipRect.height },
+        trigger: { x: triggerRect.x, y: triggerRect.y, width: triggerRect.width, height: triggerRect.height },
+      }
     })
-    console.log('PLAN GEOMETRY', JSON.stringify(planGeometry))
+    const chipBox = boxes.chip
+    const triggerBox = boxes.trigger
 
     // The reported acceptance as numbers: both controls in viewport and
     // disjoint click areas (a non-zero overlap would fail), and — in the
     // click below — the chip center receiving the pointer.
-    const chipInViewport = chipBox!.x >= 0 && chipBox!.x + chipBox!.width <= VIEWPORT.width
-      && chipBox!.y >= 0 && chipBox!.y + chipBox!.height <= VIEWPORT.height
-    const triggerInViewport = triggerBox!.x >= 0 && triggerBox!.x + triggerBox!.width <= VIEWPORT.width
-      && triggerBox!.y >= 0 && triggerBox!.y + triggerBox!.height <= VIEWPORT.height
-    const overlapLeft = Math.max(chipBox!.x, triggerBox!.x)
-    const overlapTop = Math.max(chipBox!.y, triggerBox!.y)
-    const overlapRight = Math.min(chipBox!.x + chipBox!.width, triggerBox!.x + triggerBox!.width)
-    const overlapBottom = Math.min(chipBox!.y + chipBox!.height, triggerBox!.y + triggerBox!.height)
+    const chipInViewport = chipBox.x >= 0 && chipBox.x + chipBox.width <= VIEWPORT.width
+      && chipBox.y >= 0 && chipBox.y + chipBox.height <= VIEWPORT.height
+    const triggerInViewport = triggerBox.x >= 0 && triggerBox.x + triggerBox.width <= VIEWPORT.width
+      && triggerBox.y >= 0 && triggerBox.y + triggerBox.height <= VIEWPORT.height
+    const overlapLeft = Math.max(chipBox.x, triggerBox.x)
+    const overlapTop = Math.max(chipBox.y, triggerBox.y)
+    const overlapRight = Math.min(chipBox.x + chipBox.width, triggerBox.x + triggerBox.width)
+    const overlapBottom = Math.min(chipBox.y + chipBox.height, triggerBox.y + triggerBox.height)
     const overlapArea = Math.max(0, overlapRight - overlapLeft) * Math.max(0, overlapBottom - overlapTop)
 
     const golden = [

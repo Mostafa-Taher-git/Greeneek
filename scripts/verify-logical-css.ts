@@ -58,7 +58,7 @@ const PHYSICAL_OFFSET_ALLOWLIST = new Map<string, PhysicalAllowance>([
     reason: 'splitter handles center on their strip; the offset rides a TSX inline left computed from layout',
     declarations: [
       { selector: '.handle', property: 'transition' },
-      { selector: ".handle[data-side='details']::after", property: 'left' },
+      { selector: ".handle[data-side='details']::after, .handle[data-side='rightbar']::after", property: 'left' },
     ],
   }],
   ['packages/client/ui-model-selection/src/client/ModelSelect.module.css', {

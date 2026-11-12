@@ -68,7 +68,8 @@
 
 .frame[data-desktop-host] .sidebarCol,
 .frame[data-desktop-host] .centerCol,
-.frame[data-desktop-host] .detailsCol {
+.frame[data-desktop-host] .detailsCol,
+.frame[data-desktop-host] .rightbarCol {
   grid-row: 2;
 }
 
@@ -100,10 +101,25 @@
   border-inline-start: 0.5px solid var(--dsw-alias-border-l3);
 }
 
+.rightbarCol {
+  min-width: 0;
+  overflow: hidden;
+  border-inline-start: 0.5px solid var(--dsw-alias-border-l3);
+}
+
 /* The details subtree stays mounted at zero width, so its border must not paint
    a 1px seam. The collapsed sidebar instead retains a bordered compact rail. */
-.frame[data-details-collapsed] .detailsCol {
+.frame[data-details-collapsed] .detailsCol,
+.frame[data-rightbar-collapsed] .rightbarCol {
   border-inline-start: none;
+}
+
+.terminalDrawer {
+  flex: none;
+  height: clamp(156px, 32vh, 360px);
+  min-height: 0;
+  overflow: hidden;
+  border-top: 0.5px solid var(--dsw-alias-border-l3);
 }
 
 /* Drag handles are frame children (columns clip overflow): an 8px hit strip
@@ -137,7 +153,8 @@
   }
 }
 
-.handle[data-side='details']::after {
+.handle[data-side='details']::after,
+.handle[data-side='rightbar']::after {
   content: '';
   position: absolute;
   top: 50%;
@@ -159,12 +176,17 @@
 
 .detailsCol:hover ~ .handle[data-side='details']::after,
 .handle[data-side='details']:hover::after,
-.handle[data-side='details'][data-dragging='true']::after {
+.handle[data-side='details'][data-dragging='true']::after,
+.rightbarCol:hover ~ .handle[data-side='rightbar']::after,
+.handle[data-side='rightbar']:hover::after,
+.handle[data-side='rightbar'][data-dragging='true']::after {
   opacity: 1;
 }
 
 .handle[data-side='details']:hover::after,
-.handle[data-side='details'][data-dragging='true']::after {
+.handle[data-side='details'][data-dragging='true']::after,
+.handle[data-side='rightbar']:hover::after,
+.handle[data-side='rightbar'][data-dragging='true']::after {
   background: var(--dsw-alias-button-floating-hover);
   border-color: var(--dsw-alias-border-l3);
 }

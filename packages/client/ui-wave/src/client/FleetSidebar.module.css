@@ -23,6 +23,49 @@
   color: var(--dsw-alias-label-primary);
 }
 
+.lineage {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 7px 12px;
+  overflow-x: auto;
+  border-bottom: 0.5px solid var(--dsw-alias-border-l2);
+  scrollbar-width: thin;
+}
+
+.lineageItem {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.lineageSeparator {
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+}
+
+.lineageButton {
+  max-width: 10rem;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 12px;
+  line-height: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.lineageButton:hover,
+.lineageButton[aria-current='page'] {
+  color: var(--dsw-alias-label-primary);
+}
+
 .close {
   flex: none;
   display: inline-flex;

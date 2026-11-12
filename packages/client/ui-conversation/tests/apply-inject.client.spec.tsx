@@ -142,8 +142,18 @@ describe('Conversation inject API', () => {
     expect(activate).toHaveBeenLastCalledWith('chat')
     expect(header.instance.store.getSnapshot().view).toBe('chat')
 
+    b.runtime.ctx.uiConversation.selectView(ROOT, 'trajectory')
+    expect(activate).toHaveBeenLastCalledWith('trajectory')
+    expect(header.instance.store.getSnapshot().view).toBe('trajectory')
+
     removeTrajectory()
     removeChat()
+    // A session with no mounted header has no selector to route through, and
+    // the failure says so instead of dereferencing a missing binding.
+    expect(() => {
+      b.runtime.ctx.uiConversation.selectView('no-header' as SessionId, 'trajectory')
+    })
+      .toThrow(/has no mounted view selector/)
     await b.runtime.dispose()
   })
 

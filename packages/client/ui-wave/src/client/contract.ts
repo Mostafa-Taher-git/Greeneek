@@ -8,6 +8,7 @@ import type { HostObservable, InjectFace, PropsLocale, PropsRuntime } from '@gre
 import type { RemoteResult } from '@greeneek/gnk-typert-protocol'
 import type { WaveId, WaveMemberId, WaveView } from '@greeneek/gnk-subagent-wave/client'
 import type { SessionId } from '@greeneek/gnk-session/types'
+import type { SessionListState, SessionSummary } from '@greeneek/gnk-api-session-controller/client'
 // Type-only: pulls the context with the `waves` Remote namespace through the Client assembly.
 import type {} from '@greeneek/gnk-api-remotes/client'
 // Type-only: pulls the Session Controller service used for lead resolution and child opening.
@@ -70,10 +71,65 @@ export interface FleetInjected {
   resume: (waveId: WaveId, maxTokensPerMember?: number, maxWaveTokens?: number) => Promise<ResumeOutcome>
   /** Open a member's child transcript through the current Session graph. */
   openChild: (childSessionId: SessionId) => void
+  /** Navigate to one Session in the lineage breadcrumb. */
+  openSession: (sessionId: SessionId) => void
   /** Open the dedicated right sidebar (S5-11a); the sidebar surface calls it on the empty->running edge. */
   openSidebar: () => void
   /** Close the right sidebar in one click, collapsing its track. */
   closeSidebar: () => void
+}
+
+/** One ancestor or current Session shown above Live Fleet. */
+export interface FleetLineageItem {
+  readonly id: SessionId
+  readonly displayTitle: string
+}
+
+/**
+ * Resolve the selected Session's parent chain in root-first display order.
+ * @param list - current Session list projection.
+ * @param id - selected Session identity.
+ * @returns known lineage rows, from root to selected Session.
+ */
+export function fleetLineage(list: SessionListState, id: SessionId): readonly FleetLineageItem[] {
+  const chain: FleetLineageItem[] = []
+  const seen = new Set<SessionId>()
+  let cursor: SessionId | undefined = id
+  while (cursor !== undefined && !seen.has(cursor)) {
+    seen.add(cursor)
+    const summary: SessionSummary | undefined = list.byId[cursor]
+    if (summary === undefined) break
+    chain.unshift({ id: summary.id, displayTitle: summary.displayTitle })
+    if (summary.origin !== 'subagent') break
+    cursor = summary.parentId
+  }
+  return chain
+}
+
+/** One Harness agent that ran under a Session, as the lineage group reports it. */
+export interface FleetAgentItem {
+  readonly id: SessionId
+  readonly displayTitle: string
+  readonly running: boolean
+}
+
+/**
+ * Resolve the Harness agents that ran under one Session.
+ * @param list - current Session list projection.
+ * @param id - selected Session identity.
+ * @returns the Session's child agents, in list order.
+ */
+export function fleetAgents(list: SessionListState, id: SessionId): readonly FleetAgentItem[] {
+  const agents: FleetAgentItem[] = []
+  for (const summary of Object.values(list.byId)) {
+    if (summary.parentId !== id) continue
+    agents.push({
+      id: summary.id,
+      displayTitle: summary.displayTitle,
+      running: summary.running,
+    })
+  }
+  return agents
 }
 
 /** Full props of the reused fleet body (sidebar body and pill overlay). */

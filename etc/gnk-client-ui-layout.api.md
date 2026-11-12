@@ -11,22 +11,27 @@
 `src/client/columns.ts: export const DETAILS_DEFAULT = 360`
 `src/client/columns.ts: export const DETAILS_MAX = 520`
 `src/client/columns.ts: export const DETAILS_MIN = 300`
+`src/client/columns.ts: export const RIGHTBAR_DEFAULT = 360`
+`src/client/columns.ts: export const RIGHTBAR_MAX = 520`
+`src/client/columns.ts: export const RIGHTBAR_MIN = 300`
 `src/client/columns.ts: export const SIDEBAR_AUTO_COLLAPSE = 1024`
 `src/client/columns.ts: export const SIDEBAR_COLLAPSED = 56`
 `src/client/columns.ts: export const SIDEBAR_DEFAULT = 280`
 `src/client/columns.ts: export const SIDEBAR_MAX = 420`
 `src/client/columns.ts: export const SIDEBAR_MIN = 264`
 `src/client/columns.ts: export function clampWidth(px: number, min: number, max: number): number {`
-`src/client/columns.ts: export function computeColumns(viewport: number, sidebar: number, details: number): Columns {`
-`src/client/columns.ts: export interface Columns { sidebar: number; center: number; details: number }`
+`src/client/columns.ts: export function computeColumns(viewport: number, sidebar: number, details: number, rightbar = 0): Columns {`
+`src/client/columns.ts: export interface Columns { sidebar: number; center: number; details: number; rightbar: number }`
 `src/client/index.ts: export const inject = ['slots', 'theme', 'locale']`
 `src/client/index.ts: export function apply(ctx: ClientContext): void {`
-`src/client/index.ts: export interface ConvOwnerProps {}`
+`src/client/index.ts: export interface ConvOwnerProps {`
 `src/client/index.ts: export interface DashboardOwnerProps {}`
 `src/client/index.ts: export interface DetailsOwnerProps {}`
 `src/client/index.ts: export interface RightbarOwnerProps {}`
+`src/client/index.ts: export interface SessionPanelControls {`
 `src/client/index.ts: export interface SettingsOwnerProps {`
 `src/client/index.ts: export interface SidebarOwnerProps {`
+`src/client/index.ts: export interface TerminalDrawerOwnerProps { close: () => void }`
 `src/client/index.ts: export interface TitlebarOwnerProps {`
 `src/client/index.ts: export type { ILayout } from './service.ts'`
 `src/client/index.ts: export { LayoutController } from './service.ts'`

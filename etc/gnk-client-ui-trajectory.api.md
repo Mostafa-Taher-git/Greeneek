@@ -6,6 +6,9 @@
 `src/client/TrajectoryCell.tsx: export function TrajectoryCell({`
 `src/client/TrajectoryCell.tsx: export type {`
 `src/client/TrajectoryCell.tsx: export { formatElapsedSeconds }`
+`src/client/TrajectoryDetailsAction.tsx: export function TrajectoryDetailsAction({`
+`src/client/TrajectoryDetailsAction.tsx: export interface TrajectoryDetailsActionInjected {`
+`src/client/TrajectoryDetailsAction.tsx: export type TrajectoryDetailsActionProps =`
 `src/client/TrajectoryGroupHeader.tsx: export function TrajectoryGroupHeader({ title, description }: TrajectoryGroupHeaderProps) {`
 `src/client/TrajectoryGroupHeader.tsx: export interface TrajectoryGroupHeaderProps {`
 `src/client/TrajectoryTable.tsx: export function TrajectoryTable({`

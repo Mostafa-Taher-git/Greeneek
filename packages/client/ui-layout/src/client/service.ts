@@ -27,12 +27,20 @@ export interface ILayout {
   openDetails(): void
   /** Close the details panel. */
   closeDetails(): void
-  /** Open the right sidebar (dedicated live-work surface) over the details track. */
+  /** Toggle Thread Details between its remembered width and closed state. */
+  toggleDetails(): void
+  /** Open the independent right panel (the live Fleet surface). */
   openRightbar(): void
-  /** Close the right sidebar and collapse its track. */
+  /** Close the right panel and collapse its track. */
   closeRightbar(): void
-  /** Toggle the right sidebar open/closed in one call. */
+  /** Toggle the right panel open/closed in one call. */
   toggleRightbar(): void
+  /** Open the bottom terminal activity drawer. */
+  openTerminalDrawer(): void
+  /** Close the bottom terminal activity drawer. */
+  closeTerminalDrawer(): void
+  /** Toggle the bottom terminal activity drawer. */
+  toggleTerminalDrawer(): void
   /**
    * Open Settings in the main column, optionally selecting a section.
    * @param section - Settings section id to select, or undefined to keep the current section.
@@ -79,7 +87,12 @@ export class LayoutController implements ILayout {
     this.#require().closeDetails()
   }
 
-  /** Open the right sidebar (dedicated live-work surface) over the details track. */
+  /** Toggle Thread Details between its remembered width and closed state. */
+  toggleDetails(): void {
+    this.#require().toggleDetails()
+  }
+
+  /** Open the independent right panel (the live Fleet surface). */
   openRightbar(): void {
     this.#require().openRightbar()
   }
@@ -92,6 +105,21 @@ export class LayoutController implements ILayout {
   /** Toggle the right sidebar open/closed in one call. */
   toggleRightbar(): void {
     this.#require().toggleRightbar()
+  }
+
+  /** Open the bottom terminal activity drawer. */
+  openTerminalDrawer(): void {
+    this.#require().openTerminalDrawer()
+  }
+
+  /** Close the bottom terminal activity drawer. */
+  closeTerminalDrawer(): void {
+    this.#require().closeTerminalDrawer()
+  }
+
+  /** Toggle the bottom terminal activity drawer. */
+  toggleTerminalDrawer(): void {
+    this.#require().toggleTerminalDrawer()
   }
 
   openSettings(section?: string): void {

@@ -6,13 +6,18 @@ function fakePanels(): PanelActions {
   return {
     setSidebar: vi.fn(),
     setDetails: vi.fn(),
+    setRightbar: vi.fn(),
     toggleSidebar: vi.fn(),
     setNarrow: vi.fn(),
     openDetails: vi.fn(),
     closeDetails: vi.fn(),
+    toggleDetails: vi.fn(),
     openRightbar: vi.fn(),
     closeRightbar: vi.fn(),
     toggleRightbar: vi.fn(),
+    openTerminalDrawer: vi.fn(),
+    closeTerminalDrawer: vi.fn(),
+    toggleTerminalDrawer: vi.fn(),
     openSettings: vi.fn(),
     selectSettingsSection: vi.fn(),
     showConversation: vi.fn(),
@@ -21,7 +26,7 @@ function fakePanels(): PanelActions {
 }
 
 describe('LayoutController', () => {
-  it('forwards the three panel actions to the attached set', () => {
+  it('forwards panel actions to the attached set', () => {
     const service = new LayoutController()
     const panels = fakePanels()
     service.attachPanels(panels)
@@ -29,9 +34,13 @@ describe('LayoutController', () => {
     service.toggleSidebar()
     service.openDetails()
     service.closeDetails()
+    service.toggleDetails()
     service.openRightbar()
     service.closeRightbar()
     service.toggleRightbar()
+    service.openTerminalDrawer()
+    service.closeTerminalDrawer()
+    service.toggleTerminalDrawer()
     service.openSettings('models')
     service.selectSettingsSection('general')
     service.showConversation()
@@ -42,9 +51,13 @@ describe('LayoutController', () => {
     expect(panels.showConversation).toHaveBeenCalledTimes(1)
     expect(panels.openDetails).toHaveBeenCalledTimes(1)
     expect(panels.closeDetails).toHaveBeenCalledTimes(1)
+    expect(panels.toggleDetails).toHaveBeenCalledTimes(1)
     expect(panels.openRightbar).toHaveBeenCalledTimes(1)
     expect(panels.closeRightbar).toHaveBeenCalledTimes(1)
     expect(panels.toggleRightbar).toHaveBeenCalledTimes(1)
+    expect(panels.openTerminalDrawer).toHaveBeenCalledTimes(1)
+    expect(panels.closeTerminalDrawer).toHaveBeenCalledTimes(1)
+    expect(panels.toggleTerminalDrawer).toHaveBeenCalledTimes(1)
     expect(panels.setSidebar).not.toHaveBeenCalled()
     expect(panels.setDetails).not.toHaveBeenCalled()
   })
@@ -54,9 +67,13 @@ describe('LayoutController', () => {
     expect(() => { service.toggleSidebar() }).toThrow(/panel actions not wired/)
     expect(() => { service.openDetails() }).toThrow(/panel actions not wired/)
     expect(() => { service.closeDetails() }).toThrow(/panel actions not wired/)
+    expect(() => { service.toggleDetails() }).toThrow(/panel actions not wired/)
     expect(() => { service.openRightbar() }).toThrow(/panel actions not wired/)
     expect(() => { service.closeRightbar() }).toThrow(/panel actions not wired/)
     expect(() => { service.toggleRightbar() }).toThrow(/panel actions not wired/)
+    expect(() => { service.openTerminalDrawer() }).toThrow(/panel actions not wired/)
+    expect(() => { service.closeTerminalDrawer() }).toThrow(/panel actions not wired/)
+    expect(() => { service.toggleTerminalDrawer() }).toThrow(/panel actions not wired/)
     expect(() => { service.openSettings() }).toThrow(/panel actions not wired/)
     expect(() => { service.selectSettingsSection('general') }).toThrow(/panel actions not wired/)
     expect(() => { service.showConversation() }).toThrow(/panel actions not wired/)

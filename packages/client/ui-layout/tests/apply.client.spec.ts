@@ -33,7 +33,7 @@ describe('ui-layout client apply', () => {
     expect(inject).toEqual(['slots', 'theme', 'locale'])
   })
 
-  it('provides ctx.layout and registers AppFrame into root with the three child declarations', async () => {
+  it('provides ctx.layout and registers AppFrame with its panel child declarations', async () => {
     const { ctx, slots } = await bench()
     const fiber = ctx.plugin({ inject: [...inject], apply })
     await fiber.await()
@@ -46,6 +46,7 @@ describe('ui-layout client apply', () => {
     expect(slots.spec('settings')).toEqual({ kind: 'single', scope: 'root' })
     expect(slots.spec('details')).toEqual({ kind: 'single', scope: 'session' })
     expect(slots.spec('rightbar')).toEqual({ kind: 'single', scope: 'session' })
+    expect(slots.spec('terminal.drawer')).toEqual({ kind: 'single', scope: 'session' })
   })
 
   it('injects no business face and attaches the layout actions', async () => {
@@ -54,8 +55,11 @@ describe('ui-layout client apply', () => {
     await fiber.await()
     const actions = {
       setSidebar: vi.fn(), setDetails: vi.fn(), toggleSidebar: vi.fn(),
+      setRightbar: vi.fn(), toggleDetails: vi.fn(),
       openDetails: vi.fn(), closeDetails: vi.fn(), openRightbar: vi.fn(),
       closeRightbar: vi.fn(), toggleRightbar: vi.fn(),
+      openTerminalDrawer: vi.fn(), closeTerminalDrawer: vi.fn(), toggleTerminalDrawer: vi.fn(),
+      showConversation: vi.fn(),
     }
     const injected = (slots.entries('root')[0]!.inject as (actions: never) => object)(actions as never)
     expect(injected).toEqual({})

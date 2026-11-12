@@ -1,13 +1,13 @@
 /**
- * Three-column shell frame, registered into the built-in 'root' slot (the web
+ * Four-column shell frame, registered into the built-in 'root' slot (the web
  * shell renders only 'root'). Owns the grid tracks (sidebar | center |
- * details), the drag handles (pointer capture + rAF throttle), the concession
+ * details | right panel), the drag handles (pointer capture + rAF throttle), the concession
  * chain (columns.ts), and the child-slot render decisions: the sidebar slot
  * renders HERE with live parameters from the concession solve, and the
  * session-aware occupants render in fixed column positions; strict entries
  * gate themselves on current-session availability while session-maybe
  * entries retain identity. Pure component: everything arrives
- * through the three framework shares — zero cordis or framework imports,
+ * through the framework shares — zero cordis or framework imports,
  * zero self-made hooks.
  */
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
@@ -23,7 +23,7 @@ import css from './AppFrame.module.css'
 /** Full composed props: runtime share + child-slot render share + store share. */
 export type AppFrameProps =
   & PropsRuntime<'root'>
-  & PropsRenderSlots<'sidebar' | 'titlebar' | 'conversation' | 'settings' | 'dashboard' | 'details' | 'rightbar' | 'shell.overlay'>
+  & PropsRenderSlots<'sidebar' | 'titlebar' | 'conversation' | 'settings' | 'dashboard' | 'details' | 'rightbar' | 'terminal.drawer' | 'shell.overlay'>
   & PropsStore<ReturnType<typeof createLayoutStore>>
   & PropsLocale<'common'>
 
@@ -37,11 +37,16 @@ function DetailsColumn(props: { children?: ReactNode }) {
   return <div className={css.detailsCol}>{props.children}</div>
 }
 
+/** Independent right panel grid item. */
+function RightbarColumn(props: { children?: ReactNode }) {
+  return <div className={css.rightbarCol}>{props.children}</div>
+}
+
 /**
  * One drag handle: pointer capture, rAF-throttled dx reports against the drag-start origin.
  * `side` keys the hover-reveal CSS to the owning column.
  */
-function DragHandle(props: { side: 'sidebar' | 'details'; left: number; onStart: () => void; onDrag: (dx: number) => void; onEnd: () => void }) {
+function DragHandle(props: { side: 'sidebar' | 'details' | 'rightbar'; left: number; onStart: () => void; onDrag: (dx: number) => void; onEnd: () => void }) {
   const [dragging, setDragging] = useState(false)
   const origin = useRef(0)
   const latest = useRef(0)
@@ -87,7 +92,7 @@ function DragHandle(props: { side: 'sidebar' | 'details'; left: number; onStart:
   )
 }
 
-/** The three-column frame (see module doc). */
+/** The four-column frame (see module doc). */
 export function AppFrame({
   useStore,
   useSessions,
@@ -121,6 +126,7 @@ export function AppFrame({
     if (lastSession.current !== undefined && lastSession.current !== detailsSession) {
       actions.closeDetails()
       actions.closeRightbar()
+      actions.closeTerminalDrawer()
     }
     lastSession.current = detailsSession
   }, [actions, detailsSession])
@@ -157,7 +163,12 @@ export function AppFrame({
   const sidebarPreference = sidebarCollapsed
     ? 0
     : panels.sidebar === 0 ? SIDEBAR_DEFAULT : panels.sidebar
-  const cols = computeColumns(viewport, sidebarPreference, detailsSession === undefined ? 0 : panels.details)
+  const cols = computeColumns(
+    viewport,
+    sidebarPreference,
+    detailsSession === undefined ? 0 : panels.details,
+    detailsSession === undefined ? 0 : panels.rightbar,
+  )
   const colsRef = useRef(cols)
   colsRef.current = cols
 
@@ -166,27 +177,41 @@ export function AppFrame({
   // it stays frozen for the whole gesture so dx deltas do not compound.
   const sidebarBase = useRef(0)
   const detailsBase = useRef(0)
+  const rightbarBase = useRef(0)
   // Track-level transitions pause for the whole gesture: eased tracks would
   // detach the column edge from the pointer (AppFrame.module.css).
   const [dragging, setDragging] = useState(false)
   const onDragEnd = useCallback(() => { setDragging(false) }, [])
   const onSidebarStart = useCallback(() => { sidebarBase.current = colsRef.current.sidebar; setDragging(true) }, [])
   const onDetailsStart = useCallback(() => { detailsBase.current = colsRef.current.details; setDragging(true) }, [])
+  const onRightbarStart = useCallback(() => { rightbarBase.current = colsRef.current.rightbar; setDragging(true) }, [])
   const onSidebarDrag = useCallback((dx: number) => {
     actions.setSidebar(sidebarBase.current + dx)
   }, [actions])
   const onDetailsDrag = useCallback((dx: number) => {
     actions.setDetails(detailsBase.current - dx)
   }, [actions])
+  const onRightbarDrag = useCallback((dx: number) => {
+    actions.setRightbar(rightbarBase.current - dx)
+  }, [actions])
   const productTitle = process.env.GNK_CLIENT_TITLE ?? t('brand.localBuild')
+  const panelControls = {
+    threadDetailsOpen: panels.details > 0,
+    terminalDrawerOpen: panels.terminalDrawerOpen,
+    rightPanelOpen: panels.rightbar > 0,
+    toggleThreadDetails: () => { actions.toggleDetails() },
+    toggleTerminalDrawer: () => { actions.toggleTerminalDrawer() },
+    toggleRightPanel: () => { actions.toggleRightbar() },
+  }
 
   return (
     <div
       ref={frameRef}
       className={css.frame}
-      style={{ gridTemplateColumns: `${cols.sidebar}px minmax(0, 1fr) ${cols.details}px` }}
+      style={{ gridTemplateColumns: `${cols.sidebar}px minmax(0, 1fr) ${cols.details}px ${cols.rightbar}px` }}
       data-sidebar-collapsed={sidebarCollapsed || undefined}
       data-details-collapsed={cols.details === 0 || undefined}
+      data-rightbar-collapsed={cols.rightbar === 0 || undefined}
       data-dragging={dragging || undefined}
       data-desktop-host={desktopHost || undefined}
     >
@@ -223,7 +248,7 @@ export function AppFrame({
             entry while no session is current. */}
         <CenterColumn>
           <div className={css.mainPage} hidden={panels.mainPage !== 'conversation'}>
-            {renderSlot('conversation', {})}
+            {renderSlot('conversation', { panelControls })}
           </div>
           {panels.mainPage === 'settings' && (
             <div className={css.mainPage}>
@@ -235,19 +260,28 @@ export function AppFrame({
               {renderSlot('dashboard', {})}
             </div>
           )}
+          {panels.mainPage === 'conversation' && panels.terminalDrawerOpen && detailsSession !== undefined && (
+            <div className={css.terminalDrawer} data-terminal-drawer>
+              <SessionProvider>
+                {renderSlot('terminal.drawer', { close: () => { actions.closeTerminalDrawer() } })}
+              </SessionProvider>
+            </div>
+          )}
         </CenterColumn>
         <DetailsColumn>
-          {panels.rightbarOpen
-            ? <SessionProvider>{renderSlot('rightbar', {})}</SessionProvider>
-            : <SessionProvider>{renderSlot('details', {})}</SessionProvider>}
+          <SessionProvider>{renderSlot('details', {})}</SessionProvider>
         </DetailsColumn>
+        <RightbarColumn>
+          <SessionProvider>{renderSlot('rightbar', {})}</SessionProvider>
+        </RightbarColumn>
       </>
       <div className={css.overlayLayer} data-shell-overlay>
         {renderSlot('shell.overlay', {})}
       </div>
       {/* The collapsed rail is fixed-width: no resize handle while closed. */}
       {!sidebarCollapsed && <DragHandle side="sidebar" left={cols.sidebar} onStart={onSidebarStart} onDrag={onSidebarDrag} onEnd={onDragEnd} />}
-      {cols.details > 0 && <DragHandle side="details" left={viewport - cols.details} onStart={onDetailsStart} onDrag={onDetailsDrag} onEnd={onDragEnd} />}
+      {cols.details > 0 && <DragHandle side="details" left={cols.sidebar + cols.center} onStart={onDetailsStart} onDrag={onDetailsDrag} onEnd={onDragEnd} />}
+      {cols.rightbar > 0 && <DragHandle side="rightbar" left={viewport - cols.rightbar} onStart={onRightbarStart} onDrag={onRightbarDrag} onEnd={onDragEnd} />}
     </div>
   )
 }

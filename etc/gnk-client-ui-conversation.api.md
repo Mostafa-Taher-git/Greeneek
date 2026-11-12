@@ -109,6 +109,7 @@
 `src/client/contract/slots.ts: export interface ConversationHeaderLineageOwnerProps {`
 `src/client/contract/slots.ts: export interface ConversationInjected {`
 `src/client/contract/slots.ts: export interface ConversationSessionHeaderInjected {`
+`src/client/contract/slots.ts: export interface ConversationSessionHeaderOwnerProps {`
 `src/client/contract/slots.ts: export interface ConversationSessionInjected {`
 `src/client/contract/slots.ts: export interface EmptyWorkspaceOwnerProps {`
 `src/client/contract/slots.ts: export interface HeroAgentPresetOwnerProps {`

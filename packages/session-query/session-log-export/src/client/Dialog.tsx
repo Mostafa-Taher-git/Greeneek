@@ -1,7 +1,7 @@
 import type { ObservableSnapshot } from '@greeneek/gnk-client-store'
 import type { SessionId } from '@greeneek/gnk-session/types'
 import { Button, Modal } from '@greeneek/gnk-client-ui-primitives'
-import type { InjectFace, PropsLocale, PropsRuntime } from '@greeneek/gnk-client-ui-slots'
+import type { InjectFace, PropsLocale } from '@greeneek/gnk-client-ui-slots'
 import type { SessionLogDownloadState } from './controller.ts'
 import { NS } from './locales.ts'
 
@@ -13,9 +13,9 @@ export interface SessionLogDownloadDialogInjected {
 }
 
 export type SessionLogDownloadDialogProps =
-  PropsRuntime<'conversation.session.header.utilities'>
-  & PropsLocale<typeof NS>
-  & InjectFace<SessionLogDownloadDialogInjected>
+  PropsLocale<typeof NS>
+  & InjectFace<Omit<SessionLogDownloadDialogInjected, 'request'>>
+  & { readonly sessionId: SessionId }
 
 /**
  * Modal shared by the Session Header button and this browser's `/export` command.

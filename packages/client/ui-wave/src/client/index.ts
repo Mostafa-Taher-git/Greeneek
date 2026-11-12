@@ -74,6 +74,10 @@ export function apply(ctx: ClientContext): void {
       openChild: (childSessionId) => {
         ctx.sessions.openSubagent({ parentSessionId: sessionId, childSessionId, mode: 'one-shot' })
       },
+      openSession: (sessionId) => {
+        ctx.layout.showConversation()
+        ctx.sessions.open(sessionId)
+      },
       openSidebar: () => { ctx.layout.openRightbar() },
       closeSidebar: () => { ctx.layout.closeRightbar() },
     }

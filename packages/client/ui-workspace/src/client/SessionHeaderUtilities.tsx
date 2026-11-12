@@ -1,6 +1,6 @@
 /**
  * Session header utilities: the workspace folder split-opener, pin and archive
- * shortcuts, the session overflow menu, and the rightbar toggle.
+ * shortcuts, the session overflow menu, and the three workspace panel toggles.
  *
  * The header is session-scoped, so the title comes from the global Session
  * list snapshot rather than the lifecycle snapshot, which carries control
@@ -19,6 +19,8 @@ import {
   IconChevronDownOutline14,
   IconEllipsisOutline16,
   IconFolderOpen16,
+  IconCodeOutline16,
+  IconInfoOutline16,
   IconPanelRightOutline16,
   IconPinFill16,
   IconTrashOutline16,
@@ -52,8 +54,6 @@ export interface SessionHeaderUtilitiesInjected {
   externalApps: () => Promise<ExternalAppsShare>
   /** Hand this Session's workspace directory to a Host desktop destination. */
   openPath: (sessionId: SessionId, target: OpenPathTarget) => Promise<void>
-  /** Toggle the conversation right sidebar when the layout owns one. */
-  toggleRightbar?: () => void
 }
 
 /** Composed slot props for the header utilities. */
@@ -79,7 +79,7 @@ export function SessionHeaderUtilities({
   forkSession,
   externalApps,
   openPath,
-  toggleRightbar,
+  panelControls,
 }: SessionHeaderUtilitiesProps) {
   const title = useSessions(state => state.byId[sessionId]?.title ?? '')
   const pinnedSessionIds = useWorkspaces(state => state.pinnedSessionIds)
@@ -112,11 +112,20 @@ export function SessionHeaderUtilities({
         archiveSession(sessionId).catch((reason: unknown) => {
           console.warn('session archive rejected:', reason)
         })
+      } else if (panelControls !== undefined && shortcutMatches(event, 'mod+shift+b')) {
+        event.preventDefault()
+        panelControls.toggleThreadDetails()
+      } else if (panelControls !== undefined && shortcutMatches(event, 'mod+j')) {
+        event.preventDefault()
+        panelControls.toggleTerminalDrawer()
+      } else if (panelControls !== undefined && shortcutMatches(event, 'mod+alt+b')) {
+        event.preventDefault()
+        panelControls.toggleRightPanel()
       }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => { window.removeEventListener('keydown', onKeyDown) }
-  }, [sessionId, title, forkSession, archiveSession])
+  }, [sessionId, title, forkSession, archiveSession, panelControls])
 
   const defaultLabel = fileManagerLabel(appsShare?.platform, t)
   const openInItems: MenuItem[] = useMemo(() => openInMenuItems(appsShare, t), [appsShare, t])
@@ -280,17 +289,42 @@ export function SessionHeaderUtilities({
         portal
       />
 
-      {toggleRightbar !== undefined && (
-        <Tooltip label={t('actions.toggleRightbar.aria')} delayMs={500}>
-          <button
-            type="button"
-            className={css.headerBtn}
-            onClick={toggleRightbar}
-            aria-label={t('actions.toggleRightbar.aria')}
-          >
-            <IconPanelRightOutline16 />
-          </button>
-        </Tooltip>
+      {panelControls !== undefined && (
+        <>
+          <Tooltip label={t('actions.toggleThreadDetails.aria')} delayMs={500}>
+            <button
+              type="button"
+              className={css.headerBtn}
+              onClick={panelControls.toggleThreadDetails}
+              aria-label={t('actions.toggleThreadDetails.aria')}
+              aria-pressed={panelControls.threadDetailsOpen}
+            >
+              <IconInfoOutline16 />
+            </button>
+          </Tooltip>
+          <Tooltip label={t('actions.toggleTerminalDrawer.aria')} delayMs={500}>
+            <button
+              type="button"
+              className={css.headerBtn}
+              onClick={panelControls.toggleTerminalDrawer}
+              aria-label={t('actions.toggleTerminalDrawer.aria')}
+              aria-pressed={panelControls.terminalDrawerOpen}
+            >
+              <IconCodeOutline16 />
+            </button>
+          </Tooltip>
+          <Tooltip label={t('actions.toggleRightPanel.aria')} delayMs={500}>
+            <button
+              type="button"
+              className={css.headerBtn}
+              onClick={panelControls.toggleRightPanel}
+              aria-label={t('actions.toggleRightPanel.aria')}
+              aria-pressed={panelControls.rightPanelOpen}
+            >
+              <IconPanelRightOutline16 />
+            </button>
+          </Tooltip>
+        </>
       )}
       {openError !== null && (
         <div className={css.renameError} role="alert">{openError}</div>

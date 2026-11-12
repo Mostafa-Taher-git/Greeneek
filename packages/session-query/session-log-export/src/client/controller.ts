@@ -2,6 +2,7 @@
 
 import { createSnapshotStore, type SnapshotStore } from '@greeneek/gnk-client-store'
 import type { SessionId } from '@greeneek/gnk-session/types'
+import { SessionOperationRegistry } from './session-operations.ts'
 
 /** Download phases presented by the shared modal. */
 export type SessionLogDownloadStatus = 'downloading' | 'success' | 'error'
@@ -59,8 +60,7 @@ export class SessionLogDownloadController {
   /** uSES-safe state source shared by every Session-scoped modal contribution. */
   readonly store: SnapshotStore<SessionLogDownloadState> = createSnapshotStore(INITIAL)
 
-  private readonly active = new Map<SessionId, { readonly abort: AbortController; readonly done: Promise<void> }>()
-  private disposed = false
+  private readonly operations = new SessionOperationRegistry()
 
   /**
    * @param fetcher - HTTP carrier used to read the host-streamed ZIP.
@@ -77,15 +77,7 @@ export class SessionLogDownloadController {
    * @returns after the browser save starts, an error state is published, or a late post-disposal request is ignored.
    */
   download(sessionId: SessionId): Promise<void> {
-    const existing = this.active.get(sessionId)
-    if (existing !== undefined) return existing.done
-    if (this.disposed) return Promise.resolve()
-    const abort = new AbortController()
-    const done = this.run(sessionId, abort.signal).finally(() => {
-      this.active.delete(sessionId)
-    })
-    this.active.set(sessionId, { abort, done })
-    return done
+    return this.operations.run(sessionId, signal => this.run(sessionId, signal))
   }
 
   /**
@@ -103,10 +95,7 @@ export class SessionLogDownloadController {
    * @returns after every active operation settles.
    */
   async dispose(): Promise<void> {
-    this.disposed = true
-    const active = [...this.active.values()]
-    for (const operation of active) operation.abort.abort()
-    await Promise.allSettled(active.map(operation => operation.done))
+    await this.operations.dispose()
   }
 
   private async run(sessionId: SessionId, signal: AbortSignal): Promise<void> {

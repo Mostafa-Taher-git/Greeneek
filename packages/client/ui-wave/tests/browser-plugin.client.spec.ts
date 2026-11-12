@@ -45,6 +45,7 @@ function wavesNamespace(): {
 
 /** An `openRightbar`/`closeRightbar` fake so the S5-11a inject face can call layout. */
 const layoutFace = {
+  showConversation: vi.fn(),
   openRightbar: vi.fn(),
   closeRightbar: vi.fn(),
   toggleRightbar: vi.fn(),
@@ -56,6 +57,7 @@ async function bench(waves = wavesNamespace()): Promise<{
   fiber: ReturnType<Context['plugin']>
   waves: typeof waves
   openSubagent: ReturnType<typeof vi.fn>
+  openSession: ReturnType<typeof vi.fn>
 }> {
   const ctx = new Context()
   await ctx.plugin(SlotRegistry).await()
@@ -67,7 +69,8 @@ async function bench(waves = wavesNamespace()): Promise<{
     },
   } as never, () => null)
   const openSubagent = vi.fn()
-  ctx.provide('sessions', { openSubagent })
+  const openSession = vi.fn()
+  ctx.provide('sessions', { openSubagent, open: openSession })
   ctx.provide('layout', layoutFace)
   // The locale plugin binds a settings scope, which reads the connection handle
   // and the forwarded-event port.
@@ -78,7 +81,7 @@ async function bench(waves = wavesNamespace()): Promise<{
   ctx.locale.setLocale('zh')
   const fiber = ctx.plugin({ inject: [...inject], apply })
   await fiber.await()
-  return { ctx, fiber, waves, openSubagent }
+  return { ctx, fiber, waves, openSubagent, openSession }
 }
 
 /** The inject face one seat's registration builds for this session. */
@@ -152,6 +155,14 @@ describe('ui-wave browser half', () => {
     const { ctx, fiber, openSubagent } = await bench()
     injectedFor(ctx, 'conversation.input.left').openChild(CHILD)
     expect(openSubagent).toHaveBeenCalledWith({ parentSessionId: SESSION, childSessionId: CHILD, mode: 'one-shot' })
+    await fiber.dispose()
+  })
+
+  it('opens a lineage Session in the Conversation page', async () => {
+    const { ctx, fiber, openSession } = await bench()
+    injectedFor(ctx, 'rightbar').openSession(CHILD)
+    expect(layoutFace.showConversation).toHaveBeenCalledOnce()
+    expect(openSession).toHaveBeenCalledWith(CHILD)
     await fiber.dispose()
   })
 

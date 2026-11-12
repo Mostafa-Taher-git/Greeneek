@@ -46,7 +46,10 @@ const SessionProviderStub: SessionProviderComponent = ({ children }) => children
 
 /** Observe the owner currency without importing the Tool details renderer. */
 function renderToolDetailsProbe(owners?: DetailsToolOwnerProps[]): DetailsSlotProps['renderSlot'] {
-  return (_key, owner) => {
+  return (key, owner) => {
+    // The details column renders the session action list beside the tool body;
+    // this probe stands for the tool body alone.
+    if (key !== 'conversation.details.tool') return null
     owners?.push(owner as unknown as DetailsToolOwnerProps)
     return <div data-testid="tool-details-seat" />
   }
@@ -137,7 +140,6 @@ describe('render branch tails', () => {
     const workspaces = emptyWorkspaces()
     const view = render(
       <DetailsPanel
-        useFleet={bindSnapshotSelector(createSnapshotStore(false))}
         SessionProvider={SessionProviderStub}
         renderSlot={renderToolDetailsProbe()}
         sessionId={SID}
@@ -200,7 +202,6 @@ describe('render branch tails', () => {
     const owners: DetailsToolOwnerProps[] = []
     const view = render(
       <DetailsPanel
-        useFleet={bindSnapshotSelector(createSnapshotStore(false))}
         SessionProvider={SessionProviderStub}
         renderSlot={renderToolDetailsProbe(owners)}
         sessionId={SID}

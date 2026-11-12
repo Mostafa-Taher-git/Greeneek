@@ -18,6 +18,9 @@
       "path": "../store"
     },
     {
+      "path": "../ui-chat"
+    },
+    {
       "path": "../ui-conversation"
     },
     {

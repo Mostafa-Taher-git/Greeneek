@@ -1,5 +1,9 @@
 /** Map one workspace source alias target to its declaration-build target. */
 export function builtDeclarationPath(candidate: string): string {
+  // An alias may already name the built declarations: a package's browser-safe
+  // /types channel points at its emitted declaration file, so it is its own
+  // build target.
+  if (/\/lib\/types\//.test(candidate)) return candidate
   // Two workspace path forms exist: whole-package entries end in /src, subpath
   // wildcards (browser-safe /types and /client channels) in /src/*.
   if (candidate.endsWith('/src')) {

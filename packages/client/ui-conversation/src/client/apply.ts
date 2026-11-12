@@ -260,14 +260,18 @@ export function apply(ctx: Context): void {
       'conversation.session.header.utilities': { kind: 'list', scope: 'session' },
     },
     store: conversationStore,
-    inject: (sessionId: SessionId, actions: BoundActions<typeof conversationStore>): ConversationSessionHeaderInjected => ({
-      hooks: { conversationViews },
-      open: (id) => { sessions.open(id) },
-      selectView: (view) => {
+    inject: (sessionId: SessionId, actions: BoundActions<typeof conversationStore>): ConversationSessionHeaderInjected => {
+      const selectView = (view: string): void => {
         activateView(sessionId, view)
         actions.setView(view)
-      },
-    }),
+      }
+      uiConversation.registerViewSelector(sessionId, selectView)
+      return {
+        hooks: { conversationViews },
+        open: (id) => { sessions.open(id) },
+        selectView,
+      }
+    },
   }, ConversationSessionHeader)
 
   const registerComposerBar = () => slots.register({

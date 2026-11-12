@@ -63,4 +63,21 @@ describe('FleetSidebar (S5-11a dedicated right sidebar)', () => {
     expect(screen.getByText('writer')).toBeDefined()
     expect(screen.getByText('docs pass')).toBeDefined()
   })
+
+  it('shows lineage above Live Fleet and opens an ancestor Session', () => {
+    const { verbs } = setup()
+    const lineage = screen.getByRole('navigation', { name: en['lineage.aria'] })
+    expect(lineage.textContent).toContain('Parent agent')
+    expect(lineage.textContent).toContain('Child agent')
+    fireEvent.click(screen.getByRole('button', { name: 'Parent agent' }))
+    expect(verbs.openSession).toHaveBeenCalledWith('parent-session')
+    expect(lineage.compareDocumentPosition(screen.getByText('writer')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('lists the Harness agents that ran under the Session beside the lineage', () => {
+    setup()
+    const group = screen.getByRole('region', { name: en['lineage.agents.title'] })
+    expect(group.textContent).toContain('Harness agent')
+    expect(group.textContent).toContain(en['lineage.agents.running'])
+  })
 })

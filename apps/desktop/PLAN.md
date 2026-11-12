@@ -37,7 +37,7 @@ Create `apps/desktop/` with `package.json` (runtime deps `electron-updater`, `el
 
 ### Phase 1 — Main process and window
 
-Single-instance lock, data-dir boot, tray (Show / Open in Browser / Check for updates / Hide / Quit, en+zh), splash with inline logo, sandboxed window, navigation/permission guards, cookie cleanup, dev/prod userData split. Verify with the package unit tests plus a dev start against a sourced-built tree.
+Single-instance lock, data-dir boot, desktop-only tray (Open Greeneek / Quit, en+zh), splash with inline logo, sandboxed window, navigation/permission guards, cookie cleanup, dev/prod userData split. Closing the window hides it to the tray; reopening uses the tray icon or Open Greeneek action. Verify with the package unit tests plus a dev start against a sourced-built tree.
 
 ### Phase 2 — Service lifecycle and store pin
 

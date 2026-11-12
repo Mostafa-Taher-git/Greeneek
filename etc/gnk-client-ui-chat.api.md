@@ -132,7 +132,6 @@
 `src/client/contract/store.ts: export interface ChatStoreState {`
 `src/client/contract/store.ts: export interface SelectionTarget {`
 `src/client/contract/store.ts: export interface TurnProcessViewEntry {`
-`src/client/contract/store.ts: export type DetailsTab = 'tool' | 'fleet'`
 `src/client/contract/store.ts: export type ToolCallId = string`
 `src/client/contract/turn-metrics.ts: export function assistantStepReading(node: AssistantNode): StepReading {`
 `src/client/contract/turn-metrics.ts: export function deriveTurnMetrics(nodes: readonly ConversationNode[]): Map<number, TurnMetrics> {`
@@ -197,8 +196,8 @@
 `src/client/conversation-nodes/turn-tail.ts: export function registerTurnTailConversationNode(ctx: Context): void {`
 `src/client/details/DetailsPanel.tsx: export function DetailsPanel({`
 `src/client/details/DetailsPanel.tsx: export type DetailsPanelProps = DetailsSlotProps`
-`src/client/details/fleet-tab.ts: export class FleetTabAvailability implements HostObservable<boolean> {`
-`src/client/details/fleet-tab.ts: export interface FleetSlotRegistry {`
+`src/client/details/TerminalDrawer.tsx: export function TerminalDrawer({ useChat, close, t }: TerminalDrawerProps) {`
+`src/client/details/TerminalDrawer.tsx: export type TerminalDrawerProps = PropsRuntime<'terminal.drawer'> & PropsLocale<'chat'>`
 `src/client/details/tool-node-reader.ts: export const WAVE_DISPATCH_TOOL = 'wave_dispatch'`
 `src/client/details/tool-node-reader.ts: export function findToolCall(snapshot: ChatSnapshot, callId: string): ToolCallBlock | undefined {`
 `src/client/details/tool-node-reader.ts: export function hasToolCall(snapshot: ChatSnapshot, name: string): boolean {`

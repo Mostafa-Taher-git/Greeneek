@@ -8,6 +8,7 @@ import type { HostObservable, PropsLocale } from '@greeneek/gnk-client-ui-slots'
 import { bindSnapshotSelector, makeTranslate } from '@greeneek/gnk-client-test-runtime'
 import type { WaveId, WaveMemberId, WaveMemberView, WaveView } from '@greeneek/gnk-subagent-wave/client'
 import type { SessionId } from '@greeneek/gnk-session/types'
+import type { SessionListState } from '@greeneek/gnk-api-session-controller/client'
 import type {
   FleetInjected, FleetPanelProps, FleetSnapshot, ResumeOutcome, StopAllOutcome, StopOutcome,
 } from '../src/client/contract.ts'
@@ -101,6 +102,7 @@ export interface FleetVerbSpies {
   stopMember: Mock<(waveId: WaveId, memberId: WaveMemberId) => Promise<StopOutcome>>
   resume: Mock<(waveId: WaveId, maxTokensPerMember?: number, maxWaveTokens?: number) => Promise<ResumeOutcome>>
   openChild: Mock<(childSessionId: SessionId) => void>
+  openSession: Mock<(sessionId: SessionId) => void>
 }
 
 /** Script one success answer for every stop verb. */
@@ -118,6 +120,7 @@ export function fleetVerbs(): FleetVerbSpies {
     resume: vi.fn<(waveId: WaveId, maxTokensPerMember?: number, maxWaveTokens?: number) => Promise<ResumeOutcome>>()
       .mockResolvedValue({ ok: true, value: { waveId: WAVE_TWO } }),
     openChild: vi.fn<(childSessionId: SessionId) => void>(),
+    openSession: vi.fn<(sessionId: SessionId) => void>(),
   }
 }
 
@@ -132,6 +135,28 @@ export const t = makeTranslate(en) as unknown as PropsLocale<'fleet'>['t']
  */
 export function fleetProps(source: FleetSource, verbs: FleetVerbSpies): FleetPanelProps {
   const injected: FleetInjected = { hooks: { fleet: source }, ...verbs }
+  const parentId = 'parent-session' as SessionId
+  const agentId = 'harness-agent' as SessionId
+  const selectSessions = (selector: (state: SessionListState) => unknown): unknown => selector(sessions)
+  const sessions: SessionListState = {
+    ids: [parentId, SESSION, agentId],
+    byId: {
+      [parentId]: { id: parentId, displayTitle: 'Parent agent', running: false, blank: false, updatedAt: 0 },
+      [SESSION]: {
+        id: SESSION, displayTitle: 'Child agent', parentId, origin: 'subagent',
+        running: false, blank: false, updatedAt: 0,
+      },
+      [agentId]: {
+        id: agentId, displayTitle: 'Harness agent', parentId: SESSION, origin: 'subagent',
+        running: true, blank: false, updatedAt: 0,
+      },
+    },
+    current: SESSION,
+    phase: 'ready',
+    subagentsByParent: {},
+    jobsBySession: {},
+    currentAddress: undefined,
+  }
   return {
     sessionId: SESSION,
     t,
@@ -140,7 +165,7 @@ export function fleetProps(source: FleetSource, verbs: FleetVerbSpies): FleetPan
     useSession: () => undefined,
     useProjection: () => undefined,
     useSessionPendingInteraction: () => undefined,
-    useSessions: () => undefined,
+    useSessions: selectSessions,
     useWorkspaces: () => undefined,
   } as unknown as FleetPanelProps
 }

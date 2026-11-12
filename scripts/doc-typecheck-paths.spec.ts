@@ -10,6 +10,11 @@ describe('builtDeclarationPath', () => {
       .toBe('./packages/core/session/lib/types/invariant.d.ts')
   })
 
+  it('keeps an alias that already names the built declarations', () => {
+    expect(builtDeclarationPath('./packages/api/authorization-controller/lib/types/types.d.ts'))
+      .toBe('./packages/api/authorization-controller/lib/types/types.d.ts')
+  })
+
   it('rejects aliases without a supported source target', () => {
     expect(() => builtDeclarationPath('./packages/runtime-diagnostics/invariants/source/index.ts'))
       .toThrow('cannot map workspace source path')

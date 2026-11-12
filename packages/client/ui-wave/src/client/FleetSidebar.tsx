@@ -1,7 +1,9 @@
 import { useEffect, useRef } from 'react'
 import type { FleetSidebarProps } from './contract.ts'
+import { fleetAgents, fleetLineage } from './contract.ts'
 import { IconCloseOutline16 } from '@greeneek/gnk-client-ui-primitives'
 import { FleetPanel } from './FleetPanel.tsx'
+import { PreviousAgents } from './PreviousAgents.tsx'
 import css from './FleetSidebar.module.css'
 
 /**
@@ -14,8 +16,10 @@ import css from './FleetSidebar.module.css'
  * @returns the right-sidebar fleet panel.
  */
 export function FleetSidebar(props: FleetSidebarProps) {
-  const { t, useFleet, openSidebar, closeSidebar } = props
+  const { t, useFleet, useSessions, sessionId, openSession, openSidebar, closeSidebar } = props
   const snapshot = useFleet(view => view)
+  const lineage = useSessions(state => fleetLineage(state, sessionId))
+  const agents = useSessions(state => fleetAgents(state, sessionId))
   // Auto-open on the empty->running edge only, so tool clicks keep stronger
   // intent and a manual close sticks until a new fleet starts.
   const wasRunning = useRef(false)
@@ -36,6 +40,27 @@ export function FleetSidebar(props: FleetSidebarProps) {
           <IconCloseOutline16 size={14} />
         </button>
       </div>
+      <nav className={css.lineage} aria-label={t('lineage.aria')}>
+        {lineage.map((item, index) => (
+          <span className={css.lineageItem} key={item.id}>
+            {index > 0 && <span className={css.lineageSeparator} aria-hidden="true">/</span>}
+            <button
+              type="button"
+              className={css.lineageButton}
+              aria-current={item.id === sessionId ? 'page' : undefined}
+              onClick={() => { openSession(item.id) }}
+            >
+              {item.displayTitle}
+            </button>
+          </span>
+        ))}
+      </nav>
+      <PreviousAgents
+        agents={agents}
+        title={t('lineage.agents.title')}
+        empty={t('lineage.agents.empty')}
+        running={t('lineage.agents.running')}
+      />
       <div className={css.body}>
         <FleetPanel {...props} />
       </div>

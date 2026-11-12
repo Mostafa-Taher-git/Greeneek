@@ -1,7 +1,7 @@
 /**
  * Layout plugin, browser half: one register() call contributes AppFrame into
  * the runtime's built-in 'root' slot and, in the same breath, declares the
- * four child slots (declaration = exclusive render authority), seats the
+ * frame child slots (declaration = exclusive render authority), seats the
  * layout store (panel geometry), and wires the panel-action service face.
  * ctx.layout is the cross-plugin panel-action contract; navigation state lives
  * with the runtime sessions service. A second effect seats the theme
@@ -36,7 +36,7 @@ declare module '@greeneek/cordis' {
 declare module '@greeneek/gnk-client-ui-slots' {
   interface SlotMap {
     // The 'root' entry itself is the runtime's built-in slot (declared
-    // there); these five are the frame's children, declared by the same
+    // there); these are the frame's children, declared by the same
     // register() call that contributes AppFrame. Session owners never pass
     // sessionId: the framework injects it as a standard prop.
     /**
@@ -68,8 +68,8 @@ declare module '@greeneek/gnk-client-ui-slots' {
      *
      * Current-session-optional: the occupant owns both states without
      * changing its React identity, so it keeps its own state across a session
-     * switch. It receives no owner props; session facts arrive through the
-     * framework hooks of the `session-maybe` scope.
+     * switch. The frame supplies the three panel states and toggle callbacks;
+     * session facts arrive through the framework hooks of the `session-maybe` scope.
      */
     'conversation': { kind: 'single'; scope: 'session-maybe'; owner: ConvOwnerProps }
     /** Full-height Settings destination in the center column. */
@@ -87,15 +87,14 @@ declare module '@greeneek/gnk-client-ui-slots' {
      */
     'details': { kind: 'single'; scope: 'session'; owner: DetailsOwnerProps }
     /**
-     * The right sidebar's dedicated live-work surface, rendered over the details
-     * track while the layout's rightbar preference is open. OCCUPIED by ui-wave's
-     * FleetSidebar, which reuses the wave engine and exposes the emergency stop
-     * at its top. When closed, the frame renders `details` in the same track, so
-     * the Tool inspector keeps its home and the composer pill stays the
-     * narrow-width fallback. No owner props: session facts arrive through the
-     * framework hooks of the `session` scope.
+     * Independent right panel. OCCUPIED by ui-wave's FleetSidebar, which
+     * reuses the wave engine and exposes the emergency stop at its top. The
+     * frame gives it a separate track from Thread Details. No owner props:
+     * session facts arrive through the framework hooks of the `session` scope.
      */
     'rightbar': { kind: 'single'; scope: 'session'; owner: RightbarOwnerProps }
+    /** Bottom terminal activity drawer inside the Conversation column. */
+    'terminal.drawer': { kind: 'single'; scope: 'session'; owner: TerminalDrawerOwnerProps }
     /**
      * Frame-wide floating layer, above every column and outside their scroll
      * containers. Deliberately generic and unowned by any feature: a badge, a
@@ -138,7 +137,20 @@ export interface TitlebarOwnerProps {
 }
 
 /** Conversation owner share: business state and actions belong to the registrant. */
-export interface ConvOwnerProps {}
+export interface ConvOwnerProps {
+  /** The three session-scoped panel controls rendered beside the Session title. */
+  panelControls?: SessionPanelControls | undefined
+}
+
+/** Current panel state and actions passed through the Conversation header. */
+export interface SessionPanelControls {
+  threadDetailsOpen: boolean
+  terminalDrawerOpen: boolean
+  rightPanelOpen: boolean
+  toggleThreadDetails: () => void
+  toggleTerminalDrawer: () => void
+  toggleRightPanel: () => void
+}
 
 /** Settings owner share: the section requested by a trigger or onboarding step. */
 export interface SettingsOwnerProps {
@@ -154,12 +166,15 @@ export interface DetailsOwnerProps {}
 /** Rightbar owner share: empty — sessionId arrives as a framework-standard prop. */
 export interface RightbarOwnerProps {}
 
+/** Close action for the terminal activity drawer. */
+export interface TerminalDrawerOwnerProps { close: () => void }
+
 /** Required services (cordis fiber inject — the loader passes all module exports as an object plugin). */
 export const inject = ['slots', 'theme', 'locale']
 
 /**
  * Client plugin body: provide ctx.layout, then one register() call — AppFrame
- * into 'root' with the five child-slot declarations, the layout store seat,
+ * into 'root' with the child-slot declarations, the layout store seat,
  * and the inject hook that hands the store's bound actions to the service.
  * @param ctx - client root context.
  */
@@ -178,6 +193,7 @@ export function apply(ctx: ClientContext): void {
         'dashboard': { kind: 'single', scope: 'root' },
         'details': { kind: 'single', scope: 'session' },
         'rightbar': { kind: 'single', scope: 'session' },
+        'terminal.drawer': { kind: 'single', scope: 'session' },
         'shell.overlay': { kind: 'list', scope: 'root' },
       },
       // Exclusive store: the factory itself — the framework instantiates per
@@ -187,6 +203,9 @@ export function apply(ctx: ClientContext): void {
       // conversation business actions belong to their registrants.
       inject: (actions: PanelActions) => {
         layout.attachPanels(actions)
+        // The persisted panel preferences survive a restart; the page the
+        // user last visited does not — the app opens in the conversation.
+        actions.showConversation()
         return {}
       },
     }, AppFrame)

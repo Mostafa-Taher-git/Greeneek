@@ -11,11 +11,16 @@ import type { SessionId } from '@greeneek/gnk-session/types'
 import type {} from '@greeneek/gnk-client-locale/client'
 // Type-only: the 'conversation.view' SlotMap row (declared by the slot's
 // owning package) must be in the program for the register calls to type.
+import type {} from '@greeneek/gnk-client-ui-chat/client'
 import type {} from '@greeneek/gnk-client-ui-conversation/client'
 import type {} from '@greeneek/gnk-client-ui-renderer/client'
 import type {} from '@greeneek/gnk-client-ui-session/client'
 import { createTrajectoryDurationStore } from './duration-store.ts'
 import { ar, en, NS, zh } from './locales.ts'
+import {
+  TrajectoryDetailsAction,
+  type TrajectoryDetailsActionInjected,
+} from './TrajectoryDetailsAction.tsx'
 import { registerTrajectoryAssistantDefinition } from './trajectory-assistant-definition.ts'
 import { registerTrajectoryCompactionDefinitions } from './trajectory-compaction-definition.ts'
 import { registerTrajectoryMessageDefinitions } from './trajectory-message-definitions.ts'
@@ -82,8 +87,7 @@ export function apply(ctx: Context): void {
     label: () => t('view.trajectory'),
     children: {
       'conversation.trajectory.images': { kind: 'single', scope: 'session' },
-    },
-    inject: (sessionId: SessionId): TrajectoryViewInjected => {
+    },    inject: (sessionId: SessionId): TrajectoryViewInjected => {
       const session = ctx.sessions.binding(sessionId)?.session
       if (session === undefined) {
         throw new Error(`ui-trajectory: session "${sessionId}" is unavailable`)
@@ -104,4 +108,14 @@ export function apply(ctx: Context): void {
       }
     },
   }, TrajectoryView))
+  // Thread Details opens the trajectory from the Session it belongs to, so the
+  // Session Header carries no second route into the same view.
+  ctx.slots.inject('conversation.details.actions', () => ctx.slots.register({
+    name: 'conversation.details.actions',
+    id: 'trajectory',
+    locale: NS,
+    inject: (sessionId: SessionId): TrajectoryDetailsActionInjected => ({
+      selectView: (view: string) => { ctx.uiConversation.selectView(sessionId, view) },
+    }),
+  }, TrajectoryDetailsAction))
 }

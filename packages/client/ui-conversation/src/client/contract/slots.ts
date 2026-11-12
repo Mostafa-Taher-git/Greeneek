@@ -11,6 +11,7 @@ import type {
 } from '@greeneek/gnk-client-ui-slots'
 import type { SessionPendingInteraction } from '@greeneek/gnk-client-ui-session/client'
 import type {} from '@greeneek/gnk-client-ui-layout/client'
+import type { SessionPanelControls } from '@greeneek/gnk-client-ui-layout/client'
 import type { SessionId } from '@greeneek/gnk-session/types'
 import type { WorkspaceId } from '@greeneek/gnk-workspace/types'
 import type { ComposerBlock } from './composer-blocks.ts'
@@ -94,7 +95,11 @@ declare module '@greeneek/gnk-client-ui-slots' {
     /** Strict per-Session Conversation body. */
     'conversation.session': { kind: 'single'; scope: 'session' }
     /** Strict per-Session title, actions, and View navigation. */
-    'conversation.session.header': { kind: 'single'; scope: 'session' }
+    'conversation.session.header': {
+      kind: 'single'
+      scope: 'session'
+      owner: ConversationSessionHeaderOwnerProps
+    }
     /** Optional replacement for one Session breadcrumb title. */
     'conversation.session.header.lineage': {
       kind: 'single'
@@ -200,6 +205,13 @@ export interface ConversationHeaderActionOwnerProps {
   selectView?: (view: string) => void
   /** Active conversation view id, so entries can label view navigation. */
   activeView?: string | null
+  /** Independent Thread Details, terminal drawer, and right panel controls. */
+  panelControls?: SessionPanelControls | undefined
+}
+
+/** Panel controls passed from the root frame through the Session header. */
+export interface ConversationSessionHeaderOwnerProps {
+  panelControls?: SessionPanelControls | undefined
 }
 
 /** Plain breadcrumb data handed to the optional lineage renderer. */

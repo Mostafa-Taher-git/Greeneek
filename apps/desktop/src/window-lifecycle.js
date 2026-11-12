@@ -9,17 +9,13 @@ export function shouldHideWindowOnClose(isQuitting, hasTray = true) {
 }
 
 /**
- * Tray menu rows; the update row degrades to a no-op dialog in dev builds.
- * @param options - locale, update label state, and the row actions.
+ * Desktop-only tray menu rows.
+ * @param options - locale and the desktop lifecycle actions.
  * @returns the Electron menu template.
  */
 export function createTrayMenuTemplate({
   locale = 'en',
-  updateAvailable = false,
   showWindow,
-  openInBrowser,
-  checkForUpdates,
-  hideWindow,
   quit,
 }) {
   const isChinese = locale.toLowerCase().startsWith('zh')
@@ -27,20 +23,6 @@ export function createTrayMenuTemplate({
     {
       label: isChinese ? '打开 Greeneek' : 'Open Greeneek',
       click: showWindow,
-    },
-    {
-      label: isChinese ? '在浏览器中打开' : 'Open in Browser',
-      click: openInBrowser,
-    },
-    {
-      label: updateAvailable
-        ? (isChinese ? '重启并安装更新' : 'Restart and Install Update')
-        : (isChinese ? '检查更新' : 'Check for Updates'),
-      click: checkForUpdates,
-    },
-    {
-      label: isChinese ? '隐藏窗口' : 'Hide Window',
-      click: hideWindow,
     },
     { type: 'separator' },
     {

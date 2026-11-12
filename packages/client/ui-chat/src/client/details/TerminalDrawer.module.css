@@ -1,0 +1,98 @@
+/* The terminal drawer: a bottom strip over the conversation that lists the
+   Session's shell activity, so the commands a turn ran and what they printed
+   stay readable without opening the transcript row. */
+.root {
+  display: flex;
+  flex-direction: column;
+  max-height: 320px;
+  border-top: 0.5px solid var(--dsw-alias-border-subtle);
+  background: var(--dsw-alias-surface-raised);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+}
+
+.title {
+  margin: 0;
+  color: var(--dsw-alias-label-primary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.close {
+  display: inline-flex;
+  align-items: center;
+  margin-inline-start: auto;
+  border: 0;
+  border-radius: 999px;
+  corner-shape: round;
+  padding: 2px 6px;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  cursor: pointer;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  padding: 0 12px 10px;
+}
+
+.empty {
+  margin: 0;
+  color: var(--dsw-alias-label-dimmed);
+  font-size: 12px;
+}
+
+.activity {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  corner-shape: round;
+  background: var(--dsw-alias-surface-sunken);
+}
+
+.activityHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  color: var(--dsw-alias-label-primary);
+  font-size: 12px;
+}
+
+.activityHeader span {
+  color: var(--dsw-alias-label-secondary);
+  font-size: 11px;
+}
+
+.activityHeader span[data-state="error"] {
+  color: var(--dsw-alias-state-danger-primary);
+}
+
+.section h3 {
+  margin: 0 0 2px;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.section pre {
+  margin: 0;
+  overflow-x: auto;
+  color: var(--dsw-alias-label-primary);
+  font-family: var(--dsw-alias-font-mono);
+  font-size: 11px;
+  white-space: pre-wrap;
+}
+
+.section pre[data-error] {
+  color: var(--dsw-alias-state-danger-primary);
+}

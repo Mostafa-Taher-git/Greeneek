@@ -6,23 +6,50 @@
     "tsBuildInfoFile": "lib/tsconfig.client.tsbuildinfo"
   },
   "files": [
+    "src/client/DetailsActions.tsx",
     "src/client/Dialog.tsx",
-    "src/client/HeaderAction.tsx",
     "src/client/controller.ts",
     "src/client/index.ts",
     "src/client/locales.ts",
+    "src/client/markdown-controller.ts",
+    "src/client/markdown-source.ts",
+    "src/client/markdown.ts",
+    "src/client/session-operations.ts",
     "src/css-modules.d.ts"
   ],
   "references": [
-    { "path": "../../../vendor/cordis" },
-    { "path": "../../client/locale" },
-    { "path": "../../client/store" },
-    { "path": "../../client/ui-commands" },
-    { "path": "../../client/ui-conversation" },
-    { "path": "../../client/ui-primitives" },
-    { "path": "../../client/ui-renderer" },
-    { "path": "../../client/ui-session" },
-    { "path": "../../client/ui-slots" },
-    { "path": "../../core/session/tsconfig.client.json" }
+    {
+      "path": "../../../vendor/cordis"
+    },
+    {
+      "path": "../../client/locale"
+    },
+    {
+      "path": "../../client/store"
+    },
+    {
+      "path": "../../client/ui-chat"
+    },
+    {
+      "path": "../../client/ui-commands"
+    },
+    {
+      "path": "../../client/ui-conversation"
+    },
+    {
+      "path": "../../client/ui-primitives"
+    },
+    {
+      "path": "../../client/ui-renderer"
+    },
+    {
+      "path": "../../client/ui-session"
+    },
+    {
+      "path": "../../client/ui-slots"
+    },
+    {
+      "path": "../../core/session/tsconfig.client.json"
+    }
   ]
 }

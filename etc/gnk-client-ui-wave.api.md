@@ -6,7 +6,12 @@
 `src/client/FleetPanel.tsx: export function FleetPanel({`
 `src/client/FleetPill.tsx: export function FleetPill(props: FleetPillProps) {`
 `src/client/FleetSidebar.tsx: export function FleetSidebar(props: FleetSidebarProps) {`
+`src/client/PreviousAgents.tsx: export function PreviousAgents({`
+`src/client/contract.ts: export function fleetAgents(list: SessionListState, id: SessionId): readonly FleetAgentItem[] {`
+`src/client/contract.ts: export function fleetLineage(list: SessionListState, id: SessionId): readonly FleetLineageItem[] {`
+`src/client/contract.ts: export interface FleetAgentItem {`
 `src/client/contract.ts: export interface FleetInjected {`
+`src/client/contract.ts: export interface FleetLineageItem {`
 `src/client/contract.ts: export interface FleetSnapshot {`
 `src/client/contract.ts: export type FleetPanelProps = PropsRuntime<'rightbar'>`
 `src/client/contract.ts: export type FleetPillProps = PropsRuntime<'conversation.input.left'>`

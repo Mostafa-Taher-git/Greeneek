@@ -168,6 +168,7 @@ export class UiConversation extends Service {
   /** Registry of target View definitions. */
   readonly views: ConversationViewRegistry
   private readonly bindings = new Map<SessionId, BindingRecord>()
+  private readonly viewSelectors = new Map<SessionId, (view: string) => void>()
   private readonly images: HistoricalImageCache
 
   /**
@@ -228,6 +229,20 @@ export class UiConversation extends Service {
     return binding
   }
 
+  /** Register the mounted Session header's selector for cross-surface navigation. */
+  registerViewSelector(sessionId: SessionId, selector: (view: string) => void): void {
+    this.viewSelectors.set(sessionId, selector)
+  }
+
+  /** Select a Conversation view from a surface outside the Session header. */
+  selectView(sessionId: SessionId, view: string): void {
+    const selector = this.viewSelectors.get(sessionId)
+    if (selector === undefined) {
+      throw new Error(`uiConversation.selectView: session "${sessionId}" has no mounted view selector`)
+    }
+    selector(view)
+  }
+
   /**
    * Resolve one session-authorized durable image URL, cached per Session so
    * every Conversation target shares one read and one browser URL.
@@ -282,6 +297,7 @@ export class UiConversation extends Service {
   private drop(record: BindingRecord, releaseScope: boolean): void {
     if (this.bindings.get(record.source.sessionId) !== record) return
     this.bindings.delete(record.source.sessionId)
+    this.viewSelectors.delete(record.source.sessionId)
     record.binding.dispose()
     if (releaseScope) record.disposeScope()
   }

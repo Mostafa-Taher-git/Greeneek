@@ -377,11 +377,26 @@ describe('SessionHeaderUtilities', () => {
     warn.mockRestore()
   })
 
-  it('toggles the right sidebar when the layout owns one', async () => {
-    const toggleRightbar = vi.fn()
-    mount({ toggleRightbar })
-    fireEvent.click(screen.getByLabelText('切换右侧栏'))
-    expect(toggleRightbar).toHaveBeenCalled()
+  it('toggles Thread Details, the terminal drawer, and the independent right panel', async () => {
+    const toggleThreadDetails = vi.fn()
+    const toggleTerminalDrawer = vi.fn()
+    const toggleRightPanel = vi.fn()
+    mount({ panelControls: {
+      threadDetailsOpen: true,
+      terminalDrawerOpen: false,
+      rightPanelOpen: false,
+      toggleThreadDetails,
+      toggleTerminalDrawer,
+      toggleRightPanel,
+    } })
+    expect(screen.getByLabelText('切换线程详情').getAttribute('aria-pressed')).toBe('true')
+    expect(screen.getByLabelText('切换终端抽屉').getAttribute('aria-pressed')).toBe('false')
+    fireEvent.click(screen.getByLabelText('切换线程详情'))
+    fireEvent.click(screen.getByLabelText('切换终端抽屉'))
+    fireEvent.click(screen.getByLabelText('切换右侧面板'))
+    expect(toggleThreadDetails).toHaveBeenCalledOnce()
+    expect(toggleTerminalDrawer).toHaveBeenCalledOnce()
+    expect(toggleRightPanel).toHaveBeenCalledOnce()
   })
 
   it('runs the session shortcuts and leaves editable fields alone', async () => {

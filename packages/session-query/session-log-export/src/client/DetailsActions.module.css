@@ -1,0 +1,17 @@
+/* Thread Details export actions: a quiet row of ghost buttons beside the
+   details header, with the failure note inline so a refused clipboard write
+   says what happened. The row wraps rather than clipping its last action in a
+   narrow details column. */
+.root {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  row-gap: 2px;
+  min-width: 0;
+}
+
+.error {
+  color: var(--dsw-alias-state-danger-primary);
+  font-size: 12px;
+}

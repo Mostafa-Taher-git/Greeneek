@@ -16,10 +16,12 @@
 `src/archive.ts: export interface SessionLogExportReady {`
 `src/archive.ts: export type SessionLogCompressionLevel = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9`
 `src/archive.ts: export type SessionLogZipEntry =`
+`src/client/DetailsActions.tsx: export function SessionExportActions({`
+`src/client/DetailsActions.tsx: export interface SessionExportActionsInjected {`
+`src/client/DetailsActions.tsx: export type SessionExportActionsProps =`
 `src/client/Dialog.tsx: export function SessionLogDownloadDialog({`
 `src/client/Dialog.tsx: export interface SessionLogDownloadDialogInjected {`
 `src/client/Dialog.tsx: export type SessionLogDownloadDialogProps =`
-`src/client/HeaderAction.tsx: export function SessionLogDownloadHeaderAction(props: SessionLogDownloadDialogProps): ReactNode {`
 `src/client/controller.ts: export class SessionLogDownloadController {`
 `src/client/controller.ts: export function downloadUrl(url: string, filename: string): void {`
 `src/client/controller.ts: export function sessionLogZipFilename(sessionId: SessionId): string {`
@@ -28,13 +30,24 @@
 `src/client/controller.ts: export type SessionLogDownloadStatus = 'downloading' | 'success' | 'error'`
 `src/client/index.ts: export const inject = ['slots', 'locale']`
 `src/client/index.ts: export function apply(ctx: ClientContext): void {`
-`src/client/index.ts: export type { SessionLogDownloadDialogInjected, SessionLogDownloadDialogProps } from './Dialog.tsx'`
+`src/client/index.ts: export type { SessionExportActionsInjected, SessionExportActionsProps } from './DetailsActions.tsx'`
 `src/client/index.ts: export type { SessionLogDownloadEntry, SessionLogDownloadState } from './controller.ts'`
+`src/client/index.ts: export type { SessionMarkdownCopyEntry, SessionMarkdownCopyState } from './markdown-controller.ts'`
 `src/client/locales.ts: export const NS = 'session-log-download'`
 `src/client/locales.ts: export const ar: Record<keyof typeof zh, string> = {`
 `src/client/locales.ts: export const en: Record<keyof typeof zh, string> = {`
 `src/client/locales.ts: export const zh = {`
 `src/client/locales.ts: export type SessionLogDownloadKey = keyof typeof zh`
+`src/client/markdown-controller.ts: export class SessionMarkdownCopyController {`
+`src/client/markdown-controller.ts: export interface SessionMarkdownCopyEntry {`
+`src/client/markdown-controller.ts: export interface SessionMarkdownCopyState {`
+`src/client/markdown-controller.ts: export type SessionMarkdownCopyStatus = 'idle' | 'copying' | 'copied' | 'error'`
+`src/client/markdown-controller.ts: export type SessionMarkdownTranslator = (key: 'markdown.user' | 'markdown.assistant' | 'markdown.tool' | 'markdown.result') => string`
+`src/client/markdown-source.ts: export async function fetchSessionMarkdown(`
+`src/client/markdown.ts: export function sessionMarkdown(`
+`src/client/markdown.ts: export interface SessionMarkdownHeader {`
+`src/client/markdown.ts: export interface SessionMarkdownLabels {`
+`src/client/session-operations.ts: export class SessionOperationRegistry {`
 `src/css-modules.d.ts: export default classes`
 `src/index.ts: export const Config: Schema<Config> = Schema.object({`
 `src/index.ts: export const SESSION_LOG_EXPORT_PATH = '/api/session.export'`

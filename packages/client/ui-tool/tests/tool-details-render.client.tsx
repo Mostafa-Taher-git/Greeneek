@@ -153,7 +153,10 @@ export function renderToolDetails(
   t: TranslateNS<'conversation'>,
   home?: string,
 ): DetailsSlotProps['renderSlot'] {
-  return (_key, owner) => {
+  return (key, owner) => {
+    // The details panel renders other slots in the same column (the session
+    // action list); this adapter stands for the tool body alone.
+    if (key !== 'conversation.details.tool') return null
     // PropsRenderSlots keeps its key generic even for this one-key share;
     // recover the concrete owner selected by the adapter's fixed slot.
     const details = owner as unknown as DetailsToolOwnerProps

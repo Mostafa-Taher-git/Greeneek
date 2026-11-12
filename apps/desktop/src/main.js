@@ -69,24 +69,11 @@ async function showMainWindow() {
   mainWindow.focus()
 }
 
-async function openInBrowser() {
-  try {
-    const url = serviceUrl ?? await service?.ready
-    if (url) await shell.openExternal(url)
-  } catch (error) {
-    console.warn(`Could not open Greeneek in the browser: ${error instanceof Error ? error.message : String(error)}`)
-  }
-}
-
 function refreshTrayMenu() {
   if (!tray) return
   tray.setContextMenu(Menu.buildFromTemplate(createTrayMenuTemplate({
     locale: app.getLocale(),
-    updateAvailable: updateManager?.getState() === 'downloaded',
     showWindow: () => void showMainWindow(),
-    openInBrowser: () => void openInBrowser(),
-    checkForUpdates: () => void updateManager?.checkForUpdates({ manual: true }),
-    hideWindow: () => mainWindow?.hide(),
     quit: () => {
       isQuitting = true
       app.quit()
@@ -236,7 +223,6 @@ async function launch() {
     updateManager.setPrepareToInstall(async () => {
       service?.stop()
     })
-    updateManager.onStateChange(() => refreshTrayMenu())
     updateManager.start()
   } catch (error) {
     // Self-update stays unavailable but the window, versions, and controls

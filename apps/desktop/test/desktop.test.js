@@ -353,14 +353,17 @@ describe('window chrome', () => {
     assert.equal(shouldHideWindowOnClose(false, false), false)
   })
 
-  it('labels the tray in English and Chinese, with an update row', () => {
+  it('keeps the tray menu limited to desktop open and quit actions', () => {
     const en = createTrayMenuTemplate({ locale: 'en-US', showWindow: () => undefined })
     assert.deepEqual(
       en.map((row) => row.type ?? row.label),
-      ['Open Greeneek', 'Open in Browser', 'Check for Updates', 'Hide Window', 'separator', 'Quit'],
+      ['Open Greeneek', 'separator', 'Quit'],
     )
-    const zh = createTrayMenuTemplate({ locale: 'zh-CN', updateAvailable: true })
-    assert.ok(zh.some((row) => row.label === '重启并安装更新'))
+    const zh = createTrayMenuTemplate({ locale: 'zh-CN' })
+    assert.deepEqual(
+      zh.map((row) => row.type ?? row.label),
+      ['打开 Greeneek', 'separator', '退出'],
+    )
   })
 
   it('runs frameless on Windows and Linux, framed elsewhere', () => {

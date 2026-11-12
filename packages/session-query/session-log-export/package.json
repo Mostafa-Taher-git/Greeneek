@@ -52,6 +52,7 @@
     "@greeneek/gnk-client-connection": "workspace:^",
     "@greeneek/gnk-client-locale": "workspace:^",
     "@greeneek/gnk-client-store": "workspace:^",
+    "@greeneek/gnk-client-ui-chat": "workspace:^",
     "@greeneek/gnk-client-ui-commands": "workspace:^",
     "@greeneek/gnk-client-ui-conversation": "workspace:^",
     "@greeneek/gnk-client-ui-primitives": "workspace:^",

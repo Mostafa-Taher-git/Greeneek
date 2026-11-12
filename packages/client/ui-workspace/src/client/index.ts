@@ -196,7 +196,6 @@ export function apply(ctx: Context): void {
     archiveSession: async (sessionId) => { await uiWorkspace.archiveSession(sessionId) },
     deleteSession: async (sessionId) => { await uiWorkspace.deleteSession(sessionId) },
     ...sharedSessionInjected(),
-    toggleRightbar: () => { layout()?.toggleRightbar() },
   })
   // The two picker registrations declare their directory-flow child in the
   // same call; the recent-sessions seat has no children. Slot injection

@@ -451,6 +451,10 @@ export async function launchWebScaffold(options: LaunchOptions = {}): Promise<We
     surfaceContext?: boolean
   } | undefined
   const surfaceContext = webRuntimeConfig?.surfaceContext !== false
+  const webConfig = composedRows.find(row => row.id === 'web')?.config as {
+    fetchProvider?: string
+    searchProvider?: string
+  } | undefined
   const patches: PatchOptions[] = [
     ...basePatches,
     ...surfacePatches,
@@ -552,6 +556,15 @@ export async function launchWebScaffold(options: LaunchOptions = {}): Promise<We
         { id: 'tool-cordis', name: '@greeneek/gnk-tool-cordis' },
       ] }]
       : [],
+    ...options.greeneekSearch === undefined
+      ? []
+      : [{
+        // The bundle pins the keyless DuckDuckGo engine; a scenario that
+        // drives the Custom vehicle selects it explicitly, the way the Web
+        // search card does when an endpoint is saved.
+        id: 'web',
+        config: { ...webConfig, searchProvider: 'greeneek-official' },
+      }],
     ...options.greeneekSearch === undefined
       ? []
       : [{

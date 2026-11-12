@@ -1,7 +1,8 @@
-import { spawn } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import { createRequire } from 'node:module'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { webAppBuilt } from './web-assets.mjs'
 
 /**
  * Development launcher for Greeneek Desktop (`pnpm run start`).
@@ -97,6 +98,21 @@ if (isMainModule) {
   const forcedNodeVar = findElectronNodeModeVar(process.env)
   if (forcedNodeVar !== undefined) {
     console.log(`launch: clearing ${forcedNodeVar} so Electron runs its main process, not bare Node`)
+  }
+  // The window loads the built web interface; without it the shell would open
+  // a blank window. Build it once, before the window exists, and say so.
+  if (!webAppBuilt()) {
+    console.log('launch: the web interface is not built yet; building it now')
+    const build = spawnSync('pnpm', ['--filter', '@greeneek/gnk-web-frontend', 'run', 'build'], {
+      cwd: resolve(packageDir, '..', '..'),
+      stdio: 'inherit',
+      shell: process.platform === 'win32',
+    })
+    if (build.status !== 0 || !webAppBuilt()) {
+      console.error('launch: the web interface could not be built; run "pnpm --filter @greeneek/gnk-web-frontend run build" and try again')
+      process.exitCode = 1
+      process.exit(1)
+    }
   }
   const child = launchDesktopApp({ args: [packageDir, ...process.argv.slice(2)] })
   child.once('error', (error) => {

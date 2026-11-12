@@ -86,8 +86,10 @@ it('renders durable record images in the Trajectory details panel from the share
   const chatSrc = document.querySelector('[data-align="end"] img')?.getAttribute('src')
   if (chatSrc === null || chatSrc === undefined) throw new Error('chat gallery image missing')
 
-  fireEvent.click(screen.getByRole('button', { name: 'Session options' }))
-  fireEvent.click(screen.getByRole('menuitem', { name: 'Trajectory' }))
+  // Thread Details owns the transcript verbs; its toggle carries the panel
+  // preference, so the panel must be open before the Trajectory action exists.
+  fireEvent.click(screen.getByRole('button', { name: 'Toggle thread details' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Trajectory' }))
   const userRow = await scrollRowIntoWindow('历史用户图片')
   fireEvent.click(userRow)
 

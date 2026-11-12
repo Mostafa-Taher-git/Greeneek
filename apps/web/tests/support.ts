@@ -62,6 +62,37 @@ export async function expandOwningTurnProcess(page: Page, target: Locator): Prom
   if (await control.getAttribute('aria-expanded') !== 'true') await control.click()
 }
 
+/**
+ * Ensure Thread Details is open. Panel preferences persist, so the toggle's
+ * own pressed state decides instead of a blind click that would close it.
+ * @param page - page showing a Session.
+ */
+export async function openThreadDetails(page: Page): Promise<void> {
+  const toggle = page.getByRole('button', { name: 'Toggle thread details', exact: true })
+  await toggle.waitFor({ timeout: 30_000 })
+  if (await toggle.getAttribute('aria-pressed') !== 'true') await toggle.click()
+}
+
+/**
+ * Open the Trajectory view through its Thread Details action.
+ * @param page - page showing a Session.
+ */
+export async function openTrajectory(page: Page): Promise<void> {
+  await openThreadDetails(page)
+  await page.getByRole('button', { name: 'Trajectory', exact: true }).click()
+}
+
+/**
+ * Return the Session to its Chat view (the Trajectory and other views carry a
+ * single back control named after the Session title).
+ * @param page - page showing a Session.
+ */
+export async function showChat(page: Page): Promise<void> {
+  const back = page.getByRole('button', { name: /^Back to Chat:/ })
+  if (await back.count() === 0) return
+  await back.first().click()
+}
+
 /** Fail loud on a stale checkout instead of testing yesterday's bundle. */
 export function requireDist(): void {
   if (!existsSync(DIST_INDEX)) {

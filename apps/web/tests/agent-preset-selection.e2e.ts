@@ -380,7 +380,7 @@ describe('web e2e: agent-preset selection', () => {
     expect(snapshot).toContain('Narrow mode')
     expect(snapshot).toContain('button "1 subagent"')
     expect(snapshot.indexOf('button "1 subagent"')).toBeLessThan(snapshot.indexOf('Narrow mode'))
-    expect(snapshot.indexOf('Narrow mode')).toBeLessThan(snapshot.indexOf('button "Session options"'))
+    expect(snapshot.indexOf('Narrow mode')).toBeLessThan(snapshot.indexOf('button "More session actions"'))
     // Static chrome, not a control: the header can only report a composition
     // the host would refuse to change.
     expect(snapshot).not.toContain('button "Narrow mode"')

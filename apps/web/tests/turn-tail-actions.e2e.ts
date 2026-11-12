@@ -143,8 +143,9 @@ describe('web e2e: assistant IconActions wait for the turn to end', () => {
       .getByText('partial', { exact: true })
       .waitFor({ timeout: 10_000 })
     // Only the user bubble owns a footer (clock + copy; user bubbles carry no
-    // branch action): the narration is not the answer yet.
-    const copyButtons = page.getByRole('button', { name: 'Copy' })
+    // branch action): the narration is not the answer yet. The name is exact
+    // because other surfaces (Thread Details, tool cards) also own copy verbs.
+    const copyButtons = page.getByRole('button', { name: 'Copy', exact: true })
     await expect.poll(() => copyButtons.count(), { timeout: 10_000 }).toBe(1)
     expect(await page.getByRole('button', { name: 'Branch into a new conversation' }).count()).toBe(0)
     await copyButtons.first().focus()

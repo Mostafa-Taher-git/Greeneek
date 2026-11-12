@@ -324,6 +324,44 @@ describe('AppFrame', () => {
     expect(frame.hasAttribute('data-details-collapsed')).toBe(true)
   })
 
+  it('closed panels leave the tab order and the accessibility tree', () => {
+    const { frame, instance, getByTestId } = mountFrame()
+    const details = getByTestId('details-content').parentElement!
+    const rightbar = getByTestId('rightbar-content').parentElement!
+    for (const column of [details, rightbar]) {
+      expect(column.hasAttribute('inert')).toBe(true)
+      expect(column.getAttribute('aria-hidden')).toBe('true')
+    }
+    act(() => { instance.actions.openDetails() })
+    act(() => { instance.actions.openRightbar() })
+    for (const column of [details, rightbar]) {
+      expect(column.hasAttribute('inert')).toBe(false)
+      expect(column.hasAttribute('aria-hidden')).toBe(false)
+    }
+    // The frame's collapsed attributes are the same fact, so they stay in step.
+    expect(frame.hasAttribute('data-details-collapsed')).toBe(false)
+    expect(frame.hasAttribute('data-rightbar-collapsed')).toBe(false)
+  })
+
+  it('keeps a panel transparent to the accessibility tree while it floats narrow', () => {
+    frameWidth = 900
+    const { instance, getByTestId } = mountFrame()
+    act(() => { instance.actions.openDetails() })
+    act(() => { instance.actions.openRightbar() })
+    const frame = getByTestId('details-content').parentElement!.parentElement!
+    const details = getByTestId('details-content').parentElement!
+    const rightbar = getByTestId('rightbar-content').parentElement!
+    // The solver closed both side tracks, so the panels the user asked for
+    // float over the conversation in preference order: the right panel last,
+    // therefore on top.
+    expect(details.hasAttribute('data-overlay')).toBe(true)
+    expect(rightbar.hasAttribute('data-overlay')).toBe(true)
+    expect(details.hasAttribute('aria-hidden')).toBe(false)
+    expect(rightbar.hasAttribute('aria-hidden')).toBe(false)
+    expect(details.compareDocumentPosition(rightbar) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(frame.style.gridTemplateColumns).toBe('56px minmax(0, 1fr) 0px 0px')
+  })
+
   it('closed sidebar keeps its compact rail with mounted slot content and collapsed owner props', () => {
     const { frame, instance, slotCalls, getByTestId } = mountFrame()
     act(() => { instance.actions.toggleSidebar() })

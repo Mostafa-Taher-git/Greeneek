@@ -32,14 +32,45 @@ function CenterColumn(props: { children?: ReactNode }) {
   return <div className={css.centerCol}>{props.children}</div>
 }
 
-/** Details column grid item; width 0 keeps the subtree mounted (never unmount on close). */
-function DetailsColumn(props: { children?: ReactNode }) {
-  return <div className={css.detailsCol}>{props.children}</div>
+/**
+ * Details column grid item. Width 0 keeps the subtree mounted so its internal
+ * state survives a close/reopen; a closed panel leaves the accessibility tree
+ * and the tab order so its off-screen controls cannot be reached.
+ */
+function DetailsColumn(props: { children?: ReactNode; overlay?: boolean; hidden: boolean }) {
+  return <PanelColumn className={css.detailsCol} {...props} />
 }
 
-/** Independent right panel grid item. */
-function RightbarColumn(props: { children?: ReactNode }) {
-  return <div className={css.rightbarCol}>{props.children}</div>
+/** Independent right panel grid item, with the same closed-panel semantics. */
+function RightbarColumn(props: { children?: ReactNode; overlay?: boolean; hidden: boolean }) {
+  return <PanelColumn className={css.rightbarCol} {...props} />
+}
+
+/**
+ * One side column: mounted at all times, inert while it has no rendered width.
+ * `inert` leaves the tab order and `aria-hidden` leaves the accessibility tree,
+ * so a closed panel's off-screen controls cannot be reached. `inert` applies
+ * first because it releases focus, and a browser refuses to hide a subtree
+ * that still owns focus.
+ */
+function PanelColumn(props: { children?: ReactNode; overlay?: boolean; hidden: boolean; className: string | undefined }) {
+  const ref = useRef<HTMLDivElement>(null)
+  useLayoutEffect(() => {
+    const node = ref.current
+    if (node === null) return
+    if (!props.hidden) {
+      node.removeAttribute('inert')
+      node.removeAttribute('aria-hidden')
+      return
+    }
+    node.setAttribute('inert', '')
+    node.setAttribute('aria-hidden', 'true')
+  }, [props.hidden])
+  return (
+    <div ref={ref} className={props.className} data-overlay={props.overlay || undefined}>
+      {props.children}
+    </div>
+  )
 }
 
 /**
@@ -172,6 +203,13 @@ export function AppFrame({
   const colsRef = useRef(cols)
   colsRef.current = cols
 
+  // Below the breakpoint the solver closes both side tracks to keep the
+  // center usable. A panel the user asked for must still be reachable, so it
+  // floats over the conversation instead of vanishing; the right panel comes
+  // later in the document, so it covers Thread Details when both are open.
+  const detailsOverlay = detailsSession !== undefined && panels.details > 0 && cols.details === 0
+  const rightbarOverlay = detailsSession !== undefined && panels.rightbar > 0 && cols.rightbar === 0
+
   // The drag base is the rendered width captured at drag start (grabbing a
   // concession-clamped panel must not jump back to the stored preference);
   // it stays frozen for the whole gesture so dx deltas do not compound.
@@ -268,10 +306,10 @@ export function AppFrame({
             </div>
           )}
         </CenterColumn>
-        <DetailsColumn>
+        <DetailsColumn overlay={detailsOverlay} hidden={cols.details === 0 && !detailsOverlay}>
           <SessionProvider>{renderSlot('details', {})}</SessionProvider>
         </DetailsColumn>
-        <RightbarColumn>
+        <RightbarColumn overlay={rightbarOverlay} hidden={cols.rightbar === 0 && !rightbarOverlay}>
           <SessionProvider>{renderSlot('rightbar', {})}</SessionProvider>
         </RightbarColumn>
       </>

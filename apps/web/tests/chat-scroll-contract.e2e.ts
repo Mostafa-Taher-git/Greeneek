@@ -20,7 +20,13 @@ import {
   webSnapshotMode,
   type WebScaffold,
 } from './scaffold.ts'
-import { expandOwningTurnProcess, newEnglishPage, saveFailureShot } from './support.ts'
+import {
+  expandOwningTurnProcess,
+  newEnglishPage,
+  openTrajectory,
+  saveFailureShot,
+  showChat,
+} from './support.ts'
 
 const MODE = webSnapshotMode()
 const HISTORY_SESSION_ID = 'chat-scroll-history-e2e'
@@ -278,7 +284,7 @@ async function openSeed(page: Page, fixture: ChatScrollFixture, tailMarker?: str
   await expect.poll(() => results.count(), { timeout: 60_000 }).toBe(1)
   await results.click()
   // Header utilities mounted proves the session view is ready (no tab strip remains).
-  await page.getByRole('button', { name: 'Session options', exact: true }).waitFor({ timeout: 30_000 })
+  await page.getByRole('button', { name: 'More session actions', exact: true }).waitFor({ timeout: 30_000 })
   if (tailMarker !== undefined) {
     await page.getByText(tailMarker, { exact: false }).last().waitFor({ timeout: 30_000 })
   }
@@ -745,15 +751,13 @@ describe('web e2e: long Chat scroll contract', () => {
       await wheelTranscript(world.page, 1_300)
       const sessionAnchor = await visibleFlowAnchor(world.page)
 
-      await world.page.getByRole('button', { name: 'Session options', exact: true }).click()
-      await world.page.getByRole('menuitem', { name: 'Trajectory', exact: true }).click()
+      await openTrajectory(world.page)
       await world.page.getByLabel('Trajectory timeline').waitFor({ timeout: 30_000 })
       await world.page.setViewportSize({ width: 700, height: 900 })
       // The narrow breakpoint auto-collapses the sidebar. Re-open it because
       // this scenario switches sessions while pinning the narrow Chat scroll owner.
       await world.page.getByRole('button', { name: 'Open sidebar', exact: true }).click()
-      await world.page.getByRole('button', { name: 'Session options', exact: true }).click()
-      await world.page.getByRole('menuitem', { name: 'Chat', exact: true }).click()
+      await showChat(world.page)
       await nextPaint(world.page)
       await expectSameFlowTop(world.page, sessionAnchor, RESPONSIVE_REFLOW_TOLERANCE)
       const narrowSessionAnchor = await visibleFlowAnchor(world.page)
@@ -770,20 +774,17 @@ describe('web e2e: long Chat scroll contract', () => {
       await expectSameFlowTop(world.page, narrowSessionAnchor)
 
       const backToBottom = world.page.getByRole('button', { name: 'Back to bottom', exact: true })
-      await world.page.getByRole('button', { name: 'Session options', exact: true }).click()
       await backToBottom.evaluate((button) => {
         if (!(button instanceof HTMLElement)) throw new Error('Back-to-bottom control is not an HTML element')
         button.click()
-        const trajectory = [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')]
-          .find(entry => entry.textContent?.trim() === 'Trajectory')
+        const trajectory = [...document.querySelectorAll<HTMLElement>('button[aria-label="Trajectory"]')][0]
         if (!(trajectory instanceof HTMLElement)) {
-          throw new Error('Trajectory menu item is unavailable during pinned remount')
+          throw new Error('Trajectory action is unavailable during pinned remount')
         }
         trajectory.click()
       })
       await world.page.getByLabel('Trajectory timeline').waitFor({ timeout: 30_000 })
-      await world.page.getByRole('button', { name: 'Session options', exact: true }).click()
-      await world.page.getByRole('menuitem', { name: 'Chat', exact: true }).click()
+      await showChat(world.page)
       await expectBottom(world.page)
       await openSeed(
         world.page,

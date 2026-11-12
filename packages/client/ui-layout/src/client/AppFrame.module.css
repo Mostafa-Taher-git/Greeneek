@@ -114,6 +114,25 @@
   border-inline-start: none;
 }
 
+/* Below the auto-collapse breakpoint the solver closes a side track to keep the
+   center usable. A panel the user opened still has to be reachable, so the same
+   column element leaves the grid flow and floats over the conversation. */
+.frame .detailsCol[data-overlay],
+.frame .rightbarCol[data-overlay] {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
+  width: min(360px, 92vw);
+  z-index: 6;
+  border-inline-start: 0.5px solid var(--dsw-alias-border-l3);
+  background: var(--dsw-alias-bg-base);
+}
+
+.frame[data-desktop-host] .detailsCol[data-overlay],
+.frame[data-desktop-host] .rightbarCol[data-overlay] {
+  inset-block-start: 40px;
+}
+
 .terminalDrawer {
   flex: none;
   height: clamp(156px, 32vh, 360px);

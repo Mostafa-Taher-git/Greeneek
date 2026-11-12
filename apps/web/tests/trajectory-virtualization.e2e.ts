@@ -20,7 +20,7 @@ import {
   webSnapshotMode,
   type WebScaffold,
 } from './scaffold.ts'
-import { newEnglishPage, saveFailureShot } from './support.ts'
+import { newEnglishPage, openTrajectory, saveFailureShot } from './support.ts'
 
 const MODE = webSnapshotMode()
 const LOAD_MORE_EXPECTED = fileURLToPath(new URL(
@@ -74,20 +74,12 @@ async function openSeed(page: Page): Promise<void> {
   const result = page.getByRole('tree', { name: 'Search results' }).getByRole('treeitem')
   await expect.poll(() => result.count(), { timeout: 60_000 }).toBe(1)
   await result.click()
-  await page.getByRole('button', { name: 'Session options', exact: true }).waitFor({ timeout: 30_000 })
+  await page.getByRole('button', { name: 'More session actions', exact: true }).waitFor({ timeout: 30_000 })
   await page.getByText(FIXTURE.markers.assistant(FIXTURE.turns), { exact: false })
     .last()
     .waitFor({ timeout: 30_000 })
 }
 
-async function openTrajectory(page: Page): Promise<void> {
-  await page.getByRole('button', { name: 'Session options', exact: true }).click()
-  await page.getByRole('menuitem', { name: 'Trajectory', exact: true }).click()
-  const pane = page.locator('[data-trajectory-scroll]')
-  await pane.waitFor({ timeout: 30_000 })
-  await page.locator('[data-trajectory-scroll] table[data-scroll-ready="true"]')
-    .waitFor({ timeout: 30_000 })
-}
 
 async function logicalRows(page: Page): Promise<number> {
   const raw = await page.locator('[data-trajectory-scroll] table').getAttribute('aria-rowcount')

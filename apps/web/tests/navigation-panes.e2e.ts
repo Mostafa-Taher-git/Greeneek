@@ -19,7 +19,7 @@ import {
   assertFixtureInventory, captureStableAria, compareOrRefreshGolden, fixtureUserPrompts,
   launchWebScaffold, recordFixture, seedSession, watchConsole, webSnapshotMode, type WebScaffold,
 } from './scaffold.ts'
-import { expandOwningTurnProcess, newEnglishPage, saveFailureShot } from './support.ts'
+import { expandOwningTurnProcess, newEnglishPage, openThreadDetails, openTrajectory, saveFailureShot, showChat } from './support.ts'
 
 const SNAPSHOT_DIR = fileURLToPath(new URL('../../../snapshots/web/navigation-panes', import.meta.url))
 const SEED = join(SNAPSHOT_DIR, 'session.jsonl')
@@ -56,7 +56,7 @@ async function ensureSeedOpen(page: Page): Promise<void> {
     await welcome.getByRole('button').click()
     await welcome.waitFor({ state: 'detached', timeout: 15_000 })
   }
-  const menuButton = page.getByRole('button', { name: 'Session options', exact: true })
+  const menuButton = page.getByRole('button', { name: 'More session actions', exact: true })
   // Search is a collapsed header action; expand it so the input is actionable.
   const searchButton = page.getByRole('button', { name: 'Search sessions' })
   if (await searchButton.getAttribute('aria-expanded') !== 'true') await searchButton.click()
@@ -68,14 +68,9 @@ async function ensureSeedOpen(page: Page): Promise<void> {
     await result.click()
     await menuButton.waitFor({ timeout: 15_000 })
   }
-  // Normalize to the Chat view: the menu names its destination, so a Chat
-  // item means trajectory is active and tapping it returns; otherwise the
-  // menu just closes.
-  await menuButton.click()
-  await page.getByRole('menu').waitFor({ timeout: 15_000 })
-  const chatItem = page.getByRole('menuitem', { name: 'Chat', exact: true })
-  if (await chatItem.count() > 0) await chatItem.click()
-  else await page.keyboard.press('Escape')
+  // Normalize to the Chat view: the Trajectory and other views carry one back
+  // control to Chat, so the readiness check afterwards is view-independent.
+  await showChat(page)
   await page.getByText('FIRST_DONE', { exact: true }).waitFor({ timeout: 15_000 })
   if (await search.inputValue() !== '') {
     await search.fill('')
@@ -227,8 +222,7 @@ describe('web e2e: navigation & panes over a rich seeded session', () => {
   it.skipIf(MODE === 'record')('renders the trajectory ledger and opens its local record inspector', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-navigation-trajectory'))
     await ensureSeedOpen(page)
-    await page.getByRole('button', { name: 'Session options', exact: true }).click()
-    await page.getByRole('menuitem', { name: 'Trajectory', exact: true }).click()
+    await openTrajectory(page)
     await page.waitForTimeout(100)
     const overlayLayout = await page.getByRole('table').evaluate((table) => {
       const host = table.closest('[data-conversation-scroll]')
@@ -297,29 +291,22 @@ describe('web e2e: navigation & panes over a rich seeded session', () => {
     await expect.poll(() => page.getByRole('button', { name: /^Back to Chat:/ }).count()).toBe(0)
   }, 60_000)
 
-  it.skipIf(MODE === 'record')('downloads through the Session Header and /export with one dialog', async () => {
+  it.skipIf(MODE === 'record')('downloads through Thread Details and /export with one dialog', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-navigation-export'))
     await ensureSeedOpen(page)
-    const menuButton = page.getByRole('button', { name: 'Session options' })
-    expect(await menuButton.isEnabled()).toBe(true)
-    const header = menuButton.locator('xpath=ancestor::header[1]')
-    const [buttonBox, headerBox] = await Promise.all([
-      menuButton.boundingBox(), header.boundingBox(),
-    ])
-    if (buttonBox === null || headerBox === null) {
-      throw new Error('Session Header export geometry is unavailable')
-    }
-    // The export control lives inside the Session Header; the header carries
-    // more controls than the export one, so the assertion is containment, not
-    // a distance to the header's reading edge.
-    expect(buttonBox.x).toBeGreaterThanOrEqual(headerBox.x)
-    expect(buttonBox.x + buttonBox.width).toBeLessThanOrEqual(headerBox.x + headerBox.width + 1)
+    await openThreadDetails(page)
+    const downloadButton = page.getByRole('button', { name: 'Download session log', exact: true })
+    await downloadButton.waitFor({ timeout: 30_000 })
+    expect(await downloadButton.isEnabled()).toBe(true)
+    // One export control, and it lives in Thread Details: the Session Header
+    // carries no second copy of the transcript verbs.
+    expect(await downloadButton.locator('xpath=ancestor::header').count()).toBe(0)
+    expect(await page.getByRole('button', { name: 'Download session log', exact: true }).count()).toBe(1)
     const responsePromise = page.waitForResponse(response =>
       response.request().method() === 'HEAD'
       && new URL(response.url()).pathname === '/api/session.export', { timeout: 30_000 })
     const downloadPromise = page.waitForEvent('download', { timeout: 30_000 })
-    await menuButton.click()
-    await page.getByRole('menuitem', { name: 'Session log' }).click()
+    await downloadButton.click()
     const response = await responsePromise
     expect(response.status()).toBe(200)
     const download = await downloadPromise
@@ -389,8 +376,7 @@ describe('web e2e: navigation & panes over a rich seeded session', () => {
   it.skipIf(MODE === 'record')('focuses the ledger by dragging an overview interval', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-navigation-timeline'))
     await ensureSeedOpen(page)
-    await page.getByRole('button', { name: 'Session options', exact: true }).click()
-    await page.getByRole('menuitem', { name: 'Trajectory', exact: true }).click()
+    await openTrajectory(page)
     const plot = page.getByLabel('Timeline overview; drag horizontally to focus events')
     await plot.waitFor({ timeout: 15_000 })
     const before = await page.locator('tr[data-kind]').count()

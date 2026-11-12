@@ -42,5 +42,6 @@
   - listitem:
     - button "New Session now"
 - text: Details
-- button "Close details"
+- button "Close details":
+  - img
 - tabpanel "Tool": Click a tool row in the message flow to view its details

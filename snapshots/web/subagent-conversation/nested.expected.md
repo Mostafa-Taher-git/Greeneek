@@ -10,6 +10,18 @@
     - text: Agent Team
   - button "Session options":
     - img
+  - button "Files (default)":
+    - img
+  - button "Open in external application or file manager":
+    - img
+  - button "Pin session":
+    - img
+  - button "Archive session":
+    - img
+  - button "More session actions":
+    - img
+  - button "Toggle right sidebar":
+    - img
 - text: Give one concrete event sourcing example. {{clock}}
 - button "Copy":
   - img

@@ -8,6 +8,18 @@
     - text: Agent Team
   - button "Session options":
     - img
+  - button "Files (default)":
+    - img
+  - button "Open in external application or file manager":
+    - img
+  - button "Pin session":
+    - img
+  - button "Archive session":
+    - img
+  - button "More session actions":
+    - img
+  - button "Toggle right sidebar":
+    - img
 - group "Command input": /goal
 - 'button "goal No goal is currently set. Usage: /goal [<objective>|clear|edit <objective>|pause|resume]"':
   - img

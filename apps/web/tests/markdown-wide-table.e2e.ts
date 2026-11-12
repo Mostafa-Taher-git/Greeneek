@@ -200,13 +200,12 @@ interface TableStop {
  * @param target - the page whose pane to close.
  */
 async function closeDetailsPane(target: Page): Promise<void> {
+  const collapsed = await target.locator('[data-details-collapsed]').count()
+  if (collapsed > 0) return
   await target.getByRole('button', { name: 'Close details', exact: true }).waitFor({ timeout: 10_000 })
   await target.evaluate(() => {
     document.querySelector<HTMLElement>('button[aria-label="Close details"]')?.click()
   })
-  // Closed details resolve to zero width but never unmount (ui-layout
-  // columns contract), so the settled signal is the frame's collapse marker,
-  // not the button's detachment.
   await target.waitForSelector('[data-details-collapsed]', { timeout: 5_000 })
 }
 

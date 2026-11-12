@@ -100,7 +100,7 @@ Real-API tests/demos read lane provider key. Greeneek-endpoint lanes read `GREEN
 
 ## Conventions
 
-- Every npm package is `@greeneek/gnk-<name>`; vendored packages are rescoped ([mapping](docs/rescope.md)) and `private: true`. `@greeneek/cordis` is a peerDependency (+ dev) of every harness package.
+- Every npm package is `@greeneek/gnk-<name>`; vendored packages are rescoped ([mapping](docs/rescope.md)) and `private: true`. Every harness package declares `@greeneek/cordis` as a peer and development dependency.
 - ESM everywhere (`"type": "module"`). Use package names across packages and `.ts` locally. Config subprocesses run built `lib/` under plain Node; source regressions use declared launcher ([testing policy](docs/testing.md#test-subprocess-launch-modes)). `gnk` CLI source launch runs via tsx's ESM-only hook (`node --import tsx/esm`); reached modules must stay ESM (no CJS-only exports) — Node native TypeScript modes are unavailable across engines range ([source-launch contract](.agents/notes/implemented/architecture/2026-07-29-gnk-source-launch-tsx-esm.md)). Raw/Web `cordis.yml` bare plugins must appear in resolver manifest `dependencies`; `verify-cordis-config` enforces it.
 - **Registrations are effects**: contributions go through `ctx.effect()` / `ctx.on()`; registry's `register()` returns disposer.
 - **Runtime invariants assert owned relationships.** Publish `./invariant` only when independent observations can diverge. Otherwise omit source and wiring and record why in README; empty installers and checks of service presence, plugin metadata, effects, fixed examples are invalid ([package invariant rules](packages/AGENTS.md)).

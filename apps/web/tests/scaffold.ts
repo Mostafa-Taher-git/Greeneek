@@ -556,6 +556,7 @@ export async function launchWebScaffold(options: LaunchOptions = {}): Promise<We
       ? []
       : [{
         id: 'web-search-greeneek',
+        name: '@greeneek/gnk-web-search-greeneek',
         config: {
           apiKeyEnv: options.greeneekSearch.apiKeyEnv,
           baseURL: options.greeneekSearch.baseURL,

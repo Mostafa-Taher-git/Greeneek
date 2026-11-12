@@ -58,7 +58,7 @@ describe('readZipEntry', () => {
           return
         }
         if (data !== undefined && data.byteLength > 0) chunks.push(data)
-        if (final === true) resolve()
+        if (final) resolve()
       })
       const entry = new ZipPassThrough('session.jsonl')
       archive.add(entry)

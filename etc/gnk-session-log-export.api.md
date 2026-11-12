@@ -44,6 +44,7 @@
 `src/client/markdown-controller.ts: export type SessionMarkdownCopyStatus = 'idle' | 'copying' | 'copied' | 'error'`
 `src/client/markdown-controller.ts: export type SessionMarkdownTranslator = (key: 'markdown.user' | 'markdown.assistant' | 'markdown.tool' | 'markdown.result') => string`
 `src/client/markdown-source.ts: export async function fetchSessionMarkdown(`
+`src/client/markdown-source.ts: export async function readZipEntry(`
 `src/client/markdown.ts: export function sessionMarkdown(`
 `src/client/markdown.ts: export interface SessionMarkdownHeader {`
 `src/client/markdown.ts: export interface SessionMarkdownLabels {`

@@ -97,6 +97,32 @@ describe('web e2e: plan chip click area at the narrow viewport', () => {
     const triggerBox = await trigger.boundingBox()
     expect(chipBox).not.toBeNull()
     expect(triggerBox).not.toBeNull()
+    const planGeometry = await page.evaluate(() => {
+      const chip = document.querySelector('[aria-label="Plan mode on, press to turn off"]')
+      const trigger = document.querySelector('[aria-label^="Select model"]')
+      const chain = (element: Element | null): unknown[] => {
+        const rows: unknown[] = []
+        let current = element
+        while (current instanceof HTMLElement && rows.length < 6) {
+          const box = current.getBoundingClientRect()
+          rows.push({
+            tag: current.tagName,
+            className: current.className,
+            display: getComputedStyle(current).display,
+            position: getComputedStyle(current).position,
+            flex: getComputedStyle(current).flex,
+            width: box.width,
+            height: box.height,
+            x: box.x,
+            y: box.y,
+          })
+          current = current.parentElement
+        }
+        return rows
+      }
+      return { chip: chain(chip), trigger: chain(trigger) }
+    })
+    console.log('PLAN GEOMETRY', JSON.stringify(planGeometry))
 
     // The reported acceptance as numbers: both controls in viewport and
     // disjoint click areas (a non-zero overlap would fail), and — in the

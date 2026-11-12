@@ -2706,13 +2706,18 @@ describe('One-shot members', () => {
       await vi.advanceTimersByTimeAsync(5_000)
       await awaitSettled(first.ctx, first.lead, 'slow', 'completed')
       const timedOutId = reportId(first.ctx, first.lead, 'slow')
-      for (let pump = 0; pump < 300; pump += 1) {
+      // The receipt lands on the real event loop, which fake timers do not
+      // run, so the wait is a bounded number of clock drains: a loaded CI
+      // runner needs more turns than a local one, and the ceiling keeps a
+      // missing receipt a failure with a message instead of a hang.
+      let timedOut: { id: string; sender: string; text: string } | undefined
+      for (let pump = 0; pump < 3_000; pump += 1) {
         await drainClock()
-        if (leadReceipts(first.lead).some(receipt => receipt.id === timedOutId)) break
+        timedOut = leadReceipts(first.lead).find(receipt => receipt.id === timedOutId)
+        if (timedOut !== undefined) break
       }
-      const timedOut = leadReceipts(first.lead)
-        .find(receipt => receipt.id === timedOutId)
-      expect(timedOut?.text).toContain('settled with stop reason "timeout"')
+      expect(timedOut?.text, `the timeout receipt "${timedOutId}" never arrived`)
+        .toContain('settled with stop reason "timeout"')
       expect(timedOut?.text).toContain('roster recorded: Melody member "slow" exceeded its 5000ms budget and was cancelled')
 
       const second = await setup(['hang'])

@@ -47,6 +47,7 @@ describe('product-provider public Loader composition', () => {
           name: 'codex',
           capabilities: {
             agentOptions: false,
+            agentPreset: false,
             outputSchema: false,
             depthLimit: false,
             toolFilter: false,
@@ -58,6 +59,7 @@ describe('product-provider public Loader composition', () => {
           name: 'claude-code',
           capabilities: {
             agentOptions: false,
+            agentPreset: false,
             outputSchema: false,
             depthLimit: false,
             toolFilter: false,
@@ -69,6 +71,7 @@ describe('product-provider public Loader composition', () => {
           name: 'claude-primary',
           capabilities: {
             agentOptions: false,
+            agentPreset: false,
             outputSchema: false,
             depthLimit: false,
             toolFilter: false,
@@ -80,6 +83,7 @@ describe('product-provider public Loader composition', () => {
           name: 'claude-secondary',
           capabilities: {
             agentOptions: false,
+            agentPreset: false,
             outputSchema: false,
             depthLimit: false,
             toolFilter: false,

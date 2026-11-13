@@ -1,0 +1,13 @@
+# The automation ACP bundle mounts no provider and pins no default model: a
+# deployment that wants every ACP session to start on one fixed model states
+# both here. The built-bin ACP test points `$GREENEEK_BASE_URL` at its own
+# scripted endpoint, so it mounts the adapter and pins the selection. The
+# credential resolves from `$GREENEEK_API_KEY` per request, exported for the
+# spawned process.
+- insert:
+    - id: llm-greeneek
+      name: '@greeneek/gnk-llm-greeneek'
+- id: acp
+  config:
+    provider: greeneek-official
+    model: greeneek-v4-flash

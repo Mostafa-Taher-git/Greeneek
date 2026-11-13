@@ -28,6 +28,8 @@ const SPAWN_TIMEOUT_MS = 60_000
 const cliVersion = (JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { version: string }).version
 const gnkBin = join(repoRoot, 'apps/cli/lib/bin.js')
 const invalidProvider = fileURLToPath(new URL('./fixtures/invalid-provider.cordis.yml', import.meta.url))
+const greeneekMockAdapter = fileURLToPath(new URL('./fixtures/greeneek-mock-adapter.overlay.yml', import.meta.url))
+const acpGreeneekMock = fileURLToPath(new URL('./fixtures/acp-greeneek-mock.overlay.yml', import.meta.url))
 
 async function runBuiltBin(
   args: readonly string[] = [],
@@ -487,7 +489,7 @@ describe.skipIf(!existsSync(gnkBin))('gnk BUILT bin (node lib/bin.js, no tsx)', 
       successText: 'ACP BUILT PROFILE OK',
     })
     const home = mkdtempSync(join(tmpdir(), 'gnk-built-acp-'))
-    const child = execa(process.execPath, [gnkBin, '--profile', 'acp'], {
+    const child = execa(process.execPath, [gnkBin, '--profile', 'acp', '--patch', acpGreeneekMock], {
       cwd: home,
       reject: false,
       timeout: SPAWN_TIMEOUT_MS,
@@ -573,7 +575,7 @@ describe.skipIf(!existsSync(gnkBin))('gnk BUILT bin (node lib/bin.js, no tsx)', 
     })
     const home = mkdtempSync(join(tmpdir(), 'gnk-built-headless-'))
     try {
-      const result = await runBuiltBin(['--profile', 'headless', 'answer', 'from', 'the', 'published', 'entry'], {
+      const result = await runBuiltBin(['--profile', 'headless', '--patch', greeneekMockAdapter, 'answer', 'from', 'the', 'published', 'entry'], {
         GNK_HOME: home,
         GNK_TELEMETRY_DISABLED: '1',
         GREENEEK_API_KEY: apiKey,
@@ -627,7 +629,7 @@ describe.skipIf(!existsSync(gnkBin))('gnk BUILT bin (node lib/bin.js, no tsx)', 
     createEnvironmentProbeProfile(home, project)
     try {
       const result = await runBuiltBin(
-        ['--profile', 'environment-probe'],
+        ['--profile', 'environment-probe', '--patch', greeneekMockAdapter],
         {
           GNK_HOME: home,
           GNK_TELEMETRY_DISABLED: '1',

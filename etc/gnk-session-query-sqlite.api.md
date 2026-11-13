@@ -24,8 +24,8 @@
 `src/query.ts: export function makeSnippet(markedText: string, maxChars: number): string {`
 `src/query.ts: export function normalizeEventRequest(`
 `src/query.ts: export function normalizeSessionRequest(`
-`src/query.ts: export function quoteFtsData(query: string): string {`
 `src/query.ts: export function requestFingerprint(request: NormalizedSessionRequest | NormalizedEventRequest): string {`
+`src/query.ts: export function resolveMatchExpression(query: string): string | undefined {`
 `src/query.ts: export function sanitizeFtsText(text: string): string {`
 `src/query.ts: export interface NormalizedEventRequest {`
 `src/query.ts: export interface NormalizedSessionRequest {`

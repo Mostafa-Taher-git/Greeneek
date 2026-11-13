@@ -9,7 +9,7 @@ import {
   makeSnippet,
   normalizeEventRequest,
   normalizeSessionRequest,
-  quoteFtsData,
+  resolveMatchExpression,
   requestFingerprint,
   SQLITE_FTS5_OUTER_PREDICATE_LIMIT,
   SQLITE_MAX_PAGE_LIMIT,
@@ -203,8 +203,21 @@ describe('SQLite search predicate compilation', () => {
 })
 
 describe('SQLite query identity and presentation', () => {
-  it('quotes all caller MATCH syntax as data', () => {
-    expect(quoteFtsData('say "needle" OR *')).toBe('"say ""needle"" OR *"')
+  it('compiles the Obsidian-style grammar into FTS5 MATCH expressions', () => {
+    expect(resolveMatchExpression('needle')).toBe('"needle"')
+    expect(resolveMatchExpression('say needle')).toBe('("say" AND "needle")')
+    expect(resolveMatchExpression('say or needle')).toBe('("say" OR "needle")')
+    expect(resolveMatchExpression('needle -offline')).toBe('"needle" NOT "offline"')
+    expect(resolveMatchExpression('say "needle OR *"')).toBe('("say" AND "needle OR *")')
+    expect(resolveMatchExpression('(say or needle) -"web off"')).toBe('("say" OR "needle") NOT "web off"')
+  })
+
+  it('signals unconstrained content legs and fails loud on malformed input', () => {
+    expect(resolveMatchExpression('path:apps/desktop')).toBeUndefined()
+    expect(resolveMatchExpression('title:release or path:apps')).toBeUndefined()
+    expect(resolveMatchExpression('-offline')).toBeUndefined()
+    expect(() => resolveMatchExpression('bogus:value')).toThrow(expectCode('SESSION_QUERY_INVALID_QUERY'))
+    expect(() => resolveMatchExpression('"unterminated')).toThrow(expectCode('SESSION_QUERY_INVALID_QUERY'))
   })
 
   it('canonicalizes request and filter ordering in both scopes', () => {

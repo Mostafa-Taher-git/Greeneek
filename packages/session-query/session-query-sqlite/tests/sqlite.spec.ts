@@ -506,11 +506,19 @@ describe('SQLite session search', () => {
     ctx.sessions.create(SessionId('quote'), { seed: messageEvents('say "needle" exactly', 10), meta: { createdAt: 1 } })
 
     const phrase = await ctx.sessionQuery.searchSessions({ query: 'alpha beta' })
-    expect(phrase.items.map(item => item.header.id)).toEqual([SessionId('b'), SessionId('d'), SessionId('a')])
+    // Juxtaposed words conjoin (Obsidian semantics); quote both for the exact phrase.
+    expect(phrase.items.map(item => item.header.id)).toEqual([SessionId('b'), SessionId('d'), SessionId('c'), SessionId('a')])
+    const exact = await ctx.sessionQuery.searchSessions({ query: '"alpha beta"' })
+    expect(exact.items.map(item => item.header.id)).toEqual([SessionId('b'), SessionId('d'), SessionId('a')])
     expect(phrase.items.every(item => Array.from(item.bestMatch.snippet).length <= 5)).toBe(true)
     await expect(ctx.sessionQuery.searchSessions({ query: 'AI' })).resolves.toEqual({ items: [] })
-    await expect(ctx.sessionQuery.searchSessions({ query: 'needle OR absent' }))
-      .resolves.toMatchObject({ items: [{ header: { id: SessionId('operator') } }] })
+    // `or` is the disjunction (case-insensitive); bare `OR` is no longer an inert phrase.
+    await expect(ctx.sessionQuery.searchSessions({ query: 'needle or absent' }))
+      .resolves.toMatchObject({ items: [
+        { header: { id: SessionId('operator') } },
+        { header: { id: SessionId('only') } },
+        { header: { id: SessionId('quote') } },
+      ] })
     await expect(ctx.sessionQuery.searchSessions({ query: 'say "needle"' }))
       .resolves.toMatchObject({ items: [{ header: { id: SessionId('quote') } }] })
     await expect(ctx.sessionQuery.searchSessions({ query: '*' })).resolves.toEqual({ items: [] })

@@ -16,7 +16,7 @@ Every workspace package (`packages/<family>/<name>`), categorized by what it con
 | LLM | Model routes and provider adapters | `packages/llm/*` |
 | Capability | Every other plugin, grouped by family directory | fallback: anything unmatched |
 
-Scope: 260 workspace packages; every package appears under each of its kinds (24 Tool, 4 Skill, 6 Command, 42 UI, 7 LLM, 184 Capability rows). A package with several kinds (e.g. a tool that also contributes a command) appears in each section.
+Scope: 261 workspace packages; every package appears under each of its kinds (24 Tool, 4 Skill, 6 Command, 42 UI, 7 LLM, 185 Capability rows). A package with several kinds (e.g. a tool that also contributes a command) appears in each section.
 
 ## Tools
 
@@ -515,6 +515,7 @@ Scope: 260 workspace packages; every package appears under each of its kinds (24
 | `@greeneek/gnk-launch-environment` | An immutable snapshot of this run's environment that remembers which layer supplied each value, for packages that must resolve user-facing values without trusting a flattened process.env. |
 | `@greeneek/gnk-native-command` | Host-native command and path-opening utilities with shell-free execution, cancellation, desktop detection, and WSL path handoff. |
 | `@greeneek/gnk-output-retention` | Bounded model-facing output for tools that must cap how much context they return: item and text retainers plus a standardized omission footer. |
+| `@greeneek/gnk-search-query` | Obsidian-style session-search query language: tokenization, recursive-descent parsing, SQLite FTS5 compilation, and visible-field evaluation for the sidebar search box |
 | `@greeneek/gnk-util-time` | IANA time-zone validation and canonicalization for maintainers accepting a caller-reported zone at a wire boundary. |
 | `@greeneek/gnk-timeout` | Shared timeout arithmetic, deadline fusion, and timeout-versus-cancel classification for capabilities that clamp a caller's hint, arm a deadline, and must tell the two apart later. |
 | `@greeneek/gnk-util-values` | Lossless JSON validation, detached snapshots, deep freezing, structural equality, and exhaustive-union helpers for runtime packages. |

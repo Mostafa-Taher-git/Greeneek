@@ -12,10 +12,31 @@ import type {
 } from '@greeneek/gnk-client-ui-session/client'
 import type {} from '@greeneek/gnk-schedule/client'
 import type { SessionId } from '@greeneek/gnk-session/types'
+import {
+  evaluateSearchQuery,
+  parseSearchQuery,
+  SearchQueryError,
+} from '@greeneek/gnk-search-query'
 import { workspaceTitleOf } from '@greeneek/gnk-util-workspace-path'
 import {
   indexSubagentDescendants, type SubagentDescendantSummary,
 } from './subagent-lineage.ts'
+
+/**
+ * Parse-check a raw sidebar query under the Obsidian-style grammar.
+ * @param query - raw sidebar query text.
+ * @returns true when the query parses under the Obsidian-style grammar; false
+ * for every malformation (the caller skips the host round-trip on false).
+ */
+export function isSearchQueryValid(query: string): boolean {
+  try {
+    parseSearchQuery(query.trim())
+    return true
+  } catch (error) {
+    if (error instanceof SearchQueryError) return false
+    throw error
+  }
+}
 
 /** Group key for Sessions outside every Workspace. */
 export const UNGROUPED_KEY = ''
@@ -377,8 +398,16 @@ export function deriveSearchResults(
   content: { items: readonly SessionSearchResultItem[]; hasMore: boolean },
   limit: number,
 ): SearchResultSet {
-  const q = query.trim().toLowerCase()
+  const q = query.trim()
   if (q === '') return { items: [], hasMore: false }
+  let ast: ReturnType<typeof parseSearchQuery>
+  try {
+    ast = parseSearchQuery(q)
+  } catch (error) {
+    if (!(error instanceof SearchQueryError)) throw error
+    // Unparseable query: nothing renders, the Host leg reports the same parse failure.
+    return { items: [], hasMore: content.hasMore }
+  }
   const archived = new Set(archivedSessionIds)
   const descendants = indexSubagentDescendants(list.byId)
 
@@ -390,6 +419,16 @@ export function deriveSearchResults(
   }
   const labelOf = (summary: SessionSummary): string =>
     workspaceBySession.get(summary.id) ?? workspaceLabel(summary.cwd)
+  const matches = (
+    summary: SessionSummary,
+    snippet: string | undefined,
+    contentLeaves: 'enforce' | 'host-authoritative',
+  ): boolean =>
+    evaluateSearchQuery(
+      ast,
+      { title: sessionTitle(summary), path: summary.cwd ?? undefined, label: labelOf(summary), snippet },
+      { contentLeaves },
+    )
   const contentBySession = new Map<SessionId, SessionSearchResultItem>()
   for (const item of content.items) {
     if (!contentBySession.has(item.sessionId)) contentBySession.set(item.sessionId, item)
@@ -401,10 +440,9 @@ export function deriveSearchResults(
     // Blank placeholders never match a query (their canonical title displays
     // localized, so matching it would tie search to one language).
     if (summary === undefined || summary.blank || !sessionVisible(summary, list.current, archived)) continue
-    if (
-      sessionTitle(summary).toLowerCase().includes(q)
-      || labelOf(summary).toLowerCase().includes(q)
-    ) {
+    // A phrase leaf reaches the title or the working directory, matching
+    // Obsidian's note semantics (a word hits the body or the path).
+    if (matches(summary, undefined, 'enforce')) {
       local.push(summary)
     }
   }
@@ -420,7 +458,10 @@ export function deriveSearchResults(
   for (const summary of local) include(summary)
   for (const item of content.items) {
     const summary = list.byId[item.sessionId]
-    if (summary !== undefined && !summary.blank && sessionVisible(summary, list.current, archived)) include(summary)
+    if (summary !== undefined && !summary.blank && sessionVisible(summary, list.current, archived)
+      && matches(summary, item.snippet, 'host-authoritative')) {
+      include(summary)
+    }
   }
 
   return {

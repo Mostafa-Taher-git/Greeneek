@@ -55,6 +55,7 @@
   },
   "devDependencies": {
     "@greeneek/gnk-api-remotes": "workspace:^",
+    "@greeneek/gnk-search-query": "workspace:^",
     "@greeneek/gnk-api-session-controller": "workspace:^",
     "@greeneek/gnk-api-workspace-controller": "workspace:^",
     "@greeneek/gnk-client-connection": "workspace:^",

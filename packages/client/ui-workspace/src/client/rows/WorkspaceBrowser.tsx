@@ -24,7 +24,7 @@ import type { SessionId } from '@greeneek/gnk-session/types'
 import type { ExternalAppsShare, GitFacts, OpenPathTarget, WorkspaceBrowserProps } from '../contract/slots.ts'
 import { openInMenuItems } from '../openInMenu.tsx'
 import type { SessionNode, SessionOrderBy } from '../tree.ts'
-import { deriveFlat, deriveGroups, deriveSearchResults, UNGROUPED_KEY } from '../tree.ts'
+import { deriveFlat, deriveGroups, deriveSearchResults, isSearchQueryValid, UNGROUPED_KEY } from '../tree.ts'
 import { ProjectRowItem, SearchResultItem, SessionNodeItem } from './Rows.tsx'
 import { FLAT_SESSION_ORDER_KEY } from '../stores.ts'
 import { WorkspacePickFlow } from '../WorkspacePicker.tsx'
@@ -41,6 +41,40 @@ const SEARCH_DEBOUNCE_MS = 250
 const SEARCH_QUERY_MAX_CODE_UNITS = 500
 /** Session rows visible per Workspace before the local overflow control. */
 const COLLAPSED_SESSION_LIMIT = 5
+
+/** Persisted recent queries (mirrors the Notes app's `recent-searches`). */
+const RECENT_QUERIES_STORAGE_KEY = 'gnk.search-query.recent-queries'
+/** How many recent queries the sidebar keeps. */
+const RECENT_QUERIES_MAX = 5
+
+/** @returns stored recent queries, distilled of corrupt or oversized entries. */
+function loadRecentQueries(): readonly string[] {
+  try {
+    const raw = typeof globalThis.localStorage === 'undefined'
+      ? null
+      : globalThis.localStorage.getItem(RECENT_QUERIES_STORAGE_KEY)
+    if (raw === null) return []
+    const parsed: unknown = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return parsed
+      .filter((entry): entry is string => typeof entry === 'string' && entry !== '' && !entry.includes('\0'))
+      .slice(0, RECENT_QUERIES_MAX)
+  } catch {
+    return []
+  }
+}
+
+/** @param queries - distilled recent queries; any storage failure leaves the field working without recents. */
+function persistRecentQueries(queries: readonly string[]): void {
+  try {
+    if (typeof globalThis.localStorage === 'undefined') return
+    globalThis.localStorage.setItem(RECENT_QUERIES_STORAGE_KEY, JSON.stringify(queries))
+  } catch {
+    // localStorage may be unavailable (private mode, quota); recents are a convenience only.
+  }
+}
+
+
 
 /** Fold one Workspace without charging its provisional New Session against the ordinary-row limit. */
 function collapsedSessionRows(sessions: readonly SessionNode[]): {
@@ -755,6 +789,8 @@ interface RemoteSearchState {
   status: 'idle' | 'loading' | 'ready' | 'error'
   items: readonly SessionSearchResultItem[]
   hasMore: boolean
+  /** Parse failures get the syntax copy; host failures get the unavailable copy. */
+  reason?: 'parse' | 'host' | undefined
 }
 
 /** Flat search body: local metadata matches plus the current Host result page. */
@@ -814,7 +850,7 @@ function SearchResults({
         )}
         {failed && (
           <div className={css.searchWarning} role="status">
-            {t('search.unavailable')}
+            {currentRemote.reason === 'parse' ? t('search.syntax') : t('search.unavailable')}
           </div>
         )}
         {!pending && results.items.length === 0 && (
@@ -955,6 +991,7 @@ export function WorkspaceBrowser({
   // does not silently drop an in-progress filter.
   const [query, setQuery] = useState('')
   const [searchExpanded, setSearchExpanded] = useState(false)
+  const [recentQueries, setRecentQueries] = useState<readonly string[]>(loadRecentQueries)
   const normalizedQuery = sanitizeSearchQuery(query).trim()
   const [remoteSearch, setRemoteSearch] = useState<RemoteSearchState>({
     query: '',
@@ -1010,6 +1047,11 @@ export function WorkspaceBrowser({
       setRemoteSearch({ query: '', status: 'idle', items: [], hasMore: false })
       return
     }
+    if (!isSearchQueryValid(normalizedQuery)) {
+      // Grammar-valid gates: a parse failure never fires the host round-trip.
+      setRemoteSearch({ query: normalizedQuery, status: 'error', items: [], hasMore: false, reason: 'parse' })
+      return
+    }
     const controller = new AbortController()
     setRemoteSearch({
       query: normalizedQuery,
@@ -1018,6 +1060,11 @@ export function WorkspaceBrowser({
       hasMore: false,
     })
     const timer = window.setTimeout(() => {
+      // Re-read at commit time so the fresh write never races the debounce closure.
+      const stored = loadRecentQueries()
+      const next = [normalizedQuery, ...stored.filter(entry => entry !== normalizedQuery)].slice(0, RECENT_QUERIES_MAX)
+      persistRecentQueries(next)
+      setRecentQueries(next)
       searchSessions(normalizedQuery, controller.signal).then((result) => {
         if (controller.signal.aborted) return
         setRemoteSearch({
@@ -1033,6 +1080,7 @@ export function WorkspaceBrowser({
           status: 'error',
           items: [],
           hasMore: false,
+          reason: 'host',
         })
       })
     }, SEARCH_DEBOUNCE_MS)
@@ -1322,6 +1370,38 @@ export function WorkspaceBrowser({
           onClose={() => { setWsPickerOpen(false) }}
         />
       </div>
+
+      {/* Search syntax hint + recent queries: shown while the field is empty. */}
+      {wide && searchExpanded && normalizedQuery === '' && (
+        <div className={css.searchExtras}>
+          <span className={css.searchHint}>{t('search.hint')}</span>
+          {recentQueries.length > 0 && (
+            <span className={css.recentRow} role="group" aria-label={t('search.recents.aria')}>
+              {recentQueries.map(recent => (
+                <button
+                  key={recent}
+                  type="button"
+                  className={css.recentChip}
+                  onClick={() => { setQuery(recent) }}
+                >
+                  {recent}
+                </button>
+              ))}
+              <button
+                type="button"
+                className={css.recentClear}
+                aria-label={t('search.recents.clear')}
+                onClick={() => {
+                  persistRecentQueries([])
+                  setRecentQueries([])
+                }}
+              >
+                <IconCloseFill14 size={12} />
+              </button>
+            </span>
+          )}
+        </div>
+      )}
 
       {/* The collapsed rail keeps search as its own 36px control. */}
       {!wide && <div className={css.search}>

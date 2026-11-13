@@ -25,6 +25,9 @@
     },
     {
       "path": "../session-query"
+    },
+    {
+      "path": "../../util/search-query"
     }
   ]
 }

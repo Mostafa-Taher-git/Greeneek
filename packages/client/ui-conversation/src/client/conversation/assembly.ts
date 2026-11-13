@@ -229,12 +229,18 @@ export class UiConversation extends Service {
     return binding
   }
 
-  /** Register the mounted Session header's selector for cross-surface navigation. */
+  /** Register the mounted Session header's selector for cross-surface navigation.
+   * @param sessionId - Session whose view selector to register.
+   * @param selector - callback invoked to drive the header's view selection.
+   */
   registerViewSelector(sessionId: SessionId, selector: (view: string) => void): void {
     this.viewSelectors.set(sessionId, selector)
   }
 
-  /** Select a Conversation view from a surface outside the Session header. */
+  /** Select a Conversation view from a surface outside the Session header.
+   * @param sessionId - Session whose selector should drive the view.
+   * @param view - view identifier the selector consumes.
+   */
   selectView(sessionId: SessionId, view: string): void {
     const selector = this.viewSelectors.get(sessionId)
     if (selector === undefined) {

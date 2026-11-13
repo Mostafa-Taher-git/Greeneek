@@ -312,6 +312,7 @@
     { "path": "./packages/util/launch-environment" },
     { "path": "./packages/util/native-command" },
     { "path": "./packages/util/output-retention" },
+    { "path": "./packages/util/search-query" },
     { "path": "./packages/util/time" },
     { "path": "./packages/util/timeout" },
     { "path": "./packages/util/values" },

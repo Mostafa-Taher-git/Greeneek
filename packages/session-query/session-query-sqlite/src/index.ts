@@ -53,7 +53,7 @@ import {
   makeSnippet,
   normalizeEventRequest,
   normalizeSessionRequest,
-  quoteFtsData,
+  resolveMatchExpression,
   requestFingerprint,
   sanitizeFtsText,
   SQLITE_MAX_PAGE_LIMIT,
@@ -278,10 +278,23 @@ export class SqliteSessionQueryEngine extends SessionQueryEngine {
       assertNotAborted(signal)
       const generation = String(this._globalGeneration)
       const fingerprint = requestFingerprint(normalized)
+      const expression = resolveMatchExpression(normalized.query)
       const offset = normalized.cursor === undefined
         ? 0
         : decodeCursor(normalized.cursor, this._instance, 'sessions', fingerprint, generation)
-      const rows = this._querySessions(normalized, offset, persistenceBinding)
+      if (expression === undefined) {
+        // FTS5 has no match-all-except operator; an unconstrained content leg
+        // means the whole index has nothing to search (path/title-only or pure-exclusion queries).
+        return page([], normalized.limit, row => this._sessionHit(row), cursorOffset => encodeCursor({
+          version: 1,
+          instance: this._instance,
+          scope: 'sessions',
+          fingerprint,
+          generation,
+          offset: cursorOffset,
+        }), offset)
+      }
+      const rows = this._querySessions(normalized, offset, persistenceBinding, expression)
       return page(rows, normalized.limit, row => this._sessionHit(row), cursorOffset => encodeCursor({
         version: 1,
         instance: this._instance,
@@ -306,10 +319,26 @@ export class SqliteSessionQueryEngine extends SessionQueryEngine {
       assertNotAborted(signal)
       const target = this._targetObservation(normalized.sessionId, persistenceBinding)
       const fingerprint = requestFingerprint(normalized)
+      const expression = resolveMatchExpression(normalized.query)
       const offset = normalized.cursor === undefined
         ? 0
         : decodeCursor(normalized.cursor, this._instance, 'events', fingerprint, target.generation)
-      const rows = this._queryEvents(normalized, offset, persistenceBinding)
+      if (expression === undefined) {
+        // An unconstrained content leg (pure-exclusion or path/title-only query)
+        // has no FTS5 representation; the event scope returns an empty page.
+        return {
+          session: target.header,
+          ...page([], normalized.limit, row => this._eventHit(row), cursorOffset => encodeCursor({
+            version: 1,
+            instance: this._instance,
+            scope: 'events',
+            fingerprint,
+            generation: target.generation,
+            offset: cursorOffset,
+          }), offset),
+        }
+      }
+      const rows = this._queryEvents(normalized, offset, persistenceBinding, expression)
       return {
         session: target.header,
         ...page(rows, normalized.limit, row => this._eventHit(row), cursorOffset => encodeCursor({
@@ -648,6 +677,7 @@ export class SqliteSessionQueryEngine extends SessionQueryEngine {
     request: NormalizedSessionRequest,
     offset: number,
     persistenceBinding: PersistenceBinding,
+    expression: string,
   ): SearchRow[] {
     const selected = selectedDocumentsSql()
     const sessionWhere = buildSessionWhere(request.sessionFilters)
@@ -655,7 +685,7 @@ export class SqliteSessionQueryEngine extends SessionQueryEngine {
     assertFts5OuterPredicateCount(sessionWhere.predicateCount + eventWhere.predicateCount)
     const where = [sessionWhere.sql, eventWhere.sql].filter(Boolean).join(' AND ')
     const bindings = [
-      ...selectedDocumentsParams(request.query, persistenceBinding.service !== undefined),
+      ...selectedDocumentsParams(expression, persistenceBinding.service !== undefined),
       ...sessionWhere.params,
       ...eventWhere.params,
       request.limit + 1,
@@ -687,13 +717,14 @@ export class SqliteSessionQueryEngine extends SessionQueryEngine {
     request: NormalizedEventRequest,
     offset: number,
     persistenceBinding: PersistenceBinding,
+    expression: string,
   ): SearchRow[] {
     const selected = selectedDocumentsSql()
     const eventWhere = buildEventWhere(request.filters)
     assertFts5OuterPredicateCount(1 + eventWhere.predicateCount)
     const where = ['session_id = ?', eventWhere.sql].filter(Boolean).join(' AND ')
     const bindings = [
-      ...selectedDocumentsParams(request.query, persistenceBinding.service !== undefined),
+      ...selectedDocumentsParams(expression, persistenceBinding.service !== undefined),
       request.sessionId,
       ...eventWhere.params,
       request.limit + 1,
@@ -853,8 +884,7 @@ function selectedDocumentsSql(): { sql: string } {
   }
 }
 
-function selectedDocumentsParams(query: string, persistenceVisible: boolean): Array<string | number> {
-  const expression = quoteFtsData(query)
+function selectedDocumentsParams(expression: string, persistenceVisible: boolean): Array<string | number> {
   const visible = persistenceVisible ? 1 : 0
   return [
     FTS_HIGHLIGHT_START,

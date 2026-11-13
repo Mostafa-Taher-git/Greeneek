@@ -27,6 +27,7 @@
   ],
   "license": "MIT",
   "peerDependencies": {
+    "@greeneek/gnk-search-query": "workspace:^",
     "@greeneek/gnk-session": "workspace:^",
     "@greeneek/gnk-session-persistence": "workspace:^",
     "@greeneek/gnk-session-query": "workspace:^",
@@ -42,6 +43,7 @@
   },
   "devDependencies": {
     "@greeneek/cordis-plugin-loader": "workspace:^",
+    "@greeneek/gnk-search-query": "workspace:^",
     "@greeneek/gnk-session": "workspace:^",
     "@greeneek/gnk-session-persistence": "workspace:^",
     "@greeneek/gnk-session-persistence-jsonl": "workspace:^",

@@ -82,6 +82,7 @@
 `src/client/tree.ts: export function deriveFlat(`
 `src/client/tree.ts: export function deriveGroups(`
 `src/client/tree.ts: export function deriveSearchResults(`
+`src/client/tree.ts: export function isSearchQueryValid(query: string): boolean {`
 `src/client/tree.ts: export function sessionVisible(session: SessionSummary, current: SessionId | undefined, archived: ReadonlySet<SessionId>): boolean {`
 `src/client/tree.ts: export function workspaceLabel(cwd: string | undefined): string {`
 `src/client/tree.ts: export interface GroupNode {`

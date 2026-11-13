@@ -80,6 +80,7 @@
       "@greeneek/gnk-subagent/internal": ["./packages/subagent/subagent/src/internal.ts"],
       "@greeneek/gnk-workspace/types": ["./packages/workspace/workspace/src/types.ts"],
       "@greeneek/gnk-util-workspace-path": ["./packages/util/workspace-path/src/index.ts"],
+      "@greeneek/gnk-search-query": ["./packages/util/search-query/src/index.ts"],
       "@greeneek/gnk-session-stats/types": ["./packages/session/session-stats/src/types.ts"],
       "@greeneek/gnk-session-stats/client": ["./packages/session/session-stats/src/client.ts"],
       "@greeneek/gnk-session-turn-outline/types": ["./packages/session/session-turn-outline/src/types.ts"],

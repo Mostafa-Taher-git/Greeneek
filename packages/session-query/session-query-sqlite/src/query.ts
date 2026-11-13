@@ -5,6 +5,12 @@ import {
   materializeSessionEventResultFilters,
   materializeSessionResultFilters,
 } from '@greeneek/gnk-session-query'
+import {
+  compileContentFts5,
+  hasContentTerms,
+  parseSearchQuery,
+  SearchQueryError,
+} from '@greeneek/gnk-search-query'
 import type {
   SessionAvailability,
   SessionEventMetadataFilter,
@@ -216,12 +222,37 @@ export function buildEventWhere(filters: readonly SessionEventMetadataFilter[]):
 }
 
 /**
- * Quote caller text as one FTS5 phrase so query syntax remains inert data.
- * @param query - normalized caller query.
- * @returns FTS5 expression containing one escaped literal phrase.
+ * Resolve the Greeneek session-search query language into one FTS5 MATCH expression.
+ * The language is Obsidian-style: bare words and quoted phrases are content leaves,
+ * `-` negates, `or` disjoins, parentheses group, and `path:`/`file:`/`title:`
+ * restrict visible rows client-side (no index exists for them at the host).
+ * Malformations fail loud with `SESSION_QUERY_INVALID_QUERY` — a grammar error
+ * is never silently rewritten into a weaker literal query.
+ *
+ * @param query - normalized (length-bounded, marker-free) caller query.
+ * @returns the MATCH expression; `undefined` when no content leg constrains the
+ * index (pure-exclusion or path/title-only queries — FTS5 has no match-all-except
+ * operator). Callers must then return an empty page, never a full scan.
+ * @throws {SessionQueryError} SESSION_QUERY_INVALID_QUERY when the grammar is malformed.
  */
-export function quoteFtsData(query: string): string {
-  return `"${query.replaceAll('"', '""')}"`
+export function resolveMatchExpression(query: string): string | undefined {
+  let ast
+  try {
+    ast = parseSearchQuery(query)
+  } catch (error: unknown) {
+    if (error instanceof SearchQueryError) {
+      throw new SessionQueryError(
+        `session-search query is not a valid search expression: ${error.message}`,
+        'SESSION_QUERY_INVALID_QUERY',
+        { cause: error },
+      )
+    }
+    throw error
+  }
+  if (!hasContentTerms(ast)) return undefined
+  const expression = compileContentFts5(ast)
+  if (expression === null) return undefined
+  return expression
 }
 
 /**

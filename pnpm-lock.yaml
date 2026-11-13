@@ -4096,6 +4096,9 @@ importers:
       '@greeneek/gnk-schedule':
         specifier: workspace:^
         version: link:../../schedule/schedule
+      '@greeneek/gnk-search-query':
+        specifier: workspace:^
+        version: link:../../util/search-query
       '@greeneek/gnk-session':
         specifier: workspace:^
         version: link:../../core/session
@@ -7199,6 +7202,9 @@ importers:
       '@greeneek/cordis-plugin-loader':
         specifier: workspace:^
         version: link:../../../vendor/loader
+      '@greeneek/gnk-search-query':
+        specifier: workspace:^
+        version: link:../../util/search-query
       '@greeneek/gnk-session':
         specifier: workspace:^
         version: link:../../core/session
@@ -9672,6 +9678,12 @@ importers:
         version: link:../../../vendor/cordis
 
   packages/util/output-retention:
+    devDependencies:
+      '@greeneek/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
+  packages/util/search-query:
     devDependencies:
       '@greeneek/cordis':
         specifier: workspace:^

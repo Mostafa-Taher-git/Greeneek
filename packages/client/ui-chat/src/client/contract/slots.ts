@@ -164,17 +164,11 @@ export type ChatViewSlotProps =
 /** Full props of the durable-message image renderer. */
 export type MessageImagesProps = PropsRuntime<'conversation.message.images'> & PropsLocale<'conversation'>
 
-/** Details-panel callbacks. */
-export interface DetailsInjected {
-  closeDetails: () => void
-}
-
 /** Full details-panel props. */
 export type DetailsSlotProps =
   PropsRuntime<'details'>
   & PropsRenderSlots<'conversation.details.tool' | 'conversation.details.actions'>
   & PropsStore<ChatStore>
-  & InjectFace<DetailsInjected>
   & PropsLocale<'chat'>
 
 declare module '@greeneek/gnk-client-ui-slots' {

@@ -37,7 +37,3 @@
   - text: Greeneek-V4-Flash
   - img
 - button "Send message" [disabled]
-- heading "Recent in workspace" [level=2]
-- list:
-  - listitem:
-    - button "New Session now"

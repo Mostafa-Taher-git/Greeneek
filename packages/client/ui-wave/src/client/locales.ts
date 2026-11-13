@@ -45,13 +45,12 @@ export const zh = {
   'pill.label.degraded': '{label} · 视图过时',
   'pill.stop.aria': '紧急停止全部舰队',
   'pill.close.aria': '关闭舰队面板',
-  'sidebar.title': '实时舰队',
+  'fleet.title': '实时舰队',
+  'lineage.title': '会话谱系',
   'lineage.aria': '会话谱系',
   'lineage.agents.title': '历史 Agent',
   'lineage.agents.empty': '本会话没有运行过的 Agent。',
   'lineage.agents.running': '运行中',
-  'sidebar.close.aria': '关闭舰队侧栏',
-  'sidebar.open.aria': '打开舰队侧栏',
 } satisfies Record<string, string>
 
 /** The fleet namespace key union. */
@@ -99,13 +98,12 @@ export const en = {
   'pill.label.degraded': '{label} · view stale',
   'pill.stop.aria': 'Emergency-stop the whole fleet',
   'pill.close.aria': 'Close the fleet panel',
-  'sidebar.title': 'Live fleet',
+  'fleet.title': 'Live Fleet',
+  'lineage.title': 'Lineage',
   'lineage.aria': 'Session lineage',
   'lineage.agents.title': 'Previous agents',
   'lineage.agents.empty': 'No agent ran under this Session.',
   'lineage.agents.running': 'Running',
-  'sidebar.close.aria': 'Close the fleet sidebar',
-  'sidebar.open.aria': 'Open the fleet sidebar',
 } satisfies Record<FleetKey, string>
 
 /** Arabic dictionary, checked complete against the zh key set; Army and tok stay verbatim. */
@@ -150,11 +148,10 @@ export const ar = {
   'pill.label.degraded': '{label} · العرض قديم',
   'pill.stop.aria': 'إيقاف طارئ للأسطول بأكمله',
   'pill.close.aria': 'إغلاق لوحة الأسطول',
-  'sidebar.title': 'الأسطول الحي',
+  'fleet.title': 'الأسطول الحي',
+  'lineage.title': 'تسلسل الجلسات',
   'lineage.aria': 'تسلسل الجلسات',
   'lineage.agents.title': 'الوكلاء السابقون',
   'lineage.agents.empty': 'لم يعمل أي وكيل في هذه الجلسة.',
   'lineage.agents.running': 'قيد التشغيل',
-  'sidebar.close.aria': 'إغلاق الشريط الجانبي للأسطول',
-  'sidebar.open.aria': 'فتح الشريط الجانبي للأسطول',
 } satisfies Record<FleetKey, string>

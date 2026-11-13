@@ -96,7 +96,6 @@ export function fleetSource(initial: FleetSnapshot): FleetSource {
 export interface FleetVerbSpies {
   refresh: Mock<() => void>
   openSidebar: Mock<() => void>
-  closeSidebar: Mock<() => void>
   stopAll: Mock<() => Promise<StopAllOutcome>>
   stopWave: Mock<(waveId: WaveId) => Promise<StopOutcome>>
   stopMember: Mock<(waveId: WaveId, memberId: WaveMemberId) => Promise<StopOutcome>>
@@ -110,7 +109,6 @@ export function fleetVerbs(): FleetVerbSpies {
   return {
     refresh: vi.fn<() => void>(),
     openSidebar: vi.fn<() => void>(),
-    closeSidebar: vi.fn<() => void>(),
     stopAll: vi.fn<() => Promise<StopAllOutcome>>()
       .mockResolvedValue({ ok: true, value: { waveIds: [WAVE] } }),
     stopWave: vi.fn<(waveId: WaveId) => Promise<StopOutcome>>()
@@ -126,6 +124,23 @@ export function fleetVerbs(): FleetVerbSpies {
 
 /** The English translator, so specs assert the copy shipped for `en`. */
 export const t = makeTranslate(en) as unknown as PropsLocale<'fleet'>['t']
+
+/** The session list projection without the harness agent (a Session no agent ran under). */
+export const sessionListWithoutAgent = (): SessionListState => ({
+  ids: ['parent-session' as SessionId, SESSION],
+  byId: {
+    'parent-session': { id: 'parent-session' as SessionId, displayTitle: 'Parent agent', running: false, blank: false, updatedAt: 0 },
+    [SESSION]: {
+      id: SESSION, displayTitle: 'Child agent', parentId: 'parent-session' as SessionId,
+      origin: 'subagent', running: false, blank: false, updatedAt: 0,
+    },
+  },
+  current: SESSION,
+  phase: 'ready',
+  subagentsByParent: {},
+  jobsBySession: {},
+  currentAddress: undefined,
+})
 
 /**
  * Compose the props every fleet surface reads.

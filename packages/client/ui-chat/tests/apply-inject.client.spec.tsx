@@ -13,7 +13,7 @@ import {
   apply as applyConversation, inject as injectConversation,
 } from '@greeneek/gnk-client-ui-conversation/client'
 import {
-  apply as applyChat, inject as injectChat, type ChatViewInjected, type DetailsInjected,
+  apply as applyChat, inject as injectChat, type ChatViewInjected,
 } from '@greeneek/gnk-client-ui-chat/client'
 import { SessionSeq, type SessionId } from '@greeneek/gnk-session/types'
 import { createChatStore } from '../src/client/stores.ts'
@@ -149,15 +149,9 @@ describe('Chat inject API', () => {
     await b.runtime.dispose()
   })
 
-  it('closes details while sharing selection through the Chat store', async () => {
+  it('shares the Chat store between the view and details entries', async () => {
     const b = await bench()
-    const entry = b.runtime.slots.entries('details')[0]!
-    const injected = (entry.inject as unknown as () => DetailsInjected)()
-    // The details inject face carries the close verb; the live Fleet moved to
-    // the right panel, so the fleet-occupancy hook left this face with it.
-    expect(Object.keys(injected)).toEqual(['closeDetails'])
-    injected.closeDetails()
-    expect(b.layout.closeDetails).toHaveBeenCalledOnce()
+    // Both entries bind the same Chat store; the details column reads it live.
     expect(b.runtime.storeOf('details', ROOT)).toBe(b.runtime.storeOf('conversation.view', ROOT))
     await b.runtime.dispose()
   })

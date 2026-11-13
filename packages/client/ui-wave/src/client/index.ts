@@ -79,7 +79,6 @@ export function apply(ctx: ClientContext): void {
         ctx.sessions.open(sessionId)
       },
       openSidebar: () => { ctx.layout.openRightbar() },
-      closeSidebar: () => { ctx.layout.closeRightbar() },
     }
   }
 

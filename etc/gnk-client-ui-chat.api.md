@@ -104,7 +104,6 @@
 `src/client/contract/slots.ts: export interface ChatScrollPosition {`
 `src/client/contract/slots.ts: export interface ChatViewInjected {`
 `src/client/contract/slots.ts: export interface CommandRowOwnerProps {`
-`src/client/contract/slots.ts: export interface DetailsInjected {`
 `src/client/contract/slots.ts: export interface DetailsToolOwnerProps {`
 `src/client/contract/slots.ts: export interface TurnProcessOwnerProps {`
 `src/client/contract/slots.ts: export interface TurnTailOwnerProps {`

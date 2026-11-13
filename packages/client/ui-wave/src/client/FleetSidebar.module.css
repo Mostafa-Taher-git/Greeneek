@@ -1,92 +1,153 @@
-/* Right-sidebar fleet surface: a header over the reused panel body. */
+/* Right-sidebar fleet surface: T3's section hierarchy — Lineage with its
+   session chain and the collapsible Previous agents group, then Live Fleet
+   directly underneath. Rows are 32px with 8px radii; the section heading is
+   11px medium muted; hairlines separate the sections. No panel-internal
+   header: the session header owns the one toggle for this column. */
 
 .root {
   display: flex;
   flex-direction: column;
   min-width: 0;
   height: 100%;
+  overflow-y: auto;
 }
 
-.header {
+.section {
+  padding: 8px;
+  border-top: 0.5px solid var(--dsw-alias-border-l2);
+}
+
+.section:first-child {
+  border-top: 0;
+}
+
+.heading {
+  min-height: 32px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 8px 12px;
-  border-bottom: 0.5px solid var(--dsw-alias-border-l2);
-}
-
-.title {
-  font-size: 13px;
-  line-height: 20px;
+  padding-inline: 10px;
+  margin: 0;
+  font-size: 11px;
+  line-height: 16px;
   font-weight: 500;
-  color: var(--dsw-alias-label-primary);
+  color: var(--dsw-alias-label-tertiary);
+  user-select: none;
 }
 
-.lineage {
+.lineageList {
   display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  padding: 7px 12px;
-  overflow-x: auto;
-  border-bottom: 0.5px solid var(--dsw-alias-border-l2);
-  scrollbar-width: thin;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .lineageItem {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  gap: 6px;
   min-width: 0;
 }
 
-.lineageSeparator {
-  color: var(--dsw-alias-label-tertiary);
-  font-size: 12px;
+.row,
+.agentRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 32px;
+  padding-inline: 10px;
+  border: 0;
+  border-radius: 8px;
+  corner-shape: round;
+  background: transparent;
+  color: var(--dsw-alias-label-primary);
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 500;
+  text-align: start;
+  cursor: pointer;
 }
 
-.lineageButton {
-  max-width: 10rem;
-  padding: 0;
+.row:hover,
+.agentRow:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.row[aria-current='page'] {
+  background: var(--dsw-alias-interactive-bg-active);
+}
+
+.row:focus-visible,
+.agentRow:focus-visible {
+  outline: 2px solid var(--dsw-alias-brand-primary-new-colorprimary-new-color);
+  outline-offset: -2px;
+}
+
+.rowIcon {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.rowLabel {
+  flex: 1 1 auto;
+  min-width: 0;
   overflow: hidden;
-  border: 0;
-  background: transparent;
-  color: var(--dsw-alias-label-secondary);
-  font-size: 12px;
-  line-height: 18px;
   text-overflow: ellipsis;
   white-space: nowrap;
-  cursor: pointer;
 }
 
-.lineageButton:hover,
-.lineageButton[aria-current='page'] {
-  color: var(--dsw-alias-label-primary);
-}
-
-.close {
+.count {
   flex: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--dsw-alias-label-secondary);
-  cursor: pointer;
+  font-size: 12px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  color: var(--dsw-alias-label-tertiary);
 }
 
-.close:hover {
-  background: var(--dsw-alias-interactive-bg-hover);
-  color: var(--dsw-alias-label-primary);
+.running {
+  flex: none;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 14px;
+  font-variant-numeric: tabular-nums;
+  color: var(--dsw-alias-state-success-primary);
 }
 
-.body {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 12px;
+.chevron {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--dsw-alias-label-tertiary);
+  transition: transform 120ms ease;
+}
+
+.chevronCollapsed {
+  transform: rotate(-90deg);
+}
+
+.agentsGroup {
+  margin-top: 2px;
+}
+
+.agentList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.agentRow {
+  padding-inline-start: 36px;
+}
+
+.agentsEmpty {
+  margin: 0;
+  padding: 6px 10px 4px;
+  padding-inline-start: 36px;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--dsw-alias-label-tertiary);
 }

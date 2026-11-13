@@ -1,10 +1,8 @@
 /**
- * Workspace plugin, browser half. Three registrations: WorkspaceBrowser fills
- * the sidebar shell's `sidebar.workspaces` hole (the whole browsing region),
- * WorkspacePicker fills the conversation hero's picker hole
- * (`conversation.hero.workspace` — both hero forms), and RecentSessionsSeat
- * fills the hero's recent-sessions hole (`conversation.hero.recentSessions`)
- * with the targeted Workspace's newest sessions. All read real Host
+ * Workspace plugin, browser half. Registers the WorkspaceBrowser into the
+ * sidebar shell's `sidebar.workspaces` hole (the whole browsing region) and
+ * the WorkspacePicker into the conversation hero's picker hole
+ * (`conversation.hero.workspace` — both hero forms). Both read real Host
  * Workspaces through the global useWorkspaces hook. The two picker surfaces
  * declare their own `single` directory-flow child hole for the composed
  * picker package's client half (see the contract module doc). Export
@@ -29,11 +27,9 @@ import type {} from '@greeneek/gnk-client-ui-session/client'
 import type { ILayout } from '@greeneek/gnk-client-ui-layout/client'
 import type { WorkspaceBrowserInjected, WorkspacePickerInjected } from './contract/slots.ts'
 import type { OpenPathTarget } from './contract/slots.ts'
-import type { RecentSessionsInjected } from './RecentSessionsSeat.tsx'
 import { UiWorkspaceService } from './navigation.ts'
 import { createWorkspaceViewStore } from './stores.ts'
 import { WorkspaceBrowser } from './rows/WorkspaceBrowser.tsx'
-import { RecentSessionsSeat } from './RecentSessionsSeat.tsx'
 import { DashboardAction } from './DashboardAction.tsx'
 import { DashboardPage } from './DashboardPage.tsx'
 import { WorkspacePicker } from './WorkspacePicker.tsx'
@@ -185,12 +181,6 @@ export function apply(ctx: Context): void {
     createWorkspace: input => workspaces.create(input),
     hooks: { directoryFlow: pickerFlowSource },
   })
-  const recentSessionsInjected = (): RecentSessionsInjected => ({
-    open: (sessionId) => {
-      layout()?.showConversation()
-      sessions.open(sessionId)
-    },
-  })
   const utilitiesInjected = (): SessionHeaderUtilitiesInjected => ({
     pinSession: async (sessionId, pinned) => { await workspaces.pinSession(sessionId, pinned) },
     archiveSession: async (sessionId) => { await uiWorkspace.archiveSession(sessionId) },
@@ -198,8 +188,7 @@ export function apply(ctx: Context): void {
     ...sharedSessionInjected(),
   })
   // The two picker registrations declare their directory-flow child in the
-  // same call; the recent-sessions seat has no children. Slot injection
-  // follows each owner and declaration HMR lifetime.
+  // same call. Slot injection follows each owner and declaration HMR lifetime.
   ctx.slots.inject('sidebar.workspaces', () => ctx.slots.register(
     {
       name: 'sidebar.workspaces',
@@ -218,14 +207,6 @@ export function apply(ctx: Context): void {
       locale: NS,
     },
     WorkspacePicker,
-  ))
-  ctx.slots.inject('conversation.hero.recentSessions', () => ctx.slots.register(
-    {
-      name: 'conversation.hero.recentSessions',
-      inject: recentSessionsInjected,
-      locale: NS,
-    },
-    RecentSessionsSeat,
   ))
   ctx.slots.inject('sidebar.primary.action', () => ctx.slots.register(
     {

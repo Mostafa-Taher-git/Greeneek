@@ -73,10 +73,8 @@ export interface FleetInjected {
   openChild: (childSessionId: SessionId) => void
   /** Navigate to one Session in the lineage breadcrumb. */
   openSession: (sessionId: SessionId) => void
-  /** Open the dedicated right sidebar (S5-11a); the sidebar surface calls it on the empty->running edge. */
+  /** Open the dedicated right sidebar; the sidebar surface calls it on the empty->running edge. */
   openSidebar: () => void
-  /** Close the right sidebar in one click, collapsing its track. */
-  closeSidebar: () => void
 }
 
 /** One ancestor or current Session shown above Live Fleet. */

@@ -529,7 +529,6 @@ describe('DetailsPanel Output section', () => {
         useProjection={(() => undefined)}
         useStore={bindSnapshotSelector(chat)}
         actions={chat.actions}
-        closeDetails={vi.fn()}
         t={chatT}
       />,
     )
@@ -687,10 +686,9 @@ describe('DetailsPanel Output section', () => {
     expect(view.getByText('点击消息流中的工具行查看详情')).toBeTruthy()
   })
 
-  it('the close button reaches closeDetails', () => {
+  it('renders no panel-internal close button (the header toggle is the one close path)', () => {
     localStorage.clear()
     const chat = createChatStore().create()
-    const closeDetails = vi.fn()
     const snap = snapshot()
     const session = createSnapshotStore(sessionSnapshot(SID))
     const conversation = createSnapshotStore(conversationSnapshot())
@@ -717,12 +715,12 @@ describe('DetailsPanel Output section', () => {
         useProjection={(() => undefined)}
         useStore={bindSnapshotSelector(chat)}
         actions={chat.actions}
-        closeDetails={closeDetails}
         t={chatT}
       />,
     )
-    fireEvent.click(view.getByRole('button', { name: '关闭详情' }))
-    expect(closeDetails).toHaveBeenCalledTimes(1)
+    // Thread Details is one destination: closing it belongs to the session header
+    // toggle, not to a second affordance inside the column.
+    expect(view.queryByRole('button', { name: '关闭详情' })).toBeNull()
   })
 
   it('a non-text result block renders as JSON, and an empty result falls back to its error', () => {

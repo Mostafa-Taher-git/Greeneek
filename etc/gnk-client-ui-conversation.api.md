@@ -114,7 +114,6 @@
 `src/client/contract/slots.ts: export interface EmptyWorkspaceOwnerProps {`
 `src/client/contract/slots.ts: export interface HeroAgentPresetOwnerProps {`
 `src/client/contract/slots.ts: export interface HeroBrandMarkOwnerProps {`
-`src/client/contract/slots.ts: export interface HeroRecentSessionsOwnerProps {`
 `src/client/contract/slots.ts: export interface InputControlOwnerProps {`
 `src/client/contract/slots.ts: export interface InputZone {`
 `src/client/contract/slots.ts: export interface MessageImagesOwnerProps {`

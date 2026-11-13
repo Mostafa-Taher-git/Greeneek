@@ -1,5 +1,5 @@
 import { Fragment } from 'react'
-import { CodeBlock, IconCloseOutline16 } from '@greeneek/gnk-client-ui-primitives'
+import { CodeBlock } from '@greeneek/gnk-client-ui-primitives'
 import { shallowEqual } from '@greeneek/gnk-client-store'
 import type { DetailsSlotProps } from '../contract/slots.ts'
 import type { ChatSnapshot, RunningToolCall, ToolCallBlock, ToolResultNode } from '../contract/snapshot.ts'
@@ -46,7 +46,7 @@ function rawResultText(block: ToolCallBlock): string {
 }
 
 export function DetailsPanel({
-  useChat, useSessions, sessionId, useStore, renderSlot, closeDetails, t,
+  useChat, useSessions, sessionId, useStore, renderSlot, t,
 }: DetailsPanelProps) {
   const selection = useStore(s => s.selection)
   // Session workspace root: a card model resolves omitted or relative
@@ -64,12 +64,6 @@ export function DetailsPanel({
       <div className={css.header}>
         <div className={css.title}>{callName}</div>
         <div className={css.actions}>{renderSlot('conversation.details.actions', {})}</div>
-        <button
-          type="button" className={css.close} aria-label={t('details.close')}
-          onClick={() => { closeDetails() }}
-        >
-          <IconCloseOutline16 size={14} />
-        </button>
       </div>
       <div className={css.body}>
         {selection === null || callId === undefined

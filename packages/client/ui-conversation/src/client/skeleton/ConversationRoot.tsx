@@ -358,11 +358,6 @@ export function ConversationRoot({
       {hero && heroWorkspaceRow}
       {zone !== undefined && renderSlot('conversation.input.dock', zone)}
       {inputBar}
-      {hero && (
-        <div className={css.heroRecentRow} data-testid="hero-recent-row">
-          {renderSlot('conversation.hero.recentSessions', { workspaceId })}
-        </div>
-      )}
     </div>
   )
 

@@ -16,7 +16,7 @@ async function streamedZip(name: string, content: string, level: 0 | 1 | 2 | 3 |
         return
       }
       if (data !== undefined && data.byteLength > 0) chunks.push(data)
-      if (final === true) resolve()
+      if (final) resolve()
     })
     const entry = new ZipDeflate(name, { level })
     archive.add(entry)

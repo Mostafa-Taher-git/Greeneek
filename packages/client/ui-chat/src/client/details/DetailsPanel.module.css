@@ -1,4 +1,4 @@
-/* Details third column, minimal fill: header (name + close) over a
+/* Details third column: a header (tool name + Session actions) over a
    scrolling body of Input/Output code sections. Panel width/squeeze belongs
    to layout; this fills whatever the column gives. */
 
@@ -10,7 +10,6 @@
   background: var(--dsw-alias-bg-base);
 }
 
-/* figma RightSidebar header frame (I54:42735;43:36451): pad 14/12/12/12, gap 8. */
 .header {
   display: flex;
   align-items: center;
@@ -36,24 +35,6 @@
   display: flex;
   flex: none;
   align-items: center;
-}
-
-.close {
-  display: grid;
-  flex: none;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  border: none;
-  border-radius: 999px;
-  corner-shape: round;
-  background: transparent;
-  color: var(--dsw-alias-label-secondary);
-  cursor: pointer;
-}
-
-.close:hover {
-  background: var(--dsw-alias-interactive-bg-hover);
 }
 
 .body {

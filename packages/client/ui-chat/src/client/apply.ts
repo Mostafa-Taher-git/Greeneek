@@ -15,7 +15,7 @@ import type {} from '@greeneek/gnk-client-ui-session/client'
 import type {} from '@greeneek/gnk-client-ui-settings/client'
 import type {} from '@greeneek/gnk-client-ui-workspace/client'
 import type {
-  ChatNodeTurnDataInjected, ChatScrollPosition, ChatViewInjected, DetailsInjected,
+  ChatNodeTurnDataInjected, ChatScrollPosition, ChatViewInjected,
   TurnTailOwnerProps,
 } from './contract/slots.ts'
 import type { ChatSnapshot } from './contract/snapshot.ts'
@@ -170,7 +170,6 @@ export function apply(ctx: Context): void {
         'conversation.details.actions': { kind: 'list', scope: 'session' },
       },
       store: chatStore,
-      inject: (): DetailsInjected => ({ closeDetails: () => { ctx.layout.closeDetails() } }),
     }, DetailsPanel)
     return disposePanel
   })

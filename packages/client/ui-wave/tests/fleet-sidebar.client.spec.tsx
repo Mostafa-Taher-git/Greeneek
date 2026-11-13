@@ -4,8 +4,10 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import type {} from '../src/client/index.ts'
 import { FleetSidebar } from '../src/client/FleetSidebar.tsx'
 import { en } from '../src/client/locales.ts'
+import type { SessionListState } from '@greeneek/gnk-api-session-controller/client'
+import type { SessionId } from '@greeneek/gnk-session/types'
 import {
-  emptySnapshot, fleetProps, fleetSource, fleetVerbs, liveSnapshot,
+  SESSION, emptySnapshot, fleetProps, fleetSource, fleetVerbs, liveSnapshot, sessionListWithoutAgent,
 } from './fleet-surface-fixture.client.ts'
 
 beforeEach(() => {
@@ -40,15 +42,9 @@ describe('FleetSidebar (S5-11a dedicated right sidebar)', () => {
     expect(verbs.openSidebar).toHaveBeenCalledTimes(1)
   })
 
-  it('closes in one click from the sidebar header', () => {
-    const { verbs } = setup()
-    fireEvent.click(screen.getByRole('button', { name: en['sidebar.close.aria'] }))
-    expect(verbs.closeSidebar).toHaveBeenCalledTimes(1)
-  })
-
   it('keeps the Emergency Stop reachable at the top of the sidebar', async () => {
     const { verbs } = setup()
-    expect(screen.getByText(en['sidebar.title'])).toBeDefined()
+    expect(screen.getByText(en['fleet.title'])).toBeDefined()
     fireEvent.click(screen.getByText(en['stop.all']))
     expect(verbs.stopAll).not.toHaveBeenCalled()
     await act(async () => {
@@ -74,10 +70,64 @@ describe('FleetSidebar (S5-11a dedicated right sidebar)', () => {
     expect(lineage.compareDocumentPosition(screen.getByText('writer')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
-  it('lists the Harness agents that ran under the Session beside the lineage', () => {
+  it('shows the empty sentence when no agent ran under the Session', () => {
+    const source = fleetSource(liveSnapshot())
+    const verbs = fleetVerbs()
+    const props = fleetProps(source, verbs)
+    // Drop the harness agent from the list projection: no child of this Session ran.
+    const selectSessions = (selector: (state: SessionListState) => unknown): unknown => selector(sessionListWithoutAgent())
+    const lineageFree = { ...props, useSessions: selectSessions }
+    render(<FleetSidebar {...lineageFree} />)
+    const toggle = screen.getByRole('button', { name: new RegExp(`^${en['lineage.agents.title']}`) })
+    expect(toggle.getAttribute('aria-expanded')).toBe('false')
+    fireEvent.click(toggle)
+    expect(screen.getByText(en['lineage.agents.empty'])).toBeTruthy()
+    expect(verbs.openChild).not.toHaveBeenCalled()
+  })
+
+  it('renders the running chip only for running agents', () => {
+    const source = fleetSource(liveSnapshot())
+    const verbs = fleetVerbs()
+    const props = fleetProps(source, verbs)
+    const agentId = 'harness-settled' as SessionId
+    const settledList: SessionListState = {
+      ids: ['parent-session' as SessionId, SESSION, agentId],
+      byId: {
+        'parent-session': { id: 'parent-session' as SessionId, displayTitle: 'Parent agent', running: false, blank: false, updatedAt: 0 },
+        [SESSION]: { id: SESSION, displayTitle: 'Child agent', parentId: 'parent-session' as SessionId, origin: 'subagent', running: false, blank: false, updatedAt: 0 },
+        [agentId]: { id: agentId, displayTitle: 'Settled agent', parentId: SESSION, origin: 'subagent', running: false, blank: false, updatedAt: 0 },
+      },
+      current: SESSION,
+      phase: 'ready',
+      subagentsByParent: {},
+      jobsBySession: {},
+      currentAddress: undefined,
+    }
+    const useSessions = (selector: (state: SessionListState) => unknown): unknown => selector(settledList)
+    render(<FleetSidebar {...props} useSessions={useSessions} />)
+    fireEvent.click(screen.getByRole('button', { name: new RegExp(`^${en['lineage.agents.title']}`) }))
+    const group = screen.getByRole('region', { name: en['lineage.agents.title'] })
+    expect(group.textContent).toContain('Settled agent')
+    expect(group.textContent).not.toContain(en['lineage.agents.running'])
+  })
+
+  it('renders the Lineage and Live Fleet section headings', () => {
     setup()
+    expect(screen.getByRole('heading', { name: en['lineage.title'], level: 3 })).toBeDefined()
+    expect(screen.getByRole('heading', { name: en['fleet.title'], level: 3 })).toBeDefined()
+  })
+
+  it('lists the Harness agents that ran under the Session in the Previous agents group', () => {
+    const { verbs } = setup()
+    const toggle = screen.getByRole('button', { name: new RegExp(`^${en['lineage.agents.title']}`) })
+    expect(toggle.getAttribute('aria-expanded')).toBe('false')
+    fireEvent.click(toggle)
+    expect(toggle.getAttribute('aria-expanded')).toBe('true')
     const group = screen.getByRole('region', { name: en['lineage.agents.title'] })
     expect(group.textContent).toContain('Harness agent')
     expect(group.textContent).toContain(en['lineage.agents.running'])
+    // The agent row opens the member's child transcript.
+    fireEvent.click(screen.getByRole('button', { name: /Harness agent/ }))
+    expect(verbs.openChild).toHaveBeenCalledWith('harness-agent')
   })
 })

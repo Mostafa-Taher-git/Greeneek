@@ -9,9 +9,6 @@
 `src/client/DashboardPage.tsx: export function DashboardPage({ useSessions, useWorkspaces, t, close, open, pricing }: DashboardPageProps) {`
 `src/client/DashboardPage.tsx: export interface DashboardPageInjected {`
 `src/client/DashboardPage.tsx: export type DashboardPageProps =`
-`src/client/RecentSessionsSeat.tsx: export function RecentSessionsSeat({ workspaceId, open, useSessions, useWorkspaces, t }: RecentSessionsSeatProps) {`
-`src/client/RecentSessionsSeat.tsx: export interface RecentSessionsInjected {`
-`src/client/RecentSessionsSeat.tsx: export type RecentSessionsSeatProps =`
 `src/client/SessionHeaderUtilities.tsx: export function SessionHeaderUtilities({`
 `src/client/SessionHeaderUtilities.tsx: export interface SessionHeaderUtilitiesInjected {`
 `src/client/SessionHeaderUtilities.tsx: export type SessionHeaderUtilitiesProps =`

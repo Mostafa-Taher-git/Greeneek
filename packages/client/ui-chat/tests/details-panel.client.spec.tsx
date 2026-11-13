@@ -46,7 +46,6 @@ function mountDetails(selected = false) {
     useStore: bindSnapshotSelector(store.store),
     actions: store.actions,
     renderSlot,
-    closeDetails: vi.fn(),
     t,
   } as unknown as DetailsSlotProps
   return { ...render(<DetailsPanel {...props} />), keys, store }

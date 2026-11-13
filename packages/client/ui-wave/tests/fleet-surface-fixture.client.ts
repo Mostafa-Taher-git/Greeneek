@@ -126,21 +126,49 @@ export function fleetVerbs(): FleetVerbSpies {
 export const t = makeTranslate(en) as unknown as PropsLocale<'fleet'>['t']
 
 /** The session list projection without the harness agent (a Session no agent ran under). */
-export const sessionListWithoutAgent = (): SessionListState => ({
-  ids: ['parent-session' as SessionId, SESSION],
-  byId: {
-    'parent-session': { id: 'parent-session' as SessionId, displayTitle: 'Parent agent', running: false, blank: false, updatedAt: 0 },
-    [SESSION]: {
-      id: SESSION, displayTitle: 'Child agent', parentId: 'parent-session' as SessionId,
-      origin: 'subagent', running: false, blank: false, updatedAt: 0,
+export const sessionListWithoutAgent = (): SessionListState => {
+  const parentId = 'parent-session' as SessionId
+  return {
+    ids: [parentId, SESSION],
+    byId: {
+      [parentId]: { id: parentId, displayTitle: 'Parent agent', running: false, blank: false, updatedAt: 0 },
+      [SESSION]: {
+        id: SESSION, displayTitle: 'Child agent', parentId,
+        origin: 'subagent', running: false, blank: false, updatedAt: 0,
+      },
     },
-  },
-  current: SESSION,
-  phase: 'ready',
-  subagentsByParent: {},
-  jobsBySession: {},
-  currentAddress: undefined,
-})
+    current: SESSION,
+    phase: 'ready',
+    subagentsByParent: {},
+    jobsBySession: {},
+    currentAddress: undefined,
+  }
+}
+
+/** The session list projection with one settled (non-running) harness agent. */
+export const sessionListWithSettledAgent = (): SessionListState => {
+  const parentId = 'parent-session' as SessionId
+  const agentId = 'harness-settled' as SessionId
+  return {
+    ids: [parentId, SESSION, agentId],
+    byId: {
+      [parentId]: { id: parentId, displayTitle: 'Parent agent', running: false, blank: false, updatedAt: 0 },
+      [SESSION]: {
+        id: SESSION, displayTitle: 'Child agent', parentId, origin: 'subagent',
+        running: false, blank: false, updatedAt: 0,
+      },
+      [agentId]: {
+        id: agentId, displayTitle: 'Settled agent', parentId: SESSION, origin: 'subagent',
+        running: false, blank: false, updatedAt: 0,
+      },
+    },
+    current: SESSION,
+    phase: 'ready',
+    subagentsByParent: {},
+    jobsBySession: {},
+    currentAddress: undefined,
+  }
+}
 
 /**
  * Compose the props every fleet surface reads.
@@ -183,4 +211,20 @@ export function fleetProps(source: FleetSource, verbs: FleetVerbSpies): FleetPan
     useSessions: selectSessions,
     useWorkspaces: () => undefined,
   } as unknown as FleetPanelProps
+}
+
+/** Compose props whose fleet mirror rides the default list and whose Session list is caller-supplied.
+ * @param source - the mutable mirror the spec drives.
+ * @param verbs - the scripted stop verbs.
+ * @param sessions - the Session list projection the components read.
+ * @returns props assignable to either surface.
+ */
+export function fleetPropsWithSessions(
+  source: FleetSource,
+  verbs: FleetVerbSpies,
+  sessions: SessionListState,
+): FleetPanelProps {
+  const base = fleetProps(source, verbs)
+  const selectSessions = (selector: (state: SessionListState) => unknown): unknown => selector(sessions)
+  return { ...base, useSessions: selectSessions } as unknown as FleetPanelProps
 }

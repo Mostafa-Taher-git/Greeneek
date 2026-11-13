@@ -4,10 +4,9 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import type {} from '../src/client/index.ts'
 import { FleetSidebar } from '../src/client/FleetSidebar.tsx'
 import { en } from '../src/client/locales.ts'
-import type { SessionListState } from '@greeneek/gnk-api-session-controller/client'
-import type { SessionId } from '@greeneek/gnk-session/types'
 import {
-  SESSION, emptySnapshot, fleetProps, fleetSource, fleetVerbs, liveSnapshot, sessionListWithoutAgent,
+  emptySnapshot, fleetProps, fleetPropsWithSessions, fleetSource, fleetVerbs, liveSnapshot,
+  sessionListWithSettledAgent, sessionListWithoutAgent,
 } from './fleet-surface-fixture.client.ts'
 
 beforeEach(() => {
@@ -73,11 +72,8 @@ describe('FleetSidebar (S5-11a dedicated right sidebar)', () => {
   it('shows the empty sentence when no agent ran under the Session', () => {
     const source = fleetSource(liveSnapshot())
     const verbs = fleetVerbs()
-    const props = fleetProps(source, verbs)
-    // Drop the harness agent from the list projection: no child of this Session ran.
-    const selectSessions = (selector: (state: SessionListState) => unknown): unknown => selector(sessionListWithoutAgent())
-    const lineageFree = { ...props, useSessions: selectSessions }
-    render(<FleetSidebar {...lineageFree} />)
+    const props = fleetPropsWithSessions(source, verbs, sessionListWithoutAgent())
+    render(<FleetSidebar {...props} />)
     const toggle = screen.getByRole('button', { name: new RegExp(`^${en['lineage.agents.title']}`) })
     expect(toggle.getAttribute('aria-expanded')).toBe('false')
     fireEvent.click(toggle)
@@ -88,23 +84,8 @@ describe('FleetSidebar (S5-11a dedicated right sidebar)', () => {
   it('renders the running chip only for running agents', () => {
     const source = fleetSource(liveSnapshot())
     const verbs = fleetVerbs()
-    const props = fleetProps(source, verbs)
-    const agentId = 'harness-settled' as SessionId
-    const settledList: SessionListState = {
-      ids: ['parent-session' as SessionId, SESSION, agentId],
-      byId: {
-        'parent-session': { id: 'parent-session' as SessionId, displayTitle: 'Parent agent', running: false, blank: false, updatedAt: 0 },
-        [SESSION]: { id: SESSION, displayTitle: 'Child agent', parentId: 'parent-session' as SessionId, origin: 'subagent', running: false, blank: false, updatedAt: 0 },
-        [agentId]: { id: agentId, displayTitle: 'Settled agent', parentId: SESSION, origin: 'subagent', running: false, blank: false, updatedAt: 0 },
-      },
-      current: SESSION,
-      phase: 'ready',
-      subagentsByParent: {},
-      jobsBySession: {},
-      currentAddress: undefined,
-    }
-    const useSessions = (selector: (state: SessionListState) => unknown): unknown => selector(settledList)
-    render(<FleetSidebar {...props} useSessions={useSessions} />)
+    const props = fleetPropsWithSessions(source, verbs, sessionListWithSettledAgent())
+    render(<FleetSidebar {...props} />)
     fireEvent.click(screen.getByRole('button', { name: new RegExp(`^${en['lineage.agents.title']}`) }))
     const group = screen.getByRole('region', { name: en['lineage.agents.title'] })
     expect(group.textContent).toContain('Settled agent')

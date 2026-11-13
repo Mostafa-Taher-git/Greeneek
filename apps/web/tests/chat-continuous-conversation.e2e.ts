@@ -231,7 +231,7 @@ describe('web e2e: continuous conversation grown through the composer', () => {
 
       const settled = scaffold.whenTurnSettled(60_000)
       await page.getByRole('button', { name: 'Send message', exact: true }).click()
-      await page.getByText(spec.userMarker, { exact: false }).last().waitFor({ timeout: 15_000 })
+      await page.locator('[data-conversation-scroll]').getByText(spec.userMarker, { exact: false }).last().waitFor({ timeout: 15_000 })
       await expect.poll(() => sessionEvents.slice(eventStart).some(event => (
         event.type === 'user/message'
         && event.data.source.kind === 'user'

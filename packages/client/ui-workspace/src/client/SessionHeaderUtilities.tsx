@@ -90,6 +90,12 @@ export function SessionHeaderUtilities({
   const [renameOpen, setRenameOpen] = useState(false)
   const [renameDraft, setRenameDraft] = useState('')
   const [renaming, setRenaming] = useState(false)
+  // The desktop titlebar carries the three panel toggles when the preload
+  // bridge is present (mirrors the frame's host detection). The web host has
+  // no titlebar row, so the session header keeps the same three toggles.
+  const [desktopHost] = useState(
+    () => (globalThis as { greeneekDesktop?: unknown }).greeneekDesktop !== undefined,
+  )
   const [renameError, setRenameError] = useState<string | null>(null)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -289,7 +295,7 @@ export function SessionHeaderUtilities({
         portal
       />
 
-      {panelControls !== undefined && (
+      {panelControls !== undefined && !desktopHost && (
         <>
           <Tooltip label={t('actions.toggleThreadDetails.aria')} delayMs={500}>
             <button

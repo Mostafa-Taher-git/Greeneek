@@ -1,16 +1,17 @@
 /* Desktop titlebar row (40px, mirrors FRAMELESS_TITLEBAR_HEIGHT): the bar
-   itself drags the window; only the toggle opts out. The inline-end reserve
-   matches the desktop-injected window controls (3 x 46px) on the right in
-   LTR and the far left in RTL, so no titlebar content slides under them.
-   Transparent over the frame base — the Greeneek ink (tokens, panel glyph)
-   carries the brand, no extra chrome. */
+   itself drags the window — interactive controls opt out individually. The
+   brand and session title sit inline-start; the panel toggles anchor to the
+   reading end, before the desktop-injected window controls the inline-end
+   reserves. Transparent background — the Greeneek ink and the 3px frame
+   crown carry the brand, no window-chrome surface. */
 
 .bar {
   display: flex;
   align-items: center;
+  gap: 10px;
   height: 40px;
   padding-inline-start: 8px;
-  padding-inline-end: calc(3 * 46px);
+  padding-inline-end: calc(3 * 46px + 8px);
   box-sizing: border-box;
   background: transparent;
   color: var(--dsw-alias-label-secondary);
@@ -18,29 +19,91 @@
   app-region: drag;
 }
 
-.toggle {
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+.brandMark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--dsw-static-greeneek-500);
+}
+
+.brandName {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: var(--dsw-alias-label-primary);
+  white-space: nowrap;
+}
+
+.title {
+  flex: 0 1 auto;
+  min-width: 0;
+  position: relative;
+  padding-inline-start: 10px;
+  margin-inline-start: 2px;
+  border-inline-start: 0.5px solid var(--dsw-alias-border-l2);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 20px;
+  color: var(--dsw-alias-label-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  user-select: none;
+}
+
+.spacer {
+  flex: 1 0 auto;
+  min-width: 16px;
+}
+
+.toggle,
+.panelButton {
   flex: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 28px;
   height: 28px;
-  border: none;
-  border-radius: 50%;
+  border: 0;
+  border-radius: 6px;
   corner-shape: round;
   padding: 0;
   background: transparent;
-  color: inherit;
+  color: var(--dsw-alias-label-secondary);
   cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
   -webkit-app-region: no-drag;
   app-region: no-drag;
 }
 
-.toggle:hover {
-  background: var(--dsw-alias-interactive-bg-hover);
+.toggle {
+  border-radius: 999px;
+  corner-shape: round;
 }
 
-.toggle:focus-visible {
-  outline: 2px solid var(--dsw-alias-border-l3);
+.toggle:hover,
+.panelButton:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+}
+
+.toggle:focus-visible,
+.panelButton:focus-visible {
+  outline: 2px solid var(--dsw-alias-brand-primary-new-colorprimary-new-color);
   outline-offset: 1px;
+}
+
+.panelButtonActive,
+.panelButtonActive:hover {
+  background: var(--dsw-alias-interactive-bg-active);
+  color: var(--dsw-alias-brand-primary);
 }

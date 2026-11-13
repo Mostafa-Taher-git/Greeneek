@@ -388,9 +388,16 @@ describe('AppFrame', () => {
     try {
       const open = mountFrame()
       expect(open.frame.hasAttribute('data-desktop-host')).toBe(true)
-      expect(open.slotCalls.filter(c => c.key === 'titlebar').at(-1)!.props).toEqual({ collapsed: false })
+      const titlebarCalls = open.slotCalls.filter(c => c.key === 'titlebar')
+      const expectedPanels = {
+        threadDetailsOpen: false,
+        terminalDrawerOpen: false,
+        rightPanelOpen: false,
+      }
+      expect(titlebarCalls.at(-1)!.props).toMatchObject({ collapsed: false, panelControls: expectedPanels })
+      expect(titlebarCalls.at(-1)!.props).toHaveProperty('documentTitle')
       act(() => { open.instance.actions.toggleSidebar() })
-      expect(open.slotCalls.filter(c => c.key === 'titlebar').at(-1)!.props).toEqual({ collapsed: true })
+      expect(open.slotCalls.filter(c => c.key === 'titlebar').at(-1)!.props).toMatchObject({ collapsed: true })
     } finally {
       delete (globalThis as { greeneekDesktop?: unknown }).greeneekDesktop
     }

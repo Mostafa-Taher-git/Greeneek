@@ -263,7 +263,7 @@ export function AppFrame({
           chrome and never render this row. */}
       {desktopHost && (
         <div className={css.titlebarRow}>
-          {renderSlot('titlebar', { collapsed: sidebarCollapsed })}
+          {renderSlot('titlebar', { collapsed: sidebarCollapsed, panelControls, documentTitle })}
         </div>
       )}
       <div className={css.sidebarCol}>

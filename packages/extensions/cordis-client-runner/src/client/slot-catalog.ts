@@ -2353,9 +2353,11 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     doc: 'The frameless-desktop titlebar row (40px, toggle at the inline start,\nwindow controls at the reading end). OCCUPIED by ui-sidebar\'s Titlebar; rendered only on\nthe desktop host, spanning all columns above the content grid.\nRegistering here replaces the desktop titlebar outright.',
     registerOptions: [],
     ownerProps: [
-      '/** Titlebar owner share: whether the sidebar is currently closed. */\nexport interface TitlebarOwnerProps {\n  /** True when the sidebar is closed (the toggle offers to open it). */\n  collapsed: boolean\n}',
+      '/** Titlebar owner share: whether the sidebar is currently closed, plus the three panel controls. */\nexport interface TitlebarOwnerProps {\n  /** True when the sidebar is closed (the toggle offers to open it). */\n  collapsed: boolean\n  /**\n   * The three session-scoped panel toggles T3 also pins to its titlebar:\n   * thread details, terminal drawer, and right panel. Absent only in tests;\n   * the frame always passes it so the toggles stay one gesture away from the\n   * window chrome.\n   */\n  panelControls?: SessionPanelControls | undefined\n  /**\n   * The display title to center in the bar (the current session\'s title,\n   * when any). Absent only in tests; the frame always passes it.\n   */\n  documentTitle?: string | undefined\n}',
     ],
-    ownerPropsReferences: [],
+    ownerPropsReferences: [
+      'SessionPanelControls',
+    ],
     standardProps: [
       'useWorkspaces: SnapshotSelectorHook<WorkspaceSnapshot>',
       'useSessions: UseSessions',

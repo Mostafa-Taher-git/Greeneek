@@ -130,10 +130,22 @@ export interface SidebarOwnerProps {
   desktopHost: boolean
 }
 
-/** Titlebar owner share: whether the sidebar is currently closed. */
+/** Titlebar owner share: whether the sidebar is currently closed, plus the three panel controls. */
 export interface TitlebarOwnerProps {
   /** True when the sidebar is closed (the toggle offers to open it). */
   collapsed: boolean
+  /**
+   * The three session-scoped panel toggles T3 also pins to its titlebar:
+   * thread details, terminal drawer, and right panel. Absent only in tests;
+   * the frame always passes it so the toggles stay one gesture away from the
+   * window chrome.
+   */
+  panelControls?: SessionPanelControls | undefined
+  /**
+   * The display title to center in the bar (the current session's title,
+   * when any). Absent only in tests; the frame always passes it.
+   */
+  documentTitle?: string | undefined
 }
 
 /** Conversation owner share: business state and actions belong to the registrant. */

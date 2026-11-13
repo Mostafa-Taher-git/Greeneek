@@ -136,8 +136,10 @@
 `src/icons/index.tsx: export const IconLoadingOutline16 = ({ size = 16, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconNewChatOutline16 = ({ size = 16, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconPalette16 = ({ size = 16, className }: IconProps) => (`
+`src/icons/index.tsx: export const IconPanelBottomOutline16 = ({ size = 16, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconPanelLeftOutline16 = ({ size = 16, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconPanelRightOutline16 = ({ size = 16, className }: IconProps) => (`
+`src/icons/index.tsx: export const IconPanelSquareMenuOutline16 = ({ size = 16, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconPaperclipOutline16 = ({ size = 16, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconPauseOutline16 = ({ size = 16, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconPersonalizationOutline16 = ({ size = 16, className }: IconProps) => (`

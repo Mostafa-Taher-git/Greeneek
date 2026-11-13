@@ -139,7 +139,8 @@ export type SidebarRootComponentProps =
 
 /**
  * Injected callbacks for the layout-owned `titlebar` slot: only the toggle
- * (the bar has no other controls — window controls are desktop-injected).
+ * (the bar has other controls of its own — the session panel toggles —;
+ * window controls are desktop-injected).
  */
 export type TitlebarInjected = {
   /** Toggle the sidebar column through the layout service. */
@@ -147,9 +148,9 @@ export type TitlebarInjected = {
 }
 
 /**
- * Full titlebar props: the layout owner share (collapsed flag), this
- * package's injected toggle, and the standard locale seat. No store is
- * registered and no holes are declared.
+ * Full titlebar props: the layout owner share (collapsed flag, session panel
+ * controls), this package's injected toggle, and the standard locale seat.
+ * No store is registered and no holes are declared.
  */
 export type TitlebarComponentProps =
   PropsRuntime<'titlebar'>

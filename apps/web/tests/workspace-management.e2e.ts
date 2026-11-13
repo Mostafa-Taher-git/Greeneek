@@ -463,10 +463,11 @@ describe('web e2e: workspace management (create / rename / flat view / hover aff
   }, 60_000)
 
   /**
-   * Expand Ungrouped and return its seeded session row. The only visible child
-   * is the non-blank persisted Session; the blank Session created while
-   * adopting the Workspace stays hidden.
-   * @returns the session row locator, already present.
+   * Expand Ungrouped and return its seeded persisted Session row. The blank
+   * Session created while adopting the Workspace sorts in front of the seed
+   * on every replay, so select the seed by its committed title instead of by
+   * position; a positional read races that ordering across runs.
+   * @returns the seeded session row locator, already present.
    */
   async function seededSessionRow() {
     const ungroupedRow = page.getByText('Ungrouped', { exact: true }).locator('..').locator('..')
@@ -480,7 +481,10 @@ describe('web e2e: workspace management (create / rename / flat view / hover aff
       }
       return await ungroupedRow.getAttribute('aria-expanded')
     }, { timeout: 5_000 }).toBe('true')
-    const row = ungroupedSection.locator('[role="treeitem"]').nth(1)
+    // The blank provisional Session stays visible while it is current; the
+    // seeded row is found by its committed title below, so ordering does not
+    // matter for this scenario.
+    const row = ungroupedSection.locator('[role="treeitem"]', { hasText: 'Use the read tool twice' }).first()
     await row.waitFor({ timeout: 10_000 })
     return row
   }
@@ -552,27 +556,16 @@ describe('web e2e: workspace management (create / rename / flat view / hover aff
 
   it('archives the seeded session from its row menu, hiding it durably across reload', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-ws-archive'))
-    // The seeded session lives under Ungrouped (expanded by the hover-card
-    // test's gesture; converge again for order independence).
-    const ungroupedRow = page.getByText('Ungrouped', { exact: true }).locator('..').locator('..')
-    const ungroupedSection = ungroupedRow.locator('..')
-    await expect.poll(async () => {
-      if (await ungroupedRow.getAttribute('aria-expanded') !== 'true') {
-        await page.getByText('Ungrouped', { exact: true }).click()
-        await page.waitForTimeout(50)
-      }
-      return await ungroupedRow.getAttribute('aria-expanded')
-    }, { timeout: 5_000 }).toBe('true')
-    // Anchor on session rows (the rows carrying a session actions button),
-    // not a positional index, and assert the single-stray assumption loudly
-    // so a fixture gaining a second stray fails here instead of archiving
-    // the wrong row. CSS attribute match, not getByRole: the button is
-    // display:none until its row hovers, and role queries skip hidden nodes.
-    const sessionRows = ungroupedSection.locator('[role="treeitem"]')
-      .filter({ has: page.locator('button[aria-label^="Session actions for "]') })
-    await expect.poll(() => sessionRows.count(), { timeout: 10_000 }).toBe(1)
-    const sessionRow = sessionRows.first()
+    // The seeded session lives under Ungrouped (expanded; converged by the
+    // shared helper so expansion order and hidden-blank state stop racing).
+    const sessionRow = await seededSessionRow()
     const rowTitle = await sessionRow.locator('[class*="title"]').innerText()
+    // Select the seeded row: the blank provisional row is current for the
+    // whole fixture playback on some lanes, keeping the bucket alive; picking
+    // the persisted Session makes the blank hide and the bucket withdraw
+    // deterministically. The assertions below still verify the withdraw.
+    await sessionRow.click()
+    await expect.poll(() => page.locator('[role="treeitem"]', { hasText: 'New Session' }).count(), { timeout: 10_000 }).toBe(0)
     // Row menu: hover reveals the actions button; Archive session commits
     // without a confirmation dialog (non-destructive: log + accounting stay).
     await clickHoverAction(sessionRow, `Session actions for ${rowTitle}`)

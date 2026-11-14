@@ -54,8 +54,9 @@ declare module '@greeneek/gnk-client-ui-slots' {
      */
     'sidebar': { kind: 'single'; scope: 'root'; owner: SidebarOwnerProps }
     /**
-     * The frameless-desktop titlebar row (40px, toggle at the inline start,
-     * window controls at the reading end). OCCUPIED by ui-sidebar's Titlebar; rendered only on
+     * The frameless-desktop titlebar row (52px, brand and session title at
+     * the inline start, the three panel toggles before the window controls at
+     * the reading end). OCCUPIED by ui-sidebar's Titlebar; rendered only on
      * the desktop host, spanning all columns above the content grid.
      * Registering here replaces the desktop titlebar outright.
      */

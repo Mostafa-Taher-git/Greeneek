@@ -257,10 +257,10 @@ export function AppFrame({
         productTitle={productTitle}
         {...documentTitle === undefined ? {} : { title: documentTitle }}
       />
-      {/* Frameless-desktop titlebar (Claude-style): sidebar toggle at the
-          inline start, window controls at the reading end (right in LTR, far
-          left in RTL), spanning all columns. Browser builds keep the native
-          chrome and never render this row. */}
+      {/* Frameless-desktop titlebar: brand and session title at the inline
+          start, the three panel toggles before the window controls at the
+          reading end (right in LTR, far left in RTL), spanning all columns.
+          Browser builds keep the native chrome and never render this row. */}
       {desktopHost && (
         <div className={css.titlebarRow}>
           {renderSlot('titlebar', { panelControls, documentTitle })}

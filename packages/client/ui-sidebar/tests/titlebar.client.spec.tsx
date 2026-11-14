@@ -51,7 +51,8 @@ describe('Titlebar', () => {
 
   it('double-click is a no-op without the preload bridge', () => {
     mount()
-    const bar = screen.getByRole('button', { name: '切换线程详情' }).closest('div')
+    const bar = document.querySelector('[data-titlebar]')
+    expect(bar).not.toBeNull()
     expect(() => fireEvent.doubleClick(bar!)).not.toThrow()
   })
 

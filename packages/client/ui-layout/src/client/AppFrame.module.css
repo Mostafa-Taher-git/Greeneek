@@ -51,13 +51,14 @@
   overflow: hidden;
 }
 
-/* Frameless desktop shell: a 40px titlebar row spans all columns above
-   the content grid (Claude-style: toggle left, window controls right).
-   Mirrors FRAMELESS_TITLEBAR_HEIGHT in
-   apps/desktop/src/frameless-titlebar.js; same release ships both.
-   Browser builds never render the row and keep the single-row grid. */
+/* Frameless desktop shell: a 52px titlebar row spans all columns above
+   the content grid (brand and session title left, the three panel toggles
+   before the window controls at the reading end). Mirrors
+   FRAMELESS_TITLEBAR_HEIGHT in apps/desktop/src/frameless-titlebar.js; same
+   release ships both. Browser builds never render the row and keep the
+   single-row grid. */
 .frame[data-desktop-host] {
-  grid-template-rows: 40px minmax(0, 1fr);
+  grid-template-rows: 52px minmax(0, 1fr);
 }
 
 .titlebarRow {
@@ -74,7 +75,7 @@
 }
 
 .frame[data-desktop-host] .handle {
-  top: 40px;
+  top: 52px;
 }
 
 .centerCol {

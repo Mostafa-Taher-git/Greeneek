@@ -1,15 +1,15 @@
-/* Desktop titlebar row (40px, mirrors FRAMELESS_TITLEBAR_HEIGHT): the bar
+/* Desktop titlebar row (52px, mirrors FRAMELESS_TITLEBAR_HEIGHT): the bar
    itself drags the window — interactive controls opt out individually. The
-   brand and session title sit inline-start; the panel toggles anchor to the
-   reading end, before the desktop-injected window controls the inline-end
+   brand and session title sit inline-start; the three panel toggles anchor to
+   the reading end, before the desktop-injected window controls the inline-end
    reserves. Transparent background — the Greeneek ink and the 3px frame
    crown carry the brand, no window-chrome surface. */
 
 .bar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  height: 40px;
+  gap: 8px;
+  height: 52px;
   padding-inline-start: 8px;
   padding-inline-end: calc(3 * 46px + 8px);
   box-sizing: border-box;
@@ -46,9 +46,7 @@
 .title {
   flex: 0 1 auto;
   min-width: 0;
-  padding-inline-start: 8px;
-  margin-inline-start: 0;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
   line-height: 20px;
   color: var(--dsw-alias-label-secondary);
@@ -63,6 +61,17 @@
   min-width: 16px;
 }
 
+/* T3's panel-control cluster: 28px ghost toggles 4px apart. The group opts
+   out of the drag region once for all three buttons. */
+.panelGroup {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
 .panelButton {
   flex: none;
   display: inline-flex;
@@ -71,20 +80,23 @@
   width: 28px;
   height: 28px;
   border: 0;
-  border-radius: 6px;
-  corner-shape: round;
+  border-radius: 8px;
   padding: 0;
   background: transparent;
-  color: var(--dsw-alias-label-secondary);
+  color: var(--dsw-alias-label-primary);
   cursor: pointer;
-  transition: background-color 120ms ease, color 120ms ease;
   -webkit-app-region: no-drag;
   app-region: no-drag;
 }
 
+/* T3 ghost toggle: the glyph rests at 80% and reaches full strength while
+   pressed; hover and pressed share the one neutral chrome wash. */
+.panelButton svg {
+  opacity: 0.8;
+}
+
 .panelButton:hover {
-  background: var(--dsw-alias-interactive-bg-hover);
-  color: var(--dsw-alias-label-primary);
+  background: var(--dsw-alias-interactive-bg-chrome);
 }
 
 .panelButton:focus-visible {
@@ -94,6 +106,9 @@
 
 .panelButtonActive,
 .panelButtonActive:hover {
-  background: var(--dsw-alias-interactive-bg-active);
-  color: var(--dsw-alias-brand-primary);
+  background: var(--dsw-alias-interactive-bg-chrome);
+}
+
+.panelButtonActive svg {
+  opacity: 1;
 }

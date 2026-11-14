@@ -3,15 +3,15 @@
  * custom window controls pinned to the titlebar's reading-end (the far right
  * in an LTR document, the far left in RTL), built by an injected script so
  * every page the window shows carries identical chrome without forking the
- * UI. The web UI owns the 40px titlebar row itself (drag region plus sidebar
- * toggle, with room reserved for these controls) and marks documentElement
- * with `data-desktop-titlebar`; pages without one — the splash — get a pure
- * overlay drag strip instead, so they stay draggable. Buttons resolve the
- * `greeneekDesktop` preload bridge at click time and warn once when it is
- * absent; the main process pushes maximize-state changes back into
- * `__gnkTitlebarSync`.
+ * UI. The web UI owns the 52px titlebar row itself (drag region plus the
+ * panel toggles, with room reserved for these controls) and marks
+ * documentElement with `data-desktop-titlebar`; pages without one — the
+ * splash — get a pure overlay drag strip instead, so they stay draggable.
+ * Buttons resolve the `greeneekDesktop` preload bridge at click time and
+ * warn once when it is absent; the main process pushes maximize-state
+ * changes back into `__gnkTitlebarSync`.
  */
-export const FRAMELESS_TITLEBAR_HEIGHT = 40
+export const FRAMELESS_TITLEBAR_HEIGHT = 52
 
 export const FRAMELESS_TITLEBAR_CSS = `
   html {

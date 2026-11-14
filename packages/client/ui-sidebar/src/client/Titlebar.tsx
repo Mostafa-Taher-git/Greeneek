@@ -1,13 +1,13 @@
 /**
- * Frameless-desktop titlebar (T3-shaped): one 40px row carrying the window
- * drag surface. Inline start: the sidebar fold toggle and the Greeneek
- * brand; center: the current session title; reading end: the three session
- * panel toggles — thread details, terminal drawer, right panel — exactly the
- * controls T3 pins here. The desktop-injected window controls sit to the
- * far end; their inline-end space stays reserved by padding. Mounting marks
- * documentElement so the desktop skips its overlay drag strip (the splash,
- * which has no web titlebar, still gets one). Double-click toggles maximize
- * through the preload bridge; without one it is a no-op.
+ * Frameless-desktop titlebar (T3-shaped): one 52px row carrying the window
+ * drag surface. Inline start: the Greeneek brand and the current session
+ * title; reading end: the three session panel toggles — thread details,
+ * terminal drawer, right panel — exactly the controls T3 pins here. The
+ * desktop-injected window controls sit beyond them; their inline-end space
+ * stays reserved by padding. Mounting marks documentElement so the desktop
+ * skips its overlay drag strip (the splash, which has no web titlebar, still
+ * gets one). Double-click toggles maximize through the preload bridge;
+ * without one it is a no-op.
  */
 import { useEffect } from 'react'
 import {
@@ -86,6 +86,7 @@ export function Titlebar({ documentTitle, panelControls, t }: TitlebarComponentP
   return (
     <div
       className={css.bar}
+      data-titlebar=""
       onDoubleClick={() => {
         const bridge = (globalThis as { greeneekDesktop?: unknown }).greeneekDesktop as
           | { windowToggleMaximize?: () => void }
@@ -104,23 +105,26 @@ export function Titlebar({ documentTitle, panelControls, t }: TitlebarComponentP
         <span className={css.title} title={title}>/ {title}</span>
       )}
       <span className={css.spacer} />
-      {toggles.map(spec => (
-        <Tooltip
-          key={spec.id}
-          label={`${t(spec.labelKey)} (${formatShortcut(spec.shortcut)})`}
-          delayMs={500}
-        >
-          <button
-            type="button"
-            className={clsx(css.panelButton, spec.open && css.panelButtonActive)}
-            aria-label={t(spec.labelKey)}
-            aria-pressed={spec.open}
-            onClick={() => { spec.toggle() }}
+      <div className={css.panelGroup}>
+        {toggles.map(spec => (
+          <Tooltip
+            key={spec.id}
+            label={`${t(spec.labelKey)} (${formatShortcut(spec.shortcut)})`}
+            side="bottom"
+            delayMs={500}
           >
-            <spec.icon size={16} />
-          </button>
-        </Tooltip>
-      ))}
+            <button
+              type="button"
+              className={clsx(css.panelButton, spec.open && css.panelButtonActive)}
+              aria-label={t(spec.labelKey)}
+              aria-pressed={spec.open}
+              onClick={() => { spec.toggle() }}
+            >
+              <spec.icon size={16} />
+            </button>
+          </Tooltip>
+        ))}
+      </div>
     </div>
   )
 }

@@ -113,7 +113,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     ],
     replaceRisk: 'shadows-shipped-ui',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'conversation\', () => ctx.slots.register(\n      { name: \'conversation\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
-    source: 'packages/client/ui-layout/src/client/index.ts:75',
+    source: 'packages/client/ui-layout/src/client/index.ts:76',
   },
   {
     key: 'conversation.approval.detail',
@@ -1422,7 +1422,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     ],
     replaceRisk: 'shadows-shipped-ui',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'dashboard\', () => ctx.slots.register(\n      { name: \'dashboard\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
-    source: 'packages/client/ui-layout/src/client/index.ts:79',
+    source: 'packages/client/ui-layout/src/client/index.ts:80',
   },
   {
     key: 'details',
@@ -1458,7 +1458,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     ],
     replaceRisk: 'shadows-shipped-ui',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'details\', () => ctx.slots.register(\n      { name: \'details\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
-    source: 'packages/client/ui-layout/src/client/index.ts:89',
+    source: 'packages/client/ui-layout/src/client/index.ts:90',
   },
   {
     key: 'rightbar',
@@ -1494,7 +1494,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     ],
     replaceRisk: 'shadows-shipped-ui',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'rightbar\', () => ctx.slots.register(\n      { name: \'rightbar\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
-    source: 'packages/client/ui-layout/src/client/index.ts:96',
+    source: 'packages/client/ui-layout/src/client/index.ts:97',
   },
   {
     key: 'root',
@@ -1550,7 +1550,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     ],
     replaceRisk: 'shadows-shipped-ui',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'settings\', () => ctx.slots.register(\n      { name: \'settings\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
-    source: 'packages/client/ui-layout/src/client/index.ts:77',
+    source: 'packages/client/ui-layout/src/client/index.ts:78',
   },
   {
     key: 'settings.action',
@@ -2044,7 +2044,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     occupants: [],
     replaceRisk: 'none',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'shell.overlay\', () => ctx.slots.register(\n      { name: \'shell.overlay\', id: \'my-entry\', order: 100, label: \'My entry\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
-    source: 'packages/client/ui-layout/src/client/index.ts:109',
+    source: 'packages/client/ui-layout/src/client/index.ts:110',
   },
   {
     key: 'sidebar',
@@ -2343,14 +2343,14 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     ],
     replaceRisk: 'shadows-shipped-ui',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'terminal.drawer\', () => ctx.slots.register(\n      { name: \'terminal.drawer\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
-    source: 'packages/client/ui-layout/src/client/index.ts:98',
+    source: 'packages/client/ui-layout/src/client/index.ts:99',
   },
   {
     key: 'titlebar',
     kind: 'single',
     scope: 'root',
-    summary: 'The frameless-desktop titlebar row (40px, toggle at the inline start, window controls at the reading end).',
-    doc: 'The frameless-desktop titlebar row (40px, toggle at the inline start,\nwindow controls at the reading end). OCCUPIED by ui-sidebar\'s Titlebar; rendered only on\nthe desktop host, spanning all columns above the content grid.\nRegistering here replaces the desktop titlebar outright.',
+    summary: 'The frameless-desktop titlebar row (52px, brand and session title at the inline start, the three panel toggles before the window controls at the reading end).',
+    doc: 'The frameless-desktop titlebar row (52px, brand and session title at\nthe inline start, the three panel toggles before the window controls at\nthe reading end). OCCUPIED by ui-sidebar\'s Titlebar; rendered only on\nthe desktop host, spanning all columns above the content grid.\nRegistering here replaces the desktop titlebar outright.',
     registerOptions: [],
     ownerProps: [
       '/** Titlebar owner share: panel controls and document title only; the sidebar\n * fold toggle lives in the sidebar column on every host. */\nexport interface TitlebarOwnerProps {\n  /**\n   * The three session-scoped panel toggles T3 also pins to its titlebar:\n   * thread details, terminal drawer, and right panel. Absent only in tests;\n   * the frame always passes it so the toggles stay one gesture away from the\n   * window chrome.\n   */\n  panelControls?: SessionPanelControls | undefined\n  /**\n   * The display title to sit after the brand (the current session\'s title,\n   * when any). Absent on the hero; the frame passes whatever it knows.\n   */\n  documentTitle?: string | undefined\n}',
@@ -2373,7 +2373,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     ],
     replaceRisk: 'shadows-shipped-ui',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'titlebar\', () => ctx.slots.register(\n      { name: \'titlebar\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
-    source: 'packages/client/ui-layout/src/client/index.ts:62',
+    source: 'packages/client/ui-layout/src/client/index.ts:63',
   },
   {
     key: 'tool.call.images',

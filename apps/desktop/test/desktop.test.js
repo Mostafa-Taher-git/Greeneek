@@ -384,7 +384,7 @@ describe('window chrome', () => {
   })
 
   it('paints the frameless strip with real-button controls, no native overlay', () => {
-    assert.equal(FRAMELESS_TITLEBAR_HEIGHT, 40)
+    assert.equal(FRAMELESS_TITLEBAR_HEIGHT, 52)
     assert.ok(FRAMELESS_TITLEBAR_CSS.includes('var(--dsw-alias-bg-base, Canvas)'))
     assert.ok(FRAMELESS_TITLEBAR_CSS.includes('#gnk-titlebar-controls'))
     assert.ok(FRAMELESS_TITLEBAR_CSS.includes('inset-inline-end: 0'))

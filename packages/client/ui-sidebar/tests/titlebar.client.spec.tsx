@@ -25,20 +25,17 @@ function panelControls(over: Partial<SessionPanelControls> = {}): SessionPanelCo
 }
 
 function mount(props: Partial<TitlebarComponentProps> = {}) {
-  const toggleSidebar = vi.fn()
   // Return exactly the object the frame renders with (tests may pass their own).
   const controls = props.panelControls ?? panelControls()
   render(
     <Titlebar
-      collapsed={false}
       useSessions={neverHook} useSessionPendingInteraction={neverHook} useWorkspaces={neverHook}
-      toggleSidebar={toggleSidebar}
       t={t}
       panelControls={controls}
       {...props}
     />,
   )
-  return { toggleSidebar, controls }
+  return { controls }
 }
 
 afterEach(() => {
@@ -47,17 +44,6 @@ afterEach(() => {
 })
 
 describe('Titlebar', () => {
-  it('toggles the sidebar with the collapsed-aware label', () => {
-    const { toggleSidebar } = mount()
-    fireEvent.click(screen.getByRole('button', { name: '收起侧边栏' }))
-    expect(toggleSidebar).toHaveBeenCalledOnce()
-  })
-
-  it('offers to open while collapsed', () => {
-    mount({ collapsed: true, panelControls: undefined })
-    expect(screen.getByRole('button', { name: '打开侧边栏' })).toBeTruthy()
-  })
-
   it('marks documentElement so the desktop skips its overlay strip', () => {
     mount()
     expect(document.documentElement.hasAttribute('data-desktop-titlebar')).toBe(true)
@@ -65,8 +51,19 @@ describe('Titlebar', () => {
 
   it('double-click is a no-op without the preload bridge', () => {
     mount()
-    const bar = screen.getByRole('button', { name: '收起侧边栏' }).closest('div')
+    const bar = screen.getByRole('button', { name: '切换线程详情' }).closest('div')
     expect(() => fireEvent.doubleClick(bar!)).not.toThrow()
+  })
+
+  it('renders exactly the three panel toggles, and nothing else', () => {
+    mount()
+    const buttons = screen.getAllByRole('button')
+    expect(buttons).toHaveLength(3)
+    expect(buttons.map(button => button.getAttribute('aria-label'))).toEqual([
+      '切换线程详情',
+      '切换终端抽屉',
+      '切换右侧面板',
+    ])
   })
 
   it('renders exactly the three panel toggles, with aria-pressed state', () => {
@@ -88,19 +85,24 @@ describe('Titlebar', () => {
 
   it('shows the document title when the frame supplies one', () => {
     mount({ documentTitle: 'ping' })
-    expect(screen.getByTitle('ping')).toBeTruthy()
+    expect(screen.getByTitle('ping').textContent).toBe('/ ping')
   })
 
-  it('falls back to the brand wordmark when no document title is supplied', () => {
+  it('renders the brand alone when the hero supplies no document title', () => {
     mount()
-    // 'Greeneek' is the sidebar brand name for zh/en/ar by design.
-    expect(screen.getAllByText('Greeneek').length).toBeGreaterThanOrEqual(1)
+    // 'Greeneek' is the sidebar brand name; the brand must appear exactly once.
+    expect(screen.getAllByText('Greeneek')).toHaveLength(1)
+    expect(screen.queryByText(/^\//u)).toBeNull()
+  })
+
+  it('does not render the sidebar fold toggle anywhere', () => {
+    mount({ documentTitle: 'ping' })
+    expect(screen.queryByRole('button', { name: '收起侧边栏' })).toBeNull()
+    expect(screen.queryByRole('button', { name: '打开侧边栏' })).toBeNull()
   })
 
   it('renders empty panel-control seat when the frame passes nothing', () => {
     mount({ panelControls: undefined })
-    expect(screen.queryByRole('button', { name: '切换线程详情' })).toBeNull()
-    expect(screen.queryByRole('button', { name: '切换终端抽屉' })).toBeNull()
-    expect(screen.queryByRole('button', { name: '切换右侧面板' })).toBeNull()
+    expect(screen.queryByRole('button')).toBeNull()
   })
 })

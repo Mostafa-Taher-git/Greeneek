@@ -27,11 +27,11 @@ afterEach(cleanup)
  * @param props Host flag and live column state.
  * @returns the rendered view plus the toggle call spy.
  */
-function mount(props: { desktopHost: boolean; collapsed: boolean }): { toggle: () => void } {
+function mount(props: { collapsed: boolean }): { toggle: () => void } {
   const toggle = vi.fn()
   render(
     <SidebarRoot
-      collapsed={props.collapsed} width={props.collapsed ? 56 : 300} desktopHost={props.desktopHost}
+      collapsed={props.collapsed} width={props.collapsed ? 56 : 300}
       useSessions={neverHook} useSessionPendingInteraction={useSessionPendingInteraction} useWorkspaces={neverHook}
       startSession={vi.fn()} toggleSidebar={toggle} t={t}
       renderSlot={((_key: string, _owner: SidebarSectionOwnerProps) => null) as SidebarRootComponentProps['renderSlot']}
@@ -41,30 +41,24 @@ function mount(props: { desktopHost: boolean; collapsed: boolean }): { toggle: (
 }
 
 describe('sidebar fold control', () => {
-  it('offers the collapse action on the Web host while the column is open', () => {
-    mount({ desktopHost: false, collapsed: false })
+  it('offers the collapse action on every host while the column is open', () => {
+    mount({ collapsed: false })
     const button = screen.getByRole('button', { name: 'Collapse sidebar' })
     expect(button.getAttribute('type')).toBe('button')
     expect(button.getAttribute('aria-expanded')).toBe('true')
   })
 
   it('flips the accessible name and expanded state once the column is a rail', () => {
-    mount({ desktopHost: false, collapsed: true })
+    mount({ collapsed: true })
     const button = screen.getByRole('button', { name: 'Open sidebar' })
     expect(button.getAttribute('aria-expanded')).toBe('false')
     expect(screen.queryByRole('button', { name: 'Collapse sidebar' })).toBeNull()
   })
 
   it('routes the click through the layout service rather than local state', () => {
-    const { toggle } = mount({ desktopHost: false, collapsed: false })
+    const { toggle } = mount({ collapsed: false })
     fireEvent.click(screen.getByRole('button', { name: 'Collapse sidebar' }))
     expect(toggle).toHaveBeenCalledTimes(1)
-  })
-
-  it('renders no column toggle on the desktop host, where the titlebar owns it', () => {
-    mount({ desktopHost: true, collapsed: false })
-    expect(screen.queryByRole('button', { name: 'Collapse sidebar' })).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Open sidebar' })).toBeNull()
   })
 
   it('names the control in every shipped locale', () => {

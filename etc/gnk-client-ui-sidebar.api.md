@@ -4,7 +4,7 @@
 # API report: @greeneek/gnk-client-ui-sidebar@1.1.0-alpha.0 (packages/client/ui-sidebar)
 
 `src/client/SidebarRoot.tsx: export function SidebarRoot({`
-`src/client/Titlebar.tsx: export function Titlebar({ collapsed, documentTitle, panelControls, toggleSidebar, t }: TitlebarComponentProps) {`
+`src/client/Titlebar.tsx: export function Titlebar({ documentTitle, panelControls, t }: TitlebarComponentProps) {`
 `src/client/contract/slots.ts: export interface SidebarBrandMarkOwnerProps {`
 `src/client/contract/slots.ts: export interface SidebarBrandNameOwnerProps {`
 `src/client/contract/slots.ts: export interface SidebarFooterActionOwnerProps {`
@@ -14,7 +14,6 @@
 `src/client/contract/slots.ts: export type SidebarRootComponentProps =`
 `src/client/contract/slots.ts: export type SidebarRootInjected = {`
 `src/client/contract/slots.ts: export type TitlebarComponentProps =`
-`src/client/contract/slots.ts: export type TitlebarInjected = {`
 `src/client/index.ts: export const inject = ['slots', 'layout', 'uiWorkspace', 'locale']`
 `src/client/index.ts: export function apply(ctx: ClientContext): void {`
 `src/client/index.ts: export type {`

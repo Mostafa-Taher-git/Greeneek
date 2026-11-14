@@ -1,10 +1,9 @@
 /**
  * Sidebar shell: column geometry only. The brand row is the column's bottom
  * seat (above the foot stack): the wordmark expanded — doubling as a New
- * Session shortcut — or the static mark on the rail. The fold toggle has one
- * owner per host: the desktop titlebar carries it there, and on the Web host,
- * where no titlebar row exists, this column renders it (see `desktopHost`).
- * Collapse is a slide plus crossfade: content
+ * Session shortcut — or the static mark on the rail. The fold toggle lives
+ * in this column on every host; the frameless titlebar carries only the
+ * three session panel toggles. Collapse is a slide plus crossfade: content
  * freezes at its expanded width (inline style) and fades out in place while
  * the sliding column (AppFrame grid tracks) clips it — nothing reflows
  * mid-slide. At settle the wide-only content unmounts. The bottom-pinned
@@ -55,7 +54,6 @@ const SCROLLBAR_LINGER_MS = 2000
 export function SidebarRoot({
   collapsed,
   width,
-  desktopHost,
   startSession,
   toggleSidebar,
   t,
@@ -164,24 +162,21 @@ export function SidebarRoot({
       }}
       onPointerLeave={() => { armLinger() }}
     >
-      {/* The Web host has no titlebar row, so the column carries the fold
-          control itself; on desktop the titlebar owns it and this row is not
-          rendered, so exactly one toggle exists per host. */}
-      {!desktopHost && (
-        <div className={css.foldRow}>
-          <Tooltip label={collapsed ? t('toggle.open') : t('toggle.collapse')} delayMs={500} disabled={wide}>
-            <button
-              type="button"
-              className={css.foldToggle}
-              aria-label={collapsed ? t('toggle.open') : t('toggle.collapse')}
-              aria-expanded={!collapsed}
-              onClick={() => { toggleSidebar() }}
-            >
-              <IconPanelLeftOutline16 size={16} />
-            </button>
-          </Tooltip>
-        </div>
-      )}
+      {/* The fold control lives inside the column on every host; the frameless
+          titlebar carries only the three session panel toggles. */}
+      <div className={css.foldRow}>
+        <Tooltip label={collapsed ? t('toggle.open') : t('toggle.collapse')} delayMs={500} disabled={wide}>
+          <button
+            type="button"
+            className={css.foldToggle}
+            aria-label={collapsed ? t('toggle.open') : t('toggle.collapse')}
+            aria-expanded={!collapsed}
+            onClick={() => { toggleSidebar() }}
+          >
+            <IconPanelLeftOutline16 size={16} />
+          </button>
+        </Tooltip>
+      </div>
 
       {/* Expanded, the button carries its own label — tooltip only on the
           rail. */}

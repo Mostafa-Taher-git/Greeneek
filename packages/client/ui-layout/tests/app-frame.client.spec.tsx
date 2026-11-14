@@ -274,7 +274,7 @@ describe('AppFrame', () => {
     const { slotCalls } = mountFrame()
     // The bench has no `greeneekDesktop` preload bridge, so it is the Web host:
     // the frame tells the sidebar it must carry its own fold control.
-    expect(slotCalls.find(c => c.key === 'sidebar')!.props).toEqual({ collapsed: false, width: 280, desktopHost: false })
+    expect(slotCalls.find(c => c.key === 'sidebar')!.props).toEqual({ collapsed: false, width: 280 })
   })
 
   it('sidebar drag widens through rAF-batched pointer moves', () => {
@@ -369,7 +369,7 @@ describe('AppFrame', () => {
     expect(getByTestId('sidebar-content')).toBeTruthy()
     expect(frame.hasAttribute('data-sidebar-collapsed')).toBe(true)
     const lastSidebarCall = slotCalls.filter(c => c.key === 'sidebar').at(-1)!
-    expect(lastSidebarCall.props).toEqual({ collapsed: true, width: SIDEBAR_COLLAPSED, desktopHost: false })
+    expect(lastSidebarCall.props).toEqual({ collapsed: true, width: SIDEBAR_COLLAPSED })
   })
 
   it('renders the terminal drawer in the conversation track only while open', () => {
@@ -382,7 +382,7 @@ describe('AppFrame', () => {
     expect(queryByTestId('terminal-drawer-content')).toBeNull()
   })
 
-  it('renders the titlebar slot only on the desktop host, tracking collapse', () => {
+  it('renders the titlebar slot only on the desktop host, always carrying the panel controls', () => {
     expect(mountFrame().slotCalls.some(c => c.key === 'titlebar')).toBe(false)
     ;(globalThis as { greeneekDesktop?: unknown }).greeneekDesktop = {}
     try {
@@ -394,10 +394,9 @@ describe('AppFrame', () => {
         terminalDrawerOpen: false,
         rightPanelOpen: false,
       }
-      expect(titlebarCalls.at(-1)!.props).toMatchObject({ collapsed: false, panelControls: expectedPanels })
-      expect(titlebarCalls.at(-1)!.props).toHaveProperty('documentTitle')
-      act(() => { open.instance.actions.toggleSidebar() })
-      expect(open.slotCalls.filter(c => c.key === 'titlebar').at(-1)!.props).toMatchObject({ collapsed: true })
+      expect(titlebarCalls.at(-1)!.props).toMatchObject({ panelControls: expectedPanels, documentTitle: undefined })
+      expect(Object.keys(titlebarCalls.at(-1)!.props as object).sort()).toEqual(['documentTitle', 'panelControls'])
+      expect(titlebarCalls.length).toBeGreaterThanOrEqual(1)
     } finally {
       delete (globalThis as { greeneekDesktop?: unknown }).greeneekDesktop
     }
@@ -432,7 +431,7 @@ describe('AppFrame — narrow-viewport auto-collapse', () => {
     const { frame, slotCalls } = mountFrame()
     expect(tracks(frame)).toEqual([SIDEBAR_COLLAPSED, 0, 0])
     expect(frame.hasAttribute('data-sidebar-collapsed')).toBe(true)
-    expect(slotCalls.filter(c => c.key === 'sidebar').at(-1)!.props).toEqual({ collapsed: true, width: SIDEBAR_COLLAPSED, desktopHost: false })
+    expect(slotCalls.filter(c => c.key === 'sidebar').at(-1)!.props).toEqual({ collapsed: true, width: SIDEBAR_COLLAPSED })
     expect(frame.querySelectorAll('[class*="handle"]')).toHaveLength(0)
   })
 

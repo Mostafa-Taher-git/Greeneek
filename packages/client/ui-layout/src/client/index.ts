@@ -48,7 +48,8 @@ declare module '@greeneek/gnk-client-ui-slots' {
      *
      * The occupant receives the frame's live column state (collapsed, width) and
      * the host fact that decides whether the frame already renders its sidebar
-     * toggle (desktopHost), and is expected to render the compact control rail
+     * the host fact of the frame (desktopHost) no longer decides who renders it — the
+     * titlebar carries only the three session panel toggles; the column is expected to render the compact control rail
      * while collapsed.
      */
     'sidebar': { kind: 'single'; scope: 'root'; owner: SidebarOwnerProps }
@@ -121,19 +122,11 @@ export interface SidebarOwnerProps {
   collapsed: boolean
   /** Rendered column width in px (SIDEBAR_COLLAPSED when collapsed). */
   width: number
-  /**
-   * True when the frameless-desktop titlebar row is rendered, so the desktop's
-   * own sidebar toggle already occupies the window's inline-start. The sidebar
-   * reads this to decide whether it must carry its own collapse control: on the
-   * Web host no titlebar exists, so nothing else offers one.
-   */
-  desktopHost: boolean
 }
 
-/** Titlebar owner share: whether the sidebar is currently closed, plus the three panel controls. */
+/** Titlebar owner share: panel controls and document title only; the sidebar
+ * fold toggle lives in the sidebar column on every host. */
 export interface TitlebarOwnerProps {
-  /** True when the sidebar is closed (the toggle offers to open it). */
-  collapsed: boolean
   /**
    * The three session-scoped panel toggles T3 also pins to its titlebar:
    * thread details, terminal drawer, and right panel. Absent only in tests;
@@ -142,8 +135,8 @@ export interface TitlebarOwnerProps {
    */
   panelControls?: SessionPanelControls | undefined
   /**
-   * The display title to center in the bar (the current session's title,
-   * when any). Absent only in tests; the frame always passes it.
+   * The display title to sit after the brand (the current session's title,
+   * when any). Absent on the hero; the frame passes whatever it knows.
    */
   documentTitle?: string | undefined
 }

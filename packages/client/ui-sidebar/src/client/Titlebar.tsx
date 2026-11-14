@@ -12,7 +12,6 @@
 import { useEffect } from 'react'
 import {
   FishLogo,
-  IconPanelLeftOutline16,
   IconPanelBottomOutline16,
   IconPanelRightOutline16,
   IconPanelSquareMenuOutline16,
@@ -42,10 +41,10 @@ interface PanelToggleSpec {
 
 /**
  * Render the desktop titlebar row.
- * @param props - collapsed flag, panel controls, document title, the sidebar toggle, the locale seat.
- * @returns the drag bar with its controls.
+ * @param props - panel controls, document title, the locale seat.
+ * @returns the drag bar with its panel toggle controls.
  */
-export function Titlebar({ collapsed, documentTitle, panelControls, toggleSidebar, t }: TitlebarComponentProps) {
+export function Titlebar({ documentTitle, panelControls, t }: TitlebarComponentProps) {
   useEffect(() => {
     document.documentElement.setAttribute('data-desktop-titlebar', '')
     return () => {
@@ -53,7 +52,7 @@ export function Titlebar({ collapsed, documentTitle, panelControls, toggleSideba
     }
   }, [])
 
-  const title = documentTitle !== undefined && documentTitle !== '' ? documentTitle : t('brand.name')
+  const title = documentTitle
 
   const toggles: PanelToggleSpec[] = panelControls === undefined
     ? []
@@ -101,19 +100,10 @@ export function Titlebar({ collapsed, documentTitle, panelControls, toggleSideba
         </span>
         <span className={css.brandName}>{t('brand.name')}</span>
       </span>
-      <span className={css.title} title={title}>{title}</span>
+      {title !== undefined && title !== '' && (
+        <span className={css.title} title={title}>/ {title}</span>
+      )}
       <span className={css.spacer} />
-      <Tooltip label={collapsed ? t('toggle.open') : t('toggle.collapse')} delayMs={500}>
-        <button
-          type="button"
-          className={css.toggle}
-          aria-label={collapsed ? t('toggle.open') : t('toggle.collapse')}
-          aria-expanded={!collapsed}
-          onClick={() => { toggleSidebar() }}
-        >
-          <IconPanelLeftOutline16 size={16} />
-        </button>
-      </Tooltip>
       {toggles.map(spec => (
         <Tooltip
           key={spec.id}

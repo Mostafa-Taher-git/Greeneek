@@ -113,7 +113,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     ],
     replaceRisk: 'shadows-shipped-ui',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'conversation\', () => ctx.slots.register(\n      { name: \'conversation\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
-    source: 'packages/client/ui-layout/src/client/index.ts:74',
+    source: 'packages/client/ui-layout/src/client/index.ts:75',
   },
   {
     key: 'conversation.approval.detail',
@@ -1422,7 +1422,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     ],
     replaceRisk: 'shadows-shipped-ui',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'dashboard\', () => ctx.slots.register(\n      { name: \'dashboard\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
-    source: 'packages/client/ui-layout/src/client/index.ts:78',
+    source: 'packages/client/ui-layout/src/client/index.ts:79',
   },
   {
     key: 'details',
@@ -1458,7 +1458,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     ],
     replaceRisk: 'shadows-shipped-ui',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'details\', () => ctx.slots.register(\n      { name: \'details\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
-    source: 'packages/client/ui-layout/src/client/index.ts:88',
+    source: 'packages/client/ui-layout/src/client/index.ts:89',
   },
   {
     key: 'rightbar',
@@ -1494,7 +1494,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     ],
     replaceRisk: 'shadows-shipped-ui',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'rightbar\', () => ctx.slots.register(\n      { name: \'rightbar\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
-    source: 'packages/client/ui-layout/src/client/index.ts:95',
+    source: 'packages/client/ui-layout/src/client/index.ts:96',
   },
   {
     key: 'root',
@@ -1550,7 +1550,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     ],
     replaceRisk: 'shadows-shipped-ui',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'settings\', () => ctx.slots.register(\n      { name: \'settings\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
-    source: 'packages/client/ui-layout/src/client/index.ts:76',
+    source: 'packages/client/ui-layout/src/client/index.ts:77',
   },
   {
     key: 'settings.action',
@@ -2044,17 +2044,17 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     occupants: [],
     replaceRisk: 'none',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'shell.overlay\', () => ctx.slots.register(\n      { name: \'shell.overlay\', id: \'my-entry\', order: 100, label: \'My entry\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
-    source: 'packages/client/ui-layout/src/client/index.ts:108',
+    source: 'packages/client/ui-layout/src/client/index.ts:109',
   },
   {
     key: 'sidebar',
     kind: 'single',
     scope: 'root',
     summary: 'The whole left column.',
-    doc: 'The whole left column. OCCUPIED by ui-sidebar\'s SidebarRoot, which\ndeclares the workspace and settings seats inside it — registering here\nreplaces the navigation column outright rather than adding to it, and\nthe seats it declares disappear with it. To add something to the\nsidebar, register into one of those inner seats instead.\n\nThe occupant receives the frame\'s live column state (collapsed, width) and\nthe host fact that decides whether the frame already renders its sidebar\ntoggle (desktopHost), and is expected to render the compact control rail\nwhile collapsed.',
+    doc: 'The whole left column. OCCUPIED by ui-sidebar\'s SidebarRoot, which\ndeclares the workspace and settings seats inside it — registering here\nreplaces the navigation column outright rather than adding to it, and\nthe seats it declares disappear with it. To add something to the\nsidebar, register into one of those inner seats instead.\n\nThe occupant receives the frame\'s live column state (collapsed, width) and\nthe host fact that decides whether the frame already renders its sidebar\nthe host fact of the frame (desktopHost) no longer decides who renders it — the\ntitlebar carries only the three session panel toggles; the column is expected to render the compact control rail\nwhile collapsed.',
     registerOptions: [],
     ownerProps: [
-      '/** Sidebar owner share: live column state from the frame\'s concession solve. */\nexport interface SidebarOwnerProps {\n  /** True when the sidebar is closed (the column renders the compact control rail). */\n  collapsed: boolean\n  /** Rendered column width in px (SIDEBAR_COLLAPSED when collapsed). */\n  width: number\n  /**\n   * True when the frameless-desktop titlebar row is rendered, so the desktop\'s\n   * own sidebar toggle already occupies the window\'s inline-start. The sidebar\n   * reads this to decide whether it must carry its own collapse control: on the\n   * Web host no titlebar exists, so nothing else offers one.\n   */\n  desktopHost: boolean\n}',
+      '/** Sidebar owner share: live column state from the frame\'s concession solve. */\nexport interface SidebarOwnerProps {\n  /** True when the sidebar is closed (the column renders the compact control rail). */\n  collapsed: boolean\n  /** Rendered column width in px (SIDEBAR_COLLAPSED when collapsed). */\n  width: number\n}',
     ],
     ownerPropsReferences: [],
     standardProps: [
@@ -2072,7 +2072,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     ],
     replaceRisk: 'shadows-shipped-ui',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'sidebar\', () => ctx.slots.register(\n      { name: \'sidebar\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
-    source: 'packages/client/ui-layout/src/client/index.ts:54',
+    source: 'packages/client/ui-layout/src/client/index.ts:55',
   },
   {
     key: 'sidebar.brand.mark',
@@ -2343,7 +2343,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     ],
     replaceRisk: 'shadows-shipped-ui',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'terminal.drawer\', () => ctx.slots.register(\n      { name: \'terminal.drawer\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
-    source: 'packages/client/ui-layout/src/client/index.ts:97',
+    source: 'packages/client/ui-layout/src/client/index.ts:98',
   },
   {
     key: 'titlebar',
@@ -2353,7 +2353,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     doc: 'The frameless-desktop titlebar row (40px, toggle at the inline start,\nwindow controls at the reading end). OCCUPIED by ui-sidebar\'s Titlebar; rendered only on\nthe desktop host, spanning all columns above the content grid.\nRegistering here replaces the desktop titlebar outright.',
     registerOptions: [],
     ownerProps: [
-      '/** Titlebar owner share: whether the sidebar is currently closed, plus the three panel controls. */\nexport interface TitlebarOwnerProps {\n  /** True when the sidebar is closed (the toggle offers to open it). */\n  collapsed: boolean\n  /**\n   * The three session-scoped panel toggles T3 also pins to its titlebar:\n   * thread details, terminal drawer, and right panel. Absent only in tests;\n   * the frame always passes it so the toggles stay one gesture away from the\n   * window chrome.\n   */\n  panelControls?: SessionPanelControls | undefined\n  /**\n   * The display title to center in the bar (the current session\'s title,\n   * when any). Absent only in tests; the frame always passes it.\n   */\n  documentTitle?: string | undefined\n}',
+      '/** Titlebar owner share: panel controls and document title only; the sidebar\n * fold toggle lives in the sidebar column on every host. */\nexport interface TitlebarOwnerProps {\n  /**\n   * The three session-scoped panel toggles T3 also pins to its titlebar:\n   * thread details, terminal drawer, and right panel. Absent only in tests;\n   * the frame always passes it so the toggles stay one gesture away from the\n   * window chrome.\n   */\n  panelControls?: SessionPanelControls | undefined\n  /**\n   * The display title to sit after the brand (the current session\'s title,\n   * when any). Absent on the hero; the frame passes whatever it knows.\n   */\n  documentTitle?: string | undefined\n}',
     ],
     ownerPropsReferences: [
       'SessionPanelControls',
@@ -2373,7 +2373,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     ],
     replaceRisk: 'shadows-shipped-ui',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'titlebar\', () => ctx.slots.register(\n      { name: \'titlebar\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
-    source: 'packages/client/ui-layout/src/client/index.ts:61',
+    source: 'packages/client/ui-layout/src/client/index.ts:62',
   },
   {
     key: 'tool.call.images',

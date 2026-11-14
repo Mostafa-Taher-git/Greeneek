@@ -46,10 +46,8 @@
 .title {
   flex: 0 1 auto;
   min-width: 0;
-  position: relative;
-  padding-inline-start: 10px;
-  margin-inline-start: 2px;
-  border-inline-start: 0.5px solid var(--dsw-alias-border-l2);
+  padding-inline-start: 8px;
+  margin-inline-start: 0;
   font-size: 12px;
   font-weight: 500;
   line-height: 20px;
@@ -65,7 +63,6 @@
   min-width: 16px;
 }
 
-.toggle,
 .panelButton {
   flex: none;
   display: inline-flex;
@@ -85,18 +82,11 @@
   app-region: no-drag;
 }
 
-.toggle {
-  border-radius: 999px;
-  corner-shape: round;
-}
-
-.toggle:hover,
 .panelButton:hover {
   background: var(--dsw-alias-interactive-bg-hover);
   color: var(--dsw-alias-label-primary);
 }
 
-.toggle:focus-visible,
 .panelButton:focus-visible {
   outline: 2px solid var(--dsw-alias-brand-primary-new-colorprimary-new-color);
   outline-offset: 1px;

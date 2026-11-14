@@ -9,8 +9,23 @@ import { InspectorClientFixture } from './fixtures/client-source.host.ts'
 
 // These cases start a real Worker and drive it across realms; on a contended
 // host that startup and delivery alone can exceed the default 5 s budget
-// without any behavioural defect, so the file budgets the process time.
-vi.setConfig({ testTimeout: 30_000 })
+// without any behavioural defect, so the file budgets the process time and the
+// teardown hook that disposes the same Worker and sockets.
+vi.setConfig({ testTimeout: 30_000, hookTimeout: 30_000 })
+
+// Every poll waits for one Worker round trip over the CDP socket. That latency
+// is transport, not behaviour under test, so the polls share one budget above
+// the 1 s default rather than each measuring the runner's load.
+const DELIVERY_TIMEOUT_MS = 5_000
+
+/**
+ * Poll `assertion` until the Worker delivers the state it awaits.
+ * @param assertion - Condition that throws until the delivered state arrives.
+ * @returns Nothing; rejects when the state does not arrive within the budget.
+ */
+async function waitForDelivery(assertion: () => void | Promise<void>): Promise<void> {
+  await vi.waitFor(assertion, { timeout: DELIVERY_TIMEOUT_MS })
+}
 
 interface CdpMessage {
   readonly id?: number
@@ -82,7 +97,13 @@ describe('experimental Inspector real Worker', () => {
     secondCdp = undefined
     await inspector?.close()
     inspector = undefined
-    if (server !== undefined) await new Promise<void>((resolve) => { server!.close(() => { resolve() }) })
+    if (server !== undefined) {
+      // A case that fails before it aborts its request leaves the response
+      // socket open, and close() alone waits on that socket until the hook
+      // budget expires instead of reporting the original failure.
+      server.closeAllConnections()
+      await new Promise<void>((resolve) => { server!.close(() => { resolve() }) })
+    }
     server = undefined
   })
 
@@ -93,7 +114,7 @@ describe('experimental Inspector real Worker', () => {
     client = await InspectorClientFixture.start(inspector.endpoint.client, { label: 'Test Client' })
     await client.publish('client/probe', { value: 2 })
 
-    await vi.waitFor(async () => {
+    await waitForDelivery(async () => {
       const response = await cdp!.call('GNKInspector.getSources')
       const sources = response.result?.sources as Array<{ kind: string; topics: Record<string, number> }>
       expect(sources.find(source => source.kind === 'host')?.topics).toEqual({ 'host/probe': 1 })
@@ -104,7 +125,7 @@ describe('experimental Inspector real Worker', () => {
     expect((await cdp.call('Runtime.enable')).error).toBeUndefined()
     let clientContextId: number | undefined
     let clientUniqueContextId: string | undefined
-    await vi.waitFor(() => {
+    await waitForDelivery(() => {
       expect(runtimeContexts(cdp!).some(context => context.name === 'Host')).toBe(true)
       const clientContext = cdp!.events
         .filter(event => event.method === 'Runtime.executionContextCreated')
@@ -204,7 +225,7 @@ describe('experimental Inspector real Worker', () => {
     await client.close()
     client = undefined
     expect((await pendingEvaluation).error).toBeDefined()
-    await vi.waitFor(() => {
+    await waitForDelivery(() => {
       expect(cdp!.events.some(event =>
         event.method === 'Runtime.executionContextDestroyed'
         && event.params?.executionContextId === clientContextId)).toBe(true)
@@ -285,7 +306,7 @@ describe('experimental Inspector real Worker', () => {
 
     let contextId: number | undefined
     let uniqueContextId: string | undefined
-    await vi.waitFor(() => {
+    await waitForDelivery(() => {
       const created = runtimeContexts(cdp!).find(candidate => candidate.name === 'Inspector VM Context')
       contextId = created?.id as number | undefined
       uniqueContextId = created?.uniqueId as string | undefined
@@ -380,7 +401,7 @@ describe('experimental Inspector real Worker', () => {
     await client.log(value, marker)
     let firstEvent: CdpMessage | undefined
     let secondEvent: CdpMessage | undefined
-    await vi.waitFor(() => {
+    await waitForDelivery(() => {
       firstEvent = consoleEvent(cdp!, firstContext, marker)
       secondEvent = consoleEvent(secondCdp!, secondContext, marker)
       expect(firstEvent).toBeDefined()
@@ -421,7 +442,7 @@ describe('experimental Inspector real Worker', () => {
     expect((await cdp.call('Debugger.enable')).error).toBeUndefined()
 
     let script: CdpMessage | undefined
-    await vi.waitFor(() => {
+    await waitForDelivery(() => {
       script = cdp!.events.find(event => event.method === 'Debugger.scriptParsed'
         && event.params?.url === sourceUrl)
       expect(script).toBeDefined()
@@ -485,7 +506,7 @@ describe('experimental Inspector real Worker', () => {
     expect(await response.json()).toEqual({ body: 'request-body' })
 
     let started: CdpMessage | undefined
-    await vi.waitFor(() => {
+    await waitForDelivery(() => {
       started = cdp!.events.find(event =>
         event.method === 'Network.requestWillBeSent'
         && String((event.params?.request as Record<string, unknown> | undefined)?.url).includes('/capture'))
@@ -522,7 +543,7 @@ describe('experimental Inspector real Worker', () => {
     try {
       const response = await fetch(`http://127.0.0.1:${String(port)}/events`)
       let requestId: string | undefined
-      await vi.waitFor(() => {
+      await waitForDelivery(() => {
         const received = cdp!.events.find(event =>
           event.method === 'Network.responseReceived'
           && (event.params?.response as Record<string, unknown> | undefined)?.mimeType === 'text/event-stream')
@@ -554,7 +575,7 @@ describe('experimental Inspector real Worker', () => {
       continueResponse.resolve(true)
       expect(await response.text()).toBe(firstChunk + laterChunk)
 
-      await vi.waitFor(() => {
+      await waitForDelivery(() => {
         expect(cdp!.events.some(event =>
           event.method === 'Network.loadingFinished'
           && event.params?.requestId === requestId)).toBe(true)
@@ -599,7 +620,7 @@ describe('experimental Inspector real Worker', () => {
     expect(Buffer.from((await reader.read()).value ?? []).toString('utf8')).toBe(eventStream)
 
     let requestId: string | undefined
-    await vi.waitFor(() => {
+    await waitForDelivery(() => {
       const received = cdp!.events.find(event =>
         event.method === 'Network.responseReceived'
         && String((event.params?.response as Record<string, unknown> | undefined)?.url).includes('/aborted-events'))
@@ -611,7 +632,7 @@ describe('experimental Inspector real Worker', () => {
     })
     abort.abort()
 
-    await vi.waitFor(() => {
+    await waitForDelivery(() => {
       expect(cdp!.events.some(event =>
         event.method === 'Network.loadingFinished'
         && event.params?.requestId === requestId)).toBe(true)
@@ -628,7 +649,7 @@ describe('experimental Inspector real Worker', () => {
 
 async function clientContext(client: TestCdpClient): Promise<number> {
   let contextId: number | undefined
-  await vi.waitFor(() => {
+  await waitForDelivery(() => {
     const context = runtimeContexts(client).find(candidate => String(candidate.name).startsWith('Client —'))
     expect(context).toBeDefined()
     contextId = context?.id as number

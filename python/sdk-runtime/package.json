@@ -70,6 +70,7 @@
     "@greeneek/gnk-sandbox-local": "workspace:^",
     "@greeneek/gnk-sandbox-policy": "workspace:^",
     "@greeneek/gnk-scope": "workspace:^",
+    "@greeneek/gnk-search-query": "workspace:^",
     "@greeneek/gnk-sdk-jsonrpc-server": "workspace:^",
     "@greeneek/gnk-sdk-protocol": "workspace:^",
     "@greeneek/gnk-session": "workspace:^",

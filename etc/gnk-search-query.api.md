@@ -3,39 +3,6 @@
 
 # API report: @greeneek/gnk-search-query@1.1.0-alpha.0 (packages/util/search-query)
 
-`src/index.d.ts: export declare class SearchQueryError extends Error {`
-`src/index.d.ts: export declare const SEARCH_QUERY_MAX_CHARS = 1000;`
-`src/index.d.ts: export declare function collectContentLeaves(node: SearchQueryNode): readonly SearchQueryLeaf[];`
-`src/index.d.ts: export declare function collectLeaves(node: SearchQueryNode): readonly SearchQueryLeaf[];`
-`src/index.d.ts: export declare function compileContentFts5(node: SearchQueryNode): string | null;`
-`src/index.d.ts: export declare function evaluateSearchQuery(node: SearchQueryNode, doc: SearchHaystack, options?: EvaluateSearchOptions): boolean;`
-`src/index.d.ts: export declare function hasContentTerms(node: SearchQueryNode): boolean;`
-`src/index.d.ts: export declare function hasFileTerms(node: SearchQueryNode): boolean;`
-`src/index.d.ts: export declare function hasPathTerms(node: SearchQueryNode): boolean;`
-`src/index.d.ts: export declare function hasTitleTerms(node: SearchQueryNode): boolean;`
-`src/index.d.ts: export declare function parseSearchQuery(input: string): SearchQueryNode;`
-`src/index.d.ts: export declare function tokenizeSearchQuery(input: string): SearchQueryToken[];`
-`src/index.d.ts: export interface EvaluateSearchOptions {`
-`src/index.d.ts: export interface SearchHaystack {`
-`src/index.d.ts: export interface SearchQueryToken {`
-`src/index.d.ts: export type ContentLegMode = 'enforce' | 'host-authoritative';`
-`src/index.d.ts: export type SearchQueryErrorCode = 'QUERY_TOO_LONG' | 'EMPTY_QUERY' | 'INVALID_OPERAND' | 'UNTERMINATED_QUOTE' | 'UNMATCHED_PAREN' | 'EMPTY_PARENS' | 'UNKNOWN_OPERATOR' | 'MISSING_OPERATOR_VALUE' | 'INVALID_OPERATOR';`
-`src/index.d.ts: export type SearchQueryLeaf = {`
-`src/index.d.ts: export type SearchQueryNode = SearchQueryLeaf | {`
-`src/index.d.ts: export type SearchQueryOperatorName = 'content' | 'path' | 'file' | 'title';`
-`src/index.d.ts: export {};`
-`src/index.js: export class SearchQueryError extends Error {`
-`src/index.js: export const SEARCH_QUERY_MAX_CHARS = 1000;`
-`src/index.js: export function collectContentLeaves(node) {`
-`src/index.js: export function collectLeaves(node) {`
-`src/index.js: export function compileContentFts5(node) {`
-`src/index.js: export function evaluateSearchQuery(node, doc, options) {`
-`src/index.js: export function hasContentTerms(node) {`
-`src/index.js: export function hasFileTerms(node) {`
-`src/index.js: export function hasPathTerms(node) {`
-`src/index.js: export function hasTitleTerms(node) {`
-`src/index.js: export function parseSearchQuery(input) {`
-`src/index.js: export function tokenizeSearchQuery(input) {`
 `src/index.ts: export class SearchQueryError extends Error {`
 `src/index.ts: export const SEARCH_QUERY_MAX_CHARS = 1000`
 `src/index.ts: export function collectContentLeaves(node: SearchQueryNode): readonly SearchQueryLeaf[] {`

@@ -10389,6 +10389,9 @@ importers:
       '@greeneek/gnk-sdk-protocol':
         specifier: workspace:^
         version: link:../../packages/sdk/protocol
+      '@greeneek/gnk-search-query':
+        specifier: workspace:^
+        version: link:../../packages/util/search-query
       '@greeneek/gnk-session':
         specifier: workspace:^
         version: link:../../packages/core/session

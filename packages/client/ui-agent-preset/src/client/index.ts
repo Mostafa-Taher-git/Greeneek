@@ -104,8 +104,11 @@ export function apply(ctx: ClientContext): void {
   // The new-session chip and the action-row label: one controller, because the
   // staged choice belongs to the flow rather than to any one session.
   ctx.inject(['slots', 'conversation', 'sessions', 'uiWorkspace'], (scope: ClientContext) => {
+    // Captured while the scope is active: the list applier below can run after
+    // cordis unloaded this scope, where a context property read throws.
+    const sessions = scope.sessions
     const seat = new AgentPresetSeatController(scope, () => {
-      const state = scope.sessions.list.getSnapshot()
+      const state = sessions.list.getSnapshot()
       return state.current === undefined ? undefined : state.byId[state.current]
     })
 
@@ -125,7 +128,7 @@ export function apply(ctx: ClientContext): void {
       // Connecting a workspace either creates a blank session or reuses one,
       // and either way the chip's pick predates it — so the stage is applied
       // when the session arrives, not when it was made.
-      const stop = scope.sessions.list.subscribe(() => { void seat.apply() })
+      const stop = sessions.list.subscribe(() => { void seat.apply() })
       // The chip opens on the deployment default, so a default changed from
       // the settings surface moves it too — otherwise the screen that starts
       // the next session keeps offering the previous default until a reload,

@@ -21,15 +21,15 @@ export const AGENT_PRESET_SETTINGS_NS = 'agent-presets'
  * The default is a settings field rather than a preset property; the
  * management section writes it here — one home for which namespace and field
  * the host resolves at session creation.
- * @param ctx - the browser plugin context carrying the Remote namespaces.
+ * @param remote - the Remote namespaces, captured while the scope was active.
  * @param id - the preset to make default.
  * @returns the failure message, or undefined once the write landed.
  */
 export async function writeDefaultPreset(
-  ctx: ClientContext,
+  remote: ClientContext['remote'],
   id: string,
 ): Promise<string | undefined> {
-  const response = await ctx.remote.settings.update(
+  const response = await remote.settings.update(
     AGENT_PRESET_SETTINGS_NS,
     { default: id },
     undefined,
@@ -59,11 +59,11 @@ const EMPTY_ROSTER: AgentPresetRoster = { presets: [], authorable: false }
 
 /**
  * Read the roster, turning a refusal into the message every surface shows.
- * @param ctx - the browser plugin context carrying the Remote namespaces.
+ * @param remote - the Remote namespaces, captured while the scope was active.
  * @returns the roster, or the message to show in its place.
  */
-export async function readRoster(ctx: ClientContext): Promise<RosterRead> {
-  const result = await ctx.remote.agentPresets.list()
+export async function readRoster(remote: ClientContext['remote']): Promise<RosterRead> {
+  const result = await remote.agentPresets.list()
   if (result.ok) return { ok: true, value: result.value }
   // Agent presets are optional: without that service every session uses the
   // Host composition, so callers receive the same empty roster as a mounted
@@ -79,18 +79,18 @@ export async function readRoster(ctx: ClientContext): Promise<RosterRead> {
  * A surface that gets `undefined` returns without touching its snapshot
  * further — either another read owns it, or this one already wrote the
  * failure. What differs between surfaces starts after this.
- * @param ctx - the browser plugin context carrying the Remote namespaces.
+ * @param remote - the Remote namespaces, captured while the scope was active.
  * @param store - the surface's own snapshot store.
  * @returns the roster, or undefined when the caller should return.
  */
 export async function beginRosterRead<S extends { status: string; error: string | null }>(
-  ctx: ClientContext,
+  remote: ClientContext['remote'],
   store: SnapshotStore<S>,
 ): Promise<AgentPresetRoster | undefined> {
   const before = store.getSnapshot()
   if (before.status === 'loading') return undefined
   store.set({ ...before, status: 'loading', error: null })
-  const roster = await readRoster(ctx)
+  const roster = await readRoster(remote)
   if (roster.ok) return roster.value
   store.set({ ...store.getSnapshot(), status: 'error', error: roster.error })
   return undefined
@@ -140,12 +140,18 @@ export class AgentPresetSettingsController {
   /** Roster snapshot the renderer subscribes to. */
   readonly store: SnapshotStore<AgentPresetSettingsState> = createSnapshotStore(INITIAL)
 
+  /** The Remote namespaces, captured once while the scope was active. */
+  private readonly remote: ClientContext['remote']
+
   /**
-   * @param ctx - the browser plugin context (the roster read).
+   * @param ctx - the browser plugin context; the constructor captures its
+   *   Remote namespaces. Nothing here re-reads the context proxy later,
+   *   because a callback can run against a scope cordis has already
+   *   unloaded, where a property read throws.
    */
-  constructor(
-    private readonly ctx: ClientContext,
-  ) {}
+  constructor(ctx: ClientContext) {
+    this.remote = ctx.remote
+  }
 
   private set(patch: Partial<AgentPresetSettingsState>): void {
     this.store.set({ ...this.store.getSnapshot(), ...patch })
@@ -158,7 +164,7 @@ export class AgentPresetSettingsController {
    * @returns once the snapshot reflects the host.
    */
   async load(): Promise<void> {
-    const roster = await beginRosterRead(this.ctx, this.store)
+    const roster = await beginRosterRead(this.remote, this.store)
     if (roster === undefined) return
     const { presets } = roster
     if (presets.length === 0) {

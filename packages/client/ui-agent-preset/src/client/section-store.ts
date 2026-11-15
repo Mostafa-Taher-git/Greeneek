@@ -134,8 +134,15 @@ export class AgentPresetSectionController {
   /** Page snapshot the renderer subscribes to. */
   readonly store: SnapshotStore<AgentPresetSectionState> = createSnapshotStore(INITIAL)
 
+  /**
+   * The Remote namespaces, captured once while the scope was active: nothing
+   * here re-reads the context proxy later, because a callback can run against
+   * a scope cordis has already unloaded, where a property read throws.
+   */
+  private readonly remote: ClientContext['remote']
+
   constructor(
-    private readonly ctx: ClientContext,
+    ctx: ClientContext,
     /**
      * Called after this page changes the roster DIRECTORY, so the other
      * surfaces reading the same roster re-read it. A settings field moving is
@@ -145,7 +152,9 @@ export class AgentPresetSectionController {
      * offer now exists.
      */
     private readonly rosterChanged: () => void = () => {},
-  ) {}
+  ) {
+    this.remote = ctx.remote
+  }
 
   private set(patch: Partial<AgentPresetSectionState>): void {
     this.store.set({ ...this.store.getSnapshot(), ...patch })
@@ -169,8 +178,8 @@ export class AgentPresetSectionController {
     // Issued together: one round trip decides the page, and a load that waited
     // for them in turn would hold the section in `loading` twice as long,
     // where a concurrent reload silently returns instead of refreshing.
-    const opener = this.ctx.remote.settings.canOpenAgentPresetDirectory()
-    const roster = await beginRosterRead(this.ctx, this.store)
+    const opener = this.remote.settings.canOpenAgentPresetDirectory()
+    const roster = await beginRosterRead(this.remote, this.store)
     // A refused describe leaves the reveal-the-path path, which needs no opener.
     const described = await opener
     if (roster === undefined) return
@@ -203,7 +212,7 @@ export class AgentPresetSectionController {
    */
   async view(id: string): Promise<void> {
     this.set({ error: null })
-    const result = await this.ctx.remote.agentPresets.read(id)
+    const result = await this.remote.agentPresets.read(id)
     if (!result.ok) {
       this.set({ error: result.error.message })
       return
@@ -266,7 +275,7 @@ export class AgentPresetSectionController {
     // checks arity against the declaration and rejects a short call. An
     // empty display name goes as `undefined` — absent rather than empty, so
     // the host falls back to the id instead of labelling the row with ''.
-    const result = await this.ctx.remote.agentPresets.copy(
+    const result = await this.remote.agentPresets.copy(
       draft.from, draft.id, name === '' ? undefined : name)
     if (!result.ok) {
       this.patchCopy({ saving: false, error: result.error.message })
@@ -287,7 +296,7 @@ export class AgentPresetSectionController {
    * @returns once the host answered and the page reflects it.
    */
   async openLocation(id: string): Promise<void> {
-    const result = await this.ctx.remote.settings.openAgentPresetDirectory(id)
+    const result = await this.remote.settings.openAgentPresetDirectory(id)
     if (!result.ok) {
       this.set({ error: result.error.message })
       return
@@ -317,7 +326,7 @@ export class AgentPresetSectionController {
     const { pendingDelete, deleting } = this.store.getSnapshot()
     if (pendingDelete === null || deleting) return
     this.set({ deleting: true, error: null })
-    const result = await this.ctx.remote.agentPresets.deletePreset(pendingDelete)
+    const result = await this.remote.agentPresets.deletePreset(pendingDelete)
     if (!result.ok) {
       this.set({ deleting: false, pendingDelete: null, error: result.error.message })
       return
@@ -334,7 +343,7 @@ export class AgentPresetSectionController {
    * @returns once the write settled and the roster was re-read.
    */
   async makeDefault(id: string): Promise<void> {
-    const failure = await writeDefaultPreset(this.ctx, id)
+    const failure = await writeDefaultPreset(this.remote, id)
     if (failure !== undefined) {
       this.set({ error: failure })
       return

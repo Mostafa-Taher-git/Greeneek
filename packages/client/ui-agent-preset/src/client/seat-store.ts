@@ -54,14 +54,23 @@ export class AgentPresetSeatController {
   /** Set while a pick is waiting for a session; cleared once applied. */
   private staged: string | undefined
 
+  /**
+   * The Remote namespaces, captured once while the scope was active: the
+   * list-change applier can run against a scope cordis has already unloaded,
+   * where a context property read throws.
+   */
+  private readonly remote: ClientContext['remote']
+
   constructor(
-    private readonly ctx: ClientContext,
+    ctx: ClientContext,
     /** The session the hero is about to hand over to, when there is one. */
     private readonly currentSession: () => Pick<
       SessionSummary,
       'id' | 'blank' | 'projectionValues'
     > | undefined,
-  ) {}
+  ) {
+    this.remote = ctx.remote
+  }
 
   private set(patch: Partial<AgentPresetSeatState>): void {
     this.store.set({ ...this.store.getSnapshot(), ...patch })
@@ -72,7 +81,7 @@ export class AgentPresetSeatController {
   * @returns once the snapshot reflects the host.
   */
   async load(): Promise<void> {
-    const roster = await readRoster(this.ctx)
+    const roster = await readRoster(this.remote)
     if (!roster.ok) {
       this.set({ error: roster.error })
       return
@@ -157,7 +166,7 @@ export class AgentPresetSeatController {
       return
     }
     this.set({ busy: true, error: null })
-    const result = await this.ctx.remote.agentPresets.select(session.id, staged)
+    const result = await this.remote.agentPresets.select(session.id, staged)
     this.staged = undefined
     if (!result.ok) {
       const { error } = result

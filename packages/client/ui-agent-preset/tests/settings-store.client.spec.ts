@@ -150,7 +150,7 @@ describe('the agent-preset roster store', () => {
       { id: 'minimal', trust: 'system', isDefault: false },
     ], { writes })
 
-    expect(await writeDefaultPreset(ctx, 'minimal')).toBeUndefined()
+    expect(await writeDefaultPreset(ctx.remote, 'minimal')).toBeUndefined()
 
     expect(writes).toEqual([{
       ns: AGENT_PRESET_SETTINGS_NS,
@@ -163,7 +163,7 @@ describe('the agent-preset roster store', () => {
       { id: 'standard', trust: 'system', isDefault: true },
     ], { failWrite: 'read-only settings' })
 
-    expect(await writeDefaultPreset(ctx, 'minimal')).toBe('read-only settings')
+    expect(await writeDefaultPreset(ctx.remote, 'minimal')).toBe('read-only settings')
   })
 
   it('surfaces a roster failure without claiming the deployment has no presets', async () => {

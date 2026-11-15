@@ -38,7 +38,7 @@
 `src/client/section-store.ts: export interface PresetRow {`
 `src/client/section-store.ts: export interface PresetView {`
 `src/client/settings-store.ts: export async function beginRosterRead<S extends { status: string; error: string | null }>(`
-`src/client/settings-store.ts: export async function readRoster(ctx: ClientContext): Promise<RosterRead> {`
+`src/client/settings-store.ts: export async function readRoster(remote: ClientContext['remote']): Promise<RosterRead> {`
 `src/client/settings-store.ts: export async function writeDefaultPreset(`
 `src/client/settings-store.ts: export class AgentPresetSettingsController {`
 `src/client/settings-store.ts: export const AGENT_PRESET_SETTINGS_NS = 'agent-presets'`

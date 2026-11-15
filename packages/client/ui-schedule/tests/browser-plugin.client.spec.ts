@@ -11,7 +11,7 @@ const Empty = () => null
 
 function headerEntryIds(ctx: Context): (string | undefined)[] {
   return ctx.slots
-    .entries('conversation.session.header.actions')
+    .entries('conversation.details.thread.action')
     .map(entry => entry.options.id)
 }
 
@@ -25,11 +25,11 @@ async function baseContext(): Promise<Context> {
   return ctx
 }
 
-function declareHeader(ctx: Context): () => void {
+function declareThreadDetails(ctx: Context): () => void {
   return ctx.slots.register({
     name: 'root',
     children: {
-      'conversation.session.header.actions': { kind: 'list', scope: 'session' },
+      'conversation.details.thread.action': { kind: 'list', scope: 'session' },
     },
   } as never, Empty)
 }
@@ -39,30 +39,30 @@ describe('ui-schedule browser half', () => {
     expect(inject).toEqual(['slots', 'locale'])
   })
 
-  it('waits for the header declaration, orders between static context and Jobs, and tears down', async () => {
+  it('waits for the details-action declaration, orders between static context and Jobs, and tears down', async () => {
     const ctx = await baseContext()
     const fiber = ctx.plugin({ inject: [...inject], apply })
     await fiber.await()
     expect(headerEntryIds(ctx)).toEqual([])
 
-    const header = declareHeader(ctx)
+    const declare = declareThreadDetails(ctx)
     ctx.slots.register({
-      name: 'conversation.session.header.actions', id: 'agent-preset', order: -10,
+      name: 'conversation.details.thread.action', id: 'agent-preset', order: -10,
     }, Empty)
     ctx.slots.register({
-      name: 'conversation.session.header.actions', id: 'job-list', order: 20,
+      name: 'conversation.details.thread.action', id: 'job-list', order: 20,
     }, Empty)
     expect(headerEntryIds(ctx)).toEqual(['agent-preset', 'schedule-catalog', 'job-list'])
 
     await fiber.dispose()
     expect(headerEntryIds(ctx)).toEqual(['agent-preset', 'job-list'])
-    header()
+    declare()
     await ctx.fiber.dispose()
   })
 
   it('registers both dictionaries and releases them with its fiber', async () => {
     const ctx = await baseContext()
-    declareHeader(ctx)
+    declareThreadDetails(ctx)
     ctx.locale.setLocale('zh')
     const fiber = ctx.plugin({ inject: [...inject], apply })
     await fiber.await()

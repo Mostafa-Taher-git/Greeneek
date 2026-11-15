@@ -6,7 +6,9 @@ import type {} from '@greeneek/gnk-client-locale/client'
 import type {} from '@greeneek/gnk-client-ui-renderer/client'
 // Type-only: pulls the Session root standard-props merge.
 import type {} from '@greeneek/gnk-client-ui-session/client'
-import type { SidebarRootInjected } from './contract/slots.ts'
+// Type-only: pulls the uiConversation service merge (ctx.uiConversation).
+import type {} from '@greeneek/gnk-client-ui-conversation/client'
+import type { SidebarRootInjected, TitlebarInjected } from './contract/slots.ts'
 import { SidebarRoot } from './SidebarRoot.tsx'
 import { Titlebar } from './Titlebar.tsx'
 import { ar, en, zh, type SidebarKey } from './locales.ts'
@@ -14,7 +16,7 @@ import { ar, en, zh, type SidebarKey } from './locales.ts'
 export type {
   SidebarBrandMarkOwnerProps, SidebarBrandNameOwnerProps, SidebarFooterActionOwnerProps,
   SidebarRootComponentProps, SidebarRootInjected, SidebarSectionOwnerProps, SidebarSettingsOwnerProps,
-  TitlebarComponentProps,
+  TitlebarComponentProps, TitlebarInjected,
 } from './contract/slots.ts'
 export type { SidebarKey } from './locales.ts'
 
@@ -28,12 +30,15 @@ declare module '@greeneek/gnk-client-ui-slots' {
 /** Dictionary namespace owned by this plugin (shell controls copy). */
 const NS = 'sidebar'
 
+/** Conversation view id of the transcript target that ui-chat registers. */
+const CHAT_VIEW = 'chat'
+
 interface WorkspaceNavigation {
   startSession(workspaceId?: Parameters<SidebarRootInjected['startSession']>[0]): void
 }
 
 /** Services required by the sidebar plugin. */
-export const inject = ['slots', 'layout', 'uiWorkspace', 'locale']
+export const inject = ['slots', 'layout', 'uiWorkspace', 'uiConversation', 'locale']
 
 /** Registers the sidebar shell and its service callbacks.
  * @param ctx - Client root context.
@@ -75,6 +80,14 @@ export function apply(ctx: ClientContext): void {
     () => ctx.slots.register({
       name: 'titlebar',
       locale: NS,
+      inject: (): TitlebarInjected => ({
+        // The title beside the brand is the way back to this Session's
+        // transcript from Settings, the Dashboard, or any other view.
+        openChat: (sessionId) => {
+          ctx.layout.showConversation()
+          ctx.uiConversation.selectView(sessionId, CHAT_VIEW)
+        },
+      }),
     }, Titlebar),
     'ui-sidebar: titlebar registration',
   )

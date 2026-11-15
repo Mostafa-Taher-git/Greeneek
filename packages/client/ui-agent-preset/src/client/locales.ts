@@ -1,8 +1,8 @@
-/** Locale bundles for the agent-preset hero chip, header label, and management section. */
+/** Locale bundles for the agent-preset hero chip, action-row label, and management section. */
 
 /** Locale keys these surfaces render. */
 export type AgentPresetSettingsKey =
-  | 'error' | 'userTrust' | 'headerHint'
+  | 'error' | 'userTrust' | 'labelHint'
   | 'nav' | 'sectionIntro' | 'builtIn' | 'setDefault' | 'view'
   | 'presetStandardName' | 'presetStandardDescription'
   | 'presetCordisName' | 'presetCordisDescription'
@@ -25,7 +25,7 @@ export type AgentPresetSettingsKey =
 export const en: Record<AgentPresetSettingsKey, string> = {
   error: 'Could not load agent presets.',
   userTrust: 'Custom',
-  headerHint: 'The agent preset this session runs, fixed when it started',
+  labelHint: 'The agent preset this session runs, fixed when it started',
   nav: 'Agent presets',
   sectionIntro:
     'A preset is the plugin composition one session\'s agent runs — its tools, prompt, and capabilities. '
@@ -96,7 +96,7 @@ export const en: Record<AgentPresetSettingsKey, string> = {
 export const zh: Record<AgentPresetSettingsKey, string> = {
   error: '无法加载 Agent 预设。',
   userTrust: '自定义',
-  headerHint: '本会话运行的 Agent 预设，开始时即固定',
+  labelHint: '本会话运行的 Agent 预设，开始时即固定',
   nav: 'Agent 预设',
   sectionIntro: '预设即一个会话的 Agent 所运行的插件组装 —— 它的工具、提示词与能力。复制一份既有预设改成自己的，或用「创造模式」让 Agent 帮你创建。',
   builtIn: '内置',
@@ -156,7 +156,7 @@ export const zh: Record<AgentPresetSettingsKey, string> = {
 export const ar = {
   error: 'تعذّر تحميل الإعدادات المسبقة للوكيل.',
   userTrust: 'مخصّص',
-  headerHint: 'الإعداد المسبق الذي تشغّله هذه الجلسة، ويُثبَت عند بدء الجلسة',
+  labelHint: 'الإعداد المسبق الذي تشغّله هذه الجلسة، ويُثبَت عند بدء الجلسة',
   nav: 'الإعدادات المسبقة',
   sectionIntro: 'الإعداد المسبق هو تركيب الإضافات الذي يشغّله وكيل الجلسة: أدواتها وموجّهها وقدراتها. انسخ أحد الإعدادات الموجودة وعدّلها كما تريد، أو دَع الوكيل يصوغ واحدًا لك في وضع الإنشاء.',
   builtIn: 'مدمج',

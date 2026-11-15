@@ -15,17 +15,15 @@ async function createBench() {
   const conversation = createConversationStore()
   await runtime.root.declare({
     'conversation.session': { kind: 'single', scope: 'session' },
-    'conversation.session.header': { kind: 'single', scope: 'session' },
-  }, (_props: PropsRenderSlots<'conversation.session' | 'conversation.session.header'>) => null)
+  }, (_props: PropsRenderSlots<'conversation.session'>) => null)
   runtime.slots.register({ name: 'conversation.session', store: conversation }, () => null)
-  runtime.slots.register({ name: 'conversation.session.header', store: conversation }, () => null)
   runtime.renderRoot()
   return { runtime }
 }
 
 function storeFor(
   current: Awaited<ReturnType<typeof createBench>>,
-  slot: 'conversation.session' | 'conversation.session.header',
+  slot: 'conversation.session',
   sessionId: SessionId,
 ): ConversationInstance {
   return current.runtime.storeOf(slot, sessionId) as ConversationInstance
@@ -36,16 +34,14 @@ beforeEach(() => {
 })
 
 describe('Conversation state survives on its store seat', () => {
-  it('shares one instance between the Session body and header', async () => {
+  it('carries draft and view state on the Session body instance', async () => {
     const b = await createBench()
     await b.runtime.sessions.add({ id: 's1' })
     const body = storeFor(b, 'conversation.session', sid('s1'))
-    const header = storeFor(b, 'conversation.session.header', sid('s1'))
 
     body.actions.setDraft('half-typed')
-    header.actions.setView('trajectory')
+    body.actions.setView('trajectory')
 
-    expect(header).toBe(body)
     expect(body.store.getSnapshot()).toMatchObject({ draft: 'half-typed', view: 'trajectory' })
     await b.runtime.dispose()
   })

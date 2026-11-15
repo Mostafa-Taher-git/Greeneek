@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { SlotRegistry } from '@greeneek/gnk-client-ui-renderer/client'
 import { LocaleRuntime } from '@greeneek/gnk-client-locale/client'
 import { apply, inject } from '@greeneek/gnk-client-ui-sidebar/client'
-import type { SidebarRootInjected } from '@greeneek/gnk-client-ui-sidebar/client'
+import type { SidebarRootInjected, TitlebarInjected } from '@greeneek/gnk-client-ui-sidebar/client'
 import { apply as hostApply } from '../src/index.ts'
 
 async function bench(declare = true) {
@@ -12,8 +12,10 @@ async function bench(declare = true) {
   await ctx.plugin(SlotRegistry).await()
   const layout = { toggleSidebar: vi.fn(), showConversation: vi.fn() }
   const uiWorkspace = { startSession: vi.fn() }
+  const uiConversation = { selectView: vi.fn() }
   ctx.provide('layout', layout)
   ctx.provide('uiWorkspace', uiWorkspace as never)
+  ctx.provide('uiConversation', uiConversation as never)
   ctx.provide('locale', new LocaleRuntime(ctx))
   const slots = ctx.get('slots') as SlotRegistry
   if (declare) {
@@ -28,7 +30,7 @@ async function bench(declare = true) {
       () => null,
     )
   }
-  return { ctx, slots, layout, uiWorkspace }
+  return { ctx, slots, layout, uiWorkspace, uiConversation }
 }
 
 describe('ui-sidebar apply', () => {
@@ -37,7 +39,7 @@ describe('ui-sidebar apply', () => {
   })
 
   it('declares only the services it uses', () => {
-    expect(inject).toEqual(['slots', 'layout', 'uiWorkspace', 'locale'])
+    expect(inject).toEqual(['slots', 'layout', 'uiWorkspace', 'uiConversation', 'locale'])
   })
 
   it('registers the shell and declares its child seats', async () => {
@@ -64,8 +66,12 @@ describe('ui-sidebar apply', () => {
     expect(b.layout.toggleSidebar).toHaveBeenCalledOnce()
     expect(b.slots.entries('titlebar')).toHaveLength(1)
     expect(b.slots.entries('titlebar')[0]!.locale).toBe('sidebar')
-    // The titlebar carries no injected callbacks; the layout replaces it outright.
-    expect(b.slots.entries('titlebar')[0]!.inject).toBeUndefined()
+    // The titlebar's one navigation verb yields to the conversation, then
+    // selects the Session's Chat view.
+    const titlebar = b.slots.entries('titlebar')[0]!.inject as () => TitlebarInjected
+    titlebar().openChat('s1' as never)
+    expect(b.layout.showConversation).toHaveBeenCalledTimes(3)
+    expect(b.uiConversation.selectView).toHaveBeenCalledWith('s1', 'chat')
   })
 
   it('fails when no live owner declared the sidebar slot', async () => {

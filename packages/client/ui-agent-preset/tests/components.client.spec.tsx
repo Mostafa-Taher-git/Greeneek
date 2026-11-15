@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /**
  * The two conversation-adjacent surfaces: the new-session chip naming the
- * next session's preset, and the session header's read-only label. The split
+ * next session's preset, and the thread-details read-only label. The split
  * is the host's rule — a session's history is produced under its preset's
  * tools, so the choice is only ever offered before one starts.
  */
@@ -306,7 +306,7 @@ describe('a refused switch', () => {
   })
 })
 
-describe('the session-header label', () => {
+describe('the thread-details label', () => {
   it('names the preset the session runs, and never offers a switch', async () => {
     const { load } = renderLabel({
       blank: false,
@@ -322,7 +322,7 @@ describe('the session-header label', () => {
   it('falls back to the id, and to the generic hint, when metadata is absent', () => {
     renderLabel({ blank: true, projectionValues: { agentPreset: 'mine' } })
 
-    expect(screen.getByTitle(en.headerHint).textContent).toBe('mine')
+    expect(screen.getByTitle(en.labelHint).textContent).toBe('mine')
   })
 
   it('shows the id until the roster resolves it', () => {
@@ -333,7 +333,7 @@ describe('the session-header label', () => {
 
     // The session's own summary is the authority on which preset it runs; the
     // roster only supplies the display name, and its arrival is a later frame.
-    expect(screen.getByTitle(en.headerHint).textContent).toBe('standard')
+    expect(screen.getByTitle(en.labelHint).textContent).toBe('standard')
   })
 
   it('renders nothing, and reads no roster, when the session records no preset', async () => {
@@ -342,7 +342,7 @@ describe('the session-header label', () => {
     cleanup()
 
     // A session the list has not caught up to is the same answer: a deployment
-    // that composes no presets must not pay for a roster read per header.
+    // that composes no presets must not pay for a roster read per label.
     const unknown = renderLabel(undefined)
     expect(unknown.view.container.firstChild).toBeNull()
     await act(async () => { await Promise.resolve() })

@@ -10,13 +10,13 @@ import {
   useDismissOnOutsidePointer,
 } from '@greeneek/gnk-client-ui-primitives'
 import type { PropsLocale, PropsRuntime, TranslateNS } from '@greeneek/gnk-client-ui-slots'
-import type {} from '@greeneek/gnk-client-ui-conversation/client'
+import type {} from '@greeneek/gnk-client-ui-workspace/client'
 import { NS } from './locales.ts'
 import css from './ScheduleCatalogAction.module.css'
 
-/** Full props for the Session-header Schedule catalog action. */
+/** Full props for the Thread Details Schedule catalog action. */
 export type ScheduleCatalogActionProps =
-  PropsRuntime<'conversation.session.header.actions'> & PropsLocale<typeof NS>
+  PropsRuntime<'conversation.details.thread.action'> & PropsLocale<typeof NS>
 
 type TimeUnit = 'day' | 'hour' | 'minute' | 'second'
 

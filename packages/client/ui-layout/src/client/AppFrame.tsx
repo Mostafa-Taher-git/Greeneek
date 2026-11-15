@@ -133,6 +133,7 @@ export function AppFrame({
   t,
 }: AppFrameProps) {
   const panels = useStore(s => s)
+  const currentSession = useSessions(s => s.current)
   const detailsSession = useSessions((s) => {
     const current = s.current
     return current !== undefined && s.byId[current]?.blank === false ? current : undefined
@@ -257,15 +258,14 @@ export function AppFrame({
         productTitle={productTitle}
         {...documentTitle === undefined ? {} : { title: documentTitle }}
       />
-      {/* Frameless-desktop titlebar: brand and session title at the inline
-          start, the three panel toggles before the window controls at the
-          reading end (right in LTR, far left in RTL), spanning all columns.
-          Browser builds keep the native chrome and never render this row. */}
-      {desktopHost && (
-        <div className={css.titlebarRow}>
-          {renderSlot('titlebar', { panelControls, documentTitle })}
-        </div>
-      )}
+      {/* Titlebar: brand and session title at the inline start, the three
+          panel toggles before the window controls at the reading end (right in
+          LTR, far left in RTL), spanning all columns on every host. Browser
+          builds keep the native chrome and simply have no window controls to
+          clear. */}
+      <div className={css.titlebarRow}>
+        {renderSlot('titlebar', { panelControls, documentTitle, sessionId: currentSession })}
+      </div>
       <div className={css.sidebarCol}>
         {/* Render-site slot call with live concession output: a closed
             sidebar keeps the mounted slot at the compact-rail width, and the
@@ -285,7 +285,7 @@ export function AppFrame({
             entry while no session is current. */}
         <CenterColumn>
           <div className={css.mainPage} hidden={panels.mainPage !== 'conversation'}>
-            {renderSlot('conversation', { panelControls })}
+            {renderSlot('conversation', {})}
           </div>
           {panels.mainPage === 'settings' && (
             <div className={css.mainPage}>

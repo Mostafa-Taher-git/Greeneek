@@ -1,5 +1,5 @@
 /**
- * ui-job plugin halves: the browser entry's dictionary and header-slot
+ * ui-job plugin halves: the browser entry's dictionary and details-action
  * registrations against the real SlotRegistry (with fiber teardown proving
  * removal — HMR safety), and the inert node entry.
  */
@@ -12,21 +12,21 @@ import { apply, inject } from '../src/client/index.ts'
 import { apply as applyNode } from '../src/index.ts'
 import { en, NS, zh } from '../src/client/locales.ts'
 
-/** Slot ledger reader: entry ids currently registered in the header list. */
+/** Slot ledger reader: entry ids currently registered in the details action list. */
 function headerEntryIds(ctx: Context): (string | undefined)[] {
   return ctx.slots
-    .entries('conversation.session.header.actions')
+    .entries('conversation.details.thread.action')
     .map(entry => entry.options.id)
 }
 
-/** Boot the browser half over a real slot tree that declares the header list. */
+/** Boot the browser half over a real slot tree that declares the details action list. */
 async function bench(): Promise<{ ctx: Context; fiber: ReturnType<Context['plugin']> }> {
   const ctx = new Context()
   await ctx.plugin(SlotRegistry).await()
   ctx.slots.register({
     name: 'root',
     children: {
-      'conversation.session.header.actions': { kind: 'list', scope: 'session' },
+      'conversation.details.thread.action': { kind: 'list', scope: 'session' },
     },
   } as never, () => null)
   ctx.provide('sessions', {})
@@ -50,7 +50,7 @@ describe('ui-job browser half', () => {
     expect(inject).toEqual(['sessions', 'slots', 'locale'])
   })
 
-  it('registers the header action, and fiber teardown removes it (HMR safety)', async () => {
+  it('registers the details action, and fiber teardown removes it (HMR safety)', async () => {
     const { ctx, fiber } = await bench()
     expect(headerEntryIds(ctx)).toContain('job-list')
     await fiber.dispose()

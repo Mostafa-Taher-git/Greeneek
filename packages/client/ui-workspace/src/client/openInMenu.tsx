@@ -1,7 +1,7 @@
 /**
  * The shared "Open in…" destination menu.
  *
- * The Session header and the Workspace row offer the same destinations: the
+ * The thread details panel and the Workspace row offer the same destinations: the
  * desktop's default application, the system file manager, and the applications
  * the Host reports as installed. The catalogue is a Host fact, so the menu is
  * derived from it on every read and never offers an application the Host
@@ -17,7 +17,7 @@ import {
   type MenuItem,
 } from '@greeneek/gnk-client-ui-primitives'
 import type { ExternalAppsShare, OpenPathTarget, WorkspaceBrowserProps } from './contract/slots.ts'
-import css from './SessionHeaderUtilities.module.css'
+import css from './openIn.module.css'
 
 /** Menu item id of the default-application destination. */
 const DEFAULT_ITEM_ID = 'open-in:default'

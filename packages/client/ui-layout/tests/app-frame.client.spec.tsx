@@ -191,9 +191,7 @@ describe('AppFrame', () => {
     expect(keys).toContain('conversation')
     expect(keys).toContain('details')
     expect(keys).not.toContain('conversation.empty')
-    expect(slotCalls.find(c => c.key === 'conversation')!.props).toMatchObject({
-      panelControls: { threadDetailsOpen: false, terminalDrawerOpen: false, rightPanelOpen: false },
-    })
+    expect(slotCalls.find(c => c.key === 'conversation')!.props).toEqual({})
     expect(slotCalls.find(c => c.key === 'details')!.props).toEqual({})
   })
 
@@ -382,21 +380,25 @@ describe('AppFrame', () => {
     expect(queryByTestId('terminal-drawer-content')).toBeNull()
   })
 
-  it('renders the titlebar slot only on the desktop host, always carrying the panel controls', () => {
-    expect(mountFrame().slotCalls.some(c => c.key === 'titlebar')).toBe(false)
+  it('renders the titlebar slot on every host, always carrying the panel controls', () => {
+    const expectedPanels = {
+      threadDetailsOpen: false,
+      terminalDrawerOpen: false,
+      rightPanelOpen: false,
+    }
+    const web = mountFrame()
+    expect(web.frame.hasAttribute('data-desktop-host')).toBe(false)
+    const webCalls = web.slotCalls.filter(c => c.key === 'titlebar')
+    expect(webCalls.length).toBeGreaterThanOrEqual(1)
+    expect(webCalls.at(-1)!.props).toMatchObject({ panelControls: expectedPanels, documentTitle: undefined })
+    expect(Object.keys(webCalls.at(-1)!.props as object).sort())
+      .toEqual(['documentTitle', 'panelControls', 'sessionId'])
+
     ;(globalThis as { greeneekDesktop?: unknown }).greeneekDesktop = {}
     try {
       const open = mountFrame()
       expect(open.frame.hasAttribute('data-desktop-host')).toBe(true)
-      const titlebarCalls = open.slotCalls.filter(c => c.key === 'titlebar')
-      const expectedPanels = {
-        threadDetailsOpen: false,
-        terminalDrawerOpen: false,
-        rightPanelOpen: false,
-      }
-      expect(titlebarCalls.at(-1)!.props).toMatchObject({ panelControls: expectedPanels, documentTitle: undefined })
-      expect(Object.keys(titlebarCalls.at(-1)!.props as object).sort()).toEqual(['documentTitle', 'panelControls'])
-      expect(titlebarCalls.length).toBeGreaterThanOrEqual(1)
+      expect(open.slotCalls.filter(c => c.key === 'titlebar').length).toBeGreaterThanOrEqual(1)
     } finally {
       delete (globalThis as { greeneekDesktop?: unknown }).greeneekDesktop
     }

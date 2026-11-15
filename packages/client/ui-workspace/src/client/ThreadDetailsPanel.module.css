@@ -1,0 +1,205 @@
+/* Thread Details card: one rounded surface of 32px rows, mirroring T3's thread
+   panel geometry (rounded-2xl card, rounded-lg rows, 13px medium labels,
+   muted 16px icons, a divider between sections). The card sits inside the
+   details column's padding, so it owns no outer margin. */
+
+.card {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  overflow: hidden;
+  border: 0.5px solid var(--dsw-alias-border-l2);
+  border-radius: 16px;
+  background: var(--dsw-alias-bg-layer-2);
+}
+
+/* T3: px-2 pt-2 pb-2.5, with the divider owned by the following section. */
+.section {
+  padding: 8px 8px 10px;
+}
+
+.section + .section {
+  border-top: 0.5px solid var(--dsw-alias-border-l2);
+}
+
+/* T3 heading row: min-h-8, px-2.5, mb-1, 11px medium muted. */
+.heading {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+  margin: 0 0 4px;
+  padding: 0 10px;
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 500;
+  color: var(--dsw-alias-label-tertiary);
+  user-select: none;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 32px;
+  padding: 0 10px;
+  box-sizing: border-box;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 500;
+  color: var(--dsw-alias-label-primary);
+}
+
+.icon {
+  flex: none;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The workspace row splits into "open with the default destination" and the
+   destination menu. The hairline shows only while the pair is in use. */
+.splitGroup {
+  display: flex;
+  align-items: center;
+  border-radius: 8px;
+}
+
+.splitGroup:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.splitPrimary {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  height: 32px;
+  padding: 0 10px;
+  box-sizing: border-box;
+  border: 0;
+  border-start-start-radius: 8px;
+  border-end-start-radius: 8px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 500;
+  color: var(--dsw-alias-label-primary);
+  text-align: start;
+  cursor: pointer;
+}
+
+.splitSecondary {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-start-end-radius: 8px;
+  border-end-end-radius: 8px;
+  background: transparent;
+  color: var(--dsw-alias-label-tertiary);
+  cursor: pointer;
+}
+
+.splitSecondary:hover,
+.splitSecondary[aria-expanded='true'] {
+  color: var(--dsw-alias-label-primary);
+}
+
+.splitDivider {
+  flex: none;
+  width: 0.5px;
+  height: 16px;
+  background: var(--dsw-alias-border-l2);
+  opacity: 0;
+}
+
+.splitGroup:hover .splitDivider,
+.splitGroup:focus-within .splitDivider {
+  opacity: 1;
+}
+
+/* Session controls: the slots other packages fill on the leading side, the
+   card's own pin/archive/overflow verbs on the trailing side. */
+.actionRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 0 4px;
+}
+
+.chips {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.controls {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 2px;
+}
+
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.iconButton:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+}
+
+.pinnedActive {
+  color: var(--dsw-alias-state-business-primary);
+}
+
+.error {
+  padding: 4px 10px 0;
+  color: var(--dsw-alias-state-error-primary);
+  font-size: 12px;
+}
+
+.renameInput {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--dsw-alias-bg-layer-2);
+  border: 0.5px solid var(--dsw-alias-border-l2);
+  border-radius: 6px;
+  color: var(--dsw-alias-label-primary);
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.renameInput:focus {
+  border-color: var(--dsw-alias-brand-primary);
+}
+
+.deleteAction:not(:disabled) {
+  color: var(--dsw-alias-state-error-primary);
+}

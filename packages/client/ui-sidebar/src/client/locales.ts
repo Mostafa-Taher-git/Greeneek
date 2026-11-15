@@ -11,6 +11,7 @@ export const zh = {
   'toggle.threadDetails.aria': '切换线程详情',
   'toggle.terminalDrawer.aria': '切换终端抽屉',
   'toggle.rightPanel.aria': '切换右侧面板',
+  'titlebar.returnToChat': '返回对话：{title}',
 } satisfies Record<string, string>
 
 /** The sidebar namespace key union. */
@@ -27,6 +28,7 @@ export const en = {
   'toggle.threadDetails.aria': 'Toggle thread details',
   'toggle.terminalDrawer.aria': 'Toggle terminal drawer',
   'toggle.rightPanel.aria': 'Toggle right panel',
+  'titlebar.returnToChat': 'Return to chat: {title}',
 } satisfies Record<SidebarKey, string>
 
 /** Arabic dictionary, checked complete against the zh key set; the brand name stays verbatim. */
@@ -40,4 +42,5 @@ export const ar = {
   'toggle.threadDetails.aria': 'تبديل تفاصيل سلسلة العمل',
   'toggle.terminalDrawer.aria': 'تبديل درج الطرفية',
   'toggle.rightPanel.aria': 'تبديل اللوحة اليمنى',
+  'titlebar.returnToChat': 'العودة إلى المحادثة: {title}',
 } satisfies Record<SidebarKey, string>

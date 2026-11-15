@@ -9,9 +9,7 @@
 `src/client/DashboardPage.tsx: export function DashboardPage({ useSessions, useWorkspaces, t, close, open, pricing }: DashboardPageProps) {`
 `src/client/DashboardPage.tsx: export interface DashboardPageInjected {`
 `src/client/DashboardPage.tsx: export type DashboardPageProps =`
-`src/client/SessionHeaderUtilities.tsx: export function SessionHeaderUtilities({`
-`src/client/SessionHeaderUtilities.tsx: export interface SessionHeaderUtilitiesInjected {`
-`src/client/SessionHeaderUtilities.tsx: export type SessionHeaderUtilitiesProps =`
+`src/client/ThreadDetailsPanel.tsx: export function ThreadDetailsPanel({`
 `src/client/WorkspacePicker.tsx: export function WorkspacePickFlow({`
 `src/client/WorkspacePicker.tsx: export function WorkspacePicker({`
 `src/client/WorkspacePicker.tsx: export interface WorkspacePickFlowProps {`
@@ -19,10 +17,13 @@
 `src/client/contract/slots.ts: export interface ExternalAppEntry {`
 `src/client/contract/slots.ts: export interface ExternalAppsShare {`
 `src/client/contract/slots.ts: export interface GitFacts {`
+`src/client/contract/slots.ts: export interface ThreadDetailsLineageOwnerProps {`
 `src/client/contract/slots.ts: export type DirectoryFlowSlotName =`
 `src/client/contract/slots.ts: export type DirectoryPickingHooks = PropsHooks<DirectoryPickingInjected['hooks']>`
 `src/client/contract/slots.ts: export type DirectoryPickingInjected = {`
 `src/client/contract/slots.ts: export type OpenPathTarget =`
+`src/client/contract/slots.ts: export type ThreadDetailsPanelInjected =`
+`src/client/contract/slots.ts: export type ThreadDetailsPanelProps =`
 `src/client/contract/slots.ts: export type WorkspaceBrowserInjected = {`
 `src/client/contract/slots.ts: export type WorkspaceBrowserProps =`
 `src/client/contract/slots.ts: export type WorkspacePickerInjected = DirectoryPickingInjected & {`
@@ -49,6 +50,8 @@
 `src/client/dashboard-pricing.ts: export interface DashboardUnknownCost {`
 `src/client/dashboard-pricing.ts: export type DashboardCost = DashboardKnownCost | DashboardUnknownCost`
 `src/client/dashboard-pricing.ts: export type DashboardCostUnknownReason =`
+`src/client/format.ts: export function formatCount(value: number): string {`
+`src/client/format.ts: export function pathBasename(path: string): string {`
 `src/client/index.ts: export const inject = [`
 `src/client/index.ts: export function apply(ctx: Context): void {`
 `src/client/index.ts: export type {`

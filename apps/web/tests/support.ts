@@ -83,14 +83,14 @@ export async function openTrajectory(page: Page): Promise<void> {
 }
 
 /**
- * Return the Session to its Chat view (the Trajectory and other views carry a
- * single back control named after the Session title).
+ * Return the Session to its Chat view. The titlebar's session-title button is
+ * the one return control: it calls `showConversation` + `selectView(chat)`,
+ * which are no-ops when the Chat view is already shown, so the click is
+ * idempotent and this needs no view check.
  * @param page - page showing a Session.
  */
 export async function showChat(page: Page): Promise<void> {
-  const back = page.getByRole('button', { name: /^Back to Chat:/ })
-  if (await back.count() === 0) return
-  await back.first().click()
+  await page.getByRole('button', { name: /^Return to chat: / }).first().click()
 }
 
 /** Fail loud on a stale checkout instead of testing yesterday's bundle. */
@@ -144,9 +144,10 @@ export async function connectFreshWorkspace(page: Page, root: string, name = 'wo
   await pathInput.press('Enter')
   await dialog.getByRole('button', { name: 'Open', exact: true }).click()
   // The pick connected the workspace: the blank session's live composer
-  // replaces the locked placeholder and enables.
+  // replaces the locked placeholder and enables. The full lane runs many
+  // workers beside each other, so the render wait is generous.
   await page.locator('[data-composer-input][contenteditable="true"][data-placeholder="Describe what you want to build... / commands, @ files or sessions"]')
-    .waitFor({ timeout: 15_000 })
+    .waitFor({ timeout: 30_000 })
 }
 
 /**

@@ -921,7 +921,7 @@ async function openLongHistory(page: Page): Promise<number> {
   const results = page.getByRole('tree', { name: 'Search results' }).getByRole('treeitem')
   await expect.poll(() => results.count(), { timeout: 60_000 }).toBe(1)
   await results.first().click()
-  await page.getByRole('button', { name: 'More session actions', exact: true }).waitFor({ timeout: 30_000 })
+  await page.getByRole('button', { name: /^Return to chat: / }).waitFor({ timeout: 30_000 })
   return conversationTurns(page)
 }
 
@@ -1221,7 +1221,7 @@ describe('manual web performance: complex workspace and history', () => {
       })
       const opened = await measure(cdp, async () => {
         await contentSearch.value.click()
-        await page.getByRole('button', { name: 'More session actions', exact: true })
+        await page.getByRole('button', { name: /^Return to chat: / })
           .waitFor({ timeout: 30_000 })
         return conversationTurns(page)
       })

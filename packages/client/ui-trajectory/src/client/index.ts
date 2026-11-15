@@ -15,6 +15,7 @@ import type {} from '@greeneek/gnk-client-ui-chat/client'
 import type {} from '@greeneek/gnk-client-ui-conversation/client'
 import type {} from '@greeneek/gnk-client-ui-renderer/client'
 import type {} from '@greeneek/gnk-client-ui-session/client'
+import type {} from '@greeneek/gnk-client-ui-workspace/client'
 import { createTrajectoryDurationStore } from './duration-store.ts'
 import { ar, en, NS, zh } from './locales.ts'
 import {
@@ -108,10 +109,10 @@ export function apply(ctx: Context): void {
       }
     },
   }, TrajectoryView))
-  // Thread Details opens the trajectory from the Session it belongs to, so the
-  // Session Header carries no second route into the same view.
-  ctx.slots.inject('conversation.details.actions', () => ctx.slots.register({
-    name: 'conversation.details.actions',
+  // The Thread Details action opens the trajectory from the Session it belongs
+  // to, beside every other Session-scoped control.
+  ctx.slots.inject('conversation.details.thread.action', () => ctx.slots.register({
+    name: 'conversation.details.thread.action',
     id: 'trajectory',
     locale: NS,
     inject: (sessionId: SessionId): TrajectoryDetailsActionInjected => ({

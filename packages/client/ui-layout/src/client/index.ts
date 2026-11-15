@@ -8,6 +8,7 @@
  * presenter, which projects ctx.theme snapshots onto document.body.
  */
 import type { Context as ClientContext } from '@greeneek/cordis'
+import type { SessionId } from '@greeneek/gnk-session/types'
 import type {} from '@greeneek/gnk-client-locale/client'
 import type {} from '@greeneek/gnk-client-ui-renderer/client'
 import type {} from '@greeneek/gnk-client-ui-session/client'
@@ -125,8 +126,7 @@ export interface SidebarOwnerProps {
   width: number
 }
 
-/** Titlebar owner share: panel controls and document title only; the sidebar
- * fold toggle lives in the sidebar column on every host. */
+/** Titlebar owner share: panel controls, document title, and the current Session. */
 export interface TitlebarOwnerProps {
   /**
    * The three session-scoped panel toggles T3 also pins to its titlebar:
@@ -140,13 +140,15 @@ export interface TitlebarOwnerProps {
    * when any). Absent on the hero; the frame passes whatever it knows.
    */
   documentTitle?: string | undefined
+  /**
+   * The Session the title names. A click on the title returns to that
+   * Session's Chat view; absent when no Session is current.
+   */
+  sessionId?: SessionId | undefined
 }
 
 /** Conversation owner share: business state and actions belong to the registrant. */
-export interface ConvOwnerProps {
-  /** The three session-scoped panel controls rendered beside the Session title. */
-  panelControls?: SessionPanelControls | undefined
-}
+export interface ConvOwnerProps {}
 
 /** Current panel state and actions passed through the Conversation header. */
 export interface SessionPanelControls {

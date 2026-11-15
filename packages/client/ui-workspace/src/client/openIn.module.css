@@ -1,0 +1,6 @@
+/* The shared "Open in…" menu's folder accent: the same amber folder the
+   browsing rows and the Thread Details card use for a workspace directory. */
+
+.folderIcon {
+  color: var(--dsw-alias-state-warn-primary);
+}

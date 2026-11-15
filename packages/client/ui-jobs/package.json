@@ -1,6 +1,6 @@
 {
   "name": "@greeneek/gnk-client-ui-jobs",
-  "description": "Session-header background-job list: live registry state mirrored from session/jobs frames",
+  "description": "Thread Details background-job list: live registry state mirrored from session/jobs frames",
   "version": "1.1.0-alpha.0",
   "type": "module",
   "main": "lib/index.js",
@@ -21,7 +21,7 @@
     "client": {
       "inject": [
         "@greeneek/gnk-client-locale",
-        "@greeneek/gnk-client-ui-conversation",
+        "@greeneek/gnk-client-ui-workspace",
         "@greeneek/gnk-client-ui-primitives"
       ],
       "platform": "web"
@@ -46,7 +46,7 @@
   "devDependencies": {
     "@greeneek/gnk-client-locale": "workspace:^",
     "@greeneek/gnk-client-test-runtime": "workspace:^",
-    "@greeneek/gnk-client-ui-conversation": "workspace:^",
+    "@greeneek/gnk-client-ui-workspace": "workspace:^",
     "@greeneek/gnk-client-ui-primitives": "workspace:^",
     "@greeneek/gnk-client-ui-slots": "workspace:^",
     "@types/react": "~18.3.1",

@@ -9,7 +9,7 @@ Status: implemented
 
 A human at the Web client therefore could not see that a build was running, could not distinguish a finished task from a stuck one, and could not stop one. The only trace was the `run_in_background` tool card that printed a job id somewhere earlier in the transcript, and that card never updates again.
 
-The session header was already the place where per-session background activity lives: [`gnk-client-ui-subagent`](../../../../packages/client/ui-subagent/README.md) contributes the subagent catalog to `conversation.session.header.actions`. Placement was settled. What was missing was any channel at all that carried task state to a browser.
+The per-Session surfaces are where background activity lives in the UI: [`gnk-client-ui-subagent`](../../../../packages/client/ui-subagent/README.md) contributes the subagent lineage to `conversation.details.thread.lineage`. Placement was settled. What was missing was any channel at all that carried task state to a browser.
 
 ## Decision
 
@@ -84,9 +84,9 @@ It lives on the list mirror rather than on `Session` for three reasons: the head
 
 Two replacement points keep it honest. Each control-stream generation clears the complete jobs mirror before installing the new baseline's non-empty sets. An `api-session/removed` event also drops that Session's entry, independently of the job-registry disposal notification's ordering.
 
-### The header action
+### The details action
 
-[`@greeneek/gnk-client-ui-jobs`](../../../../packages/client/ui-jobs/README.md) registers one entry in `conversation.session.header.actions`, ordered after the subagent catalog. Its own README owns the presentation contract; the decisions worth recording here are that the control does not render at all until the session has a task, that the live badge is omitted at zero so a history-only session keeps a quiet entry point, and that settled rows stay visible because a failed task's `detail` is the only place its failure is legible.
+[`@greeneek/gnk-client-ui-jobs`](../../../../packages/client/ui-jobs/README.md) registers one entry in `conversation.details.thread.action`. Its own README owns the presentation contract; the decisions worth recording here are that the control does not render at all until the session has a task, that the live badge is omitted at zero so a history-only session keeps a quiet entry point, and that settled rows stay visible because a failed task's `detail` is the only place its failure is legible.
 
 A running one-shot background subagent therefore appears both there and in the subagent catalog. The two answer different questions — the catalog navigates into the child's transcript, this list is the only handle a cancellation can ever attach to — and suppressing `kind: 'subagent'` here would leave the cancellation phase with no entry point for exactly those tasks.
 

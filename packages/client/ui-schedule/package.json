@@ -1,6 +1,6 @@
 {
   "name": "@greeneek/gnk-client-ui-schedule",
-  "description": "Read-only active Schedule catalog in the Web Session header",
+  "description": "Read-only active Schedule catalog in the Web Thread Details card",
   "version": "1.1.0-alpha.0",
   "type": "module",
   "main": "lib/index.js",
@@ -21,7 +21,7 @@
     "client": {
       "inject": [
         "@greeneek/gnk-client-locale",
-        "@greeneek/gnk-client-ui-conversation",
+        "@greeneek/gnk-client-ui-workspace",
         "@greeneek/gnk-client-ui-primitives"
       ],
       "platform": "web"
@@ -47,7 +47,7 @@
     "@greeneek/gnk-api-session-controller": "workspace:^",
     "@greeneek/gnk-client-locale": "workspace:^",
     "@greeneek/gnk-client-test-runtime": "workspace:^",
-    "@greeneek/gnk-client-ui-conversation": "workspace:^",
+    "@greeneek/gnk-client-ui-workspace": "workspace:^",
     "@greeneek/gnk-client-ui-primitives": "workspace:^",
     "@greeneek/gnk-client-ui-renderer": "workspace:^",
     "@greeneek/gnk-client-ui-session": "workspace:^",

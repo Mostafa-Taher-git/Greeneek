@@ -140,8 +140,10 @@ describe.skipIf(MODE === 'record')('web e2e: GitHub ready-for-review', () => {
       },
     }
     expect((await send(webhookOrigin, 'ready', payload)).status).toBe(202)
-    await vi.waitFor(() => { expect(scaffold.ctx.agents.list()).toHaveLength(before + 1) })
-    await vi.waitFor(() => { expect(adapter.requests).toHaveLength(1) })
+    // The 202 only queues the session creation and the model turn; parallel
+    // web workers make the 1s `vi.waitFor` default too tight for both.
+    await vi.waitFor(() => { expect(scaffold.ctx.agents.list()).toHaveLength(before + 1) }, { timeout: 15_000 })
+    await vi.waitFor(() => { expect(adapter.requests).toHaveLength(1) }, { timeout: 15_000 })
 
     const agent = scaffold.ctx.agents.list().find(candidate => candidate.session.header.cwd === scaffold.workspaceCwd)
     expect(agent).toBeDefined()

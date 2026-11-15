@@ -56,17 +56,18 @@ async function ensureSeedOpen(page: Page): Promise<void> {
     await welcome.getByRole('button').click()
     await welcome.waitFor({ state: 'detached', timeout: 15_000 })
   }
-  const menuButton = page.getByRole('button', { name: 'More session actions', exact: true })
-  // Search is a collapsed header action; expand it so the input is actionable.
+  // The titlebar's session-title button mounts once a session view is ready.
+  const chatReady = page.getByRole('button', { name: /^Return to chat: / })
+  // Search is a collapsed sidebar action; expand it so the input is actionable.
   const searchButton = page.getByRole('button', { name: 'Search sessions' })
   if (await searchButton.getAttribute('aria-expanded') !== 'true') await searchButton.click()
   const search = page.getByPlaceholder('Search sessions', { exact: false })
-  if (await menuButton.count() === 0) {
+  if (await chatReady.count() === 0) {
     await search.fill('WATERFALL')
     const result = page.getByRole('tree', { name: 'Search results' }).getByRole('treeitem')
     await expect.poll(() => result.count(), { timeout: 15_000 }).toBe(1)
     await result.click()
-    await menuButton.waitFor({ timeout: 15_000 })
+    await chatReady.waitFor({ timeout: 15_000 })
   }
   // Normalize to the Chat view: the Trajectory and other views carry one back
   // control to Chat, so the readiness check afterwards is view-independent.
@@ -283,12 +284,10 @@ describe('web e2e: navigation & panes over a rich seeded session', () => {
     await compareOrRefreshGolden(TRAJECTORY_EXPECTED, snapshot, MODE)
     await details.getByRole('button', { name: 'Close details' }).click()
 
-    // The session title doubles as the way back: from the trajectory view it
-    // carries a back affordance and returns to Chat in place.
-    const backToChat = page.getByRole('button', { name: /^Back to Chat:/ })
-    await backToChat.click()
+    // The session title doubles as the way back: the titlebar's title button
+    // returns to Chat in place from the trajectory view.
+    await page.getByRole('button', { name: /^Return to chat: / }).click()
     await page.getByText('FIRST_DONE', { exact: true }).waitFor({ timeout: 15_000 })
-    await expect.poll(() => page.getByRole('button', { name: /^Back to Chat:/ }).count()).toBe(0)
   }, 60_000)
 
   it.skipIf(MODE === 'record')('downloads through Thread Details and /export with one dialog', async () => {

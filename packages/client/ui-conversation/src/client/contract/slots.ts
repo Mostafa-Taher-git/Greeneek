@@ -11,7 +11,6 @@ import type {
 } from '@greeneek/gnk-client-ui-slots'
 import type { SessionPendingInteraction } from '@greeneek/gnk-client-ui-session/client'
 import type {} from '@greeneek/gnk-client-ui-layout/client'
-import type { SessionPanelControls } from '@greeneek/gnk-client-ui-layout/client'
 import type { SessionId } from '@greeneek/gnk-session/types'
 import type { WorkspaceId } from '@greeneek/gnk-workspace/types'
 import type { ComposerBlock } from './composer-blocks.ts'
@@ -94,30 +93,6 @@ declare module '@greeneek/gnk-client-ui-slots' {
   interface SlotMap {
     /** Strict per-Session Conversation body. */
     'conversation.session': { kind: 'single'; scope: 'session' }
-    /** Strict per-Session title, actions, and View navigation. */
-    'conversation.session.header': {
-      kind: 'single'
-      scope: 'session'
-      owner: ConversationSessionHeaderOwnerProps
-    }
-    /** Optional replacement for one Session breadcrumb title. */
-    'conversation.session.header.lineage': {
-      kind: 'single'
-      scope: 'session'
-      owner: ConversationHeaderLineageOwnerProps
-    }
-    /** Title-adjacent Session actions in ascending order. */
-    'conversation.session.header.actions': {
-      kind: 'list'
-      scope: 'session'
-      owner: ConversationHeaderActionOwnerProps
-    }
-    /** Right-aligned Session utilities in ascending order. */
-    'conversation.session.header.utilities': {
-      kind: 'list'
-      scope: 'session'
-      owner: ConversationHeaderActionOwnerProps
-    }
     /** Registered Conversation target Views, rendered one at a time. */
     'conversation.view': { kind: 'list'; scope: 'session'; owner: ConvViewOwnerProps }
     /** Selector-routed replacements for the current Session's resident composer. */
@@ -182,33 +157,6 @@ export interface HeroAgentPresetOwnerProps {
   children?: never
 }
 
-/** Header actions derive their state from standard Session props. */
-export interface ConversationHeaderActionOwnerProps {
-  /** Marker field: entries receive no other owner-specific values. */
-  children?: never
-  /** Switch the Session's active conversation view. */
-  selectView?: (view: string) => void
-  /** Active conversation view id, so entries can label view navigation. */
-  activeView?: string | null
-  /** Independent Thread Details, terminal drawer, and right panel controls. */
-  panelControls?: SessionPanelControls | undefined
-}
-
-/** Panel controls passed from the root frame through the Session header. */
-export interface ConversationSessionHeaderOwnerProps {
-  panelControls?: SessionPanelControls | undefined
-}
-
-/** Plain breadcrumb data handed to the optional lineage renderer. */
-export interface ConversationHeaderLineageOwnerProps {
-  /** Session represented by this breadcrumb title. */
-  lineageSessionId: SessionId
-  /** Display title available to a combined title/control renderer. */
-  displayTitle: string
-  /** Navigate to an ancestor title when present. */
-  openTitle?: () => void
-}
-
 /** Point-in-time owner values for composer extension entries. */
 export interface InputZone {
   readonly session: SessionSnapshot
@@ -244,16 +192,6 @@ export interface ConversationSessionInjected {
   bindDraftMirror: (write: (text: string) => void) => () => void
   /** Select and activate one View while addressing an opaque focus request to it. */
   openView: (view: string, focus: string) => void
-}
-
-/** Business callbacks injected into the strict Session header. */
-export interface ConversationSessionHeaderInjected {
-  /** Package-owned View roster source bound only for the Conversation header. */
-  readonly hooks: { readonly conversationViews: ObservableSnapshot<readonly ViewTab[]> }
-  /** Select a Session through the Session Controller. */
-  open: (sessionId: SessionId) => void
-  /** Select and activate one registered Conversation View. */
-  selectView: (view: string) => void
 }
 
 /** Owner share of the resident composer bar. */
@@ -351,7 +289,7 @@ export interface HeroBrandMarkOwnerProps {
 export type ConversationSlotProps =
   PropsRuntime<'conversation'>
   & PropsRenderSlots<
-    | 'conversation.session' | 'conversation.session.header'
+    | 'conversation.session'
     | 'conversation.composer' | 'conversation.composer.bar'
     | 'conversation.input.dock'
     | 'conversation.hero.brand.mark'
@@ -370,18 +308,6 @@ export type ConversationSessionSlotProps =
   & PropsRenderSlots<'conversation.view'>
   & PropsStore<ConversationStore>
   & InjectFace<ConversationSessionInjected>
-
-/** Full props of the strict Session header. */
-export type ConversationSessionHeaderSlotProps =
-  PropsRuntime<'conversation.session.header'>
-  & PropsRenderSlots<
-    'conversation.session.header.lineage'
-    | 'conversation.session.header.actions'
-    | 'conversation.session.header.utilities'
-  >
-  & PropsStore<ConversationStore>
-  & InjectFace<ConversationSessionHeaderInjected>
-  & PropsLocale<'conversation'>
 
 /** Full props of the draft-image attachment renderer. */
 export type ComposerAttachmentsProps =

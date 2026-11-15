@@ -10,10 +10,11 @@ import * as yaml from 'js-yaml'
 import { entryListSchema } from '@greeneek/cordis-plugin-include'
 import { createMessage, createUserMessage } from '@greeneek/gnk-llm'
 import {
+  acknowledgeReloadConnectionLoss,
   assertFixtureInventory, captureStableAria, compareOrRefreshGolden,
   launchWebScaffold, watchConsole, webSnapshotMode, type WebScaffold,
 } from './scaffold.ts'
-import { connectFreshWorkspace, newEnglishPage, saveFailureShot } from './support.ts'
+import { connectFreshWorkspace, newEnglishPage, openThreadDetails, saveFailureShot } from './support.ts'
 
 const SNAPSHOT_DIR = fileURLToPath(new URL('./snapshots/agent-team-panel', import.meta.url))
 const PANEL_EXPECTED = join(SNAPSHOT_DIR, 'task.expected.md')
@@ -72,6 +73,14 @@ describe('web e2e: Agent Teams panel', () => {
     agent.session.append('step/end', { turn: 1, step: 1 })
     agent.session.append('turn/end', { turn: 1, reason: { kind: 'completed' } })
     await scaffold.ctx.sessions.flush(agent.session)
+    // The appends landed host-side, so the client's list still mirrors the
+    // blank session it connected with — and the Thread Details card refuses a
+    // blank current session. Reload onto the refreshed list (the proven
+    // route in subagent-interrupt-ui) so the card can open.
+    const warningStart = tripwire.warnings.length
+    await page.reload({ waitUntil: 'load' })
+    await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
+    acknowledgeReloadConnectionLoss(tripwire, warningStart)
     await page.getByText('Ready.').waitFor({ timeout: 10_000 })
   }, 120_000)
 
@@ -82,6 +91,8 @@ describe('web e2e: Agent Teams panel', () => {
 
   it('loads the roster and creates one shared task through generated Remote', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-agent-team-panel'))
+    // The Team controls are a Thread Details action, so the card must be open.
+    await openThreadDetails(page)
     const action = page.locator('[data-team-action]')
     await action.getByRole('button', { name: /Agent Team/iu }).click()
     await action.getByText('No shared tasks yet').waitFor()

@@ -13,6 +13,8 @@ import type {} from '@greeneek/gnk-client-ui-layout/client'
 import type {} from '@greeneek/gnk-client-ui-renderer/client'
 import type {} from '@greeneek/gnk-client-ui-session/client'
 import type {} from '@greeneek/gnk-client-ui-settings/client'
+// Pulls ui-workspace's SlotMap merges: the details column renders the
+// `conversation.details.thread` hole whose contract lives there.
 import type {} from '@greeneek/gnk-client-ui-workspace/client'
 import type {
   ChatNodeTurnDataInjected, ChatScrollPosition, ChatViewInjected,
@@ -166,8 +168,8 @@ export function apply(ctx: Context): void {
       name: 'details',
       locale: NS,
       children: {
+        'conversation.details.thread': { kind: 'single', scope: 'session' },
         'conversation.details.tool': { kind: 'single', scope: 'session' },
-        'conversation.details.actions': { kind: 'list', scope: 'session' },
       },
       store: chatStore,
     }, DetailsPanel)

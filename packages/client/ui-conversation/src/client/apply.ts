@@ -12,8 +12,7 @@ import type {} from '@greeneek/gnk-client-ui-settings/client'
 import { UiConversation } from './conversation/assembly.ts'
 import type { ViewTab } from './contract/views.ts'
 import type {
-  ComposerBarInjected, ConversationInjected, ConversationSessionHeaderInjected,
-  ConversationSessionInjected,
+  ComposerBarInjected, ConversationInjected, ConversationSessionInjected,
 } from './contract/slots.ts'
 import type { InputNotice } from './contract/input.ts'
 import { createConversationStore, readConversationViewPreference } from './stores.ts'
@@ -27,7 +26,7 @@ import { queueDockEntry } from './queue/QueueDock.tsx'
 import { EnterBehaviorRow } from './settings/EnterBehaviorRow.tsx'
 import type { EnterBehaviorRowInjected } from './settings/EnterBehaviorRow.tsx'
 import { ConversationRoot } from './skeleton/ConversationRoot.tsx'
-import { ConversationSession, ConversationSessionHeader } from './skeleton/ConversationSession.tsx'
+import { ConversationSession } from './skeleton/ConversationSession.tsx'
 import { InputBar } from './input/InputBar.tsx'
 import { todoDockEntry } from './skeleton/TodoPanel.tsx'
 import { resolveActiveView } from './view-selection.ts'
@@ -200,7 +199,6 @@ export function apply(ctx: Context): void {
     locale: NS,
     children: {
       'conversation.session': { kind: 'single', scope: 'session' },
-      'conversation.session.header': { kind: 'single', scope: 'session' },
       'conversation.composer': { kind: 'chain', scope: 'session' },
       'conversation.composer.bar': { kind: 'single', scope: 'session-maybe' },
       'conversation.input.dock': { kind: 'list', scope: 'session' },
@@ -240,38 +238,24 @@ export function apply(ctx: Context): void {
       'conversation.view': { kind: 'list', scope: 'session' },
     },
     store: conversationStore,
-    inject: (sessionId: SessionId, actions: BoundActions<typeof conversationStore>): ConversationSessionInjected => ({
-      hooks: { conversationViews },
-      bindDraftMirror: write => inputHub.shell(sessionId).bindMirror(write),
-      openView: (view, focus) => {
-        activateView(sessionId, view)
-        actions.openView(view, focus)
-      },
-    }),
-  }, ConversationSession)
-
-  const registerConversationHeader = () => slots.register({
-    name: 'conversation.session.header',
-    locale: NS,
-    children: {
-      'conversation.session.header.lineage': { kind: 'single', scope: 'session' },
-      'conversation.session.header.actions': { kind: 'list', scope: 'session' },
-      'conversation.session.header.utilities': { kind: 'list', scope: 'session' },
-    },
-    store: conversationStore,
-    inject: (sessionId: SessionId, actions: BoundActions<typeof conversationStore>): ConversationSessionHeaderInjected => {
+    inject: (sessionId: SessionId, actions: BoundActions<typeof conversationStore>): ConversationSessionInjected => {
       const selectView = (view: string): void => {
         activateView(sessionId, view)
         actions.setView(view)
       }
+      // The titlebar's chat return resolves through this selector; the session
+      // body is the only mount guaranteed to exist whenever a session is open.
       uiConversation.registerViewSelector(sessionId, selectView)
       return {
         hooks: { conversationViews },
-        open: (id) => { sessions.open(id) },
-        selectView,
+        bindDraftMirror: write => inputHub.shell(sessionId).bindMirror(write),
+        openView: (view, focus) => {
+          activateView(sessionId, view)
+          actions.openView(view, focus)
+        },
       }
     },
-  }, ConversationSessionHeader)
+  }, ConversationSession)
 
   const registerComposerBar = () => slots.register({
     name: 'conversation.composer.bar',
@@ -367,7 +351,6 @@ export function apply(ctx: Context): void {
   slots.inject('conversation', function* () {
     yield registerConversationRoot()
     yield registerConversationSession()
-    yield registerConversationHeader()
     yield registerComposerBar()
   })
 

@@ -167,7 +167,7 @@ export type MessageImagesProps = PropsRuntime<'conversation.message.images'> & P
 /** Full details-panel props. */
 export type DetailsSlotProps =
   PropsRuntime<'details'>
-  & PropsRenderSlots<'conversation.details.tool' | 'conversation.details.actions'>
+  & PropsRenderSlots<'conversation.details.thread' | 'conversation.details.tool'>
   & PropsStore<ChatStore>
   & PropsLocale<'chat'>
 
@@ -226,7 +226,5 @@ declare module '@greeneek/gnk-client-ui-slots' {
      * replaces the shipped Tool details renderer; absence uses the raw fallback.
      */
     'conversation.details.tool': { kind: 'single'; scope: 'session'; owner: DetailsToolOwnerProps }
-    /** Actions that belong to Thread Details, such as Trajectory and export. */
-    'conversation.details.actions': { kind: 'list'; scope: 'session' }
   }
 }

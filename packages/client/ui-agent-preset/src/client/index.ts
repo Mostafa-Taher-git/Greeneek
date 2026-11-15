@@ -1,13 +1,14 @@
 /**
  * Agent-preset surface plugin, browser half — three surfaces over one roster:
  * a chip on the new-session screen for the session about to start, a
- * read-only label in the session header, and a settings section that manages
- * the roster (copy, delete, default, and the way into a preset's own files).
+ * read-only label in the Thread Details card's action row, and a settings
+ * section that manages the roster (copy, delete, default, and the way into a
+ * preset's own files).
  *
  * A running session keeps the composition it began with (the host refuses to
  * adopt an existing session under a different preset). That is what splits
  * the choice from the display: the hero chip is before-the-fact, while the
- * header only reports what a session already runs. The default preset is
+ * label only reports what a session already runs. The default preset is
  * edited where the roster is visible — the settings section's "make default"
  * — so General settings carries no duplicate control for the same field.
  */
@@ -59,7 +60,7 @@ export const inject = [
 ]
 
 /**
- * Mount the roster surfaces: hero chip, session-header label, settings section.
+ * Mount the roster surfaces: hero chip, Thread Details action-row label, settings section.
  * @param ctx - the browser plugin context.
  */
 export function apply(ctx: ClientContext): void {
@@ -100,7 +101,7 @@ export function apply(ctx: ClientContext): void {
   // render and simply hides the button while no flow exists.
   let creatorDraft: (() => void) | undefined
 
-  // The new-session chip and the header label: one controller, because the
+  // The new-session chip and the action-row label: one controller, because the
   // staged choice belongs to the flow rather than to any one session.
   ctx.inject(['slots', 'conversation', 'sessions', 'uiWorkspace'], (scope: ClientContext) => {
     const seat = new AgentPresetSeatController(scope, () => {
@@ -156,9 +157,9 @@ export function apply(ctx: ClientContext): void {
         inject: seatInjected,
       }, AgentPresetSeat)
       const label = scope.slots.register({
-        name: 'conversation.session.header.actions',
+        name: 'conversation.details.thread.action',
         id: 'agent-preset',
-        // Static session context occupies the header's leading negative-order band.
+        // Static session context occupies the action row's leading band.
         order: -10,
         locale: 'settings.agentPreset',
         inject: labelInjected,
@@ -171,7 +172,7 @@ export function apply(ctx: ClientContext): void {
         chip()
         label()
       }
-    }, 'ui-agent-preset: new-session chip and header label')
+    }, 'ui-agent-preset: new-session chip and action-row label')
   })
 
   const sectionInjected = (): AgentPresetSectionInjected => ({

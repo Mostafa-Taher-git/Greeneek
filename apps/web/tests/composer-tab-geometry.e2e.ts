@@ -254,7 +254,7 @@ describe('web e2e: input card position across view tabs', () => {
     await page.goto(scaffold.authenticatedUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
     await openSeededSession(page)
-    await page.getByRole('button', { name: 'More session actions', exact: true }).waitFor({ timeout: 30_000 })
+    await page.getByRole('button', { name: /^Return to chat: / }).waitFor({ timeout: 30_000 })
     await page.getByText(FIXTURE.markers.assistant(FIXTURE.turns), { exact: false }).last()
       .waitFor({ timeout: 30_000 })
   }, 180_000)

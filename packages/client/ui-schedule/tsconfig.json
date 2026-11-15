@@ -21,7 +21,7 @@
       "path": "../locale"
     },
     {
-      "path": "../ui-conversation"
+      "path": "../ui-workspace"
     },
     {
       "path": "../ui-primitives"

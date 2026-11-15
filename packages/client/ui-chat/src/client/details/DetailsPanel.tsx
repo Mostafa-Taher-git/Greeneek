@@ -45,6 +45,11 @@ function rawResultText(block: ToolCallBlock): string {
   return parts.join('\n')
 }
 
+/**
+ * Render the details column: the Thread Details card on top and, once a Tool
+ * call is selected, that call's input and output beneath it. The card is the
+ * column's resting content, so an open column always has something to show.
+ */
 export function DetailsPanel({
   useChat, useSessions, sessionId, useStore, renderSlot, t,
 }: DetailsPanelProps) {
@@ -58,47 +63,49 @@ export function DetailsPanel({
   const material = useChat(
     s => (callId === undefined ? null : materialFor(s, callId)),
     (a, b) => shallowEqual(a, b))
-  const callName = selection === null ? t('details.title') : material?.name ?? selection.toolName ?? t('details.title')
+  const callName = material?.name ?? selection?.toolName ?? t('details.title')
   return (
     <div className={css.root}>
-      <div className={css.header}>
-        <div className={css.title}>{callName}</div>
-        <div className={css.actions}>{renderSlot('conversation.details.actions', {})}</div>
-      </div>
-      <div className={css.body}>
-        {selection === null || callId === undefined
-          ? <div className={css.empty}>{t('details.empty')}</div>
-          : material === null
-            ? <div className={css.empty}>{t('details.notInWindow')}</div>
-            : (
-              <>
-                {material.argsRaw !== null && (
+      {renderSlot('conversation.details.thread', {})}
+      {selection !== null && callId !== undefined && (
+        <section className={css.toolCard}>
+          <div className={css.header}>
+            <div className={css.title}>{callName}</div>
+          </div>
+          <div className={css.body}>
+            {material === null
+              ? <div className={css.empty}>{t('details.notInWindow')}</div>
+              : (
+                <>
+                  {material.argsRaw !== null && (
+                    <section className={css.section}>
+                      <div className={css.sectionLabel}>{t('details.input')}</div>
+                      <CodeBlock code={pretty(material.argsRaw)} lang="json" copyLabel={t('copy')} copiedLabel={t('copied')} />
+                    </section>
+                  )}
                   <section className={css.section}>
-                    <div className={css.sectionLabel}>{t('details.input')}</div>
-                    <CodeBlock code={pretty(material.argsRaw)} lang="json" copyLabel={t('copy')} copiedLabel={t('copied')} />
+                    <div className={css.sectionLabel}>{t('details.output')}</div>
+                    {/* Keyed by the selected call: the body owns per-call view
+                          state (the terminal card's expand and copy), which React
+                          would otherwise carry into the next selection because the
+                          panel does not unmount between calls. */}
+                    <Fragment key={callId}>
+                      {renderSlot('conversation.details.tool', { block: material.block, cwd: sessionCwd }, {
+                        fallback: 'kind' in material.block
+                          ? (
+                            <pre className={css.code} data-error={material.block.isError || undefined}>
+                              {rawResultText(material.block)}
+                            </pre>
+                          )
+                          : <div className={css.empty}>{t('details.running')}</div>,
+                      })}
+                    </Fragment>
                   </section>
-                )}
-                <section className={css.section}>
-                  <div className={css.sectionLabel}>{t('details.output')}</div>
-                  {/* Keyed by the selected call: the body owns per-call view
-                        state (the terminal card's expand and copy), which React
-                        would otherwise carry into the next selection because the
-                        panel does not unmount between calls. */}
-                  <Fragment key={callId}>
-                    {renderSlot('conversation.details.tool', { block: material.block, cwd: sessionCwd }, {
-                      fallback: 'kind' in material.block
-                        ? (
-                          <pre className={css.code} data-error={material.block.isError || undefined}>
-                            {rawResultText(material.block)}
-                          </pre>
-                        )
-                        : <div className={css.empty}>{t('details.running')}</div>,
-                    })}
-                  </Fragment>
-                </section>
-              </>
-            )}
-      </div>
+                </>
+              )}
+          </div>
+        </section>
+      )}
     </div>
   )
 }

@@ -1,25 +1,25 @@
 /**
- * The session header's agent-preset label.
+ * The Thread Details card's agent-preset label.
  *
  * Read-only by construction: a session's composition is fixed once its
- * conversation starts, and a header is only worth reading after that. Offering
- * a control here would promise a switch the host refuses; naming what the
- * session runs is the honest affordance, and the choice itself lives on the
- * new-session screen ({@link AgentPresetSeat}).
+ * conversation starts, and a started session is only worth reading after
+ * that. Offering a control here would promise a switch the host refuses;
+ * naming what the session runs is the honest affordance, and the choice
+ * itself lives on the new-session screen ({@link AgentPresetSeat}).
  */
 
 import { useEffect } from 'react'
 import type { SnapshotStore } from '@greeneek/gnk-client-store'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@greeneek/gnk-client-ui-slots'
 import { IconAgentPresetOutline16 } from '@greeneek/gnk-client-ui-primitives'
-// Type-only: pulls the ui-conversation SlotMap merge (the header actions).
-import type {} from '@greeneek/gnk-client-ui-conversation/client'
+// Type-only: pulls the ui-workspace SlotMap merge (the Thread Details action row).
+import type {} from '@greeneek/gnk-client-ui-workspace/client'
 import type {} from '@greeneek/gnk-agent-presets/types'
 import type { AgentPresetSettingsState } from './settings-store.ts'
 import { presetDisplayText } from './locales.ts'
 import css from './AgentPresetLabel.module.css'
 
-/** Registration-side business face for the header label. */
+/** Registration-side business face for the action-row label. */
 export interface AgentPresetLabelInjected {
   hooks: {
     /** Roster snapshot bound by the renderer as useAgentPresets. */
@@ -31,12 +31,12 @@ export interface AgentPresetLabelInjected {
 
 /** Full component props. */
 export type AgentPresetLabelProps =
-  PropsRuntime<'conversation.session.header.actions'>
+  PropsRuntime<'conversation.details.thread.action'>
   & PropsLocale<'settings.agentPreset'>
   & InjectFace<AgentPresetLabelInjected>
 
 /**
- * Render this session's agent-preset name beside its title.
+ * Render this session's agent-preset name in the Thread Details action row.
  * @param props - composed slot props.
  * @returns the label, or null when the session records no preset.
  */
@@ -60,7 +60,7 @@ export function AgentPresetLabel({
   const option = options.find(entry => entry.id === preset)
   const text = option === undefined ? undefined : presetDisplayText(option, t)
   return (
-    <span className={css.label} title={text?.description ?? t('headerHint')}>
+    <span className={css.label} title={text?.description ?? t('labelHint')}>
       <IconAgentPresetOutline16 size={14} className={css.icon} />
       {text?.name ?? preset}
     </span>

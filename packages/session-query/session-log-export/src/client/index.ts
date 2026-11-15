@@ -8,6 +8,7 @@ import type {} from '@greeneek/gnk-client-ui-commands/client'
 import type {} from '@greeneek/gnk-client-ui-conversation/client'
 import type {} from '@greeneek/gnk-client-ui-renderer/client'
 import type {} from '@greeneek/gnk-client-ui-session/client'
+import type {} from '@greeneek/gnk-client-ui-workspace/client'
 import { SessionLogDownloadController } from './controller.ts'
 import { SessionExportActions, type SessionExportActionsInjected } from './DetailsActions.tsx'
 import { SessionMarkdownCopyController } from './markdown-controller.ts'
@@ -53,10 +54,9 @@ export function apply(ctx: ClientContext): void {
     if (commandName === 'export' && result.kind === 'success') void controller.download(sessionId)
   })
   // Thread Details owns the Session's transcript actions: the copy, the log
-  // download, and the trajectory, so the Session Header carries no duplicate
-  // menu for the same verbs.
-  ctx.slots.inject('conversation.details.actions', () => ctx.slots.register({
-    name: 'conversation.details.actions',
+  // download, and the trajectory, beside every other Session-scoped control.
+  ctx.slots.inject('conversation.details.thread.action', () => ctx.slots.register({
+    name: 'conversation.details.thread.action',
     id: 'session-export',
     locale: NS,
     inject: (): SessionExportActionsInjected => ({

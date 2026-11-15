@@ -27,6 +27,9 @@
       "path": "../../client/ui-conversation"
     },
     {
+      "path": "../../client/ui-workspace"
+    },
+    {
       "path": "../../client/ui-primitives"
     },
     {

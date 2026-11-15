@@ -71,7 +71,7 @@ Scope: 261 workspace packages; every package appears under each of its kinds (24
 
 | Package | Role |
 | --- | --- |
-| `@greeneek/gnk-client-ui-agent-preset` | Agent-preset surfaces for the Web GUI: the default-preset setting, the new-session chip, the session-header label, and the preset roster management section; for users and maintainers of agent composition. |
+| `@greeneek/gnk-client-ui-agent-preset` | Agent-preset surfaces for the Web GUI: the default-preset setting, the new-session chip, the thread-details label, and the preset roster management section; for users and maintainers of agent composition. |
 | `@greeneek/gnk-client-ui-agent-team` | Use the Web Agent Teams roster, shared task board, and teammate navigation panel. |
 | `@greeneek/gnk-client-ui-approval` | Browser approval UI that answers Host permission requests through the scoped interaction path. |
 | `@greeneek/gnk-client-ui-attachment` | Attachment presentation for the conversation UI: draft-image rail, document drop target, history-image gallery, and original-image lightbox; for users and maintainers of the Web attachment experience. |
@@ -85,7 +85,7 @@ Scope: 261 workspace packages; every package appears under each of its kinds (24
 | `@greeneek/gnk-client-ui-directory-picker-native` | Native directory-picker surface: the browser half that drives the host OS chooser for workspace-directory flows; for users and maintainers choosing a picking interaction. |
 | `@greeneek/gnk-client-ui-goal` | Goal surface for the Web GUI: the composer-context strip that shows the current goal and edits, pauses, resumes, or clears it; for users and maintainers of the goal experience. |
 | `@greeneek/gnk-client-ui-input-trigger` | Input trigger pipeline for the Web GUI: / and @ detection under the caret, the grouped candidate menu, and pick routing to registered sources; for users and maintainers of slash commands and references. |
-| `@greeneek/gnk-client-ui-jobs` | Web background-job surface: the session-header action listing the jobs this session can see; for users and maintainers of the background-job experience. |
+| `@greeneek/gnk-client-ui-jobs` | Web background-job surface: the thread-details action listing the jobs this session can see; for users and maintainers of the background-job experience. |
 | `@greeneek/gnk-client-ui-layout` | Shell layout for the Web GUI: the four-column AppFrame with drag handles, concession behavior, persisted panel preferences, the panel-geometry service, and theme presentation; for users and maintainers of the window chrome. |
 | `@greeneek/gnk-client-ui-message-feedback` | Per-message feedback for the Web GUI: the Like/Dislike pair and optional note in the finalized assistant message's action row; for users and maintainers of the feedback experience. |
 | `@greeneek/gnk-client-ui-model-selection` | Model selection for the Web GUI: the /model popup and the composer model seat over one per-session provider-grouped directory; for users and maintainers of model routing. |

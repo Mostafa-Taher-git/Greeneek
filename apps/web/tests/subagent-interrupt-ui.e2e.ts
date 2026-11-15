@@ -25,7 +25,7 @@ import {
   acknowledgeReloadConnectionLoss, assertFixtureInventory, captureStableAria, compareOrRefreshGolden,
   launchWebScaffold, readPersistedEvents, watchConsole, webSnapshotMode, type WebScaffold,
 } from './scaffold.ts'
-import { connectFreshWorkspace, newEnglishPage, saveFailureShot } from './support.ts'
+import { connectFreshWorkspace, newEnglishPage, openThreadDetails, saveFailureShot } from './support.ts'
 
 const BASE_FIXTURE = fileURLToPath(new URL('../../../snapshots/web/live-interactions/session.jsonl', import.meta.url))
 
@@ -165,6 +165,9 @@ describe.skipIf(MODE === 'record')('web e2e: composer interrupt for a running co
     const warningStart = tripwire.warnings.length
     await page.reload({ waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
+    // The running-descendant trigger is the Thread Details card's lineage
+    // count, and the panel starts closed on a fresh load.
+    await openThreadDetails(page)
     await page.getByRole('button', { name: /1 subagent/ }).waitFor({ timeout: 15_000 })
     acknowledgeReloadConnectionLoss(tripwire, warningStart)
     expect(scaffold.ctx.agents.get(childId)?.status).toBe('running')
@@ -198,6 +201,7 @@ describe.skipIf(MODE === 'record')('web e2e: composer interrupt for a running co
       await route.fulfill({ response, json: body })
     })
     try {
+      await openThreadDetails(page)
       await page.getByRole('button', { name: /1 subagent/ }).click()
       await page.getByRole('treeitem', { name: new RegExp(LABEL) }).click()
       const input = page.getByRole('textbox', {
@@ -259,8 +263,12 @@ describe.skipIf(MODE === 'record')('web e2e: composer interrupt for a running co
   it('interrupts through subagents/interruptByParent, parks the follow-up, and resumes it FIFO', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-subagent-interrupt-flow'))
     // Reselect the child with the truthful catalog: parent available again.
-    await page.getByRole('navigation', { name: 'Session hierarchy' })
-      .getByRole('button').first().click()
+    // The sidebar parent row is the way back (the breadcrumb is gone), and
+    // the session switch re-closes the details panel.
+    await page.getByRole('tree', { name: 'Sessions' })
+      .getByRole('treeitem', { name: /Ask a research subagent to/ })
+      .click()
+    await openThreadDetails(page)
     await page.getByRole('button', { name: /1 subagent/ }).click()
     await page.getByRole('treeitem', { name: new RegExp(LABEL) }).click()
     const input = page.getByRole('textbox', { name: 'Message or run a task... / commands, @ files or sessions' })

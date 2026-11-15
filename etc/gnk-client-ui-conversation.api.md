@@ -105,11 +105,7 @@
 `src/client/contract/slots.ts: export interface ComposerBarOwnerProps {`
 `src/client/contract/slots.ts: export interface ComposerChainProps {`
 `src/client/contract/slots.ts: export interface ConvViewOwnerProps {`
-`src/client/contract/slots.ts: export interface ConversationHeaderActionOwnerProps {`
-`src/client/contract/slots.ts: export interface ConversationHeaderLineageOwnerProps {`
 `src/client/contract/slots.ts: export interface ConversationInjected {`
-`src/client/contract/slots.ts: export interface ConversationSessionHeaderInjected {`
-`src/client/contract/slots.ts: export interface ConversationSessionHeaderOwnerProps {`
 `src/client/contract/slots.ts: export interface ConversationSessionInjected {`
 `src/client/contract/slots.ts: export interface EmptyWorkspaceOwnerProps {`
 `src/client/contract/slots.ts: export interface HeroAgentPresetOwnerProps {`
@@ -120,7 +116,6 @@
 `src/client/contract/slots.ts: export type ComposerAttachmentsProps =`
 `src/client/contract/slots.ts: export type ComposerBarProps =`
 `src/client/contract/slots.ts: export type ConvViewProps = PropsRuntime<'conversation.view'>`
-`src/client/contract/slots.ts: export type ConversationSessionHeaderSlotProps =`
 `src/client/contract/slots.ts: export type ConversationSessionSlotProps =`
 `src/client/contract/slots.ts: export type ConversationSlotProps =`
 `src/client/contract/slots.ts: export type ConversationStore = ReturnType<typeof createConversationStore>`
@@ -242,8 +237,6 @@
 `src/client/skeleton/ConversationRoot.tsx: export function ConversationRoot({`
 `src/client/skeleton/ConversationRoot.tsx: export type ConversationRootProps = ConversationSlotProps`
 `src/client/skeleton/ConversationSession.tsx: export function ConversationSession({`
-`src/client/skeleton/ConversationSession.tsx: export function ConversationSessionHeader({`
-`src/client/skeleton/ConversationSession.tsx: export type ConversationSessionHeaderProps = ConversationSessionHeaderSlotProps`
 `src/client/skeleton/ConversationSession.tsx: export type ConversationSessionProps = ConversationSessionSlotProps`
 `src/client/skeleton/EmptyHero.tsx: export function HeroShell({ t, renderSlot, children }: HeroShellProps) {`
 `src/client/skeleton/EmptyHero.tsx: export function WorkspaceChip({ buttonRef, label, menuOpen = false, onClick, t }: {`

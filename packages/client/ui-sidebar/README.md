@@ -24,7 +24,11 @@ kind: "package-reference"
 <a id="use-this-package"></a>
 ## Use this package
 
-The sidebar is the navigation shell: users see the brand, start new sessions, collapse the rail, and reach Settings. Feature plugins fill its seats — ui-workspace fills `sidebar.workspaces`, registers the Dashboard trigger at `sidebar.primary.action`, and ui-settings registers the trigger row and settings panel at `sidebar.settings`.
+The sidebar is the navigation shell, and this package also renders the frameless-desktop titlebar: users see the brand, start new sessions, collapse the rail, and reach Settings. Feature plugins fill the sidebar's seats — ui-workspace fills `sidebar.workspaces`, registers the Dashboard trigger at `sidebar.primary.action`, and ui-settings registers the trigger row and settings panel at `sidebar.settings`.
+
+### Titlebar
+
+The 52px titlebar row carries the drag surface and the three session panel toggles (thread details, terminal drawer, right panel) at its reading end; the desktop host reserves inline-end space for the injected window controls, and double-click toggles maximize through the preload bridge. The brand sits at the inline start, followed by the current Session's title: a plain label in a browser host, and a button that returns to that Session's Chat view by yielding to the conversation and selecting Chat through the Session body's view selector. Mounting inside the desktop shell marks `documentElement[data-desktop-titlebar]` so the desktop's overlay drag strip stands down.
 
 ### Brand and New Session
 
@@ -46,7 +50,7 @@ Scrollbars in the column are a pointer affordance: the shell rebinds the scrollb
 <details>
 <summary>Implementation internals — click to expand</summary>
 
-The shell is pure composition: `SidebarRootComponentProps` composes the layout owner share, the global `useSessions` and `useWorkspaces` hooks, the declared brand, the `sidebar.workspaces` and `sidebar.settings` child slots, and injected `startSession` plus sidebar-toggle callbacks. There is no plugin store.
+The shell is pure composition: `SidebarRootComponentProps` composes the layout owner share, the global `useSessions` and `useWorkspaces` hooks, the declared brand, the `sidebar.workspaces` and `sidebar.settings` child slots, and injected `startSession` plus sidebar-toggle callbacks. There is no plugin store. The `titlebar` entry composes the layout owner share (panel controls, document title, current Session), the `openChat` callback over `ctx.layout` and `ctx.uiConversation`, and the locale seat; it declares no holes and reads no store.
 
 ### Slot discipline
 

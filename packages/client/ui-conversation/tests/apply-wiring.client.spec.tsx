@@ -34,7 +34,7 @@ async function bench(options: { declareConversation?: boolean } = {}) {
 
 function entry(
   runtime: SlotTestRuntime,
-  key: 'conversation' | 'conversation.session' | 'conversation.session.header',
+  key: 'conversation' | 'conversation.session',
 ) {
   return runtime.slots.entries(key)[0] as { store?: unknown } | undefined
 }
@@ -51,7 +51,6 @@ describe('target-neutral Conversation apply wiring', () => {
 
     expect(b.runtime.slots.entries('conversation')).toHaveLength(1)
     expect(b.runtime.slots.entries('conversation.session')).toHaveLength(1)
-    expect(b.runtime.slots.entries('conversation.session.header')).toHaveLength(1)
     expect(b.runtime.slots.entries('conversation.composer.bar')).toHaveLength(1)
     await b.runtime.dispose()
   })
@@ -64,13 +63,11 @@ describe('target-neutral Conversation apply wiring', () => {
     await b.runtime.dispose()
   })
 
-  it('owns shell slots and shares only the Conversation store', async () => {
+  it('owns shell slots and carries the Conversation store on the Session body', async () => {
     const b = await bench()
     const session = entry(b.runtime, 'conversation.session')
-    const header = entry(b.runtime, 'conversation.session.header')
     expect(entry(b.runtime, 'conversation')?.store).toBeUndefined()
     expect(session?.store).toBeDefined()
-    expect(header?.store).toBe(session?.store)
     expect(b.runtime.slots.spec('conversation.composer'))
       .toEqual({ kind: 'chain', scope: 'session' })
     expect(b.runtime.slots.entries('settings.general.item').map(row => row.options.id))
@@ -82,8 +79,8 @@ describe('target-neutral Conversation apply wiring', () => {
     const b = await bench()
     await b.runtime.sessions.add({ id: SID }, { current: false })
     expect(b.runtime.ctx.uiSession.adapter.resolve(SID)?.hooks.conversationViews).toBeUndefined()
-    const header = b.runtime.slots.entries('conversation.session.header')[0]
-    const source = (header?.inject?.() as {
+    const body = b.runtime.slots.entries('conversation.session')[0]
+    const source = (body?.inject?.() as {
       hooks: { conversationViews: ObservableSnapshot<readonly ViewTab[]> }
     } | undefined)?.hooks.conversationViews
     expect(source).toBeDefined()

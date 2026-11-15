@@ -8,7 +8,7 @@ kind: "package-reference"
 
 ## Summary
 
-`gnk-client-ui-subagent` is the web client's subagent conversation feature: users browse and open subagent conversations from the parent session's header, continue them through reason-specific read-only composer states, and reference running children with the `@` source. From the parent session's header, users browse the complete subagent-origin descendant lineage — each row shows mode, running activity, token usage, and active-turn duration — and open any depth with the child's exact address. A one-shot child always opens a read-only composer identifying the transcript as a completed execution record; a continuable child routes follow-up prompts through its FIFO inbox while it runs. Subagent-origin Session rows are omitted from the ordinary sidebar, so the parent header catalog is their navigation entry point.
+`gnk-client-ui-subagent` is the web client's subagent conversation feature: users browse and open subagent conversations from the parent session's Thread Details panel, continue them through reason-specific read-only composer states, and reference running children with the `@` source. From the parent session's Lineage section, users browse the complete subagent-origin descendant lineage — each row shows mode, running activity, token usage, and active-turn duration — and open any depth with the child's exact address. A one-shot child always opens a read-only composer identifying the transcript as a completed execution record; a continuable child routes follow-up prompts through its FIFO inbox while it runs. Subagent-origin Session rows are omitted from the ordinary sidebar, so the parent's Lineage section is their navigation entry point.
 
 ## Table of Contents
 
@@ -24,7 +24,7 @@ kind: "package-reference"
 <a id="use-this-package"></a>
 ## Use this package
 
-The session header keeps the current session title as the lineage breadcrumb and, when the session has subagent descendants, appends a `/` count trigger before the header's action row; the trigger opens the descendant catalog, counts the complete subagent-only lineage, stops at ordinary forks, and shows ongoing activity when any counted descendant is running. Select any depth to open that child's conversation with its exact `{parentSessionId, childSessionId, mode}` address.
+The Thread Details panel's Lineage section keeps the current session as the lineage root and, when the session has subagent descendants, lists them under a count; the section counts the complete subagent-only lineage, stops at ordinary forks, and shows ongoing activity when any counted descendant is running. Select any depth to open that child's conversation with its exact `{parentSessionId, childSessionId, mode}` address.
 
 ### Browsing the tree
 
@@ -50,7 +50,7 @@ The catalog and composer behavior are specified by the [Web subagent conversatio
 
 ### Catalog derivation
 
-The header lineage renderer reads `subagentsByParent` and session summaries through the standard `useSessions` hook. The compact tree remains direct-catalog authoritative: each healthy row's `hasChildren` hint determines disclosure before interaction, a catalog level reserves the disclosure column only when at least one healthy row is a branch, and expanding a branch immediately reserves one disabled loading row per known direct descendant before lazily replacing them with that child's authoritative catalog. Every visible branch is reported to the runtime so membership frames cause a debounced refresh only where the tree is being consumed.
+The Lineage renderer reads `subagentsByParent` and session summaries through the standard `useSessions` hook. The compact tree remains direct-catalog authoritative: each healthy row's `hasChildren` hint determines disclosure before interaction, a catalog level reserves the disclosure column only when at least one healthy row is a branch, and expanding a branch immediately reserves one disabled loading row per known direct descendant before lazily replacing them with that child's authoritative catalog. Every visible branch is reported to the runtime so membership frames cause a debounced refresh only where the tree is being consumed.
 
 ### Duration and tokens
 
@@ -69,7 +69,8 @@ One-shot children always elect a read-only composer. A continuable child elects 
 
 These pages cover the conversation surface, the host seam, and the design notes.
 
-- [ui-conversation](../ui-conversation/README.md) — the chat surface hosting the header action and composer chain.
+- [ui-workspace](../ui-workspace/README.md) — the Thread Details panel hosting the Lineage section.
+- [ui-conversation](../ui-conversation/README.md) — the chat surface and composer chain hosting the read-only composer states.
 - [ui-input-trigger](../ui-input-trigger/README.md) — the suggestion machinery hosting the `@` source.
 - [subagent](../../subagent/subagent/README.md) — the host-side capability seam behind continuable children.
 - [Web subagent conversations](../../../.agents/notes/implemented/feature/2026-07-27-web-subagent-conversations.md) — the catalog and composer specification.

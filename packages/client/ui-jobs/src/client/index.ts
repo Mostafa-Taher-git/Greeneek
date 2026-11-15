@@ -24,15 +24,15 @@ export type { JobListActionProps } from './JobListAction.tsx'
 export const inject = ['sessions', 'slots', 'locale']
 
 /**
- * Client plugin body: register the dictionaries and the header action.
+ * Client plugin body: register the dictionaries and the Thread Details action.
  * @param ctx - client root context.
  */
 export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register(NS, { zh, en, ar }), 'ui-job: dictionaries')
   ctx.slots.inject(
-    'conversation.session.header.actions',
+    'conversation.details.thread.action',
     () => ctx.slots.register({
-      name: 'conversation.session.header.actions',
+      name: 'conversation.details.thread.action',
       id: 'job-list',
       // After the subagent catalog: session lineage reads before process work.
       order: 20,

@@ -1,13 +1,14 @@
 /**
  * Frameless-desktop titlebar (T3-shaped): one 52px row carrying the window
  * drag surface. Inline start: the Greeneek brand and the current session
- * title; reading end: the three session panel toggles — thread details,
- * terminal drawer, right panel — exactly the controls T3 pins here. The
- * desktop-injected window controls sit beyond them; their inline-end space
- * stays reserved by padding. Mounting marks documentElement so the desktop
+ * title — a button that returns to that Session's Chat view; reading end: the
+ * three session panel toggles — thread details, terminal drawer, right panel —
+ * exactly the controls T3 pins here. The desktop-injected window controls sit
+ * beyond them; their inline-end space stays reserved by padding on the desktop
+ * host only. Mounting in a desktop host marks documentElement so the desktop
  * skips its overlay drag strip (the splash, which has no web titlebar, still
- * gets one). Double-click toggles maximize through the preload bridge;
- * without one it is a no-op.
+ * gets one). Double-click toggles maximize through the preload bridge; without
+ * one it is a no-op.
  */
 import { useEffect } from 'react'
 import {
@@ -39,18 +40,29 @@ interface PanelToggleSpec {
   toggle: () => void
 }
 
+/** The preload bridge, when this page runs inside the desktop shell. */
+function desktopBridge(): { windowToggleMaximize?: () => void } | undefined {
+  return (globalThis as { greeneekDesktop?: unknown }).greeneekDesktop as
+    | { windowToggleMaximize?: () => void }
+    | undefined
+}
+
 /**
  * Render the desktop titlebar row.
- * @param props - panel controls, document title, the locale seat.
- * @returns the drag bar with its panel toggle controls.
+ * @param props - panel controls, document title, the current Session, the
+ * Chat-return callback, and the locale seat.
+ * @returns the drag bar with its title control and panel toggles.
  */
-export function Titlebar({ documentTitle, panelControls, t }: TitlebarComponentProps) {
+export function Titlebar({ documentTitle, panelControls, sessionId, openChat, t }: TitlebarComponentProps) {
+  const desktopHost = desktopBridge() !== undefined
   useEffect(() => {
+    // A browser page has no overlay drag strip to stand down.
+    if (!desktopHost) return
     document.documentElement.setAttribute('data-desktop-titlebar', '')
     return () => {
       document.documentElement.removeAttribute('data-desktop-titlebar')
     }
-  }, [])
+  }, [desktopHost])
 
   const title = documentTitle
 
@@ -87,11 +99,9 @@ export function Titlebar({ documentTitle, panelControls, t }: TitlebarComponentP
     <div
       className={css.bar}
       data-titlebar=""
+      data-desktop-host={desktopHost || undefined}
       onDoubleClick={() => {
-        const bridge = (globalThis as { greeneekDesktop?: unknown }).greeneekDesktop as
-          | { windowToggleMaximize?: () => void }
-          | undefined
-        const toggleMaximize = bridge?.windowToggleMaximize
+        const toggleMaximize = desktopBridge()?.windowToggleMaximize
         if (typeof toggleMaximize === 'function') toggleMaximize()
       }}
     >
@@ -102,7 +112,22 @@ export function Titlebar({ documentTitle, panelControls, t }: TitlebarComponentP
         <span className={css.brandName}>{t('brand.name')}</span>
       </span>
       {title !== undefined && title !== '' && (
-        <span className={css.title} title={title}>/ {title}</span>
+        <span className={css.titleCluster}>
+          <span aria-hidden="true" className={css.separator}>/</span>
+          {sessionId === undefined
+            ? <span className={css.title} title={title}>{title}</span>
+            : (
+              <button
+                type="button"
+                className={clsx(css.title, css.titleButton)}
+                title={t('titlebar.returnToChat', { title })}
+                aria-label={t('titlebar.returnToChat', { title })}
+                onClick={() => { openChat(sessionId) }}
+              >
+                {title}
+              </button>
+            )}
+        </span>
       )}
       <span className={css.spacer} />
       <div className={css.panelGroup}>

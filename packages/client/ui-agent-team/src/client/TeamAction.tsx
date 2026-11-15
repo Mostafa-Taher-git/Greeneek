@@ -14,7 +14,7 @@ import {
   IconRefreshOutline14, IconTrashOutline16, IconUserOutline16, StateDot,
 } from '@greeneek/gnk-client-ui-primitives'
 import type { PropsLocale, PropsRuntime } from '@greeneek/gnk-client-ui-slots'
-import type {} from '@greeneek/gnk-client-ui-conversation/client'
+import type {} from '@greeneek/gnk-client-ui-workspace/client'
 import { NS, type TeamKey } from './locales.ts'
 import css from './TeamAction.module.css'
 
@@ -46,9 +46,9 @@ export interface TeamActionInjected {
   openTeammate: (sessionId: SessionId, member: TeamRosterMember) => Promise<void>
 }
 
-/** Full props of the Team conversation-header action. */
+/** Full props of the Team Thread Details action. */
 export type TeamActionProps =
-  PropsRuntime<'conversation.session.header.actions'> & TeamActionInjected & PropsLocale<typeof NS>
+  PropsRuntime<'conversation.details.thread.action'> & TeamActionInjected & PropsLocale<typeof NS>
 
 interface Draft {
   subject: string

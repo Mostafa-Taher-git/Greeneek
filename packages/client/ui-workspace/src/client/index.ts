@@ -25,20 +25,23 @@ import type {} from '@greeneek/gnk-client-ui-renderer/client'
 import type {} from '@greeneek/gnk-client-ui-session/client'
 // Type-only: pulls the layout service merge (ctx.layout) and slot declarations.
 import type { ILayout } from '@greeneek/gnk-client-ui-layout/client'
-import type { WorkspaceBrowserInjected, WorkspacePickerInjected } from './contract/slots.ts'
+import type {
+  GitFacts, ThreadDetailsPanelInjected, WorkspaceBrowserInjected, WorkspacePickerInjected,
+} from './contract/slots.ts'
 import type { OpenPathTarget } from './contract/slots.ts'
 import { UiWorkspaceService } from './navigation.ts'
 import { createWorkspaceViewStore } from './stores.ts'
 import { WorkspaceBrowser } from './rows/WorkspaceBrowser.tsx'
 import { DashboardAction } from './DashboardAction.tsx'
 import { DashboardPage } from './DashboardPage.tsx'
+import { ThreadDetailsPanel } from './ThreadDetailsPanel.tsx'
 import { WorkspacePicker } from './WorkspacePicker.tsx'
-import { SessionHeaderUtilities, type SessionHeaderUtilitiesInjected } from './SessionHeaderUtilities.tsx'
 import { ar, en, zh, type WorkspaceKey } from './locales.ts'
 
 export type { UiWorkspace } from './navigation.ts'
 export type {
   DirectoryFlowOwnerProps, DirectoryFlowSlotName, DirectoryPickingHooks, DirectoryPickingInjected,
+  ThreadDetailsLineageOwnerProps, ThreadDetailsPanelInjected, ThreadDetailsPanelProps,
   WorkspaceBrowserInjected, WorkspaceBrowserProps, WorkspacePickerInjected, WorkspacePickerProps,
 } from './contract/slots.ts'
 export type { WorkspaceKey } from './locales.ts'
@@ -92,12 +95,24 @@ export function apply(ctx: Context): void {
     return result.value
   }
 
+  const readGitFacts = async (path: string): Promise<GitFacts> => {
+    const result = await ctx.remote.session.gitFacts({ path })
+    if (!result.ok) throw new Error(result.error.message)
+    return result.value
+  }
+
   // Stable per-surface occupancy sources (the renderer's hook cache keys by
   // source identity): true while the surface's directory-flow hole is filled.
   const flowSource = (hole: 'sidebar.workspaces.directoryFlow' | 'conversation.hero.workspace.directoryFlow'): HostObservable<boolean> => ({
     getSnapshot: () => ctx.slots.entries(hole).length > 0,
     subscribe: listener => ctx.slots.subscribe(hole, listener),
   })
+  // One source for the Thread Details lineage hole: it holds at most one
+  // occupant, so the card's lineage section follows the declaration lifetime.
+  const lineageOccupied: HostObservable<boolean> = {
+    getSnapshot: () => ctx.slots.entries('conversation.details.thread.lineage').length > 0,
+    subscribe: listener => ctx.slots.subscribe('conversation.details.thread.lineage', listener),
+  }
   const browserFlowSource = flowSource('sidebar.workspaces.directoryFlow')
   const hostInfo: HostObservable<RemoteHostFacts> = {
     getSnapshot: () => ctx.remote.$host,
@@ -166,11 +181,7 @@ export function apply(ctx: Context): void {
       const result = await ctx.remote.session.openPath({ path, target })
       if (!result.ok) throw new Error(result.error.message)
     },
-    gitFacts: async (path) => {
-      const result = await ctx.remote.session.gitFacts({ path })
-      if (!result.ok) throw new Error(result.error.message)
-      return result.value
-    },
+    gitFacts: readGitFacts,
     insertSessionBefore: async (workspaceId, sessionId, beforeSessionId) => {
       await workspaces.insertSessionBefore(workspaceId, sessionId, beforeSessionId)
     },
@@ -181,11 +192,16 @@ export function apply(ctx: Context): void {
     createWorkspace: input => workspaces.create(input),
     hooks: { directoryFlow: pickerFlowSource },
   })
-  const utilitiesInjected = (): SessionHeaderUtilitiesInjected => ({
+  const threadDetailsInjected = (): ThreadDetailsPanelInjected => ({
+    ...sharedSessionInjected(),
     pinSession: async (sessionId, pinned) => { await workspaces.pinSession(sessionId, pinned) },
     archiveSession: async (sessionId) => { await uiWorkspace.archiveSession(sessionId) },
     deleteSession: async (sessionId) => { await uiWorkspace.deleteSession(sessionId) },
-    ...sharedSessionInjected(),
+    gitFacts: readGitFacts,
+    toggleDetails: () => { layout()?.toggleDetails() },
+    toggleTerminalDrawer: () => { layout()?.toggleTerminalDrawer() },
+    toggleRightPanel: () => { layout()?.toggleRightbar() },
+    hooks: { lineage: lineageOccupied },
   })
   // The two picker registrations declare their directory-flow child in the
   // same call. Slot injection follows each owner and declaration HMR lifetime.
@@ -231,13 +247,16 @@ export function apply(ctx: Context): void {
     },
     DashboardPage,
   ))
-  ctx.slots.inject('conversation.session.header.utilities', () => ctx.slots.register(
+  ctx.slots.inject('conversation.details.thread', () => ctx.slots.register(
     {
-      name: 'conversation.session.header.utilities',
-      id: 'workspace-utilities',
-      inject: utilitiesInjected,
+      name: 'conversation.details.thread',
+      children: {
+        'conversation.details.thread.action': { kind: 'list', scope: 'session' },
+        'conversation.details.thread.lineage': { kind: 'single', scope: 'session' },
+      },
+      inject: threadDetailsInjected,
       locale: NS,
     },
-    SessionHeaderUtilities,
+    ThreadDetailsPanel,
   ))
 }

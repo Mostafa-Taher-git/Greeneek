@@ -9,7 +9,7 @@ import {
 import type { SessionBehaviorOverrides } from '@greeneek/gnk-client-test-runtime'
 import {
   apply, inject, type ComposerBarInjected, type ConversationInjected,
-  type ConversationSessionHeaderInjected, type ConversationSessionInjected, type ViewTab,
+  type ConversationSessionInjected, type ViewTab,
 } from '@greeneek/gnk-client-ui-conversation/client'
 import type { SessionId } from '@greeneek/gnk-session/types'
 import type { WorkspaceId } from '@greeneek/gnk-workspace/types'
@@ -63,7 +63,7 @@ async function bench() {
 
   const feature = await runtime.mount({ inject: [...inject], apply })
   runtime.renderRoot()
-  const entryOf = (key: 'conversation' | 'conversation.session' | 'conversation.session.header' | 'conversation.composer.bar') =>
+  const entryOf = (key: 'conversation' | 'conversation.session' | 'conversation.composer.bar') =>
     runtime.slots.entries(key)[0]!
   const conversationApi = (id: SessionId) => {
     const entry = entryOf('conversation.session')
@@ -78,15 +78,6 @@ async function bench() {
     const entry = entryOf('conversation')
     return (entry.inject as unknown as (sessionId: SessionId | undefined) => ConversationInjected)(id)
   }
-  const headerApi = (id: SessionId) => {
-    const entry = entryOf('conversation.session.header')
-    const instance = runtime.storeOf('conversation.session.header', id) as ConversationInstance
-    const injected = (entry.inject as unknown as (
-      sessionId: SessionId,
-      actions: ConversationActions,
-    ) => ConversationSessionHeaderInjected)(id, instance.actions)
-    return { instance, injected }
-  }
   const composerApi = (id: SessionId | undefined) => {
     const entry = entryOf('conversation.composer.bar')
     return (entry.inject as unknown as (sessionId: SessionId | undefined) => ComposerBarInjected)(id)
@@ -98,7 +89,7 @@ async function bench() {
   const viewSource = (id: SessionId): ObservableSnapshot<readonly ViewTab[]> =>
     conversationApi(id).injected.hooks.conversationViews
   return {
-    runtime, feature, slots: runtime.slots, entryOf, conversationApi, headerApi, residentApi, composerApi,
+    runtime, feature, slots: runtime.slots, entryOf, conversationApi, residentApi, composerApi,
     inputApi, viewSource, sessionFake, connectWorkspace, presented,
     setPresent: (response: PresentResponse) => { presentResponse = response },
   }
@@ -137,21 +128,21 @@ describe('Conversation inject API', () => {
       viewRequest: { view: 'trajectory', focus: 'call-1' },
     })
 
-    const header = b.headerApi(ROOT)
-    header.injected.selectView('chat')
+    // The session body registers the view selector its inject created.
+    b.runtime.ctx.uiConversation.selectView(ROOT, 'chat')
     expect(activate).toHaveBeenLastCalledWith('chat')
-    expect(header.instance.store.getSnapshot().view).toBe('chat')
+    expect(body.instance.store.getSnapshot().view).toBe('chat')
 
     b.runtime.ctx.uiConversation.selectView(ROOT, 'trajectory')
     expect(activate).toHaveBeenLastCalledWith('trajectory')
-    expect(header.instance.store.getSnapshot().view).toBe('trajectory')
+    expect(body.instance.store.getSnapshot().view).toBe('trajectory')
 
     removeTrajectory()
     removeChat()
-    // A session with no mounted header has no selector to route through, and
+    // A session with no mounted body has no selector to route through, and
     // the failure says so instead of dereferencing a missing binding.
     expect(() => {
-      b.runtime.ctx.uiConversation.selectView('no-header' as SessionId, 'trajectory')
+      b.runtime.ctx.uiConversation.selectView('unmounted' as SessionId, 'trajectory')
     })
       .toThrow(/has no mounted view selector/)
     await b.runtime.dispose()

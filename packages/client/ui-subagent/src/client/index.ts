@@ -3,7 +3,7 @@ import type { Context as ClientContext } from '@greeneek/cordis'
 import type { SubagentAddress } from '@greeneek/gnk-subagent/client'
 import type { SessionId } from '@greeneek/gnk-session/types'
 import type { ComposerChainProps } from '@greeneek/gnk-client-ui-conversation/client'
-import { SubagentHeaderLineage, type SubagentCatalogInjected } from './SubagentHeaderLineage.tsx'
+import { ThreadDetailsLineage, type SubagentCatalogInjected } from './ThreadDetailsLineage.tsx'
 import {
   SubagentReadOnlyComposer, type SubagentReadOnlyMatch,
 } from './SubagentReadOnlyComposer.tsx'
@@ -20,8 +20,8 @@ declare module '@greeneek/gnk-client-ui-slots' {
 }
 
 export type {
-  SubagentCatalogInjected, SubagentHeaderLineageProps,
-} from './SubagentHeaderLineage.tsx'
+  SubagentCatalogInjected, ThreadDetailsLineageProps,
+} from './ThreadDetailsLineage.tsx'
 export type {
   SubagentReadOnlyComposerProps, SubagentReadOnlyMatch,
 } from './SubagentReadOnlyComposer.tsx'
@@ -63,12 +63,12 @@ export function apply(ctx: ClientContext): void {
     },
   })
   ctx.slots.inject(
-    'conversation.session.header.lineage',
+    'conversation.details.thread.lineage',
     () => ctx.slots.register({
-      name: 'conversation.session.header.lineage',
+      name: 'conversation.details.thread.lineage',
       locale: NS,
       inject: catalogActions,
-    }, SubagentHeaderLineage),
+    }, ThreadDetailsLineage),
   )
   ctx.slots.inject(
     'conversation.composer',

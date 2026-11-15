@@ -167,7 +167,7 @@ async function bench(options: {
   const collapseHeader = ctx.slots.register({
     name: 'root',
     children: {
-      'conversation.session.header.actions': { kind: 'list', scope: 'session' },
+      'conversation.details.thread.action': { kind: 'list', scope: 'session' },
       'settings.section': { kind: 'list', scope: 'root' },
     },
   } as never, () => null)
@@ -185,7 +185,7 @@ async function bench(options: {
   } else {
     await fiber.await()
   }
-  const entry = () => ctx.slots.entries('conversation.session.header.actions')
+  const entry = () => ctx.slots.entries('conversation.details.thread.action')
     .find(candidate => candidate.component === TeamAction)
   const fleetEntry = () => ctx.slots.entries('settings.section')
     .find(candidate => candidate.component === FleetSettingsSection)
@@ -402,7 +402,7 @@ describe('ui-team browser plugin', () => {
     expect(b.navigation).toEqual([['refresh', SESSION]])
   })
 
-  it('re-registers after the conversation header slot is collapsed and declared again', async () => {
+  it('re-registers after the details-action slot is collapsed and declared again', async () => {
     const b = await bench()
     expect(b.entry()).toBeDefined()
     b.collapseHeader()
@@ -410,7 +410,7 @@ describe('ui-team browser plugin', () => {
     b.ctx.slots.register({
       name: 'root',
       children: {
-        'conversation.session.header.actions': { kind: 'list', scope: 'session' },
+        'conversation.details.thread.action': { kind: 'list', scope: 'session' },
         'settings.section': { kind: 'list', scope: 'root' },
       },
     } as never, () => null)

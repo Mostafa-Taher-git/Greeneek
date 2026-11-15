@@ -11,8 +11,8 @@ import type { SessionId } from '@greeneek/gnk-session/types'
 import type { ComposerChainProps } from '@greeneek/gnk-client-ui-conversation/client'
 import { apply as applyLocale, inject as localeInject } from '@greeneek/gnk-client-locale/client'
 import {
-  SubagentHeaderLineage, type SubagentCatalogInjected,
-} from '../src/client/SubagentHeaderLineage.tsx'
+  ThreadDetailsLineage, type SubagentCatalogInjected,
+} from '../src/client/ThreadDetailsLineage.tsx'
 import {
   SubagentReadOnlyComposer, type SubagentReadOnlyMatch,
 } from '../src/client/SubagentReadOnlyComposer.tsx'
@@ -59,7 +59,7 @@ async function provideSlotFaces(ctx: Context): Promise<void> {
   ctx.slots.register({
     name: 'root',
     children: {
-      'conversation.session.header.lineage': { kind: 'single', scope: 'session' },
+      'conversation.details.thread.lineage': { kind: 'single', scope: 'session' },
       'conversation.composer': { kind: 'chain', scope: 'session' },
     },
   } as never, () => null)
@@ -95,8 +95,8 @@ describe('apply', () => {
 
   it('registers catalog actions and selects read-only subagent composers from session facts', async () => {
     const { ctx, face } = await fullBench(FAMILY)
-    const catalogEntry = ctx.slots.entries('conversation.session.header.lineage')
-      .find(entry => entry.component === SubagentHeaderLineage)!
+    const catalogEntry = ctx.slots.entries('conversation.details.thread.lineage')
+      .find(entry => entry.component === ThreadDetailsLineage)!
     const actions = (catalogEntry.inject as unknown as (id: SessionId) => SubagentCatalogInjected)(sid('parent'))
     const address: SubagentAddress = {
       parentSessionId: sid('parent'),

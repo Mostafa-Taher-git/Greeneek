@@ -32,11 +32,9 @@ import type { WorkspaceSnapshot } from '@greeneek/gnk-api-workspace-controller/c
 import type { SessionId } from '@greeneek/gnk-session/types'
 import type { SessionPendingInteractionSnapshot } from '@greeneek/gnk-client-ui-session/client'
 import {
-  ConversationSession, ConversationSessionHeader,
-  type ConversationSessionHeaderProps, type ConversationSessionProps,
+  ConversationSession, type ConversationSessionProps,
 } from '@greeneek/gnk-client-ui-conversation/src/client/skeleton/ConversationSession.tsx'
 import { createConversationStore } from '@greeneek/gnk-client-ui-conversation/src/client/stores.ts'
-import { zh as conversationZh } from '@greeneek/gnk-client-ui-conversation/src/client/locales.ts'
 import { apply as localeApply, inject as localeInject } from '@greeneek/gnk-client-locale/client'
 import { apply, inject } from '@greeneek/gnk-client-ui-trajectory/client'
 import { apply as nodeApply } from '@greeneek/gnk-client-ui-trajectory'
@@ -58,8 +56,6 @@ function TrajectoryTimeline(
 }
 
 const SID = 's1' as SessionId
-const tConversation: ConversationSessionHeaderProps['t'] =
-  key => (conversationZh as Record<string, string>)[key] ?? key
 
 const runtimes: SlotTestRuntime[] = []
 
@@ -308,7 +304,7 @@ function isConvViewOwner(owner: object): owner is ConvViewOwner {
     && 'completeViewRequest' in owner && typeof owner.completeViewRequest === 'function'
 }
 
-/** Mount the strict Session header/body over the ring ledger with outlet-faithful render shares. */
+/** Mount the strict Session body over the ring ledger with outlet-faithful render shares. */
 function mount(fixture: Awaited<ReturnType<typeof bench>>) {
   const { runtime, slots, trajectoryStore, conversationStore } = fixture
   const session = runtime.sessions.binding(SID)?.session
@@ -383,27 +379,15 @@ function mount(fixture: Awaited<ReturnType<typeof bench>>) {
     )
   }
   const view = render(
-    <>
-      <ConversationSessionHeader
-        {...standardProps}
-        SessionProvider={({ children }) => children}
-        useStore={bindSnapshotSelector(conversation)}
-        actions={conversation.actions}
-        renderSlot={() => null}
-        open={vi.fn()}
-        selectView={conversation.actions.setView}
-        t={tConversation}
-      />
-      <ConversationSession
-        {...standardProps}
-        SessionProvider={({ children }) => children}
-        useStore={bindSnapshotSelector(conversation)}
-        actions={conversation.actions}
-        renderSlot={renderSlot}
-        bindDraftMirror={() => () => {}}
-        openView={conversation.actions.openView}
-      />
-    </>,
+    <ConversationSession
+      {...standardProps}
+      SessionProvider={({ children }) => children}
+      useStore={bindSnapshotSelector(conversation)}
+      actions={conversation.actions}
+      renderSlot={renderSlot}
+      bindDraftMirror={() => () => {}}
+      openView={conversation.actions.openView}
+    />,
   )
   return { ...view, selectView: conversation.actions.setView }
 }
@@ -496,7 +480,7 @@ describe('view switching in ConversationRoot', () => {
     expect(screen.queryByRole('tablist')).toBeNull()
     expect(screen.queryByRole('tab')).toBeNull()
 
-    // Sibling views are selected through the header menu's selectView, not a tab strip.
+    // Sibling views are selected through the conversation store's setView, not a tab strip.
     act(() => { view.selectView('trajectory') })
     expect(screen.queryByText(/turns ·/)).toBeNull()
     expect(view.container.querySelectorAll('tr[data-turn-start="true"]')).toHaveLength(2)

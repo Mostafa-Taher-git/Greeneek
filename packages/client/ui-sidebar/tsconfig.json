@@ -15,6 +15,9 @@
       "path": "../../../vendor/cordis"
     },
     {
+      "path": "../../core/session/tsconfig.client.json"
+    },
+    {
       "path": "../ui-slots"
     },
     {
@@ -25,6 +28,9 @@
     },
     {
       "path": "../ui-session"
+    },
+    {
+      "path": "../ui-conversation"
     },
     {
       "path": "../ui-layout"

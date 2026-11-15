@@ -1,7 +1,7 @@
 /**
  * The menu rows the Session surfaces share.
  *
- * The conversation header and the sidebar row offer the same Session verbs.
+ * The thread details panel and the sidebar row offer the same Session verbs.
  * The rows live here so both surfaces stay in step: one label, one shortcut
  * hint, one icon per verb.
  */

@@ -1,7 +1,7 @@
 /**
  * The Host external application catalogue, read once per surface.
  *
- * Both the Session header and the Workspace row offer the same destinations,
+ * Both the thread details panel and the Workspace row offer the same destinations,
  * so both read the catalogue the same way: on mount, per call, and never
  * blocking the surface on it.
  */

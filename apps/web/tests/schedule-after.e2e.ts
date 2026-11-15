@@ -32,6 +32,7 @@ import {
   REPO_ROOT,
   connectFreshWorkspace,
   conversationContextKey,
+  openThreadDetails,
   saveFailureShot,
 } from './support.ts'
 
@@ -243,8 +244,9 @@ async function openSession(page: Page, title: string): Promise<void> {
   const row = page.getByRole('treeitem', { name: new RegExp(title) })
   await row.waitFor({ timeout: 15_000 })
   await row.click()
-  await page.getByRole('navigation', { name: 'Session hierarchy' })
-    .getByRole('button', { name: title, exact: true })
+  // The titlebar's session-title button mounts once the session view is ready;
+  // the old breadcrumb navigation no longer exists.
+  await page.getByRole('button', { name: `Return to chat: ${title}`, exact: true })
     .waitFor({ timeout: 15_000 })
 }
 
@@ -510,6 +512,9 @@ describe.skipIf(MODE === 'record')('web e2e: conversational reminders', () => {
       await captureStableAria(page, selector, scaffold.workspaceCwd),
       MODE,
     )
+    // The reminder trigger is a Thread Details action, and the session switch
+    // above closed the card: reopen it before the visible wait.
+    await openThreadDetails(page)
     await page.getByRole('button', { name: '2 reminders', exact: true }).waitFor({ timeout: 15_000 })
     expect(await page.getByRole('list', { name: 'Active reminders' }).count()).toBe(0)
   }, 60_000)
@@ -708,6 +713,9 @@ describe.skipIf(MODE === 'record')('web e2e: active Schedule catalog', () => {
     await openSession(page, CATALOG_TITLE)
     const parentAgent = await liveAgent(scaffold, CATALOG_SESSION_ID)
 
+    // The reminder trigger is a Thread Details action, and the session switch
+    // above closed the card: reopen it before the visible wait.
+    await openThreadDetails(page)
     const trigger = page.getByRole('button', { name: '3 reminders' })
     await trigger.waitFor({ timeout: 15_000 })
     await trigger.click()

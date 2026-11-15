@@ -10,13 +10,19 @@
   align-items: center;
   gap: 8px;
   height: 52px;
-  padding-inline-start: 8px;
-  padding-inline-end: calc(3 * 46px + 8px);
+  padding-inline: 8px;
   box-sizing: border-box;
   background: transparent;
   color: var(--dsw-alias-label-secondary);
   -webkit-app-region: drag;
   app-region: drag;
+}
+
+/* Desktop host only: clear the three window controls the shell injects at the
+   inline end (46px each). A browser keeps its native chrome and the row can
+   use the full width. */
+.bar[data-desktop-host] {
+  padding-inline-end: calc(3 * 46px + 8px);
 }
 
 .brand {
@@ -43,6 +49,21 @@
   white-space: nowrap;
 }
 
+.titleCluster {
+  display: inline-flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.separator {
+  flex: none;
+  font-size: 13px;
+  color: var(--dsw-alias-label-tertiary);
+  user-select: none;
+}
+
 .title {
   flex: 0 1 auto;
   min-width: 0;
@@ -54,6 +75,33 @@
   overflow: hidden;
   text-overflow: ellipsis;
   user-select: none;
+}
+
+/* The title is the way back to the Session's Chat view: a ghost button with
+   the row's own type, opting out of the window drag region. */
+.titleButton {
+  max-width: 48ch;
+  border: 0;
+  border-radius: 6px;
+  padding: 2px 8px;
+  margin-inline-start: -6px;
+  background: transparent;
+  font-family: inherit;
+  text-align: start;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.titleButton:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+}
+
+.titleButton:focus-visible {
+  outline: 2px solid var(--dsw-alias-brand-primary-new-colorprimary-new-color);
+  outline-offset: 1px;
 }
 
 .spacer {

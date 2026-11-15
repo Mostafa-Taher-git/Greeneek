@@ -74,7 +74,8 @@ async function openSeed(page: Page): Promise<void> {
   const result = page.getByRole('tree', { name: 'Search results' }).getByRole('treeitem')
   await expect.poll(() => result.count(), { timeout: 60_000 }).toBe(1)
   await result.click()
-  await page.getByRole('button', { name: 'More session actions', exact: true }).waitFor({ timeout: 30_000 })
+  // The titlebar's session-title button mounts once the session view is ready.
+  await page.getByRole('button', { name: /^Return to chat: / }).waitFor({ timeout: 30_000 })
   await page.getByText(FIXTURE.markers.assistant(FIXTURE.turns), { exact: false })
     .last()
     .waitFor({ timeout: 30_000 })

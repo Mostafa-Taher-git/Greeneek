@@ -150,9 +150,9 @@ function registerUi(ctx: ClientContext): void {
   }, FleetSettingsSection))
 
   ctx.slots.inject(
-    'conversation.session.header.actions',
+    'conversation.details.thread.action',
     () => ctx.slots.register({
-      name: 'conversation.session.header.actions',
+      name: 'conversation.details.thread.action',
       id: 'agent-team',
       order: 20,
       locale: NS,

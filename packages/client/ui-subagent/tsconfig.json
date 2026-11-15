@@ -24,6 +24,9 @@
       "path": "../ui-conversation"
     },
     {
+      "path": "../ui-workspace"
+    },
+    {
       "path": "../ui-input-trigger"
     },
     {

@@ -2,7 +2,7 @@
 
 import type { Context as ClientContext } from '@greeneek/cordis'
 import type {} from '@greeneek/gnk-client-locale/client'
-import type {} from '@greeneek/gnk-client-ui-conversation/client'
+import type {} from '@greeneek/gnk-client-ui-workspace/client'
 import type {} from '@greeneek/gnk-client-ui-renderer/client'
 import type {} from '@greeneek/gnk-client-ui-session/client'
 import type {} from '@greeneek/gnk-schedule/client'
@@ -16,16 +16,16 @@ declare module '@greeneek/gnk-client-ui-slots' {
   }
 }
 
-/** Required services for locale registration and header-slot contribution. */
+/** Required services for locale registration and Thread Details contribution. */
 export const inject = ['slots', 'locale']
 
-/** Register the dictionaries and Session-header catalog action. */
+/** Register the dictionaries and Thread Details catalog action. */
 export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register(NS, { zh, en, ar }), 'ui-schedule: dictionaries')
   ctx.slots.inject(
-    'conversation.session.header.actions',
+    'conversation.details.thread.action',
     () => ctx.slots.register({
-      name: 'conversation.session.header.actions',
+      name: 'conversation.details.thread.action',
       id: 'schedule-catalog',
       // Static Session identity precedes this entry; background jobs follow it.
       order: 10,

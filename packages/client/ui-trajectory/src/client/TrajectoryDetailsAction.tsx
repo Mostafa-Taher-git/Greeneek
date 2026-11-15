@@ -12,7 +12,7 @@ export interface TrajectoryDetailsActionInjected {
 }
 
 export type TrajectoryDetailsActionProps =
-  PropsRuntime<'conversation.details.actions'>
+  PropsRuntime<'conversation.details.thread.action'>
   & PropsLocale<typeof NS>
   & InjectFace<TrajectoryDetailsActionInjected>
 

@@ -68,7 +68,7 @@ async function bench() {
   return { runtime, conversation, chat, chatSettings, sourceDescriptor }
 }
 
-function storeOf(runtime: SlotTestRuntime, key: 'conversation.session' | 'conversation.session.header' | 'conversation.view' | 'details') {
+function storeOf(runtime: SlotTestRuntime, key: 'conversation.session' | 'conversation.view' | 'details') {
   return (runtime.slots.entries(key)[0] as { store?: unknown } | undefined)?.store
 }
 
@@ -110,7 +110,6 @@ describe('Chat apply wiring', () => {
     const b = await bench()
     const conversationStore = storeOf(b.runtime, 'conversation.session')
     const chatStore = storeOf(b.runtime, 'conversation.view')
-    expect(storeOf(b.runtime, 'conversation.session.header')).toBe(conversationStore)
     expect(storeOf(b.runtime, 'details')).toBe(chatStore)
     expect(chatStore).toBeDefined()
     expect(chatStore).not.toBe(conversationStore)

@@ -17,13 +17,13 @@ Registrations and declarations follow Cordis effect lifetimes. Disposing an entr
 
 ```tsx ignore-check
 import type { Context } from '@greeneek/cordis'
-import type {} from '@greeneek/gnk-client-ui-conversation/client'
+import type {} from '@greeneek/gnk-client-ui-workspace/client'
 import type {} from '@greeneek/gnk-client-ui-session/client'
 import type { PropsRuntime } from '@greeneek/gnk-client-ui-slots'
 
-type HeaderActionProps = PropsRuntime<'conversation.session.header.actions'>
+type DetailsActionProps = PropsRuntime<'conversation.details.thread.action'>
 
-function HeaderAction({ useSession }: HeaderActionProps) {
+function DetailsAction({ useSession }: DetailsActionProps) {
   const running = useSession(snapshot => snapshot.running)
   return <button disabled={running}>Review</button>
 }
@@ -31,12 +31,12 @@ function HeaderAction({ useSession }: HeaderActionProps) {
 export const inject = ['slots']
 
 export function apply(ctx: Context): void {
-  ctx.slots.inject('conversation.session.header.actions', () =>
+  ctx.slots.inject('conversation.details.thread.action', () =>
     ctx.slots.register({
-      name: 'conversation.session.header.actions',
+      name: 'conversation.details.thread.action',
       id: 'review',
       order: 100,
-    }, HeaderAction))
+    }, DetailsAction))
 }
 ```
 
@@ -127,6 +127,7 @@ root
 │        ├─ settings.models.footer
 │        └─ settings.plugins.tab
 │           └─ settings.plugin.item
+├─ titlebar
 ├─ dashboard
 ├─ conversation
 │  ├─ conversation.session
@@ -140,10 +141,6 @@ root
 │  │     │     └─ tool.view.cordis
 │  │     ├─ conversation.message.images
 │  │     └─ conversation.trajectory.images
-│  ├─ conversation.session.header
-│  │  ├─ conversation.session.header.lineage
-│  │  ├─ conversation.session.header.actions
-│  │  └─ conversation.session.header.utilities
 │  ├─ conversation.composer
 │  │  └─ conversation.approval.detail
 │  ├─ conversation.composer.bar
@@ -160,6 +157,9 @@ root
 │  │  └─ conversation.hero.workspace.directoryFlow
 │  └─ conversation.hero.agentPreset
 ├─ details
+│  ├─ conversation.details.thread
+│  │  ├─ conversation.details.thread.action
+│  │  └─ conversation.details.thread.lineage
 │  └─ conversation.details.tool
 └─ shell.overlay
 ```

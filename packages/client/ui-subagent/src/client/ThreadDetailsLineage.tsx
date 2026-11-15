@@ -13,9 +13,9 @@ import {
 } from '@greeneek/gnk-client-ui-primitives'
 import type { PropsLocale, PropsRuntime, TranslateNS } from '@greeneek/gnk-client-ui-slots'
 import { NS } from './locales.ts'
-import type {} from '@greeneek/gnk-client-ui-conversation/client'
+import type {} from '@greeneek/gnk-client-ui-workspace/client'
 import type {} from '@greeneek/gnk-token-meter/client'
-import css from './SubagentHeaderLineage.module.css'
+import css from './ThreadDetailsLineage.module.css'
 import { indexSubagentDescendants } from './subagent-lineage.ts'
 
 type CatalogEntry = SubagentCatalogSnapshot['entries'][number]
@@ -28,9 +28,9 @@ export interface SubagentCatalogInjected {
   setCatalogOpen: (parentSessionId: SessionId, open: boolean) => void
 }
 
-/** Full props for the session-header lineage renderer. */
-export type SubagentHeaderLineageProps =
-  PropsRuntime<'conversation.session.header.lineage'> & SubagentCatalogInjected & PropsLocale<typeof NS>
+/** Full props for the Thread Details lineage renderer. */
+export type ThreadDetailsLineageProps =
+  PropsRuntime<'conversation.details.thread.lineage'> & SubagentCatalogInjected & PropsLocale<typeof NS>
 
 interface CatalogRowsProps {
   parentSessionId: SessionId
@@ -440,7 +440,7 @@ interface CatalogDropdownSharedProps extends SubagentCatalogInjected {
   rootSessionId: SessionId
   /** Whether an ordinary title needs a breadcrumb separator before its count. */
   separator?: boolean
-  useSessions: SubagentHeaderLineageProps['useSessions']
+  useSessions: ThreadDetailsLineageProps['useSessions']
   t: TranslateNS<typeof NS>
 }
 
@@ -450,7 +450,6 @@ type CatalogDropdownProps = CatalogDropdownSharedProps & (
     variant: 'count'
     currentSessionId?: never
     displayTitle?: never
-    openTitle?: never
   }
   | {
     /** Current-title sibling switcher. */
@@ -459,8 +458,6 @@ type CatalogDropdownProps = CatalogDropdownSharedProps & (
     currentSessionId: SessionId
     /** Visible title included in the switcher's hover target. */
     displayTitle: string
-    /** Optional ancestor navigation when the combined title is clicked. */
-    openTitle?: () => void
   }
 )
 
@@ -481,10 +478,9 @@ function catalogMenuPosition(trigger: HTMLButtonElement): CSSProperties {
 
 /** One trigger-plus-tree dropdown over the catalog rooted at `rootSessionId`. */
 function CatalogDropdown({
-  rootSessionId, currentSessionId, displayTitle, openTitle, variant, separator = false,
+  rootSessionId, currentSessionId, displayTitle, variant, separator = false,
   useSessions, openChild, refresh, setCatalogOpen, t,
 }: CatalogDropdownProps) {
-  const ancestorSwitcher = variant === 'switcher' && openTitle !== undefined
   const catalogs = useSessions(state => state.subagentsByParent)
   const summaries = useSessions(state => state.byId)
   const catalog = catalogs[rootSessionId]
@@ -723,9 +719,7 @@ function CatalogDropdown({
       <button
         ref={triggerRef}
         type="button"
-        className={variant === 'switcher'
-          ? `${css.switcherTrigger} ${ancestorSwitcher ? css.ancestorSwitcherTrigger : ''}`
-          : css.trigger}
+        className={variant === 'switcher' ? css.switcherTrigger : css.trigger}
         aria-haspopup="tree"
         aria-expanded={open}
         aria-label={variant === 'switcher'
@@ -734,13 +728,6 @@ function CatalogDropdown({
             descendants.runningCount > 0 ? runningCountKey : totalCountKey,
             { count: descendants.runningCount > 0 ? descendants.runningCount : descendantCount },
           )}
-        onClick={openTitle === undefined
-          ? undefined
-          : () => {
-            cancelHoverOpen()
-            if (open) changeOpen(false)
-            openTitle()
-          }}
         onKeyDown={(event) => {
           if (event.key !== 'ArrowDown') return
           event.preventDefault()
@@ -796,14 +783,15 @@ function CatalogDropdown({
 }
 
 /**
- * Render one breadcrumb title together with its subagent navigation.
- * @param props - Breadcrumb title, session standard props, and catalog actions.
- * @returns An ordinary-title descendant count, or a title-and-chevron sibling switcher.
+ * Render one Session's lineage inside the Thread Details card: the parent
+ * switcher for a subagent Session and the descendant catalog.
+ * @param props - Session title, standard Session props, and catalog actions.
+ * @returns The parent switcher and the descendant count, each opening its own catalog.
  */
-export function SubagentHeaderLineage({
-  lineageSessionId, displayTitle, openTitle,
+export function ThreadDetailsLineage({
+  lineageSessionId, displayTitle,
   useSessions, openChild, refresh, setCatalogOpen, t,
-}: SubagentHeaderLineageProps) {
+}: ThreadDetailsLineageProps) {
   const parentId = useSessions((state) => {
     const summary = state.byId[lineageSessionId]
     return summary?.origin === 'subagent' ? summary.parentId : undefined
@@ -823,22 +811,19 @@ export function SubagentHeaderLineage({
   return (
     <>
       <CatalogDropdown
-        key={lineageSessionId}
+        key={`${lineageSessionId}:switcher`}
         rootSessionId={parentId}
         currentSessionId={lineageSessionId}
         variant="switcher"
         displayTitle={displayTitle}
-        {...openTitle === undefined ? {} : { openTitle }}
         {...shared}
       />
-      {openTitle === undefined && (
-        <CatalogDropdown
-          key={lineageSessionId}
-          rootSessionId={lineageSessionId}
-          variant="count"
-          {...shared}
-        />
-      )}
+      <CatalogDropdown
+        key={`${lineageSessionId}:count`}
+        rootSessionId={lineageSessionId}
+        variant="count"
+        {...shared}
+      />
     </>
   )
 }

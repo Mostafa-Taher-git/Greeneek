@@ -19,6 +19,7 @@ import {
 import type { StateDotState } from '@greeneek/gnk-client-ui-primitives'
 import { abbreviateHomePath } from '@greeneek/gnk-util-workspace-path'
 import type { GitFacts, OpenPathTarget, WorkspaceBrowserProps } from '../contract/slots.ts'
+import { formatCount } from '../format.ts'
 import { openInTarget } from '../openInMenu.tsx'
 import { sharedSessionMenuItems } from '../sessionMenuItems.tsx'
 import type { GroupNode, SearchResultNode, SessionNode } from '../tree.ts'
@@ -27,15 +28,6 @@ import css from './Rows.module.css'
 
 /** The standard locale seat, prop-passed from the browser root. */
 type RowTranslate = WorkspaceBrowserProps['t']
-
-/**
- * Group a count in thousands with the ASCII separator.
- * @param value - the count.
- * @returns the grouped count.
- */
-function formatCount(value: number): string {
-  return String(value).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-}
 
 /** Row display title: blank rows show the localized New Session label. */
 function displayTitle(node: SessionNode, t: RowTranslate): string {

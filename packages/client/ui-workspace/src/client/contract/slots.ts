@@ -57,7 +57,39 @@ declare module '@greeneek/gnk-client-ui-slots' {
     'conversation.hero.workspace.directoryFlow': { kind: 'single'; scope: 'root'; owner: DirectoryFlowOwnerProps }
     /** Directory-flow hole under the sidebar browsing region (declared by the WorkspaceBrowser entry). */
     'sidebar.workspaces.directoryFlow': { kind: 'single'; scope: 'root'; owner: DirectoryFlowOwnerProps }
+    /**
+     * The Thread Details card at the top of the details column: workspace,
+     * version-control facts, session controls, and lineage. The ui-chat details
+     * column declares this hole and renders the card ui-workspace registers;
+     * the member lives here because this package owns the card contract.
+     */
+    'conversation.details.thread': { kind: 'single'; scope: 'session' }
+    /**
+     * Controls that act on one Session, rendered as the Thread Details card's
+     * action row: agent preset, Team roster, background jobs, Schedule catalog,
+     * Trajectory, and transcript export. Declared by this package's Thread
+     * Details entry; entries order among themselves.
+     */
+    'conversation.details.thread.action': { kind: 'list'; scope: 'session' }
+    /**
+     * Session lineage inside the Thread Details card: descendant count and the
+     * subagent catalog tree. Declared by this package's Thread Details entry;
+     * absence leaves the card's lineage section out.
+     */
+    'conversation.details.thread.lineage': {
+      kind: 'single'
+      scope: 'session'
+      owner: ThreadDetailsLineageOwnerProps
+    }
   }
+}
+
+/** Plain Session facts handed to the Thread Details lineage renderer. */
+export interface ThreadDetailsLineageOwnerProps {
+  /** Session whose subagent catalog roots the lineage row. */
+  lineageSessionId: SessionId
+  /** Display title of that Session. */
+  displayTitle: string
 }
 
 /** The two directory-flow holes; a flow package's client half registers its one component into both. */
@@ -221,6 +253,38 @@ export type WorkspaceBrowserProps =
   & PropsStore<ReturnType<typeof createWorkspaceViewStore>>
   & Omit<WorkspaceBrowserInjected, 'hooks'>
   & PropsHooks<WorkspaceBrowserInjected['hooks']>
+  & PropsLocale<'workspace'>
+
+/**
+ * Thread Details card share: the Session verbs the card and the browsing rows
+ * mean the same way, the three panel toggles its shortcuts drive, and the
+ * lineage occupancy fact that decides whether the card shows that section.
+ */
+export type ThreadDetailsPanelInjected =
+  & Pick<
+    WorkspaceBrowserInjected,
+    | 'renameSession' | 'forkSession' | 'archiveSession' | 'deleteSession' | 'pinSession'
+    | 'externalApps' | 'openPath' | 'gitFacts'
+  >
+  & {
+    hooks: {
+      /** True while this Session's Thread Details card has a lineage occupant. */
+      lineage: HostObservable<boolean>
+    }
+    /** Toggle the details column between its remembered width and closed. */
+    toggleDetails: () => void
+    /** Toggle the bottom terminal activity drawer. */
+    toggleTerminalDrawer: () => void
+    /** Toggle the independent right panel. */
+    toggleRightPanel: () => void
+  }
+
+/** Full Thread Details card props: the Session scope, both inner holes, the injected share, and the locale seat. */
+export type ThreadDetailsPanelProps =
+  PropsRuntime<'conversation.details.thread'>
+  & PropsRenderSlots<'conversation.details.thread.action' | 'conversation.details.thread.lineage'>
+  & Omit<ThreadDetailsPanelInjected, 'hooks'>
+  & PropsHooks<ThreadDetailsPanelInjected['hooks']>
   & PropsLocale<'workspace'>
 
 /**

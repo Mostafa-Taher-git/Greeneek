@@ -19,7 +19,7 @@ import {
   webSnapshotMode,
   type WebScaffold,
 } from './scaffold.ts'
-import { connectFreshWorkspace, newEnglishPage, saveFailureShot } from './support.ts'
+import { connectFreshWorkspace, newEnglishPage, openThreadDetails, saveFailureShot } from './support.ts'
 
 const SNAPSHOT_DIR = fileURLToPath(new URL('./expected/sidebar-subagent-activity', import.meta.url))
 const RUNNING_OWNER_EXPECTED = join(SNAPSHOT_DIR, 'owner-running.expected.md')
@@ -146,6 +146,10 @@ describe('web e2e: sidebar subagent activity', () => {
     )
     expect(await ownerRow.locator('[data-state="ongoing"]').count()).toBe(1)
     await ownerRow.click()
+    // The session-level running trigger is the Thread Details card's lineage
+    // count; the card is hidden while the details panel is closed, and the
+    // panel preference persists so the pressed state decides the click.
+    await openThreadDetails(page)
     const runningTrigger = page.getByRole('button', { name: '1 subagent running' })
     await runningTrigger.waitFor({ timeout: 10_000 })
     expect(await runningTrigger.locator('[data-state="ongoing"]').count()).toBe(1)

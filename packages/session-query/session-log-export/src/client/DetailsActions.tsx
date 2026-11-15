@@ -27,7 +27,7 @@ export interface SessionExportActionsInjected {
 }
 
 export type SessionExportActionsProps =
-  PropsRuntime<'conversation.details.actions'>
+  PropsRuntime<'conversation.details.thread.action'>
   & PropsLocale<typeof NS>
   & InjectFace<SessionExportActionsInjected>
 

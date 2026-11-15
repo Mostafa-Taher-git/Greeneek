@@ -24,12 +24,12 @@ import {
   webSnapshotMode, type WebScaffold,
 } from './scaffold.ts'
 import {
-  connectFreshWorkspace, newEnglishPage, saveFailureShot, writeComposerDraft,
+  connectFreshWorkspace, newEnglishPage, openThreadDetails, saveFailureShot, writeComposerDraft,
 } from './support.ts'
 
 const SNAPSHOT_DIR = fileURLToPath(new URL('./expected/agent-preset-selection', import.meta.url))
 const HERO_EXPECTED = join(SNAPSHOT_DIR, 'hero.expected.md')
-const HEADER_EXPECTED = join(SNAPSHOT_DIR, 'header.expected.md')
+const CARD_EXPECTED = join(SNAPSHOT_DIR, 'card.expected.md')
 const MODE = webSnapshotMode()
 const SEED_ID = 'agent-preset-selection-web-e2e'
 /** Lane-owned narrow composition root: several lanes need a two-tool preset. */
@@ -367,21 +367,26 @@ describe('web e2e: agent-preset selection', () => {
   }, 90_000)
 
   it('labels a resumed session with the preset it was created under', async () => {
-    onTestFailed(() => saveFailureShot(page, 'web-e2e-agent-preset-header'))
+    onTestFailed(() => saveFailureShot(page, 'web-e2e-agent-preset-card'))
     // The seeded session's cwd is the scaffold root rather than the connected
     // workspace, so it lists under Ungrouped; the group collapses by default.
     await page.getByRole('treeitem', { name: /^Ungrouped/ }).click()
     await page.locator('[role="treeitem"]').last().click()
     await page.getByText('Seeded turn.').waitFor({ timeout: 15_000 })
 
-    const snapshot = await captureStableAria(page, '[class*="titleRow"]', scaffold.workspaceCwd)
+    // The card is the Session's label surface now: open the details panel and
+    // capture the column the card lives in.
+    await openThreadDetails(page)
+    const snapshot = await captureStableAria(page, '[class*="detailsCol"]', scaffold.workspaceCwd)
 
-    await compareOrRefreshGolden(HEADER_EXPECTED, snapshot, MODE)
+    await compareOrRefreshGolden(CARD_EXPECTED, snapshot, MODE)
     expect(snapshot).toContain('Narrow mode')
     expect(snapshot).toContain('button "1 subagent"')
-    expect(snapshot.indexOf('button "1 subagent"')).toBeLessThan(snapshot.indexOf('Narrow mode'))
+    // Card order: the action row (chips, then the trailing controls) precedes
+    // the Lineage section's count.
     expect(snapshot.indexOf('Narrow mode')).toBeLessThan(snapshot.indexOf('button "More session actions"'))
-    // Static chrome, not a control: the header can only report a composition
+    expect(snapshot.indexOf('button "More session actions"')).toBeLessThan(snapshot.indexOf('button "1 subagent"'))
+    // Static chrome, not a control: the card can only report a composition
     // the host would refuse to change.
     expect(snapshot).not.toContain('button "Narrow mode"')
   })

@@ -104,7 +104,7 @@ export async function beginRosterRead<S extends { status: string; error: string 
  * fact to a failed session start. The management section renders the full
  * roster (broken rows included) from its own store instead.
  *
- * The chip, the header label, and the management section all show the same
+ * The chip, the action-row label, and the management section all show the same
  * facts, and `exactOptionalPropertyTypes` makes "absent" and "present as
  * undefined" different shapes — so the spread dance belongs in one place rather than
  * once per store.

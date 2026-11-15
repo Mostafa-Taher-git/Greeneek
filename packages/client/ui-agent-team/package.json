@@ -32,6 +32,7 @@
         "@greeneek/gnk-api-session-controller",
         "@greeneek/gnk-client-locale",
         "@greeneek/gnk-client-ui-conversation",
+        "@greeneek/gnk-client-ui-workspace",
         "@greeneek/gnk-client-ui-primitives",
         "@greeneek/gnk-client-ui-settings"
       ],
@@ -55,6 +56,7 @@
     "@greeneek/gnk-client-locale": "workspace:^",
     "@greeneek/gnk-client-test-runtime": "workspace:^",
     "@greeneek/gnk-client-ui-conversation": "workspace:^",
+    "@greeneek/gnk-client-ui-workspace": "workspace:^",
     "@greeneek/gnk-client-ui-primitives": "workspace:^",
     "@greeneek/gnk-client-ui-renderer": "workspace:^",
     "@greeneek/gnk-client-ui-session": "workspace:^",

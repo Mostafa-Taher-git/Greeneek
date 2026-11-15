@@ -38,11 +38,6 @@
   font-weight: 500;
 }
 
-.ancestorSwitcherTrigger {
-  color: var(--dsw-alias-label-tertiary);
-  font-weight: 400;
-}
-
 .switcherTitle {
   flex: 1;
   min-width: 0;
@@ -76,11 +71,6 @@
 .switcherTrigger:hover,
 .switcherTrigger:focus-visible {
   color: var(--dsw-alias-label-primary);
-}
-
-.ancestorSwitcherTrigger:hover,
-.ancestorSwitcherTrigger:focus-visible {
-  color: var(--dsw-alias-label-tertiary);
 }
 
 .trigger svg,

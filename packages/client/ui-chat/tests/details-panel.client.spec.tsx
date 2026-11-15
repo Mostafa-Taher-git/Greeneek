@@ -30,7 +30,7 @@ function mountDetails(selected = false) {
   const keys: string[] = []
   const renderSlot = ((key: string) => {
     keys.push(key)
-    if (key === 'conversation.details.actions') return <button>Session actions</button>
+    if (key === 'conversation.details.thread') return <div>Thread details</div>
     if (key === 'conversation.details.tool') return <div>Tool renderer</div>
     return null
   }) as unknown as DetailsSlotProps['renderSlot']
@@ -53,20 +53,19 @@ function mountDetails(selected = false) {
 
 afterEach(cleanup)
 
-describe('Thread Details panel', () => {
-  it('hosts session actions in its header without a competing Fleet tab', () => {
+describe('Thread details column', () => {
+  it('rests on the Thread Details card without a competing Fleet tab', () => {
     const view = mountDetails()
-    expect(view.getByText('Details')).toBeTruthy()
-    expect(view.getByRole('button', { name: 'Session actions' })).toBeTruthy()
-    expect(view.keys).toEqual(['conversation.details.actions'])
+    expect(view.getByText('Thread details')).toBeTruthy()
+    expect(view.keys).toEqual(['conversation.details.thread'])
     expect(view.queryByRole('tab')).toBeNull()
   })
 
-  it('shows the selected tool output in the details body', () => {
+  it('shows the selected tool output beneath the card', () => {
     const view = mountDetails(true)
     expect(view.getByText('bash')).toBeTruthy()
     expect(view.getByText('Tool renderer')).toBeTruthy()
-    expect(view.keys).toEqual(['conversation.details.actions', 'conversation.details.tool'])
+    expect(view.keys).toEqual(['conversation.details.thread', 'conversation.details.tool'])
   })
 })
 

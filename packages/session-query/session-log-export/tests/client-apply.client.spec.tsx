@@ -15,7 +15,7 @@ function declare(slots: SlotRegistry): () => void {
   return slots.register({
     name: 'root',
     children: {
-      'conversation.details.actions': { kind: 'list', scope: 'session' },
+      'conversation.details.thread.action': { kind: 'list', scope: 'session' },
     },
   } as never, () => null)
 }
@@ -38,9 +38,9 @@ describe('session-log-download browser plugin', () => {
     expect(inject).toEqual(['slots', 'locale'])
     expect(b.ctx.sessionLogDownload).toBeDefined()
     expect(b.ctx.sessionMarkdownCopy).toBeDefined()
-    // The Session Header carries no duplicate menu for the export verbs.
-    expect(b.slots.entries('conversation.session.header.utilities')).toHaveLength(0)
-    const entry = b.slots.entries('conversation.details.actions')[0]
+    // The details panel action row carries the only export verbs.
+    expect(b.slots.entries('conversation.details.thread.action')).toHaveLength(1)
+    const entry = b.slots.entries('conversation.details.thread.action')[0]
     expect(entry?.component).toBe(SessionExportActions)
     expect(entry?.options).toMatchObject({ id: 'session-export' })
     const injected = (entry?.inject as unknown as () => import('../src/client/DetailsActions.tsx').SessionExportActionsInjected)()
@@ -50,7 +50,7 @@ describe('session-log-download browser plugin', () => {
     expect(b.ctx.sessionLogDownload.store.getSnapshot().bySession[SID]?.open).toBe(false)
 
     await b.fiber.dispose()
-    expect(b.slots.entries('conversation.details.actions')).toHaveLength(0)
+    expect(b.slots.entries('conversation.details.thread.action')).toHaveLength(0)
   })
 
   it('downloads only for an export execution acknowledged by this browser client', async () => {

@@ -174,6 +174,12 @@ describe('web e2e: long Chat interaction contract', () => {
 
   it.skipIf(MODE === 'record')('keeps heterogeneous rows and their actions bound to exact semantic identities', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-chat-long-interactions'))
+    // Opening a persisted Session attaches its live Agent asynchronously;
+    // viewing never blocks on it (subagent scenarios assert non-activation).
+    await expect.poll(
+      () => scaffold.ctx.agents.get(SessionId(SESSION_ID)),
+      { timeout: 30_000 },
+    ).toBeDefined()
     const source = scaffold.ctx.agents.get(SessionId(SESSION_ID))
     if (source === undefined) throw new Error('seeded long-history agent is not attached')
 
@@ -316,10 +322,12 @@ describe('web e2e: long Chat interaction contract', () => {
     expect(child.session.snapshotEvents().some(event => carries(event, FIXTURE.markers.user(BRANCH_TURN + 1)))).toBe(false)
     expect(child.session.snapshotEvents().some(event => carries(event, FIXTURE.markers.user(FIXTURE.turns)))).toBe(false)
 
-    const currentCrumb = page.getByRole('navigation', { name: 'Session hierarchy' })
-      .getByRole('button').last()
-    await expect.poll(() => currentCrumb.textContent(), { timeout: 15_000 })
-      .toBe(`${FIXTURE.title} (1)`)
+    // The branch child owns the view after the fork, and the titlebar carries
+    // the current Session's title with the fork's numeric suffix.
+    await expect.poll(
+      () => page.getByRole('button', { name: `Return to chat: ${FIXTURE.title} (1)` }).count(),
+      { timeout: 15_000 },
+    ).toBe(1)
     await page.getByText(branchAssistantMarker, { exact: false }).last().waitFor({ timeout: 15_000 })
     const settled = scaffold.whenTurnSettled(60_000)
     const composer = page.locator('[data-composer-input][contenteditable="true"]').last()

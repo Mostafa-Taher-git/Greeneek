@@ -77,10 +77,9 @@ skill/@subagent references skip the placeholder + occurrence identity chain — 
 
 ### The slot system
 
-`conversation` is itself session-maybe; its session content and the composer input slots are strict session, while the Hero Workspace picker stays root. The root registration renders the header outlet above its resident scrollport and the body outlet inside it, before the resident composer seat. The child slots are all declared by ui-conversation's conversation registration:
+`conversation` is itself session-maybe; its session content and the composer input slots are strict session, while the Hero Workspace picker stays root. The root registration renders the body outlet inside its resident scrollport, before the resident composer seat. The child slots are all declared by ui-conversation's conversation registration:
 
-- `conversation.session.header` (single) — strict-session breadcrumb, view tabs, and header actions above the resident scrollport.
-- `conversation.session` (single) — the strict-session view ring and draft mirror inside the resident scrollport. Header and body share the same session-scoped chat store; each is rebuilt when the session id switches.
+- `conversation.session` (single) — the strict-session view ring and draft mirror inside the resident scrollport, sharing the session-scoped chat store with the composer; it is rebuilt when the session id switches.
 - `conversation.composer.bar` (single) — the slot for the InputBar itself: the InputBar is a true slot entry (self-registered into its own slot) and the content of the composer chain's fallback; it is not a chain entry — the chain's single election would unmount it on a takeover, breaking composer-surface DOM survival.
 - `conversation.input.overlay` — the floating-overlay anchor inside the input card; registrants' inject resolves each one's own per-session controller by the slot sessionId.
 - `conversation.input.dock` — the stacked strip above the input (QueueDock's read-only queue list lands here), ordered by `order`.

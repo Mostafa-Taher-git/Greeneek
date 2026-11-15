@@ -21,15 +21,13 @@ import { createConversationStore } from '../src/client/stores.ts'
 import { SessionInputShell } from '../src/client/input/facade.ts'
 import { en, zh } from '../src/client/locales.ts'
 import { ConversationRoot } from '../src/client/skeleton/ConversationRoot.tsx'
-import { ConversationSession, ConversationSessionHeader } from '../src/client/skeleton/ConversationSession.tsx'
+import { ConversationSession } from '../src/client/skeleton/ConversationSession.tsx'
 import { conversationPhase } from '../src/client/contract/snapshot.ts'
 import { HeroShell } from '../src/client/skeleton/EmptyHero.tsx'
 import type { HeroShellProps } from '../src/client/skeleton/EmptyHero.tsx'
 import { InputBar } from '../src/client/input/InputBar.tsx'
 import type { InputBarProps } from '../src/client/input/InputBar.tsx'
-import type {
-  ComposerBarOwnerProps, ConversationHeaderLineageOwnerProps,
-} from '../src/client/contract/slots.ts'
+import type { ComposerBarOwnerProps } from '../src/client/contract/slots.ts'
 import type { ViewTab } from '../src/client/contract/views.ts'
 
 // jsdom implements no Range geometry (Lexical's scroll-into-view measures the
@@ -113,10 +111,6 @@ function mount(
     summaryBlank?: boolean
     /** Drop the session's summary row entirely (a session the list has not caught up with). */
     omitSummaryRow?: boolean
-    /** Classify the selected child as a subagent instead of an ordinary fork. */
-    summaryOrigin?: 'subagent'
-    /** Insert a first-level subagent between the root and selected child. */
-    nestedSubagent?: boolean
     /** A composer block another plugin raised for this session. */
     composerBlock?: { reason: string }
     /** Mutable view ledger used by registration-order regressions. */
@@ -124,25 +118,16 @@ function mount(
   } = {},
 ) {
   const root = sid('root')
-  const parent = sid('parent')
   const rootRow = { id: root, displayTitle: 'Root', running: false, blank: false, updatedAt: 1 }
-  const parentRow = {
-    id: parent, displayTitle: 'Parent', parentId: root, origin: 'subagent' as const,
-    running: false, blank: false, updatedAt: 2,
-  }
   const childRow = {
-    id: SID, displayTitle: 'Child', parentId: options.nestedSubagent === true ? parent : root,
+    id: SID, displayTitle: 'Child', parentId: root,
     cwd: '/projects/one', running: false, blank: options.summaryBlank ?? false, updatedAt: 3,
-    ...(options.summaryOrigin === undefined ? {} : { origin: options.summaryOrigin }),
   }
   const listed = options.omitSummaryRow !== true
   const sessions = createSnapshotStore<SessionListState>({
-    ids: listed
-      ? [root, ...options.nestedSubagent === true ? [parent] : [], SID]
-      : [root],
+    ids: listed ? [root, SID] : [root],
     byId: {
       [root]: rootRow,
-      ...listed && options.nestedSubagent === true && { [parent]: parentRow },
       ...listed && { [SID]: childRow },
     },
     current: SID,
@@ -162,9 +147,7 @@ function mount(
   const useInput = bindSnapshotSelector(wiring.state)
   const inputActions = wiring.actions
   const stop = vi.fn()
-  const open = vi.fn()
   const slotCalls: string[] = []
-  const lineageOwners: ConversationHeaderLineageOwnerProps[] = []
   const viewTabs = options.viewTabs ?? [
     { id: 'chat', label: 'Chat' },
     { id: 'trajectory', label: 'Trajectory' },
@@ -179,35 +162,6 @@ function mount(
       seatOwners.push({ key, owner })
     }
     if (key === 'conversation.hero.workspace') { pickerOwner = owner; return null }
-    if (key === 'conversation.session.header.lineage') {
-      lineageOwners.push(owner as ConversationHeaderLineageOwnerProps)
-      return opts?.fallback ?? null
-    }
-    if (key === 'conversation.session.header') {
-      return (
-        <ConversationSessionHeader
-          sessionId={SID}
-          SessionProvider={({ children }) => children}
-          useSession={useSession}
-          useConversation={useConversation}
-          useConversationViews={useConversationViews}
-          useChat={useChat}
-          useTrajectory={useTrajectory}
-          useSessions={props.useSessions}
-          useSessionPendingInteraction={useSessionPendingInteraction}
-          useWorkspaces={props.useWorkspaces}
-          useProjection={(() => undefined)}
-          useInput={useInput}
-          inputActions={inputActions}
-          useStore={bindSnapshotSelector(store)}
-          actions={store.actions}
-          renderSlot={renderSlot as never}
-          open={open}
-          selectView={(view) => { store.actions.setView(view) }}
-          t={t}
-        />
-      )
-    }
     if (key === 'conversation.session') {
       return (
         <ConversationSession
@@ -303,7 +257,7 @@ function mount(
   }
   const view = render(<ConversationRoot {...props} />)
   return {
-    view, store, wiring, sink, retargetWorkspace, session, conversation, slotCalls, lineageOwners, seatOwners, open,
+    view, store, wiring, sink, retargetWorkspace, session, conversation, slotCalls, seatOwners,
     pickerOwner: () => pickerOwner,
     rerender: () => { view.rerender(<ConversationRoot {...props} />) },
   }
@@ -390,67 +344,18 @@ describe('ConversationRoot resident composer', () => {
     expect(b.store.store.getSnapshot().draft).toBe('ordinary revised')
     fireEvent.keyDown(box, { key: 'Enter' })
     expect(b.sink).toHaveBeenCalledWith('ordinary revised', [], 'queue', expect.any(AbortSignal))
-    expect((b.view.getByRole('button', { name: 'Child' }) as HTMLButtonElement).disabled).toBe(false)
-    expect(b.view.queryByText('Root')).toBeNull()
   })
 
-  it('shows hierarchy only for subagents and opens their ordinary owner', () => {
-    const b = mount(sessionSnapshotOf(), undefined, undefined, { summaryOrigin: 'subagent' })
-    const root = b.view.getByRole('button', { name: 'Root' })
-    expect((b.view.getByRole('button', { name: 'Child' }) as HTMLButtonElement).disabled).toBe(false)
-    fireEvent.click(root)
-    expect(b.open).toHaveBeenCalledWith(sid('root'))
-  })
-
-  it('keeps intermediate subagent breadcrumbs at the compact title size', () => {
-    const b = mount(sessionSnapshotOf(), undefined, undefined, {
-      summaryOrigin: 'subagent',
-      nestedSubagent: true,
-    })
-    expect(b.view.getByRole('button', { name: 'Root' }).className).not.toContain('crumbSubagent')
-    expect(b.view.getByRole('button', { name: 'Parent' }).className).toContain('crumbSubagent')
-    expect(b.view.getByRole('button', { name: 'Child' }).className).toContain('crumbSubagent')
-    expect(b.lineageOwners.slice(-2).map(owner => owner.lineageSessionId)).toEqual([
-      sid('parent'),
-      SID,
-    ])
-    expect(b.lineageOwners.at(-2)?.openTitle).toEqual(expect.any(Function))
-    expect(b.lineageOwners.at(-1)?.openTitle).toBeUndefined()
-  })
-
-  it('returns to Chat through the session title outside the Chat view', () => {
-    const viewTabs: ViewTab[] = [
-      { id: 'chat', label: 'Chat' },
-      { id: 'trajectory', label: 'Trajectory' },
-    ]
-    const b = mount(sessionSnapshotOf(), undefined, undefined, { viewTabs })
-    // On Chat the title carries no return affordance.
-    expect(b.view.queryByRole('button', { name: /返回对话/ })).toBeNull()
-
-    act(() => { b.store.actions.setView('trajectory') })
-    const back = b.view.getByRole('button', { name: /返回对话/ })
-    expect(back.querySelector('svg')).not.toBeNull()
-    fireEvent.click(back)
-    expect(b.store.store.getSnapshot().view).toBe('chat')
-    expect(b.view.queryByRole('button', { name: /返回对话/ })).toBeNull()
-  })
-
-  it('active phase: fixed header outside the scrollport; sticky composer seat inside it', () => {
+  it('active phase: the session body and the sticky composer seat live inside the scrollport', () => {
     const b = mount(sessionSnapshotOf())
     const host = b.view.container.querySelector('[data-conversation-scroll]')
     const seat = b.view.container.querySelector('[data-composer-seat]')
-    const header = b.view.container.querySelector('header')
     const textarea = b.view.container.querySelector<HTMLDivElement>('[data-composer-input]')
     expect(host).not.toBeNull()
     expect(seat).not.toBeNull()
-    expect(header).not.toBeNull()
-    // Header is column chrome above the scrollport; the seat sticks inside it.
-    expect(host?.contains(header)).toBe(false)
-    expect(host?.contains(seat)).toBe(true)
     expect(seat?.contains(textarea)).toBe(true)
-    expect(b.slotCalls).toContain('conversation.session.header.lineage')
-    expect(b.slotCalls).toContain('conversation.session.header.actions')
-    expect(b.slotCalls).toContain('conversation.session.header.utilities')
+    // The session body slot is what the scrollport hosts.
+    expect(b.slotCalls).toContain('conversation.session')
   })
 
   it('sticky composer seat wraps the whole overlay chain, not only the fallback stack', () => {
@@ -462,7 +367,7 @@ describe('ConversationRoot resident composer', () => {
     expect(seat?.contains(fallback)).toBe(true)
   })
 
-  it('hero phase: same textarea, hero chrome, no header, picker switches the workspace', () => {
+  it('hero phase: same textarea, hero chrome, picker switches the workspace', () => {
     const b = mount(
       sessionSnapshotOf({ blank: true }),
       [
@@ -472,9 +377,7 @@ describe('ConversationRoot resident composer', () => {
     )
     // Hero chrome is present and the selected View slot remains absent.
     const host = b.view.container.querySelector('[data-conversation-scroll]')
-    const header = b.view.container.querySelector('header')
     expect(host).not.toBeNull()
-    expect(header?.getAttribute('aria-hidden')).toBe('true')
     expect(b.view.getByText('探索未至之境')).toBeTruthy()
     expect(b.view.queryByTestId('view-chat')).toBeNull()
     // The same machine-backed textarea is live in the hero, and the
@@ -578,9 +481,9 @@ describe('ConversationRoot resident composer', () => {
 
     expect(b.view.getByTestId('view-chat')).toBeTruthy()
     expect(b.view.queryByTestId('view-new-view')).toBeNull()
-    // Sibling views live in the header utilities menu, not a tab strip: no
-    // tabs render even with several views registered, while view selection
-    // through the ledger still resolves.
+    // Sibling views render one at a time, not as a tab strip: no tabs render
+    // even with several views registered, while view selection through the
+    // ledger still resolves.
     expect(b.view.queryByRole('tablist')).toBeNull()
     expect(b.view.queryByRole('tab')).toBeNull()
   })

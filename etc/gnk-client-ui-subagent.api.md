@@ -3,12 +3,12 @@
 
 # API report: @greeneek/gnk-client-ui-subagent@1.1.0-alpha.0 (packages/client/ui-subagent)
 
-`src/client/SubagentHeaderLineage.tsx: export function SubagentHeaderLineage({`
-`src/client/SubagentHeaderLineage.tsx: export interface SubagentCatalogInjected {`
-`src/client/SubagentHeaderLineage.tsx: export type SubagentHeaderLineageProps =`
 `src/client/SubagentReadOnlyComposer.tsx: export function SubagentReadOnlyComposer({`
 `src/client/SubagentReadOnlyComposer.tsx: export interface SubagentReadOnlyMatch {`
 `src/client/SubagentReadOnlyComposer.tsx: export type SubagentReadOnlyComposerProps =`
+`src/client/ThreadDetailsLineage.tsx: export function ThreadDetailsLineage({`
+`src/client/ThreadDetailsLineage.tsx: export interface SubagentCatalogInjected {`
+`src/client/ThreadDetailsLineage.tsx: export type ThreadDetailsLineageProps =`
 `src/client/index.ts: export const inject = ['sessions', 'slots', 'locale']`
 `src/client/index.ts: export function apply(ctx: ClientContext): void {`
 `src/client/index.ts: export type {`

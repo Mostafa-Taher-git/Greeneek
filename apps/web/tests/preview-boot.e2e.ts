@@ -35,7 +35,7 @@ import {
   type PreviewFixtureManifest,
 } from '@greeneek/gnk-experimental-webworker-runtime'
 import { captureStableAria, compareOrRefreshGolden, webSnapshotMode } from './scaffold.ts'
-import { newEnglishPage, REPO_ROOT, saveFailureShot } from './support.ts'
+import { newEnglishPage, openThreadDetails, REPO_ROOT, saveFailureShot } from './support.ts'
 
 const DIST_ROOT = fileURLToPath(new URL('../dist', import.meta.url))
 
@@ -413,6 +413,9 @@ async function bootPreview(origin: string, browser: Browser): Promise<void> {
     await page.getByText('Update to-do list', { exact: true }).waitFor()
     await page.getByText('Error: ENOENT: no such file, open missing.txt', { exact: true }).waitFor()
 
+    // The lineage count lives in the Thread Details card, and the showcase
+    // switch above re-closed the panel.
+    await openThreadDetails(page)
     const subagents = page.getByRole('button', { name: '2 subagents' })
     await subagents.waitFor({ timeout: 15_000 })
     await subagents.hover()

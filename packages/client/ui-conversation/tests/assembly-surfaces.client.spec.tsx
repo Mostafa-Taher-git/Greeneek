@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /** Conversation assembly acceptance independent of Tool presentation. */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, cleanup, fireEvent, waitFor, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, waitFor } from '@testing-library/react'
 import { useState } from 'react'
 import { LocaleRuntime } from '@greeneek/gnk-client-locale/client'
 import type { ISession } from '@greeneek/gnk-api-session-controller/client'
@@ -224,22 +224,6 @@ describe('prompt rejection through the assembled composer', () => {
     await waitFor(() => {
       expect(shell.snapshot.draft).toBe('do not lose this')
     })
-    await runtime.dispose()
-  })
-})
-
-describe('title projection across assembled surfaces', () => {
-  it('one summary update re-labels the current-session crumb', async () => {
-    const runtime = await bench()
-    const view = runtime.renderRoot()
-    const hierarchy = view.getByRole('navigation', { name: '会话层级' })
-    expect(within(hierarchy).getByRole('button', { name: '返回对话：S' }).hasAttribute('disabled')).toBe(false)
-
-    await runtime.sessions.updateSummary(SID, { displayTitle: '修订标题', title: '修订标题' })
-    await waitFor(() => {
-      expect(within(hierarchy).getByRole('button', { name: '返回对话：修订标题' }).hasAttribute('disabled')).toBe(false)
-    })
-    expect(within(hierarchy).queryByRole('button', { name: '返回对话：S' })).toBeNull()
     await runtime.dispose()
   })
 })

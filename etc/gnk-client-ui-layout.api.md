@@ -24,7 +24,7 @@
 `src/client/columns.ts: export interface Columns { sidebar: number; center: number; details: number; rightbar: number }`
 `src/client/index.ts: export const inject = ['slots', 'theme', 'locale']`
 `src/client/index.ts: export function apply(ctx: ClientContext): void {`
-`src/client/index.ts: export interface ConvOwnerProps {`
+`src/client/index.ts: export interface ConvOwnerProps {}`
 `src/client/index.ts: export interface DashboardOwnerProps {}`
 `src/client/index.ts: export interface DetailsOwnerProps {}`
 `src/client/index.ts: export interface RightbarOwnerProps {}`

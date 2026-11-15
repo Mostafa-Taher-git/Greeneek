@@ -4,9 +4,10 @@ import { SlotRegistry } from '@greeneek/gnk-client-ui-renderer/client'
 import { RemoteError, TestRemote } from '@greeneek/gnk-client-test-runtime'
 import { LocaleRuntime } from '@greeneek/gnk-client-locale/client'
 import { apply, inject } from '@greeneek/gnk-client-ui-workspace/client'
-import type { WorkspaceBrowserInjected, WorkspacePickerInjected } from '@greeneek/gnk-client-ui-workspace/client'
+import type { ThreadDetailsPanelInjected, WorkspaceBrowserInjected, WorkspacePickerInjected } from '@greeneek/gnk-client-ui-workspace/client'
 import { WorkspaceBrowser } from '../src/client/rows/WorkspaceBrowser.tsx'
 import { WorkspacePicker } from '../src/client/WorkspacePicker.tsx'
+import { ThreadDetailsPanel } from '../src/client/ThreadDetailsPanel.tsx'
 import { apply as hostApply } from '../src/index.ts'
 
 async function bench() {
@@ -61,13 +62,21 @@ async function bench() {
   } as never)
   const pickDirectory = vi.fn(() => Promise.resolve({ ok: true as const, value: '/projects/picked' }))
   const directoryPicker = { pick: pickDirectory }
-  // The open-in catalogue and the path handoff live on the Session namespace.
+  // The open-in catalogue, the path handoff, and the git facts live on the
+  // Session namespace.
   const sessionRemote = {
     externalApps: vi.fn(async () => ({
       ok: true as const,
       value: { platform: 'linux' as const, apps: [], canReveal: true },
     })),
     openPath: vi.fn(async () => ({ ok: true as const, value: { opened: true as const } })),
+    gitFacts: vi.fn(async () => ({
+      ok: true as const,
+      value: {
+        isRepository: true, branch: 'main', baseBranch: 'origin/main',
+        changedFiles: 2, insertions: 10, deletions: 3,
+      },
+    })),
   }
   new TestRemote(ctx, { directoryPicker, session: sessionRemote })
   const locale = new LocaleRuntime(ctx)
@@ -79,6 +88,7 @@ async function bench() {
   return {
     ctx, slots: ctx.get('slots') as SlotRegistry, locale, create, rename,
     insertSessionBefore, open, clear, search, renameSession, binding, fork, pickDirectory,
+    sessionRemote,
   }
 }
 
@@ -200,6 +210,63 @@ describe('ui-workspace apply', () => {
     const browser = (b.slots.entries('sidebar.workspaces')[0]!.inject as () => WorkspaceBrowserInjected)()
     await expect(browser.searchSessions('needle', new AbortController().signal))
       .rejects.toThrow('index unavailable')
+  })
+
+  it('fills the details column thread card once it is declared, and wires its toggles, git facts, and lineage occupancy', async () => {
+    const b = await bench()
+    const layout = { toggleDetails: vi.fn(), toggleTerminalDrawer: vi.fn(), toggleRightbar: vi.fn() }
+    b.ctx.provide('layout', layout as never)
+    // The layout declares the details column; ui-chat's details entry declares
+    // the thread card hole (and the tool hole) the plugin waits on.
+    b.slots.register({
+      name: 'root',
+      children: {
+        'sidebar.workspaces': { kind: 'single', scope: 'root' },
+        'details': { kind: 'single', scope: 'session' },
+      },
+    } as never, () => null)
+    b.slots.register({
+      name: 'details',
+      children: {
+        'conversation.details.thread': { kind: 'single', scope: 'session' },
+        'conversation.details.tool': { kind: 'single', scope: 'session' },
+      },
+    } as never, () => null)
+    await b.ctx.plugin({ inject: [...inject], apply }).await()
+
+    const card = b.slots.entries('conversation.details.thread')[0]!
+    expect(card.component).toBe(ThreadDetailsPanel)
+    expect(card.locale).toBe('workspace')
+    // Registration declared both inner holes (declaration = render authorization).
+    expect(b.slots.spec('conversation.details.thread.action')).toMatchObject({ kind: 'list', scope: 'session' })
+    expect(b.slots.spec('conversation.details.thread.lineage')).toMatchObject({ kind: 'single', scope: 'session' })
+
+    const injected = (card.inject as () => ThreadDetailsPanelInjected)()
+    // gitFacts reads the Session namespace remote and unwraps the envelope.
+    await expect(injected.gitFacts('/repo')).resolves.toEqual({
+      isRepository: true, branch: 'main', baseBranch: 'origin/main',
+      changedFiles: 2, insertions: 10, deletions: 3,
+    })
+    expect(b.sessionRemote.gitFacts).toHaveBeenCalledWith({ path: '/repo' })
+    // The three panel toggles ride the layout service.
+    injected.toggleDetails()
+    injected.toggleTerminalDrawer()
+    injected.toggleRightPanel()
+    expect(layout.toggleDetails).toHaveBeenCalledOnce()
+    expect(layout.toggleTerminalDrawer).toHaveBeenCalledOnce()
+    expect(layout.toggleRightbar).toHaveBeenCalledOnce()
+
+    // The Lineage section follows the lineage hole's occupancy reactively.
+    const notified = vi.fn()
+    const unsubscribe = injected.hooks.lineage.subscribe(notified)
+    expect(injected.hooks.lineage.getSnapshot()).toBe(false)
+    const lineage = b.slots.register({ name: 'conversation.details.thread.lineage' } as never, () => null)
+    expect(injected.hooks.lineage.getSnapshot()).toBe(true)
+    await Promise.resolve()
+    expect(notified).toHaveBeenCalled()
+    lineage()
+    expect(injected.hooks.lineage.getSnapshot()).toBe(false)
+    unsubscribe()
   })
 
   it('unregisters every entry on teardown', async () => {

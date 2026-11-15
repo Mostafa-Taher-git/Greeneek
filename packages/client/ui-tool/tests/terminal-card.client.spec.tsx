@@ -675,15 +675,17 @@ describe('DetailsPanel Output section', () => {
     expect(view.getByText('该调用不在当前窗口内')).toBeTruthy()
   })
 
-  it('no selection at all renders the guidance line and the default title', () => {
+  it('no selection renders no tool section — the thread card is the resting content', () => {
     const view = mount(snapshot(), null)
-    expect(view.getByText('详情')).toBeTruthy()
-    expect(view.getByText('点击消息流中的工具行查看详情')).toBeTruthy()
+    expect(view.queryByText('详情')).toBeNull()
+    expect(view.queryByText('输入')).toBeNull()
+    expect(view.queryByText('输出')).toBeNull()
   })
 
-  it('a step selection without a callId renders the guidance line too', () => {
+  it('a step selection without a callId renders no tool section either', () => {
     const view = mount(snapshot(), { turnSeq: 3, stepSeq: 1 })
-    expect(view.getByText('点击消息流中的工具行查看详情')).toBeTruthy()
+    expect(view.queryByText('输出')).toBeNull()
+    expect(view.container.querySelector('section')).toBeNull()
   })
 
   it('renders no panel-internal close button (the header toggle is the one close path)', () => {

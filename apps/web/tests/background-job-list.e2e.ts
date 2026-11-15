@@ -14,7 +14,7 @@ import {
   assertFixtureInventory, captureStableAria, compareOrRefreshGolden,
   launchWebScaffold, seedSession, watchConsole, webSnapshotMode, type WebScaffold,
 } from './scaffold.ts'
-import { newEnglishPage, saveFailureShot } from './support.ts'
+import { newEnglishPage, openThreadDetails, saveFailureShot } from './support.ts'
 
 const FIXTURE = fileURLToPath(new URL('../../../snapshots/web/fresh-round-trip/session.jsonl', import.meta.url))
 const SNAPSHOT_DIR = fileURLToPath(new URL('../../../snapshots/web/background-job-list', import.meta.url))
@@ -79,6 +79,8 @@ describe.skipIf(MODE === 'record')('web e2e: background job list', () => {
 
   it('shows a running background job in the session header without a refresh', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-background-job-running'))
+    // The job list is a Thread Details action; the panel starts closed.
+    await openThreadDetails(page)
     // Polling for zero would pass at t=0 before delivery and prove nothing.
     const trigger = page.getByRole('button', { name: '1 background job running' })
     expect(await trigger.count()).toBe(0)

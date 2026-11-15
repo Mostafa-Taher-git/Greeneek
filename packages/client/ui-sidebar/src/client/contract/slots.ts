@@ -10,6 +10,7 @@
  */
 import type { PropsLocale, PropsRenderSlots, PropsRuntime } from '@greeneek/gnk-client-ui-slots'
 import type { WorkspaceId } from '@greeneek/gnk-api-workspace-controller/client'
+import type { SessionId } from '@greeneek/gnk-session/types'
 // Type-only: pulls ui-layout's SlotMap merge (the 'sidebar' entry) into every
 // program that sees this contract, so PropsRuntime<'sidebar'> resolves.
 import type {} from '@greeneek/gnk-client-ui-layout/client'
@@ -138,9 +139,23 @@ export type SidebarRootComponentProps =
   & SidebarRootInjected & PropsLocale<'sidebar'>
 
 /**
+ * Titlebar-injected share: the one cross-surface navigation verb the bar
+ * owns. The title beside the brand is the way back to the current Session's
+ * Chat view from wherever the user has navigated.
+ */
+export type TitlebarInjected = {
+  /**
+   * Return to the Session's Chat view: a full-page destination yields to the
+   * conversation, then the Session body selects its Chat target.
+   * @param sessionId - Session whose Chat view should become current.
+   */
+  openChat: (sessionId: SessionId) => void
+}
+
+/**
  * Full titlebar props: the layout owner share (session panel controls, the
- * document title), and the standard locale seat. No store is registered and
- * no holes are declared.
+ * document title, the current Session), the Chat-return callback, and the
+ * standard locale seat. No store is registered and no holes are declared.
  */
 export type TitlebarComponentProps =
-  PropsRuntime<'titlebar'> & PropsLocale<'sidebar'>
+  PropsRuntime<'titlebar'> & TitlebarInjected & PropsLocale<'sidebar'>

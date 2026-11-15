@@ -1,5 +1,5 @@
 ---
-description: "Agent-preset surfaces for the Web GUI: the default-preset setting, the new-session chip, the session-header label, and the preset roster management section; for users and maintainers of agent composition."
+description: "Agent-preset surfaces for the Web GUI: the default-preset setting, the new-session chip, the thread-details label, and the preset roster management section; for users and maintainers of agent composition."
 kind: "package-reference"
 ---
 
@@ -8,7 +8,7 @@ kind: "package-reference"
 
 ## Summary
 
-This package provides the agent-preset surfaces of the Web GUI: a chip on the new-session screen choosing the next session's preset, a read-only label in the session header, and a settings section that manages the roster — copy, delete, default, and the way into a preset's own files. A session's preset is fixed at creation, so the choice applies to sessions started afterwards while running sessions keep the composition they began with; the default preset is edited in the settings section, where the roster is visible, so General settings carries no duplicate control for the same field. When a deployment composes no presets, all three surfaces render nothing and every session shares the host composition.
+This package provides the agent-preset surfaces of the Web GUI: a chip on the new-session screen choosing the next session's preset, a read-only label in the Thread Details panel, and a settings section that manages the roster — copy, delete, default, and the way into a preset's own files. A session's preset is fixed at creation, so the choice applies to sessions started afterwards while running sessions keep the composition they began with; the default preset is edited in the settings section, where the roster is visible, so General settings carries no duplicate control for the same field. When a deployment composes no presets, all three surfaces render nothing and every session shares the host composition.
 
 ## Table of Contents
 
@@ -54,7 +54,8 @@ The display options come from one `agentPresets/list` call — the roster alread
 Read these pages when the preset surface is not enough. They move from the browser surfaces to the preset domain and the composition model.
 
 - [gnk-agent-presets](../../preset/agent-presets/README.md) — the host roster and composition the surfaces read and manage.
-- [ui-conversation](../ui-conversation/README.md) — declares the hero and session-header slots the chip and label fill.
+- [ui-conversation](../ui-conversation/README.md) — declares the hero slot the chip fills.
+- [ui-workspace](../ui-workspace/README.md) — declares the Thread Details action slot the label fills.
 - [ui-settings](../ui-settings/README.md) — the settings shell that hosts the roster section.
 - [Client package map](../README.md) — adjacent browser UI packages.
 

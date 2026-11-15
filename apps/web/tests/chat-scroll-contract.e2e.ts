@@ -283,8 +283,8 @@ async function openSeed(page: Page, fixture: ChatScrollFixture, tailMarker?: str
   const results = page.getByRole('tree', { name: 'Search results' }).getByRole('treeitem')
   await expect.poll(() => results.count(), { timeout: 60_000 }).toBe(1)
   await results.click()
-  // Header utilities mounted proves the session view is ready (no tab strip remains).
-  await page.getByRole('button', { name: 'More session actions', exact: true }).waitFor({ timeout: 30_000 })
+  // The titlebar's session-title button mounts once the session view is ready.
+  await page.getByRole('button', { name: /^Return to chat: / }).waitFor({ timeout: 30_000 })
   if (tailMarker !== undefined) {
     await page.getByText(tailMarker, { exact: false }).last().waitFor({ timeout: 30_000 })
   }

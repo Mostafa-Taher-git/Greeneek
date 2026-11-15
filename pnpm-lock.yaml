@@ -2108,6 +2108,9 @@ importers:
       '@greeneek/gnk-client-ui-slots':
         specifier: workspace:^
         version: link:../ui-slots
+      '@greeneek/gnk-client-ui-workspace':
+        specifier: workspace:^
+        version: link:../ui-workspace
       '@greeneek/gnk-session':
         specifier: workspace:^
         version: link:../../core/session
@@ -2813,9 +2816,6 @@ importers:
       '@greeneek/gnk-client-test-runtime':
         specifier: workspace:^
         version: link:../../test-support/client-runtime
-      '@greeneek/gnk-client-ui-conversation':
-        specifier: workspace:^
-        version: link:../ui-conversation
       '@greeneek/gnk-client-ui-primitives':
         specifier: workspace:^
         version: link:../ui-primitives
@@ -2828,6 +2828,9 @@ importers:
       '@greeneek/gnk-client-ui-slots':
         specifier: workspace:^
         version: link:../ui-slots
+      '@greeneek/gnk-client-ui-workspace':
+        specifier: workspace:^
+        version: link:../ui-workspace
       '@types/react':
         specifier: ~18.3.1
         version: 18.3.31
@@ -2858,6 +2861,9 @@ importers:
       '@greeneek/gnk-client-ui-theme':
         specifier: workspace:^
         version: link:../ui-theme
+      '@greeneek/gnk-session':
+        specifier: workspace:^
+        version: link:../../core/session
       '@types/react':
         specifier: ~18.3.1
         version: 18.3.31
@@ -3239,9 +3245,6 @@ importers:
       '@greeneek/gnk-client-test-runtime':
         specifier: workspace:^
         version: link:../../test-support/client-runtime
-      '@greeneek/gnk-client-ui-conversation':
-        specifier: workspace:^
-        version: link:../ui-conversation
       '@greeneek/gnk-client-ui-primitives':
         specifier: workspace:^
         version: link:../ui-primitives
@@ -3254,6 +3257,9 @@ importers:
       '@greeneek/gnk-client-ui-slots':
         specifier: workspace:^
         version: link:../ui-slots
+      '@greeneek/gnk-client-ui-workspace':
+        specifier: workspace:^
+        version: link:../ui-workspace
       '@greeneek/gnk-schedule':
         specifier: workspace:^
         version: link:../../schedule/schedule
@@ -3536,6 +3542,9 @@ importers:
       '@greeneek/gnk-client-test-runtime':
         specifier: workspace:^
         version: link:../../test-support/client-runtime
+      '@greeneek/gnk-client-ui-conversation':
+        specifier: workspace:^
+        version: link:../ui-conversation
       '@greeneek/gnk-client-ui-layout':
         specifier: workspace:^
         version: link:../ui-layout
@@ -3554,6 +3563,9 @@ importers:
       '@greeneek/gnk-client-ui-workspace':
         specifier: workspace:^
         version: link:../ui-workspace
+      '@greeneek/gnk-session':
+        specifier: workspace:^
+        version: link:../../core/session
       '@types/react':
         specifier: ~18.3.1
         version: 18.3.31
@@ -3659,6 +3671,9 @@ importers:
       '@greeneek/gnk-client-ui-slots':
         specifier: workspace:^
         version: link:../ui-slots
+      '@greeneek/gnk-client-ui-workspace':
+        specifier: workspace:^
+        version: link:../ui-workspace
       '@greeneek/gnk-session':
         specifier: workspace:^
         version: link:../../core/session
@@ -3842,6 +3857,9 @@ importers:
       '@greeneek/gnk-client-ui-slots':
         specifier: workspace:^
         version: link:../ui-slots
+      '@greeneek/gnk-client-ui-workspace':
+        specifier: workspace:^
+        version: link:../ui-workspace
       '@greeneek/gnk-compaction':
         specifier: workspace:^
         version: link:../../compaction/compaction
@@ -7141,6 +7159,9 @@ importers:
       '@greeneek/gnk-client-ui-slots':
         specifier: workspace:^
         version: link:../../client/ui-slots
+      '@greeneek/gnk-client-ui-workspace':
+        specifier: workspace:^
+        version: link:../../client/ui-workspace
       '@greeneek/gnk-commands':
         specifier: workspace:^
         version: link:../../interaction/commands

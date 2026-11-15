@@ -51,6 +51,7 @@
     "@greeneek/gnk-client-ui-session": "workspace:^",
     "@greeneek/gnk-client-ui-slots": "workspace:^",
     "@greeneek/gnk-client-ui-theme": "workspace:^",
+    "@greeneek/gnk-session": "workspace:^",
     "@types/react": "~18.3.1",
     "@greeneek/cordis": "workspace:^",
     "react": "^18.2.0"

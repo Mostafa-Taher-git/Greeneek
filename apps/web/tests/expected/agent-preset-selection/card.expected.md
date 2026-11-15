@@ -1,0 +1,24 @@
+- button "Open workspace {{workspace}}":
+  - img
+  - text: {{workspace}}
+- button "Open in external application or file manager":
+  - img
+- img
+- text: Narrow mode
+- button "Copy Session as Markdown": Copy
+- button "Download session log": Log
+- button "Trajectory"
+- button "Agent Team":
+  - img
+  - text: Agent Team
+- button "Pin session":
+  - img
+- button "Archive session":
+  - img
+- button "More session actions":
+  - img
+- heading "Lineage" [level=3]
+- text: /
+- button "1 subagent":
+  - text: 1 subagent
+  - img

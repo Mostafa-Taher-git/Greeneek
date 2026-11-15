@@ -1,3 +1,10 @@
+- text: Greeneek
+- button "Toggle thread details":
+  - img
+- button "Toggle terminal drawer":
+  - img
+- button "Toggle right panel":
+  - img
 - button "Collapse sidebar" [expanded]:
   - img
 - button "New session":

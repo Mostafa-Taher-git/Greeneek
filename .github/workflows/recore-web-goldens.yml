@@ -43,10 +43,13 @@ jobs:
       - name: Collect what moved
         # A failed refresh step still leaves the fixtures it wrote; the
         # collector must run either way so the artifacts stay available.
+        # A brand-new golden is untracked, which plain `git diff` cannot
+        # express — stage everything first so the patch carries new files.
         if: always()
         run: |
           git status --porcelain > "$RUNNER_TEMP/recore-status.txt" || true
-          git diff --binary > "$RUNNER_TEMP/recore.patch" || true
+          git add -A
+          git diff --cached --binary > "$RUNNER_TEMP/recore.patch" || true
           if [ ! -s "$RUNNER_TEMP/recore.patch" ]; then
             printf 'no fixture changed on this run\n' > "$RUNNER_TEMP/recore.patch"
           fi

@@ -231,7 +231,7 @@ describe('AppFrame', () => {
     expect(tracks(frame)).toEqual([280, 0, 0])
 
     act(() => { instance.actions.openDetails() })
-    expect(tracks(frame)).toEqual([280, 360, 0])
+    expect(tracks(frame)).toEqual([280, 300, 0])
 
     selectedSession.current = 's-next' as SessionId
     act(() => { rerenderFrame() })
@@ -242,12 +242,12 @@ describe('AppFrame', () => {
     selectedSessionBlank.current = true
     act(() => { rerenderFrame() })
     expect(tracks(frame)).toEqual([280, 0, 0])
-    expect(instance.getSnapshot().details).toBe(360)
+    expect(instance.getSnapshot().details).toBe(300)
 
     selectedSession.current = 's-next' as SessionId
     selectedSessionBlank.current = false
     act(() => { rerenderFrame() })
-    expect(tracks(frame)).toEqual([280, 360, 0])
+    expect(tracks(frame)).toEqual([280, 300, 0])
 
     selectedSession.current = undefined
     act(() => { rerenderFrame() })
@@ -287,13 +287,13 @@ describe('AppFrame', () => {
     act(() => { instance.actions.openDetails() })
     const handles = frame.querySelectorAll('[class*="handle"]')
     drag(handles[1]!, 1560, 1500)
-    expect(tracks(frame)[1]).toBe(420)
+    expect(tracks(frame)[1]).toBe(360)
   })
 
   it('drag base is the rendered (concession-clamped) width, not the preference', () => {
-    frameWidth = 1250 // step-2 squeeze: details renders 330 while preference is 360
+    frameWidth = 1250 // step-2 squeeze: a dragged 360 preference renders 330
     const { frame, instance } = mountFrame()
-    act(() => { instance.actions.openDetails() })
+    act(() => { instance.actions.setDetails(360) })
     expect(tracks(frame)).toEqual([280, 330, 0])
     const handles = frame.querySelectorAll('[class*="handle"]')
     drag(handles[1]!, 920, 930) // shrink by 10 from the rendered width
@@ -307,10 +307,10 @@ describe('AppFrame', () => {
     act(() => { instance.actions.openRightbar() })
     expect(tracks(frame)).toEqual([280, 0, 360])
     act(() => { instance.actions.openDetails() })
-    expect(tracks(frame)).toEqual([280, 360, 360])
+    expect(tracks(frame)).toEqual([280, 300, 360])
     expect(getByTestId('details-content')).toBeTruthy()
     act(() => { instance.actions.closeRightbar() })
-    expect(tracks(frame)).toEqual([280, 360, 0])
+    expect(tracks(frame)).toEqual([280, 300, 0])
     expect(queryByTestId('rightbar-content')).not.toBeNull()
     expect(getByTestId('details-content')).toBeTruthy()
   })
@@ -406,7 +406,7 @@ describe('AppFrame', () => {
 
   it('viewport shrink triggers the concession chain via ResizeObserver', () => {
     const { frame, instance } = mountFrame()
-    act(() => { instance.actions.openDetails() })
+    act(() => { instance.actions.setDetails(360) })
     frameWidth = 1250
     act(() => { fireResize?.(); vi.advanceTimersByTime(20) })
     expect(tracks(frame)).toEqual([280, 330, 0])
@@ -533,7 +533,7 @@ describe('AppFrame — unmount with an in-flight resize frame', () => {
 
   it('double resize inside one frame rides the pending rAF (??= guard)', () => {
     const { frame, instance } = mountFrame()
-    act(() => { instance.actions.openDetails() })
+    act(() => { instance.actions.setDetails(360) })
     frameWidth = 1250
     act(() => { fireResize?.(); fireResize?.(); vi.advanceTimersByTime(20) })
     expect(tracks(frame)).toEqual([280, 330, 0])

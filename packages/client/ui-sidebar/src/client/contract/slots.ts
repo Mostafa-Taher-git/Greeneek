@@ -159,3 +159,29 @@ export type TitlebarInjected = {
  */
 export type TitlebarComponentProps =
   PropsRuntime<'titlebar'> & TitlebarInjected & PropsLocale<'sidebar'>
+
+/**
+ * Right-panel injected share: navigation verbs for the destinations the
+ * launcher lists. The two view verbs take the Session whose views they open;
+ * the drawer and the two full-page destinations are Session-independent.
+ */
+export type SurfacePanelInjected = {
+  /** Open the terminal activity drawer. */
+  openTerminal: () => void
+  /** Open the current Session's Trajectory view. */
+  openTrajectory: (sessionId: SessionId) => void
+  /** Open the current Session's Chat view. */
+  openChat: (sessionId: SessionId) => void
+  /** Open the Settings destination. */
+  openSettings: () => void
+  /** Open the Dashboard destination. */
+  openDashboard: () => void
+}
+
+/**
+ * Full right-panel props: the layout owner's session scope, the navigation
+ * verbs, and the standard locale seat. No store is registered and no holes
+ * are declared.
+ */
+export type SurfacePanelComponentProps =
+  PropsRuntime<'rightbar'> & SurfacePanelInjected & PropsLocale<'sidebar'>

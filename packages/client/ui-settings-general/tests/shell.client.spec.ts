@@ -35,7 +35,7 @@ async function bench() {
   } as never)
   ctx.provide('remote', {
     $on: () => () => {},
-    $host: { home: undefined, isLoopback: false },
+    $host: { home: undefined, hostname: undefined, isLoopback: false },
     settings,
   } as never)
   ctx.provide('remote.settings', settings as never)

@@ -74,8 +74,9 @@ export function createLayoutStore(): EngineStoreHandle<LayoutState, LayoutAction
     // The panel preferences survive a restart: a closed panel remembers its
     // width, an open one reopens where it was, and the terminal drawer keeps
     // its visibility. The main page does not: the app opens in the
-    // conversation, whatever page was last visited.
-    persist: 'gnk.layout.panels',
+    // conversation, whatever page was last visited. Versioned because the
+    // details column now sizes the floating card, not a bordered sidebar.
+    persist: 'gnk.layout.panels.v2',
     init: (): LayoutState => ({ sidebar: SIDEBAR_DEFAULT, details: 0, rightbar: 0, terminalDrawerOpen: false, narrow: false, narrowExpanded: false, mainPage: 'conversation', settingsSection: undefined }),
     actions: {
       setSidebar: (d, px: number) => { d.sidebar = clampWidth(px, SIDEBAR_MIN, SIDEBAR_MAX) },

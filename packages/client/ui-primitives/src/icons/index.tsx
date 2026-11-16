@@ -1124,3 +1124,27 @@ export const IconGraduationCap16 = ({ size = 16, className }: IconProps) => (
     />
   </svg>
 )
+
+/** lucide monitor (ISC), scaled to the 16 grid: the Host device row. */
+export const IconMonitor16 = ({ size = 16, className }: IconProps) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <g stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <rect x="1.33" y="2" width="13.34" height="9.33" rx="1.33" />
+      <path d="M8 11.33V14" />
+      <path d="M5.33 14h5.34" />
+    </g>
+  </svg>
+)
+
+/** lucide file-diff (ISC), scaled to the 16 grid: the change-set row. */
+export const IconFileDiff16 = ({ size = 16, className }: IconProps) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <g stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9.33 1.33H4A1.33 1.33 0 0 0 2.67 2.67v10.66A1.33 1.33 0 0 0 4 14.67h8a1.33 1.33 0 0 0 1.33-1.34V5.33z" />
+      <path d="M9.33 1.33v2.67A1.33 1.33 0 0 0 10.67 5.33h2.66" />
+      <path d="M6 6.67h4" />
+      <path d="M8 4.67v4" />
+      <path d="M6 11.33h4" />
+    </g>
+  </svg>
+)

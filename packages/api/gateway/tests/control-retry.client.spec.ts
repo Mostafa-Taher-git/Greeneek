@@ -6,7 +6,7 @@ import {
   RemoteStream,
 } from '../src/client/index.ts'
 
-const GENERATION = { id: 1, host: { home: '/home/fixture' } }
+const GENERATION = { id: 1, host: { home: '/home/fixture', hostname: 'fixture-host' } }
 
 function hostSource(initiallyAvailable: boolean): {
   connection: Pick<ConnectionHandle, 'generation'>

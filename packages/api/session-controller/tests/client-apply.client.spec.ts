@@ -16,7 +16,10 @@ import * as SessionClient from '../src/client/index.ts'
 import { ClientSessions } from '../src/client/sessions/service.ts'
 import { FakeApiClient, fakeRemote } from './fake-api.client.ts'
 
-const GENERATION: ConnectionGeneration = { id: 1, host: { home: '/home/fixture' } }
+const GENERATION: ConnectionGeneration = {
+  id: 1,
+  host: { home: '/home/fixture', hostname: 'fixture-host' },
+}
 
 const sid = (value: string): SessionId => value as SessionId
 

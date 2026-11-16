@@ -1,6 +1,6 @@
 /**
  * Army fleet surfaces contract: the live poll mirror, the shared inject face,
- * and the composed component props of the Fleet tab and the fallback pill.
+ * and the composed component props of the fleet body and the fallback pill.
  *
  * @module @greeneek/gnk-client-ui-wave/client/contract
  */
@@ -8,10 +8,9 @@ import type { HostObservable, InjectFace, PropsLocale, PropsRuntime } from '@gre
 import type { RemoteResult } from '@greeneek/gnk-typert-protocol'
 import type { WaveId, WaveMemberId, WaveView } from '@greeneek/gnk-subagent-wave/client'
 import type { SessionId } from '@greeneek/gnk-session/types'
-import type { SessionListState, SessionSummary } from '@greeneek/gnk-api-session-controller/client'
 // Type-only: pulls the context with the `waves` Remote namespace through the Client assembly.
 import type {} from '@greeneek/gnk-api-remotes/client'
-// Type-only: pulls the Session Controller service used for lead resolution and child opening.
+// Type-only: pulls the Session Controller service used for child opening.
 import type {} from '@greeneek/gnk-api-session-controller/client'
 // Type-only: pulls the locale plugin's Context merge (ctx.locale).
 import type {} from '@greeneek/gnk-client-locale/client'
@@ -73,71 +72,10 @@ export interface FleetInjected {
   openChild: (childSessionId: SessionId) => void
   /** Navigate to one Session in the lineage breadcrumb. */
   openSession: (sessionId: SessionId) => void
-  /** Open the dedicated right sidebar; the sidebar surface calls it on the empty->running edge. */
-  openSidebar: () => void
 }
 
-/** One ancestor or current Session shown above Live Fleet. */
-export interface FleetLineageItem {
-  readonly id: SessionId
-  readonly displayTitle: string
-}
-
-/**
- * Resolve the selected Session's parent chain in root-first display order.
- * @param list - current Session list projection.
- * @param id - selected Session identity.
- * @returns known lineage rows, from root to selected Session.
- */
-export function fleetLineage(list: SessionListState, id: SessionId): readonly FleetLineageItem[] {
-  const chain: FleetLineageItem[] = []
-  const seen = new Set<SessionId>()
-  let cursor: SessionId | undefined = id
-  while (cursor !== undefined && !seen.has(cursor)) {
-    seen.add(cursor)
-    const summary: SessionSummary | undefined = list.byId[cursor]
-    if (summary === undefined) break
-    chain.unshift({ id: summary.id, displayTitle: summary.displayTitle })
-    if (summary.origin !== 'subagent') break
-    cursor = summary.parentId
-  }
-  return chain
-}
-
-/** One Harness agent that ran under a Session, as the lineage group reports it. */
-export interface FleetAgentItem {
-  readonly id: SessionId
-  readonly displayTitle: string
-  readonly running: boolean
-}
-
-/**
- * Resolve the Harness agents that ran under one Session.
- * @param list - current Session list projection.
- * @param id - selected Session identity.
- * @returns the Session's child agents, in list order.
- */
-export function fleetAgents(list: SessionListState, id: SessionId): readonly FleetAgentItem[] {
-  const agents: FleetAgentItem[] = []
-  for (const summary of Object.values(list.byId)) {
-    if (summary.parentId !== id) continue
-    agents.push({
-      id: summary.id,
-      displayTitle: summary.displayTitle,
-      running: summary.running,
-    })
-  }
-  return agents
-}
-
-/** Full props of the reused fleet body (sidebar body and pill overlay). */
-export type FleetPanelProps = PropsRuntime<'rightbar'>
-  & InjectFace<FleetInjected>
-  & PropsLocale<'fleet'>
-
-/** Full props of the dedicated right-sidebar fleet surface (S5-11a). */
-export type FleetSidebarProps = PropsRuntime<'rightbar'>
-  & InjectFace<FleetInjected>
+/** Full props of the reused fleet body (the Thread Details card section and the pill overlay). */
+export type FleetPanelProps = InjectFace<FleetInjected>
   & PropsLocale<'fleet'>
 
 /** Full props of the composer-left fallback pill with its fleet overlay. */

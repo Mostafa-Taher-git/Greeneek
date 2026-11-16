@@ -90,10 +90,11 @@ declare module '@greeneek/gnk-client-ui-slots' {
      */
     'details': { kind: 'single'; scope: 'session'; owner: DetailsOwnerProps }
     /**
-     * Independent right panel. OCCUPIED by ui-wave's FleetSidebar, which
-     * reuses the wave engine and exposes the emergency stop at its top. The
-     * frame gives it a separate track from Thread Details. No owner props:
-     * session facts arrive through the framework hooks of the `session` scope.
+     * Independent right panel. OCCUPIED by ui-sidebar's SurfacePanel, a T3-shaped
+     * "Open a surface" launcher over this app's real destinations. The frame
+     * gives it a separate track from Thread Details and both toggles stay
+     * independent. No owner props: session facts arrive through the framework
+     * hooks of the `session` scope.
      */
     'rightbar': { kind: 'single'; scope: 'session'; owner: RightbarOwnerProps }
     /** Bottom terminal activity drawer inside the Conversation column. */

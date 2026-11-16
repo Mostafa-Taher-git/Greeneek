@@ -18,9 +18,13 @@ import {
   formatShortcut,
   IconArchiveOutline20,
   IconBranchOutline16,
+  IconCheckOutline16,
   IconChevronDownOutline14,
+  IconCopyOutline16,
   IconEllipsisOutline16,
+  IconFileDiff16,
   IconFolderOpenOutline16,
+  IconMonitor16,
   IconPinFill16,
   IconTrashOutline16,
   Menu,
@@ -51,6 +55,8 @@ export function ThreadDetailsPanel({
   useWorkspaces,
   renderSlot,
   useLineage,
+  useFleet,
+  useHostInfo,
   t,
   pinSession,
   archiveSession,
@@ -69,8 +75,11 @@ export function ThreadDetailsPanel({
   const pinnedSessionIds = useWorkspaces(state => state.pinnedSessionIds)
   const isPinned = pinnedSessionIds.includes(sessionId)
   const lineageOccupied = useLineage(occupied => occupied)
+  const fleetOccupied = useFleet(occupied => occupied)
+  const hostname = useHostInfo(info => info.hostname)
   const appsShare = useExternalApps(externalApps)
   const [git, setGit] = useState<GitFacts | undefined>(undefined)
+  const [deviceCopied, setDeviceCopied] = useState(false)
   const [appsMenuOpen, setAppsMenuOpen] = useState(false)
   const [actionsMenuOpen, setActionsMenuOpen] = useState(false)
   const [renameOpen, setRenameOpen] = useState(false)
@@ -112,6 +121,13 @@ export function ThreadDetailsPanel({
     window.addEventListener('keydown', onKeyDown)
     return () => { window.removeEventListener('keydown', onKeyDown) }
   }, [sessionId, title, forkSession, archiveSession, toggleDetails, toggleTerminalDrawer, toggleRightPanel])
+
+  // The copy confirmation is transient feedback, not durable state.
+  useEffect(() => {
+    if (!deviceCopied) return
+    const timer = setTimeout(() => { setDeviceCopied(false) }, 1500)
+    return () => { clearTimeout(timer) }
+  }, [deviceCopied])
 
   // Version-control facts belong to the workspace directory, so they are read
   // once per directory and dropped while the next Session's directory loads.
@@ -206,53 +222,80 @@ export function ThreadDetailsPanel({
       .finally(() => { setDeleting(false) })
   }
 
-  const branchLabel = git?.branch === undefined ? t('git.detachedHead') : t('git.branch', { branch: git.branch })
+  const branchLabel = git?.branch === undefined ? t('git.detachedHead') : t('git.branchName', { branch: git.branch })
   const changesLabel = git === undefined
     ? ''
     : git.baseBranch === undefined
-      ? t('git.changesUnbased', { added: formatCount(git.insertions), removed: formatCount(git.deletions) })
-      : t('git.changes', {
-        base: git.baseBranch,
-        added: formatCount(git.insertions),
-        removed: formatCount(git.deletions),
-      })
+      ? t('git.changesUnbasedLabel')
+      : t('git.changesLabel', { base: git.baseBranch })
+  const changesCounts = git === undefined
+    ? ''
+    : t('git.changesCounts', {
+      added: formatCount(git.insertions),
+      removed: formatCount(git.deletions),
+    })
 
   return (
     <div className={css.card}>
-      {workspaceName !== undefined && (
+      {(hostname !== undefined || workspaceName !== undefined) && (
         <section className={css.section}>
-          <div className={css.splitGroup}>
-            <Tooltip label={defaultLabel} delayMs={500}>
-              <button
-                type="button"
-                className={css.splitPrimary}
-                aria-label={t('actions.openWorkspace.aria', { name: workspaceName })}
-                onClick={() => { openDestination({ kind: 'default' }) }}
+          {hostname !== undefined && (
+            <div className={css.row}>
+              <IconMonitor16 className={css.icon} />
+              <span className={css.label}>{hostname}</span>
+              <Tooltip
+                label={deviceCopied ? t('actions.copiedDevice.aria') : t('actions.copyDevice.aria')}
+                delayMs={500}
               >
-                <IconFolderOpenOutline16 className={css.icon} />
-                <span className={css.label}>{workspaceName}</span>
-              </button>
-            </Tooltip>
-            <span className={css.splitDivider} aria-hidden="true" />
-            <Menu
-              open={appsMenuOpen}
-              anchor={(
                 <button
                   type="button"
-                  className={css.splitSecondary}
-                  onClick={() => { setAppsMenuOpen(value => !value) }}
-                  aria-label={t('actions.openIn.aria')}
-                  aria-expanded={appsMenuOpen}
+                  className={css.rowAction}
+                  aria-label={deviceCopied ? t('actions.copiedDevice.aria') : t('actions.copyDevice.aria')}
+                  onClick={() => {
+                    void writeClipboard(hostname).then((accepted) => {
+                      if (accepted) setDeviceCopied(true)
+                    })
+                  }}
                 >
-                  <IconChevronDownOutline14 />
+                  {deviceCopied ? <IconCheckOutline16 /> : <IconCopyOutline16 />}
                 </button>
-              )}
-              items={openInItems}
-              onSelect={handleSelectApp}
-              onClose={() => { setAppsMenuOpen(false) }}
-              portal
-            />
-          </div>
+              </Tooltip>
+            </div>
+          )}
+          {workspaceName !== undefined && (
+            <div className={css.splitGroup}>
+              <Tooltip label={defaultLabel} delayMs={500}>
+                <button
+                  type="button"
+                  className={css.splitPrimary}
+                  aria-label={t('actions.openWorkspace.aria', { name: workspaceName })}
+                  onClick={() => { openDestination({ kind: 'default' }) }}
+                >
+                  <IconFolderOpenOutline16 className={css.icon} />
+                  <span className={css.label}>{workspaceName}</span>
+                </button>
+              </Tooltip>
+              <span className={css.splitDivider} aria-hidden="true" />
+              <Menu
+                open={appsMenuOpen}
+                anchor={(
+                  <button
+                    type="button"
+                    className={css.splitSecondary}
+                    onClick={() => { setAppsMenuOpen(value => !value) }}
+                    aria-label={t('actions.openIn.aria')}
+                    aria-expanded={appsMenuOpen}
+                  >
+                    <IconChevronDownOutline14 />
+                  </button>
+                )}
+                items={openInItems}
+                onSelect={handleSelectApp}
+                onClose={() => { setAppsMenuOpen(false) }}
+                portal
+              />
+            </div>
+          )}
           {openError !== null && (
             <div className={css.error} role="alert">{openError}</div>
           )}
@@ -319,13 +362,14 @@ export function ThreadDetailsPanel({
 
       {git !== undefined && git.isRepository && (
         <section className={css.section}>
-          <h3 className={css.heading}>{t('panel.versionControl')}</h3>
           <div className={css.row}>
             <IconBranchOutline16 className={css.icon} />
             <span className={css.label}>{branchLabel}</span>
           </div>
           <div className={css.row}>
+            <IconFileDiff16 className={css.icon} />
             <span className={css.label}>{changesLabel}</span>
+            <span className={css.rowValue}>{changesCounts}</span>
           </div>
         </section>
       )}
@@ -337,6 +381,13 @@ export function ThreadDetailsPanel({
             lineageSessionId: sessionId,
             displayTitle: title,
           })}
+        </section>
+      )}
+
+      {fleetOccupied && (
+        <section className={css.section}>
+          <h3 className={css.heading}>{t('panel.liveFleet')}</h3>
+          {renderSlot('conversation.details.thread.fleet', {})}
         </section>
       )}
 

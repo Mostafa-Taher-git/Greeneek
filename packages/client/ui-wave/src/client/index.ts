@@ -1,7 +1,7 @@
 /**
- * Army fleet surfaces, browser half: the dedicated right-sidebar fleet
- * surface and the composer pill, both reading one sampled mirror of the Lead
- * session's waves through the `waves` Remote.
+ * Army fleet surfaces, browser half: the Live Fleet section of the Thread
+ * Details card and the composer pill, both reading one sampled mirror of the
+ * Lead session's waves through the `waves` Remote.
  * @module @greeneek/gnk-client-ui-wave/client
  */
 import type { Context as ClientContext } from '@greeneek/cordis'
@@ -17,11 +17,13 @@ import type {} from '@greeneek/gnk-api-session-controller/client'
 // Type-only: pulls the SlotMap merges for the two seats this plugin fills.
 import type {} from '@greeneek/gnk-client-ui-conversation/client'
 import type {} from '@greeneek/gnk-client-ui-layout/client'
+// Type-only: the Thread Details card declares the fleet hole this plugin fills.
+import type {} from '@greeneek/gnk-client-ui-workspace/client'
 import type {} from '@greeneek/gnk-client-ui-session/client'
 import type { FleetInjected } from './contract.ts'
 import { FleetMirror } from './fleet-mirror.ts'
+import { FleetPanel } from './FleetPanel.tsx'
 import { FleetPill } from './FleetPill.tsx'
-import { FleetSidebar } from './FleetSidebar.tsx'
 import { ar, en, NS, zh, type FleetKey } from './locales.ts'
 
 declare module '@greeneek/gnk-client-ui-slots' {
@@ -32,7 +34,7 @@ declare module '@greeneek/gnk-client-ui-slots' {
 }
 
 export type {
-  FleetInjected, FleetPillProps, FleetPanelProps, FleetSidebarProps, FleetSnapshot, ResumeOutcome, StopAllOutcome, StopOutcome,
+  FleetInjected, FleetPillProps, FleetPanelProps, FleetSnapshot, ResumeOutcome, StopAllOutcome, StopOutcome,
 } from './contract.ts'
 export type { FleetKey } from './locales.ts'
 
@@ -40,15 +42,15 @@ export type { FleetKey } from './locales.ts'
 export const inject = ['slots', 'locale', 'sessions', 'remote', 'remote.waves', 'layout']
 
 /**
- * Client plugin body: register the dictionaries, the right-sidebar fleet
- * surface, and the composer pill.
+ * Client plugin body: register the dictionaries, the Thread Details Live Fleet
+ * section, and the composer pill.
  * @param ctx - Client root context.
  */
 export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register(NS, { zh, en, ar }), 'ui-wave: dictionaries')
 
-  // One mirror per Lead session: the sidebar and the pill read the same sampled
-  // fleet, and its sampling loop runs while either of them is on screen.
+  // One mirror per Lead session: the card section and the pill read the same
+  // sampled fleet, and its sampling loop runs while either of them is on screen.
   const mirrors = new Map<SessionId, FleetMirror>()
   const mirrorFor = (sessionId: SessionId): FleetMirror => {
     let mirror = mirrors.get(sessionId)
@@ -78,7 +80,6 @@ export function apply(ctx: ClientContext): void {
         ctx.layout.showConversation()
         ctx.sessions.open(sessionId)
       },
-      openSidebar: () => { ctx.layout.openRightbar() },
     }
   }
 
@@ -87,11 +88,11 @@ export function apply(ctx: ClientContext): void {
     mirrors.clear()
   }, 'ui-wave: fleet mirrors')
 
-  ctx.slots.inject('rightbar', () => ctx.slots.register({
-    name: 'rightbar',
+  ctx.slots.inject('conversation.details.thread.fleet', () => ctx.slots.register({
+    name: 'conversation.details.thread.fleet',
     locale: NS,
     inject: injected,
-  }, FleetSidebar))
+  }, FleetPanel))
 
   ctx.slots.inject('conversation.input.left', () => ctx.slots.register({
     name: 'conversation.input.left',

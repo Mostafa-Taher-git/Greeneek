@@ -1,6 +1,6 @@
 /** Host BFF entry and Loader shell for the Remote contribution assembly. */
 
-import { homedir } from 'node:os'
+import { homedir, hostname } from 'node:os'
 import type { Context } from '@greeneek/cordis'
 import type {
   TypertRemoteEventDispatch,
@@ -36,7 +36,10 @@ export const inject = ['typertGateway']
 /** Host plugin body registering this application's selected Cordis event source. */
 export function apply(ctx: Context): void {
   ctx.effect(
-    () => ctx.typertGateway.registerRemoteEvents(remoteEventSource(ctx), { home: homedir() }),
+    () => ctx.typertGateway.registerRemoteEvents(remoteEventSource(ctx), {
+      home: homedir(),
+      hostname: hostname(),
+    }),
     'api-remotes: forwarded Cordis event source',
   )
 }

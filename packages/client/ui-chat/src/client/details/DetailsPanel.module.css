@@ -1,6 +1,7 @@
 /* Details third column: the Thread Details card on top, then the selected
    Tool call's card. Panel width/squeeze belongs to layout; this fills whatever
-   the column gives. */
+   the column gives. The column paints no chrome: both surfaces are cards over
+   the conversation background. */
 
 .root {
   display: flex;
@@ -8,10 +9,9 @@
   gap: 8px;
   height: 100%;
   min-width: 0;
-  padding: 8px;
+  padding: 10px;
   box-sizing: border-box;
   overflow-y: auto;
-  background: var(--dsw-alias-bg-base);
 }
 
 /* One card per subject, matching the Thread Details card's surface. The card

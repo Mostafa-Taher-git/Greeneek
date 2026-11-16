@@ -7,6 +7,8 @@
   display: flex;
   flex: none;
   flex-direction: column;
+  width: 100%;
+  box-sizing: border-box;
   overflow: hidden;
   border: 0.5px solid var(--dsw-alias-border-l2);
   border-radius: 16px;
@@ -55,10 +57,43 @@
 }
 
 .label {
+  flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Trailing value cell on a card row: the change-set counts sit at the reading
+   end, tabular so a digit change never shifts the row. */
+.rowValue {
+  flex: none;
+  margin-inline-start: auto;
+  color: var(--dsw-alias-label-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Trailing icon action on a card row (copy the device name). */
+.rowAction {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin-inline-start: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--dsw-alias-label-tertiary);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.rowAction:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
 }
 
 /* The workspace row splits into "open with the default destination" and the

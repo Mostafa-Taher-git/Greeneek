@@ -1,5 +1,5 @@
 /** Test-local programmable Connection generation source. */
-import type { ConnectionGenerationSource } from '../src/client/connection.ts'
+import type { ConnectionGenerationSource, ConnectionHostInfo } from '../src/client/connection.ts'
 
 type StreamItem = { kind: 'end' } | { kind: 'fail'; error: unknown }
 
@@ -46,7 +46,7 @@ export class FakeGenerationSource {
 
   private async open(
     signal: AbortSignal,
-    onReady: (host: { readonly home: string }) => void,
+    onReady: (host: ConnectionHostInfo) => void,
   ): Promise<void> {
     const inbox: StreamItem[] = []
     let wake: (() => void) | null = null
@@ -57,7 +57,7 @@ export class FakeGenerationSource {
       },
     }
     this.connections.push(connection)
-    const ready = (): void => { onReady({ home: '/h' }) }
+    const ready = (): void => { onReady({ home: '/h', hostname: 'h-host' }) }
     if (this.holdReady) this.heldReady.push(ready)
     else if (!this.suppressReady) ready()
     try {

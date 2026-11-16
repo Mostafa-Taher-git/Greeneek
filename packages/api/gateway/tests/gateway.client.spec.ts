@@ -487,7 +487,7 @@ class RemoteEventCarrier {
     const abort = (): void => { connection.wake?.() }
     signal.addEventListener('abort', abort, { once: true })
     try {
-      yield { type: 'ready', clientId, host: { home: '/home/fixture' } }
+      yield { type: 'ready', clientId, host: { home: '/home/fixture', hostname: 'fixture-host' } }
       while (!signal.aborted) {
         while (connection.items.length > 0) {
           const item = connection.items.shift() as EventStreamItem
@@ -573,12 +573,12 @@ describe('Client Remote transport readiness', () => {
     const remote = ctx.remote
 
     const beforeReady = remote.$host
-    expect(beforeReady).toEqual({ home: undefined, isLoopback: true })
+    expect(beforeReady).toEqual({ home: undefined, hostname: undefined, isLoopback: true })
     expect(remote.$host).toBe(beforeReady)
 
-    live.snapshot = { id: 1, host: { home: '/hosts/primary' } }
+    live.snapshot = { id: 1, host: { home: '/hosts/primary', hostname: 'primary-host' } }
     const afterReady = remote.$host
-    expect(afterReady).toEqual({ home: '/hosts/primary', isLoopback: true })
+    expect(afterReady).toEqual({ home: '/hosts/primary', hostname: 'primary-host', isLoopback: true })
     expect(afterReady).not.toBe(beforeReady)
     expect(remote.$host).toBe(afterReady)
 
@@ -1887,7 +1887,7 @@ describe('Client Typert API', () => {
       socket.receive({
         type: 'item',
         streamId: opened.streamId,
-        value: { type: 'ready', clientId: 'browser-client', host: { home: '/home/browser' } },
+        value: { type: 'ready', clientId: 'browser-client', host: { home: '/home/browser', hostname: 'browser-host' } },
       })
       await run.ready
       socket.receive({
@@ -1961,7 +1961,8 @@ describe('Client Typert API', () => {
     { type: 'ready', clientId: 'client', extra: true },
     { type: 'ready', clientId: 'client', host: null },
     { type: 'ready', clientId: 'client', host: {} },
-    { type: 'ready', clientId: 'client', host: { home: 1 } },
+    { type: 'ready', clientId: 'client', host: { home: 1, hostname: 'host' } },
+    { type: 'ready', clientId: 'client', host: { home: '/home', hostname: 1 } },
     { type: 'ready', clientId: 'client', host: { home: '/home', extra: true } },
     { type: 'emit', event: 'fixture/changed', args: ['too early'] },
   ])('rejects malformed forwarded-event readiness item %#', async (opening) => {

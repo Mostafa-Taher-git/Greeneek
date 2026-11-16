@@ -163,7 +163,7 @@ export function renderToolDetails(
     return <ToolDetails
       block={details.block}
       cwd={details.cwd}
-      useHostInfo={selector => selector({ home, isLoopback: true })}
+      useHostInfo={selector => selector({ home, hostname: 'test-host', isLoopback: true })}
       t={t}
     />
   }

@@ -43,12 +43,9 @@ function wavesNamespace(): {
   }
 }
 
-/** An `openRightbar`/`closeRightbar` fake so the S5-11a inject face can call layout. */
+/** A `showConversation` fake so the inject face can navigate to a lineage Session. */
 const layoutFace = {
   showConversation: vi.fn(),
-  openRightbar: vi.fn(),
-  closeRightbar: vi.fn(),
-  toggleRightbar: vi.fn(),
 }
 
 /** Boot the browser half over a slot tree declaring both seats this plugin fills. */
@@ -64,7 +61,7 @@ async function bench(waves = wavesNamespace()): Promise<{
   ctx.slots.register({
     name: 'root',
     children: {
-      rightbar: { kind: 'single', scope: 'session' },
+      'conversation.details.thread.fleet': { kind: 'single', scope: 'session' },
       'conversation.input.left': { kind: 'list', scope: 'session' },
     },
   } as never, () => null)
@@ -85,7 +82,7 @@ async function bench(waves = wavesNamespace()): Promise<{
 }
 
 /** The inject face one seat's registration builds for this session. */
-function injectedFor(ctx: Context, key: 'rightbar' | 'conversation.input.left'): FleetInjected {
+function injectedFor(ctx: Context, key: 'conversation.details.thread.fleet' | 'conversation.input.left'): FleetInjected {
   const entry = ctx.slots.entries(key)[0]
   const factory = entry?.inject as ((sessionId: SessionId) => FleetInjected) | undefined
   if (factory === undefined) throw new Error(`no inject face registered under ${key}`)
@@ -103,12 +100,12 @@ describe('ui-wave browser half', () => {
     applyNode()
   })
 
-  it('registers the right-sidebar fleet surface and the composer pill, and fiber teardown removes both', async () => {
+  it('registers the Thread Details fleet section and the composer pill, and fiber teardown removes both', async () => {
     const { ctx, fiber } = await bench()
-    expect(ctx.slots.entries('rightbar')).toHaveLength(1)
+    expect(ctx.slots.entries('conversation.details.thread.fleet')).toHaveLength(1)
     expect(ctx.slots.entries('conversation.input.left').map(entry => entry.options.id)).toContain('army-fleet')
     await fiber.dispose()
-    expect(ctx.slots.entries('rightbar')).toHaveLength(0)
+    expect(ctx.slots.entries('conversation.details.thread.fleet')).toHaveLength(0)
     expect(ctx.slots.entries('conversation.input.left')).toHaveLength(0)
   })
 
@@ -125,7 +122,7 @@ describe('ui-wave browser half', () => {
 
   it('gives a surface one mirror per session, sampled from the waves namespace', async () => {
     const { ctx, fiber, waves } = await bench()
-    const panel = injectedFor(ctx, 'rightbar')
+    const panel = injectedFor(ctx, 'conversation.details.thread.fleet')
     const pill = injectedFor(ctx, 'conversation.input.left')
     expect(panel.hooks.fleet).toBe(pill.hooks.fleet)
     expect(panel.hooks.fleet.getSnapshot()).toMatchObject({ loading: true, waveViews: [] })
@@ -141,7 +138,7 @@ describe('ui-wave browser half', () => {
 
   it('routes the stop verbs to their Remote endpoints', async () => {
     const { ctx, fiber, waves } = await bench()
-    const panel = injectedFor(ctx, 'rightbar')
+    const panel = injectedFor(ctx, 'conversation.details.thread.fleet')
     await expect(panel.stopWave(WAVE)).resolves.toEqual({ ok: true, value: { cancelled: true } })
     await expect(panel.stopMember(WAVE, MEMBER)).resolves.toEqual({ ok: true, value: { cancelled: true } })
     await expect(panel.stopAll()).resolves.toEqual({ ok: true, value: { waveIds: [WAVE] } })
@@ -160,7 +157,7 @@ describe('ui-wave browser half', () => {
 
   it('opens a lineage Session in the Conversation page', async () => {
     const { ctx, fiber, openSession } = await bench()
-    injectedFor(ctx, 'rightbar').openSession(CHILD)
+    injectedFor(ctx, 'conversation.details.thread.fleet').openSession(CHILD)
     expect(layoutFace.showConversation).toHaveBeenCalledOnce()
     expect(openSession).toHaveBeenCalledWith(CHILD)
     await fiber.dispose()
@@ -168,7 +165,7 @@ describe('ui-wave browser half', () => {
 
   it('stops sampling once the fiber unloads', async () => {
     const { ctx, fiber, waves } = await bench()
-    const panel = injectedFor(ctx, 'rightbar')
+    const panel = injectedFor(ctx, 'conversation.details.thread.fleet')
     panel.refresh()
     await vi.waitFor(() => {
       expect(waves.list).toHaveBeenCalled()

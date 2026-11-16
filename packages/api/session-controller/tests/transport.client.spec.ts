@@ -30,7 +30,7 @@ type SessionTransportRemote = Pick<SessionRemote, 'control' | 'follow' | 'page'>
 const ADDRESS: SessionAddress = { kind: 'session', sessionId: 'session-1' as never }
 const AVAILABLE_CONNECTION = {
   generation: {
-    getSnapshot: () => ({ id: 1, host: { home: '/home/fixture' } }),
+    getSnapshot: () => ({ id: 1, host: { home: '/home/fixture', hostname: 'fixture-host' } }),
     subscribe: () => () => {},
   },
 }

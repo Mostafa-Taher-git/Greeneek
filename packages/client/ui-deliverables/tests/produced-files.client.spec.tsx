@@ -512,7 +512,7 @@ describe('plugin registration', () => {
     }
     ctx.provide('remote', {
       $on: () => () => {},
-      $host: { home: undefined, isLoopback: false },
+      $host: { home: undefined, hostname: undefined, isLoopback: false },
       session,
     } as never)
     ctx.provide('remote.session', session as never)
@@ -574,7 +574,7 @@ describe('plugin registration', () => {
     const session = { canOpenWorkspacePath: capability }
     ctx.provide('remote', {
       $on: () => () => {},
-      $host: { home: undefined, isLoopback: true },
+      $host: { home: undefined, hostname: undefined, isLoopback: true },
       session,
     } as never)
     ctx.provide('remote.session', session as never)

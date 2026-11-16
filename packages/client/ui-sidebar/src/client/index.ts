@@ -8,15 +8,16 @@ import type {} from '@greeneek/gnk-client-ui-renderer/client'
 import type {} from '@greeneek/gnk-client-ui-session/client'
 // Type-only: pulls the uiConversation service merge (ctx.uiConversation).
 import type {} from '@greeneek/gnk-client-ui-conversation/client'
-import type { SidebarRootInjected, TitlebarInjected } from './contract/slots.ts'
+import type { SidebarRootInjected, SurfacePanelInjected, TitlebarInjected } from './contract/slots.ts'
 import { SidebarRoot } from './SidebarRoot.tsx'
+import { SurfacePanel } from './SurfacePanel.tsx'
 import { Titlebar } from './Titlebar.tsx'
 import { ar, en, zh, type SidebarKey } from './locales.ts'
 
 export type {
   SidebarBrandMarkOwnerProps, SidebarBrandNameOwnerProps, SidebarFooterActionOwnerProps,
   SidebarRootComponentProps, SidebarRootInjected, SidebarSectionOwnerProps, SidebarSettingsOwnerProps,
-  TitlebarComponentProps, TitlebarInjected,
+  SurfacePanelComponentProps, SurfacePanelInjected, TitlebarComponentProps, TitlebarInjected,
 } from './contract/slots.ts'
 export type { SidebarKey } from './locales.ts'
 
@@ -32,6 +33,9 @@ const NS = 'sidebar'
 
 /** Conversation view id of the transcript target that ui-chat registers. */
 const CHAT_VIEW = 'chat'
+
+/** Conversation view id of the request/step target that ui-trajectory registers. */
+const TRAJECTORY_VIEW = 'trajectory'
 
 interface WorkspaceNavigation {
   startSession(workspaceId?: Parameters<SidebarRootInjected['startSession']>[0]): void
@@ -90,5 +94,25 @@ export function apply(ctx: ClientContext): void {
       }),
     }, Titlebar),
     'ui-sidebar: titlebar registration',
+  )
+  ctx.effect(
+    () => ctx.slots.register({
+      name: 'rightbar',
+      locale: NS,
+      inject: (): SurfacePanelInjected => ({
+        openTerminal: () => { ctx.layout.openTerminalDrawer() },
+        openTrajectory: (sessionId) => {
+          ctx.layout.showConversation()
+          ctx.uiConversation.selectView(sessionId, TRAJECTORY_VIEW)
+        },
+        openChat: (sessionId) => {
+          ctx.layout.showConversation()
+          ctx.uiConversation.selectView(sessionId, CHAT_VIEW)
+        },
+        openSettings: () => { ctx.layout.openSettings() },
+        openDashboard: () => { ctx.layout.openDashboard() },
+      }),
+    }, SurfacePanel),
+    'ui-sidebar: right panel registration',
   )
 }

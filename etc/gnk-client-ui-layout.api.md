@@ -8,7 +8,7 @@
 `src/client/DocumentTitle.tsx: export function DocumentTitle({ title, productTitle }: DocumentTitleProps): null {`
 `src/client/DocumentTitle.tsx: export interface DocumentTitleProps {`
 `src/client/columns.ts: export const CENTER_MIN = 640`
-`src/client/columns.ts: export const DETAILS_DEFAULT = 360`
+`src/client/columns.ts: export const DETAILS_DEFAULT = 300`
 `src/client/columns.ts: export const DETAILS_MAX = 520`
 `src/client/columns.ts: export const DETAILS_MIN = 300`
 `src/client/columns.ts: export const RIGHTBAR_DEFAULT = 360`

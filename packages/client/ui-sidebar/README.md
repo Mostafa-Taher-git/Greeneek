@@ -1,5 +1,5 @@
 ---
-description: "Sidebar shell plugin for the gnk web client: brand row, New Session action, collapse control, scroll-aware region seat, and bottom-pinned Settings seat."
+description: "Sidebar shell plugin for the gnk web client: brand row, New Session action, collapse control, scroll-aware region seat, bottom-pinned Settings seat, frameless titlebar, and the right-panel surface launcher."
 kind: "package-reference"
 ---
 
@@ -24,11 +24,15 @@ kind: "package-reference"
 <a id="use-this-package"></a>
 ## Use this package
 
-The sidebar is the navigation shell, and this package also renders the frameless-desktop titlebar: users see the brand, start new sessions, collapse the rail, and reach Settings. Feature plugins fill the sidebar's seats — ui-workspace fills `sidebar.workspaces`, registers the Dashboard trigger at `sidebar.primary.action`, and ui-settings registers the trigger row and settings panel at `sidebar.settings`.
+The sidebar is the navigation shell, and this package also renders the frameless-desktop titlebar and the independent right panel: users see the brand, start new sessions, collapse the rail, reach Settings, and open a surface from the right panel. Feature plugins fill the sidebar's seats — ui-workspace fills `sidebar.workspaces`, registers the Dashboard trigger at `sidebar.primary.action`, and ui-settings registers the trigger row and settings panel at `sidebar.settings`.
 
 ### Titlebar
 
 The 52px titlebar row carries the drag surface and the three session panel toggles (thread details, terminal drawer, right panel) at its reading end; the desktop host reserves inline-end space for the injected window controls, and double-click toggles maximize through the preload bridge. The brand sits at the inline start, followed by the current Session's title: a plain label in a browser host, and a button that returns to that Session's Chat view by yielding to the conversation and selecting Chat through the Session body's view selector. Mounting inside the desktop shell marks `documentElement[data-desktop-titlebar]` so the desktop's overlay drag strip stands down.
+
+### Right panel
+
+The right panel is a T3-shaped "Open a surface" launcher over destinations this app actually has: Terminal (the activity drawer, with its bound `mod+j` shortcut chip), Trajectory and Chat (the current Session's conversation views), Settings, and Dashboard. It is a separate `rightbar` slot from Thread Details, and picking a row navigates without closing either panel, so the titlebar's thread-details and right-panel toggles stay independent. No placeholder Browser, Files, Diff, or pull-request rows are rendered for surfaces Greeneek does not have.
 
 ### Brand and New Session
 
@@ -50,7 +54,7 @@ Scrollbars in the column are a pointer affordance: the shell rebinds the scrollb
 <details>
 <summary>Implementation internals — click to expand</summary>
 
-The shell is pure composition: `SidebarRootComponentProps` composes the layout owner share, the global `useSessions` and `useWorkspaces` hooks, the declared brand, the `sidebar.workspaces` and `sidebar.settings` child slots, and injected `startSession` plus sidebar-toggle callbacks. There is no plugin store. The `titlebar` entry composes the layout owner share (panel controls, document title, current Session), the `openChat` callback over `ctx.layout` and `ctx.uiConversation`, and the locale seat; it declares no holes and reads no store.
+The shell is pure composition: `SidebarRootComponentProps` composes the layout owner share, the global `useSessions` and `useWorkspaces` hooks, the declared brand, the `sidebar.workspaces` and `sidebar.settings` child slots, and injected `startSession` plus sidebar-toggle callbacks. There is no plugin store. The `titlebar` entry composes the layout owner share (panel controls, document title, current Session), the `openChat` callback over `ctx.layout` and `ctx.uiConversation`, and the locale seat; it declares no holes and reads no store. The `rightbar` entry composes the session scope, five navigation callbacks over `ctx.layout` and `ctx.uiConversation`, and the locale seat; the launcher's rows are a static list in the component and no shortcut chip is fabricated for a destination without a bound key.
 
 ### Slot discipline
 

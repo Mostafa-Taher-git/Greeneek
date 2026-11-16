@@ -95,10 +95,11 @@
   display: none;
 }
 
+/* The details column is a transparent gutter: the Thread Details card floats in
+   it, so the column paints no panel chrome of its own. */
 .detailsCol {
   min-width: 0;
   overflow: hidden;
-  border-inline-start: 0.5px solid var(--dsw-alias-border-l3);
 }
 
 .rightbarCol {
@@ -107,9 +108,8 @@
   border-inline-start: 0.5px solid var(--dsw-alias-border-l3);
 }
 
-/* The details subtree stays mounted at zero width, so its border must not paint
-   a 1px seam. The collapsed sidebar instead retains a bordered compact rail. */
-.frame[data-details-collapsed] .detailsCol,
+/* The right panel keeps a bordered compact rail while collapsed; the floating
+   details card simply disappears with its track. */
 .frame[data-rightbar-collapsed] .rightbarCol {
   border-inline-start: none;
 }
@@ -124,6 +124,9 @@
   inset-inline-end: 0;
   width: min(360px, 92vw);
   z-index: 6;
+}
+
+.frame .rightbarCol[data-overlay] {
   border-inline-start: 0.5px solid var(--dsw-alias-border-l3);
   background: var(--dsw-alias-bg-base);
 }

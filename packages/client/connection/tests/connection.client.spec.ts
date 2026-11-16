@@ -122,7 +122,7 @@ describe('connection lifecycle', () => {
     const source: ConnectionGenerationSource = (signal, ready) => {
       calls++
       if (calls === 1) return Promise.reject(new Error('offline'))
-      ready({ home: '/h' })
+      ready({ home: '/h', hostname: 'h-host' })
       return new Promise<void>((resolve) => {
         signal.addEventListener('abort', () => { resolve() }, { once: true })
       })
@@ -156,7 +156,7 @@ describe('connection lifecycle', () => {
       calls++
       active++
       maxActive = Math.max(maxActive, active)
-      ready({ home: '/h' })
+      ready({ home: '/h', hostname: 'h-host' })
       signal.addEventListener('abort', () => {
         active--
         resolve()
@@ -481,8 +481,8 @@ describe('connection lifecycle', () => {
   it('accepts only the first readiness report from one generation', async () => {
     const homes: string[] = []
     const source: ConnectionGenerationSource = (signal, ready) => {
-      ready({ home: '/first' })
-      ready({ home: '/duplicate' })
+      ready({ home: '/first', hostname: 'first-host' })
+      ready({ home: '/duplicate', hostname: 'duplicate-host' })
       return new Promise<void>((resolve) => {
         signal.addEventListener('abort', () => { resolve() }, { once: true })
       })
@@ -504,7 +504,7 @@ describe('connection lifecycle', () => {
     const connected = vi.fn()
     const source: ConnectionGenerationSource = (signal, ready) => new Promise<void>((resolve) => {
       sourceCalls++
-      ready({ home: '/h' })
+      ready({ home: '/h', hostname: 'h-host' })
       queueMicrotask(() => { owner.controller?.stop() })
       signal.addEventListener('abort', () => { resolve() }, { once: true })
     })
@@ -552,7 +552,7 @@ describe('connection lifecycle', () => {
     const source: ConnectionGenerationSource = (signal, ready) => {
       sourceCalls++
       if (sourceCalls === 1) return fail()
-      ready({ home: '/h' })
+      ready({ home: '/h', hostname: 'h-host' })
       return new Promise<void>((resolve) => {
         signal.addEventListener('abort', () => { resolve() }, { once: true })
       })
@@ -642,7 +642,7 @@ describe('connection lifecycle', () => {
     const source: ConnectionGenerationSource = (signal, ready) => {
       sourceCalls++
       if (sourceCalls <= 2) return Promise.reject(new Error('down'))
-      ready({ home: '/h' })
+      ready({ home: '/h', hostname: 'h-host' })
       return new Promise<void>((resolve) => {
         signal.addEventListener('abort', () => { resolve() }, { once: true })
       })

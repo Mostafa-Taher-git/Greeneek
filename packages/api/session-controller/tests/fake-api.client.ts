@@ -33,7 +33,7 @@ import { historyRecordLastSeq } from '../src/client/sessions/history-records.ts'
 
 const AVAILABLE_STREAM_CONNECTION = {
   generation: {
-    getSnapshot: () => ({ id: 1, host: { home: '/h' } }),
+    getSnapshot: () => ({ id: 1, host: { home: '/h', hostname: 'fake-host' } }),
     subscribe: () => () => {},
   },
 }

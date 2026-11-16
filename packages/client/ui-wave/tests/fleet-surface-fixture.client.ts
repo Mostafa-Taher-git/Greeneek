@@ -8,9 +8,8 @@ import type { HostObservable, PropsLocale } from '@greeneek/gnk-client-ui-slots'
 import { bindSnapshotSelector, makeTranslate } from '@greeneek/gnk-client-test-runtime'
 import type { WaveId, WaveMemberId, WaveMemberView, WaveView } from '@greeneek/gnk-subagent-wave/client'
 import type { SessionId } from '@greeneek/gnk-session/types'
-import type { SessionListState } from '@greeneek/gnk-api-session-controller/client'
 import type {
-  FleetInjected, FleetPanelProps, FleetSnapshot, ResumeOutcome, StopAllOutcome, StopOutcome,
+  FleetInjected, FleetPillProps, FleetSnapshot, ResumeOutcome, StopAllOutcome, StopOutcome,
 } from '../src/client/contract.ts'
 import { en } from '../src/client/locales.ts'
 
@@ -95,7 +94,6 @@ export function fleetSource(initial: FleetSnapshot): FleetSource {
 /** Verbs a spec scripts, each recording its call and answer. */
 export interface FleetVerbSpies {
   refresh: Mock<() => void>
-  openSidebar: Mock<() => void>
   stopAll: Mock<() => Promise<StopAllOutcome>>
   stopWave: Mock<(waveId: WaveId) => Promise<StopOutcome>>
   stopMember: Mock<(waveId: WaveId, memberId: WaveMemberId) => Promise<StopOutcome>>
@@ -108,7 +106,6 @@ export interface FleetVerbSpies {
 export function fleetVerbs(): FleetVerbSpies {
   return {
     refresh: vi.fn<() => void>(),
-    openSidebar: vi.fn<() => void>(),
     stopAll: vi.fn<() => Promise<StopAllOutcome>>()
       .mockResolvedValue({ ok: true, value: { waveIds: [WAVE] } }),
     stopWave: vi.fn<(waveId: WaveId) => Promise<StopOutcome>>()
@@ -125,106 +122,18 @@ export function fleetVerbs(): FleetVerbSpies {
 /** The English translator, so specs assert the copy shipped for `en`. */
 export const t = makeTranslate(en) as unknown as PropsLocale<'fleet'>['t']
 
-/** The session list projection without the harness agent (a Session no agent ran under). */
-export const sessionListWithoutAgent = (): SessionListState => {
-  const parentId = 'parent-session' as SessionId
-  return {
-    ids: [parentId, SESSION],
-    byId: {
-      [parentId]: { id: parentId, displayTitle: 'Parent agent', running: false, blank: false, updatedAt: 0 },
-      [SESSION]: {
-        id: SESSION, displayTitle: 'Child agent', parentId,
-        origin: 'subagent', running: false, blank: false, updatedAt: 0,
-      },
-    },
-    current: SESSION,
-    phase: 'ready',
-    subagentsByParent: {},
-    jobsBySession: {},
-    currentAddress: undefined,
-  }
-}
-
-/** The session list projection with one settled (non-running) harness agent. */
-export const sessionListWithSettledAgent = (): SessionListState => {
-  const parentId = 'parent-session' as SessionId
-  const agentId = 'harness-settled' as SessionId
-  return {
-    ids: [parentId, SESSION, agentId],
-    byId: {
-      [parentId]: { id: parentId, displayTitle: 'Parent agent', running: false, blank: false, updatedAt: 0 },
-      [SESSION]: {
-        id: SESSION, displayTitle: 'Child agent', parentId, origin: 'subagent',
-        running: false, blank: false, updatedAt: 0,
-      },
-      [agentId]: {
-        id: agentId, displayTitle: 'Settled agent', parentId: SESSION, origin: 'subagent',
-        running: false, blank: false, updatedAt: 0,
-      },
-    },
-    current: SESSION,
-    phase: 'ready',
-    subagentsByParent: {},
-    jobsBySession: {},
-    currentAddress: undefined,
-  }
-}
-
 /**
- * Compose the props every fleet surface reads.
+ * Compose the props the fleet body reads.
  * @param source - the mutable mirror the spec drives.
  * @param verbs - the scripted stop verbs.
- * @returns props assignable to either surface.
+ * @returns props assignable to the fleet body.
  */
-export function fleetProps(source: FleetSource, verbs: FleetVerbSpies): FleetPanelProps {
+export function fleetProps(source: FleetSource, verbs: FleetVerbSpies): FleetPillProps {
   const injected: FleetInjected = { hooks: { fleet: source }, ...verbs }
-  const parentId = 'parent-session' as SessionId
-  const agentId = 'harness-agent' as SessionId
-  const selectSessions = (selector: (state: SessionListState) => unknown): unknown => selector(sessions)
-  const sessions: SessionListState = {
-    ids: [parentId, SESSION, agentId],
-    byId: {
-      [parentId]: { id: parentId, displayTitle: 'Parent agent', running: false, blank: false, updatedAt: 0 },
-      [SESSION]: {
-        id: SESSION, displayTitle: 'Child agent', parentId, origin: 'subagent',
-        running: false, blank: false, updatedAt: 0,
-      },
-      [agentId]: {
-        id: agentId, displayTitle: 'Harness agent', parentId: SESSION, origin: 'subagent',
-        running: true, blank: false, updatedAt: 0,
-      },
-    },
-    current: SESSION,
-    phase: 'ready',
-    subagentsByParent: {},
-    jobsBySession: {},
-    currentAddress: undefined,
-  }
   return {
     sessionId: SESSION,
     t,
     useFleet: bindSnapshotSelector(source),
     ...injected,
-    useSession: () => undefined,
-    useProjection: () => undefined,
-    useSessionPendingInteraction: () => undefined,
-    useSessions: selectSessions,
-    useWorkspaces: () => undefined,
-  } as unknown as FleetPanelProps
-}
-
-/** Compose props whose fleet mirror rides the default list and whose Session list is caller-supplied.
- * @param source - the mutable mirror the spec drives.
- * @param verbs - the scripted stop verbs.
- * @param sessions - the Session list projection the components read.
- * @returns props assignable to either surface.
- */
-export function fleetPropsWithSessions(
-  source: FleetSource,
-  verbs: FleetVerbSpies,
-  sessions: SessionListState,
-): FleetPanelProps {
-  const base = fleetProps(source, verbs)
-  const selectSessions = (selector: (state: SessionListState) => unknown): unknown => selector(sessions)
-  return { ...base, useSessions: selectSessions } as unknown as FleetPanelProps
+  } as unknown as FleetPillProps
 }

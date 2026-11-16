@@ -47,7 +47,7 @@ async function bench(isLoopback = true) {
     settings: { describe: settingsDescribe, openSettingsDocument: settingsOpenDocument },
   })
   // The fixed Host facts the shell reads its loopback-only action from.
-  remote.$host = { home: undefined, isLoopback }
+  remote.$host = { home: undefined, hostname: undefined, isLoopback }
   ctx.provide('layout', {
     openSettings: () => {}, selectSettingsSection: () => {}, showConversation: () => {},
   } as never)

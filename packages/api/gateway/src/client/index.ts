@@ -118,6 +118,8 @@ export interface ClientRemote extends TypertClientRemote {
 export interface RemoteHostFacts {
   /** Host home directory from the ready frame, undefined before it. */
   readonly home: string | undefined
+  /** Host machine name from the ready frame, undefined before it. */
+  readonly hostname: string | undefined
   /** Whether the carrier connects to the local Host. */
   readonly isLoopback: boolean
 }
@@ -191,9 +193,13 @@ class ClientRemoteService extends Service implements ClientRemote {
     // Identity-stable: readers (useSyncExternalStore snapshots, memo inputs)
     // compare by reference, so a fresh object is minted only when the fact
     // itself changed. isLoopback is fixed for the page lifetime.
-    const home = this.connection.generation.getSnapshot()?.host.home
-    if (this.hostFacts === undefined || this.hostFacts.home !== home) {
-      this.hostFacts = { home, isLoopback: this.connection.isLoopback }
+    const generationHost = this.connection.generation.getSnapshot()?.host
+    const home = generationHost?.home
+    const hostname = generationHost?.hostname
+    if (this.hostFacts === undefined
+      || this.hostFacts.home !== home
+      || this.hostFacts.hostname !== hostname) {
+      this.hostFacts = { home, hostname, isLoopback: this.connection.isLoopback }
     }
     return this.hostFacts
   }

@@ -1,5 +1,5 @@
 ---
-description: "Web Army fleet surfaces: the dedicated right-sidebar fleet panel and the composer pill, polled from the wave engine's browser control face; for users and maintainers of fleet delegation."
+description: "Web Army fleet surfaces: the Live Fleet section of the Thread Details card and the composer pill, polled from the wave engine's browser control face; for users and maintainers of fleet delegation."
 kind: "package-reference"
 ---
 
@@ -8,7 +8,7 @@ kind: "package-reference"
 
 ## Summary
 
-This package renders the Army fleet of the Web GUI: one body in the dedicated right sidebar and one compact pill beside the composer, both reading the same live mirror of the Lead session's waves. The engine keeps member progress in host memory and publishes no event for it, so this package samples the `waves` Remote face — once a second while a wave is unclosed, and every five seconds while the fleet is settled — and issues no other RPC. Accepted samples reach the surfaces through an 80 ms coalescing window, so a burst is one render. The pill appears only when the session lists a wave, counts the members a stop could still reach, and carries the emergency stop on itself; the sidebar offers the full rows.
+This package renders the Army fleet of the Web GUI: one body in the Thread Details card's Live Fleet section and one compact pill beside the composer, both reading the same live mirror of the Lead session's waves. The engine keeps member progress in host memory and publishes no event for it, so this package samples the `waves` Remote face — once a second while a wave is unclosed, and every five seconds while the fleet is settled — and issues no other RPC. Accepted samples reach the surfaces through an 80 ms coalescing window, so a burst is one render. The pill appears only when the session lists a wave, counts the members a stop could still reach, and carries the emergency stop on itself; the card section offers the full rows.
 
 ## Table of Contents
 
@@ -26,7 +26,7 @@ This package renders the Army fleet of the Web GUI: one body in the dedicated ri
 
 Mount this plugin with the host `waves` service ([`gnk-subagent-wave`](../../subagent/wave/README.md)) and the Army preset. A Lead session then shows its fleet wherever the reader looks:
 
-- **Right sidebar** — the dedicated `rightbar` surface over the details track: a Lineage section (the real Session chain as navigation rows, with the collapsible Previous agents group inside it) and the **Live Fleet** section directly underneath Lineage, sharing its row language. It auto-opens on the empty→running edge while agents run; the titlebar's right-panel toggle closes it. The emergency stop sits at the top of Live Fleet while stoppable; the tool inspector keeps the details track.
+- **Thread Details card** — the **Live Fleet** section of the floating thread card, directly under the card's Lineage section and sharing its row language. The section appears only while this package occupies the card's `conversation.details.thread.fleet` hole, and the emergency stop sits at its top while stoppable.
 - **Composer pill** — below the width where the details column collapses, the pill names the newest open wave, counts cancellable members, and opens the same rows in an overlay above the composer. Escape, the close control, and a pointer outside all dismiss it.
 - **Stops** — one button per member while it is queued or running, one per open wave, and an emergency stop that aborts every unsettled member of every wave this session owns. The mass cancel needs two clicks and disarms after five seconds.
 - **Resume** — a closed wave that lost a member to a budget kill shows a resume card naming the exact remaining members, with per-member and wave budget fields; the action stays disabled until at least one positive budget is entered, and the card disappears once the wave carries its resumed-to mark. The card rides the shared panel body, so the pill's overlay offers it too.
@@ -43,7 +43,7 @@ A stopped or failed member keeps its row with its status and diagnostic; a fleet
 <details>
 <summary>Implementation internals — click to expand</summary>
 
-**One mirror per Lead session.** `apply` keeps a `FleetMirror` per Session id and hands the same instance to both registrations, so one sampled fleet backs the sidebar and the pill. The mirror is a bare observable in the reserved `hooks` compartment; the renderer binds it to `useFleet`, and no component sees the source or a timer.
+**One mirror per Lead session.** `apply` keeps a `FleetMirror` per Session id and hands the same instance to both registrations, so one sampled fleet backs the card section and the pill. The mirror is a bare observable in the reserved `hooks` compartment; the renderer binds it to `useFleet`, and no component sees the source or a timer.
 
 **Sampling follows attention.** The loop starts when the first surface subscribes and stops when the last one unsubscribes, so a session nobody is looking at pays no RPC. An in-flight sample collapses a second request, and a sample is accepted only when a rendered field moved — closed flags, a wave's resumed-to mark, member status, tokens, budget reading, ceiling, last tool, duration, child session, artifact pointers, or diagnostic — because the Remote builds fresh views on every call and reference equality would re-render the fleet once per second.
 
@@ -51,7 +51,7 @@ A stopped or failed member keeps its row with its status and diagnostic; a fleet
 
 **Verbs answer, then resample.** `stopAll`, `stopWave`, `stopMember`, and `resume` call their Remote endpoint and schedule an immediate sample, so the abort or the resumed wave's admission shows without waiting for the next tick. The resume answer is the admission — the resumed wave's id — and its progress arrives through the polled rows, not the call.
 
-**The panel owns no fleet knowledge.** `rightbar` is a session-scoped slot that ui-layout declares and ui-wave occupies. The sidebar auto-opens on the empty→running edge and never steals a manual close back until a new fleet starts.
+**The panel owns no fleet knowledge.** `conversation.details.thread.fleet` is a session-scoped hole that ui-workspace's Thread Details card declares and ui-wave occupies. The card decides where the section sits and hides it while the hole is empty.
 
 **Child transcripts ride the seam.** A wave member is a one-shot subagent, so opening it calls `ctx.sessions.openSubagent` with `mode: 'one-shot'` — the same read-only transport the subagent catalog uses.
 
@@ -64,7 +64,7 @@ A stopped or failed member keeps its row with its status and diagnostic; a fleet
 
 - [gnk-subagent-wave](../../subagent/wave/README.md) — the engine whose `@Remote` face this package polls.
 - [gnk-tool-wave](../../subagent/tool-wave/README.md) — the Lead-facing `wave_dispatch` and `wave_cancel` tools.
-- [ui-layout](../ui-layout/README.md) — the frame that declares the `rightbar` slot and owns open/close.
+- [ui-workspace](../ui-workspace/README.md) — the Thread Details card that declares the fleet hole this package fills.
 - [api/remotes](../../api/remotes/README.md) — the Client assembly that mounts the `waves` namespace.
 
 -----
@@ -85,7 +85,7 @@ None; the package never assembles or sends provider requests.
 These limits define the current fleet surfaces. They are current package constraints, not a general fleet-UI comparison.
 
 - **Rows are as fresh as the last sample** — member status, last tool, and token spend move between samples, up to one second plus the coalescing window behind while a wave runs. The engine publishes no Remote event for member progress, so a pushed fleet view waits on that seam.
-- **Lead activity is not listed** — the right sidebar shows the waves this session started, not what the Lead itself is doing; that stays in the conversation.
+- **Lead activity is not listed** — the card section shows the waves this session started, not what the Lead itself is doing; that stays in the conversation.
 - **One member drawer at a time** — opening another row closes the first; the drawer is a reading surface, not a comparison table. Each artifact pointer has no independent open action.
 - **Rows are not virtualized** — a wave's members are bounded by the engine's roster, so the list is short by construction; a fleet that outgrows that assumption needs windowing here.
 - **No member reordering or grouping** — waves render in acceptance order and members in dispatch order, which is the order the Lead's result reports.

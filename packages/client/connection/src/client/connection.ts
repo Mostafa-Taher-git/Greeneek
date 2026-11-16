@@ -2,6 +2,8 @@
 export interface ConnectionHostInfo {
   /** Host account home used only to abbreviate displayed filesystem paths. */
   readonly home: string
+  /** Host machine name shown as the device label. */
+  readonly hostname: string
 }
 
 /** One successfully established Host generation. */

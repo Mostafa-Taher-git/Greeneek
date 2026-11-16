@@ -118,7 +118,7 @@ describe('apply', () => {
       },
     })
     class RemoteService extends Service {
-      readonly $host = { home: undefined, isLoopback: false }
+      readonly $host = { home: undefined, hostname: undefined, isLoopback: false }
 
       constructor(serviceCtx: Context) {
         super(serviceCtx, 'remote')

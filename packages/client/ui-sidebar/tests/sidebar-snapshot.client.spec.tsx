@@ -51,6 +51,7 @@ async function bench(options: { locale?: 'en' } = {}) {
   await runtime.declare({
     'sidebar': { kind: 'single', scope: 'root' },
     'titlebar': { kind: 'single', scope: 'root' },
+    'rightbar': { kind: 'single', scope: 'session' },
   })
   await runtime.mount({ inject: [...inject], apply })
   return { runtime, locale }

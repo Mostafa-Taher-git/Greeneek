@@ -43,7 +43,7 @@ type PageSource = Page | Promise<Page> | ((signal: AbortSignal) => Promise<Page>
 
 const AVAILABLE_CONNECTION = {
   generation: {
-    getSnapshot: () => ({ id: 1, host: { home: '/home/fixture' } }),
+    getSnapshot: () => ({ id: 1, host: { home: '/home/fixture', hostname: 'fixture-host' } }),
     subscribe: () => () => {},
   },
 }

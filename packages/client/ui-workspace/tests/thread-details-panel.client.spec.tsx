@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { makeTranslate } from '@greeneek/gnk-client-test-runtime'
 import type { SessionListState, SessionSummary } from '@greeneek/gnk-api-session-controller/client'
 import type { WorkspaceSnapshot } from '@greeneek/gnk-api-workspace-controller/client'
@@ -78,6 +78,7 @@ function mount(overrides: Partial<ThreadDetailsPanelProps> = {}) {
     owners[key] = owner
     if (key === 'conversation.details.thread.action') return <button type="button">Preset chip</button>
     if (key === 'conversation.details.thread.lineage') return <div>Lineage tree</div>
+    if (key === 'conversation.details.thread.fleet') return <div>Fleet rows</div>
     return null
   }) as unknown as ThreadDetailsPanelProps['renderSlot']
   const props = {
@@ -85,6 +86,8 @@ function mount(overrides: Partial<ThreadDetailsPanelProps> = {}) {
     useSessions: hook(sessions),
     useWorkspaces: hook(workspaces),
     useLineage: hook(true),
+    useFleet: hook(true),
+    useHostInfo: hook({ home: '/home/fixture', hostname: 'fixture-host', isLoopback: true }),
     renderSlot,
     pinSession: vi.fn(async () => {}),
     archiveSession: vi.fn(async () => {}),
@@ -494,15 +497,15 @@ describe('ThreadDetailsPanel delete dialog', () => {
   })
 })
 
-describe('ThreadDetailsPanel version control', () => {
+describe('ThreadDetailsPanel git rows', () => {
   it('reads the branch and change set of the workspace directory', async () => {
     const { props } = mount()
     await waitFor(() => {
-      expect(screen.getByText('版本控制')).toBeTruthy()
+      expect(screen.getByText('main')).toBeTruthy()
     })
     expect(props.gitFacts).toHaveBeenCalledWith(CWD)
-    expect(screen.getByText('分支：main')).toBeTruthy()
-    expect(screen.getByText('相对 origin/main 的改动：+1,200 −3')).toBeTruthy()
+    expect(screen.getByText('相对 origin/main 的改动')).toBeTruthy()
+    expect(screen.getByText('+1,200 −3')).toBeTruthy()
   })
 
   it('names a detached head and an unbased change set', async () => {
@@ -514,10 +517,11 @@ describe('ThreadDetailsPanel version control', () => {
     await waitFor(() => {
       expect(screen.getByText('分离头指针（未检出版本）')).toBeTruthy()
     })
-    expect(screen.getByText('未提交改动：+4 −5')).toBeTruthy()
+    expect(screen.getByText('未提交改动')).toBeTruthy()
+    expect(screen.getByText('+4 −5')).toBeTruthy()
   })
 
-  it('shows no section outside a repository', async () => {
+  it('shows no rows outside a repository', async () => {
     mount({
       gitFacts: vi.fn(async () => ({
         isRepository: false, changedFiles: 0, insertions: 0, deletions: 0,
@@ -526,16 +530,17 @@ describe('ThreadDetailsPanel version control', () => {
     await waitFor(() => {
       expect(screen.getByLabelText('更多会话操作')).toBeTruthy()
     })
-    expect(screen.queryByText('版本控制')).toBeNull()
+    expect(screen.queryByText('main')).toBeNull()
+    expect(screen.queryByText('未提交改动')).toBeNull()
   })
 
-  it('keeps the section out when the facts read fails', async () => {
+  it('keeps the rows out when the facts read fails', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     mount({ gitFacts: vi.fn(async () => { throw new Error('git unavailable') }) })
     await waitFor(() => {
       expect(warn).toHaveBeenCalledWith('workspace git facts unavailable:', expect.any(Error))
     })
-    expect(screen.queryByText('版本控制')).toBeNull()
+    expect(screen.queryByText('main')).toBeNull()
     warn.mockRestore()
   })
 
@@ -546,7 +551,52 @@ describe('ThreadDetailsPanel version control', () => {
     view.unmount()
     resolveFacts(gitFactsFixture)
     await pending
-    expect(screen.queryByText('版本控制')).toBeNull()
+    expect(screen.queryByText('main')).toBeNull()
+  })
+})
+
+describe('ThreadDetailsPanel device row', () => {
+  it('names the Host device and copies it', async () => {
+    const writeText = vi.fn(async () => {})
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    mount()
+    expect(screen.getByText('fixture-host')).toBeTruthy()
+    fireEvent.click(screen.getByLabelText('复制设备名称'))
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalledWith('fixture-host')
+    })
+  })
+
+  it('confirms the copy and clears the confirmation after the feedback window', async () => {
+    const writeText = vi.fn(async () => {})
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    vi.useFakeTimers()
+    try {
+      mount()
+      fireEvent.click(screen.getByLabelText('复制设备名称'))
+      await act(async () => { await Promise.resolve() })
+      expect(screen.getByLabelText('已复制设备名称')).toBeTruthy()
+      await act(async () => { vi.advanceTimersByTime(1500) })
+      expect(screen.getByLabelText('复制设备名称')).toBeTruthy()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('keeps the plain affordance when the Host refuses the write', async () => {
+    const writeText = vi.fn(async () => { throw new Error('denied') })
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    mount()
+    fireEvent.click(screen.getByLabelText('复制设备名称'))
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalled()
+    })
+    expect(screen.getByLabelText('复制设备名称')).toBeTruthy()
+  })
+
+  it('drops the device row when the Host reports no name', () => {
+    mount({ useHostInfo: hook({ home: undefined, hostname: undefined, isLoopback: true }) })
+    expect(screen.queryByLabelText('复制设备名称')).toBeNull()
   })
 })
 
@@ -564,6 +614,20 @@ describe('ThreadDetailsPanel lineage', () => {
   it('drops the section when no renderer occupies the hole', () => {
     mount({ useLineage: hook(false) })
     expect(screen.queryByText('会话谱系')).toBeNull()
+  })
+})
+
+describe('ThreadDetailsPanel live fleet', () => {
+  it('shows the fleet section while its hole is occupied', () => {
+    const { keys } = mount()
+    expect(screen.getByText('实时编队')).toBeTruthy()
+    expect(screen.getByText('Fleet rows')).toBeTruthy()
+    expect(keys).toContain('conversation.details.thread.fleet')
+  })
+
+  it('drops the section when no renderer occupies the hole', () => {
+    mount({ useFleet: hook(false) })
+    expect(screen.queryByText('实时编队')).toBeNull()
   })
 })
 

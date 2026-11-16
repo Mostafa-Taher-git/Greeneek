@@ -33,7 +33,7 @@ describe('Connection generation facts', () => {
   it('publishes ready-frame Host facts and retracts them when the loop stops', async () => {
     const connection = await mount()
     const source: ConnectionGenerationSource = (signal, ready) => {
-      ready({ home: '/home/from-ready' })
+      ready({ home: '/home/from-ready', hostname: 'from-ready-host' })
       return new Promise<void>((resolve) => {
         if (signal.aborted) resolve()
         else signal.addEventListener('abort', () => { resolve() }, { once: true })
@@ -54,7 +54,7 @@ describe('Connection generation facts', () => {
     await vi.waitFor(() => {
       expect(connection.generation.getSnapshot()).toEqual({
         id: 1,
-        host: { home: '/home/from-ready' },
+        host: { home: '/home/from-ready', hostname: 'from-ready-host' },
       })
     })
     loop.stop()

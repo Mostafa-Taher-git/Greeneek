@@ -81,6 +81,11 @@ declare module '@greeneek/gnk-client-ui-slots' {
       scope: 'session'
       owner: ThreadDetailsLineageOwnerProps
     }
+    /**
+     * Live Fleet inside the Thread Details card. Declared by this package's
+     * Thread Details entry; absence leaves the card's fleet section out.
+     */
+    'conversation.details.thread.fleet': { kind: 'single'; scope: 'session' }
   }
 }
 
@@ -257,8 +262,8 @@ export type WorkspaceBrowserProps =
 
 /**
  * Thread Details card share: the Session verbs the card and the browsing rows
- * mean the same way, the three panel toggles its shortcuts drive, and the
- * lineage occupancy fact that decides whether the card shows that section.
+ * mean the same way, the three panel toggles its shortcuts drive, and the two
+ * occupancy facts that decide whether the card shows those sections.
  */
 export type ThreadDetailsPanelInjected =
   & Pick<
@@ -270,6 +275,10 @@ export type ThreadDetailsPanelInjected =
     hooks: {
       /** True while this Session's Thread Details card has a lineage occupant. */
       lineage: HostObservable<boolean>
+      /** True while a Live Fleet renderer occupies the card's fleet hole. */
+      fleet: HostObservable<boolean>
+      /** Fixed Host facts: the device row selects `info => info.hostname`. */
+      hostInfo: HostObservable<RemoteHostFacts>
     }
     /** Toggle the details column between its remembered width and closed. */
     toggleDetails: () => void
@@ -279,10 +288,14 @@ export type ThreadDetailsPanelInjected =
     toggleRightPanel: () => void
   }
 
-/** Full Thread Details card props: the Session scope, both inner holes, the injected share, and the locale seat. */
+/** Full Thread Details card props: the Session scope, the three inner holes, the injected share, and the locale seat. */
 export type ThreadDetailsPanelProps =
   PropsRuntime<'conversation.details.thread'>
-  & PropsRenderSlots<'conversation.details.thread.action' | 'conversation.details.thread.lineage'>
+  & PropsRenderSlots<
+    | 'conversation.details.thread.action'
+    | 'conversation.details.thread.lineage'
+    | 'conversation.details.thread.fleet'
+  >
   & Omit<ThreadDetailsPanelInjected, 'hooks'>
   & PropsHooks<ThreadDetailsPanelInjected['hooks']>
   & PropsLocale<'workspace'>

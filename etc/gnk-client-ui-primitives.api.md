@@ -116,6 +116,7 @@
 `src/icons/index.tsx: export const IconEditOutline16 = ({ size = 16, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconEllipsisOutline16 = ({ size = 16, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconEnhanceOutline16 = ({ size = 16, className }: IconProps) => (`
+`src/icons/index.tsx: export const IconFileDiff16 = ({ size = 16, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconFolderClose16 = ({ size = 16, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconFolderOpen16 = ({ size = 16, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconFolderOpenOutline16 = ({ size = 16, className }: IconProps) => (`
@@ -134,6 +135,7 @@
 `src/icons/index.tsx: export const IconLinkOutline16 = ({ size = 16, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconListPenOutline16 = ({ size = 16, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconLoadingOutline16 = ({ size = 16, className }: IconProps) => (`
+`src/icons/index.tsx: export const IconMonitor16 = ({ size = 16, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconNewChatOutline16 = ({ size = 16, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconPalette16 = ({ size = 16, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconPanelBottomOutline16 = ({ size = 16, className }: IconProps) => (`

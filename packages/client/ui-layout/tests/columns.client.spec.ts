@@ -20,7 +20,9 @@ describe('clampWidth', () => {
 describe('computeColumns', () => {
   it('step 1: everything fits at preferred widths', () => {
     const cols = computeColumns(1920, open(SIDEBAR_DEFAULT), open(DETAILS_DEFAULT))
-    expect(cols).toEqual({ sidebar: 280, center: 1920 - 280 - 360, details: 360, rightbar: 0 })
+    expect(cols).toEqual({
+      sidebar: 280, center: 1920 - 280 - DETAILS_DEFAULT, details: DETAILS_DEFAULT, rightbar: 0,
+    })
   })
 
   it('closed sidebar keeps its compact rail while closed details contribute zero width', () => {
@@ -36,8 +38,9 @@ describe('computeColumns', () => {
   })
 
   it('step 2: details shrinks first, center pinned at min', () => {
-    // 280 + 360 + 640 = 1280 > 1250; details concedes to 1250-280-640 = 330.
-    const cols = computeColumns(1250, open(SIDEBAR_DEFAULT), open(DETAILS_DEFAULT))
+    // A dragged 360 preference has a shrink band above the 300 floor:
+    // 280 + 360 + 640 = 1280 > 1250, so details concedes to 1250-280-640 = 330.
+    const cols = computeColumns(1250, open(SIDEBAR_DEFAULT), open(360))
     expect(cols).toEqual({ sidebar: 280, center: CENTER_MIN, details: 330, rightbar: 0 })
   })
 
@@ -98,13 +101,13 @@ describe('computeColumns', () => {
   })
 
   it('shrinks and then closes the right panel before closing thread details', () => {
-    const shrunk = computeColumns(1_580, SIDEBAR_DEFAULT, DETAILS_DEFAULT, RIGHTBAR_DEFAULT)
+    const shrunk = computeColumns(1_520, SIDEBAR_DEFAULT, DETAILS_DEFAULT, RIGHTBAR_DEFAULT)
     expect(shrunk).toEqual({
       sidebar: SIDEBAR_DEFAULT, center: CENTER_MIN,
       details: DETAILS_DEFAULT, rightbar: RIGHTBAR_MIN,
     })
     const closed = computeColumns(1_250, SIDEBAR_DEFAULT, DETAILS_DEFAULT, RIGHTBAR_DEFAULT)
-    expect(closed).toEqual({ sidebar: SIDEBAR_DEFAULT, center: 970, details: 0, rightbar: 0 })
+    expect(closed).toEqual({ sidebar: SIDEBAR_DEFAULT, center: 670, details: DETAILS_DEFAULT, rightbar: 0 })
   })
 })
 

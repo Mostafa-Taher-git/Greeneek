@@ -204,7 +204,7 @@ interface FixtureRemoteEventResult {
 interface FixtureRemoteEventReadyFrame {
   readonly type: 'ready'
   readonly clientId: string
-  readonly host: { readonly home: string }
+  readonly host: { readonly home: string; readonly hostname: string }
 }
 
 interface FixtureProjectionFrame {
@@ -1909,6 +1909,7 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
   const wid = (raw: string): WorkspaceId => raw as WorkspaceId
   const fixtureEpoch = new Date(Date.now() - 300_000).toISOString()
   const FIXTURE_HOME = '/home/fixture'
+  const FIXTURE_HOSTNAME = 'fixture-host'
   const workspaces: FixtureWorkspace[] = options.empty ? [] : [{
     workspaceId: wid('fx-ws-fixture'),
     path: '/tmp/fixture',
@@ -3170,7 +3171,7 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
       if (gamma !== undefined) setRunning(gamma.sessionId, !gamma.running)
     }, 5000)
     try {
-      yield { type: 'ready', clientId, host: { home: FIXTURE_HOME } }
+      yield { type: 'ready', clientId, host: { home: FIXTURE_HOME, hostname: FIXTURE_HOSTNAME } }
       if (approvalPending) yield approvalInvocation()
       if (questionPending) yield questionInvocation()
       yield* conn.drain(signal)

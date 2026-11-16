@@ -113,6 +113,11 @@ export function apply(ctx: Context): void {
     getSnapshot: () => ctx.slots.entries('conversation.details.thread.lineage').length > 0,
     subscribe: listener => ctx.slots.subscribe('conversation.details.thread.lineage', listener),
   }
+  // The card's Live Fleet hole follows the same declaration lifetime.
+  const fleetOccupied: HostObservable<boolean> = {
+    getSnapshot: () => ctx.slots.entries('conversation.details.thread.fleet').length > 0,
+    subscribe: listener => ctx.slots.subscribe('conversation.details.thread.fleet', listener),
+  }
   const browserFlowSource = flowSource('sidebar.workspaces.directoryFlow')
   const hostInfo: HostObservable<RemoteHostFacts> = {
     getSnapshot: () => ctx.remote.$host,
@@ -201,7 +206,7 @@ export function apply(ctx: Context): void {
     toggleDetails: () => { layout()?.toggleDetails() },
     toggleTerminalDrawer: () => { layout()?.toggleTerminalDrawer() },
     toggleRightPanel: () => { layout()?.toggleRightbar() },
-    hooks: { lineage: lineageOccupied },
+    hooks: { lineage: lineageOccupied, fleet: fleetOccupied, hostInfo },
   })
   // The two picker registrations declare their directory-flow child in the
   // same call. Slot injection follows each owner and declaration HMR lifetime.
@@ -253,6 +258,7 @@ export function apply(ctx: Context): void {
       children: {
         'conversation.details.thread.action': { kind: 'list', scope: 'session' },
         'conversation.details.thread.lineage': { kind: 'single', scope: 'session' },
+        'conversation.details.thread.fleet': { kind: 'single', scope: 'session' },
       },
       inject: threadDetailsInjected,
       locale: NS,

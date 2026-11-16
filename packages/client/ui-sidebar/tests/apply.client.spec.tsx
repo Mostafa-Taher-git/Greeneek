@@ -4,13 +4,19 @@ import { describe, expect, it, vi } from 'vitest'
 import { SlotRegistry } from '@greeneek/gnk-client-ui-renderer/client'
 import { LocaleRuntime } from '@greeneek/gnk-client-locale/client'
 import { apply, inject } from '@greeneek/gnk-client-ui-sidebar/client'
-import type { SidebarRootInjected, TitlebarInjected } from '@greeneek/gnk-client-ui-sidebar/client'
+import type { SidebarRootInjected, SurfacePanelInjected, TitlebarInjected } from '@greeneek/gnk-client-ui-sidebar/client'
 import { apply as hostApply } from '../src/index.ts'
 
 async function bench(declare = true) {
   const ctx = new Context()
   await ctx.plugin(SlotRegistry).await()
-  const layout = { toggleSidebar: vi.fn(), showConversation: vi.fn() }
+  const layout = {
+    toggleSidebar: vi.fn(),
+    showConversation: vi.fn(),
+    openTerminalDrawer: vi.fn(),
+    openSettings: vi.fn(),
+    openDashboard: vi.fn(),
+  }
   const uiWorkspace = { startSession: vi.fn() }
   const uiConversation = { selectView: vi.fn() }
   ctx.provide('layout', layout)
@@ -25,6 +31,7 @@ async function bench(declare = true) {
         children: {
           'sidebar': { kind: 'single', scope: 'root' },
           'titlebar': { kind: 'single', scope: 'root' },
+          'rightbar': { kind: 'single', scope: 'session' },
         },
       } as never,
       () => null,
@@ -72,6 +79,23 @@ describe('ui-sidebar apply', () => {
     titlebar().openChat('s1' as never)
     expect(b.layout.showConversation).toHaveBeenCalledTimes(3)
     expect(b.uiConversation.selectView).toHaveBeenCalledWith('s1', 'chat')
+
+    expect(b.slots.entries('rightbar')).toHaveLength(1)
+    expect(b.slots.entries('rightbar')[0]!.locale).toBe('sidebar')
+    // Every launcher row delegates to a destination this app really has.
+    const surfaces = b.slots.entries('rightbar')[0]!.inject as () => SurfacePanelInjected
+    surfaces().openTerminal()
+    expect(b.layout.openTerminalDrawer).toHaveBeenCalledOnce()
+    surfaces().openTrajectory('s1' as never)
+    expect(b.layout.showConversation).toHaveBeenCalledTimes(4)
+    expect(b.uiConversation.selectView).toHaveBeenCalledWith('s1', 'trajectory')
+    surfaces().openChat('s1' as never)
+    expect(b.layout.showConversation).toHaveBeenCalledTimes(5)
+    expect(b.uiConversation.selectView).toHaveBeenCalledWith('s1', 'chat')
+    surfaces().openSettings()
+    expect(b.layout.openSettings).toHaveBeenCalledOnce()
+    surfaces().openDashboard()
+    expect(b.layout.openDashboard).toHaveBeenCalledOnce()
   })
 
   it('fails when no live owner declared the sidebar slot', async () => {
@@ -85,6 +109,7 @@ describe('ui-sidebar apply', () => {
     await fiber.await()
     await fiber.dispose()
     expect(b.slots.entries('sidebar')).toHaveLength(0)
+    expect(b.slots.entries('rightbar')).toHaveLength(0)
     expect(b.slots.spec('sidebar.brand.mark')).toBeUndefined()
     expect(b.slots.spec('sidebar.brand.name')).toBeUndefined()
     expect(b.slots.spec('sidebar.workspaces')).toBeUndefined()

@@ -36,8 +36,8 @@ export const SIDEBAR_AUTO_COLLAPSE = 1024
 export const DETAILS_MIN = 300
 /** Details drag clamp ceiling. */
 export const DETAILS_MAX = 520
-/** Details width before any user drag. */
-export const DETAILS_DEFAULT = 360
+/** Details width before any user drag: the floating card plus its gutters. */
+export const DETAILS_DEFAULT = 300
 /** Right panel drag clamp floor. */
 export const RIGHTBAR_MIN = 300
 /** Right panel drag clamp ceiling. */

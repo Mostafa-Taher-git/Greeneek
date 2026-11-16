@@ -1,11 +1,13 @@
+- button "Collapse sidebar" [pressed]:
+  - img
+- button "New session":
+  - img
 - text: Greeneek
 - button "Toggle thread details":
   - img
 - button "Toggle terminal drawer":
   - img
 - button "Toggle right panel":
-  - img
-- button "Collapse sidebar" [expanded]:
   - img
 - button "New session":
   - img
@@ -26,7 +28,6 @@
     - img
     - text: workspace
   - treeitem "New Session" [selected]
-- button "Go to home"
 - button "Settings":
   - img
   - text: Settings

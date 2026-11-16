@@ -1,3 +1,7 @@
+- img
+- text: {{hostname}}
+- button "Copy device name":
+  - img
 - button "Open workspace {{workspace}}":
   - img
   - text: {{workspace}}
@@ -22,3 +26,6 @@
 - button "1 subagent":
   - text: 1 subagent
   - img
+- heading "Live Fleet" [level=3]
+- status
+- text: {{fleetStatus}}

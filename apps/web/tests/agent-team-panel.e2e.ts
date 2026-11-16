@@ -95,17 +95,24 @@ describe('web e2e: Agent Teams panel', () => {
     await openThreadDetails(page)
     const action = page.locator('[data-team-action]')
     await action.getByRole('button', { name: /Agent Team/iu }).click()
-    await action.getByText('No shared tasks yet').waitFor()
-    await action.getByText('lead').waitFor()
+    // The board portals to the body so the card cannot clip it; query it at
+    // page scope rather than inside the trigger's subtree.
+    const board = page.getByRole('dialog', { name: 'Agent Team' })
+    await board.getByText('No shared tasks yet').waitFor()
+    await board.getByText('lead').waitFor()
 
-    await action.getByRole('button', { name: 'New task' }).click()
-    await action.getByPlaceholder('Task subject').fill('Browser task')
-    await action.getByPlaceholder('Task description').fill('Created through the assembled browser')
-    await action.getByPlaceholder(/Write scopes/iu).fill('src/web')
-    await action.getByRole('button', { name: 'Save' }).click()
-    await action.getByText('Browser task').waitFor()
+    await board.getByRole('button', { name: 'New task' }).click()
+    await board.getByPlaceholder('Task subject').fill('Browser task')
+    await board.getByPlaceholder('Task description').fill('Created through the assembled browser')
+    await board.getByPlaceholder(/Write scopes/iu).fill('src/web')
+    await board.getByRole('button', { name: 'Save' }).click()
+    await board.getByText('Browser task').waitFor()
 
-    const snapshot = await captureStableAria(page, '[data-team-action]', scaffold.workspaceCwd)
+    // The board is portaled out of the trigger subtree, so capture the dialog
+    // itself as the stable product surface.
+    const snapshot = await captureStableAria(
+      page, '[role="dialog"][aria-label="Agent Team"]', scaffold.workspaceCwd,
+    )
     await compareOrRefreshGolden(PANEL_EXPECTED, snapshot, MODE)
     expect(tripwire.pageErrors).toEqual([])
     expect(tripwire.warnings).toEqual([])

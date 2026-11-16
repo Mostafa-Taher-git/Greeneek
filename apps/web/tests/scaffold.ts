@@ -25,7 +25,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { mkdir, mkdtemp, readFile, readdir, realpath, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
+import { hostname, tmpdir } from 'node:os'
 import { basename, dirname, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type { Page } from 'playwright'
@@ -1160,6 +1160,12 @@ function normalizeAria(snapshot: string, workspaceCwd: string, age: boolean): st
   // only on `/` would leave the basename literal in that host's captures.
   const base = workspaceCwd.split(/[\\/]/).pop()!
   return (age ? snapshot.replace(ARIA_AGE, '{{age}}') : snapshot)
+    // The Thread Details device row prints the Host machine name, which is
+    // different on every CI runner and developer machine.
+    .split(hostname()).join('{{hostname}}')
+    // The Live Fleet section settles at different sample counts across lanes.
+    .replace('No active Army waves for this session.', '{{fleetStatus}}')
+    .replace('Loading the fleet…', '{{fleetStatus}}')
     .split(workspaceCwd).join('{{cwd}}')
     .split(base).join('{{workspace}}')
     .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '{{uuid}}')

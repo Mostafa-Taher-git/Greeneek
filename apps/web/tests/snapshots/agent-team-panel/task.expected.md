@@ -1,6 +1,3 @@
-- button "Agent Team" [expanded]:
-  - img
-  - text: Agent Team
 - dialog "Agent Team":
   - strong: Agent Team
   - button "Refresh Team":

@@ -101,7 +101,7 @@ Scope: 261 workspace packages; every package appears under each of its kinds (24
 | `@greeneek/gnk-client-ui-settings-models` | Models settings and product-onboarding plugin for the gnk web client: provider rows, API-key management, model lists, and the Greeneek first-run dialogs. |
 | `@greeneek/gnk-client-ui-settings-plugin-inventory` | Scope-grouped read-only plugin inventory tab in Web Plugins settings for the gnk web client: agent-preset compositions first, the global plane behind a disclosure, search across both. |
 | `@greeneek/gnk-client-ui-settings-plugins` | Plugins settings section for the gnk web client: feature-owned tabs, the configurable host-plane plugin cards, and the settings.plugin.item extension point. |
-| `@greeneek/gnk-client-ui-sidebar` | Sidebar shell plugin for the gnk web client: brand row, New Session action, collapse control, scroll-aware region seat, bottom-pinned Settings seat, frameless titlebar, and the right-panel surface launcher. |
+| `@greeneek/gnk-client-ui-sidebar` | Sidebar shell plugin for the gnk web client: New Session action, scroll-aware region seat, bottom-pinned Settings seat, frameless titlebar, and the right-panel surface launcher. |
 | `@greeneek/gnk-client-ui-skill` | Web skill references and the dedicated skill tool row for the gnk web client: the /-triggered skill source and the skill call card. |
 | `@greeneek/gnk-client-ui-slots` | Slot registry pure core for the gnk web client: SlotMap declaration merging, the single register composition API, four-share props types, store seats, and the renderer install contract. |
 | `@greeneek/gnk-client-ui-subagent` | Subagent conversation catalog, continuation routing UI, and '@' reference source for the gnk web client. |

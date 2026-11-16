@@ -1,5 +1,5 @@
 ---
-description: "Sidebar shell plugin for the gnk web client: brand row, New Session action, collapse control, scroll-aware region seat, bottom-pinned Settings seat, frameless titlebar, and the right-panel surface launcher."
+description: "Sidebar shell plugin for the gnk web client: New Session action, scroll-aware region seat, bottom-pinned Settings seat, frameless titlebar, and the right-panel surface launcher."
 kind: "package-reference"
 ---
 
@@ -8,7 +8,7 @@ kind: "package-reference"
 
 ## Summary
 
-`gnk-client-ui-sidebar` is the sidebar shell of the gnk web client: users see the brand row, start new sessions, open primary actions such as the Dashboard directly under New Session, fully close the sidebar, and reach Settings from the bottom-pinned seat, while the scroll-aware region seat hosts the Workspace and Session browser. The Workspace and Session browser rendered into `sidebar.workspaces` belongs to ui-workspace; this package neither derives its rows nor owns its view preferences. A deployment package can replace the brand mark or name without replacing the New Session control, and New Session starts the runtime's page-local frontend Session Intent against the explicit, current, or most recently active Workspace. The sidebar's leading toggle and New Session control also live in the titlebar, so they remain reachable while the sidebar is closed.
+`gnk-client-ui-sidebar` is the sidebar shell of the gnk web client: users start new sessions, open primary actions such as the Dashboard directly under New Session, fully close the sidebar, and reach Settings from the bottom-pinned seat, while the scroll-aware region seat hosts the Workspace and Session browser. The Workspace and Session browser rendered into `sidebar.workspaces` belongs to ui-workspace; this package neither derives its rows nor owns its view preferences. The brand mark and name, the fold toggle, and New Session all live in the titlebar, so they remain reachable while the sidebar is closed and no longer take space inside the column. New Session starts the runtime's page-local frontend Session Intent against the explicit, current, or most recently active Workspace.
 
 ## Table of Contents
 
@@ -24,7 +24,7 @@ kind: "package-reference"
 <a id="use-this-package"></a>
 ## Use this package
 
-The sidebar is the navigation shell, and this package also renders the frameless-desktop titlebar and the independent right panel: users see the brand, start new sessions, close the sidebar entirely, reach Settings, and open a surface from the right panel. Feature plugins fill the sidebar's seats — ui-workspace fills `sidebar.workspaces`, registers the Dashboard trigger at `sidebar.primary.action`, and ui-settings registers the trigger row and settings panel at `sidebar.settings`.
+The sidebar is the navigation shell, and this package also renders the frameless-desktop titlebar and the independent right panel: users start new sessions, close the sidebar entirely, reach Settings, and open a surface from the right panel. Feature plugins fill the sidebar's seats — ui-workspace fills `sidebar.workspaces`, registers the Dashboard trigger at `sidebar.primary.action`, and ui-settings registers the trigger row and settings panel at `sidebar.settings`.
 
 ### Titlebar
 
@@ -34,9 +34,9 @@ The 52px titlebar row carries the drag surface. Before the brand sit the sidebar
 
 The right panel is a T3-shaped "Open a surface" launcher over destinations this app actually has: Terminal (the activity drawer, with its bound `mod+j` shortcut chip), Trajectory and Chat (the current Session's conversation views), Settings, and Dashboard. It is a separate `rightbar` slot from Thread Details, and picking a row navigates without closing either panel, so the titlebar's thread-details and right-panel toggles stay independent. No placeholder Browser, Files, Diff, or pull-request rows are rendered for surfaces Greeneek does not have.
 
-### Brand and New Session
+### New Session
 
-The expanded brand row renders `sidebar.brand.mark` and `sidebar.brand.name` as independent single slots. Without occupants, the shell uses the fish mark and a localized local-build label. A complete build stacks a code badge below the label as `version[-commit][-dirty]`, using `GNK_CLIENT_VERSION`, the optional 7-character `GNK_CLIENT_COMMIT_HASH`, and `GNK_CLIENT_GIT_DIRTY=true`; missing version metadata omits the badge. New Session targets the explicit Workspace used by a scoped action, otherwise the current Session's Workspace, otherwise the most recently active Workspace; when none exists it clears into the blank New Session page.
+The column starts with the New Session capsule, then the browsing region, then the foot. The titlebar owns the fish mark, the localized brand name, and the fold toggle; the `sidebar.brand.mark` and `sidebar.brand.name` slots remain declared for deployed brand plugins but the shell no longer renders them inside the column. New Session targets the explicit Workspace used by a scoped action, otherwise the current Session's Workspace, otherwise the most recently active Workspace; when none exists it clears into the blank New Session page.
 
 ### Collapse behavior
 
@@ -54,7 +54,7 @@ Scrollbars in the column are a pointer affordance: the shell rebinds the scrollb
 <details>
 <summary>Implementation internals — click to expand</summary>
 
-The shell is pure composition: `SidebarRootComponentProps` composes the layout owner share, the global `useSessions` and `useWorkspaces` hooks, the declared brand, the `sidebar.workspaces` and `sidebar.settings` child slots, and injected `startSession` plus sidebar-toggle callbacks. There is no plugin store. The `titlebar` entry composes the layout owner share (panel controls, document title, current Session, sidebar collapsed state), the `openChat`, `toggleSidebar`, and `startSession` callbacks over `ctx.layout`, `ctx.uiConversation`, and the shared Workspace action, and the locale seat; it declares no holes and reads no store. The `rightbar` entry composes the session scope, five navigation callbacks over `ctx.layout` and `ctx.uiConversation`, and the locale seat; the launcher's rows are a static list in the component and no shortcut chip is fabricated for a destination without a bound key.
+The shell is pure composition: `SidebarRootComponentProps` composes the layout owner share, the global `useSessions` and `useWorkspaces` hooks, the `sidebar.workspaces` and `sidebar.settings` child slots, and injected `startSession` plus sidebar-toggle callbacks. There is no plugin store. The `titlebar` entry composes the layout owner share (panel controls, document title, current Session, sidebar collapsed state), the `openChat`, `toggleSidebar`, and `startSession` callbacks over `ctx.layout`, `ctx.uiConversation`, and the shared Workspace action, and the locale seat; it declares no holes and reads no store. The `rightbar` entry composes the session scope, five navigation callbacks over `ctx.layout` and `ctx.uiConversation`, and the locale seat; the launcher's rows are a static list in the component and no shortcut chip is fabricated for a destination without a bound key.
 
 ### Slot discipline
 

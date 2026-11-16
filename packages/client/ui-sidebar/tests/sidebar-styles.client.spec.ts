@@ -83,14 +83,11 @@ describe('SidebarRoot.module.css', () => {
   })
 
   it('stages the rail controls top-to-bottom while the settings seat only fades', () => {
-    // The V2 entrance is a choreography, not one shared animation: each seat
-    // gets its own delay so the rail fills in toggle → New Session → region
-    // → brand mark (its new bottom seat, dropping into place beside the
-    // fading foot). Pin the pairs, including the overshoot curve.
+    // Each seat gets its own delay so the column fills in New Session →
+    // region → foot. The fold toggle and brand live in the titlebar now.
     const stagger: Array<[selector: string, animation: string]> = [
       ['.railIn .newSession', 'rail-in 200ms var(--gnk-sidebar-neon-ease) 0ms backwards'],
       ['.railIn .regionArea', 'rail-in 200ms var(--gnk-sidebar-neon-ease) 60ms backwards'],
-      ['.railIn .logoRow', 'logo-rail-in 200ms var(--gnk-sidebar-neon-ease) 120ms backwards'],
       ['.railIn .footArea', 'rail-fade-in 200ms var(--gnk-sidebar-neon-ease) 120ms backwards'],
     ]
     for (const [selector, animation] of stagger) {
@@ -106,7 +103,6 @@ describe('SidebarRoot.module.css', () => {
     // The class (SidebarRoot.tsx) is what gates the expand entrance and its
     // sheen; a cold expanded paint must not animate the arrival.
     for (const selector of [
-      '.expanding .logoRow',
       '.expanding .newSession',
       '.expanding .regionArea',
       '.expanding .footArea',
@@ -118,18 +114,8 @@ describe('SidebarRoot.module.css', () => {
       .toBe('neon-sweep 480ms var(--ds-ease-in-out) 60ms both')
   })
 
-  it('gives shell rail controls the same base anchor for their shared translation', () => {
-    expect(declarations('.collapsed .logoRow')?.get('justify-content')).toBe('center')
+  it('keeps the New Session control at its rail icon geometry', () => {
     expect(declarations('.collapsed .newSession')?.get('align-self')).toBe('flex-start')
     expect(declarations('.collapsed .newSession')?.get('width')).toBe('36px')
-  })
-
-  it('keeps the slotted brand row at the full artwork height', () => {
-    expect(declarations('.brandIdentity')?.get('height')).toBe('24px')
-    expect(declarations('.brandName')?.get('height')).toBe('24px')
-    expect(declarations('.brandName')?.get('line-height')).toBe('24px')
-    expect(declarations('.brandName')?.get('font-size')).toBe('18px')
-    expect(declarations('.fallbackBrandName')?.get('font-size')).toBe('17px')
-    expect(declarations('.fallbackBrandName')?.get('white-space')).toBe('nowrap')
   })
 })

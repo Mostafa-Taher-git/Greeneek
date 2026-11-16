@@ -61,28 +61,28 @@ describe('sidebar shell snapshots', () => {
   it('renders the expanded column in the default locale (zh, no setLocale)', async () => {
     const { runtime } = await bench()
     const slot = runtime.renderSlot('sidebar', { collapsed: false, width: 300 })
-    // Wordmark is home; capsule is New Session.
-    expect(slot.view.getByRole('button', { name: '回到主页' })).toBeTruthy()
+    // The column owns only New Session; the brand lives in the titlebar.
+    expect(slot.view.queryByRole('button', { name: '回到主页' })).toBeNull()
     expect(slot.view.getAllByRole('button', { name: '新建会话' })).toHaveLength(1)
     expect(slot.container).toMatchSnapshot()
     await runtime.dispose()
   })
 
-  it('renders the expanded column (wordmark, capsule, empty holes)', async () => {
+  it('renders the expanded column (capsule, empty holes)', async () => {
     const { runtime } = await bench({ locale: 'en' })
     const slot = runtime.renderSlot('sidebar', { collapsed: false, width: 300 })
-    // Wordmark is home; capsule is New Session.
-    expect(slot.view.getByRole('button', { name: 'Go to home' })).toBeTruthy()
+    expect(slot.view.queryByRole('button', { name: 'Go to home' })).toBeNull()
     expect(slot.view.getAllByRole('button', { name: 'New session' })).toHaveLength(1)
     expect(slot.container).toMatchSnapshot()
     await runtime.dispose()
   })
 
-  it('carries the fold control inside the column on every host', async () => {
+  it('keeps the fold control and brand out of the column on every host', async () => {
     const { runtime } = await bench({ locale: 'en' })
     const slot = runtime.renderSlot('sidebar', { collapsed: false, width: 300 })
-    expect(slot.view.getByRole('button', { name: 'Collapse sidebar' })).toBeTruthy()
-    expect(slot.view.getByRole('button', { name: 'Go to home' })).toBeTruthy()
+    expect(slot.view.queryByRole('button', { name: 'Collapse sidebar' })).toBeNull()
+    expect(slot.view.queryByRole('button', { name: 'Go to home' })).toBeNull()
+    expect(slot.view.queryByText('Greeneek')).toBeNull()
     await runtime.dispose()
   })
 
@@ -91,13 +91,12 @@ describe('sidebar shell snapshots', () => {
     const slot = runtime.renderSlot('sidebar', { collapsed: false, width: 300 })
     const shell = slot.container.firstElementChild
     slot.update({ collapsed: true, width: 56 })
-    // The wide content (wordmark shortcut) unmounts at the 150ms settle;
-    // only the rail's capsule remains a New-session button. The Web host's fold
-    // control keeps its seat, centered in the rail.
+    // The wide-only label unmounts at the 150ms settle; the capsule remains a
+    // New Session button. The fold toggle is in the titlebar, not here.
     await waitFor(() => {
       expect(slot.view.getAllByRole('button', { name: 'New session' })).toHaveLength(1)
     })
-    expect(slot.view.getByRole('button', { name: 'Open sidebar' })).toBeTruthy()
+    expect(slot.view.queryByRole('button', { name: 'Open sidebar' })).toBeNull()
     expect(slot.container).toMatchSnapshot()
     // Same tree position: the owner flip re-rendered the shell in place.
     expect(slot.container.firstElementChild).toBe(shell)
@@ -107,13 +106,12 @@ describe('sidebar shell snapshots', () => {
   it('a locale switch refreshes mounted copy without re-registration', async () => {
     const { runtime, locale } = await bench()
     const slot = runtime.renderSlot('sidebar', { collapsed: false, width: 300 })
-    expect(slot.view.getByRole('button', { name: '回到主页' })).toBeTruthy()
+    expect(slot.view.queryByRole('button', { name: '回到主页' })).toBeNull()
     expect(slot.view.getAllByRole('button', { name: '新建会话' })).toHaveLength(1)
     // Same fiber, same registration: setLocale alone re-renders the outlet.
     act(() => { locale.setLocale('en') })
-    expect(slot.view.getByRole('button', { name: 'Go to home' })).toBeTruthy()
     expect(slot.view.getAllByRole('button', { name: 'New session' })).toHaveLength(1)
-    expect(slot.view.queryByRole('button', { name: '回到主页' })).toBeNull()
+    expect(slot.view.queryByRole('button', { name: '新建会话' })).toBeNull()
     await runtime.dispose()
   })
 })

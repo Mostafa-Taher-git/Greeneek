@@ -148,22 +148,14 @@
   from { opacity: 0; }
 }
 
-/* At the 150ms rail settle, the rail controls enter top-to-bottom:
-   New Session (0ms) → browsing region (60ms) → brand mark (120ms, dropping
-   into its bottom seat as the foot fades in beside it). The 200ms entrances
-   therefore finish by 320ms, just after the AppFrame track lands, so the
-   column fills itself from top to bottom instead of snapping all at once.
-   Only a live collapse gets .railIn; a cold collapsed render stays static. */
+/* At the 150ms settle the controls enter top-to-bottom: New Session (0ms),
+   browsing region (60ms), foot (120ms). Only a live collapse gets .railIn. */
 .railIn .newSession {
   animation: rail-in 200ms var(--gnk-sidebar-neon-ease) 0ms backwards;
 }
 
 .railIn .regionArea {
   animation: rail-in 200ms var(--gnk-sidebar-neon-ease) 60ms backwards;
-}
-
-.railIn .logoRow {
-  animation: logo-rail-in 200ms var(--gnk-sidebar-neon-ease) 120ms backwards;
 }
 
 .railIn .footArea {
@@ -191,32 +183,19 @@
   }
 }
 
-@keyframes logo-rail-in {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-}
-
 @keyframes rail-fade-in {
   from { opacity: 0; }
 }
 
-/* Expand entrance (V2): the inverse choreography, again top-to-bottom from
-   the column's new reading order — New Session (60ms, with its sheen), the
-   browsing region (90ms), then the brand mark (120ms) and the foot together.
-   SidebarRoot.tsx adds .expanding for one expand and drops it again, so a
-   cold expanded paint is still and every later expand replays it. */
+/* Expand entrance (V2): New Session (60ms, with its sheen), browsing region
+   (90ms), then the foot (120ms). SidebarRoot.tsx adds .expanding for one
+   expand and drops it again, so a cold expanded paint stays still. */
 .expanding .newSession {
   animation: neon-expand-in 200ms var(--gnk-sidebar-neon-ease) 60ms backwards;
 }
 
 .expanding .regionArea {
   animation: neon-expand-in 200ms var(--gnk-sidebar-neon-ease) 90ms backwards;
-}
-
-.expanding .logoRow {
-  animation: neon-expand-in 200ms var(--gnk-sidebar-neon-ease) 120ms backwards;
 }
 
 .expanding .footArea {
@@ -232,7 +211,6 @@
 
 /* Expanding content melts in from the rail side; RTL flips that side. */
 [dir='rtl'] .expanding .regionArea,
-[dir='rtl'] .expanding .logoRow,
 [dir='rtl'] .expanding .footArea {
   animation-name: neon-expand-in-rtl;
 }
@@ -287,126 +265,8 @@
   }
 }
 
-/* Logo row (figma pad (4,8,4,8)): the brand wordmark in its bottom seat —
-   above the foot stack in both states (the fold toggle lives in the desktop
-   titlebar). The rail shows the static mark only. */
-.logoRow {
-  flex: none;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 8px;
-  height: 60px;
-  padding-block: 8px;
-  padding-inline: 4px 0;
-  margin-bottom: 8px;
-  box-sizing: border-box;
-  overflow: hidden;
-}
-
-.collapsed .logoRow {
-  height: 40px;
-  padding: 4px 0;
-  /* The seat order puts the wordmark above the collapsing foot, not at the
-     column head; the rail keeps it there with a simple vertical center. */
-  margin-bottom: 0;
-  justify-content: center;
-}
-
-/* Brand group (figma I133:7632): the full wordmark rides the text ink
-   (figma flows: the main-screen instance is black; blue is brand
-   emphasis only). A button only in behavior (New Session shortcut): the
-   pointer cursor is the sole affordance — no hover chrome on the mark. */
-.brand {
-  flex: 1;
-  min-width: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-}
-
-.collapsed .brand {
-  justify-content: center;
-}
-
-/* Mark and name are independent slots; the shell owns their shared baseline,
-   spacing, and height so either occupant can vary in width. */
-.brandIdentity {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  height: 24px;
-  min-width: 0;
-}
-
-.brandMark {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* The mark is deliberately unlit in the Edge Frame shell: no ambient halo,
-   no bloom — the brand color itself is the light. (The one brand glow left
-   in the shell is the AppFrame crown line above the window.) */
-
-.brandName {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  height: 24px;
-  font-size: 18px;
-  font-weight: 600;
-  line-height: 24px;
-  letter-spacing: 0.04em;
-}
-
-.fallbackBrandName {
-  font-size: 17px;
-  letter-spacing: 0px;
-  white-space: nowrap;
-}
-
-.localBuildBrand {
-  flex: none;
-  display: inline-flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 1px;
-  height: 24px;
-  white-space: nowrap;
-}
-
-.localBuildTitle {
-  font-size: 12px;
-  line-height: 13px;
-  letter-spacing: 0;
-}
-
-/* Rail mark: removed; logo stays visible in collapsed state. */
-.buildVersion {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  height: 10px;
-  padding: 0 3px;
-  border-radius: 2px;
-  color: var(--dsw-alias-label-primary-inverted);
-  background: var(--dsw-alias-label-primary);
-  font-family: var(--ds-font-family-code);
-  font-size: 6px;
-  font-weight: 500;
-  line-height: 10px;
-  white-space: nowrap;
-}
+/* The brand wordmark and the fold control live in the titlebar. This column
+   carries only New Session, the browsing region, and the foot stack. */
 
 /* New Session: 38px bar, 12px radius (figma 133:7634 geometry, squared-off
    corners); collapsed it renders as the rail's plain icon control. The
@@ -424,51 +284,6 @@
 .collapsed .primaryActions {
   align-items: flex-start;
   padding-inline: 0;
-}
-
-/* The Web host's fold control: one icon box on its own row above New Session,
-   because the Web host renders no titlebar row. Expanded it rides the column's
-   trailing edge; on the rail it centers in the 56px track like every other
-   control box. It stays icon-only in both widths, so the collapse choreography
-   never has to fade a label. */
-.foldRow {
-  flex: none;
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 2px;
-}
-
-.foldToggle {
-  flex: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  box-sizing: border-box;
-  padding: 0;
-  border: 0;
-  border-radius: 10px;
-  background: transparent;
-  color: var(--dsw-alias-label-secondary);
-  cursor: pointer;
-  transition:
-    background-color 150ms var(--ds-ease-in-out),
-    color 150ms var(--ds-ease-in-out);
-}
-
-.foldToggle:hover {
-  background: color-mix(in srgb, var(--gnk-sidebar-neon) 13%, transparent);
-  color: var(--dsw-alias-label-primary);
-}
-
-.foldToggle:focus-visible {
-  outline: 2px solid var(--gnk-sidebar-neon);
-  outline-offset: 1px;
-}
-
-.collapsed .foldRow {
-  justify-content: center;
 }
 
 .newSession {
@@ -547,10 +362,6 @@
   background: var(--dsw-alias-interactive-bg-hover);
 }
 
-/* The host rule for the fold control: the desktop titlebar owns it there, so
-   the column renders none; on the Web host the `.foldRow` above is the only one
-   and keeps its seat in both widths. */
-
 .newSessionLabel {
   max-width: 200px;
   overflow: hidden;
@@ -618,17 +429,13 @@
 @media (prefers-reduced-motion: reduce) {
   .wide,
   .fading > *,
-  .railIn .logoRow,
   .railIn .newSession,
   .railIn .regionArea,
   .railIn .footArea,
-  .expanding .logoRow,
   .expanding .newSession,
   .expanding .regionArea,
   .expanding .footArea,
-  .expanding .brandMark,
   .expanding .newSession::before,
-  .brandMark,
   .newSession,
   .root::before,
   .regionArea {

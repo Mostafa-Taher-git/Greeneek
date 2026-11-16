@@ -36,8 +36,6 @@ function mountShell({
   let regionOwner: SidebarSectionOwnerProps | undefined
   let settingsOwner: SidebarSettingsOwnerProps | undefined
   let footerActionOwner: SidebarFooterActionOwnerProps | undefined
-  const brandMark = <span data-testid="custom-brand-mark">M</span>
-  const brandName = <span data-testid="custom-brand-name">Custom Brand</span>
   let current = { collapsed, width }
   const root = () => (
     <SidebarRoot
@@ -49,8 +47,6 @@ function mountShell({
         owner: SidebarFooterActionOwnerProps | SidebarPrimaryActionOwnerProps
           | SidebarSectionOwnerProps | SidebarSettingsOwnerProps,
       ) => {
-        if (key === 'sidebar.brand.mark') return brandMark
-        if (key === 'sidebar.brand.name') return brandName
         if (key === 'sidebar.settings') {
           settingsOwner = owner
           return <div data-testid="settings-seat" data-wide={owner.wide} />
@@ -91,25 +87,18 @@ function mountShell({
 }
 
 describe('SidebarRoot shell', () => {
-  it('routes home from brand wordmark and New Session from capsule', () => {
+  it('routes New Session from the capsule and renders no brand or fold control', () => {
     const b = mountShell()
-    expect(screen.getByTestId('custom-brand-mark')).toBeTruthy()
-    expect(screen.getByTestId('custom-brand-name')).toBeTruthy()
-    // Expanded: the brand wordmark is a home button, and the capsule is
-    // a separate New Session control.
-    const homeButton = screen.getByRole('button', { name: 'Go to home' })
     const newSessionButtons = screen.getAllByRole('button', { name: 'New session' })
     expect(newSessionButtons).toHaveLength(1)
-    if (!homeButton) throw new Error('home button not found')
-    fireEvent.click(homeButton)
-    for (const button of newSessionButtons) fireEvent.click(button)
-    expect(b.startSession).toHaveBeenCalledTimes(2)
+    fireEvent.click(newSessionButtons[0]!)
+    expect(b.startSession).toHaveBeenCalledOnce()
+    expect(screen.queryByRole('button', { name: 'Go to home' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Collapse sidebar' })).toBeNull()
+    expect(screen.queryByText('Greeneek')).toBeNull()
   })
 
-  it('renders generic brand fallbacks when no package fills the slots', () => {
-    vi.stubEnv('GNK_CLIENT_COMMIT_HASH', '0123456')
-    vi.stubEnv('GNK_CLIENT_GIT_DIRTY', 'true')
-    vi.stubEnv('GNK_CLIENT_VERSION', '1.2.3-rc.4')
+  it('never renders a brand fallback inside the column', () => {
     const { container } = render(<SidebarRoot
       collapsed={false} width={300}
       useSessions={neverHook} useSessionPendingInteraction={useSessionPendingInteraction} useWorkspaces={neverHook}
@@ -118,35 +107,9 @@ describe('SidebarRoot shell', () => {
         options?.fallback ?? null) as SidebarRootComponentProps['renderSlot']}
     />)
 
-    expect(screen.getByText('Greeneek')).toBeTruthy()
-    expect(container.querySelector('svg')).not.toBeNull()
-  })
-
-  it.each([
-    [{ GNK_CLIENT_VERSION: '1.2.3' }, '1.2.3'],
-    [{ GNK_CLIENT_COMMIT_HASH: 'abcdef0', GNK_CLIENT_VERSION: '1.2.3' }, '1.2.3-abcdef0'],
-  ])('omits unavailable build-version suffixes from %j', (_environment, _expected) => {
-    render(<SidebarRoot
-      collapsed={false} width={300}
-      useSessions={neverHook} useSessionPendingInteraction={useSessionPendingInteraction} useWorkspaces={neverHook}
-      startSession={vi.fn()} toggleSidebar={vi.fn()} t={t}
-      renderSlot={((_key: string, _owner: unknown, options?: { fallback?: ReactNode }) =>
-        options?.fallback ?? null) as SidebarRootComponentProps['renderSlot']}
-    />)
-
-    expect(screen.getByText('Greeneek')).toBeTruthy()
-  })
-
-  it('retains the local-build fallback without complete build metadata', () => {
-    render(<SidebarRoot
-      collapsed={false} width={300}
-      useSessions={neverHook} useSessionPendingInteraction={useSessionPendingInteraction} useWorkspaces={neverHook}
-      startSession={vi.fn()} toggleSidebar={vi.fn()} t={t}
-      renderSlot={((_key: string, _owner: unknown, options?: { fallback?: ReactNode }) =>
-        options?.fallback ?? null) as SidebarRootComponentProps['renderSlot']}
-    />)
-
-    expect(screen.getByText('Greeneek')).toBeTruthy()
+    expect(screen.queryByText('Greeneek')).toBeNull()
+    // Only the New Session icon remains in the column.
+    expect(container.querySelectorAll('svg')).toHaveLength(1)
   })
 
   it('hands the region its wide flag and clamps expandSidebar to the collapsed state', () => {
@@ -178,8 +141,6 @@ describe('SidebarRoot shell', () => {
   it('renders statically collapsed on a cold start (no crossfade classes)', () => {
     const b = mountShell({ collapsed: true })
     expect(b.regionOwner().wide).toBe(false)
-    // The rail keeps the brand mark visible in its bottom seat; the one
-    // collapse control lives in the desktop titlebar, not on the rail.
-    expect(screen.getByTestId('custom-brand-mark')).toBeTruthy()
+    expect(screen.queryByText('Greeneek')).toBeNull()
   })
 })

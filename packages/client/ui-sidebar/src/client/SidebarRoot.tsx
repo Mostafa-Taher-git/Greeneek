@@ -1,17 +1,12 @@
 /**
- * Sidebar shell: column geometry only. The brand row is the column's bottom
- * seat (above the foot stack): the wordmark expanded — doubling as a New
- * Session shortcut — or the static mark on the rail. The fold toggle lives
- * in this column on every host; the frameless titlebar carries only the
- * three session panel toggles. Collapse is a slide plus crossfade: content
- * freezes at its expanded width (inline style) and fades out in place while
- * the sliding column (AppFrame grid tracks) clips it — nothing reflows
- * mid-slide. At settle the wide-only content unmounts. The bottom-pinned
- * settings control only fades. The workspace/session browsing region between
- * the New Session button and the brand row is the `sidebar.workspaces`
- * registrant's, and the foot holds `sidebar.settings` plus
- * `sidebar.footer.action`; the shell hands them the wide flag (plus an
- * expand request callback for the browser).
+ * Sidebar shell: column geometry only. The fold toggle and the brand live in
+ * the titlebar now, so this column starts with New Session and ends with the
+ * foot stack. Collapse is a slide plus crossfade: content freezes at its
+ * expanded width (inline style) and fades out in place while the sliding
+ * column (AppFrame grid tracks) clips it — nothing reflows mid-slide. At
+ * settle the column is hidden entirely. The workspace/session browsing region
+ * between New Session and the foot is the `sidebar.workspaces` registrant's;
+ * the foot holds `sidebar.settings` plus `sidebar.footer.action`.
  *
  * The column also owns whether the scroll regions nested in it draw a
  * scrollbar at all: the shell tracks the pointer and rebinds ui-theme's
@@ -20,9 +15,7 @@
  */
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import clsx from 'clsx'
-import {
-  FishLogo, IconNewChatOutline16, IconPanelLeftOutline16, Tooltip,
-} from '@greeneek/gnk-client-ui-primitives'
+import { IconNewChatOutline16, Tooltip } from '@greeneek/gnk-client-ui-primitives'
 import type { SidebarRootComponentProps } from './contract/slots.ts'
 import css from './SidebarRoot.module.css'
 
@@ -162,22 +155,6 @@ export function SidebarRoot({
       }}
       onPointerLeave={() => { armLinger() }}
     >
-      {/* The fold control lives inside the column on every host; the frameless
-          titlebar carries only the three session panel toggles. */}
-      <div className={css.foldRow}>
-        <Tooltip label={collapsed ? t('toggle.open') : t('toggle.collapse')} delayMs={500} disabled={wide}>
-          <button
-            type="button"
-            className={css.foldToggle}
-            aria-label={collapsed ? t('toggle.open') : t('toggle.collapse')}
-            aria-expanded={!collapsed}
-            onClick={() => { toggleSidebar() }}
-          >
-            <IconPanelLeftOutline16 size={16} />
-          </button>
-        </Tooltip>
-      </div>
-
       {/* Expanded, the button carries its own label — tooltip only on the
           rail. */}
       <Tooltip label={t('session.new.label')} delayMs={500} disabled={wide}>
@@ -205,30 +182,6 @@ export function SidebarRoot({
           wide,
           expandSidebar: () => { if (collapsed) toggleSidebar() },
         })}
-      </div>
-
-      {/* Brand seat: the wordmark sits at the column's bottom, above the foot
-          stack, in both sidebar widths. */}
-      <div className={css.logoRow}>
-        <button
-          type="button"
-          className={clsx(css.brand, wide && css.wide)}
-          aria-label={t('brand.home')}
-          onClick={() => { startSession() }}
-        >
-          <span className={css.brandIdentity} aria-hidden="true">
-            <span className={css.brandMark}>
-              {renderSlot('sidebar.brand.mark', { size: 24 }, { fallback: <FishLogo size={24} /> })}
-            </span>
-            {wide && (
-              <span className={css.brandName}>
-                {renderSlot('sidebar.brand.name', { wordmark: t('brand.name') }, {
-                  fallback: <span className={css.fallbackBrandName}>{t('brand.name')}</span>,
-                })}
-              </span>
-            )}
-          </span>
-        </button>
       </div>
 
       {/* Footer actions stack above Settings in both sidebar widths. */}

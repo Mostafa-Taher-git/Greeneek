@@ -9,25 +9,6 @@ exports[`sidebar shell snapshots > renders the collapsed rail after the crossfad
     class="root fading quietBars"
     style="width: 300px;"
   >
-    <div
-      class="foldRow"
-    >
-      <button
-        aria-expanded="false"
-        aria-label="Open sidebar"
-        class="foldToggle"
-        type="button"
-      >
-        <svg
-          data-content="35f95b0c"
-          fill="none"
-          height="16"
-          viewBox="0 0 16 16"
-          width="16"
-          xmlns="http://www.w3.org/2000/svg"
-        />
-      </button>
-    </div>
     <button
       aria-label="New session"
       class="newSession"
@@ -62,52 +43,6 @@ exports[`sidebar shell snapshots > renders the collapsed rail after the crossfad
         data-slot="sidebar.workspaces"
         style="display: contents;"
       />
-    </div>
-    <div
-      class="logoRow"
-    >
-      <button
-        aria-label="Go to home"
-        class="brand wide"
-        type="button"
-      >
-        <span
-          aria-hidden="true"
-          class="brandIdentity"
-        >
-          <span
-            class="brandMark"
-          >
-            <div
-              data-slot="sidebar.brand.mark"
-              style="display: contents;"
-            >
-              <img
-                alt=""
-                aria-hidden="true"
-                height="24"
-                src="/assets/logo-mark.png"
-                style="display: block; width: 24px; height: 24px; object-fit: contain;"
-                width="24"
-              />
-            </div>
-          </span>
-          <span
-            class="brandName"
-          >
-            <div
-              data-slot="sidebar.brand.name"
-              style="display: contents;"
-            >
-              <span
-                class="fallbackBrandName"
-              >
-                Greeneek
-              </span>
-            </div>
-          </span>
-        </span>
-      </button>
     </div>
     <div
       class="footArea"
@@ -133,7 +68,7 @@ exports[`sidebar shell snapshots > renders the collapsed rail after the crossfad
 </div>
 `;
 
-exports[`sidebar shell snapshots > renders the expanded column (wordmark, capsule, empty holes) 1`] = `
+exports[`sidebar shell snapshots > renders the expanded column (capsule, empty holes) 1`] = `
 <div
   data-slot="sidebar"
   style="display: contents;"
@@ -142,25 +77,6 @@ exports[`sidebar shell snapshots > renders the expanded column (wordmark, capsul
     class="root quietBars"
     style="width: 300px;"
   >
-    <div
-      class="foldRow"
-    >
-      <button
-        aria-expanded="true"
-        aria-label="Collapse sidebar"
-        class="foldToggle"
-        type="button"
-      >
-        <svg
-          data-content="35f95b0c"
-          fill="none"
-          height="16"
-          viewBox="0 0 16 16"
-          width="16"
-          xmlns="http://www.w3.org/2000/svg"
-        />
-      </button>
-    </div>
     <button
       aria-label="New session"
       class="newSession"
@@ -195,52 +111,6 @@ exports[`sidebar shell snapshots > renders the expanded column (wordmark, capsul
         data-slot="sidebar.workspaces"
         style="display: contents;"
       />
-    </div>
-    <div
-      class="logoRow"
-    >
-      <button
-        aria-label="Go to home"
-        class="brand wide"
-        type="button"
-      >
-        <span
-          aria-hidden="true"
-          class="brandIdentity"
-        >
-          <span
-            class="brandMark"
-          >
-            <div
-              data-slot="sidebar.brand.mark"
-              style="display: contents;"
-            >
-              <img
-                alt=""
-                aria-hidden="true"
-                height="24"
-                src="/assets/logo-mark.png"
-                style="display: block; width: 24px; height: 24px; object-fit: contain;"
-                width="24"
-              />
-            </div>
-          </span>
-          <span
-            class="brandName"
-          >
-            <div
-              data-slot="sidebar.brand.name"
-              style="display: contents;"
-            >
-              <span
-                class="fallbackBrandName"
-              >
-                Greeneek
-              </span>
-            </div>
-          </span>
-        </span>
-      </button>
     </div>
     <div
       class="footArea"
@@ -275,25 +145,6 @@ exports[`sidebar shell snapshots > renders the expanded column in the default lo
     class="root quietBars"
     style="width: 300px;"
   >
-    <div
-      class="foldRow"
-    >
-      <button
-        aria-expanded="true"
-        aria-label="收起侧边栏"
-        class="foldToggle"
-        type="button"
-      >
-        <svg
-          data-content="35f95b0c"
-          fill="none"
-          height="16"
-          viewBox="0 0 16 16"
-          width="16"
-          xmlns="http://www.w3.org/2000/svg"
-        />
-      </button>
-    </div>
     <button
       aria-label="新建会话"
       class="newSession"
@@ -328,52 +179,6 @@ exports[`sidebar shell snapshots > renders the expanded column in the default lo
         data-slot="sidebar.workspaces"
         style="display: contents;"
       />
-    </div>
-    <div
-      class="logoRow"
-    >
-      <button
-        aria-label="回到主页"
-        class="brand wide"
-        type="button"
-      >
-        <span
-          aria-hidden="true"
-          class="brandIdentity"
-        >
-          <span
-            class="brandMark"
-          >
-            <div
-              data-slot="sidebar.brand.mark"
-              style="display: contents;"
-            >
-              <img
-                alt=""
-                aria-hidden="true"
-                height="24"
-                src="/assets/logo-mark.png"
-                style="display: block; width: 24px; height: 24px; object-fit: contain;"
-                width="24"
-              />
-            </div>
-          </span>
-          <span
-            class="brandName"
-          >
-            <div
-              data-slot="sidebar.brand.name"
-              style="display: contents;"
-            >
-              <span
-                class="fallbackBrandName"
-              >
-                Greeneek
-              </span>
-            </div>
-          </span>
-        </span>
-      </button>
     </div>
     <div
       class="footArea"

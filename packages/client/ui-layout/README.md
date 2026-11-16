@@ -1,5 +1,5 @@
 ---
-description: "Shell layout for the Web GUI: the four-column AppFrame with drag handles, concession behavior, persisted panel preferences, the panel-geometry service, and theme presentation; for users and maintainers of the window chrome."
+description: "Shell layout for the Web GUI: the AppFrame with a resizable sidebar and right panel, a fixed-size Thread Details popover, concession behavior, persisted panel preferences, the panel-geometry service, and theme presentation; for users and maintainers of the window chrome."
 kind: "package-reference"
 ---
 
@@ -8,7 +8,7 @@ kind: "package-reference"
 
 ## Summary
 
-This package provides the shell layout of the Web GUI: a 52px titlebar row above a four-column AppFrame (sidebar, center, Thread Details, right panel) with resizable side panels, a concession chain that shrinks the right panel and then Thread Details before auto-closing them, the terminal drawer track, and the `ctx.layout` panel-geometry service other plugins call to move panels. It also seats the theme presenter, which projects the resolved color scheme, alias tokens, content font size, and `theme-color` metadata onto the document. Choose it for the standard window chrome.
+This package provides the shell layout of the Web GUI: a 52px titlebar row above an AppFrame with a resizable sidebar and right panel, a fixed-size Thread Details popover anchored under the toggle, a concession chain for the right panel, the terminal drawer track, and the `ctx.layout` panel-geometry service other plugins call to move panels. It also seats the theme presenter, which projects the resolved color scheme, alias tokens, content font size, and `theme-color` metadata onto the document. Choose it for the standard window chrome.
 
 ## Table of Contents
 
@@ -24,9 +24,9 @@ This package provides the shell layout of the Web GUI: a 52px titlebar row above
 <a id="use-this-package"></a>
 ## Use this package
 
-Mount this plugin at the root slot; it then renders the titlebar row and the app frame around whatever occupies the sidebar, conversation, details, right panel, and terminal drawer seats. Users resize the sidebar by dragging its invisible hit strip and each right-side panel by dragging its floating pill; when the window narrows, the right panel shrinks first, then Thread Details, then both close. A closed sidebar retains a 56px control rail; the side panels close to zero width while staying mounted.
+Mount this plugin at the root slot; it then renders the titlebar row and the app frame around whatever occupies the sidebar, conversation, details, right panel, and terminal drawer seats. Users resize the sidebar by dragging its invisible hit strip and the right panel by dragging its floating pill; Thread Details has no track and no resize affordance — its toggle opens a 280px card in a 300px wrapper, and a click outside the card and the titlebar toggles dismisses it. When the window narrows, the right panel shrinks and then auto-closes while staying mounted. A closed sidebar retains a 56px control rail.
 
-A side panel whose preference is open is never silently lost: when the solver collapses its track the column floats over the conversation instead, in preference order, so the right panel covers Thread Details. A closed side panel is `inert` and `aria-hidden`, which keeps its mounted controls out of the tab order and the accessibility tree until it opens again.
+A right panel whose preference is open is never silently lost: when the solver collapses its track the column floats over the conversation instead. Thread Details is always a popover and sits beside the right panel when that panel is open, so both remain visible. A closed panel is `inert`, `aria-hidden`, and `hidden`, which keeps its mounted controls out of the tab order and the accessibility tree until it opens again.
 
 ### Theme presentation
 
@@ -40,7 +40,7 @@ The presenter consumes resolved theme snapshots and projects them onto the docum
 <details>
 <summary>Implementation internals — click to expand</summary>
 
-One `register()` call contributes `AppFrame` into the runtime's built-in `'root'` slot and, in the same breath, declares the child slots (`titlebar`, `sidebar`, `conversation`, `settings`, `dashboard`, `details`, `rightbar`, `terminal.drawer`, `shell.overlay`), seats the layout store (panel geometry and visibility), and wires the `ctx.layout` panel-action service. The layout store starts from the sidebar default with both right-side panels closed and persists the four panel preferences under `gnk.layout.panels`; the current page still opens on the conversation. AppFrame renders the titlebar row on every host with the panel controls, document title, and current Session as its owner share, always mounts the conversation and both side columns, and renders a session's Trajectory or Fleet through `SessionProvider`. Side-panel collapse is symmetric: the same element leaves the grid flow as an overlay when its preference survives a zero-width solve, and takes `inert`/`aria-hidden` when the preference is closed. It projects the selected Session title over the build-configured product title or the localized `common.brand.localBuild` fallback, so locale revisions update document metadata with the root entry. The theme presenter is a second effect: pure DOM writes from resolved snapshots — initial state through the getter once, then event-driven only, with no React path. It applies palette, font-size, and token variables before measuring the rendered background as the single color authority.
+One `register()` call contributes `AppFrame` into the runtime's built-in `'root'` slot and, in the same breath, declares the child slots (`titlebar`, `sidebar`, `conversation`, `settings`, `dashboard`, `details`, `rightbar`, `terminal.drawer`, `shell.overlay`), seats the layout store (panel geometry and visibility), and wires the `ctx.layout` panel-action service. The layout store starts from the sidebar default with the right panel and Thread Details closed and persists the panel preferences under `gnk.layout.panels.v2`; the current page still opens on the conversation. AppFrame renders the titlebar row on every host with the panel controls, document title, and current Session as its owner share, always mounts the conversation and the right column, and renders a session's Trajectory or Fleet through `SessionProvider`. Thread Details stays mounted as an out-of-flow popover; the right panel leaves the grid flow as an overlay when its preference survives a zero-width solve, and either surface takes `inert`/`aria-hidden`/`hidden` when closed. It projects the selected Session title over the build-configured product title or the localized `common.brand.localBuild` fallback, so locale revisions update document metadata with the root entry. The theme presenter is a second effect: pure DOM writes from resolved snapshots — initial state through the getter once, then event-driven only, with no React path. It applies palette, font-size, and token variables before measuring the rendered background as the single color authority.
 
 </details>
 
@@ -74,8 +74,8 @@ None; this package neither assembles nor sends a provider request.
 
 These limits define the current layout behavior. They are current package constraints, not a general window-manager comparison or a task backlog.
 
-- **Panel preferences persist but the page does not** — a reload restores each side panel's open state and dragged width, then opens on the conversation regardless of the last page.
-- **Concession-chain auto-close derives a zero width without touching the preferred width** — the panel either floats as an overlay or restores itself when the window widens; consumers must not read the stored width as the rendered truth.
+- **Panel preferences persist but the page does not** — a reload restores the sidebar and right-panel width and each panel's open state, then opens on the conversation regardless of the last page. Thread Details has no stored width.
+- **Concession-chain auto-close derives a zero width without touching the preferred width** — the right panel either floats as an overlay or restores itself when the window widens; consumers must not read the stored width as the rendered truth. Thread Details never enters the concession chain.
 - **No scroll anchoring during squeeze reflow** — layout changes may move the reader's viewport.
 
 <a id="dev-note"></a>

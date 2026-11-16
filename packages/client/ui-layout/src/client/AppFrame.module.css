@@ -73,6 +73,14 @@
   grid-row: 2;
 }
 
+/* Explicit columns matter: the details popover is out of flow, so the right
+   panel must keep its fourth track instead of auto-placing into the zero-width
+   details slot. */
+.sidebarCol { grid-column: 1; }
+.centerCol { grid-column: 2; }
+.detailsCol { grid-column: 3; }
+.rightbarCol { grid-column: 4; }
+
 .handle {
   top: 52px;
 }
@@ -95,11 +103,26 @@
   display: none;
 }
 
-/* The details column is a transparent gutter: the Thread Details card floats in
-   it, so the column paints no panel chrome of its own. */
+/* Thread Details is a dropdown anchored under the titlebar toggle, never a
+   column: a fixed 300px wrapper yields the card's 280px content width. It takes
+   no grid track, so no drag handle and no resize affordance exist. */
 .detailsCol {
-  min-width: 0;
-  overflow: hidden;
+  position: absolute;
+  top: 52px;
+  inset-inline-end: 16px;
+  width: 300px;
+  max-height: calc(100% - 68px);
+  overflow: visible;
+  z-index: 30;
+}
+
+/* With the right panel open, sit beside it instead of covering its rows. */
+.frame[data-rightbar-open] .detailsCol {
+  inset-inline-end: 376px;
+}
+
+.detailsCol[hidden] {
+  display: none;
 }
 
 .rightbarCol {
@@ -108,30 +131,23 @@
   border-inline-start: 0.5px solid var(--dsw-alias-border-l3);
 }
 
-/* The right panel keeps a bordered compact rail while collapsed; the floating
-   details card simply disappears with its track. */
+/* The right panel keeps a bordered compact rail while collapsed. */
 .frame[data-rightbar-collapsed] .rightbarCol {
   border-inline-start: none;
 }
 
-/* Below the auto-collapse breakpoint the solver closes a side track to keep the
-   center usable. A panel the user opened still has to be reachable, so the same
-   column element leaves the grid flow and floats over the conversation. */
-.frame .detailsCol[data-overlay],
+/* Below the auto-collapse breakpoint the solver closes the right track to keep
+   the center usable; a panel the user opened floats over the conversation. */
 .frame .rightbarCol[data-overlay] {
   position: absolute;
   inset-block: 0;
   inset-inline-end: 0;
   width: min(360px, 92vw);
   z-index: 6;
-}
-
-.frame .rightbarCol[data-overlay] {
   border-inline-start: 0.5px solid var(--dsw-alias-border-l3);
   background: var(--dsw-alias-bg-base);
 }
 
-.frame[data-desktop-host] .detailsCol[data-overlay],
 .frame[data-desktop-host] .rightbarCol[data-overlay] {
   inset-block-start: 40px;
 }
@@ -145,8 +161,9 @@
 }
 
 /* Drag handles are frame children (columns clip overflow): an 8px hit strip
-   centered on the column border via inline left, above column content. Details
-   adds a visible 12x32 pill at vertical center; sidebar keeps only the hit strip. */
+   centered on the column border via inline left, above column content. The
+   right panel adds a visible 12x32 pill; the sidebar keeps only the hit strip.
+   Thread Details has no track and therefore no handle. */
 .handle {
   position: absolute;
   top: 0;
@@ -175,7 +192,6 @@
   }
 }
 
-.handle[data-side='details']::after,
 .handle[data-side='rightbar']::after {
   content: '';
   position: absolute;
@@ -196,17 +212,12 @@
     background var(--ds-transition-duration-slow) var(--ds-ease-in-out);
 }
 
-.detailsCol:hover ~ .handle[data-side='details']::after,
-.handle[data-side='details']:hover::after,
-.handle[data-side='details'][data-dragging='true']::after,
 .rightbarCol:hover ~ .handle[data-side='rightbar']::after,
 .handle[data-side='rightbar']:hover::after,
 .handle[data-side='rightbar'][data-dragging='true']::after {
   opacity: 1;
 }
 
-.handle[data-side='details']:hover::after,
-.handle[data-side='details'][data-dragging='true']::after,
 .handle[data-side='rightbar']:hover::after,
 .handle[data-side='rightbar'][data-dragging='true']::after {
   background: var(--dsw-alias-button-floating-hover);

@@ -1,13 +1,13 @@
-/* Details third column: the Thread Details card on top, then the selected
-   Tool call's card. Panel width/squeeze belongs to layout; this fills whatever
-   the column gives. The column paints no chrome: both surfaces are cards over
-   the conversation background. */
+/* Thread Details popover: the Thread Details card on top, then the selected
+   Tool call's card. The wrapper is a fixed-size dropdown, so the body sizes to
+   its content and scrolls only past the viewport. Both surfaces are cards. */
 
 .root {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  height: 100%;
+  height: auto;
+  max-height: calc(100vh - 72px);
   min-width: 0;
   padding: 10px;
   box-sizing: border-box;

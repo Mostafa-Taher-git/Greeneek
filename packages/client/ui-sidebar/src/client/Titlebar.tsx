@@ -143,6 +143,7 @@ export function Titlebar({ documentTitle, panelControls, sessionId, openChat, t 
               className={clsx(css.panelButton, spec.open && css.panelButtonActive)}
               aria-label={t(spec.labelKey)}
               aria-pressed={spec.open}
+              data-panel-toggle={spec.id}
               onClick={() => { spec.toggle() }}
             >
               <spec.icon size={16} />

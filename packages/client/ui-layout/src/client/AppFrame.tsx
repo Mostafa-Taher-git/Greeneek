@@ -1,17 +1,17 @@
 /**
- * Four-column shell frame, registered into the built-in 'root' slot (the web
- * shell renders only 'root'). Owns the grid tracks (sidebar | center |
- * details | right panel), the drag handles (pointer capture + rAF throttle), the concession
- * chain (columns.ts), and the child-slot render decisions: the sidebar slot
- * renders HERE with live parameters from the concession solve, and the
- * session-aware occupants render in fixed column positions; strict entries
- * gate themselves on current-session availability while session-maybe
- * entries retain identity. Pure component: everything arrives
- * through the framework shares — zero cordis or framework imports,
- * zero self-made hooks.
+ * Shell frame, registered into the built-in 'root' slot (the web shell renders
+ * only 'root'). Owns the grid tracks (sidebar | center | right panel), the drag
+ * handles (pointer capture + rAF throttle), the concession chain (columns.ts),
+ * and the child-slot render decisions. Thread Details is not a track: its
+ * toggle opens a fixed-size card popover below the titlebar, so the center is
+ * never squeezed and there is nothing to resize. The sidebar slot renders HERE
+ * with live parameters from the concession solve; strict session entries gate
+ * themselves on current-session availability while session-maybe entries
+ * retain identity. Pure component: everything arrives through the framework
+ * shares — zero cordis or framework imports, zero self-made hooks.
  */
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import type { ReactNode } from 'react'
+import type { ReactNode, RefObject } from 'react'
 import type {
   PropsLocale, PropsRenderSlots, PropsRuntime, PropsStore,
 } from '@greeneek/gnk-client-ui-slots'
@@ -33,12 +33,14 @@ function CenterColumn(props: { children?: ReactNode }) {
 }
 
 /**
- * Details column grid item. Width 0 keeps the subtree mounted so its internal
- * state survives a close/reopen; a closed panel leaves the accessibility tree
- * and the tab order so its off-screen controls cannot be reached.
+ * Thread Details popover: a fixed-size card anchored under the titlebar, not a
+ * column. The subtree stays mounted while closed so its internal state
+ * survives a close/reopen; a closed popover leaves the accessibility tree
+ * and the tab order.
  */
-function DetailsColumn(props: { children?: ReactNode; overlay?: boolean; hidden: boolean }) {
-  return <PanelColumn className={css.detailsCol} {...props} />
+function DetailsColumn(props: { children?: ReactNode; hidden: boolean; columnRef: RefObject<HTMLDivElement> }) {
+  const { columnRef, ...rest } = props
+  return <PanelColumn className={css.detailsCol} columnRef={columnRef} {...rest} />
 }
 
 /** Independent right panel grid item, with the same closed-panel semantics. */
@@ -53,8 +55,15 @@ function RightbarColumn(props: { children?: ReactNode; overlay?: boolean; hidden
  * first because it releases focus, and a browser refuses to hide a subtree
  * that still owns focus.
  */
-function PanelColumn(props: { children?: ReactNode; overlay?: boolean; hidden: boolean; className: string | undefined }) {
-  const ref = useRef<HTMLDivElement>(null)
+function PanelColumn(props: {
+  children?: ReactNode
+  overlay?: boolean
+  hidden: boolean
+  className: string | undefined
+  columnRef?: RefObject<HTMLDivElement>
+}) {
+  const ownRef = useRef<HTMLDivElement>(null)
+  const ref = props.columnRef ?? ownRef
   useLayoutEffect(() => {
     const node = ref.current
     if (node === null) return
@@ -67,7 +76,7 @@ function PanelColumn(props: { children?: ReactNode; overlay?: boolean; hidden: b
     node.setAttribute('aria-hidden', 'true')
   }, [props.hidden])
   return (
-    <div ref={ref} className={props.className} data-overlay={props.overlay || undefined}>
+    <div ref={ref} className={props.className} data-overlay={props.overlay || undefined} hidden={props.hidden}>
       {props.children}
     </div>
   )
@@ -77,7 +86,7 @@ function PanelColumn(props: { children?: ReactNode; overlay?: boolean; hidden: b
  * One drag handle: pointer capture, rAF-throttled dx reports against the drag-start origin.
  * `side` keys the hover-reveal CSS to the owning column.
  */
-function DragHandle(props: { side: 'sidebar' | 'details' | 'rightbar'; left: number; onStart: () => void; onDrag: (dx: number) => void; onEnd: () => void }) {
+function DragHandle(props: { side: 'sidebar' | 'rightbar'; left: number; onStart: () => void; onDrag: (dx: number) => void; onEnd: () => void }) {
   const [dragging, setDragging] = useState(false)
   const origin = useRef(0)
   const latest = useRef(0)
@@ -195,40 +204,55 @@ export function AppFrame({
   const sidebarPreference = sidebarCollapsed
     ? 0
     : panels.sidebar === 0 ? SIDEBAR_DEFAULT : panels.sidebar
+  // Thread Details never claims a grid track: its toggle opens a fixed card
+  // popover, so the center keeps its full width and the card has no resize
+  // affordance. The right panel keeps its own concession track.
   const cols = computeColumns(
     viewport,
     sidebarPreference,
-    detailsSession === undefined ? 0 : panels.details,
+    0,
     detailsSession === undefined ? 0 : panels.rightbar,
   )
   const colsRef = useRef(cols)
   colsRef.current = cols
 
-  // Below the breakpoint the solver closes both side tracks to keep the
-  // center usable. A panel the user asked for must still be reachable, so it
-  // floats over the conversation instead of vanishing; the right panel comes
-  // later in the document, so it covers Thread Details when both are open.
-  const detailsOverlay = detailsSession !== undefined && panels.details > 0 && cols.details === 0
+  const detailsOpen = detailsSession !== undefined && panels.details > 0
+  const detailsRef = useRef<HTMLDivElement>(null)
+  // A click on the toggle or inside the card keeps it open; a click anywhere
+  // else dismisses it like any other dropdown.
+  useEffect(() => {
+    if (!detailsOpen) return
+    const onOutside = (event: PointerEvent): void => {
+      const target = event.target
+      if (target instanceof Node
+        && detailsRef.current?.contains(target) !== true
+        // The other titlebar toggles are part of the same chrome group: using
+        // one must not dismiss the card, so both panels can stay open.
+        && !(target instanceof Element && target.closest('[data-panel-toggle]'))) {
+        actions.closeDetails()
+      }
+    }
+    document.addEventListener('pointerdown', onOutside)
+    return () => { document.removeEventListener('pointerdown', onOutside) }
+  }, [actions, detailsOpen])
+
+  // Below the breakpoint the solver closes the right track to keep the center
+  // usable; an opened right panel then floats over the conversation.
   const rightbarOverlay = detailsSession !== undefined && panels.rightbar > 0 && cols.rightbar === 0
 
   // The drag base is the rendered width captured at drag start (grabbing a
   // concession-clamped panel must not jump back to the stored preference);
   // it stays frozen for the whole gesture so dx deltas do not compound.
   const sidebarBase = useRef(0)
-  const detailsBase = useRef(0)
   const rightbarBase = useRef(0)
   // Track-level transitions pause for the whole gesture: eased tracks would
   // detach the column edge from the pointer (AppFrame.module.css).
   const [dragging, setDragging] = useState(false)
   const onDragEnd = useCallback(() => { setDragging(false) }, [])
   const onSidebarStart = useCallback(() => { sidebarBase.current = colsRef.current.sidebar; setDragging(true) }, [])
-  const onDetailsStart = useCallback(() => { detailsBase.current = colsRef.current.details; setDragging(true) }, [])
   const onRightbarStart = useCallback(() => { rightbarBase.current = colsRef.current.rightbar; setDragging(true) }, [])
   const onSidebarDrag = useCallback((dx: number) => {
     actions.setSidebar(sidebarBase.current + dx)
-  }, [actions])
-  const onDetailsDrag = useCallback((dx: number) => {
-    actions.setDetails(detailsBase.current - dx)
   }, [actions])
   const onRightbarDrag = useCallback((dx: number) => {
     actions.setRightbar(rightbarBase.current - dx)
@@ -249,8 +273,9 @@ export function AppFrame({
       className={css.frame}
       style={{ gridTemplateColumns: `${cols.sidebar}px minmax(0, 1fr) ${cols.details}px ${cols.rightbar}px` }}
       data-sidebar-collapsed={sidebarCollapsed || undefined}
-      data-details-collapsed={cols.details === 0 || undefined}
+      data-details-collapsed={!detailsOpen || undefined}
       data-rightbar-collapsed={cols.rightbar === 0 || undefined}
+      data-rightbar-open={detailsSession !== undefined && panels.rightbar > 0 || undefined}
       data-dragging={dragging || undefined}
       data-desktop-host={desktopHost || undefined}
     >
@@ -305,7 +330,7 @@ export function AppFrame({
             </div>
           )}
         </CenterColumn>
-        <DetailsColumn overlay={detailsOverlay} hidden={cols.details === 0 && !detailsOverlay}>
+        <DetailsColumn hidden={!detailsOpen} columnRef={detailsRef}>
           <SessionProvider>{renderSlot('details', {})}</SessionProvider>
         </DetailsColumn>
         <RightbarColumn overlay={rightbarOverlay} hidden={cols.rightbar === 0 && !rightbarOverlay}>
@@ -317,7 +342,6 @@ export function AppFrame({
       </div>
       {/* The collapsed rail is fixed-width: no resize handle while closed. */}
       {!sidebarCollapsed && <DragHandle side="sidebar" left={cols.sidebar} onStart={onSidebarStart} onDrag={onSidebarDrag} onEnd={onDragEnd} />}
-      {cols.details > 0 && <DragHandle side="details" left={cols.sidebar + cols.center} onStart={onDetailsStart} onDrag={onDetailsDrag} onEnd={onDragEnd} />}
       {cols.rightbar > 0 && <DragHandle side="rightbar" left={viewport - cols.rightbar} onStart={onRightbarStart} onDrag={onRightbarDrag} onEnd={onDragEnd} />}
     </div>
   )

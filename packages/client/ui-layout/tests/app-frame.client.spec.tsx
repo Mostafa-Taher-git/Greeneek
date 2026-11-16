@@ -231,30 +231,31 @@ describe('AppFrame', () => {
     expect(tracks(frame)).toEqual([280, 0, 0])
 
     act(() => { instance.actions.openDetails() })
-    expect(tracks(frame)).toEqual([280, 300, 0])
+    expect(tracks(frame)).toEqual([280, 0, 0])
+    expect(frame.hasAttribute('data-details-collapsed')).toBe(false)
 
     selectedSession.current = 's-next' as SessionId
     act(() => { rerenderFrame() })
-    expect(tracks(frame)).toEqual([280, 0, 0])
+    expect(frame.hasAttribute('data-details-collapsed')).toBe(true)
 
     act(() => { instance.actions.openDetails() })
     selectedSession.current = 's-blank' as SessionId
     selectedSessionBlank.current = true
     act(() => { rerenderFrame() })
-    expect(tracks(frame)).toEqual([280, 0, 0])
+    expect(frame.hasAttribute('data-details-collapsed')).toBe(true)
     expect(instance.getSnapshot().details).toBe(300)
 
     selectedSession.current = 's-next' as SessionId
     selectedSessionBlank.current = false
     act(() => { rerenderFrame() })
-    expect(tracks(frame)).toEqual([280, 300, 0])
+    expect(frame.hasAttribute('data-details-collapsed')).toBe(false)
 
     selectedSession.current = undefined
     act(() => { rerenderFrame() })
-    expect(tracks(frame)).toEqual([280, 0, 0])
+    expect(frame.hasAttribute('data-details-collapsed')).toBe(true)
     selectedSession.current = 's-test' as SessionId
     act(() => { rerenderFrame() })
-    expect(tracks(frame)).toEqual([280, 0, 0])
+    expect(frame.hasAttribute('data-details-collapsed')).toBe(true)
   })
 
   it('keeps details closed when the first Session materializes', () => {
@@ -282,36 +283,37 @@ describe('AppFrame', () => {
     expect(tracks(frame)[0]).toBe(350)
   })
 
-  it('details drag widens leftward (negative dx grows the panel)', () => {
+  it('opens Thread Details as a fixed popover with no resize handle', () => {
     const { frame, instance } = mountFrame()
     act(() => { instance.actions.openDetails() })
-    const handles = frame.querySelectorAll('[class*="handle"]')
-    drag(handles[1]!, 1560, 1500)
-    expect(tracks(frame)[1]).toBe(360)
+    expect(tracks(frame)).toEqual([280, 0, 0])
+    // Only the sidebar and right panel own tracks; the card has no handle.
+    expect(frame.querySelectorAll('[data-side="details"]')).toHaveLength(0)
+    expect(frame.querySelector('[class*="detailsCol"]')?.hasAttribute('hidden')).toBe(false)
   })
 
   it('drag base is the rendered (concession-clamped) width, not the preference', () => {
-    frameWidth = 1250 // step-2 squeeze: a dragged 360 preference renders 330
+    frameWidth = 1250 // step-2 squeeze: a dragged 360 right-panel preference renders 330
     const { frame, instance } = mountFrame()
-    act(() => { instance.actions.setDetails(360) })
-    expect(tracks(frame)).toEqual([280, 330, 0])
+    act(() => { instance.actions.setRightbar(360) })
+    expect(tracks(frame)).toEqual([280, 0, 330])
     const handles = frame.querySelectorAll('[class*="handle"]')
-    drag(handles[1]!, 920, 930) // shrink by 10 from the rendered width
-    expect(instance.getSnapshot().details).toBe(320)
+    drag(handles[1]!, 920, 910) // widen by 10 from the rendered width
+    expect(instance.getSnapshot().rightbar).toBe(340)
   })
 
-  it('keeps Thread Details and the right panel in independent tracks', () => {
-    const { instance, frame, getByTestId, queryByTestId } = mountFrame()
+  it('keeps Thread Details and the right panel open independently', () => {
+    const { instance, frame, getByTestId } = mountFrame()
     expect(getByTestId('rightbar-content')).toBeTruthy()
     expect(getByTestId('details-content')).toBeTruthy()
     act(() => { instance.actions.openRightbar() })
     expect(tracks(frame)).toEqual([280, 0, 360])
     act(() => { instance.actions.openDetails() })
-    expect(tracks(frame)).toEqual([280, 300, 360])
-    expect(getByTestId('details-content')).toBeTruthy()
+    expect(tracks(frame)).toEqual([280, 0, 360])
+    expect(frame.hasAttribute('data-details-collapsed')).toBe(false)
     act(() => { instance.actions.closeRightbar() })
-    expect(tracks(frame)).toEqual([280, 300, 0])
-    expect(queryByTestId('rightbar-content')).not.toBeNull()
+    expect(tracks(frame)).toEqual([280, 0, 0])
+    expect(frame.hasAttribute('data-details-collapsed')).toBe(false)
     expect(getByTestId('details-content')).toBeTruthy()
   })
 
@@ -349,10 +351,9 @@ describe('AppFrame', () => {
     const frame = getByTestId('details-content').parentElement!.parentElement!
     const details = getByTestId('details-content').parentElement!
     const rightbar = getByTestId('rightbar-content').parentElement!
-    // The solver closed both side tracks, so the panels the user asked for
-    // float over the conversation in preference order: the right panel last,
-    // therefore on top.
-    expect(details.hasAttribute('data-overlay')).toBe(true)
+    // Thread Details is always a fixed popover; the narrow solver closes the
+    // right track, so that panel floats over the conversation on top.
+    expect(details.hasAttribute('data-overlay')).toBe(false)
     expect(rightbar.hasAttribute('data-overlay')).toBe(true)
     expect(details.hasAttribute('aria-hidden')).toBe(false)
     expect(rightbar.hasAttribute('aria-hidden')).toBe(false)
@@ -406,21 +407,23 @@ describe('AppFrame', () => {
 
   it('viewport shrink triggers the concession chain via ResizeObserver', () => {
     const { frame, instance } = mountFrame()
-    act(() => { instance.actions.setDetails(360) })
+    act(() => { instance.actions.setRightbar(360) })
     frameWidth = 1250
     act(() => { fireResize?.(); vi.advanceTimersByTime(20) })
-    expect(tracks(frame)).toEqual([280, 330, 0])
+    expect(tracks(frame)).toEqual([280, 0, 330])
     frameWidth = 1920
     act(() => { fireResize?.(); vi.advanceTimersByTime(20) })
-    expect(tracks(frame)).toEqual([280, 360, 0])
+    expect(tracks(frame)).toEqual([280, 0, 360])
   })
 
   it('drag handles disappear for collapsed columns', () => {
     const { frame, instance } = mountFrame()
     expect(frame.querySelectorAll('[class*="handle"]')).toHaveLength(1)
     act(() => { instance.actions.openDetails() })
+    expect(frame.querySelectorAll('[class*="handle"]')).toHaveLength(1)
+    act(() => { instance.actions.openRightbar() })
     expect(frame.querySelectorAll('[class*="handle"]')).toHaveLength(2)
-    act(() => { instance.actions.closeDetails() })
+    act(() => { instance.actions.closeRightbar() })
     expect(frame.querySelectorAll('[class*="handle"]')).toHaveLength(1)
     act(() => { instance.actions.toggleSidebar() })
     expect(frame.querySelectorAll('[class*="handle"]')).toHaveLength(0)
@@ -533,9 +536,9 @@ describe('AppFrame — unmount with an in-flight resize frame', () => {
 
   it('double resize inside one frame rides the pending rAF (??= guard)', () => {
     const { frame, instance } = mountFrame()
-    act(() => { instance.actions.setDetails(360) })
+    act(() => { instance.actions.setRightbar(360) })
     frameWidth = 1250
     act(() => { fireResize?.(); fireResize?.(); vi.advanceTimersByTime(20) })
-    expect(tracks(frame)).toEqual([280, 330, 0])
+    expect(tracks(frame)).toEqual([280, 0, 330])
   })
 })

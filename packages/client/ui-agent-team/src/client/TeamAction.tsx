@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ChangeEvent } from 'react'
+import { createPortal } from 'react-dom'
 import type { SessionId } from '@greeneek/gnk-session/types'
 import type {
   TeamMemberView as TeamRosterMember,
@@ -12,6 +13,7 @@ import type { RemoteResult } from '@greeneek/gnk-api-remotes/client'
 import {
   IconCheckOutline14, IconCloseOutline16, IconEditOutline16, IconPlusOutline16,
   IconRefreshOutline14, IconTrashOutline16, IconUserOutline16, StateDot,
+  useDismissOnOutsidePointer,
 } from '@greeneek/gnk-client-ui-primitives'
 import type { PropsLocale, PropsRuntime } from '@greeneek/gnk-client-ui-slots'
 import type {} from '@greeneek/gnk-client-ui-workspace/client'
@@ -108,6 +110,10 @@ export function TeamAction({
   const [editing, setEditing] = useState<string | null>(null)
   const [editDraft, setEditDraft] = useState<Draft>(EMPTY_DRAFT)
   const [pendingTasks, setPendingTasks] = useState<ReadonlySet<string>>(() => new Set())
+  const [panelPosition, setPanelPosition] = useState<CSSProperties>()
+  const rootRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
   const sessionRef = useRef(sessionId)
   const refreshGeneration = useRef(0)
   sessionRef.current = sessionId
@@ -123,7 +129,31 @@ export function TeamAction({
     setEditing(null)
     setEditDraft(EMPTY_DRAFT)
     setPendingTasks(new Set())
+    setPanelPosition(undefined)
   }, [sessionId])
+
+  // The roster board is portaled to the body: the Thread Details card clips
+  // its own overflow, so an in-card panel would lose its background and rows
+  // below the card edge. Fixed coordinates keep it beside the trigger.
+  useLayoutEffect(() => {
+    if (!open || triggerRef.current === null) return
+    const rect = triggerRef.current.getBoundingClientRect()
+    const width = Math.min(420, window.innerWidth - 32)
+    setPanelPosition({
+      top: rect.bottom + 5,
+      left: Math.min(Math.max(16, rect.left), window.innerWidth - width - 16),
+      maxHeight: Math.min(560, window.innerHeight - rect.bottom - 24),
+    })
+  }, [open, view])
+
+  useEffect(() => {
+    if (!open) return
+    const onKey = (event: KeyboardEvent): void => { if (event.key === 'Escape') setOpen(false) }
+    document.addEventListener('keydown', onKey)
+    return () => { document.removeEventListener('keydown', onKey) }
+  }, [open])
+
+  useDismissOnOutsidePointer(rootRef, open, setOpen, panelRef)
 
   const refresh = useCallback(async (): Promise<boolean> => {
     const requestedSession = sessionId
@@ -244,8 +274,9 @@ export function TeamAction({
   const assignable = view?.members.filter(member => member.status !== 'failed' && member.status !== 'provisioning') ?? []
 
   return (
-    <div className={css.root} data-team-action>
+    <div ref={rootRef} className={css.root} data-team-action>
       <button
+        ref={triggerRef}
         type="button"
         className={css.trigger}
         aria-expanded={open}
@@ -259,8 +290,8 @@ export function TeamAction({
         <span>{t('trigger')}</span>
         {teammates.length > 0 && <span className={css.count}>{teammates.length}</span>}
       </button>
-      {open && (
-        <div className={css.panel} role="dialog" aria-label={t('trigger')}>
+      {open && panelPosition !== undefined && createPortal((
+        <div ref={panelRef} className={css.panel} style={panelPosition} role="dialog" aria-label={t('trigger')}>
           <div className={css.toolbar}>
             <strong>{t('trigger')}</strong>
             <span className={css.spacer} />
@@ -394,7 +425,7 @@ export function TeamAction({
             </>
           )}
         </div>
-      )}
+      ), document.body)}
     </div>
   )
 }

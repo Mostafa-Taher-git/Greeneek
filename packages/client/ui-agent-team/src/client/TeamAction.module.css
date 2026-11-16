@@ -43,14 +43,13 @@
   --gnk-scrollbar-thumb: var(--dsw-alias-scrollbar-bg-l2);
   --gnk-scrollbar-thumb-hover: var(--dsw-alias-scrollbar-hover-l2);
 
-  position: absolute;
-  top: calc(100% + 5px);
-  inset-inline-start: 0;
+  /* Portaled to the body: fixed coordinates from the trigger keep the whole
+     board visible even though the Thread Details card clips its own overflow. */
+  position: fixed;
   z-index: 110;
   box-sizing: border-box;
-  width: min(560px, calc(100vw - 32px));
-  max-height: min(680px, calc(100vh - 120px));
-  padding: 10px;
+  width: min(420px, calc(100vw - 32px));
+  padding: 12px;
   overflow: auto;
   border: 0;
   border-radius: 12px;

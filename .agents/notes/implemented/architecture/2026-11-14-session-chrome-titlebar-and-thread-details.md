@@ -47,6 +47,7 @@ The session header is gone; the conversation column is the titlebar row, the scr
 
 ## Verification
 
+- The browser snapshot harness normalizes the Host hostname to `{{hostname}}` and the two Live Fleet status strings to `{{fleetStatus}}`; the Agent Team e2e captures the portaled dialog directly, and the card golden reflects the device row and Live Fleet section. The logical-CSS gate allowlist admits only the remaining right-panel resize handle.
 - `pnpm run typecheck` compiles clean; `pnpm run test:gui` passes 319 files / 4453 tests (1 skipped). The ui-workspace panel spec covers the device row and transient copy confirmation, the branch/change rows, and the Live Fleet section; the ui-sidebar surface spec covers the five launcher rows and their destinations. The ui-layout frame spec asserts the details popover opens without a track or handle and that both panels can be open together; the ui-agent-team spec still covers the portaled roster board.
 - The titlebar spec covers the two leading buttons and their callbacks, and the frame spec covers the sidebar closing to a zero-width `hidden` column whose slot stays mounted for state; the concession tests drive the right panel only.
 - The ui-theme stylesheet gates cover the new sheets: the details column rebinds the scrollbar pair on the elevated card and the card's hairline divider draws at 0.5px.

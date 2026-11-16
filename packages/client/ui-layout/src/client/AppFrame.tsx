@@ -289,9 +289,11 @@ export function AppFrame({
           builds keep the native chrome and simply have no window controls to
           clear. */}
       <div className={css.titlebarRow}>
-        {renderSlot('titlebar', { panelControls, documentTitle, sessionId: currentSession })}
+        {renderSlot('titlebar', {
+          panelControls, documentTitle, sessionId: currentSession, sidebarCollapsed,
+        })}
       </div>
-      <div className={css.sidebarCol}>
+      <div className={css.sidebarCol} hidden={sidebarCollapsed}>
         {/* Render-site slot call with live concession output: a closed
             sidebar keeps the mounted slot at the compact-rail width, and the
             component sees its rendered state as owner params decided here

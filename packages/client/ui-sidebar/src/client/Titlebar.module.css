@@ -25,6 +25,16 @@
   padding-inline-end: calc(3 * 46px + 8px);
 }
 
+/* Leading toggle pair, before the brand. Both opt out of window drag. */
+.startGroup {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
 .brand {
   display: inline-flex;
   align-items: center;

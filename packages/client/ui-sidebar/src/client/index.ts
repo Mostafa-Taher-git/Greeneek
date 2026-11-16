@@ -91,6 +91,13 @@ export function apply(ctx: ClientContext): void {
           ctx.layout.showConversation()
           ctx.uiConversation.selectView(sessionId, CHAT_VIEW)
         },
+        // The leading toggles duplicate the sidebar controls so both stay
+        // reachable when the sidebar is fully closed.
+        toggleSidebar: () => { ctx.layout.toggleSidebar() },
+        startSession: () => {
+          ctx.layout.showConversation()
+          workspaceNavigation.startSession()
+        },
       }),
     }, Titlebar),
     'ui-sidebar: titlebar registration',

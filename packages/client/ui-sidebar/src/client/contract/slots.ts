@@ -150,12 +150,17 @@ export type TitlebarInjected = {
    * @param sessionId - Session whose Chat view should become current.
    */
   openChat: (sessionId: SessionId) => void
+  /** Toggle the sidebar column; with no rail, this is the only way back in. */
+  toggleSidebar: () => void
+  /** Start a Session from the same shared action the sidebar's button uses. */
+  startSession: () => void
 }
 
 /**
  * Full titlebar props: the layout owner share (session panel controls, the
- * document title, the current Session), the Chat-return callback, and the
- * standard locale seat. No store is registered and no holes are declared.
+ * document title, the current Session, whether the sidebar is closed), the
+ * navigation callbacks, and the standard locale seat. No store is registered
+ * and no holes are declared.
  */
 export type TitlebarComponentProps =
   PropsRuntime<'titlebar'> & TitlebarInjected & PropsLocale<'sidebar'>

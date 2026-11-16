@@ -358,14 +358,15 @@ describe('AppFrame', () => {
     expect(details.hasAttribute('aria-hidden')).toBe(false)
     expect(rightbar.hasAttribute('aria-hidden')).toBe(false)
     expect(details.compareDocumentPosition(rightbar) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    expect(frame.style.gridTemplateColumns).toBe('56px minmax(0, 1fr) 0px 0px')
+    expect(frame.style.gridTemplateColumns).toBe('0px minmax(0, 1fr) 0px 0px')
   })
 
-  it('closed sidebar keeps its compact rail with mounted slot content and collapsed owner props', () => {
+  it('closed sidebar fully hides its column while keeping the slot mounted', () => {
     const { frame, instance, slotCalls, getByTestId } = mountFrame()
     act(() => { instance.actions.toggleSidebar() })
     expect(tracks(frame)).toEqual([SIDEBAR_COLLAPSED, 0, 0])
     expect(getByTestId('sidebar-content')).toBeTruthy()
+    expect(getByTestId('sidebar-content').parentElement?.hasAttribute('hidden')).toBe(true)
     expect(frame.hasAttribute('data-sidebar-collapsed')).toBe(true)
     const lastSidebarCall = slotCalls.filter(c => c.key === 'sidebar').at(-1)!
     expect(lastSidebarCall.props).toEqual({ collapsed: true, width: SIDEBAR_COLLAPSED })
@@ -393,7 +394,7 @@ describe('AppFrame', () => {
     expect(webCalls.length).toBeGreaterThanOrEqual(1)
     expect(webCalls.at(-1)!.props).toMatchObject({ panelControls: expectedPanels, documentTitle: undefined })
     expect(Object.keys(webCalls.at(-1)!.props as object).sort())
-      .toEqual(['documentTitle', 'panelControls', 'sessionId'])
+      .toEqual(['documentTitle', 'panelControls', 'sessionId', 'sidebarCollapsed'])
 
     ;(globalThis as { greeneekDesktop?: unknown }).greeneekDesktop = {}
     try {

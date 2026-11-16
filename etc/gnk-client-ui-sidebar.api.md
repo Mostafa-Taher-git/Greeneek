@@ -5,7 +5,7 @@
 
 `src/client/SidebarRoot.tsx: export function SidebarRoot({`
 `src/client/SurfacePanel.tsx: export function SurfacePanel({`
-`src/client/Titlebar.tsx: export function Titlebar({ documentTitle, panelControls, sessionId, openChat, t }: TitlebarComponentProps) {`
+`src/client/Titlebar.tsx: export function Titlebar({`
 `src/client/contract/slots.ts: export interface SidebarBrandMarkOwnerProps {`
 `src/client/contract/slots.ts: export interface SidebarBrandNameOwnerProps {`
 `src/client/contract/slots.ts: export interface SidebarFooterActionOwnerProps {`

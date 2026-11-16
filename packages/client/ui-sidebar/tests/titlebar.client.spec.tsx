@@ -33,16 +33,20 @@ function mount(props: Partial<TitlebarComponentProps> = {}) {
   // Return exactly the object the frame renders with (tests may pass their own).
   const controls = props.panelControls ?? panelControls()
   const openChat = props.openChat ?? vi.fn()
+  const toggleSidebar = props.toggleSidebar ?? vi.fn()
+  const startSession = props.startSession ?? vi.fn()
   render(
     <Titlebar
       useSessions={neverHook} useSessionPendingInteraction={neverHook} useWorkspaces={neverHook}
       t={t}
       panelControls={controls}
       openChat={openChat}
+      toggleSidebar={toggleSidebar}
+      startSession={startSession}
       {...props}
     />,
   )
-  return { controls, openChat }
+  return { controls, openChat, toggleSidebar, startSession }
 }
 
 /** Install (or remove) the desktop preload bridge for one case. */
@@ -70,7 +74,7 @@ describe('Titlebar', () => {
     desktopBridge(vi.fn())
     const view = render(<Titlebar
       useSessions={neverHook} useSessionPendingInteraction={neverHook} useWorkspaces={neverHook}
-      t={t} openChat={vi.fn()}
+      t={t} openChat={vi.fn()} toggleSidebar={vi.fn()} startSession={vi.fn()}
     />)
     expect(document.documentElement.hasAttribute('data-desktop-titlebar')).toBe(true)
     view.unmount()
@@ -101,11 +105,13 @@ describe('Titlebar', () => {
     expect(toggleMaximize).toHaveBeenCalledOnce()
   })
 
-  it('renders exactly the three panel toggles, and nothing else', () => {
+  it('renders the two leading controls before the brand, then the three panel toggles', () => {
     mount()
     const buttons = screen.getAllByRole('button')
-    expect(buttons).toHaveLength(3)
+    expect(buttons).toHaveLength(5)
     expect(buttons.map(button => button.getAttribute('aria-label'))).toEqual([
+      '收起侧边栏',
+      '新建会话',
       '切换线程详情',
       '切换终端抽屉',
       '切换右侧面板',
@@ -153,14 +159,22 @@ describe('Titlebar', () => {
     expect(openChat).toHaveBeenCalledWith(SID)
   })
 
-  it('does not render the sidebar fold toggle anywhere', () => {
-    mount({ documentTitle: 'ping' })
-    expect(screen.queryByRole('button', { name: '收起侧边栏' })).toBeNull()
-    expect(screen.queryByRole('button', { name: '打开侧边栏' })).toBeNull()
+  it('drives the sidebar toggle and New Session from the leading buttons', () => {
+    const { toggleSidebar, startSession } = mount()
+    fireEvent.click(screen.getByRole('button', { name: '收起侧边栏' }))
+    fireEvent.click(screen.getByRole('button', { name: '新建会话' }))
+    expect(toggleSidebar).toHaveBeenCalledOnce()
+    expect(startSession).toHaveBeenCalledOnce()
   })
 
-  it('renders empty panel-control seat when the frame passes nothing', () => {
+  it('labels and presses the sidebar toggle from the frame state', () => {
+    mount({ sidebarCollapsed: true })
+    const toggle = screen.getByRole('button', { name: '打开侧边栏' })
+    expect(toggle.getAttribute('aria-pressed')).toBe('false')
+  })
+
+  it('keeps the two leading controls when the frame passes no panel controls', () => {
     mount({ panelControls: undefined })
-    expect(screen.queryByRole('button')).toBeNull()
+    expect(screen.getAllByRole('button')).toHaveLength(2)
   })
 })

@@ -15,7 +15,7 @@
 `src/client/columns.ts: export const RIGHTBAR_MAX = 520`
 `src/client/columns.ts: export const RIGHTBAR_MIN = 300`
 `src/client/columns.ts: export const SIDEBAR_AUTO_COLLAPSE = 1024`
-`src/client/columns.ts: export const SIDEBAR_COLLAPSED = 56`
+`src/client/columns.ts: export const SIDEBAR_COLLAPSED = 0`
 `src/client/columns.ts: export const SIDEBAR_DEFAULT = 280`
 `src/client/columns.ts: export const SIDEBAR_MAX = 420`
 `src/client/columns.ts: export const SIDEBAR_MIN = 264`

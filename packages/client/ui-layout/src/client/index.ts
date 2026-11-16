@@ -142,6 +142,11 @@ export interface TitlebarOwnerProps {
    */
   documentTitle?: string | undefined
   /**
+   * True when the sidebar is fully closed. The titlebar's leading toggle uses
+   * it for its label and pressed state; absent only in tests.
+   */
+  sidebarCollapsed?: boolean | undefined
+  /**
    * The Session the title names. A click on the title returns to that
    * Session's Chat view; absent when no Session is current.
    */

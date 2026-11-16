@@ -8,7 +8,7 @@ kind: "package-reference"
 
 ## Summary
 
-`gnk-client-ui-sidebar` is the sidebar shell of the gnk web client: users see the brand row, start new sessions, open primary actions such as the Dashboard directly under New Session, collapse into the layout-owned 56px rail, and reach Settings from the bottom-pinned seat, while the scroll-aware region seat hosts the Workspace and Session browser. The Workspace and Session browser rendered into `sidebar.workspaces` belongs to ui-workspace; this package neither derives its rows nor owns its view preferences. A deployment package can replace the brand mark or name without replacing the New Session control or the rail geometry, and New Session starts the runtime's page-local frontend Session Intent against the explicit, current, or most recently active Workspace. Collapse into the layout-owned 56px rail remains presentation-local.
+`gnk-client-ui-sidebar` is the sidebar shell of the gnk web client: users see the brand row, start new sessions, open primary actions such as the Dashboard directly under New Session, fully close the sidebar, and reach Settings from the bottom-pinned seat, while the scroll-aware region seat hosts the Workspace and Session browser. The Workspace and Session browser rendered into `sidebar.workspaces` belongs to ui-workspace; this package neither derives its rows nor owns its view preferences. A deployment package can replace the brand mark or name without replacing the New Session control, and New Session starts the runtime's page-local frontend Session Intent against the explicit, current, or most recently active Workspace. The sidebar's leading toggle and New Session control also live in the titlebar, so they remain reachable while the sidebar is closed.
 
 ## Table of Contents
 
@@ -24,11 +24,11 @@ kind: "package-reference"
 <a id="use-this-package"></a>
 ## Use this package
 
-The sidebar is the navigation shell, and this package also renders the frameless-desktop titlebar and the independent right panel: users see the brand, start new sessions, collapse the rail, reach Settings, and open a surface from the right panel. Feature plugins fill the sidebar's seats — ui-workspace fills `sidebar.workspaces`, registers the Dashboard trigger at `sidebar.primary.action`, and ui-settings registers the trigger row and settings panel at `sidebar.settings`.
+The sidebar is the navigation shell, and this package also renders the frameless-desktop titlebar and the independent right panel: users see the brand, start new sessions, close the sidebar entirely, reach Settings, and open a surface from the right panel. Feature plugins fill the sidebar's seats — ui-workspace fills `sidebar.workspaces`, registers the Dashboard trigger at `sidebar.primary.action`, and ui-settings registers the trigger row and settings panel at `sidebar.settings`.
 
 ### Titlebar
 
-The 52px titlebar row carries the drag surface and the three session panel toggles (thread details, terminal drawer, right panel) at its reading end; the desktop host reserves inline-end space for the injected window controls, and double-click toggles maximize through the preload bridge. The brand sits at the inline start, followed by the current Session's title: a plain label in a browser host, and a button that returns to that Session's Chat view by yielding to the conversation and selecting Chat through the Session body's view selector. Mounting inside the desktop shell marks `documentElement[data-desktop-titlebar]` so the desktop's overlay drag strip stands down.
+The 52px titlebar row carries the drag surface. Before the brand sit the sidebar toggle and New Session buttons; the three session panel toggles (thread details, terminal drawer, right panel) sit at the reading end. The desktop host reserves inline-end space for the injected window controls, and double-click toggles maximize through the preload bridge. The brand sits after the leading pair, followed by the current Session's title: a plain label in a browser host, and a button that returns to that Session's Chat view by yielding to the conversation and selecting Chat through the Session body's view selector. Mounting inside the desktop shell marks `documentElement[data-desktop-titlebar]` so the desktop's overlay drag strip stands down.
 
 ### Right panel
 
@@ -36,11 +36,11 @@ The right panel is a T3-shaped "Open a surface" launcher over destinations this 
 
 ### Brand and New Session
 
-The expanded brand row renders `sidebar.brand.mark` and `sidebar.brand.name` as independent single slots; the collapsed rail renders the same mark slot. Without occupants, the shell uses the fish mark and a localized local-build label. A complete build stacks a code badge below the label as `version[-commit][-dirty]`, using `GNK_CLIENT_VERSION`, the optional 7-character `GNK_CLIENT_COMMIT_HASH`, and `GNK_CLIENT_GIT_DIRTY=true`; missing version metadata omits the badge. New Session targets the explicit Workspace used by a scoped action, otherwise the current Session's Workspace, otherwise the most recently active Workspace; when none exists it clears into the blank New Session page.
+The expanded brand row renders `sidebar.brand.mark` and `sidebar.brand.name` as independent single slots. Without occupants, the shell uses the fish mark and a localized local-build label. A complete build stacks a code badge below the label as `version[-commit][-dirty]`, using `GNK_CLIENT_VERSION`, the optional 7-character `GNK_CLIENT_COMMIT_HASH`, and `GNK_CLIENT_GIT_DIRTY=true`; missing version metadata omits the badge. New Session targets the explicit Workspace used by a scoped action, otherwise the current Session's Workspace, otherwise the most recently active Workspace; when none exists it clears into the blank New Session page.
 
 ### Collapse behavior
 
-During a live collapse, the expanded content fades out at its current width, the upper controls share one fade and leftward translation into the 56px rail, and the layout's column slide ends the motion. A page that starts collapsed renders the rail statically, and reduced-motion mode disables both transitions. The bottom-pinned `sidebar.settings` control shares the fade timing but has no horizontal translation.
+During a live close, the expanded content fades out at its current width and the layout's column slide ends the motion; the closed column takes zero width and the `hidden` attribute, so no rail remains. A page that starts closed renders nothing in that column, and reduced-motion mode disables the transitions. The titlebar's leading toggle restores the sidebar from either state.
 
 ### Scrollbars
 
@@ -54,7 +54,7 @@ Scrollbars in the column are a pointer affordance: the shell rebinds the scrollb
 <details>
 <summary>Implementation internals — click to expand</summary>
 
-The shell is pure composition: `SidebarRootComponentProps` composes the layout owner share, the global `useSessions` and `useWorkspaces` hooks, the declared brand, the `sidebar.workspaces` and `sidebar.settings` child slots, and injected `startSession` plus sidebar-toggle callbacks. There is no plugin store. The `titlebar` entry composes the layout owner share (panel controls, document title, current Session), the `openChat` callback over `ctx.layout` and `ctx.uiConversation`, and the locale seat; it declares no holes and reads no store. The `rightbar` entry composes the session scope, five navigation callbacks over `ctx.layout` and `ctx.uiConversation`, and the locale seat; the launcher's rows are a static list in the component and no shortcut chip is fabricated for a destination without a bound key.
+The shell is pure composition: `SidebarRootComponentProps` composes the layout owner share, the global `useSessions` and `useWorkspaces` hooks, the declared brand, the `sidebar.workspaces` and `sidebar.settings` child slots, and injected `startSession` plus sidebar-toggle callbacks. There is no plugin store. The `titlebar` entry composes the layout owner share (panel controls, document title, current Session, sidebar collapsed state), the `openChat`, `toggleSidebar`, and `startSession` callbacks over `ctx.layout`, `ctx.uiConversation`, and the shared Workspace action, and the locale seat; it declares no holes and reads no store. The `rightbar` entry composes the session scope, five navigation callbacks over `ctx.layout` and `ctx.uiConversation`, and the locale seat; the launcher's rows are a static list in the component and no shortcut chip is fabricated for a destination without a bound key.
 
 ### Slot discipline
 
@@ -71,7 +71,7 @@ These pages cover the surfaces that fill the shell's seats and the composition m
 
 - [ui-workspace](../ui-workspace/README.md) — the Workspace and Session browser rendered into `sidebar.workspaces`.
 - [ui-settings](../ui-settings/README.md) — the settings domain base registering the trigger row at `sidebar.settings`.
-- [ui-layout](../ui-layout/README.md) — the layout owner whose rail and column state the collapse uses.
+- [ui-layout](../ui-layout/README.md) — the layout owner whose column state the close/reopen uses.
 - [ui-theme](../ui-theme/README.md) — the scrollbar token indirection the shell rebinds.
 - [Slot system standard](../../../.agents/notes/implemented/architecture/2026-07-22-slot-type-chain-implementation.md) — the composition model behind the seats.
 

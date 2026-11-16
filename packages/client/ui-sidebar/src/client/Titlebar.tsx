@@ -14,8 +14,10 @@ import { useEffect } from 'react'
 import {
   FishLogo,
   IconPanelBottomOutline16,
+  IconPanelLeftOutline16,
   IconPanelRightOutline16,
   IconPanelSquareMenuOutline16,
+  IconPlusOutline16,
   Tooltip,
   formatShortcut,
   type IconProps,
@@ -53,7 +55,9 @@ function desktopBridge(): { windowToggleMaximize?: () => void } | undefined {
  * Chat-return callback, and the locale seat.
  * @returns the drag bar with its title control and panel toggles.
  */
-export function Titlebar({ documentTitle, panelControls, sessionId, openChat, t }: TitlebarComponentProps) {
+export function Titlebar({
+  documentTitle, panelControls, sessionId, sidebarCollapsed, openChat, toggleSidebar, startSession, t,
+}: TitlebarComponentProps) {
   const desktopHost = desktopBridge() !== undefined
   useEffect(() => {
     // A browser page has no overlay drag strip to stand down.
@@ -105,6 +109,38 @@ export function Titlebar({ documentTitle, panelControls, sessionId, openChat, t 
         if (typeof toggleMaximize === 'function') toggleMaximize()
       }}
     >
+      {/* Leading chrome controls, before the brand: the sidebar toggle is the
+          only way back in once the sidebar fully closes, and New Session stays
+          one gesture away without the rail. */}
+      <div className={css.startGroup}>
+        <Tooltip
+          label={t(sidebarCollapsed ? 'toggle.open' : 'toggle.collapse')}
+          side="bottom"
+          delayMs={500}
+        >
+          <button
+            type="button"
+            className={css.panelButton}
+            aria-label={t(sidebarCollapsed ? 'toggle.open' : 'toggle.collapse')}
+            aria-pressed={!sidebarCollapsed}
+            data-panel-toggle="sidebar"
+            onClick={() => { toggleSidebar() }}
+          >
+            <IconPanelLeftOutline16 size={16} />
+          </button>
+        </Tooltip>
+        <Tooltip label={t('session.new.label')} side="bottom" delayMs={500}>
+          <button
+            type="button"
+            className={css.panelButton}
+            aria-label={t('session.new.label')}
+            data-titlebar-new-session
+            onClick={() => { startSession() }}
+          >
+            <IconPlusOutline16 size={16} />
+          </button>
+        </Tooltip>
+      </div>
       <span className={css.brand}>
         <span aria-hidden="true" className={css.brandMark}>
           <FishLogo size={16} />

@@ -90,6 +90,22 @@ export interface PullRequestPage {
   hasNext: boolean
 }
 
+/** Props of the desktop Browser surface. */
+export type BrowserSurfaceProps = PropsLocale<'sidebar'> & {
+  /** Selected browser profile id. */
+  profile: string
+  /** True when running inside the desktop shell. */
+  desktop: boolean
+}
+
+/** Props of the Side Chat surface. */
+export type SideChatSurfaceProps = PropsLocale<'sidebar'> & {
+  /** Forked side session id. */
+  childId: string
+  /** Open the forked session in the main conversation. */
+  open: (id: string) => void
+}
+
 /** Request for one page of GitHub pull requests. */
 export interface PullRequestRequest {
   /** Repository owner. */

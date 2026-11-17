@@ -52,8 +52,13 @@ interface WorkspaceNavigation {
 
 /** Services required by the sidebar plugin. */
 export const inject = [
-  'slots', 'layout', 'uiWorkspace', 'uiConversation', 'locale', 'remote', 'remote.session', 'remote.files',
+  'slots', 'layout', 'uiWorkspace', 'uiConversation', 'locale', 'remote', 'remote.session', 'remote.files', 'sessions',
 ]
+
+/** Side-thread navigation over the Client Session service. */
+interface SideSessionNavigation {
+  open: (sessionId: never) => void
+}
 
 /** Product names for the application ids the Host reports. */
 const APP_LABELS: Record<string, string> = {
@@ -146,6 +151,7 @@ async function loadDevice(ctx: ClientContext): Promise<DeviceFacts> {
  */
 export function apply(ctx: ClientContext): void {
   const workspaceNavigation = ctx.get('uiWorkspace') as unknown as WorkspaceNavigation
+  const sideSessions = ctx.get('sessions') as unknown as SideSessionNavigation
   ctx.effect(() => ctx.locale.register(NS, { zh, en, ar }), 'ui-sidebar: dictionaries')
 
   const injectProps = (): SidebarRootInjected => ({
@@ -214,6 +220,15 @@ export function apply(ctx: ClientContext): void {
         githubPullRequests: request => githubPullRequests(request, ctx),
         githubLinkedPullRequests: request => githubPullRequests(request, ctx),
         currentBranch: path => currentBranch(path, ctx),
+        forkSideChat: async (sessionId) => {
+          const result = await ctx.remote.session.fork({ sessionId })
+          if (!result.ok) throw new Error(result.error.message)
+          return result.value.sessionId
+        },
+        openSideChat: (sessionId) => {
+          ctx.layout.showConversation()
+          sideSessions.open(sessionId as never)
+        },
         openTerminal: () => { ctx.layout.openTerminalDrawer() },
         openTrajectory: (sessionId) => {
           ctx.layout.showConversation()

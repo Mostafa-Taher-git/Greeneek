@@ -23,6 +23,23 @@ export function isTrustedAppUrl(rawUrl) {
 }
 
 /**
+ * Browser partitions the renderer may use for the desktop Browser surface.
+ * `persist:` gives Default genuine on-disk storage; Incognito deliberately has
+ * no `persist:` prefix, so Chromium keeps its cookies, storage, and session in
+ * memory only. The two are separate storage partitions in the same session.
+ */
+export const BROWSER_PARTITIONS = ['persist:gnk-browser-default', 'gnk-browser-incognito']
+
+/**
+ * Whether a webview partition is one the Browser surface may attach.
+ * @param partition - requested Electron partition string.
+ * @returns true only for the two declared browser profiles.
+ */
+export function isAllowedBrowserPartition(partition) {
+  return typeof partition === 'string' && BROWSER_PARTITIONS.includes(partition)
+}
+
+/**
  * Whether a permission request may be granted.
  * The local UI needs nothing beyond sanitized clipboard writes on its own
  * main frame; everything else (media, notifications, fullscreen, pointer
@@ -42,7 +59,8 @@ export function canGrantWindowPermission(permission, requestingUrl, isMainFrame)
 /**
  * Wire the policy onto a live window's webContents.
  * Window-open and cross-origin navigation escape to the system browser;
- * webviews are refused; permission handlers consult the predicate above.
+ * webviews attach only for the declared Browser partitions and keep hardened
+ * preferences; permission handlers consult the predicate above.
  * @param webContents - the window's webContents.
  * @param shell - the Electron shell module (openExternal).
  * @returns nothing.
@@ -61,8 +79,18 @@ export function secureWindow(webContents, shell) {
       void shell.openExternal(url)
     }
   })
-  webContents.on('will-attach-webview', (event) => {
-    event.preventDefault()
+  webContents.on('will-attach-webview', (event, webPreferences, params) => {
+    if (!isAllowedBrowserPartition(params?.partition)) {
+      event.preventDefault()
+      return
+    }
+    // The guest keeps the same hardened defaults as the host window. Nothing
+    // in the allowlist grants node integration or relaxes web security.
+    webPreferences.sandbox = true
+    webPreferences.nodeIntegration = false
+    webPreferences.nodeIntegrationInSubFrames = false
+    webPreferences.contextIsolation = true
+    webPreferences.webSecurity = true
   })
   webContents.session.setPermissionCheckHandler((webContentsOwner, permission, requestingUrl) => {
     void webContentsOwner

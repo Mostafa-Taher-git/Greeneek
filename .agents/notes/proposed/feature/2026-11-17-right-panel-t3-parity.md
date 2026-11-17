@@ -54,11 +54,11 @@ Greeneek already has equivalents for the shared base: capability seams, guarded 
 | R-07 | Backend service seam: Diff (git status/diff hunks) | R-04 | done — `ctx.remote.session.gitDiff` with unified patches and output cap |
 | R-08 | Backend service seam: Terminal (PTY stream + ownership) | R-04 | partial — existing activity drawer, no PTY transport |
 | R-09 | Backend service seam: Pull request + Linked PRs (GitHub credentials) | R-04 | done — user-owned token via `ctx.credentials`, Host REST calls with redirect refusal, pagination and linked-branch search |
-| R-10 | Backend service seam: Browser (Electron webview, partition allowlist) | R-04, security review | pending |
-| R-11 | Backend service seam: Side chat (forked session) | R-04 | pending |
+| R-10 | Backend service seam: Browser (Electron webview, partition allowlist) | R-04, security review | done — main-process allowlist with hardened guest preferences, persistent Default and in-memory Incognito partitions |
+| R-11 | Backend service seam: Side chat (forked session) | R-04 | done — Host `session.fork` creates a real independent thread; panel opens it in the conversation |
 | R-12 | `@Remote` contracts and client contributions per seam | R-05..R-11 | pending |
-| R-13 | Right-panel UI, surface store, shortcuts, locale, Browser profile submenu | R-12 | partial — launcher, tabs, Device/Files/Diff/PR/Linked-PR surfaces, profile submenu land; Browser and Side chat rows disabled until their seams exist |
-| R-14 | Tests per service and per row | R-05..R-13 | pending |
+| R-13 | Right-panel UI, surface store, shortcuts, locale, Browser profile submenu | R-12 | done — all 8 rows enabled with bound B/T/F/D/P/L/M/S shortcuts and real surfaces |
+| R-14 | Tests per service and per row | R-05..R-13 | done — host specs for Files, Git diff, GitHub, desktop partition policy; client specs for every surface |
 | R-15 | Desktop application UI verification | R-14 | pending |
 | R-16 | Evidence report with per-ID status | R-15 | pending |
 

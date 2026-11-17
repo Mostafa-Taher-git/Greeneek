@@ -46,6 +46,8 @@ function mount(overrides: Partial<SurfacePanelComponentProps> = {}) {
     })),
     githubLinkedPullRequests: vi.fn(async () => ({ items: [], hasNext: false })),
     currentBranch: vi.fn(async () => 'feature'),
+    forkSideChat: vi.fn(async () => 'child-1'),
+    openSideChat: vi.fn(),
     useSessions: (selector: (state: { byId: Record<string, { cwd?: string }> }) => unknown) =>
       selector({ byId: { s1: { cwd: '/workspace/demo' } } }),
   }
@@ -79,6 +81,13 @@ describe('SurfacePanel', () => {
     fireEvent.click(screen.getByRole('button', { name: '选择浏览器配置' }))
     expect(screen.getByText('默认')).toBeTruthy()
     expect(screen.getByText('无痕')).toBeTruthy()
+  })
+
+  it('opens an isolated browser profile surface from the submenu', async () => {
+    mount()
+    fireEvent.click(screen.getByRole('button', { name: '选择浏览器配置' }))
+    fireEvent.click(screen.getByText('无痕'))
+    await waitFor(() => { expect(screen.getByText('浏览器面板仅在桌面应用中可用。')).toBeTruthy() })
   })
 
   it('opens the terminal drawer from its row', () => {
@@ -129,10 +138,18 @@ describe('SurfacePanel', () => {
     expect(verbs.githubPullRequests).toHaveBeenCalledWith(expect.objectContaining({ branch: 'feature' }))
   })
 
-  it('keeps the pending rows disabled instead of faking functionality', () => {
+  it('forks a real side session and opens it in the conversation', async () => {
+    const verbs = mount()
+    fireEvent.click(screen.getByRole('button', { name: '侧边对话' }))
+    await waitFor(() => { expect(verbs.forkSideChat).toHaveBeenCalledWith(SID) })
+    fireEvent.click(screen.getByRole('button', { name: '在主对话中打开' }))
+    expect(verbs.openSideChat).toHaveBeenCalledWith('child-1')
+  })
+
+  it('offers every launcher row as an enabled control', () => {
     mount()
-    for (const label of ['浏览器', '侧边对话']) {
-      expect(screen.getByRole('button', { name: label })).toHaveProperty('disabled', true)
+    for (const label of ['浏览器', '终端', '文件', '差异', '拉取请求', '关联的拉取请求', '设备', '侧边对话']) {
+      expect(screen.getByRole('button', { name: label })).toHaveProperty('disabled', false)
     }
   })
 

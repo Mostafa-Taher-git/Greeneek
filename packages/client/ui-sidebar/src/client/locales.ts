@@ -58,6 +58,13 @@ export const zh = {
   'pr.empty': '没有拉取请求。',
   'pr.draft': '草稿',
   'pr.more': '加载更多',
+  'sideChat.created': '已从当前会话分叉出一个独立会话。',
+  'sideChat.open': '在主对话中打开',
+  'browser.desktopOnly': '浏览器面板仅在桌面应用中可用。',
+  'browser.address': '网页地址',
+  'browser.go': '打开',
+  'browser.empty': '输入地址以在此面板中打开网页。',
+  'browser.invalidUrl': '请输入有效的 http(s) 地址。',
 } satisfies Record<string, string>
 
 /** The sidebar namespace key union. */
@@ -121,6 +128,13 @@ export const en = {
   'pr.empty': 'No pull requests.',
   'pr.draft': 'draft',
   'pr.more': 'Load more',
+  'sideChat.created': 'An independent session was forked from this thread.',
+  'sideChat.open': 'Open in conversation',
+  'browser.desktopOnly': 'The browser surface is available in the desktop app only.',
+  'browser.address': 'Web address',
+  'browser.go': 'Open',
+  'browser.empty': 'Enter an address to load a page in this surface.',
+  'browser.invalidUrl': 'Enter a valid http(s) address.',
 } satisfies Record<SidebarKey, string>
 
 /** Arabic dictionary, checked complete against the zh key set; the brand name stays verbatim. */
@@ -181,4 +195,11 @@ export const ar = {
   'pr.empty': 'لا توجد طلبات سحب.',
   'pr.draft': 'مسودة',
   'pr.more': 'تحميل المزيد',
+  'sideChat.created': 'تم إنشاء جلسة مستقلة من هذه المحادثة.',
+  'sideChat.open': 'افتح في المحادثة الرئيسية',
+  'browser.desktopOnly': 'لوحة المتصفح متاحة في تطبيق سطح المكتب فقط.',
+  'browser.address': 'عنوان الويب',
+  'browser.go': 'افتح',
+  'browser.empty': 'أدخل عنواناً لتحميل صفحة في هذه اللوحة.',
+  'browser.invalidUrl': 'أدخل عنوان http(s) صالحاً.',
 } satisfies Record<SidebarKey, string>

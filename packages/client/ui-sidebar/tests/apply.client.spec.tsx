@@ -21,7 +21,10 @@ async function bench(declare = true) {
   const uiConversation = { selectView: vi.fn() }
   const remote = {
     $host: { home: '/home/u', hostname: 'test-host', isLoopback: true },
-    session: { externalApps: vi.fn(async () => ({ ok: true, value: { platform: 'linux', apps: [], canReveal: false } })) },
+    session: {
+      externalApps: vi.fn(async () => ({ ok: true, value: { platform: 'linux', apps: [], canReveal: false } })),
+      fork: vi.fn(async () => ({ ok: true, value: { sessionId: 'child-1' } })),
+    },
     files: {
       list: vi.fn(async () => ({ ok: true, value: { path: '/home/u', home: '/home/u', crumbs: [], entries: [], truncated: false } })),
       read: vi.fn(async (path: string) => ({ ok: true, value: { path, text: '', binary: false, size: 0 } })),
@@ -41,6 +44,7 @@ async function bench(declare = true) {
   ctx.provide('remote.files', remote.files as never)
   ctx.provide('remote.github', remote.github as never)
   ctx.provide('locale', new LocaleRuntime(ctx))
+  ctx.provide('sessions', { open: vi.fn() } as never)
   const slots = ctx.get('slots') as SlotRegistry
   if (declare) {
     slots.register(
@@ -65,7 +69,7 @@ describe('ui-sidebar apply', () => {
 
   it('declares only the services it uses', () => {
     expect(inject).toEqual([
-      'slots', 'layout', 'uiWorkspace', 'uiConversation', 'locale', 'remote', 'remote.session', 'remote.files',
+      'slots', 'layout', 'uiWorkspace', 'uiConversation', 'locale', 'remote', 'remote.session', 'remote.files', 'sessions',
     ])
   })
 

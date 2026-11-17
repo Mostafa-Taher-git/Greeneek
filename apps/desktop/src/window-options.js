@@ -24,6 +24,9 @@ export function createWindowOptions(platform = process.platform, useDarkColors =
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      // The Browser surface uses host-approved webview partitions; every other
+      // webview is refused by secureWindow.
+      webviewTag: true,
       ...(preload === undefined ? {} : { preload }),
     },
   }

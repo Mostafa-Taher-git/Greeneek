@@ -45,7 +45,10 @@ async function bench(options: { locale?: 'en' } = {}) {
   runtime.ctx.provide('uiConversation', { selectView: vi.fn() } as never)
   const remote = {
     $host: { home: '/home/u', hostname: 'test-host', isLoopback: true },
-    session: { externalApps: vi.fn(async () => ({ ok: true, value: { platform: 'linux', apps: [], canReveal: false } })) },
+    session: {
+      externalApps: vi.fn(async () => ({ ok: true, value: { platform: 'linux', apps: [], canReveal: false } })),
+      fork: vi.fn(async () => ({ ok: true, value: { sessionId: 'child-1' } })),
+    },
     files: {
       list: vi.fn(async () => ({ ok: true, value: { path: '/home/u', home: '/home/u', crumbs: [], entries: [], truncated: false } })),
       read: vi.fn(async (path: string) => ({ ok: true, value: { path, text: '', binary: false, size: 0 } })),

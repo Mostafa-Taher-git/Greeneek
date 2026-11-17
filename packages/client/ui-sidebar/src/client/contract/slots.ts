@@ -203,6 +203,10 @@ export type SurfacePanelInjected = {
   ) => Promise<import('../surfaces/contract.ts').PullRequestPage>
   /** Resolve the current git branch of a Workspace. */
   currentBranch: (path: string) => Promise<string | undefined>
+  /** Fork a real side Session from the current one. */
+  forkSideChat: (sessionId: SessionId) => Promise<string>
+  /** Open a side Session in the main conversation. */
+  openSideChat: (sessionId: SessionId) => void
 }
 
 /**

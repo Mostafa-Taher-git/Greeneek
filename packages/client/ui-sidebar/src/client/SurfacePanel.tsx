@@ -25,10 +25,12 @@ import {
 import type { SurfacePanelComponentProps } from './contract/slots.ts'
 import type { SidebarKey } from './locales.ts'
 import type { SurfaceKind } from './right-panel-store.ts'
+import { BrowserPanel } from './surfaces/BrowserPanel.tsx'
 import { DevicePanel } from './surfaces/DevicePanel.tsx'
 import { DiffPanel } from './surfaces/DiffPanel.tsx'
 import { FilesPanel } from './surfaces/FilesPanel.tsx'
 import { PullRequestsPanel } from './surfaces/PullRequestsPanel.tsx'
+import { SideChatPanel } from './surfaces/SideChatPanel.tsx'
 import css from './SurfacePanel.module.css'
 
 /** One launcher row: glyph, localized name, shortcut, destination. */
@@ -61,9 +63,10 @@ export function SurfacePanel(props: SurfacePanelComponentProps) {
     sessionId, useStore, actions, openTerminal, openTrajectory, openChat,
     openSettings, openDashboard, loadDevice, browseFiles, readFile, loadDiff,
     githubStatus, githubRepository, githubPullRequests, currentBranch,
-    useSessions, t,
+    forkSideChat, openSideChat, useSessions, t,
   } = props
   const cwd = useSessions(state => state.byId[sessionId]?.cwd)
+  const desktop = (globalThis as { greeneekDesktop?: unknown }).greeneekDesktop !== undefined
   const surfaces = useStore(state => state.surfaces)
   const activeId = useStore(state => state.activeId)
   const active = surfaces.find(surface => surface.id === activeId)
@@ -83,6 +86,11 @@ export function SurfacePanel(props: SurfacePanelComponentProps) {
   useEffect(() => {
     const onKey = (event: KeyboardEvent): void => {
       if (isEditableTarget(event.target)) return
+      if (shortcutMatches(event, 'mod+b')) {
+        event.preventDefault()
+        actions.open({ kind: 'browser', title: t('surface.browser'), data: { profile: 'default' } }, true)
+        return
+      }
       if (shortcutMatches(event, 'mod+f')) {
         event.preventDefault()
         actions.open({ kind: 'files', title: t('surface.files'), data: {} }, true)
@@ -101,26 +109,41 @@ export function SurfacePanel(props: SurfacePanelComponentProps) {
       if (shortcutMatches(event, 'mod+l')) {
         event.preventDefault()
         actions.open({ kind: 'linked-pull-requests', title: t('surface.linkedPullRequests'), data: {} }, true)
+        return
+      }
+      if (shortcutMatches(event, 'mod+s')) {
+        event.preventDefault()
+        void forkSideChat(sessionId).then((childId) => {
+          actions.open({ kind: 'side-chat', title: t('surface.sideChat'), data: { childId } }, false)
+        })
       }
     }
     window.addEventListener('keydown', onKey)
     return () => { window.removeEventListener('keydown', onKey) }
-  }, [actions, t])
+  }, [actions, forkSideChat, sessionId, t])
 
   const specifications: SurfaceSpec[] = [
-    { id: 'browser', icon: IconCodeOutline16, labelKey: 'surface.browser', shortcut: 'b', ready: false },
+    { id: 'browser', icon: IconCodeOutline16, labelKey: 'surface.browser', shortcut: 'b', ready: true },
     { id: 'terminal', icon: IconCodeOutline16, labelKey: 'surface.terminal', shortcut: 't', ready: true },
     { id: 'files', icon: IconFolderOpenOutline16, labelKey: 'surface.files', shortcut: 'f', ready: true },
     { id: 'diff', icon: IconFileDiff16, labelKey: 'surface.diff', shortcut: 'd', ready: true },
     { id: 'pull-request', icon: IconGitHubDesktop16, labelKey: 'surface.pullRequest', shortcut: 'p', ready: true },
     { id: 'linked-pull-requests', icon: IconBranchOutline16, labelKey: 'surface.linkedPullRequests', shortcut: 'l', ready: true },
     { id: 'device', icon: IconMonitor16, labelKey: 'surface.device', shortcut: 'm', ready: true },
-    { id: 'side-chat', icon: IconNewChatOutline16, labelKey: 'surface.sideChat', shortcut: 's', ready: false },
+    { id: 'side-chat', icon: IconNewChatOutline16, labelKey: 'surface.sideChat', shortcut: 's', ready: true },
   ]
 
   const openSurface = (spec: SurfaceSpec, data: Record<string, string> = {}): void => {
     if (!spec.ready) return
     if (spec.id === 'terminal') { openTerminal(); return }
+    if (spec.id === 'side-chat') {
+      void forkSideChat(sessionId).then((childId) => {
+        actions.open({
+          kind: 'side-chat', title: t('surface.sideChat'), data: { childId },
+        }, false)
+      })
+      return
+    }
     actions.open({ kind: spec.id, title: t(spec.labelKey), data }, true)
   }
 
@@ -200,7 +223,6 @@ export function SurfacePanel(props: SurfacePanelComponentProps) {
                             key={profile.id}
                             type="button"
                             className={css.submenuRow}
-                            disabled
                             onClick={() => {
                               actions.open({
                                 kind: 'browser', title: t(profile.labelKey), data: { profile: profile.id },
@@ -246,7 +268,17 @@ export function SurfacePanel(props: SurfacePanelComponentProps) {
                       t={t}
                     />
                   )
-                  : <div className={css.notice}>{t('surface.pendingBackend')}</div>}
+                  : active.kind === 'browser'
+                    ? <BrowserPanel profile={active.data.profile ?? 'default'} desktop={desktop} t={t} />
+                    : active.kind === 'side-chat'
+                      ? (
+                        <SideChatPanel
+                          childId={active.data.childId ?? ''}
+                          open={(id) => { openSideChat(id as typeof sessionId) }}
+                          t={t}
+                        />
+                      )
+                      : <div className={css.notice}>{t('surface.pendingBackend')}</div>}
         </div>
       )}
     </div>

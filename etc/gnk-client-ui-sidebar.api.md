@@ -29,10 +29,12 @@
 `src/client/right-panel-store.ts: export function createRightPanelStore(): EngineStoreHandle<RightPanelState, RightPanelActions> {`
 `src/client/right-panel-store.ts: export interface SurfaceDescriptor {`
 `src/client/right-panel-store.ts: export type SurfaceKind =`
+`src/client/surfaces/BrowserPanel.tsx: export function BrowserPanel({ profile, desktop, t }: BrowserSurfaceProps) {`
 `src/client/surfaces/DevicePanel.tsx: export function DevicePanel({ loadDevice, t }: DeviceSurfaceProps) {`
 `src/client/surfaces/DiffPanel.tsx: export function DiffPanel({ cwd, loadDiff, t }: DiffSurfaceProps) {`
 `src/client/surfaces/FilesPanel.tsx: export function FilesPanel({ browseFiles, readFile, t }: FilesSurfaceProps) {`
 `src/client/surfaces/PullRequestsPanel.tsx: export function PullRequestsPanel({`
+`src/client/surfaces/SideChatPanel.tsx: export function SideChatPanel({ childId, open, t }: SideChatSurfaceProps) {`
 `src/client/surfaces/contract.ts: export interface DeviceAppEntry {`
 `src/client/surfaces/contract.ts: export interface DeviceFacts {`
 `src/client/surfaces/contract.ts: export interface DiffFile {`
@@ -44,10 +46,12 @@
 `src/client/surfaces/contract.ts: export interface PullRequestPage {`
 `src/client/surfaces/contract.ts: export interface PullRequestRequest {`
 `src/client/surfaces/contract.ts: export interface PullRequestRow {`
+`src/client/surfaces/contract.ts: export type BrowserSurfaceProps = PropsLocale<'sidebar'> & {`
 `src/client/surfaces/contract.ts: export type DeviceSurfaceProps = PropsLocale<'sidebar'> & {`
 `src/client/surfaces/contract.ts: export type DiffSurfaceProps = PropsLocale<'sidebar'> & {`
 `src/client/surfaces/contract.ts: export type FilesSurfaceProps = PropsLocale<'sidebar'> & {`
 `src/client/surfaces/contract.ts: export type PullRequestsSurfaceProps = PropsLocale<'sidebar'> & {`
+`src/client/surfaces/contract.ts: export type SideChatSurfaceProps = PropsLocale<'sidebar'> & {`
 `src/client/surfaces/contract.ts: export type SurfaceLocaleKey = SidebarKey`
 `src/css-modules.d.ts: export default classes`
 `src/index.ts: export function apply(): void {}`

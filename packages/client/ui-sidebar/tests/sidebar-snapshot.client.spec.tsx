@@ -43,6 +43,12 @@ async function bench(options: { locale?: 'en' } = {}) {
   runtime.ctx.provide('layout', { toggleSidebar: vi.fn() })
   runtime.ctx.provide('uiWorkspace', { startSession: vi.fn() } as never)
   runtime.ctx.provide('uiConversation', { selectView: vi.fn() } as never)
+  const remote = {
+    $host: { home: '/home/u', hostname: 'test-host', isLoopback: true },
+    session: { externalApps: vi.fn(async () => ({ ok: true, value: { platform: 'linux', apps: [], canReveal: false } })) },
+  }
+  runtime.ctx.provide('remote', remote as never)
+  runtime.ctx.provide('remote.session', remote.session as never)
   const locale = new LocaleRuntime(runtime.ctx)
   locale.register('common', { zh: commonZh, en: commonEn, ar: commonAr })
   if (options.locale === 'en') locale.setLocale('en')

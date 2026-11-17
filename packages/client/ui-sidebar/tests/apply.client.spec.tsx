@@ -19,9 +19,15 @@ async function bench(declare = true) {
   }
   const uiWorkspace = { startSession: vi.fn() }
   const uiConversation = { selectView: vi.fn() }
+  const remote = {
+    $host: { home: '/home/u', hostname: 'test-host', isLoopback: true },
+    session: { externalApps: vi.fn(async () => ({ ok: true, value: { platform: 'linux', apps: [], canReveal: false } })) },
+  }
   ctx.provide('layout', layout)
   ctx.provide('uiWorkspace', uiWorkspace as never)
   ctx.provide('uiConversation', uiConversation as never)
+  ctx.provide('remote', remote as never)
+  ctx.provide('remote.session', remote.session as never)
   ctx.provide('locale', new LocaleRuntime(ctx))
   const slots = ctx.get('slots') as SlotRegistry
   if (declare) {
@@ -37,7 +43,7 @@ async function bench(declare = true) {
       () => null,
     )
   }
-  return { ctx, slots, layout, uiWorkspace, uiConversation }
+  return { ctx, slots, layout, uiWorkspace, uiConversation, remote }
 }
 
 describe('ui-sidebar apply', () => {
@@ -46,7 +52,9 @@ describe('ui-sidebar apply', () => {
   })
 
   it('declares only the services it uses', () => {
-    expect(inject).toEqual(['slots', 'layout', 'uiWorkspace', 'uiConversation', 'locale'])
+    expect(inject).toEqual([
+      'slots', 'layout', 'uiWorkspace', 'uiConversation', 'locale', 'remote', 'remote.session',
+    ])
   })
 
   it('registers the shell and declares its child seats', async () => {

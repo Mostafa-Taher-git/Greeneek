@@ -8,7 +8,7 @@
  * actions in `sidebar.footer.action`; primary actions sit directly under the
  * New Session control in `sidebar.primary.action`.
  */
-import type { PropsLocale, PropsRenderSlots, PropsRuntime } from '@greeneek/gnk-client-ui-slots'
+import type { PropsLocale, PropsRenderSlots, PropsRuntime, PropsStore } from '@greeneek/gnk-client-ui-slots'
 import type { WorkspaceId } from '@greeneek/gnk-api-workspace-controller/client'
 import type { SessionId } from '@greeneek/gnk-session/types'
 // Type-only: pulls ui-layout's SlotMap merge (the 'sidebar' entry) into every
@@ -181,12 +181,16 @@ export type SurfacePanelInjected = {
   openSettings: () => void
   /** Open the Dashboard destination. */
   openDashboard: () => void
+  /** Load the Host facts shown by the Device surface. */
+  loadDevice: () => Promise<import('../surfaces/contract.ts').DeviceFacts>
 }
 
 /**
  * Full right-panel props: the layout owner's session scope, the navigation
- * verbs, and the standard locale seat. No store is registered and no holes
- * are declared.
+ * verbs, the surface store, and the standard locale seat. No holes declared.
  */
 export type SurfacePanelComponentProps =
-  PropsRuntime<'rightbar'> & SurfacePanelInjected & PropsLocale<'sidebar'>
+  PropsRuntime<'rightbar'>
+  & SurfacePanelInjected
+  & PropsStore<ReturnType<typeof import('../right-panel-store.ts').createRightPanelStore>>
+  & PropsLocale<'sidebar'>

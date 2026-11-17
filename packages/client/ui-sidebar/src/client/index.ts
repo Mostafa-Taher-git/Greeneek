@@ -8,7 +8,12 @@ import type {} from '@greeneek/gnk-client-ui-renderer/client'
 import type {} from '@greeneek/gnk-client-ui-session/client'
 // Type-only: pulls the uiConversation service merge (ctx.uiConversation).
 import type {} from '@greeneek/gnk-client-ui-conversation/client'
+// Type-only: pulls the Remote namespace merges (ctx.remote, ctx.remote.session).
+import type {} from '@greeneek/gnk-api-remotes/client'
+import type {} from '@greeneek/gnk-api-session-controller/client'
+import type { DeviceAppEntry, DeviceFacts } from './surfaces/contract.ts'
 import type { SidebarRootInjected, SurfacePanelInjected, TitlebarInjected } from './contract/slots.ts'
+import { createRightPanelStore } from './right-panel-store.ts'
 import { SidebarRoot } from './SidebarRoot.tsx'
 import { SurfacePanel } from './SurfacePanel.tsx'
 import { Titlebar } from './Titlebar.tsx'
@@ -42,7 +47,40 @@ interface WorkspaceNavigation {
 }
 
 /** Services required by the sidebar plugin. */
-export const inject = ['slots', 'layout', 'uiWorkspace', 'uiConversation', 'locale']
+export const inject = [
+  'slots', 'layout', 'uiWorkspace', 'uiConversation', 'locale', 'remote', 'remote.session',
+]
+
+/** Product names for the application ids the Host reports. */
+const APP_LABELS: Record<string, string> = {
+  cursor: 'Cursor',
+  vscode: 'VS Code',
+  'android-studio': 'Android Studio',
+  'github-desktop': 'GitHub Desktop',
+}
+
+/** Load the Host facts shown by the Device surface. */
+async function loadDevice(ctx: ClientContext): Promise<DeviceFacts> {
+  const host = ctx.remote.$host
+  const apps: DeviceAppEntry[] = []
+  let platform = ''
+  const result = await ctx.remote.session.externalApps()
+  if (result.ok) {
+    platform = result.value.platform
+    for (const app of result.value.apps) {
+      if (!app.available) continue
+      const label = APP_LABELS[app.id]
+      if (label !== undefined) apps.push({ id: app.id, label })
+    }
+  }
+  return {
+    hostname: host.hostname,
+    home: host.home,
+    isLoopback: host.isLoopback,
+    platform,
+    apps,
+  }
+}
 
 /** Registers the sidebar shell and its service callbacks.
  * @param ctx - Client root context.
@@ -106,7 +144,9 @@ export function apply(ctx: ClientContext): void {
     () => ctx.slots.register({
       name: 'rightbar',
       locale: NS,
+      store: createRightPanelStore,
       inject: (): SurfacePanelInjected => ({
+        loadDevice: () => loadDevice(ctx),
         openTerminal: () => { ctx.layout.openTerminalDrawer() },
         openTrajectory: (sessionId) => {
           ctx.layout.showConversation()

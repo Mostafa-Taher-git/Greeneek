@@ -3536,12 +3536,21 @@ importers:
       '@greeneek/cordis':
         specifier: workspace:^
         version: link:../../../vendor/cordis
+      '@greeneek/gnk-api-remotes':
+        specifier: workspace:^
+        version: link:../../api/remotes
+      '@greeneek/gnk-api-session-controller':
+        specifier: workspace:^
+        version: link:../../api/session-controller
       '@greeneek/gnk-api-workspace-controller':
         specifier: workspace:^
         version: link:../../api/workspace-controller
       '@greeneek/gnk-client-locale':
         specifier: workspace:^
         version: link:../locale
+      '@greeneek/gnk-client-store':
+        specifier: workspace:^
+        version: link:../store
       '@greeneek/gnk-client-test-runtime':
         specifier: workspace:^
         version: link:../../test-support/client-runtime

@@ -74,3 +74,125 @@
   font-size: 11px;
   line-height: 16px;
 }
+
+.row:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.rowWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.submenuToggle {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--dsw-alias-label-tertiary);
+  cursor: pointer;
+}
+
+.submenu {
+  position: absolute;
+  top: 100%;
+  inset-inline-start: 24px;
+  z-index: 5;
+  min-width: 120px;
+  padding: 4px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--dsw-specific-menu);
+  --dsw-elevation-stroke-color: var(--dsw-alias-border-l2);
+  --gnk-scrollbar-thumb: var(--dsw-alias-scrollbar-bg-l2);
+  --gnk-scrollbar-thumb-hover: var(--dsw-alias-scrollbar-hover-l2);
+  box-shadow: var(--dsw-elevation-prominent);
+}
+
+.submenuRow {
+  display: block;
+  width: 100%;
+  padding: 5px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--dsw-alias-label-primary);
+  font: inherit;
+  font-size: 12px;
+  text-align: start;
+  cursor: pointer;
+}
+
+.submenuRow:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding-bottom: 6px;
+  border-bottom: 0.5px solid var(--dsw-alias-border-l2);
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 4px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.tabActive {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+}
+
+.tabClose {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--dsw-alias-label-tertiary);
+  cursor: pointer;
+}
+
+.launcherButton {
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.surfaceBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.notice {
+  padding: 12px;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+}

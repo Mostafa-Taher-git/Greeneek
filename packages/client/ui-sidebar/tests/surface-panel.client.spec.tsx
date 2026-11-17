@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { makeTranslate } from '@greeneek/gnk-client-test-runtime'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { bindSnapshotSelector, makeTranslate } from '@greeneek/gnk-client-test-runtime'
 import { formatShortcut } from '@greeneek/gnk-client-ui-primitives'
 import type { SessionId } from '@greeneek/gnk-session/types'
 import type { SurfacePanelComponentProps } from '../src/client/contract/slots.ts'
+import { createRightPanelStore } from '../src/client/right-panel-store.ts'
 import { SurfacePanel } from '../src/client/SurfacePanel.tsx'
 import { zh } from '../src/client/locales.ts'
 
@@ -20,32 +21,40 @@ function mount(overrides: Partial<SurfacePanelComponentProps> = {}) {
     openChat: vi.fn(),
     openSettings: vi.fn(),
     openDashboard: vi.fn(),
+    loadDevice: vi.fn(async () => ({
+      hostname: 'test-host', home: '/home/u', isLoopback: true, platform: 'linux', apps: [],
+    })),
   }
+  const handle = createRightPanelStore().create()
   const props = {
     sessionId: SID,
     t,
+    useStore: bindSnapshotSelector(handle.store),
+    actions: handle.actions,
     ...verbs,
     ...overrides,
   } as unknown as SurfacePanelComponentProps
   render(<SurfacePanel {...props} />)
-  return verbs
+  return { ...verbs, handle }
 }
 
 describe('SurfacePanel', () => {
-  it('lists only the destinations this app actually has', () => {
+  it('lists the eight T3 launcher rows with their single-key chips', () => {
     mount()
     expect(screen.getByRole('heading', { name: '打开一个面板' })).toBeTruthy()
-    for (const label of ['终端', '执行轨迹', '对话', '设置', '仪表盘']) {
+    for (const label of ['浏览器', '终端', '文件', '差异', '拉取请求', '关联的拉取请求', '设备', '侧边对话']) {
       expect(screen.getByRole('button', { name: label })).toBeTruthy()
     }
-    expect(screen.queryByText('Browser')).toBeNull()
-    expect(screen.queryByText('Pull request')).toBeNull()
+    for (const key of ['b', 't', 'f', 'd', 'p', 'l', 'm', 's']) {
+      expect(screen.getByText(formatShortcut(key))).toBeTruthy()
+    }
   })
 
-  it('shows a shortcut chip only for the bound terminal shortcut', () => {
+  it('offers the Browser profile submenu', () => {
     mount()
-    expect(screen.getByText(formatShortcut('mod+j'))).toBeTruthy()
-    expect(document.querySelectorAll('kbd')).toHaveLength(1)
+    fireEvent.click(screen.getByRole('button', { name: '选择浏览器配置' }))
+    expect(screen.getByText('默认')).toBeTruthy()
+    expect(screen.getByText('无痕')).toBeTruthy()
   })
 
   it('opens the terminal drawer from its row', () => {
@@ -54,18 +63,31 @@ describe('SurfacePanel', () => {
     expect(verbs.openTerminal).toHaveBeenCalledOnce()
   })
 
-  it('opens the two Session views with the current Session', () => {
+  it('opens the Device surface and renders the Host facts', async () => {
+    const verbs = mount()
+    fireEvent.click(screen.getByRole('button', { name: '设备' }))
+    await waitFor(() => {
+      expect(verbs.loadDevice).toHaveBeenCalled()
+    })
+    expect(screen.getByText('test-host')).toBeTruthy()
+    expect(screen.getByText('linux')).toBeTruthy()
+  })
+
+  it('keeps the pending rows disabled instead of faking functionality', () => {
+    mount()
+    for (const label of ['浏览器', '文件', '差异', '拉取请求', '关联的拉取请求', '侧边对话']) {
+      expect(screen.getByRole('button', { name: label })).toHaveProperty('disabled', true)
+    }
+  })
+
+  it('opens the two Session views and two full-page destinations from the extra rows', () => {
     const verbs = mount()
     fireEvent.click(screen.getByRole('button', { name: '执行轨迹' }))
     fireEvent.click(screen.getByRole('button', { name: '对话' }))
-    expect(verbs.openTrajectory).toHaveBeenCalledWith(SID)
-    expect(verbs.openChat).toHaveBeenCalledWith(SID)
-  })
-
-  it('opens the two full-page destinations', () => {
-    const verbs = mount()
     fireEvent.click(screen.getByRole('button', { name: '设置' }))
     fireEvent.click(screen.getByRole('button', { name: '仪表盘' }))
+    expect(verbs.openTrajectory).toHaveBeenCalledWith(SID)
+    expect(verbs.openChat).toHaveBeenCalledWith(SID)
     expect(verbs.openSettings).toHaveBeenCalledOnce()
     expect(verbs.openDashboard).toHaveBeenCalledOnce()
   })

@@ -110,7 +110,7 @@ export function ThreadDetailsPanel({
       } else if (shortcutMatches(event, 'mod+shift+b')) {
         event.preventDefault()
         toggleDetails()
-      } else if (shortcutMatches(event, 'mod+j')) {
+      } else if (shortcutMatches(event, 'mod+j') || shortcutMatches(event, 'mod+t')) {
         event.preventDefault()
         toggleTerminalDrawer()
       } else if (shortcutMatches(event, 'mod+alt+b')) {

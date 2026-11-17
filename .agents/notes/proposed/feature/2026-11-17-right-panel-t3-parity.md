@@ -1,0 +1,73 @@
+# Agent Note: Right Panel T3 parity — full 13-row implementation
+
+Status: proposed
+
+## Problem
+
+The right panel currently offers five Greeneek-native destinations. The owner requires the complete T3 Code "Open a surface" list with real functionality behind every row, desktop-only, without faking controls or weakening the desktop security policy.
+
+## Decision
+
+Build the rows as genuine capability seams: Host-side Cordis service definitions with providers, `@Remote` exposure through the Typert gateway, client consumers through `ctx.remote`, and persisted UI state. No row may be a link-only stub or a placeholder.
+
+The desktop remains the primary host. External content is rendered as data from Host-fetched, validated responses; the Electron window never navigates to an untrusted origin and no webview is enabled in the primary window.
+
+## Reference study
+
+### T3 Code (clone: `%TEMP%/opencode/t3code`)
+Source-level study completed. The launcher has exactly **8 top-level rows** in `apps/web/src/components/RightPanelTabs.tsx:341-412` (empty state) and `:1095-1164` ("+" menu): Browser `B`, Terminal `T`, Files `F`, Diff `D`, Pull request `P`, Linked pull requests `L`, Device `M`, Side chat `S`. Browser owns a profile submenu (built-ins Default and Incognito, `packages/contracts/src/browserProfile.ts:28-52`). The store recognizes 9 internal kinds (`apps/web/src/rightPanelStore.ts:15-26`) after two historical kinds were migrated out. The owner chose **8 rows + the Browser profile submenu** as the target set.
+
+Reusable T3 patterns: per-thread descriptor-based surface store with versioned persistence and revisions (`rightPanelStore.ts:83-116, 485-580, 703-762`), one surface→component switch (`RightPanelSurfaceContent.tsx:85-241`), explicit resource release on close (`useRightPanelSurfaceClose.ts:54-106`), sender-guarded IPC with narrow preload (`DesktopIpc.ts:106-137, 184-196`), webview partition allowlist (`DesktopWindow.ts:620-645`), centralized typed RPC contract with method→scope map (`packages/contracts/src/rpc.ts:417-594`, `RpcAuthorization.ts:40-100`), and keyboard-shortcut hygiene (typing/popup guards, physical-key fallback: `RightPanelTabs.tsx:265-284, 420-435`, `surfaceShortcutKey.ts:1-14`). T3-specific infrastructure (Effect runtime, node-pty/ghostty, CDP-over-fd, device hub/EAS/Tailscale, provider ecosystem) will not be copied verbatim.
+
+### Sibling Cordis harness (reference B, cloned under the session temp directory)
+Source-level study completed. Greeneek and reference B are sibling forks of the same Cordis base, so most core architecture is already shared. Genuinely reusable findings (paths are in the clone, not in this repository):
+
+- **Adopt** the local-API trust fence (Host + `Sec-Fetch-Site` + `Origin`) — `packages/client/connection/src/api-request-trust.ts:121-175`.
+- **Adopt** the one-shot IPC secret handshake between the Electron parent and its owned Host process — `apps/desktop/src/parent-authentication.ts:7-37`, `apps/desktop-host/src/authentication.ts:30-70`.
+- **Adopt** session-fenced streaming Remote controllers with coalesced frames — `packages/api/job-controller/src/index.ts:43-125`.
+- **Adopt** credential templates with destination scoping and output redaction — `packages/mcp/mcp-client/src/credentials.ts:1-90`.
+- **Adopt** per-session resource lifecycle (`SessionResources<T>`) for PTYs/browser/device sessions — `packages/experimental/browser-use-runtime/src/index.ts:8-45`.
+- **Adapt** validated config writes serialized with HMR — `packages/boot/config-editor/README.md:5-7`.
+- **Adapt** user-owned provider credentials scoped to an allowed endpoint with invalidate-on-401 — reference B's account-token provider.
+- **Reject** reference-B product surfaces (market, CUA, Liveshare, OTel) unless a row requires them.
+
+Greeneek already has equivalents for the shared base: capability seams, guarded tool pipeline, `fs`/`subprocess`/`sandbox`, `jobs`, `session` persistence, and `authorization-controller`.
+
+### Greeneek extension recipe (audit result)
+1. Wire-safe types in `<pkg>/src/types.ts`, exported via `./types`.
+2. `TypertRemoteService` class with `super(ctx, key, { namespace })`, `@Remote` methods with strict signatures, injectable internals seam for tests.
+3. `package.json` exports `./typert` and `./remote`; build generates host/remote artifacts.
+4. Host composition in bundle `cordis.patch.yml` + package dependencies.
+5. Client contribution mounted in `packages/api/remotes/src/client/index.ts`; consumers add `remote.<ns>` to `inject`.
+6. Tests: unit + disposal, gateway endpoint validation, REAL composition, coverage, `test:gui`, `test:web` replay, API reports and catalogs.
+
+## Requirement IDs and dependencies
+
+| ID | Requirement | Depends on | Status |
+| --- | --- | --- | --- |
+| R-01 | Source-level study of both reference repositories | — | done |
+| R-02 | Architecture comparison and plan with IDs | R-01 | in progress |
+| R-03 | Fix card top position, dismissal, open-in menu | — | done (`2a8175d0`) |
+| R-04 | Enumerate the exact rows (8 + Browser profile submenu) | R-01 | done |
+| R-05 | Backend service seam: Device (host facts + app catalogue) | R-04 | done — reuses existing `$host` + `session.externalApps` |
+| R-06 | Backend service seam: Files (directory browsing + read) | R-04 | pending |
+| R-07 | Backend service seam: Diff (git status/diff hunks) | R-04 | pending |
+| R-08 | Backend service seam: Terminal (PTY stream + ownership) | R-04 | partial — existing activity drawer, no PTY transport |
+| R-09 | Backend service seam: Pull request + Linked PRs (GitHub credentials) | R-04 | pending |
+| R-10 | Backend service seam: Browser (Electron webview, partition allowlist) | R-04, security review | pending |
+| R-11 | Backend service seam: Side chat (forked session) | R-04 | pending |
+| R-12 | `@Remote` contracts and client contributions per seam | R-05..R-11 | pending |
+| R-13 | Right-panel UI, surface store, shortcuts, locale, Browser profile submenu | R-12 | partial — launcher, tabs, Device surface, profile submenu land; six rows disabled until their seam exists |
+| R-14 | Tests per service and per row | R-05..R-13 | pending |
+| R-15 | Desktop application UI verification | R-14 | pending |
+| R-16 | Evidence report with per-ID status | R-15 | pending |
+
+## Alternatives considered
+
+- **Nearest-action row mapping** (rejected by owner): would omit real implementations.
+- **External links instead of in-app surfaces**: rejected by owner.
+- **Weakening Electron security to enable a webview**: rejected; desktop must stay primary and policies unchanged.
+
+## Consequences
+
+This is a multi-package program of work. Each row will land behind its own tested capability seam; until a seam is verified it will not be presented as complete. The final report will use VERIFIED COMPLETE / IMPLEMENTED BUT NOT VERIFIED / BLOCKED / NOT IMPLEMENTED with evidence per ID.

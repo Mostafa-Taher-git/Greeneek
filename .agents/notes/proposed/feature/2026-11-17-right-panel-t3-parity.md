@@ -84,6 +84,21 @@ Greeneek already has equivalents for the shared base: capability seams, guarded 
 | R-24 | Full T3 source parity audit for all 8 rows, menus and shortcuts | IMPLEMENTED BUT NOT VERIFIED | T3 study covered launcher rows and key handlers; full interaction parity comparison pending |
 | R-25 | Both apps launched and every workflow tested | IMPLEMENTED BUT NOT VERIFIED | Desktop and Web launched; 7 rows exercised in Web and Browser in Desktop; full matrix pending |
 
+## Three-repository comparative decision record (owner request)
+
+Source-level studies were completed for all three repositories. Clones live under the session temp directory; no code was copied verbatim.
+
+- **Architecture**: Adopt the Cordis capability-seam model from DeepSeek Harness (same plugin family as Greeneek), adapt T3 Code's typed RPC contract plus per-method authorization scopes, reject PandaCode's 5,000-line Tauri command monolith as a composition model.
+- **Terminal**: Adopt DeepSeek's typed `TerminalBackend`/`TerminalSessionService`/branded-id seam; adapt PandaCode's process-tree teardown and offset-based output replay, and T3's adaptive output batching for the web stream. Our current implementation is a first Host PTY Remote; the deeper seam work remains.
+- **Browser**: Adopt T3's profile-id validation and Default/Incognito partition model plus its CDP command/event contract shape; adapt PandaCode's native webview containment (URL allowlist, denied new windows/downloads, screenshots/element pick) into the Electron host; use DeepSeek's exclusive-provider registry as the capability wrapper. Reject PandaCode's single-tab download-blocked browser as the complete solution and T3's mandatory ~100 MB Chrome download unless full agent CDP is required.
+- **GitHub**: Adopt T3's credential hygiene (hostname validation, token scoping, fingerprinting, settings-secret precedence) and rich typed PR model; adapt PandaCode's "repository content, not instructions" boundary marker and body truncation; keep DeepSeek's plugin packaging. Reject reliance on ambient `gh auth` as the only credential story.
+- **Diff**: PandaCode has the strongest viewer (virtualization, worker isolation, explicit patch limits). Adopt that approach for Greeneek's diff card; our current diff panel renders plain unified text and remains a simplification.
+- **Device**: Adopt T3's typed cross-device contract; Greeneek currently exposes Host facts only.
+- **Side chat**: Adapt PandaCode's projectless-chat idea and DeepSeek's agent-team task board; current Greeneek side chat is a real fork of the active Session.
+- **Security layers**: DeepSeek wins execution sandbox/approval semantics, T3 wins client/RPC authorization, PandaCode wins embedded-webview containment. Use all three at their respective layers; never weaken the Electron policy.
+
+Evidence: PandaCode `src-tauri/src/terminal.rs:64-135`, `browser.rs:115-120,240-276`, `diff-viewer.ts`, `github.rs:100-130`, `github.ts:1-10`; T3 `contracts/src/rpc.ts`, `clientRpcPermissions.ts:39-108`, `browserProfile.ts`, `GitHubCredentials.ts:42-70`, `OutputProtocol.ts`; DeepSeek `terminal/types.ts`, `browser-use/src/index.ts`, `sandbox/escalation.ts`, `tool-terminal/src/index.ts:41-54`.
+
 ## Remaining limitations
 
 - GitHub PR rows require the user to configure `GITHUB_TOKEN` through the existing credentials seam; no key is provided by Greeneek.

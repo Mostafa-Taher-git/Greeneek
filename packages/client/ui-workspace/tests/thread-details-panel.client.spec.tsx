@@ -174,28 +174,30 @@ describe('ThreadDetailsPanel workspace row', () => {
     mount({ externalApps: vi.fn(async () => ({ ...catalogue, apps: [{ id: 'unknown-editor', available: true }] })) })
     fireEvent.click(screen.getByLabelText('在外部应用或文件管理器中打开'))
     await waitFor(() => {
-      expect(screen.getByText('文件 (默认)')).toBeTruthy()
+      expect(screen.getByText('在文件夹中显示')).toBeTruthy()
     })
     expect(screen.queryByText('unknown-editor')).toBeNull()
+    expect(screen.queryByText('文件 (默认)')).toBeNull()
   })
 
   it('omits the reveal entry when the Host has no file manager', async () => {
     mount({ externalApps: vi.fn(async () => ({ ...catalogue, canReveal: false })) })
     fireEvent.click(screen.getByLabelText('在外部应用或文件管理器中打开'))
     await waitFor(() => {
-      expect(screen.getByText('文件 (默认)')).toBeTruthy()
+      expect(screen.getByText('Cursor')).toBeTruthy()
     })
     expect(screen.queryByText('在文件夹中显示')).toBeNull()
   })
 
-  it('keeps the default entry when the catalogue read fails', async () => {
+  it('offers no overflow destination when the catalogue read fails', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     mount({ externalApps: vi.fn(async () => { throw new Error('host offline') }) })
     await waitFor(() => {
       expect(warn).toHaveBeenCalledWith('external application catalogue unavailable:', expect.any(Error))
     })
     fireEvent.click(screen.getByLabelText('在外部应用或文件管理器中打开'))
-    expect(screen.getByText('打开工作区文件夹')).toBeTruthy()
+    expect(screen.queryByText('打开工作区文件夹')).toBeNull()
+    expect(screen.queryByText('在文件夹中显示')).toBeNull()
     warn.mockRestore()
   })
 

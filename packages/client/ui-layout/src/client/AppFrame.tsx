@@ -11,7 +11,7 @@
  * shares — zero cordis or framework imports, zero self-made hooks.
  */
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import type { ReactNode, RefObject } from 'react'
+import type { ReactNode } from 'react'
 import type {
   PropsLocale, PropsRenderSlots, PropsRuntime, PropsStore,
 } from '@greeneek/gnk-client-ui-slots'
@@ -38,9 +38,8 @@ function CenterColumn(props: { children?: ReactNode }) {
  * survives a close/reopen; a closed popover leaves the accessibility tree
  * and the tab order.
  */
-function DetailsColumn(props: { children?: ReactNode; hidden: boolean; columnRef: RefObject<HTMLDivElement> }) {
-  const { columnRef, ...rest } = props
-  return <PanelColumn className={css.detailsCol} columnRef={columnRef} {...rest} />
+function DetailsColumn(props: { children?: ReactNode; hidden: boolean }) {
+  return <PanelColumn className={css.detailsCol} {...props} />
 }
 
 /** Independent right panel grid item, with the same closed-panel semantics. */
@@ -60,10 +59,8 @@ function PanelColumn(props: {
   overlay?: boolean
   hidden: boolean
   className: string | undefined
-  columnRef?: RefObject<HTMLDivElement>
 }) {
-  const ownRef = useRef<HTMLDivElement>(null)
-  const ref = props.columnRef ?? ownRef
+  const ref = useRef<HTMLDivElement>(null)
   useLayoutEffect(() => {
     const node = ref.current
     if (node === null) return
@@ -217,24 +214,6 @@ export function AppFrame({
   colsRef.current = cols
 
   const detailsOpen = detailsSession !== undefined && panels.details > 0
-  const detailsRef = useRef<HTMLDivElement>(null)
-  // A click on the toggle or inside the card keeps it open; a click anywhere
-  // else dismisses it like any other dropdown.
-  useEffect(() => {
-    if (!detailsOpen) return
-    const onOutside = (event: PointerEvent): void => {
-      const target = event.target
-      if (target instanceof Node
-        && detailsRef.current?.contains(target) !== true
-        // The other titlebar toggles are part of the same chrome group: using
-        // one must not dismiss the card, so both panels can stay open.
-        && !(target instanceof Element && target.closest('[data-panel-toggle]'))) {
-        actions.closeDetails()
-      }
-    }
-    document.addEventListener('pointerdown', onOutside)
-    return () => { document.removeEventListener('pointerdown', onOutside) }
-  }, [actions, detailsOpen])
 
   // Below the breakpoint the solver closes the right track to keep the center
   // usable; an opened right panel then floats over the conversation.
@@ -264,7 +243,13 @@ export function AppFrame({
     rightPanelOpen: panels.rightbar > 0,
     toggleThreadDetails: () => { actions.toggleDetails() },
     toggleTerminalDrawer: () => { actions.toggleTerminalDrawer() },
-    toggleRightPanel: () => { actions.toggleRightbar() },
+    // The right panel and the thread card share the same chrome region: using
+    // one dismisses the other. Clicking the thread toggle again still closes
+    // the card; ordinary clicks elsewhere no longer dismiss it.
+    toggleRightPanel: () => {
+      actions.toggleRightbar()
+      if (detailsOpen) actions.closeDetails()
+    },
   }
 
   return (
@@ -332,7 +317,7 @@ export function AppFrame({
             </div>
           )}
         </CenterColumn>
-        <DetailsColumn hidden={!detailsOpen} columnRef={detailsRef}>
+        <DetailsColumn hidden={!detailsOpen}>
           <SessionProvider>{renderSlot('details', {})}</SessionProvider>
         </DetailsColumn>
         <RightbarColumn overlay={rightbarOverlay} hidden={cols.rightbar === 0 && !rightbarOverlay}>

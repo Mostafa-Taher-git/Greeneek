@@ -302,7 +302,7 @@ describe('AppFrame', () => {
     expect(instance.getSnapshot().rightbar).toBe(340)
   })
 
-  it('keeps Thread Details and the right panel open independently', () => {
+  it('keeps the two panel preferences independent at the store level', () => {
     const { instance, frame, getByTestId } = mountFrame()
     expect(getByTestId('rightbar-content')).toBeTruthy()
     expect(getByTestId('details-content')).toBeTruthy()
@@ -315,6 +315,18 @@ describe('AppFrame', () => {
     expect(tracks(frame)).toEqual([280, 0, 0])
     expect(frame.hasAttribute('data-details-collapsed')).toBe(false)
     expect(getByTestId('details-content')).toBeTruthy()
+  })
+
+  it('closes the thread card when the right-panel toggle is used', () => {
+    const { instance, frame, slotCalls } = mountFrame()
+    act(() => { instance.actions.openDetails() })
+    expect(frame.hasAttribute('data-details-collapsed')).toBe(false)
+    const titlebarProps = slotCalls.filter(call => call.key === 'titlebar').at(-1)!.props as {
+      panelControls: { toggleRightPanel: () => void }
+    }
+    act(() => { titlebarProps.panelControls.toggleRightPanel() })
+    expect(frame.hasAttribute('data-details-collapsed')).toBe(true)
+    expect(instance.getSnapshot().rightbar).toBe(360)
   })
 
   it('details column stays mounted at zero width', () => {

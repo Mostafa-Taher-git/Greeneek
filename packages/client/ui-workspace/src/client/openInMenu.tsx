@@ -10,14 +10,12 @@
 import {
   IconAndroidStudio16,
   IconCursor16,
-  IconFolderOpen16,
   IconFolderOpenOutline16,
   IconGitHubDesktop16,
   IconVSCode16,
   type MenuItem,
 } from '@greeneek/gnk-client-ui-primitives'
 import type { ExternalAppsShare, OpenPathTarget, WorkspaceBrowserProps } from './contract/slots.ts'
-import css from './openIn.module.css'
 
 /** Menu item id of the default-application destination. */
 const DEFAULT_ITEM_ID = 'open-in:default'
@@ -60,11 +58,9 @@ export function openInMenuItems(
   share: ExternalAppsShare | undefined,
   t: WorkspaceBrowserProps['t'],
 ): MenuItem[] {
-  const items: MenuItem[] = [{
-    id: DEFAULT_ITEM_ID,
-    label: fileManagerLabel(share?.platform, t),
-    icon: <IconFolderOpen16 className={css.folderIcon} />,
-  }]
+  // The workspace row itself opens the default destination; the overflow menu
+  // offers only the extra actions and applications.
+  const items: MenuItem[] = []
   if (share?.canReveal === true) {
     items.push({
       id: REVEAL_ITEM_ID,

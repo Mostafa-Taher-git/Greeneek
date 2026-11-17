@@ -108,7 +108,7 @@
    no grid track, so no drag handle and no resize affordance exist. */
 .detailsCol {
   position: absolute;
-  top: 52px;
+  top: 0;
   inset-inline-end: 16px;
   width: 300px;
   max-height: calc(100% - 68px);

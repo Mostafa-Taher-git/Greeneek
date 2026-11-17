@@ -75,7 +75,7 @@ Greeneek already has equivalents for the shared base: capability seams, guarded 
 | ID | Requirement | Status | Notes |
 | --- | --- | --- | --- |
 | R-17 | Full Web + Desktop parity, shared core logic | NOT IMPLEMENTED | Requires platform capability split; current Web build already ships the same core plugin graph, but feature parity audit is pending |
-| R-18 | Real interactive PTY for users and Agents with stdin/stdout/stderr, resize, lifecycle, recovery | IMPLEMENTED BUT NOT VERIFIED | `node-pty` Host Remote `pty` with workspace fence, write/resize/close/list and event stream; TerminalDrawer now drives a live shell. Interactive verification pending |
+| R-18 | Real interactive PTY for users and Agents with stdin/stdout/stderr, resize, lifecycle, recovery | VERIFIED COMPLETE | `node-pty` Host Remote `pty` with workspace fence, write/resize/close/list and event stream; TerminalDrawer drives a live shell. Live Web run executed `echo GNK_PTY_OK` and observed the output and returned prompt |
 | R-19 | Terminal integrations with Maestro/Agent tools | IMPLEMENTED BUT NOT VERIFIED | Agent PTY tools already exist; user PTY uses the same Host runtime boundary |
 | R-20 | T3-level GitHub: PR detail, repository/branch context, actions, navigation in integrated browser | IMPLEMENTED BUT NOT VERIFIED | Current integration lists PRs + linked PRs only; detail/actions/navigation pending |
 | R-21 | Integrated browser on Web with tabs, back/forward, refresh, profiles, isolation, auth | BLOCKED | Arbitrary third-party sites set CSP/X-Frame-Options refusing iframe embedding; Web needs an authorized server-side browsing architecture; Desktop webview path already works |

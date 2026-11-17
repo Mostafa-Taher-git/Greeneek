@@ -119,7 +119,7 @@ async function bench(snapshot: ChatSnapshot) {
   const openWorkspacePath = vi.fn(async () => ({ ok: true, value: { opened: true } }))
   ctx.provide('layout', layout as never)
   ctx.provide('uiWorkspace', {} as never)
-  new TestRemote(ctx, { session: { openWorkspacePath } })
+  new TestRemote(ctx, { session: { openWorkspacePath }, pty: {} })
   const locale = new LocaleRuntime(ctx)
   ctx.provide('locale', locale)
   locale.register(CONVERSATION_NS, { zh: conversationZh, en: conversationEn, ar: conversationAr })

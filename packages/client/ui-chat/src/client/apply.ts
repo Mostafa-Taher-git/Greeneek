@@ -48,7 +48,7 @@ const CHAT_NODE_INJECT: ChatNodeTurnDataInjected = {
 /** Services required by the Chat target and its presentation registrations. */
 export const inject = [
   'slots', 'sessions', 'uiSession', 'uiConversation', 'layout', 'locale',
-  'settingsScope', 'remote', 'remote.session',
+  'settingsScope', 'remote', 'remote.session', 'remote.pty',
 ]
 
 /**

@@ -120,7 +120,7 @@ export function TerminalDrawer({
   const submit = (event: KeyboardEvent<HTMLInputElement>): void => {
     if (event.key !== 'Enter' || ptyId === undefined) return
     event.preventDefault()
-    void write(ptyId, `${input}\n`).then(() => { setInput('') })
+    void write(ptyId, `${input}\r`).then(() => { setInput('') })
   }
 
   return (

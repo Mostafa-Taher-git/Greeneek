@@ -50,6 +50,8 @@ declare module '@greeneek/gnk-typert-protocol' {
     'files/unreadable': { readonly path: string }
     /** The file exceeds the Host read cap. */
     'files/too-large': { readonly path: string }
+    /** A git push was refused or failed. */
+    'files/push-failed': { readonly path: string }
     /** No user-owned GitHub token is configured. */
     'github/unconfigured': {}
     /** GitHub refused the request. */

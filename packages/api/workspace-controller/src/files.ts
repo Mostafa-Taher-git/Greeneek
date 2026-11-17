@@ -9,6 +9,7 @@ import { homedir } from 'node:os'
 import { basename, dirname, join, posix, resolve, win32 } from 'node:path'
 import { Context } from '@greeneek/cordis'
 import { Remote, RemoteError, TypertRemoteService } from '@greeneek/gnk-typert-protocol'
+import { runNativeCommand, type NativeCommandRunner } from '@greeneek/gnk-native-command'
 import type { FileBrowserEntry, FileBrowserListing, FileBrowserRead } from './types.ts'
 
 /** Maximum entries in one listing level. */
@@ -24,6 +25,8 @@ export interface FileBrowserInternals {
   stat: (path: string) => Promise<import('node:fs').Stats>
   /** Read one file. */
   readFile: (path: string) => Promise<Buffer>
+  /** Read-only command runner for git operations. */
+  run: NativeCommandRunner
 }
 
 /** Test seams keyed by Host context; never read from the inject proxy. */
@@ -50,6 +53,7 @@ export class FileBrowserController extends TypertRemoteService {
         readdir: async path => readdir(path, { withFileTypes: true }),
         stat,
         readFile,
+        run: runNativeCommand,
       }
   }
 
@@ -82,6 +86,30 @@ export class FileBrowserController extends TypertRemoteService {
       throw new RemoteError('files/unreadable', `cannot list ${target}: ${messageOf(error)}`, { path: target }, { cause: error })
     }
     return { path: target, home, crumbs: ancestry(target), entries, truncated }
+  }
+
+  /**
+   * Push the current branch to its configured upstream.
+   * @param request - fully-qualified workspace directory.
+   * @param signal - caller lifetime.
+   * @returns the command output; failures carry a stable wire code.
+   */
+  @Remote('gitPush')
+  async gitPush(request: { path: string }, signal: AbortSignal): Promise<{ pushed: boolean; output: string }> {
+    const target = qualified(request.path)
+    try {
+      const { stdout, stderr } = await this.io.run('git', ['-C', target, 'push'], signal)
+      signal.throwIfAborted()
+      return { pushed: true, output: `${stdout}${stderr}`.trim() }
+    } catch (error: unknown) {
+      signal.throwIfAborted()
+      throw new RemoteError(
+        'files/push-failed',
+        `git push failed in ${target}: ${messageOf(error)}`,
+        { path: target },
+        { cause: error },
+      )
+    }
   }
 
   /**

@@ -272,6 +272,8 @@ export type ThreadDetailsPanelInjected =
     | 'externalApps' | 'openPath' | 'gitFacts'
   >
   & {
+    /** Push the current branch of the Session Workspace. */
+    gitPush: (path: string) => Promise<void>
     hooks: {
       /** True while this Session's Thread Details card has a lineage occupant. */
       lineage: HostObservable<boolean>

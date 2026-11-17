@@ -67,6 +67,8 @@ export const zh = {
   'git.changesLabel': '相对 {base} 的改动',
   'git.changesUnbasedLabel': '未提交改动',
   'git.changesCounts': '+{added} −{removed}',
+  'git.push': '推送',
+  'git.copyBranch': '复制分支名称',
   'actions.copyDevice.aria': '复制设备名称',
   'actions.copiedDevice.aria': '已复制设备名称',
 
@@ -258,6 +260,8 @@ export const en = {
   'git.changesLabel': 'Changes vs {base}',
   'git.changesUnbasedLabel': 'Uncommitted changes',
   'git.changesCounts': '+{added} −{removed}',
+  'git.push': 'Push',
+  'git.copyBranch': 'Copy branch name',
   'actions.copyDevice.aria': 'Copy device name',
   'actions.copiedDevice.aria': 'Device name copied',
 
@@ -446,6 +450,8 @@ export const ar = {
   'git.changesLabel': 'التغييرات مقابل {base}',
   'git.changesUnbasedLabel': 'تغييرات غير مودعة',
   'git.changesCounts': '+{added} −{removed}',
+  'git.push': 'دفع',
+  'git.copyBranch': 'نسخ اسم الفرع',
   'actions.copyDevice.aria': 'نسخ اسم الجهاز',
   'actions.copiedDevice.aria': 'تم نسخ اسم الجهاز',
 

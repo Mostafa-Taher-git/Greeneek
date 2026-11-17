@@ -21,6 +21,7 @@ async function harness(io: Partial<FileBrowserInternals> = {}) {
     readdir: io.readdir ?? (async () => []),
     stat: io.stat ?? (async () => ({ isDirectory: () => false, size: 3 }) as never),
     readFile: io.readFile ?? (async () => Buffer.from('abc')),
+    run: io.run ?? (async () => ({ stdout: '', stderr: '' })),
   })
   return controller
 }
@@ -73,6 +74,15 @@ describe('FileBrowserController', () => {
     })
     const error: unknown = await controller.read(`${ROOT}/big`, signal).catch((reason: unknown) => reason)
     expect(remoteErrorOf(error)).toMatchObject({ code: 'files/too-large' })
+  })
+
+  it('pushes a workspace branch and reports command output', async () => {
+    const run = vi.fn(async () => ({ stdout: 'Everything up-to-date\n', stderr: '' }))
+    const controller = await harness({ run })
+    await expect(controller.gitPush({ path: ROOT }, signal)).resolves.toMatchObject({
+      pushed: true, output: 'Everything up-to-date',
+    })
+    expect(run).toHaveBeenCalledWith('git', ['-C', ROOT, 'push'], signal)
   })
 
   it('propagates cancellation', async () => {

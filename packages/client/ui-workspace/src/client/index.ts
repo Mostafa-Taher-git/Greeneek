@@ -203,6 +203,10 @@ export function apply(ctx: Context): void {
     archiveSession: async (sessionId) => { await uiWorkspace.archiveSession(sessionId) },
     deleteSession: async (sessionId) => { await uiWorkspace.deleteSession(sessionId) },
     gitFacts: readGitFacts,
+    gitPush: async (path) => {
+      const result = await ctx.remote.files.gitPush({ path })
+      if (!result.ok) throw new Error(result.error.message)
+    },
     toggleDetails: () => { layout()?.toggleDetails() },
     toggleTerminalDrawer: () => { layout()?.toggleTerminalDrawer() },
     toggleRightPanel: () => { layout()?.toggleRightbar() },

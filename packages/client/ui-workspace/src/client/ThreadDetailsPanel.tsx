@@ -24,6 +24,7 @@ import {
   IconEllipsisOutline16,
   IconFileDiff16,
   IconFolderOpenOutline16,
+  IconGitHubDesktop16,
   IconMonitor16,
   IconPinFill16,
   IconTrashOutline16,
@@ -66,6 +67,7 @@ export function ThreadDetailsPanel({
   externalApps,
   openPath,
   gitFacts,
+  gitPush,
   toggleDetails,
   toggleTerminalDrawer,
   toggleRightPanel,
@@ -79,6 +81,8 @@ export function ThreadDetailsPanel({
   const hostname = useHostInfo(info => info.hostname)
   const appsShare = useExternalApps(externalApps)
   const [git, setGit] = useState<GitFacts | undefined>(undefined)
+  const [gitBusy, setGitBusy] = useState(false)
+  const [gitError, setGitError] = useState<string>()
   const [deviceCopied, setDeviceCopied] = useState(false)
   const [appsMenuOpen, setAppsMenuOpen] = useState(false)
   const [actionsMenuOpen, setActionsMenuOpen] = useState(false)
@@ -158,6 +162,18 @@ export function ThreadDetailsPanel({
       setOpenError(reason instanceof Error ? reason.message : String(reason))
       console.warn('session path open rejected:', reason)
     })
+  }
+
+  const pushBranch = (): void => {
+    if (cwd === undefined || cwd === '' || gitBusy) return
+    setGitBusy(true)
+    setGitError(undefined)
+    gitPush(cwd)
+      .then(() => { setGitBusy(false) })
+      .catch((reason: unknown) => {
+        setGitBusy(false)
+        setGitError(reason instanceof Error ? reason.message : String(reason))
+      })
   }
 
   const handleSelectApp = (id: string): void => {
@@ -365,12 +381,34 @@ export function ThreadDetailsPanel({
           <div className={css.row}>
             <IconBranchOutline16 className={css.icon} />
             <span className={css.label}>{branchLabel}</span>
+            <Tooltip label={t('git.copyBranch')} delayMs={500}>
+              <button
+                type="button"
+                className={css.rowAction}
+                aria-label={t('git.copyBranch')}
+                onClick={() => { void writeClipboard(git?.branch ?? '') }}
+              >
+                <IconChevronDownOutline14 />
+              </button>
+            </Tooltip>
           </div>
+          <button
+            type="button"
+            className={css.pushRow}
+            aria-label={t('git.push')}
+            disabled={gitBusy}
+            onClick={pushBranch}
+          >
+            <IconGitHubDesktop16 className={css.icon} />
+            <span className={css.label}>{t('git.push')}</span>
+            <IconChevronDownOutline14 />
+          </button>
           <div className={css.row}>
             <IconFileDiff16 className={css.icon} />
             <span className={css.label}>{changesLabel}</span>
             <span className={css.rowValue}>{changesCounts}</span>
           </div>
+          {gitError !== undefined && <div className={css.error} role="alert">{gitError}</div>}
         </section>
       )}
 

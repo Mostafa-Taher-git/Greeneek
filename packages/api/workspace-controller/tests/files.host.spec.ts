@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@greeneek/cordis'
 import { remoteErrorOf } from '@greeneek/gnk-typert-protocol'
-import { FileBrowserController, FILE_LISTING_LIMIT, FILE_READ_LIMIT } from '../src/files.ts'
+import { FileBrowserController, FILE_LISTING_LIMIT, FILE_READ_LIMIT, setFileBrowserInternals } from '../src/files.ts'
 import type { FileBrowserInternals } from '../src/files.ts'
 
 const ROOT = process.platform === 'win32' ? 'C:\\Users\\u' : '/home/u'
@@ -17,11 +17,11 @@ async function harness(io: Partial<FileBrowserInternals> = {}) {
   const ctx = new Context()
   roots.push(ctx)
   const controller = new FileBrowserController(ctx)
-  ;(ctx as Context & { fileBrowserInternals?: FileBrowserInternals }).fileBrowserInternals = {
+  setFileBrowserInternals(ctx, {
     readdir: io.readdir ?? (async () => []),
     stat: io.stat ?? (async () => ({ isDirectory: () => false, size: 3 }) as never),
     readFile: io.readFile ?? (async () => Buffer.from('abc')),
-  }
+  })
   return controller
 }
 

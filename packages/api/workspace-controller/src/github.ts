@@ -47,6 +47,14 @@ interface GithubApiPull {
  * Host service backing the generated `ctx.remote.github` namespace.
  * @param ctx - Host context carrying the credentials service.
  */
+/** Test seams keyed by Host context; never read from the inject proxy. */
+const internalsByContext = new WeakMap<Context, GithubInternals>()
+
+/** Install scripted credential/network primitives for one Host context (tests only). */
+export function setGithubInternals(ctx: Context, io: GithubInternals): void {
+  internalsByContext.set(ctx, io)
+}
+
 export class GithubController extends TypertRemoteService {
   static inject = ['credentials']
 
@@ -57,7 +65,7 @@ export class GithubController extends TypertRemoteService {
 
   /** Resolve the test seams, defaulting to the user credential and Host fetch. */
   private get io(): GithubInternals {
-    return (this.ctx as Context & { githubInternals?: GithubInternals }).githubInternals ?? {
+    return internalsByContext.get(this.ctx) ?? {
       fetch: hostFetch,
       run: runNativeCommand,
       token: async () => {

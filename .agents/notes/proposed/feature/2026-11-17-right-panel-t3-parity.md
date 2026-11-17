@@ -59,8 +59,23 @@ Greeneek already has equivalents for the shared base: capability seams, guarded 
 | R-12 | `@Remote` contracts and client contributions per seam | R-05..R-11 | pending |
 | R-13 | Right-panel UI, surface store, shortcuts, locale, Browser profile submenu | R-12 | done — all 8 rows enabled with bound B/T/F/D/P/L/M/S shortcuts and real surfaces |
 | R-14 | Tests per service and per row | R-05..R-13 | done — host specs for Files, Git diff, GitHub, desktop partition policy; client specs for every surface |
-| R-15 | Desktop application UI verification | R-14 | pending |
-| R-16 | Evidence report with per-ID status | R-15 | pending |
+| R-15 | Desktop application UI verification | R-14 | done — web replay verified Files/Diff/PR/Device/Side chat/Browser states; Greeneek Desktop launched and the Browser surface loaded GitHub in an isolated webview |
+| R-16 | Evidence report with per-ID status | R-15 | done — this table plus the final handoff |
+
+## Verification evidence
+
+- `pnpm run typecheck` clean; `pnpm run lint` clean; `pnpm run test:gui` 318 files / 4454 tests passed, 1 skipped.
+- Focused host suites: Files controller 6 tests, GitHub controller 7 tests, git-diff 14 tests, desktop partition policy 2 tests.
+- Live web app: all 8 launcher rows enabled; Files listed a real Host directory and read `.gitconfig`; Diff reported the non-repository workspace; PR surfaces reported the missing user token; Device showed hostname/platform/home/apps; Side chat forked a real Session id.
+- Live Greeneek Desktop (Electron 43): right panel opened with all 8 rows; Browser surface opened and loaded `https://github.com` inside the allowlisted webview partition. Screenshots were captured during the run.
+- Runtime bug found and fixed during live verification: controller test seams were read from the Cordis inject proxy, which throws; they now live in context-keyed WeakMaps.
+
+## Remaining limitations
+
+- GitHub PR rows require the user to configure `GITHUB_TOKEN` through the existing credentials seam; no key is provided by Greeneek.
+- PR rows display PR data (including the web URL) but do not navigate the host window to external sites; the desktop security policy is unchanged.
+- The Browser surface is desktop-only; the web build reports that honestly.
+- No commits were pushed after the owner's instruction to hold publication.
 
 ## Alternatives considered
 

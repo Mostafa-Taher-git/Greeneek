@@ -26,6 +26,14 @@ export interface FileBrowserInternals {
   readFile: (path: string) => Promise<Buffer>
 }
 
+/** Test seams keyed by Host context; never read from the inject proxy. */
+const internalsByContext = new WeakMap<Context, FileBrowserInternals>()
+
+/** Install scripted filesystem primitives for one Host context (tests only). */
+export function setFileBrowserInternals(ctx: Context, io: FileBrowserInternals): void {
+  internalsByContext.set(ctx, io)
+}
+
 /** Host service backing the generated `ctx.remote.files` namespace. */
 export class FileBrowserController extends TypertRemoteService {
   static inject = []
@@ -37,7 +45,7 @@ export class FileBrowserController extends TypertRemoteService {
 
   /** Resolve the injected primitives, defaulting to Node's stdlib. */
   private get io(): FileBrowserInternals {
-    return (this.ctx as Context & { fileBrowserInternals?: FileBrowserInternals }).fileBrowserInternals
+    return internalsByContext.get(this.ctx)
       ?? {
         readdir: async path => readdir(path, { withFileTypes: true }),
         stat,

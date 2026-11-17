@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@greeneek/cordis'
-import { GithubController, GITHUB_PAGE_LIMIT } from '../src/github.ts'
+import { GithubController, GITHUB_PAGE_LIMIT, setGithubInternals } from '../src/github.ts'
 import type { GithubInternals } from '../src/github.ts'
 
 const signal = new AbortController().signal
@@ -14,11 +14,11 @@ async function harness(io: Partial<GithubInternals> = {}) {
   const ctx = new Context()
   roots.push(ctx)
   const controller = new GithubController(ctx)
-  ;(ctx as Context & { githubInternals?: GithubInternals }).githubInternals = {
+  setGithubInternals(ctx, {
     token: io.token ?? (async () => 'user-token'),
     fetch: io.fetch ?? (async () => []),
     run: io.run ?? (async () => ({ stdout: '', stderr: '' })),
-  }
+  })
   return controller
 }
 

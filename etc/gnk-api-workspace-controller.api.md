@@ -29,10 +29,12 @@
 `src/files.ts: export class FileBrowserController extends TypertRemoteService {`
 `src/files.ts: export const FILE_LISTING_LIMIT = 1000`
 `src/files.ts: export const FILE_READ_LIMIT = 1_048_576`
+`src/files.ts: export function setFileBrowserInternals(ctx: Context, io: FileBrowserInternals): void {`
 `src/files.ts: export interface FileBrowserInternals {`
 `src/github.ts: export class GithubController extends TypertRemoteService {`
 `src/github.ts: export const GITHUB_PAGE_LIMIT = 100`
 `src/github.ts: export const GITHUB_TOKEN_REF = 'GITHUB_TOKEN' as import('@greeneek/gnk-credentials/types').CredentialRef`
+`src/github.ts: export function setGithubInternals(ctx: Context, io: GithubInternals): void {`
 `src/github.ts: export interface GithubInternals {`
 `src/index.ts: export class WorkspaceController extends TypertRemoteService {`
 `src/index.ts: export default WorkspaceController`

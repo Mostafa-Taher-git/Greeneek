@@ -1684,6 +1684,12 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'the git facts; a directory outside a repository reports none.',
       },
       {
+        signature: '@Remote(\'gitDiff\') async gitDiff( request: SessionGitDiffRequest, signal: AbortSignal, ): Promise<SessionGitDiffValue>',
+        description: 'Report the unified diff of one project directory against its base branch.',
+        parameters: [{ name: 'request', description: 'the project directory to inspect.' }, { name: 'signal', description: 'caller lifetime; abort terminates the native commands.' }],
+        returns: 'the change set with one patch per changed file.',
+      },
+      {
         signature: '@Remote(\'openPath\') async openPath( request: SessionOpenPathRequest, signal: AbortSignal, ): Promise<SessionOpenPathValue>',
         description: 'Send one path to a Host desktop destination.\n\nThe `default` target hands the path to the operating system handler, `reveal` selects it in the system file manager, and `app` launches one catalogued application. Launching never goes through a shell.',
         parameters: [{ name: 'request', description: 'path and destination.' }, { name: 'signal', description: 'caller lifetime; abort terminates the native command.' }],
@@ -5581,6 +5587,18 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'SessionForkValue',
     declaration: 'export interface SessionForkValue {\n    readonly sessionId: SessionId;\n}',
+  },
+  {
+    name: 'SessionGitDiffFile',
+    declaration: 'export interface SessionGitDiffFile {\n    readonly path: string;\n    readonly status: string;\n    readonly patch: string;\n}',
+  },
+  {
+    name: 'SessionGitDiffRequest',
+    declaration: 'export interface SessionGitDiffRequest {\n    readonly path: string;\n}',
+  },
+  {
+    name: 'SessionGitDiffValue',
+    declaration: 'export interface SessionGitDiffValue {\n    readonly isRepository: boolean;\n    readonly baseBranch?: string;\n    readonly files: readonly SessionGitDiffFile[];\n    readonly truncated: boolean;\n}',
   },
   {
     name: 'SessionGitFactsRequest',

@@ -344,6 +344,8 @@ export const LINK_MAP: Readonly<Record<string, string>> = {
   SessionExternalAppsValue: 'session.md',
   SessionGitFactsRequest: 'session.md',
   SessionGitFactsValue: 'session.md',
+  SessionGitDiffRequest: 'session.md',
+  SessionGitDiffValue: 'session.md',
   SessionModels: 'session.md',
   SessionModelsRequest: 'session.md',
   SessionPage: 'session.md',

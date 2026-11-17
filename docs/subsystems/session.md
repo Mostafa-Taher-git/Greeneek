@@ -762,6 +762,14 @@ inspect( sessionId: SessionId, signal?: AbortSignal, ): Promise<SessionInspectio
 @Remote('gitFacts') async gitFacts( request: SessionGitFactsRequest, signal: AbortSignal, ): Promise<SessionGitFactsValue>
 
 /**
+ * Report the unified diff of one project directory against its base branch.
+ * @param request - the project directory to inspect.
+ * @param signal - caller lifetime; abort terminates the native commands.
+ * @returns the change set with one patch per changed file.
+ */
+@Remote('gitDiff') async gitDiff( request: SessionGitDiffRequest, signal: AbortSignal, ): Promise<SessionGitDiffValue>
+
+/**
  * Send one path to a Host desktop destination.
  *
  * The `default` target hands the path to the operating system handler,

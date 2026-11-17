@@ -268,7 +268,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/api/session-controller/src/index.ts:89`](../packages/api/session-controller/src/index.ts)
+Source: [`packages/api/session-controller/src/index.ts:93`](../packages/api/session-controller/src/index.ts)
 
 <a id="greeneekgnk-api-settings-controller"></a>
 

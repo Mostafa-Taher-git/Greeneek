@@ -195,8 +195,9 @@
 `src/client/conversation-nodes/turn-tail.ts: export function registerTurnTailConversationNode(ctx: Context): void {`
 `src/client/details/DetailsPanel.tsx: export function DetailsPanel({`
 `src/client/details/DetailsPanel.tsx: export type DetailsPanelProps = DetailsSlotProps`
-`src/client/details/TerminalDrawer.tsx: export function TerminalDrawer({ useChat, close, t }: TerminalDrawerProps) {`
-`src/client/details/TerminalDrawer.tsx: export type TerminalDrawerProps = PropsRuntime<'terminal.drawer'> & PropsLocale<'chat'>`
+`src/client/details/TerminalDrawer.tsx: export function TerminalDrawer({`
+`src/client/details/TerminalDrawer.tsx: export interface TerminalDrawerInjected {`
+`src/client/details/TerminalDrawer.tsx: export type TerminalDrawerProps = PropsRuntime<'terminal.drawer'>`
 `src/client/details/tool-node-reader.ts: export const WAVE_DISPATCH_TOOL = 'wave_dispatch'`
 `src/client/details/tool-node-reader.ts: export function findToolCall(snapshot: ChatSnapshot, callId: string): ToolCallBlock | undefined {`
 `src/client/details/tool-node-reader.ts: export function hasToolCall(snapshot: ChatSnapshot, name: string): boolean {`

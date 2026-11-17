@@ -126,6 +126,7 @@
 `src/presentation.ts: export function releasePresentation(scope: object): boolean {`
 `src/presentation.ts: export function rememberPresentation(scope: object, dispose: () => void): void {`
 `src/presentation.ts: export type ToolPresentationProjectionState = 'native' | 'ptc' | 'both' | null`
+`src/pty.ts: export class PtyController extends TypertRemoteService {`
 `src/remote-events.ts: export {}`
 `src/skill-catalog.ts: export class SessionSkillCatalog extends TypertRemoteService {`
 `src/skill-catalog.ts: export default SessionSkillCatalog`
@@ -140,6 +141,8 @@
 `src/types.ts: export interface ModelSelection {`
 `src/types.ts: export interface ModelSelectionProjection {`
 `src/types.ts: export interface ModelSelectionProjectionState {`
+`src/types.ts: export interface PtyOpenRequest {`
+`src/types.ts: export interface PtySessionInfo {`
 `src/types.ts: export interface SessionAttachmentRequest {`
 `src/types.ts: export interface SessionAttachmentValue {`
 `src/types.ts: export interface SessionCancelRequest {`
@@ -195,6 +198,7 @@
 `src/types.ts: export type ChunkRowEvent = {`
 `src/types.ts: export type HostPlatform =`
 `src/types.ts: export type PromptContentPart =`
+`src/types.ts: export type PtyFrame =`
 `src/types.ts: export type QueueAction =`
 `src/types.ts: export type SessionAddress =`
 `src/types.ts: export type SessionControlFrame =`

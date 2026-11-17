@@ -204,6 +204,10 @@ export const SESSION_SEARCH_SNIPPET_MAX_CODE_POINTS = 240
 
 declare module '@greeneek/gnk-typert-protocol' {
   interface RemoteErrorDetailsMap {
+    /** A PTY id is unknown or its process already exited. */
+    'pty/not-found': { readonly id: string }
+    /** A PTY path is outside every registered Workspace. */
+    'pty/bad-cwd': { readonly path: string }
     /**
      * Both halves are absent when nothing is configured at all (a first run
      * with no provider), and present when a named route stopped being served.
@@ -702,3 +706,30 @@ declare module '@greeneek/cordis' {
 
 /** JSON-compatible projection value accepted by list consumers. */
 export type SessionProjectionValue = JsonValue
+
+/** Request to open one interactive PTY. */
+export interface PtyOpenRequest {
+  /** Workspace directory the child process starts in. */
+  readonly path: string
+  /** Initial terminal columns. */
+  readonly cols: number
+  /** Initial terminal rows. */
+  readonly rows: number
+}
+
+/** One live PTY summary. */
+export interface PtySessionInfo {
+  /** Opaque session id. */
+  readonly id: string
+  /** Workspace directory the PTY runs in. */
+  readonly cwd: string
+  /** Current columns. */
+  readonly cols: number
+  /** Current rows. */
+  readonly rows: number
+}
+
+/** One frame emitted by a live PTY. */
+export type PtyFrame =
+  | { readonly type: 'data'; readonly data: string }
+  | { readonly type: 'exit'; readonly exitCode: number | null }

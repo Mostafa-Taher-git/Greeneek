@@ -33,6 +33,7 @@ import {
   DEFAULT_COLD_BLANK_PROBE_MAX_EVENTS,
 } from './list.ts'
 import { buildModelCatalog } from './catalog.ts'
+import { PtyController } from './pty.ts'
 import { installModelSelectionProjection } from './model-selection-projection.ts'
 import { installToolPresentationProjection } from './presentation.ts'
 import { SessionSkillCatalog } from './skill-catalog.ts'
@@ -191,6 +192,7 @@ export class SessionController extends TypertRemoteService {
     this.readGitDiff = internals.gitDiff ?? gitDiff
     ctx.plugin(SessionFileReferences)
     ctx.plugin(SessionSkillCatalog)
+    ctx.plugin(PtyController)
 
     ctx.on('session/created', (session) => {
       ctx.emit('api-session/added', this.listState.summaryFor(session))

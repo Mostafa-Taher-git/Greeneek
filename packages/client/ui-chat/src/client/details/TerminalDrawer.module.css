@@ -36,6 +36,43 @@
   cursor: pointer;
 }
 
+.pty {
+  display: flex;
+  flex-direction: column;
+  min-height: 120px;
+  padding: 6px 12px;
+  border-block-end: 0.5px solid var(--dsw-alias-border-subtle);
+}
+
+.output {
+  flex: 1;
+  min-height: 80px;
+  max-height: 180px;
+  margin: 0;
+  overflow: auto;
+  color: var(--dsw-alias-label-primary);
+  font-family: var(--ds-font-family-code);
+  font-size: 11px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.input {
+  padding: 4px 7px;
+  border: 0.5px solid var(--dsw-alias-border-l4);
+  border-radius: 6px;
+  background: var(--dsw-alias-bg-base);
+  color: var(--dsw-alias-label-primary);
+  font-family: var(--ds-font-family-code);
+  font-size: 11px;
+}
+
+.error {
+  margin: 0;
+  color: var(--dsw-alias-state-error-primary);
+  font-size: 11px;
+}
+
 .list {
   display: flex;
   flex-direction: column;

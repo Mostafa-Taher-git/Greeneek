@@ -80,6 +80,12 @@ describe('Terminal activity drawer', () => {
         }],
       }))),
       close,
+      useSessions: (selector: (state: { byId: Record<string, { cwd?: string }> }) => unknown) =>
+        selector({ byId: {} }),
+      open: vi.fn(async () => 'pty-1'),
+      write: vi.fn(async () => {}),
+      resize: vi.fn(async () => {}),
+      events: vi.fn(async function* () {}),
       t,
     } as unknown as TerminalDrawerProps
     const view = render(<TerminalDrawer {...props} />)
@@ -98,6 +104,12 @@ describe('Terminal activity drawer', () => {
       sessionId: SID,
       useChat: bindSnapshotSelector(createSnapshotStore(chatSnapshotFixture())),
       close: vi.fn(),
+      useSessions: (selector: (state: { byId: Record<string, { cwd?: string }> }) => unknown) =>
+        selector({ byId: {} }),
+      open: vi.fn(async () => 'pty-1'),
+      write: vi.fn(async () => {}),
+      resize: vi.fn(async () => {}),
+      events: vi.fn(async function* () {}),
       t,
     } as unknown as TerminalDrawerProps
     const view = render(<TerminalDrawer {...props} />)

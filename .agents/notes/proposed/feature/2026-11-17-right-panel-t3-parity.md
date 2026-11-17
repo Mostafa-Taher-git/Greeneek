@@ -70,6 +70,20 @@ Greeneek already has equivalents for the shared base: capability seams, guarded 
 - Live Greeneek Desktop (Electron 43): right panel opened with all 8 rows; Browser surface opened and loaded `https://github.com` inside the allowlisted webview partition. Screenshots were captured during the run.
 - Runtime bug found and fixed during live verification: controller test seams were read from the Cordis inject proxy, which throws; they now live in context-keyed WeakMaps.
 
+## Expanded requirements (owner clarification, next session)
+
+| ID | Requirement | Status | Notes |
+| --- | --- | --- | --- |
+| R-17 | Full Web + Desktop parity, shared core logic | NOT IMPLEMENTED | Requires platform capability split; current Web build already ships the same core plugin graph, but feature parity audit is pending |
+| R-18 | Real interactive PTY for users and Agents with stdin/stdout/stderr, resize, lifecycle, recovery | IMPLEMENTED BUT NOT VERIFIED | `node-pty` Host Remote `pty` with workspace fence, write/resize/close/list and event stream; TerminalDrawer now drives a live shell. Interactive verification pending |
+| R-19 | Terminal integrations with Maestro/Agent tools | IMPLEMENTED BUT NOT VERIFIED | Agent PTY tools already exist; user PTY uses the same Host runtime boundary |
+| R-20 | T3-level GitHub: PR detail, repository/branch context, actions, navigation in integrated browser | IMPLEMENTED BUT NOT VERIFIED | Current integration lists PRs + linked PRs only; detail/actions/navigation pending |
+| R-21 | Integrated browser on Web with tabs, back/forward, refresh, profiles, isolation, auth | BLOCKED | Arbitrary third-party sites set CSP/X-Frame-Options refusing iframe embedding; Web needs an authorized server-side browsing architecture; Desktop webview path already works |
+| R-22 | Browser profile storage/cookie isolation and agent interaction | IMPLEMENTED BUT NOT VERIFIED | Desktop partitions exist and are allowlisted; Web profile isolation pending R-21 |
+| R-23 | PR navigation through integrated browser without external window | IMPLEMENTED BUT NOT VERIFIED | PR rows currently display data only; navigation depends on R-21 |
+| R-24 | Full T3 source parity audit for all 8 rows, menus and shortcuts | IMPLEMENTED BUT NOT VERIFIED | T3 study covered launcher rows and key handlers; full interaction parity comparison pending |
+| R-25 | Both apps launched and every workflow tested | IMPLEMENTED BUT NOT VERIFIED | Desktop and Web launched; 7 rows exercised in Web and Browser in Desktop; full matrix pending |
+
 ## Remaining limitations
 
 - GitHub PR rows require the user to configure `GITHUB_TOKEN` through the existing credentials seam; no key is provided by Greeneek.

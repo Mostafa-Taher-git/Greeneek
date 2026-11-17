@@ -2,6 +2,7 @@
 import type { Context } from '@greeneek/cordis'
 import type { ImageAttachmentRef } from '@greeneek/gnk-attachment'
 import type {} from '@greeneek/gnk-api-remotes/client'
+import type {} from '@greeneek/gnk-api-session-controller/client'
 import type { SessionBinding } from '@greeneek/gnk-api-session-controller/client'
 import type { BoundActions, ObservableSnapshot } from '@greeneek/gnk-client-store'
 import type { SessionId } from '@greeneek/gnk-session/types'
@@ -28,7 +29,7 @@ import { registerChatNodeRenderers } from './chat/register-node-renderers.ts'
 import { StatsLine } from './chat/StatsLine.tsx'
 import { registerConversationNodes } from './conversation-nodes/register.ts'
 import { DetailsPanel } from './details/DetailsPanel.tsx'
-import { TerminalDrawer } from './details/TerminalDrawer.tsx'
+import { TerminalDrawer, type TerminalDrawerInjected } from './details/TerminalDrawer.tsx'
 import { ar, en, NS, zh } from './locale.ts'
 import { TranscriptViewRow, type TranscriptViewRowInjected } from './settings/TranscriptViewRow.tsx'
 import { createChatStore } from './stores.ts'
@@ -179,5 +180,25 @@ export function apply(ctx: Context): void {
   ctx.slots.inject('terminal.drawer', () => ctx.slots.register({
     name: 'terminal.drawer',
     locale: NS,
+    inject: (): TerminalDrawerInjected => ({
+      open: async (path, cols, rows) => {
+        const result = await ctx.remote.pty.open({ path, cols, rows })
+        if (!result.ok) throw new Error(result.error.message)
+        return result.value.id
+      },
+      write: async (id, data) => {
+        const result = await ctx.remote.pty.write({ id, data })
+        if (!result.ok) throw new Error(result.error.message)
+      },
+      resize: async (id, cols, rows) => {
+        const result = await ctx.remote.pty.resize({ id, cols, rows })
+        if (!result.ok) throw new Error(result.error.message)
+      },
+      events: (id, signal) => ctx.remote.pty.events({ id }, signal),
+      closePty: async (id) => {
+        const result = await ctx.remote.pty.close({ id })
+        if (!result.ok) throw new Error(result.error.message)
+      },
+    }),
   }, TerminalDrawer))
 }

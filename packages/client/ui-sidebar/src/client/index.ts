@@ -11,7 +11,9 @@ import type {} from '@greeneek/gnk-client-ui-conversation/client'
 // Type-only: pulls the Remote namespace merges (ctx.remote, ctx.remote.session).
 import type {} from '@greeneek/gnk-api-remotes/client'
 import type {} from '@greeneek/gnk-api-session-controller/client'
-import type { DeviceAppEntry, DeviceFacts } from './surfaces/contract.ts'
+// Type-only: pulls the generated `ctx.remote.files` namespace merge.
+import type {} from '@greeneek/gnk-api-workspace-controller/client'
+import type { DeviceAppEntry, DiffView, DeviceFacts, FileListing, FileRead } from './surfaces/contract.ts'
 import type { SidebarRootInjected, SurfacePanelInjected, TitlebarInjected } from './contract/slots.ts'
 import { createRightPanelStore } from './right-panel-store.ts'
 import { SidebarRoot } from './SidebarRoot.tsx'
@@ -48,7 +50,7 @@ interface WorkspaceNavigation {
 
 /** Services required by the sidebar plugin. */
 export const inject = [
-  'slots', 'layout', 'uiWorkspace', 'uiConversation', 'locale', 'remote', 'remote.session',
+  'slots', 'layout', 'uiWorkspace', 'uiConversation', 'locale', 'remote', 'remote.session', 'remote.files',
 ]
 
 /** Product names for the application ids the Host reports. */
@@ -57,6 +59,27 @@ const APP_LABELS: Record<string, string> = {
   vscode: 'VS Code',
   'android-studio': 'Android Studio',
   'github-desktop': 'GitHub Desktop',
+}
+
+/** List one Host directory level through the file-browsing Remote. */
+async function browseFiles(path: string | undefined, ctx: ClientContext): Promise<FileListing> {
+  const result = await ctx.remote.files.list(path)
+  if (!result.ok) throw new Error(result.error.message)
+  return result.value
+}
+
+/** Read one Host text file through the file-browsing Remote. */
+async function readHostFile(path: string, ctx: ClientContext): Promise<FileRead> {
+  const result = await ctx.remote.files.read(path)
+  if (!result.ok) throw new Error(result.error.message)
+  return result.value
+}
+
+/** Load the unified git diff through the Session Remote. */
+async function loadDiff(path: string, ctx: ClientContext): Promise<DiffView> {
+  const result = await ctx.remote.session.gitDiff({ path })
+  if (!result.ok) throw new Error(result.error.message)
+  return result.value
 }
 
 /** Load the Host facts shown by the Device surface. */
@@ -147,6 +170,9 @@ export function apply(ctx: ClientContext): void {
       store: createRightPanelStore,
       inject: (): SurfacePanelInjected => ({
         loadDevice: () => loadDevice(ctx),
+        browseFiles: path => browseFiles(path, ctx),
+        readFile: path => readHostFile(path, ctx),
+        loadDiff: path => loadDiff(path, ctx),
         openTerminal: () => { ctx.layout.openTerminalDrawer() },
         openTrajectory: (sessionId) => {
           ctx.layout.showConversation()

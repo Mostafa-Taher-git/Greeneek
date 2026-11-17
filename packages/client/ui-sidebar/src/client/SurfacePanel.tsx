@@ -5,7 +5,7 @@
  * backend is still landing are disabled with an explicit reason rather than
  * presented as working controls.
  */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   IconBranchOutline16,
   IconChevronDownOutline14,
@@ -18,12 +18,16 @@ import {
   IconSettingsOutline16,
   IconDashboardOutline16,
   formatShortcut,
+  isEditableTarget,
+  shortcutMatches,
   type IconProps,
 } from '@greeneek/gnk-client-ui-primitives'
 import type { SurfacePanelComponentProps } from './contract/slots.ts'
 import type { SidebarKey } from './locales.ts'
 import type { SurfaceKind } from './right-panel-store.ts'
 import { DevicePanel } from './surfaces/DevicePanel.tsx'
+import { DiffPanel } from './surfaces/DiffPanel.tsx'
+import { FilesPanel } from './surfaces/FilesPanel.tsx'
 import css from './SurfacePanel.module.css'
 
 /** One launcher row: glyph, localized name, shortcut, destination. */
@@ -54,18 +58,38 @@ const BROWSER_PROFILES = [
 export function SurfacePanel(props: SurfacePanelComponentProps) {
   const {
     sessionId, useStore, actions, openTerminal, openTrajectory, openChat,
-    openSettings, openDashboard, loadDevice, t,
+    openSettings, openDashboard, loadDevice, browseFiles, readFile, loadDiff, useSessions, t,
   } = props
+  const cwd = useSessions(state => state.byId[sessionId]?.cwd)
   const surfaces = useStore(state => state.surfaces)
   const activeId = useStore(state => state.activeId)
   const active = surfaces.find(surface => surface.id === activeId)
   const [profileOpen, setProfileOpen] = useState(false)
 
+  // The single-key launcher shortcut for Files. Other rows bind their own
+  // shortcuts as their backends land.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent): void => {
+      if (isEditableTarget(event.target)) return
+      if (shortcutMatches(event, 'mod+f')) {
+        event.preventDefault()
+        actions.open({ kind: 'files', title: t('surface.files'), data: {} }, true)
+        return
+      }
+      if (shortcutMatches(event, 'mod+d')) {
+        event.preventDefault()
+        actions.open({ kind: 'diff', title: t('surface.diff'), data: {} }, true)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => { window.removeEventListener('keydown', onKey) }
+  }, [actions, t])
+
   const specifications: SurfaceSpec[] = [
     { id: 'browser', icon: IconCodeOutline16, labelKey: 'surface.browser', shortcut: 'b', ready: false },
     { id: 'terminal', icon: IconCodeOutline16, labelKey: 'surface.terminal', shortcut: 't', ready: true },
-    { id: 'files', icon: IconFolderOpenOutline16, labelKey: 'surface.files', shortcut: 'f', ready: false },
-    { id: 'diff', icon: IconFileDiff16, labelKey: 'surface.diff', shortcut: 'd', ready: false },
+    { id: 'files', icon: IconFolderOpenOutline16, labelKey: 'surface.files', shortcut: 'f', ready: true },
+    { id: 'diff', icon: IconFileDiff16, labelKey: 'surface.diff', shortcut: 'd', ready: true },
     { id: 'pull-request', icon: IconGitHubDesktop16, labelKey: 'surface.pullRequest', shortcut: 'p', ready: false },
     { id: 'linked-pull-requests', icon: IconBranchOutline16, labelKey: 'surface.linkedPullRequests', shortcut: 'l', ready: false },
     { id: 'device', icon: IconMonitor16, labelKey: 'surface.device', shortcut: 'm', ready: true },
@@ -184,7 +208,11 @@ export function SurfacePanel(props: SurfacePanelComponentProps) {
         <div className={css.surfaceBody}>
           {active.kind === 'device'
             ? <DevicePanel loadDevice={loadDevice} t={t} />
-            : <div className={css.notice}>{t('surface.pendingBackend')}</div>}
+            : active.kind === 'files'
+              ? <FilesPanel browseFiles={browseFiles} readFile={readFile} t={t} />
+              : active.kind === 'diff'
+                ? <DiffPanel cwd={cwd} loadDiff={loadDiff} t={t} />
+                : <div className={css.notice}>{t('surface.pendingBackend')}</div>}
         </div>
       )}
     </div>

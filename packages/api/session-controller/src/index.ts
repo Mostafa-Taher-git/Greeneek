@@ -8,6 +8,7 @@ import {
   canRevealNativePath,
   EXTERNAL_APPS,
   externalAppAvailability,
+  gitDiff,
   gitFacts,
   launchExternalApp,
   openNativePath,
@@ -51,6 +52,8 @@ import type {
   SessionListRequest,
   SessionListValue,
   SessionExternalAppsValue,
+  SessionGitDiffRequest,
+  SessionGitDiffValue,
   SessionGitFactsRequest,
   SessionGitFactsValue,
   SessionOpenPathRequest,
@@ -111,6 +114,8 @@ export interface SessionControllerInternals {
   readonly externalApps?: () => SessionExternalAppsValue
   /** Read-only git facts of one project directory. */
   readonly gitFacts?: (path: string, signal: AbortSignal) => Promise<SessionGitFactsValue>
+  /** Read-only unified diff of one project directory. */
+  readonly gitDiff?: (path: string, signal: AbortSignal) => Promise<SessionGitDiffValue>
 }
 
 /** Host service backing the generated `ctx.remote.session` namespace. */
@@ -144,6 +149,7 @@ export class SessionController extends TypertRemoteService {
   private readonly canRevealPath: () => boolean
   private readonly launchExternalApplication: (appId: string, path: string, signal: AbortSignal) => Promise<void>
   private readonly readExternalApps: () => SessionExternalAppsValue
+  private readonly readGitDiff: (path: string, signal: AbortSignal) => Promise<SessionGitDiffValue>
   private readonly readGitFacts: (path: string, signal: AbortSignal) => Promise<SessionGitFactsValue>
   private readonly promotions = new Set<Promise<void>>()
 
@@ -182,6 +188,7 @@ export class SessionController extends TypertRemoteService {
       canReveal: this.canRevealPath(),
     }))
     this.readGitFacts = internals.gitFacts ?? gitFacts
+    this.readGitDiff = internals.gitDiff ?? gitDiff
     ctx.plugin(SessionFileReferences)
     ctx.plugin(SessionSkillCatalog)
 
@@ -391,6 +398,24 @@ export class SessionController extends TypertRemoteService {
     }
     signal.throwIfAborted()
     return await this.readGitFacts(request.path, signal)
+  }
+
+  /**
+   * Report the unified diff of one project directory against its base branch.
+   * @param request - the project directory to inspect.
+   * @param signal - caller lifetime; abort terminates the native commands.
+   * @returns the change set with one patch per changed file.
+   */
+  @Remote('gitDiff')
+  async gitDiff(
+    request: SessionGitDiffRequest,
+    signal: AbortSignal,
+  ): Promise<SessionGitDiffValue> {
+    if (request.path.length === 0) {
+      throw new RemoteError('gateway/bad-request', 'session.gitDiff requires a non-empty path', {})
+    }
+    signal.throwIfAborted()
+    return await this.readGitDiff(request.path, signal)
   }
 
   /**

@@ -46,6 +46,10 @@ declare module '@greeneek/gnk-typert-protocol' {
     'directory-picker/exists': { readonly path: string }
     /** The parent is not fully qualified, the name is not one segment, or creation failed. */
     'directory-picker/create-failed': { readonly path: string }
+    /** The requested directory or file cannot be read. */
+    'files/unreadable': { readonly path: string }
+    /** The file exceeds the Host read cap. */
+    'files/too-large': { readonly path: string }
   }
 }
 
@@ -154,3 +158,41 @@ export type WorkspaceFollowIncrement =
 export type WorkspaceFollowFrame =
   | { readonly type: 'baseline'; readonly value: WorkspaceBaseline }
   | WorkspaceFollowIncrement
+
+/** One row of a Host file-browser listing. */
+export interface FileBrowserEntry {
+  /** Base name within the listed level. */
+  readonly name: string
+  /** Fully qualified path of the row. */
+  readonly path: string
+  /** Whether the row can be entered as a directory. */
+  readonly kind: 'directory' | 'file'
+  /** True for dot-prefixed names. */
+  readonly hidden: boolean
+}
+
+/** One bounded directory level for the Files surface. */
+export interface FileBrowserListing {
+  /** Fully qualified path that was listed. */
+  readonly path: string
+  /** Host home directory. */
+  readonly home: string
+  /** Ancestor chain from the filesystem root to path. */
+  readonly crumbs: readonly FileBrowserEntry[]
+  /** Name-sorted rows, bounded by the Host cap. */
+  readonly entries: readonly FileBrowserEntry[]
+  /** True when the level had more rows than the cap. */
+  readonly truncated: boolean
+}
+
+/** One bounded text read for the Files surface. */
+export interface FileBrowserRead {
+  /** Fully qualified path that was read. */
+  readonly path: string
+  /** UTF-8 text; empty for a binary file. */
+  readonly text: string
+  /** True when the file contains NUL bytes. */
+  readonly binary: boolean
+  /** Byte length of the file. */
+  readonly size: number
+}

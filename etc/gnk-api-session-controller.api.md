@@ -154,6 +154,9 @@
 `src/types.ts: export interface SessionFollowRequest {`
 `src/types.ts: export interface SessionForkRequest {`
 `src/types.ts: export interface SessionForkValue {`
+`src/types.ts: export interface SessionGitDiffFile {`
+`src/types.ts: export interface SessionGitDiffRequest {`
+`src/types.ts: export interface SessionGitDiffValue {`
 `src/types.ts: export interface SessionGitFactsRequest {`
 `src/types.ts: export interface SessionGitFactsValue {`
 `src/types.ts: export interface SessionJob {`

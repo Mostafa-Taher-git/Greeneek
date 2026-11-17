@@ -26,10 +26,18 @@
 `src/directory-picker.ts: export class DirectoryPickerController extends TypertRemoteService {`
 `src/feed.ts: export class WorkspaceFeed {`
 `src/feed.ts: export function workspaceView(workspace: Workspace): WorkspaceView {`
+`src/files.ts: export class FileBrowserController extends TypertRemoteService {`
+`src/files.ts: export const FILE_LISTING_LIMIT = 1000`
+`src/files.ts: export const FILE_READ_LIMIT = 1_048_576`
+`src/files.ts: export interface FileBrowserInternals {`
 `src/index.ts: export class WorkspaceController extends TypertRemoteService {`
 `src/index.ts: export default WorkspaceController`
 `src/index.ts: export type * from './types.ts'`
 `src/index.ts: export { DirectoryPickerController } from './directory-picker.ts'`
+`src/index.ts: export { FileBrowserController } from './files.ts'`
+`src/types.ts: export interface FileBrowserEntry {`
+`src/types.ts: export interface FileBrowserListing {`
+`src/types.ts: export interface FileBrowserRead {`
 `src/types.ts: export interface WorkspaceArchiveSessionRequest {`
 `src/types.ts: export interface WorkspaceArchiveValue {`
 `src/types.ts: export interface WorkspaceBaseline {`

@@ -50,14 +50,14 @@ Greeneek already has equivalents for the shared base: capability seams, guarded 
 | R-03 | Fix card top position, dismissal, open-in menu | — | done (`2a8175d0`) |
 | R-04 | Enumerate the exact rows (8 + Browser profile submenu) | R-01 | done |
 | R-05 | Backend service seam: Device (host facts + app catalogue) | R-04 | done — reuses existing `$host` + `session.externalApps` |
-| R-06 | Backend service seam: Files (directory browsing + read) | R-04 | pending |
-| R-07 | Backend service seam: Diff (git status/diff hunks) | R-04 | pending |
+| R-06 | Backend service seam: Files (directory browsing + read) | R-04 | done — `ctx.remote.files.list/read` with fully-qualified-path fence and byte caps |
+| R-07 | Backend service seam: Diff (git status/diff hunks) | R-04 | done — `ctx.remote.session.gitDiff` with unified patches and output cap |
 | R-08 | Backend service seam: Terminal (PTY stream + ownership) | R-04 | partial — existing activity drawer, no PTY transport |
 | R-09 | Backend service seam: Pull request + Linked PRs (GitHub credentials) | R-04 | pending |
 | R-10 | Backend service seam: Browser (Electron webview, partition allowlist) | R-04, security review | pending |
 | R-11 | Backend service seam: Side chat (forked session) | R-04 | pending |
 | R-12 | `@Remote` contracts and client contributions per seam | R-05..R-11 | pending |
-| R-13 | Right-panel UI, surface store, shortcuts, locale, Browser profile submenu | R-12 | partial — launcher, tabs, Device surface, profile submenu land; six rows disabled until their seam exists |
+| R-13 | Right-panel UI, surface store, shortcuts, locale, Browser profile submenu | R-12 | partial — launcher, tabs, Device/Files/Diff surfaces, profile submenu land; four rows disabled until their seam exists |
 | R-14 | Tests per service and per row | R-05..R-13 | pending |
 | R-15 | Desktop application UI verification | R-14 | pending |
 | R-16 | Evidence report with per-ID status | R-15 | pending |

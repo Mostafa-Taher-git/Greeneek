@@ -43,6 +43,16 @@ export const zh = {
   'device.unknown': '未知',
   'device.copy': '复制设备名称',
   'device.copied': '已复制设备名称',
+  'files.truncated': '目录条目过多，仅显示前 1000 项。',
+  'files.binary': '此文件为二进制内容，无法显示文本。',
+  'diff.against': '对比',
+  'diff.head': '当前提交',
+  'diff.files': '个文件',
+  'diff.clean': '没有改动。',
+  'diff.notRepository': '当前工作区不是 Git 仓库。',
+  'diff.noWorkspace': '请先打开一个工作区。',
+  'diff.noPatch': '此文件没有可显示的补丁。',
+  'diff.truncated': '改动过多，仅显示部分内容。',
 } satisfies Record<string, string>
 
 /** The sidebar namespace key union. */
@@ -91,6 +101,16 @@ export const en = {
   'device.unknown': 'Unknown',
   'device.copy': 'Copy device name',
   'device.copied': 'Device name copied',
+  'files.truncated': 'This directory has more than 1000 entries; only the first 1000 are shown.',
+  'files.binary': 'This file is binary and cannot be shown as text.',
+  'diff.against': 'Against',
+  'diff.head': 'HEAD',
+  'diff.files': 'files',
+  'diff.clean': 'No changes.',
+  'diff.notRepository': 'The current workspace is not a Git repository.',
+  'diff.noWorkspace': 'Open a workspace first.',
+  'diff.noPatch': 'This file has no patch to display.',
+  'diff.truncated': 'The change set was truncated by the Host cap.',
 } satisfies Record<SidebarKey, string>
 
 /** Arabic dictionary, checked complete against the zh key set; the brand name stays verbatim. */
@@ -136,4 +156,14 @@ export const ar = {
   'device.unknown': 'غير معروف',
   'device.copy': 'نسخ اسم الجهاز',
   'device.copied': 'تم نسخ اسم الجهاز',
+  'files.truncated': 'يحتوي المجلد على أكثر من 1000 عنصر؛ تُعرض أول 1000 فقط.',
+  'files.binary': 'هذا الملف ثنائي ولا يمكن عرضه كنص.',
+  'diff.against': 'مقابل',
+  'diff.head': 'HEAD',
+  'diff.files': 'ملفات',
+  'diff.clean': 'لا توجد تغييرات.',
+  'diff.notRepository': 'مساحة العمل الحالية ليست مستودع Git.',
+  'diff.noWorkspace': 'افتح مساحة عمل أولاً.',
+  'diff.noPatch': 'لا يوجد تصحيح لعرضه لهذا الملف.',
+  'diff.truncated': 'تم اقتطاع مجموعة التغييرات بواسطة حد المضيف.',
 } satisfies Record<SidebarKey, string>

@@ -11,16 +11,19 @@
 `src/external-app.ts: export interface ExternalAppAvailability {`
 `src/external-app.ts: export interface ExternalAppInternals {`
 `src/external-app.ts: export interface ExternalAppSpec {`
+`src/git-facts.ts: export async function gitDiff(`
 `src/git-facts.ts: export async function gitFacts(`
+`src/git-facts.ts: export interface GitDiff {`
+`src/git-facts.ts: export interface GitDiffFile {`
 `src/git-facts.ts: export interface GitFacts {`
 `src/git-facts.ts: export interface GitFactsInternals {`
 `src/index.ts: export type {`
 `src/index.ts: export type {`
-`src/index.ts: export type { GitFacts, GitFactsInternals } from './git-facts.ts'`
+`src/index.ts: export type { GitFacts, GitFactsInternals, GitDiff, GitDiffFile } from './git-facts.ts'`
 `src/index.ts: export type { NativeCommandRunner } from './runner.ts'`
 `src/index.ts: export {`
 `src/index.ts: export {`
-`src/index.ts: export { gitFacts } from './git-facts.ts'`
+`src/index.ts: export { gitFacts, gitDiff } from './git-facts.ts'`
 `src/index.ts: export { runNativeCommand } from './runner.ts'`
 `src/path-opener.ts: export function canOpenNativePath(internals: PathOpenerInternals = {}): boolean {`
 `src/path-opener.ts: export function openNativePath(`

@@ -24,6 +24,19 @@ function mount(overrides: Partial<SurfacePanelComponentProps> = {}) {
     loadDevice: vi.fn(async () => ({
       hostname: 'test-host', home: '/home/u', isLoopback: true, platform: 'linux', apps: [],
     })),
+    browseFiles: vi.fn(async () => ({
+      path: '/home/u', home: '/home/u',
+      crumbs: [{ name: '/', path: '/', kind: 'directory' as const, hidden: false }],
+      entries: [{ name: 'notes.txt', path: '/home/u/notes.txt', kind: 'file' as const, hidden: false }],
+      truncated: false,
+    })),
+    readFile: vi.fn(async (path: string) => ({ path, text: 'hello', binary: false, size: 5 })),
+    loadDiff: vi.fn(async () => ({
+      isRepository: true, baseBranch: 'main',
+      files: [{ path: 'a.ts', status: 'M', patch: '@@ -1 +1 @@' }], truncated: false,
+    })),
+    useSessions: (selector: (state: { byId: Record<string, { cwd?: string }> }) => unknown) =>
+      selector({ byId: { s1: { cwd: '/workspace/demo' } } }),
   }
   const handle = createRightPanelStore().create()
   const props = {
@@ -73,9 +86,27 @@ describe('SurfacePanel', () => {
     expect(screen.getByText('linux')).toBeTruthy()
   })
 
+  it('browses a Host directory and reads a file from the Files surface', async () => {
+    const verbs = mount()
+    fireEvent.click(screen.getByRole('button', { name: '文件' }))
+    await waitFor(() => { expect(verbs.browseFiles).toHaveBeenCalledWith(undefined) })
+    fireEvent.click(screen.getByRole('button', { name: 'notes.txt' }))
+    await waitFor(() => { expect(verbs.readFile).toHaveBeenCalledWith('/home/u/notes.txt') })
+    expect(screen.getByText('hello')).toBeTruthy()
+  })
+
+  it('shows the Host unified diff for the current workspace', async () => {
+    const verbs = mount()
+    fireEvent.click(screen.getByRole('button', { name: '差异' }))
+    await waitFor(() => { expect(verbs.loadDiff).toHaveBeenCalledWith('/workspace/demo') })
+    expect(screen.getByText('a.ts')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: /a\.ts/ }))
+    expect(screen.getByText('@@ -1 +1 @@')).toBeTruthy()
+  })
+
   it('keeps the pending rows disabled instead of faking functionality', () => {
     mount()
-    for (const label of ['浏览器', '文件', '差异', '拉取请求', '关联的拉取请求', '侧边对话']) {
+    for (const label of ['浏览器', '拉取请求', '关联的拉取请求', '侧边对话']) {
       expect(screen.getByRole('button', { name: label })).toHaveProperty('disabled', true)
     }
   })

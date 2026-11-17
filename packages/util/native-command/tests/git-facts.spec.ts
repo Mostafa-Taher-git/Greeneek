@@ -3,7 +3,7 @@ import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
-import { gitFacts, type GitFactsInternals } from '../src/index.ts'
+import { gitDiff, gitFacts, type GitFactsInternals } from '../src/index.ts'
 import type { NativeCommandRunner } from '../src/runner.ts'
 
 const signal = (): AbortSignal => new AbortController().signal
@@ -135,5 +135,48 @@ describe('git facts', () => {
     const facts = await gitFacts(directory, signal())
     expect(facts.isRepository).toBe(false)
     expect(facts.changedFiles).toBe(0)
+  })
+})
+
+describe('git diff', () => {
+  it('returns no diff outside a repository', async () => {
+    const diff = await gitDiff('/projects/plain', signal(), internals({
+      'rev-parse --is-inside-work-tree': 'false',
+    }))
+    expect(diff).toEqual({ isRepository: false, files: [], truncated: false })
+  })
+
+  it('pairs each changed file with its unified patch', async () => {
+    const diff = await gitDiff('/projects/app', signal(), internals({
+      'rev-parse --is-inside-work-tree': 'true',
+      'symbolic-ref --short refs/remotes/origin/HEAD': 'origin/main',
+      'status --porcelain=v1': ' M src/a.ts\n?? src/new.ts\n',
+      'diff --no-color main': [
+        'diff --git a/src/a.ts b/src/a.ts',
+        '--- a/src/a.ts',
+        '+++ b/src/a.ts',
+        '@@ -1 +1 @@',
+        '-old',
+        '+new',
+      ].join('\n'),
+    }))
+    expect(diff.isRepository).toBe(true)
+    expect(diff.baseBranch).toBe('main')
+    expect(diff.files).toEqual([
+      { path: 'src/a.ts', status: 'M', patch: '@@ -1 +1 @@\n-old\n+new' },
+      { path: 'src/new.ts', status: '??', patch: '' },
+    ])
+  })
+
+  it('uses HEAD when no base branch is known', async () => {
+    const diff = await gitDiff('/projects/app', signal(), internals({
+      'rev-parse --is-inside-work-tree': 'true',
+      'symbolic-ref --short refs/remotes/origin/HEAD': '',
+      'rev-parse --abbrev-ref origin/HEAD': '',
+      'status --porcelain=v1': ' M src/a.ts\n',
+      'diff --no-color HEAD': '+++ b/src/a.ts\n@@ -1 +1 @@\n',
+    }))
+    expect(diff.baseBranch).toBeUndefined()
+    expect(diff.files[0]?.patch).toBe('@@ -1 +1 @@')
   })
 })

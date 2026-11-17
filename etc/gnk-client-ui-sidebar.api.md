@@ -30,9 +30,18 @@
 `src/client/right-panel-store.ts: export interface SurfaceDescriptor {`
 `src/client/right-panel-store.ts: export type SurfaceKind =`
 `src/client/surfaces/DevicePanel.tsx: export function DevicePanel({ loadDevice, t }: DeviceSurfaceProps) {`
+`src/client/surfaces/DiffPanel.tsx: export function DiffPanel({ cwd, loadDiff, t }: DiffSurfaceProps) {`
+`src/client/surfaces/FilesPanel.tsx: export function FilesPanel({ browseFiles, readFile, t }: FilesSurfaceProps) {`
 `src/client/surfaces/contract.ts: export interface DeviceAppEntry {`
 `src/client/surfaces/contract.ts: export interface DeviceFacts {`
+`src/client/surfaces/contract.ts: export interface DiffFile {`
+`src/client/surfaces/contract.ts: export interface DiffView {`
+`src/client/surfaces/contract.ts: export interface FileListing {`
+`src/client/surfaces/contract.ts: export interface FileRead {`
+`src/client/surfaces/contract.ts: export interface FileRow {`
 `src/client/surfaces/contract.ts: export type DeviceSurfaceProps = PropsLocale<'sidebar'> & {`
+`src/client/surfaces/contract.ts: export type DiffSurfaceProps = PropsLocale<'sidebar'> & {`
+`src/client/surfaces/contract.ts: export type FilesSurfaceProps = PropsLocale<'sidebar'> & {`
 `src/client/surfaces/contract.ts: export type SurfaceLocaleKey = SidebarKey`
 `src/css-modules.d.ts: export default classes`
 `src/index.ts: export function apply(): void {}`

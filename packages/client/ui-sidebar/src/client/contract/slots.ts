@@ -183,6 +183,12 @@ export type SurfacePanelInjected = {
   openDashboard: () => void
   /** Load the Host facts shown by the Device surface. */
   loadDevice: () => Promise<import('../surfaces/contract.ts').DeviceFacts>
+  /** List one Host directory level for the Files surface. */
+  browseFiles: (path: string | undefined) => Promise<import('../surfaces/contract.ts').FileListing>
+  /** Read one Host text file for the Files surface. */
+  readFile: (path: string) => Promise<import('../surfaces/contract.ts').FileRead>
+  /** Load the unified git diff for the current Workspace. */
+  loadDiff: (path: string) => Promise<import('../surfaces/contract.ts').DiffView>
 }
 
 /**

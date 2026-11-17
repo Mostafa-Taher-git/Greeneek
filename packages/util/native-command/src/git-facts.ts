@@ -25,6 +25,28 @@ export interface GitFacts {
   readonly deletions: number
 }
 
+/** One changed file's unified diff against the base branch. */
+export interface GitDiffFile {
+  /** Repository-relative path. */
+  readonly path: string
+  /** Single-letter git status (`M`, `A`, `D`, `?`). */
+  readonly status: string
+  /** Unified diff text; empty for an untracked or binary file. */
+  readonly patch: string
+}
+
+/** The change set of one project directory. */
+export interface GitDiff {
+  /** True when the directory is in a git work tree. */
+  readonly isRepository: boolean
+  /** Base branch the diff is measured against. */
+  readonly baseBranch?: string
+  /** Changed files with their unified patches. */
+  readonly files: readonly GitDiffFile[]
+  /** True when the output was cut by the byte cap. */
+  readonly truncated: boolean
+}
+
 /** Injectable seam for deterministic tests. */
 export interface GitFactsInternals {
   /** Command runner; the default runs the host `git` executable. */
@@ -134,5 +156,73 @@ export async function gitFacts(
     changedFiles: counts.files,
     insertions: counts.insertions,
     deletions: counts.deletions,
+  }
+}
+
+/**
+ * Read the unified diff of one project directory against its base branch.
+ * All commands are read-only and shell-free; output is capped before parsing.
+ * @param path - absolute project directory.
+ * @param signal - caller lifetime.
+ * @param internals - command runner seam.
+ * @returns the change set with one patch per changed file.
+ */
+export async function gitDiff(
+  path: string,
+  signal: AbortSignal,
+  internals: GitFactsInternals = {},
+): Promise<GitDiff> {
+  const run = internals.run ?? runNativeCommand
+  const inside = await gitOutput(['rev-parse', '--is-inside-work-tree'], path, signal, run)
+  if (inside !== 'true') return { isRepository: false, files: [], truncated: false }
+
+  const remoteHead = await gitOutput(
+    ['symbolic-ref', '--short', 'refs/remotes/origin/HEAD'], path, signal, run,
+  )
+  const rawBase = remoteHead === undefined
+    ? await gitOutput(['rev-parse', '--abbrev-ref', 'origin/HEAD'], path, signal, run)
+    : remoteHead.replace(/^origin\//, '')
+  const baseBranch = rawBase === undefined || rawBase === '' ? undefined : rawBase
+
+  const status = await gitOutput(['status', '--porcelain=v1'], path, signal, run)
+  const names = (status ?? '').split('\n').map(line => line.trim()).filter(Boolean).map((line) => {
+    const match = /^(.{1,2})\s+(.+)$/.exec(line)
+    return {
+      status: match?.[1]?.trim() || '?',
+      path: match?.[2] ?? line,
+    }
+  })
+  const patchArgs = baseBranch === undefined
+    ? ['diff', '--no-color', 'HEAD']
+    : ['diff', '--no-color', baseBranch]
+  const rawPatch = await gitOutput(patchArgs, path, signal, run)
+  const cap = (rawPatch ?? '').slice(0, MAX_OUTPUT_BYTES)
+  const patches = new Map<string, string>()
+  let current: string | undefined
+  const chunks: string[] = []
+  const flush = (): void => {
+    if (current !== undefined) patches.set(current, chunks.join('\n'))
+    chunks.length = 0
+  }
+  for (const line of cap.split('\n')) {
+    if (line.startsWith('+++ b/')) {
+      flush()
+      current = line.slice('+++ b/'.length)
+      continue
+    }
+    if (line.startsWith('diff --git ') && !line.startsWith('diff --git a/')) continue
+    if (current !== undefined) chunks.push(line)
+  }
+  flush()
+
+  return {
+    isRepository: true,
+    ...(baseBranch === undefined ? {} : { baseBranch }),
+    files: names.map(entry => ({
+      path: entry.path,
+      status: entry.status,
+      patch: patches.get(entry.path) ?? '',
+    })),
+    truncated: (rawPatch ?? '').length > MAX_OUTPUT_BYTES,
   }
 }

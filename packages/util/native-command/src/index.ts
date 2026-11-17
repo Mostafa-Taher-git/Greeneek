@@ -26,5 +26,5 @@ export type {
   ExternalAppInternals,
   ExternalAppSpec,
 } from './external-app.ts'
-export { gitFacts } from './git-facts.ts'
-export type { GitFacts, GitFactsInternals } from './git-facts.ts'
+export { gitFacts, gitDiff } from './git-facts.ts'
+export type { GitFacts, GitFactsInternals, GitDiff, GitDiffFile } from './git-facts.ts'

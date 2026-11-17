@@ -268,6 +268,10 @@ export class FakeApiClient {
           payload,
           this.onGitFacts(payload),
         ),
+        gitDiff: () => Promise.resolve({
+          ok: true,
+          value: { isRepository: false, files: [], truncated: false },
+        }),
         page: request => this.page(request),
         follow: (request, signal) => this.openFollow(request, signal),
         control: signal => this.openControl(signal),

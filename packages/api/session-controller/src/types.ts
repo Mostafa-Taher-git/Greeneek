@@ -480,6 +480,34 @@ export interface SessionGitFactsValue {
   readonly deletions: number
 }
 
+/** Request for the unified diff of one project directory. */
+export interface SessionGitDiffRequest {
+  /** Absolute path of the project directory. */
+  readonly path: string
+}
+
+/** One changed file with its unified patch. */
+export interface SessionGitDiffFile {
+  /** Repository-relative path. */
+  readonly path: string
+  /** Git status letters. */
+  readonly status: string
+  /** Unified diff text, empty for untracked or binary files. */
+  readonly patch: string
+}
+
+/** Unified change set of one project directory. */
+export interface SessionGitDiffValue {
+  /** True when the directory is inside a git work tree. */
+  readonly isRepository: boolean
+  /** Base branch the diff is measured against. */
+  readonly baseBranch?: string
+  /** Changed files with their patches. */
+  readonly files: readonly SessionGitDiffFile[]
+  /** True when the diff was cut by the Host byte cap. */
+  readonly truncated: boolean
+}
+
 /** Client-minted prompt identity used to reconcile optimistic and durable messages. */
 export type SessionRequestId = Branded<'session-request-id'>
 

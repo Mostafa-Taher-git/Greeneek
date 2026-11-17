@@ -1,0 +1,78 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px;
+}
+
+.summary {
+  padding: 6px 4px;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 11px;
+}
+
+.file {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 0.5px solid var(--dsw-alias-border-l2);
+}
+
+.fileButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  padding: 4px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--dsw-alias-label-primary);
+  font: inherit;
+  font-size: 12px;
+  text-align: start;
+  cursor: pointer;
+}
+
+.fileButton:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.status {
+  flex: none;
+  color: var(--dsw-alias-label-tertiary);
+  font-family: var(--ds-font-family-code);
+}
+
+.path {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.patch {
+  max-height: 260px;
+  margin: 2px 0 6px;
+  padding: 8px;
+  overflow: auto;
+  border-radius: 8px;
+  background: var(--dsw-alias-bg-layer-2);
+  --gnk-scrollbar-thumb: var(--dsw-alias-scrollbar-bg-l2);
+  --gnk-scrollbar-thumb-hover: var(--dsw-alias-scrollbar-hover-l2);
+  font-family: var(--ds-font-family-code);
+  font-size: 11px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.notice {
+  padding: 8px 4px;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 11px;
+}
+
+.error {
+  padding: 8px;
+  color: var(--dsw-alias-state-error-primary);
+  font-size: 12px;
+}

@@ -46,9 +46,14 @@ async function bench(options: { locale?: 'en' } = {}) {
   const remote = {
     $host: { home: '/home/u', hostname: 'test-host', isLoopback: true },
     session: { externalApps: vi.fn(async () => ({ ok: true, value: { platform: 'linux', apps: [], canReveal: false } })) },
+    files: {
+      list: vi.fn(async () => ({ ok: true, value: { path: '/home/u', home: '/home/u', crumbs: [], entries: [], truncated: false } })),
+      read: vi.fn(async (path: string) => ({ ok: true, value: { path, text: '', binary: false, size: 0 } })),
+    },
   }
   runtime.ctx.provide('remote', remote as never)
   runtime.ctx.provide('remote.session', remote.session as never)
+  runtime.ctx.provide('remote.files', remote.files as never)
   const locale = new LocaleRuntime(runtime.ctx)
   locale.register('common', { zh: commonZh, en: commonEn, ar: commonAr })
   if (options.locale === 'en') locale.setLocale('en')

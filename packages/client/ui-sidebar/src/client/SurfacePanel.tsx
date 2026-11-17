@@ -15,8 +15,6 @@ import {
   IconGitHubDesktop16,
   IconMonitor16,
   IconNewChatOutline16,
-  IconSettingsOutline16,
-  IconDashboardOutline16,
   formatShortcut,
   isEditableTarget,
   shortcutMatches,
@@ -60,8 +58,7 @@ const BROWSER_PROFILES = [
  */
 export function SurfacePanel(props: SurfacePanelComponentProps) {
   const {
-    sessionId, useStore, actions, openTerminal, openTrajectory, openChat,
-    openSettings, openDashboard, loadDevice, browseFiles, readFile, loadDiff,
+    sessionId, useStore, actions, openTerminal, loadDevice, browseFiles, readFile, loadDiff,
     githubStatus, githubRepository, githubPullRequests, currentBranch,
     forkSideChat, openSideChat, useSessions, t,
   } = props
@@ -147,13 +144,6 @@ export function SurfacePanel(props: SurfacePanelComponentProps) {
     actions.open({ kind: spec.id, title: t(spec.labelKey), data }, true)
   }
 
-  const legacyRows = [
-    { key: 'surface.trajectory' as const, icon: IconBranchOutline16, open: () => { openTrajectory(sessionId) } },
-    { key: 'surface.chat' as const, icon: IconNewChatOutline16, open: () => { openChat(sessionId) } },
-    { key: 'surface.settings' as const, icon: IconSettingsOutline16, open: openSettings },
-    { key: 'surface.dashboard' as const, icon: IconDashboardOutline16, open: openDashboard },
-  ]
-
   return (
     <div className={css.root} data-surface-panel="">
       {surfaces.length > 0 && (
@@ -237,12 +227,6 @@ export function SurfacePanel(props: SurfacePanelComponentProps) {
                   </>
                 )}
               </div>
-            ))}
-            {legacyRows.map(row => (
-              <button key={row.key} type="button" className={css.row} aria-label={t(row.key)} onClick={row.open}>
-                <row.icon size={16} className={css.icon} />
-                <span className={css.label}>{t(row.key)}</span>
-              </button>
             ))}
           </div>
         </>

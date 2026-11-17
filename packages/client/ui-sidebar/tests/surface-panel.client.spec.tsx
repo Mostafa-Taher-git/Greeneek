@@ -153,15 +153,9 @@ describe('SurfacePanel', () => {
     }
   })
 
-  it('opens the two Session views and two full-page destinations from the extra rows', () => {
-    const verbs = mount()
-    fireEvent.click(screen.getByRole('button', { name: '执行轨迹' }))
-    fireEvent.click(screen.getByRole('button', { name: '对话' }))
-    fireEvent.click(screen.getByRole('button', { name: '设置' }))
-    fireEvent.click(screen.getByRole('button', { name: '仪表盘' }))
-    expect(verbs.openTrajectory).toHaveBeenCalledWith(SID)
-    expect(verbs.openChat).toHaveBeenCalledWith(SID)
-    expect(verbs.openSettings).toHaveBeenCalledOnce()
-    expect(verbs.openDashboard).toHaveBeenCalledOnce()
+  it('offers only the eight T3 launcher rows', () => {
+    mount()
+    expect(screen.queryByRole('button', { name: '执行轨迹' })).toBeNull()
+    expect(screen.queryByRole('button', { name: '仪表盘' })).toBeNull()
   })
 })

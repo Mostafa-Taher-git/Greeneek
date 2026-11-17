@@ -189,6 +189,20 @@ export type SurfacePanelInjected = {
   readFile: (path: string) => Promise<import('../surfaces/contract.ts').FileRead>
   /** Load the unified git diff for the current Workspace. */
   loadDiff: (path: string) => Promise<import('../surfaces/contract.ts').DiffView>
+  /** Report whether the user configured a GitHub token. */
+  githubStatus: () => Promise<import('../surfaces/contract.ts').GithubStatus>
+  /** Resolve owner/repo from the Workspace remote. */
+  githubRepository: (path: string) => Promise<{ owner: string; repo: string }>
+  /** Load one page of GitHub pull requests. */
+  githubPullRequests: (
+    request: import('../surfaces/contract.ts').PullRequestRequest,
+  ) => Promise<import('../surfaces/contract.ts').PullRequestPage>
+  /** Load pull requests linked to the current branch. */
+  githubLinkedPullRequests: (
+    request: import('../surfaces/contract.ts').PullRequestRequest,
+  ) => Promise<import('../surfaces/contract.ts').PullRequestPage>
+  /** Resolve the current git branch of a Workspace. */
+  currentBranch: (path: string) => Promise<string | undefined>
 }
 
 /**

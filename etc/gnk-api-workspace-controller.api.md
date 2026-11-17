@@ -30,14 +30,24 @@
 `src/files.ts: export const FILE_LISTING_LIMIT = 1000`
 `src/files.ts: export const FILE_READ_LIMIT = 1_048_576`
 `src/files.ts: export interface FileBrowserInternals {`
+`src/github.ts: export class GithubController extends TypertRemoteService {`
+`src/github.ts: export const GITHUB_PAGE_LIMIT = 100`
+`src/github.ts: export const GITHUB_TOKEN_REF = 'GITHUB_TOKEN' as import('@greeneek/gnk-credentials/types').CredentialRef`
+`src/github.ts: export interface GithubInternals {`
 `src/index.ts: export class WorkspaceController extends TypertRemoteService {`
 `src/index.ts: export default WorkspaceController`
 `src/index.ts: export type * from './types.ts'`
 `src/index.ts: export { DirectoryPickerController } from './directory-picker.ts'`
 `src/index.ts: export { FileBrowserController } from './files.ts'`
+`src/index.ts: export { GithubController } from './github.ts'`
 `src/types.ts: export interface FileBrowserEntry {`
 `src/types.ts: export interface FileBrowserListing {`
 `src/types.ts: export interface FileBrowserRead {`
+`src/types.ts: export interface GithubPullRequest {`
+`src/types.ts: export interface GithubPullRequestList {`
+`src/types.ts: export interface GithubPullRequestRequest {`
+`src/types.ts: export interface GithubRepository {`
+`src/types.ts: export interface GithubStatus {`
 `src/types.ts: export interface WorkspaceArchiveSessionRequest {`
 `src/types.ts: export interface WorkspaceArchiveValue {`
 `src/types.ts: export interface WorkspaceBaseline {`

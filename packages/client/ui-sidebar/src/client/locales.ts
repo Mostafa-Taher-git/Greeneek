@@ -53,6 +53,11 @@ export const zh = {
   'diff.noWorkspace': '请先打开一个工作区。',
   'diff.noPatch': '此文件没有可显示的补丁。',
   'diff.truncated': '改动过多，仅显示部分内容。',
+  'pr.unconfigured': '请先配置你自己的 GitHub 令牌。',
+  'pr.noWorkspace': '请先打开一个工作区。',
+  'pr.empty': '没有拉取请求。',
+  'pr.draft': '草稿',
+  'pr.more': '加载更多',
 } satisfies Record<string, string>
 
 /** The sidebar namespace key union. */
@@ -111,6 +116,11 @@ export const en = {
   'diff.noWorkspace': 'Open a workspace first.',
   'diff.noPatch': 'This file has no patch to display.',
   'diff.truncated': 'The change set was truncated by the Host cap.',
+  'pr.unconfigured': 'Configure your own GitHub token first.',
+  'pr.noWorkspace': 'Open a workspace first.',
+  'pr.empty': 'No pull requests.',
+  'pr.draft': 'draft',
+  'pr.more': 'Load more',
 } satisfies Record<SidebarKey, string>
 
 /** Arabic dictionary, checked complete against the zh key set; the brand name stays verbatim. */
@@ -166,4 +176,9 @@ export const ar = {
   'diff.noWorkspace': 'افتح مساحة عمل أولاً.',
   'diff.noPatch': 'لا يوجد تصحيح لعرضه لهذا الملف.',
   'diff.truncated': 'تم اقتطاع مجموعة التغييرات بواسطة حد المضيف.',
+  'pr.unconfigured': 'قم أولاً بإعداد رمز GitHub خاص بك.',
+  'pr.noWorkspace': 'افتح مساحة عمل أولاً.',
+  'pr.empty': 'لا توجد طلبات سحب.',
+  'pr.draft': 'مسودة',
+  'pr.more': 'تحميل المزيد',
 } satisfies Record<SidebarKey, string>

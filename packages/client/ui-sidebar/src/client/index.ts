@@ -13,7 +13,9 @@ import type {} from '@greeneek/gnk-api-remotes/client'
 import type {} from '@greeneek/gnk-api-session-controller/client'
 // Type-only: pulls the generated `ctx.remote.files` namespace merge.
 import type {} from '@greeneek/gnk-api-workspace-controller/client'
-import type { DeviceAppEntry, DiffView, DeviceFacts, FileListing, FileRead } from './surfaces/contract.ts'
+import type {
+  DeviceAppEntry, DeviceFacts, DiffView, FileListing, FileRead, GithubStatus, PullRequestRequest,
+} from './surfaces/contract.ts'
 import type { SidebarRootInjected, SurfacePanelInjected, TitlebarInjected } from './contract/slots.ts'
 import { createRightPanelStore } from './right-panel-store.ts'
 import { SidebarRoot } from './SidebarRoot.tsx'
@@ -73,6 +75,40 @@ async function readHostFile(path: string, ctx: ClientContext): Promise<FileRead>
   const result = await ctx.remote.files.read(path)
   if (!result.ok) throw new Error(result.error.message)
   return result.value
+}
+
+/** Report the GitHub integration's configuration without exposing the token. */
+async function githubStatus(ctx: ClientContext): Promise<GithubStatus> {
+  const result = await ctx.remote.github.status()
+  if (!result.ok) throw new Error(result.error.message)
+  return result.value
+}
+
+/** Resolve the GitHub repository from a Workspace's origin remote. */
+async function githubRepository(path: string, ctx: ClientContext): Promise<{ owner: string; repo: string }> {
+  const result = await ctx.remote.github.repository({ path })
+  if (!result.ok) throw new Error(result.error.message)
+  return result.value
+}
+
+/** Load one page of PRs through the Host GitHub integration. */
+async function githubPullRequests(request: PullRequestRequest, ctx: ClientContext) {
+  const result = request.branch === undefined
+    ? await ctx.remote.github.pullRequests({
+      owner: request.owner, repo: request.repo, page: request.page, perPage: request.perPage,
+    })
+    : await ctx.remote.github.linkedPullRequests({
+      owner: request.owner, repo: request.repo, branch: request.branch,
+      page: request.page, perPage: request.perPage,
+    })
+  if (!result.ok) throw new Error(result.error.message)
+  return result.value
+}
+
+/** Resolve the current branch of a Workspace through the git-facts Remote. */
+async function currentBranch(path: string, ctx: ClientContext): Promise<string | undefined> {
+  const result = await ctx.remote.session.gitFacts({ path })
+  return result.ok ? result.value.branch : undefined
 }
 
 /** Load the unified git diff through the Session Remote. */
@@ -173,6 +209,11 @@ export function apply(ctx: ClientContext): void {
         browseFiles: path => browseFiles(path, ctx),
         readFile: path => readHostFile(path, ctx),
         loadDiff: path => loadDiff(path, ctx),
+        githubStatus: () => githubStatus(ctx),
+        githubRepository: path => githubRepository(path, ctx),
+        githubPullRequests: request => githubPullRequests(request, ctx),
+        githubLinkedPullRequests: request => githubPullRequests(request, ctx),
+        currentBranch: path => currentBranch(path, ctx),
         openTerminal: () => { ctx.layout.openTerminalDrawer() },
         openTrajectory: (sessionId) => {
           ctx.layout.showConversation()

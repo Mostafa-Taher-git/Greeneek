@@ -1,0 +1,71 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px;
+}
+
+.heading {
+  margin: 0 0 4px;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  padding: 8px 6px;
+  border-bottom: 0.5px solid var(--dsw-alias-border-l2);
+}
+
+.number {
+  flex: none;
+  color: var(--dsw-alias-label-tertiary);
+  font-family: var(--ds-font-family-code);
+  font-size: 11px;
+}
+
+.body {
+  min-width: 0;
+}
+
+.title {
+  color: var(--dsw-alias-label-primary);
+  font-size: 12px;
+}
+
+.meta {
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 11px;
+}
+
+.url {
+  overflow: hidden;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.more {
+  padding: 6px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.notice,
+.error {
+  padding: 8px;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 11px;
+}
+
+.error {
+  color: var(--dsw-alias-state-error-primary);
+}

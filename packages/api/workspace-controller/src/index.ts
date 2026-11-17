@@ -5,6 +5,7 @@ import { Remote, TypertRemoteService } from '@greeneek/gnk-typert-protocol'
 import { WorkspaceCommands } from './commands.ts'
 import { DirectoryPickerController } from './directory-picker.ts'
 import { FileBrowserController } from './files.ts'
+import { GithubController } from './github.ts'
 import { WorkspaceFeed } from './feed.ts'
 import type {
   WorkspaceArchiveSessionRequest,
@@ -28,6 +29,7 @@ import type {
 export type * from './types.ts'
 export { DirectoryPickerController } from './directory-picker.ts'
 export { FileBrowserController } from './files.ts'
+export { GithubController } from './github.ts'
 
 declare module '@greeneek/cordis' {
   interface Context {
@@ -54,6 +56,7 @@ export class WorkspaceController extends TypertRemoteService {
     // registers no picking namespace instead of answering an unservable verb.
     ctx.plugin(DirectoryPickerController)
     ctx.plugin(FileBrowserController)
+    ctx.plugin(GithubController)
   }
 
   /**

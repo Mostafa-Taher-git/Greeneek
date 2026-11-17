@@ -1025,9 +1025,15 @@ importers:
       '@greeneek/gnk-client-store':
         specifier: workspace:^
         version: link:../../client/store
+      '@greeneek/gnk-credentials':
+        specifier: workspace:^
+        version: link:../../credentials/credentials
       '@greeneek/gnk-host-directory-picker':
         specifier: workspace:^
         version: link:../../host/directory-picker
+      '@greeneek/gnk-native-command':
+        specifier: workspace:^
+        version: link:../../util/native-command
       '@greeneek/gnk-session':
         specifier: workspace:^
         version: link:../../core/session

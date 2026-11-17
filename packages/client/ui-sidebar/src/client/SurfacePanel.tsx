@@ -28,6 +28,7 @@ import type { SurfaceKind } from './right-panel-store.ts'
 import { DevicePanel } from './surfaces/DevicePanel.tsx'
 import { DiffPanel } from './surfaces/DiffPanel.tsx'
 import { FilesPanel } from './surfaces/FilesPanel.tsx'
+import { PullRequestsPanel } from './surfaces/PullRequestsPanel.tsx'
 import css from './SurfacePanel.module.css'
 
 /** One launcher row: glyph, localized name, shortcut, destination. */
@@ -58,13 +59,24 @@ const BROWSER_PROFILES = [
 export function SurfacePanel(props: SurfacePanelComponentProps) {
   const {
     sessionId, useStore, actions, openTerminal, openTrajectory, openChat,
-    openSettings, openDashboard, loadDevice, browseFiles, readFile, loadDiff, useSessions, t,
+    openSettings, openDashboard, loadDevice, browseFiles, readFile, loadDiff,
+    githubStatus, githubRepository, githubPullRequests, currentBranch,
+    useSessions, t,
   } = props
   const cwd = useSessions(state => state.byId[sessionId]?.cwd)
   const surfaces = useStore(state => state.surfaces)
   const activeId = useStore(state => state.activeId)
   const active = surfaces.find(surface => surface.id === activeId)
   const [profileOpen, setProfileOpen] = useState(false)
+  const [githubConfigured, setGithubConfigured] = useState(false)
+
+  useEffect(() => {
+    let live = true
+    githubStatus()
+      .then((status) => { if (live) setGithubConfigured(status.configured) })
+      .catch(() => { if (live) setGithubConfigured(false) })
+    return () => { live = false }
+  }, [githubStatus])
 
   // The single-key launcher shortcut for Files. Other rows bind their own
   // shortcuts as their backends land.
@@ -79,6 +91,16 @@ export function SurfacePanel(props: SurfacePanelComponentProps) {
       if (shortcutMatches(event, 'mod+d')) {
         event.preventDefault()
         actions.open({ kind: 'diff', title: t('surface.diff'), data: {} }, true)
+        return
+      }
+      if (shortcutMatches(event, 'mod+p')) {
+        event.preventDefault()
+        actions.open({ kind: 'pull-request', title: t('surface.pullRequest'), data: {} }, true)
+        return
+      }
+      if (shortcutMatches(event, 'mod+l')) {
+        event.preventDefault()
+        actions.open({ kind: 'linked-pull-requests', title: t('surface.linkedPullRequests'), data: {} }, true)
       }
     }
     window.addEventListener('keydown', onKey)
@@ -90,8 +112,8 @@ export function SurfacePanel(props: SurfacePanelComponentProps) {
     { id: 'terminal', icon: IconCodeOutline16, labelKey: 'surface.terminal', shortcut: 't', ready: true },
     { id: 'files', icon: IconFolderOpenOutline16, labelKey: 'surface.files', shortcut: 'f', ready: true },
     { id: 'diff', icon: IconFileDiff16, labelKey: 'surface.diff', shortcut: 'd', ready: true },
-    { id: 'pull-request', icon: IconGitHubDesktop16, labelKey: 'surface.pullRequest', shortcut: 'p', ready: false },
-    { id: 'linked-pull-requests', icon: IconBranchOutline16, labelKey: 'surface.linkedPullRequests', shortcut: 'l', ready: false },
+    { id: 'pull-request', icon: IconGitHubDesktop16, labelKey: 'surface.pullRequest', shortcut: 'p', ready: true },
+    { id: 'linked-pull-requests', icon: IconBranchOutline16, labelKey: 'surface.linkedPullRequests', shortcut: 'l', ready: true },
     { id: 'device', icon: IconMonitor16, labelKey: 'surface.device', shortcut: 'm', ready: true },
     { id: 'side-chat', icon: IconNewChatOutline16, labelKey: 'surface.sideChat', shortcut: 's', ready: false },
   ]
@@ -212,7 +234,19 @@ export function SurfacePanel(props: SurfacePanelComponentProps) {
               ? <FilesPanel browseFiles={browseFiles} readFile={readFile} t={t} />
               : active.kind === 'diff'
                 ? <DiffPanel cwd={cwd} loadDiff={loadDiff} t={t} />
-                : <div className={css.notice}>{t('surface.pendingBackend')}</div>}
+                : active.kind === 'pull-request' || active.kind === 'linked-pull-requests'
+                  ? (
+                    <PullRequestsPanel
+                      cwd={cwd}
+                      configured={githubConfigured}
+                      load={githubPullRequests}
+                      repository={githubRepository}
+                      branch={currentBranch}
+                      linked={active.kind === 'linked-pull-requests'}
+                      t={t}
+                    />
+                  )
+                  : <div className={css.notice}>{t('surface.pendingBackend')}</div>}
         </div>
       )}
     </div>

@@ -50,6 +50,12 @@ declare module '@greeneek/gnk-typert-protocol' {
     'files/unreadable': { readonly path: string }
     /** The file exceeds the Host read cap. */
     'files/too-large': { readonly path: string }
+    /** No user-owned GitHub token is configured. */
+    'github/unconfigured': {}
+    /** GitHub refused the request. */
+    'github/failed': { readonly status: number }
+    /** No GitHub remote is configured in the workspace. */
+    'github/no-remote': { readonly path: string }
   }
 }
 
@@ -195,4 +201,64 @@ export interface FileBrowserRead {
   readonly binary: boolean
   /** Byte length of the file. */
   readonly size: number
+}
+
+/** Repository identity derived from a git remote. */
+export interface GithubRepository {
+  /** Owner namespace. */
+  readonly owner: string
+  /** Repository name. */
+  readonly repo: string
+}
+
+/** Configuration state of the GitHub integration, without secret values. */
+export interface GithubStatus {
+  /** True when a user-owned token is configured. */
+  readonly configured: boolean
+  /** Maximum page size the Host grants. */
+  readonly pageLimit: number
+}
+
+/** One GitHub pull request summary. */
+export interface GithubPullRequest {
+  /** Repository-local PR number. */
+  readonly number: number
+  /** PR title. */
+  readonly title: string
+  /** GitHub state (`open`, `closed`, ...). */
+  readonly state: string
+  /** Web URL of the PR, displayed as data rather than navigated in-app. */
+  readonly url: string
+  /** Head branch. */
+  readonly branch: string
+  /** Author login. */
+  readonly author: string
+  /** True for a draft PR. */
+  readonly draft: boolean
+  /** Last update timestamp from GitHub. */
+  readonly updatedAt: string
+}
+
+/** Request for one page of GitHub pull requests. */
+export interface GithubPullRequestRequest {
+  /** Repository owner. */
+  readonly owner: string
+  /** Repository name. */
+  readonly repo: string
+  /** Head branch for the linked-PR lookup. */
+  readonly branch?: string
+  /** GitHub state filter. */
+  readonly state?: string
+  /** One-based page number. */
+  readonly page?: number
+  /** Requested page size, capped by the Host. */
+  readonly perPage?: number
+}
+
+/** One bounded page of PR summaries. */
+export interface GithubPullRequestList {
+  /** PR rows in GitHub order. */
+  readonly items: readonly GithubPullRequest[]
+  /** True when another page exists. */
+  readonly hasNext: boolean
 }

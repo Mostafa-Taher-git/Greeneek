@@ -35,6 +35,17 @@ function mount(overrides: Partial<SurfacePanelComponentProps> = {}) {
       isRepository: true, baseBranch: 'main',
       files: [{ path: 'a.ts', status: 'M', patch: '@@ -1 +1 @@' }], truncated: false,
     })),
+    githubStatus: vi.fn(async () => ({ configured: true, pageLimit: 100 })),
+    githubRepository: vi.fn(async () => ({ owner: 'o', repo: 'r' })),
+    githubPullRequests: vi.fn(async () => ({
+      items: [{
+        number: 7, title: 'A PR', state: 'open', url: 'https://github.com/o/r/pull/7',
+        branch: 'feature', author: 'alice', draft: false, updatedAt: '',
+      }],
+      hasNext: false,
+    })),
+    githubLinkedPullRequests: vi.fn(async () => ({ items: [], hasNext: false })),
+    currentBranch: vi.fn(async () => 'feature'),
     useSessions: (selector: (state: { byId: Record<string, { cwd?: string }> }) => unknown) =>
       selector({ byId: { s1: { cwd: '/workspace/demo' } } }),
   }
@@ -104,9 +115,23 @@ describe('SurfacePanel', () => {
     expect(screen.getByText('@@ -1 +1 @@')).toBeTruthy()
   })
 
+  it('lists real pull requests from the GitHub backend', async () => {
+    const verbs = mount()
+    fireEvent.click(screen.getByRole('button', { name: '拉取请求' }))
+    await waitFor(() => { expect(verbs.githubPullRequests).toHaveBeenCalled() })
+    expect(screen.getByText('A PR')).toBeTruthy()
+  })
+
+  it('lists linked pull requests for the current branch', async () => {
+    const verbs = mount()
+    fireEvent.click(screen.getByRole('button', { name: '关联的拉取请求' }))
+    await waitFor(() => { expect(verbs.currentBranch).toHaveBeenCalledWith('/workspace/demo') })
+    expect(verbs.githubPullRequests).toHaveBeenCalledWith(expect.objectContaining({ branch: 'feature' }))
+  })
+
   it('keeps the pending rows disabled instead of faking functionality', () => {
     mount()
-    for (const label of ['浏览器', '拉取请求', '关联的拉取请求', '侧边对话']) {
+    for (const label of ['浏览器', '侧边对话']) {
       expect(screen.getByRole('button', { name: label })).toHaveProperty('disabled', true)
     }
   })

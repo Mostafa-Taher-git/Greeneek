@@ -26,6 +26,12 @@ async function bench(declare = true) {
       list: vi.fn(async () => ({ ok: true, value: { path: '/home/u', home: '/home/u', crumbs: [], entries: [], truncated: false } })),
       read: vi.fn(async (path: string) => ({ ok: true, value: { path, text: '', binary: false, size: 0 } })),
     },
+    github: {
+      status: vi.fn(async () => ({ ok: true, value: { configured: false, pageLimit: 100 } })),
+      repository: vi.fn(async () => ({ ok: true, value: { owner: 'o', repo: 'r' } })),
+      pullRequests: vi.fn(async () => ({ ok: true, value: { items: [], hasNext: false } })),
+      linkedPullRequests: vi.fn(async () => ({ ok: true, value: { items: [], hasNext: false } })),
+    },
   }
   ctx.provide('layout', layout)
   ctx.provide('uiWorkspace', uiWorkspace as never)
@@ -33,6 +39,7 @@ async function bench(declare = true) {
   ctx.provide('remote', remote as never)
   ctx.provide('remote.session', remote.session as never)
   ctx.provide('remote.files', remote.files as never)
+  ctx.provide('remote.github', remote.github as never)
   ctx.provide('locale', new LocaleRuntime(ctx))
   const slots = ctx.get('slots') as SlotRegistry
   if (declare) {

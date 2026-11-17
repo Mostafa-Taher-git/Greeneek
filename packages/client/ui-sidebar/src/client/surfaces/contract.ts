@@ -62,6 +62,70 @@ export interface FileRead {
   size: number
 }
 
+/** One GitHub PR row shown by the two PR surfaces. */
+export interface PullRequestRow {
+  /** PR number. */
+  number: number
+  /** Title. */
+  title: string
+  /** GitHub state. */
+  state: string
+  /** PR web URL, shown as data. */
+  url: string
+  /** Head branch. */
+  branch: string
+  /** Author login. */
+  author: string
+  /** Draft flag. */
+  draft: boolean
+  /** Last update timestamp. */
+  updatedAt: string
+}
+
+/** One page of PR rows. */
+export interface PullRequestPage {
+  /** Rows in GitHub order. */
+  items: readonly PullRequestRow[]
+  /** True when another page exists. */
+  hasNext: boolean
+}
+
+/** Request for one page of GitHub pull requests. */
+export interface PullRequestRequest {
+  /** Repository owner. */
+  owner: string
+  /** Repository name. */
+  repo: string
+  /** Head branch for a linked lookup. */
+  branch?: string
+  /** One-based page. */
+  page: number
+  /** Requested page size. */
+  perPage: number
+}
+
+/** Configuration state of the GitHub integration. */
+export interface GithubStatus {
+  /** True when the user configured a token. */
+  configured: boolean
+  /** Maximum Host page size. */
+  pageLimit: number
+}
+
+/** Props of the GitHub PR surfaces. */
+export type PullRequestsSurfaceProps = PropsLocale<'sidebar'> & {
+  /** Workspace path. */
+  cwd: string | undefined
+  /** True when a user token is configured. */
+  configured: boolean
+  /** Load one PR page. */
+  load: (request: PullRequestRequest) => Promise<PullRequestPage>
+  /** Resolve owner/repo from the workspace remote. */
+  repository: (path: string) => Promise<{ owner: string; repo: string }>
+  /** Resolve the current branch, used by Linked pull requests. */
+  branch: (path: string) => Promise<string | undefined>
+}
+
 /** One changed file in the Diff surface. */
 export interface DiffFile {
   /** Repository-relative path. */

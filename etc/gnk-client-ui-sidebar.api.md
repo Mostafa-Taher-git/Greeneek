@@ -32,6 +32,7 @@
 `src/client/surfaces/DevicePanel.tsx: export function DevicePanel({ loadDevice, t }: DeviceSurfaceProps) {`
 `src/client/surfaces/DiffPanel.tsx: export function DiffPanel({ cwd, loadDiff, t }: DiffSurfaceProps) {`
 `src/client/surfaces/FilesPanel.tsx: export function FilesPanel({ browseFiles, readFile, t }: FilesSurfaceProps) {`
+`src/client/surfaces/PullRequestsPanel.tsx: export function PullRequestsPanel({`
 `src/client/surfaces/contract.ts: export interface DeviceAppEntry {`
 `src/client/surfaces/contract.ts: export interface DeviceFacts {`
 `src/client/surfaces/contract.ts: export interface DiffFile {`
@@ -39,9 +40,14 @@
 `src/client/surfaces/contract.ts: export interface FileListing {`
 `src/client/surfaces/contract.ts: export interface FileRead {`
 `src/client/surfaces/contract.ts: export interface FileRow {`
+`src/client/surfaces/contract.ts: export interface GithubStatus {`
+`src/client/surfaces/contract.ts: export interface PullRequestPage {`
+`src/client/surfaces/contract.ts: export interface PullRequestRequest {`
+`src/client/surfaces/contract.ts: export interface PullRequestRow {`
 `src/client/surfaces/contract.ts: export type DeviceSurfaceProps = PropsLocale<'sidebar'> & {`
 `src/client/surfaces/contract.ts: export type DiffSurfaceProps = PropsLocale<'sidebar'> & {`
 `src/client/surfaces/contract.ts: export type FilesSurfaceProps = PropsLocale<'sidebar'> & {`
+`src/client/surfaces/contract.ts: export type PullRequestsSurfaceProps = PropsLocale<'sidebar'> & {`
 `src/client/surfaces/contract.ts: export type SurfaceLocaleKey = SidebarKey`
 `src/css-modules.d.ts: export default classes`
 `src/index.ts: export function apply(): void {}`

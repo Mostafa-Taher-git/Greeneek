@@ -11,12 +11,15 @@
     "src/commands.ts",
     "src/directory-picker.ts",
     "src/files.ts",
+    "src/github.ts",
     "src/feed.ts"
   ],
   "references": [
     { "path": "../../../vendor/cordis" },
     { "path": "../../core/session/tsconfig.host.json" },
+    { "path": "../../credentials/credentials" },
     { "path": "../../host/directory-picker" },
+    { "path": "../../util/native-command" },
     { "path": "../../storage/storage-domain" },
     { "path": "../../typert/protocol" },
     { "path": "../../util/deque" },

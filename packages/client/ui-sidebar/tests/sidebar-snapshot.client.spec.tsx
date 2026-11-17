@@ -50,10 +50,17 @@ async function bench(options: { locale?: 'en' } = {}) {
       list: vi.fn(async () => ({ ok: true, value: { path: '/home/u', home: '/home/u', crumbs: [], entries: [], truncated: false } })),
       read: vi.fn(async (path: string) => ({ ok: true, value: { path, text: '', binary: false, size: 0 } })),
     },
+    github: {
+      status: vi.fn(async () => ({ ok: true, value: { configured: false, pageLimit: 100 } })),
+      repository: vi.fn(async () => ({ ok: true, value: { owner: 'o', repo: 'r' } })),
+      pullRequests: vi.fn(async () => ({ ok: true, value: { items: [], hasNext: false } })),
+      linkedPullRequests: vi.fn(async () => ({ ok: true, value: { items: [], hasNext: false } })),
+    },
   }
   runtime.ctx.provide('remote', remote as never)
   runtime.ctx.provide('remote.session', remote.session as never)
   runtime.ctx.provide('remote.files', remote.files as never)
+  runtime.ctx.provide('remote.github', remote.github as never)
   const locale = new LocaleRuntime(runtime.ctx)
   locale.register('common', { zh: commonZh, en: commonEn, ar: commonAr })
   if (options.locale === 'en') locale.setLocale('en')

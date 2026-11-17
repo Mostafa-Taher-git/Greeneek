@@ -386,7 +386,7 @@ export function ThreadDetailsPanel({
                 type="button"
                 className={css.rowAction}
                 aria-label={t('git.copyBranch')}
-                onClick={() => { void writeClipboard(git?.branch ?? '') }}
+                onClick={() => { void writeClipboard(git.branch ?? '') }}
               >
                 <IconChevronDownOutline14 />
               </button>

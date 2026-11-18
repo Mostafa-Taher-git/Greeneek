@@ -143,6 +143,40 @@ The owner requested a complete reassessment from the FIRST instruction, not a co
 - **Git discipline**: small logical batches; inspect every changed/untracked/staged file; scan for secrets before each push; report exact hash, purpose, files, tests, push result, and any skipped hooks with reasons.
 - **Security**: the previously supplied GitHub token is treated as exposed; never reproduce, reuse, or commit it; store replacements outside the repo.
 
+## Full historical audit result (2026-11-18)
+
+Statuses are evidence-based; a commit or a passing unit test alone does not make a row VERIFIED COMPLETE.
+
+| ID | Final status | Evidence / gap |
+| --- | --- | --- |
+| R-01 Source study | VERIFIED COMPLETE | Source-level studies of three clones with file/line evidence recorded above. |
+| R-02 Architecture comparison/plan | VERIFIED COMPLETE | Decision record above; batches landed incrementally against it. |
+| R-03 Thread card position/dismissal/menu | VERIFIED COMPLETE | `2a8175d0`; live Desktop screenshot shows top-positioned card and git rows. |
+| R-04 Eight rows + profile submenu | VERIFIED COMPLETE | `eb583e12`; live verified in Web and Desktop. |
+| R-05 Device seam | VERIFIED COMPLETE | Prior live run showed host facts/apps. |
+| R-06 Files seam | VERIFIED COMPLETE | Prior live run listed and read a real Host directory. |
+| R-07 Diff seam | IMPLEMENTED BUT NOT VERIFIED | Host unified diff exists; real changed-file diff not exercised live. |
+| R-08 Terminal PTY seam | VERIFIED COMPLETE | `482e7e0c`, `3b0ce8ae`, `5ecee0fa`; live User Terminal (commands, prompt, Ctrl-C) and Agent PTY (4 tool calls, real output). |
+| R-09 PR + linked PR backends | IMPLEMENTED BUT NOT VERIFIED | Real list/detail verified; linked-branch search not live-verified. |
+| R-10 Desktop webview | VERIFIED COMPLETE | `06fed771`; Desktop loaded github.com in the native webview after all changes. |
+| R-11 Side chat | VERIFIED COMPLETE | Prior live run forked a real Session id. |
+| R-12 Remote contracts/contributions | VERIFIED COMPLETE | Live Remote calls succeed across Web for github, files, pty, session. |
+| R-13 Right-panel UI/store/shortcuts | IMPLEMENTED BUT NOT VERIFIED | Rows and submenu live; per-shortcut matrix incomplete. |
+| R-14 Tests per service/row | IMPLEMENTED BUT NOT VERIFIED | `test:gui` 318/4454 green; `test:web`/`test:snapshot` have pre-existing Windows failures (reproduced with changes stashed). |
+| R-15 Desktop UI verification | IMPLEMENTED BUT NOT VERIFIED | Key workflows live; full matrix pending. |
+| R-16 Evidence report | IMPLEMENTED BUT NOT VERIFIED | Delivered with this handoff. |
+| R-17 Web+Desktop parity/shared core | IMPLEMENTED BUT NOT VERIFIED | Both run the same profile; full parity matrix pending. |
+| R-18 Interactive PTY users+agents | VERIFIED COMPLETE | Same evidence as R-08. Historical R-08/R-18 conflict resolved by tracking both. |
+| R-19 Agent tool integrations | IMPLEMENTED BUT NOT VERIFIED | `terminal_*` composed and live-verified; Maestro-specific integration unverified. |
+| R-20 T3 GitHub detail/actions/nav | IMPLEMENTED BUT NOT VERIFIED | List/detail/external navigation live; merge/close unit-tested only. |
+| R-21 Web Browser functionality | IMPLEMENTED BUT NOT VERIFIED | `53f9924d` sandboxed validated iframe + history live; agent browser-use registry not implemented. |
+| R-22 Profile isolation + agent interaction | IMPLEMENTED BUT NOT VERIFIED | Desktop partitions live; Web origin-only; agent interaction missing. |
+| R-23 PR navigation | IMPLEMENTED BUT NOT VERIFIED | External-browser navigation live; integrated-browser route not used (per owner clarification external is acceptable). |
+| R-24 Full T3 audit | IMPLEMENTED BUT NOT VERIFIED | Three-source research done; exhaustive interaction audit pending. |
+| R-25 Both-app workflow matrix | IMPLEMENTED BUT NOT VERIFIED | Significant subset verified; matrix incomplete. |
+
+Security note: revoking the previously exposed token is BLOCKED externally — `gh auth status` shows a fine-grained PAT, but `GET /user/personal_access_tokens` and `GET /user/tokens` both return HTTP 404 with the available credentials, so revocation must be done in GitHub settings by the owner. A fresh token must be stored in the external credentials file before live GitHub lanes can run again. No secret was added to any commit (verified by staged secret scans and `git grep`).
+
 ## Remaining limitations
 
 - GitHub PR rows require the user to configure `GITHUB_TOKEN` through the existing credentials seam; no key is provided by Greeneek.

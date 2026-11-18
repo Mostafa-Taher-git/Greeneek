@@ -219,6 +219,15 @@ export function apply(ctx: ClientContext): void {
         githubRepository: path => githubRepository(path, ctx),
         githubPullRequests: request => githubPullRequests(request, ctx),
         githubLinkedPullRequests: request => githubPullRequests(request, ctx),
+        githubDetail: async (request) => {
+          const result = await ctx.remote.github.pullRequestDetail(request)
+          if (!result.ok) throw new Error(result.error.message)
+          return result.value
+        },
+        githubAction: async (request) => {
+          const result = await ctx.remote.github.pullRequestAction(request)
+          if (!result.ok) throw new Error(result.error.message)
+        },
         currentBranch: path => currentBranch(path, ctx),
         forkSideChat: async (sessionId) => {
           const result = await ctx.remote.session.fork({ sessionId })

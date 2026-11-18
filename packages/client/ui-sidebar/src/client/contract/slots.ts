@@ -201,6 +201,14 @@ export type SurfacePanelInjected = {
   githubLinkedPullRequests: (
     request: import('../surfaces/contract.ts').PullRequestRequest,
   ) => Promise<import('../surfaces/contract.ts').PullRequestPage>
+  /** Load one PR's detail, files, checks and comments. */
+  githubDetail: (
+    request: import('../surfaces/contract.ts').PullRequestRef,
+  ) => Promise<import('../surfaces/contract.ts').PullRequestDetail>
+  /** Perform a supported PR action. */
+  githubAction: (
+    request: import('../surfaces/contract.ts').PullRequestActionRequest,
+  ) => Promise<void>
   /** Resolve the current git branch of a Workspace. */
   currentBranch: (path: string) => Promise<string | undefined>
   /** Fork a real side Session from the current one. */

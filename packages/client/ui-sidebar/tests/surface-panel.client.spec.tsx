@@ -45,6 +45,12 @@ function mount(overrides: Partial<SurfacePanelComponentProps> = {}) {
       hasNext: false,
     })),
     githubLinkedPullRequests: vi.fn(async () => ({ items: [], hasNext: false })),
+    githubDetail: vi.fn(async () => ({
+      number: 7, title: 'A PR', body: '', state: 'open', merged: false, draft: false,
+      branch: 'feature', baseBranch: 'main', author: 'alice',
+      url: 'https://github.com/o/r/pull/7', files: [], checks: [], comments: [],
+    })),
+    githubAction: vi.fn(async () => {}),
     currentBranch: vi.fn(async () => 'feature'),
     forkSideChat: vi.fn(async () => 'child-1'),
     openSideChat: vi.fn(),
@@ -129,6 +135,9 @@ describe('SurfacePanel', () => {
     fireEvent.click(screen.getByRole('button', { name: '拉取请求' }))
     await waitFor(() => { expect(verbs.githubPullRequests).toHaveBeenCalled() })
     expect(screen.getByText('A PR')).toBeTruthy()
+    fireEvent.click(screen.getByText('A PR'))
+    await waitFor(() => { expect(verbs.githubDetail).toHaveBeenCalledWith({ owner: 'o', repo: 'r', number: 7 }) })
+    expect(screen.getByRole('button', { name: '合并' })).toBeTruthy()
   })
 
   it('lists linked pull requests for the current branch', async () => {

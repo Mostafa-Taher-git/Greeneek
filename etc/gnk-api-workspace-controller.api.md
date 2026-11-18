@@ -32,9 +32,12 @@
 `src/files.ts: export function setFileBrowserInternals(ctx: Context, io: FileBrowserInternals): void {`
 `src/files.ts: export interface FileBrowserInternals {`
 `src/github.ts: export class GithubController extends TypertRemoteService {`
+`src/github.ts: export const GITHUB_DETAIL_ITEMS = 100`
 `src/github.ts: export const GITHUB_PAGE_LIMIT = 100`
+`src/github.ts: export const GITHUB_TEXT_LIMIT = 16_384`
 `src/github.ts: export const GITHUB_TOKEN_REF = 'GITHUB_TOKEN' as import('@greeneek/gnk-credentials/types').CredentialRef`
 `src/github.ts: export function setGithubInternals(ctx: Context, io: GithubInternals): void {`
+`src/github.ts: export interface GithubFetchOptions {`
 `src/github.ts: export interface GithubInternals {`
 `src/index.ts: export class WorkspaceController extends TypertRemoteService {`
 `src/index.ts: export default WorkspaceController`
@@ -45,7 +48,14 @@
 `src/types.ts: export interface FileBrowserEntry {`
 `src/types.ts: export interface FileBrowserListing {`
 `src/types.ts: export interface FileBrowserRead {`
+`src/types.ts: export interface GithubCheck {`
+`src/types.ts: export interface GithubComment {`
+`src/types.ts: export interface GithubPullFile {`
 `src/types.ts: export interface GithubPullRequest {`
+`src/types.ts: export interface GithubPullRequestActionRequest extends GithubPullRequestDetailRequest {`
+`src/types.ts: export interface GithubPullRequestActionResult {`
+`src/types.ts: export interface GithubPullRequestDetail {`
+`src/types.ts: export interface GithubPullRequestDetailRequest {`
 `src/types.ts: export interface GithubPullRequestList {`
 `src/types.ts: export interface GithubPullRequestRequest {`
 `src/types.ts: export interface GithubRepository {`

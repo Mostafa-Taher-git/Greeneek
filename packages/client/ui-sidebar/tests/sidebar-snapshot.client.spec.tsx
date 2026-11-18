@@ -58,6 +58,15 @@ async function bench(options: { locale?: 'en' } = {}) {
       repository: vi.fn(async () => ({ ok: true, value: { owner: 'o', repo: 'r' } })),
       pullRequests: vi.fn(async () => ({ ok: true, value: { items: [], hasNext: false } })),
       linkedPullRequests: vi.fn(async () => ({ ok: true, value: { items: [], hasNext: false } })),
+      pullRequestDetail: vi.fn(async () => ({
+        ok: true,
+        value: {
+          number: 7, title: 'A PR', body: '', state: 'open', merged: false, draft: false,
+          branch: 'feature', baseBranch: 'main', author: 'alice', url: '',
+          files: [], checks: [], comments: [],
+        },
+      })),
+      pullRequestAction: vi.fn(async () => ({ ok: true, value: { done: true, message: 'merged' } })),
     },
   }
   runtime.ctx.provide('remote', remote as never)

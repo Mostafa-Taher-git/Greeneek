@@ -128,6 +128,82 @@ export interface GithubStatus {
   pageLimit: number
 }
 
+/** One changed file in a PR detail. */
+export interface PullRequestFile {
+  /** Repository-relative path. */
+  path: string
+  /** Git status. */
+  status: string
+  /** Added lines. */
+  additions: number
+  /** Removed lines. */
+  deletions: number
+}
+
+/** One check result on a PR head commit. */
+export interface PullRequestCheck {
+  /** Check name. */
+  name: string
+  /** Conclusion. */
+  conclusion: string
+}
+
+/** One PR comment. */
+export interface PullRequestComment {
+  /** Author login. */
+  author: string
+  /** Markdown body. */
+  body: string
+  /** Creation timestamp. */
+  createdAt: string
+}
+
+/** Full bounded PR detail. */
+export interface PullRequestDetail {
+  /** PR number. */
+  number: number
+  /** Title. */
+  title: string
+  /** Markdown body. */
+  body: string
+  /** GitHub state. */
+  state: string
+  /** True when merged. */
+  merged: boolean
+  /** True for a draft. */
+  draft: boolean
+  /** Head branch. */
+  branch: string
+  /** Base branch. */
+  baseBranch: string
+  /** Author login. */
+  author: string
+  /** Web URL, shown as data. */
+  url: string
+  /** Changed files. */
+  files: readonly PullRequestFile[]
+  /** Head-commit checks. */
+  checks: readonly PullRequestCheck[]
+  /** Issue comments. */
+  comments: readonly PullRequestComment[]
+}
+
+/** Address of one GitHub pull request. */
+export interface PullRequestRef {
+  /** Repository owner. */
+  owner: string
+  /** Repository name. */
+  repo: string
+  /** PR number. */
+  number: number
+}
+
+/** One supported PR action. */
+export interface PullRequestActionRequest extends PullRequestRef {
+  /** Action to perform. */
+  action: 'merge' | 'close'
+}
+
 /** Props of the GitHub PR surfaces. */
 export type PullRequestsSurfaceProps = PropsLocale<'sidebar'> & {
   /** Workspace path. */
@@ -140,6 +216,10 @@ export type PullRequestsSurfaceProps = PropsLocale<'sidebar'> & {
   repository: (path: string) => Promise<{ owner: string; repo: string }>
   /** Resolve the current branch, used by Linked pull requests. */
   branch: (path: string) => Promise<string | undefined>
+  /** Load one PR detail. */
+  detail: (request: PullRequestRef) => Promise<PullRequestDetail>
+  /** Perform a PR action. */
+  action: (request: PullRequestActionRequest) => Promise<void>
 }
 
 /** One changed file in the Diff surface. */

@@ -59,7 +59,7 @@ const BROWSER_PROFILES = [
 export function SurfacePanel(props: SurfacePanelComponentProps) {
   const {
     sessionId, useStore, actions, openTerminal, loadDevice, browseFiles, readFile, loadDiff,
-    githubStatus, githubRepository, githubPullRequests, currentBranch,
+    githubStatus, githubRepository, githubPullRequests, githubDetail, githubAction, currentBranch,
     forkSideChat, openSideChat, useSessions, t,
   } = props
   const cwd = useSessions(state => state.byId[sessionId]?.cwd)
@@ -248,6 +248,8 @@ export function SurfacePanel(props: SurfacePanelComponentProps) {
                       load={githubPullRequests}
                       repository={githubRepository}
                       branch={currentBranch}
+                      detail={githubDetail}
+                      action={githubAction}
                       linked={active.kind === 'linked-pull-requests'}
                       t={t}
                     />

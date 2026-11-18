@@ -59,6 +59,68 @@
   cursor: pointer;
 }
 
+.rowButton {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 6px;
+  border: 0;
+  border-bottom: 0.5px solid var(--dsw-alias-border-l2);
+  background: transparent;
+  color: var(--dsw-alias-label-primary);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.rowButton:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.back {
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--dsw-alias-label-tertiary);
+  font: inherit;
+  font-size: 11px;
+  text-align: start;
+  cursor: pointer;
+}
+
+.subheading {
+  margin: 10px 0 4px;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.text {
+  margin: 4px 0;
+  padding: 6px;
+  border-radius: 6px;
+  background: var(--dsw-alias-bg-layer-2);
+  color: var(--dsw-alias-label-primary);
+  font-size: 11px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.comment {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 0.5px solid var(--dsw-alias-border-l2);
+}
+
+.actions,
+.confirm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 0;
+}
+
 .notice,
 .error {
   padding: 8px;

@@ -43,7 +43,13 @@
 `src/client/surfaces/contract.ts: export interface FileRead {`
 `src/client/surfaces/contract.ts: export interface FileRow {`
 `src/client/surfaces/contract.ts: export interface GithubStatus {`
+`src/client/surfaces/contract.ts: export interface PullRequestActionRequest extends PullRequestRef {`
+`src/client/surfaces/contract.ts: export interface PullRequestCheck {`
+`src/client/surfaces/contract.ts: export interface PullRequestComment {`
+`src/client/surfaces/contract.ts: export interface PullRequestDetail {`
+`src/client/surfaces/contract.ts: export interface PullRequestFile {`
 `src/client/surfaces/contract.ts: export interface PullRequestPage {`
+`src/client/surfaces/contract.ts: export interface PullRequestRef {`
 `src/client/surfaces/contract.ts: export interface PullRequestRequest {`
 `src/client/surfaces/contract.ts: export interface PullRequestRow {`
 `src/client/surfaces/contract.ts: export type BrowserSurfaceProps = PropsLocale<'sidebar'> & {`

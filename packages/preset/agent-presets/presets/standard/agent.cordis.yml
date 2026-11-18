@@ -49,6 +49,11 @@
   name: '@greeneek/gnk-tool-pwsh'
   disabled: !!js process.platform !== 'win32'
 
+# Persistent PTY tools: commands run in a real terminal owned by this Agent,
+# so state survives across sends and foreground signals reach the live process.
+- id: tool-terminal
+  name: '@greeneek/gnk-tool-terminal'
+
 # ── filesystem ──────────────────────────────────────────────────────────────
 
 # Both register into the host `tools` registry and provide nothing, so

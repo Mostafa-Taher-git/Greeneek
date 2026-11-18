@@ -84,6 +84,7 @@
     "@greeneek/gnk-persona": "workspace:^",
     "@greeneek/gnk-terminal": "workspace:^",
     "@greeneek/gnk-terminal-bash": "workspace:^",
+    "@greeneek/gnk-tool-terminal": "workspace:^",
     "@greeneek/gnk-tool-bash-persistent": "workspace:^",
     "@greeneek/gnk-tool-pwsh-persistent": "workspace:^",
     "@greeneek/gnk-tool-str-replace-editor": "workspace:^",

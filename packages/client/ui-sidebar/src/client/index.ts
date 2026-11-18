@@ -228,6 +228,14 @@ export function apply(ctx: ClientContext): void {
           const result = await ctx.remote.github.pullRequestAction(request)
           if (!result.ok) throw new Error(result.error.message)
         },
+        openExternal: (url) => {
+          try {
+            const parsed = new URL(url)
+            if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+              window.open(parsed.href, '_blank', 'noopener,noreferrer')
+            }
+          } catch { /* ignore malformed external URLs */ }
+        },
         currentBranch: path => currentBranch(path, ctx),
         forkSideChat: async (sessionId) => {
           const result = await ctx.remote.session.fork({ sessionId })

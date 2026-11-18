@@ -220,6 +220,8 @@ export type PullRequestsSurfaceProps = PropsLocale<'sidebar'> & {
   detail: (request: PullRequestRef) => Promise<PullRequestDetail>
   /** Perform a PR action. */
   action: (request: PullRequestActionRequest) => Promise<void>
+  /** Open the PR URL in the configured external browser. */
+  openExternal: (url: string) => void
 }
 
 /** One changed file in the Diff surface. */

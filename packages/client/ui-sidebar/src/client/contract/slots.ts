@@ -209,6 +209,8 @@ export type SurfacePanelInjected = {
   githubAction: (
     request: import('../surfaces/contract.ts').PullRequestActionRequest,
   ) => Promise<void>
+  /** Open an external URL in the user's configured browser. */
+  openExternal: (url: string) => void
   /** Resolve the current git branch of a Workspace. */
   currentBranch: (path: string) => Promise<string | undefined>
   /** Fork a real side Session from the current one. */

@@ -51,6 +51,7 @@ function mount(overrides: Partial<SurfacePanelComponentProps> = {}) {
       url: 'https://github.com/o/r/pull/7', files: [], checks: [], comments: [],
     })),
     githubAction: vi.fn(async () => {}),
+    openExternal: vi.fn(),
     currentBranch: vi.fn(async () => 'feature'),
     forkSideChat: vi.fn(async () => 'child-1'),
     openSideChat: vi.fn(),

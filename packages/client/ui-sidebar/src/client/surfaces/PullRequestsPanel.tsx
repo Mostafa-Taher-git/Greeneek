@@ -19,7 +19,7 @@ type Repo = { owner: string; repo: string }
  * @returns the list or the selected PR detail.
  */
 export function PullRequestsPanel({
-  cwd, configured, load, repository, branch, detail, action, t, linked,
+  cwd, configured, load, repository, branch, detail, action, openExternal, t, linked,
 }: PullRequestsSurfaceProps & { linked: boolean }) {
   const [rows, setRows] = useState<Awaited<ReturnType<typeof load>>['items']>([])
   const [page, setPage] = useState(1)
@@ -124,6 +124,11 @@ export function PullRequestsPanel({
               <pre className={css.text}>{comment.body}</pre>
             </div>
           ))}
+        <div className={css.actions}>
+          <button type="button" className={css.more} onClick={() => { openExternal(selected.url) }}>
+            {t('pr.openBrowser')}
+          </button>
+        </div>
         {selected.merged || selected.state === 'closed' ? null : (
           <div className={css.actions}>
             <button type="button" className={css.more} disabled={busy} onClick={() => { setConfirm('merge') }}>
@@ -154,19 +159,28 @@ export function PullRequestsPanel({
       <h3 className={css.heading}>{linked ? t('surface.linkedPullRequests') : t('surface.pullRequest')}</h3>
       {rows.length === 0 && !loading && <div className={css.notice}>{t('pr.empty')}</div>}
       {rows.map(row => (
-        <button
-          key={`${row.number}-${row.url}`}
-          type="button"
-          className={css.rowButton}
-          onClick={() => { openDetail(row.number) }}
-        >
-          <span className={css.number}>#{row.number}</span>
-          <span className={css.body}>
-            <span className={css.title}>{row.title}</span>
-            <span className={css.meta}>{row.state} · {row.branch} · {row.author}{row.draft ? ` · ${t('pr.draft')}` : ''}</span>
-            <span className={css.url}>{row.url}</span>
-          </span>
-        </button>
+        <div key={`${row.number}-${row.url}`} className={css.rowWrap}>
+          <button
+            type="button"
+            className={css.rowButton}
+            onClick={() => { openDetail(row.number) }}
+          >
+            <span className={css.number}>#{row.number}</span>
+            <span className={css.body}>
+              <span className={css.title}>{row.title}</span>
+              <span className={css.meta}>{row.state} · {row.branch} · {row.author}{row.draft ? ` · ${t('pr.draft')}` : ''}</span>
+              <span className={css.url}>{row.url}</span>
+            </span>
+          </button>
+          <button
+            type="button"
+            className={css.external}
+            aria-label={`${t('pr.openBrowser')} #${row.number}`}
+            onClick={() => { openExternal(row.url) }}
+          >
+            ↗
+          </button>
+        </div>
       ))}
       {hasNext && (
         <button type="button" className={css.more} onClick={() => { void refresh(page + 1) }} disabled={loading}>

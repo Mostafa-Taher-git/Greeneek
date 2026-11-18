@@ -59,6 +59,23 @@
   cursor: pointer;
 }
 
+.rowWrap {
+  position: relative;
+}
+
+.external {
+  position: absolute;
+  top: 8px;
+  inset-inline-end: 8px;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--dsw-alias-label-tertiary);
+  cursor: pointer;
+}
+
 .rowButton {
   display: flex;
   gap: 8px;

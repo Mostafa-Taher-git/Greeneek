@@ -73,6 +73,34 @@
   font-size: 11px;
 }
 
+.output:focus-visible {
+  outline: 1px solid var(--dsw-alias-border-focus);
+  outline-offset: -1px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 22px;
+  padding-block-start: 4px;
+}
+
+.hint {
+  color: var(--dsw-alias-label-dimmed);
+  font-size: 10px;
+}
+
+.reopen {
+  border: 0.5px solid var(--dsw-alias-border-l4);
+  border-radius: 6px;
+  padding: 2px 8px;
+  background: var(--dsw-alias-bg-base);
+  color: var(--dsw-alias-label-secondary);
+  font-size: 10px;
+  cursor: pointer;
+}
+
 .list {
   display: flex;
   flex-direction: column;

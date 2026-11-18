@@ -74,17 +74,18 @@
     "@greeneek/gnk-session": "workspace:^",
     "@greeneek/gnk-session-stats": "workspace:^",
     "@greeneek/gnk-session-turn-outline": "workspace:^",
+    "@greeneek/gnk-settings": "workspace:^",
     "@greeneek/gnk-token-meter": "workspace:^",
     "@greeneek/gnk-tools": "workspace:^",
     "@greeneek/gnk-util-workspace-path": "workspace:^",
     "@types/react": "~18.3.1",
     "@types/react-dom": "~18.3.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "@greeneek/gnk-settings": "workspace:^"
+    "react-dom": "^18.2.0"
   },
   "dependencies": {
-    "@greeneek/schemastery": "workspace:^"
+    "@greeneek/schemastery": "workspace:^",
+    "@xterm/headless": "^6.0.0"
   },
   "files": [
     "lib/index.js",

@@ -2271,6 +2271,9 @@ importers:
       '@greeneek/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
+      '@xterm/headless':
+        specifier: ^6.0.0
+        version: 6.0.0
     devDependencies:
       '@greeneek/cordis':
         specifier: workspace:^

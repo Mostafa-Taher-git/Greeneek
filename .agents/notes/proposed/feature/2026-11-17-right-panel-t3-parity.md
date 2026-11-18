@@ -129,6 +129,20 @@ Evidence: PandaCode `src-tauri/src/terminal.rs:64-135`, `browser.rs:115-120,240-
 | R-24 T3 audit | IMPLEMENTED BUT NOT VERIFIED | Launcher rows, profile submenu, git section, PR detail shape covered; full menu/tab/shortcut audit pending |
 | R-25 Both apps workflow matrix | IMPLEMENTED BUT NOT VERIFIED | Both apps launched; full matrix pending |
 
+## Authoritative full audit and bug-fix mandate (owner clarification, 2026-11-18)
+
+The owner requested a complete reassessment from the FIRST instruction, not a continuation of the latest report. The following supersedes earlier interpretations wherever they differ:
+
+- **No release**: no release, publication, tag, or release workflow is authorized. Work stays on the development line; only logical commits are pushed.
+- **Full R-01..R-25 audit required**: every ID needs original request, final expected behavior, implementation, commits, tests, live evidence, gaps, and one of the four statuses. A commit, a rendered component, or a passing unit test is not proof of VERIFIED COMPLETE.
+- **Historical ID conflict to document, not guess**: the canonical table above defines R-08 as "Backend service seam: Terminal (PTY stream + ownership)" and R-18 as "Real interactive PTY for users and Agents". The owner's latest message calls the failing Terminal/Agent PTY "R-08". Both IDs are tracked for that capability.
+- **Browser**: must be implemented from the reference harness's ACTUAL source (not only its sibling Cordis project). External default-browser navigation is acceptable when correct but is not a substitute for the requested Browser functionality. No arbitrary iframe. Desktop's integrated native browser stays fully supported.
+- **Terminal/Agent PTY**: the single `echo GNK_PTY_OK` echo is not sufficient. User Terminal and Agent PTY must be reproduced, root-caused, fixed, and tested independently in running Web and Desktop apps. This includes the Agent↔PTY execution path.
+- **Three-repository research**: T3 Code, the reference harness itself, and PandaCode — source-level, with evidence. PandaCode is an additional decision authority when the other two differ.
+- **Bug discipline**: reproduce, capture logs, root-cause, fix, focused regression test, reopen the app, verify live, record evidence.
+- **Git discipline**: small logical batches; inspect every changed/untracked/staged file; scan for secrets before each push; report exact hash, purpose, files, tests, push result, and any skipped hooks with reasons.
+- **Security**: the previously supplied GitHub token is treated as exposed; never reproduce, reuse, or commit it; store replacements outside the repo.
+
 ## Remaining limitations
 
 - GitHub PR rows require the user to configure `GITHUB_TOKEN` through the existing credentials seam; no key is provided by Greeneek.

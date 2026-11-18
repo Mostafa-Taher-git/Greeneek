@@ -310,6 +310,14 @@ export class E2BTerminalHandle implements SubprocessTerminalHandle {
     })
   }
 
+  /**
+   * Resize the remote PTY. E2B's PTY API has no resize operation, so this is a
+   * documented no-op rather than a failure of an otherwise live terminal.
+   * @param _cols - requested columns.
+   * @param _rows - requested rows.
+   */
+  resize(_cols: number, _rows: number): void {}
+
   /** @inheritdoc */
   inspectForeground(): Promise<SubprocessTerminalForeground | undefined> {
     return this.trackOperation(signal => this.inspectForegroundOnce(signal))

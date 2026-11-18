@@ -61,6 +61,8 @@ class FakeTerminal implements SubprocessTerminalHandle {
 
   constructor(public inspector = new FakeInspector()) {}
 
+  resize(_cols: number, _rows: number): void {}
+
   emitData(data: string): void {
     this.output.write(Buffer.from(data, 'utf8'))
   }

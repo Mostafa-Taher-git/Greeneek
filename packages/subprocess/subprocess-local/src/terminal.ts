@@ -80,6 +80,11 @@ export class LocalTerminalHandle implements SubprocessTerminalHandle {
     this.terminal.write(data)
   }
 
+  resize(cols: number, rows: number): void {
+    if (this.exited) return
+    this.terminal.resize(cols, rows)
+  }
+
   // Local inspection is synchronous; the seam returns a promise for remote transports.
   // oxlint-disable-next-line typescript/require-await -- Preserve promise rejection semantics at the async provider contract.
   async inspectForeground(): Promise<SubprocessTerminalForeground | undefined> {

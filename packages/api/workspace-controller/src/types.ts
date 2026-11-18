@@ -56,6 +56,8 @@ declare module '@greeneek/gnk-typert-protocol' {
     'github/unconfigured': {}
     /** GitHub refused the request. */
     'github/failed': { readonly status: number }
+    /** GitHub refused a PR action. */
+    'github/action-failed': { readonly status: number }
     /** No GitHub remote is configured in the workspace. */
     'github/no-remote': { readonly path: string }
   }
@@ -255,6 +257,90 @@ export interface GithubPullRequestRequest {
   readonly page?: number
   /** Requested page size, capped by the Host. */
   readonly perPage?: number
+}
+
+/** One changed file in a PR. */
+export interface GithubPullFile {
+  /** Repository-relative path. */
+  readonly path: string
+  /** Git patch status (`added`, `modified`, `removed`, ...). */
+  readonly status: string
+  /** Added lines. */
+  readonly additions: number
+  /** Removed lines. */
+  readonly deletions: number
+}
+
+/** One check result on a PR head commit. */
+export interface GithubCheck {
+  /** Check name. */
+  readonly name: string
+  /** GitHub conclusion (`success`, `failure`, `pending`, ...). */
+  readonly conclusion: string
+}
+
+/** One PR comment. */
+export interface GithubComment {
+  /** Author login. */
+  readonly author: string
+  /** Markdown body, bounded by the Host. */
+  readonly body: string
+  /** Creation timestamp. */
+  readonly createdAt: string
+}
+
+/** Full detail of one PR, all fields bounded by the Host. */
+export interface GithubPullRequestDetail {
+  /** PR number. */
+  readonly number: number
+  /** Title. */
+  readonly title: string
+  /** Markdown body, bounded by the Host. */
+  readonly body: string
+  /** GitHub state. */
+  readonly state: string
+  /** True when merged. */
+  readonly merged: boolean
+  /** True for a draft. */
+  readonly draft: boolean
+  /** Head branch. */
+  readonly branch: string
+  /** Base branch. */
+  readonly baseBranch: string
+  /** Author login. */
+  readonly author: string
+  /** Web URL, shown as data. */
+  readonly url: string
+  /** Changed files. */
+  readonly files: readonly GithubPullFile[]
+  /** Head-commit checks. */
+  readonly checks: readonly GithubCheck[]
+  /** Issue comments. */
+  readonly comments: readonly GithubComment[]
+}
+
+/** Request for one PR detail. */
+export interface GithubPullRequestDetailRequest {
+  /** Repository owner. */
+  readonly owner: string
+  /** Repository name. */
+  readonly repo: string
+  /** PR number. */
+  readonly number: number
+}
+
+/** Request for one PR action. */
+export interface GithubPullRequestActionRequest extends GithubPullRequestDetailRequest {
+  /** Action to perform on the PR. */
+  readonly action: 'merge' | 'close'
+}
+
+/** Result of one PR action. */
+export interface GithubPullRequestActionResult {
+  /** True when GitHub accepted the action. */
+  readonly done: boolean
+  /** Short Host-safe message. */
+  readonly message: string
 }
 
 /** One bounded page of PR summaries. */

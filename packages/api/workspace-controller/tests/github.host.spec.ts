@@ -90,6 +90,42 @@ describe('GithubController', () => {
     expect(result.hasNext).toBe(true)
   })
 
+  it('projects PR detail with bounded files, checks and comments', async () => {
+    const fetch = vi.fn(async (url: string) => {
+      if (url.includes('/pulls/7/files')) return [{ filename: 'a.ts', status: 'modified', additions: 2, deletions: 1 }]
+      if (url.includes('/check-runs')) return { check_runs: [{ name: 'ci', conclusion: 'success' }] }
+      if (url.includes('/issues/7/comments')) return [{ body: 'note', created_at: '2026-01-01', user: { login: 'bob' } }]
+      return {
+        number: 7, title: 'Detail', state: 'open', html_url: 'https://github.com/o/r/pull/7',
+        body: 'body', merged: false, head: { ref: 'feature', sha: 'abc' }, base: { ref: 'main' },
+        user: { login: 'alice' },
+      }
+    })
+    const controller = await harness({ fetch })
+    const result = await controller.pullRequestDetail({ owner: 'o', repo: 'r', number: 7 }, signal)
+    expect(result).toMatchObject({
+      number: 7, title: 'Detail', branch: 'feature', baseBranch: 'main',
+      files: [{ path: 'a.ts', status: 'modified', additions: 2, deletions: 1 }],
+      checks: [{ name: 'ci', conclusion: 'success' }],
+      comments: [{ author: 'bob', body: 'note' }],
+    })
+  })
+
+  it('sends a merge action with a JSON body', async () => {
+    const fetch = vi.fn(async (
+      _url: string,
+      _token: string | undefined,
+      _signal: AbortSignal,
+      _options?: { method?: string; body?: string },
+    ) => ({ merged: true, state: 'closed' }))
+    const controller = await harness({ fetch })
+    const result = await controller.pullRequestAction({
+      owner: 'o', repo: 'r', number: 7, action: 'merge',
+    }, signal)
+    expect(result).toEqual({ done: true, message: 'merged' })
+    expect(fetch.mock.calls[0]?.[3]).toMatchObject({ method: 'PUT', body: '{"merge_method":"merge"}' })
+  })
+
   it('refuses a request without a repository', async () => {
     const controller = await harness()
     await expect(controller.pullRequests({ owner: '', repo: 'r' }, signal)).rejects.toMatchObject({

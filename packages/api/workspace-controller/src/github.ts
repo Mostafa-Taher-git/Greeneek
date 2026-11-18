@@ -11,7 +11,9 @@ import type {} from '@greeneek/gnk-credentials'
 import { Remote, RemoteError, TypertRemoteService } from '@greeneek/gnk-typert-protocol'
 import { runNativeCommand, type NativeCommandRunner } from '@greeneek/gnk-native-command'
 import type {
-  GithubPullRequest, GithubPullRequestList, GithubPullRequestRequest, GithubRepository, GithubStatus,
+  GithubCheck, GithubComment, GithubPullFile, GithubPullRequest, GithubPullRequestActionRequest,
+  GithubPullRequestActionResult, GithubPullRequestDetail, GithubPullRequestDetailRequest,
+  GithubPullRequestList, GithubPullRequestRequest, GithubRepository, GithubStatus,
 } from './types.ts'
 
 /** Credential the integration reads from the user's own configuration. */
@@ -19,11 +21,28 @@ export const GITHUB_TOKEN_REF = 'GITHUB_TOKEN' as import('@greeneek/gnk-credenti
 
 /** Maximum page size the Host grants. */
 export const GITHUB_PAGE_LIMIT = 100
+/** Unicode-character cap for a PR body or comment. */
+export const GITHUB_TEXT_LIMIT = 16_384
+/** Maximum number of files, checks and comments retained per detail read. */
+export const GITHUB_DETAIL_ITEMS = 100
 
 /** Injectable HTTP and credential seams for deterministic tests. */
+/** One HTTP request option set for an authenticated GitHub call. */
+export interface GithubFetchOptions {
+  /** HTTP method; GET when absent. */
+  method?: string
+  /** JSON request body. */
+  body?: string
+}
+
 export interface GithubInternals {
-  /** Perform one GET request with an Authorization header. */
-  fetch: (url: string, token: string | undefined, signal: AbortSignal) => Promise<unknown>
+  /** Perform one authenticated GitHub request. */
+  fetch: (
+    url: string,
+    token: string | undefined,
+    signal: AbortSignal,
+    options?: GithubFetchOptions,
+  ) => Promise<unknown>
   /** Resolve the current user token; undefined when unconfigured. */
   token: () => Promise<string | undefined>
   /** Read-only command runner for the workspace git remote. */
@@ -155,6 +174,155 @@ export class GithubController extends TypertRemoteService {
     const payload = await this.io.fetch(`https://api.github.com/search/issues?${query}`, token, signal)
     return present(payload, GITHUB_PAGE_LIMIT, 1)
   }
+
+  /**
+   * Read one PR's detail, files, head checks and comments in bounded parallel reads.
+   * @param request - owner, repo and PR number.
+   * @param signal - caller lifetime.
+   * @returns the bounded detail projection.
+   */
+  @Remote('pullRequestDetail')
+  async pullRequestDetail(
+    request: GithubPullRequestDetailRequest,
+    signal: AbortSignal,
+  ): Promise<GithubPullRequestDetail> {
+    validateDetail(request)
+    const token = await this.requireToken()
+    const base = `https://api.github.com/repos/${encodeURIComponent(request.owner)}/${encodeURIComponent(request.repo)}`
+    const query = `per_page=${GITHUB_DETAIL_ITEMS}&page=1`
+    const pull = await this.io.fetch(`${base}/pulls/${request.number}`, token, signal)
+    const api = pull as GithubApiPull & {
+      body?: string
+      merged?: boolean
+      base?: { ref?: string }
+      head?: { ref?: string; sha?: string }
+    }
+    const sha = api.head?.sha ?? ''
+    const [files, checks, comments] = await Promise.all([
+      this.io.fetch(`${base}/pulls/${request.number}/files?${query}`, token, signal),
+      sha === ''
+        ? Promise.resolve([])
+        : this.io.fetch(
+          `${base}/commits/${encodeURIComponent(sha)}/check-runs?${query}`, token, signal,
+        ),
+      this.io.fetch(`${base}/issues/${request.number}/comments?${query}`, token, signal),
+    ])
+
+    return {
+      number: api.number,
+      title: bound(api.title),
+      body: bound(api.body ?? ''),
+      state: api.state,
+      merged: api.merged ?? false,
+      draft: api.draft ?? false,
+      branch: api.head?.ref ?? '',
+      baseBranch: api.base?.ref ?? '',
+      author: api.user?.login ?? '',
+      url: api.html_url,
+      files: projectFiles(files),
+      checks: projectChecks(checks),
+      comments: projectComments(comments),
+    }
+  }
+
+  /**
+   * Perform a supported PR action on GitHub.
+   * @param request - owner, repo, PR number and action.
+   * @param signal - caller lifetime.
+   * @returns the accepted outcome.
+   */
+  @Remote('pullRequestAction')
+  async pullRequestAction(
+    request: GithubPullRequestActionRequest,
+    signal: AbortSignal,
+  ): Promise<GithubPullRequestActionResult> {
+    validateDetail(request)
+    const action: string = request.action
+    if (action !== 'merge' && action !== 'close') {
+      throw new RemoteError('gateway/bad-request', 'unsupported PR action', {})
+    }
+    const token = await this.requireToken()
+    const url = `https://api.github.com/repos/${encodeURIComponent(request.owner)}/${encodeURIComponent(request.repo)}/pulls/${request.number}`
+    const options: GithubFetchOptions = request.action === 'merge'
+      ? { method: 'PUT', body: JSON.stringify({ merge_method: 'merge' }) }
+      : { method: 'PATCH', body: JSON.stringify({ state: 'closed' }) }
+    try {
+      const result = await this.io.fetch(url, token, signal, options) as { merged?: boolean; state?: string }
+      return {
+        done: request.action === 'merge' ? result.merged === true : result.state === 'closed',
+        message: request.action === 'merge' ? 'merged' : 'closed',
+      }
+    } catch (error: unknown) {
+      signal.throwIfAborted()
+      const status = error instanceof RemoteError
+        ? (error.details as { status?: number }).status ?? 0
+        : 0
+      throw new RemoteError('github/action-failed', errorMessage(error), { status }, { cause: error })
+    }
+  }
+
+  /** Resolve the user token or refuse the call. */
+  private async requireToken(): Promise<string> {
+    const token = await this.io.token()
+    if (token === undefined || token === '') {
+      throw new RemoteError('github/unconfigured', 'no GitHub token is configured', {})
+    }
+    return token
+  }
+}
+
+/** Validate a PR-addressing request before any network call. */
+function validateDetail(request: { owner: string; repo: string; number: number }): void {
+  if (request.owner.trim() === '' || request.repo.trim() === '' || !Number.isInteger(request.number) || request.number <= 0) {
+    throw new RemoteError('gateway/bad-request', 'a repository owner, name and PR number are required', {})
+  }
+}
+
+/** Bound a Host string before it reaches the browser. */
+function bound(value: string): string {
+  return value.slice(0, GITHUB_TEXT_LIMIT)
+}
+
+/** Project a bounded list of changed files. */
+function projectFiles(payload: unknown): GithubPullFile[] {
+  const rows = Array.isArray(payload) ? payload.slice(0, GITHUB_DETAIL_ITEMS) : []
+  return rows.map((row) => {
+    const item = row as { filename?: string; status?: string; additions?: number; deletions?: number }
+    return {
+      path: bound(item.filename ?? ''),
+      status: item.status ?? 'modified',
+      additions: item.additions ?? 0,
+      deletions: item.deletions ?? 0,
+    }
+  })
+}
+
+/** Project a bounded list of check runs. */
+function projectChecks(payload: unknown): GithubCheck[] {
+  const rows = (payload as { check_runs?: unknown } | undefined)?.check_runs
+  const list = Array.isArray(rows) ? rows.slice(0, GITHUB_DETAIL_ITEMS) : []
+  return list.map((row) => {
+    const item = row as { name?: string; conclusion?: string | null }
+    return { name: bound(item.name ?? ''), conclusion: item.conclusion ?? 'pending' }
+  })
+}
+
+/** Project a bounded list of issue comments. */
+function projectComments(payload: unknown): GithubComment[] {
+  const rows = Array.isArray(payload) ? payload.slice(0, GITHUB_DETAIL_ITEMS) : []
+  return rows.map((row) => {
+    const item = row as { body?: string; created_at?: string; user?: { login?: string } }
+    return {
+      author: item.user?.login ?? '',
+      body: bound(item.body ?? ''),
+      createdAt: item.created_at ?? '',
+    }
+  })
+}
+
+/** Safe message for a failed GitHub call. */
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
 }
 
 /** Parse `owner/repo` from an HTTPS or SSH GitHub remote URL. */
@@ -174,11 +342,19 @@ function validate(request: GithubPullRequestRequest): void {
 }
 
 /** Default Host fetch: refuses redirects and non-OK responses. */
-async function hostFetch(url: string, token: string | undefined, signal: AbortSignal): Promise<unknown> {
+async function hostFetch(
+  url: string,
+  token: string | undefined,
+  signal: AbortSignal,
+  options: GithubFetchOptions = {},
+): Promise<unknown> {
   const response = await fetch(url, {
+    method: options.method ?? 'GET',
+    ...(options.body === undefined ? {} : { body: options.body }),
     headers: {
       accept: 'application/vnd.github+json',
       authorization: `Bearer ${token ?? ''}`,
+      ...(options.body === undefined ? {} : { 'content-type': 'application/json' }),
     },
     redirect: 'error',
     signal,

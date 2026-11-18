@@ -52,7 +52,7 @@ interface WorkspaceNavigation {
 
 /** Services required by the sidebar plugin. */
 export const inject = [
-  'slots', 'layout', 'uiWorkspace', 'uiConversation', 'locale', 'remote', 'remote.session', 'remote.files', 'sessions',
+  'slots', 'layout', 'uiWorkspace', 'uiConversation', 'locale', 'remote', 'remote.session', 'remote.files', 'remote.github', 'sessions',
 ]
 
 /** Side-thread navigation over the Client Session service. */

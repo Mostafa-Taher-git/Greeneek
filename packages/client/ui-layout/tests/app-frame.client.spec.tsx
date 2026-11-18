@@ -226,33 +226,28 @@ describe('AppFrame', () => {
     expect(slotCalls.map(c => c.key)).toContain('details')
   })
 
-  it('ignores unselected states and closes only when the Session id changes', () => {
+  it('keeps panel chrome available on a blank session and closes only when the live Session changes', () => {
     const { frame, instance, rerenderFrame } = mountFrame()
     expect(tracks(frame)).toEqual([280, 0, 0])
 
     act(() => { instance.actions.openDetails() })
-    expect(tracks(frame)).toEqual([280, 0, 0])
     expect(frame.hasAttribute('data-details-collapsed')).toBe(false)
 
+    // A blank (New Session) owns the panel chrome too: the toggle must open a
+    // real panel, not merely flip its pressed state.
+    selectedSession.current = 's-blank' as SessionId
+    selectedSessionBlank.current = true
+    act(() => { rerenderFrame() })
+    expect(frame.hasAttribute('data-details-collapsed')).toBe(false)
+    expect(instance.getSnapshot().details).toBe(300)
+
+    // Moving between two live Sessions still closes the panel chrome.
     selectedSession.current = 's-next' as SessionId
+    selectedSessionBlank.current = false
     act(() => { rerenderFrame() })
     expect(frame.hasAttribute('data-details-collapsed')).toBe(true)
 
     act(() => { instance.actions.openDetails() })
-    selectedSession.current = 's-blank' as SessionId
-    selectedSessionBlank.current = true
-    act(() => { rerenderFrame() })
-    expect(frame.hasAttribute('data-details-collapsed')).toBe(true)
-    expect(instance.getSnapshot().details).toBe(300)
-
-    selectedSession.current = 's-next' as SessionId
-    selectedSessionBlank.current = false
-    act(() => { rerenderFrame() })
-    expect(frame.hasAttribute('data-details-collapsed')).toBe(false)
-
-    selectedSession.current = undefined
-    act(() => { rerenderFrame() })
-    expect(frame.hasAttribute('data-details-collapsed')).toBe(true)
     selectedSession.current = 's-test' as SessionId
     act(() => { rerenderFrame() })
     expect(frame.hasAttribute('data-details-collapsed')).toBe(true)

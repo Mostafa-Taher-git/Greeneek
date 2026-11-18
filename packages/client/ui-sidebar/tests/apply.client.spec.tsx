@@ -78,7 +78,7 @@ describe('ui-sidebar apply', () => {
 
   it('declares only the services it uses', () => {
     expect(inject).toEqual([
-      'slots', 'layout', 'uiWorkspace', 'uiConversation', 'locale', 'remote', 'remote.session', 'remote.files', 'sessions',
+      'slots', 'layout', 'uiWorkspace', 'uiConversation', 'locale', 'remote', 'remote.session', 'remote.files', 'remote.github', 'sessions',
     ])
   })
 

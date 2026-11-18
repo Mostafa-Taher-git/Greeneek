@@ -204,20 +204,23 @@ export function AppFrame({
   // Thread Details never claims a grid track: its toggle opens a fixed card
   // popover, so the center keeps its full width and the card has no resize
   // affordance. The right panel keeps its own concession track.
+  // A blank (New Session) still owns the three chrome panels: the toggles are
+  // available there and must open real panels with their sessionless empty
+  // states, not just flip their pressed attribute.
   const cols = computeColumns(
     viewport,
     sidebarPreference,
     0,
-    detailsSession === undefined ? 0 : panels.rightbar,
+    panels.rightbar,
   )
   const colsRef = useRef(cols)
   colsRef.current = cols
 
-  const detailsOpen = detailsSession !== undefined && panels.details > 0
+  const detailsOpen = panels.details > 0
 
   // Below the breakpoint the solver closes the right track to keep the center
   // usable; an opened right panel then floats over the conversation.
-  const rightbarOverlay = detailsSession !== undefined && panels.rightbar > 0 && cols.rightbar === 0
+  const rightbarOverlay = panels.rightbar > 0 && cols.rightbar === 0
 
   // The drag base is the rendered width captured at drag start (grabbing a
   // concession-clamped panel must not jump back to the stored preference);
@@ -260,7 +263,7 @@ export function AppFrame({
       data-sidebar-collapsed={sidebarCollapsed || undefined}
       data-details-collapsed={!detailsOpen || undefined}
       data-rightbar-collapsed={cols.rightbar === 0 || undefined}
-      data-rightbar-open={detailsSession !== undefined && panels.rightbar > 0 || undefined}
+      data-rightbar-open={panels.rightbar > 0 || undefined}
       data-dragging={dragging || undefined}
       data-desktop-host={desktopHost || undefined}
     >
@@ -309,7 +312,7 @@ export function AppFrame({
               {renderSlot('dashboard', {})}
             </div>
           )}
-          {panels.mainPage === 'conversation' && panels.terminalDrawerOpen && detailsSession !== undefined && (
+          {panels.mainPage === 'conversation' && panels.terminalDrawerOpen && (
             <div className={css.terminalDrawer} data-terminal-drawer>
               <SessionProvider>
                 {renderSlot('terminal.drawer', { close: () => { actions.closeTerminalDrawer() } })}

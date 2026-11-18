@@ -99,6 +99,36 @@ Source-level studies were completed for all three repositories. Clones live unde
 
 Evidence: PandaCode `src-tauri/src/terminal.rs:64-135`, `browser.rs:115-120,240-276`, `diff-viewer.ts`, `github.rs:100-130`, `github.ts:1-10`; T3 `contracts/src/rpc.ts`, `clientRpcPermissions.ts:39-108`, `browserProfile.ts`, `GitHubCredentials.ts:42-70`, `OutputProtocol.ts`; the sibling harness `terminal/types.ts`, `browser-use/src/index.ts`, `sandbox/escalation.ts`, `tool-terminal/src/index.ts:41-54`.
 
+## Architectural clarification and reassessment (owner decision)
+
+**Final decision: Web-first + Fully Supported Desktop + Shared Backend.** This supersedes any earlier interpretation that required arbitrary third-party sites to be embedded in the Web UI. External PR URLs may open in the user's configured browser; Desktop keeps its native integrated browser.
+
+### Reference Web/Desktop study (sibling Cordis harness, source-level)
+
+- Web composition wires the server via `cordis.patch.yml`, not code; CLI flags (`--host`, `--port`, `--no-open`, `--trusted-host`, TLS) are provided as `webStartup` and consumed by the `webserver` row.
+- One admission seam (`webserver/authorize`) decides `anonymous|required|deny` per route and passes a Peer to handlers; refusals are `Cache-Control: no-store`.
+- Wildcard binds are rejected at config load; loopback is the default; TLS is fail-closed; `--public-url` is display-only while `--trusted-host` grants authority trust.
+- Browser auth uses a short-lived `?token=` exchange into an HttpOnly, SameSite=Strict, authority-bound signed cookie; API mux gets a separate Peer; socket close revokes the Peer synchronously.
+- The browser trust fence checks Host against loopback/bind/trusted hosts, refuses `sec-fetch-site: cross-site`, and requires exact Origin equality.
+- Desktop launches the same web profile with a private in-memory credential delivered over IPC; it reuses Host services, Gateway and UI plugins, differing only in auth provider and transport.
+- Web UI and Desktop share one browser artifact and one composition patch; platform-specific rows are gated by profile name rather than duplicated.
+
+### Decisions for Greeneek
+
+- **Adopt**: single admission seam, concrete-bind rejection, no-store refusals, peer-keyed SPA fallback, bind/Origin/Cross-Site trust fence, and fail-closed TLS. Greeneek already has the plugin/composition seams to express these incrementally.
+- **Adapt**: split BrowserAuth out of `client/connection` into a host authentication provider registry; add v2 API cookies and socket-close revocation; keep Greeneek's existing cookie format and slot architecture.
+- **Reject**: the reference's custom app scheme and renderer details; copying them would violate Greeneek's client layering. Also reject wildcard serving.
+- **No longer pursued**: server-side embedded browser for Web. It was an in-progress prototype; it was reverted because the clarified architecture allows external browser navigation and does not require arbitrary-site embedding. Desktop's native browser remains untouched.
+
+### Reassessed requirement IDs
+
+| ID | Status | Notes |
+| --- | --- | --- |
+| R-21 Web-first experience | IMPLEMENTED BUT NOT VERIFIED | Web already launches the full profile in the default browser; full workflow matrix pending |
+| R-23 PR navigation | IMPLEMENTED BUT NOT VERIFIED | PR list/detail now offer "Open in browser" using `window.open(..., 'noopener,noreferrer')`; Electron routes external targets to the system browser via `setWindowOpenHandler`; no iframe was added |
+| R-24 T3 audit | IMPLEMENTED BUT NOT VERIFIED | Launcher rows, profile submenu, git section, PR detail shape covered; full menu/tab/shortcut audit pending |
+| R-25 Both apps workflow matrix | IMPLEMENTED BUT NOT VERIFIED | Both apps launched; full matrix pending |
+
 ## Remaining limitations
 
 - GitHub PR rows require the user to configure `GITHUB_TOKEN` through the existing credentials seam; no key is provided by Greeneek.

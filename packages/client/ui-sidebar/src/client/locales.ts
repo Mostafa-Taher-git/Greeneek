@@ -75,6 +75,13 @@ export const zh = {
   'browser.go': '打开',
   'browser.empty': '输入地址以在此面板中打开网页。',
   'browser.invalidUrl': '请输入有效的 http(s) 地址。',
+  'browser.back': '后退',
+  'browser.forward': '前进',
+  'browser.reload': '刷新',
+  'browser.openExternal': '在默认浏览器中打开',
+  'browser.title': '内嵌网页',
+  'browser.profileWebNote': '网页端按来源隔离；完整分区仅在桌面端可用。',
+  'browser.embedNote': '许多网站禁止被嵌入，此时请使用“在默认浏览器中打开”。',
 } satisfies Record<string, string>
 
 /** The sidebar namespace key union. */
@@ -155,6 +162,13 @@ export const en = {
   'browser.go': 'Open',
   'browser.empty': 'Enter an address to load a page in this surface.',
   'browser.invalidUrl': 'Enter a valid http(s) address.',
+  'browser.back': 'Back',
+  'browser.forward': 'Forward',
+  'browser.reload': 'Reload',
+  'browser.openExternal': 'Open in default browser',
+  'browser.title': 'Embedded page',
+  'browser.profileWebNote': 'Web isolates by origin; full partitions are Desktop-only.',
+  'browser.embedNote': 'Many sites refuse embedding; use "Open in default browser" for those pages.',
 } satisfies Record<SidebarKey, string>
 
 /** Arabic dictionary, checked complete against the zh key set; the brand name stays verbatim. */
@@ -232,4 +246,11 @@ export const ar = {
   'browser.go': 'افتح',
   'browser.empty': 'أدخل عنواناً لتحميل صفحة في هذه اللوحة.',
   'browser.invalidUrl': 'أدخل عنوان http(s) صالحاً.',
+  'browser.back': 'رجوع',
+  'browser.forward': 'تقدم',
+  'browser.reload': 'تحديث',
+  'browser.openExternal': 'فتح في المتصفح الافتراضي',
+  'browser.title': 'صفحة مضمنة',
+  'browser.profileWebNote': 'يعزل الويب حسب المصدر؛ الأقسام الكاملة متاحة في سطح المكتب فقط.',
+  'browser.embedNote': 'تُرفض إعادة تضمين صفحات كثيرة؛ استخدم "فتح في المتصفح الافتراضي" لتلك الصفحات.',
 } satisfies Record<SidebarKey, string>

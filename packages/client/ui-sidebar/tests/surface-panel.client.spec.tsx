@@ -94,7 +94,8 @@ describe('SurfacePanel', () => {
     mount()
     fireEvent.click(screen.getByRole('button', { name: '选择浏览器配置' }))
     fireEvent.click(screen.getByText('无痕'))
-    await waitFor(() => { expect(screen.getByText('浏览器面板仅在桌面应用中可用。')).toBeTruthy() })
+    // Web now renders the validated sandbox carrier instead of a desktop-only notice.
+    await waitFor(() => { expect(screen.getByRole('textbox', { name: '网页地址' })).toBeTruthy() })
   })
 
   it('opens the terminal drawer from its row', () => {

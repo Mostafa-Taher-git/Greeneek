@@ -78,7 +78,11 @@ async function bench() {
       },
     })),
   }
-  new TestRemote(ctx, { directoryPicker, session: sessionRemote })
+  new TestRemote(ctx, {
+    directoryPicker,
+    session: sessionRemote,
+    files: { gitPush: vi.fn(async () => ({ ok: true as const, value: { pushed: true, output: '' } })) },
+  })
   const locale = new LocaleRuntime(ctx)
   // These specs assert the shipped Chinese copy. There is no jsdom `window`
   // in this lane, so browser-language detection never runs and the locale
@@ -110,7 +114,7 @@ describe('ui-workspace apply', () => {
 
   it('declares the services it drives', () => {
     expect(inject).toEqual([
-      'slots', 'sessions', 'workspaces', 'locale', 'remote', 'remote.session', 'remote.directoryPicker',
+      'slots', 'sessions', 'workspaces', 'locale', 'remote', 'remote.session', 'remote.files', 'remote.directoryPicker',
     ])
   })
 

@@ -39,6 +39,7 @@ async function createRuntime(): Promise<SlotTestRuntime> {
   const directoryPicker = {}
   new TestRemote(runtime.ctx, {
     directoryPicker,
+    files: { gitPush: async () => ({ ok: true as const, value: { pushed: true, output: '' } }) },
     session: {
       externalApps: async () => ({
         ok: true as const,

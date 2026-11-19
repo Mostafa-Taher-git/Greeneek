@@ -167,12 +167,17 @@ export class GithubController extends TypertRemoteService {
     if (token === undefined || token === '') {
       throw new RemoteError('github/unconfigured', 'no GitHub token is configured', {})
     }
+    // Honour the caller's pagination like the repository PR list: a page of 30
+    // must not return the full 100-item search ceiling.
+    const page = request.page ?? 1
+    const perPage = Math.min(request.perPage ?? 30, GITHUB_PAGE_LIMIT)
     const query = new URLSearchParams({
       q: `is:pr repo:${request.owner}/${request.repo} head:${request.branch}`,
-      per_page: String(GITHUB_PAGE_LIMIT),
+      page: String(page),
+      per_page: String(perPage),
     })
     const payload = await this.io.fetch(`https://api.github.com/search/issues?${query}`, token, signal)
-    return present(payload, GITHUB_PAGE_LIMIT, 1)
+    return present(payload, perPage, page)
   }
 
   /**

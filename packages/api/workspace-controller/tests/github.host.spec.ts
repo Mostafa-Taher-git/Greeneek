@@ -82,6 +82,19 @@ describe('GithubController', () => {
     expect(result.hasNext).toBe(false)
   })
 
+  it('honours the caller page size for linked pull requests', async () => {
+    const fetch = vi.fn(async (_url: string, _token: string | undefined, _signal: AbortSignal) => ({
+      items: [row], total_count: 100,
+    }))
+    const controller = await harness({ fetch })
+    await controller.linkedPullRequests({
+      owner: 'o', repo: 'r', branch: 'b', page: 2, perPage: 5,
+    }, signal)
+    const url = fetch.mock.calls[0]?.[0] ?? ''
+    expect(url).toContain('page=2')
+    expect(url).toContain('per_page=5')
+  })
+
   it('reports a following page from a search total', async () => {
     const controller = await harness({
       fetch: async () => ({ items: [row], total_count: 500 }),

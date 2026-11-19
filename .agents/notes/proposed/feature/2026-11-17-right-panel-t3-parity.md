@@ -219,6 +219,14 @@ LIVE Web evidence:
 
 Resolved a real bug during live testing: `cannot get property "remote.browser" without inject` was fixed by adding `remote.browser` to ui-sidebar's inject; a `SessionAlreadyOwnedError` during repeated submits was traced to stale session leases from killed dev servers (test-environment artefact, not product code).
 
+## Test failure root causes (2026-11-19, evidence-based)
+
+- `shipped-composition.e2e.ts` bash/pwsh: a TEST defect. `apps/web/tests/shipped-composition.e2e.ts` hardcoded `bash`; on Windows the base bundle disables `tool-bash` and enables `tool-pwsh`. Fixed in `3b8f7c41` with a platform-selected `SHELL_TOOL` constant plus a PowerShell-compatible command; the focused spec now passes 2/2. Exact assertion strength is unchanged.
+- `SDK snapshot "cannot create effect on inactive context"`: pre-existing (reproduced with all this round's changes stashed). Throw sites `vendor/cordis/src/fiber.ts:353,419-422` (effect on a disposed fiber); the JSON-RPC carrier drops the server stack (`packages/sdk/protocol/src/transport.ts:226-237`), so the exact racing effect line is not yet pinned. Precedent `packages/boot/app-boot/tests/user-patches.spec.ts:420-436` describes the same teardown race. Not bash-specific (`text-turn` fails identically). Needs server-side stack capture before claiming a code bug vs host-timing.
+- `duplicate loader entry id: terminal-bash` (SDK `persistent-tools`, and session PTY snapshots): pre-existing (same stash reproduction). Root cause: snapshot overlay `cordis.yml` files `insert` ids that their target profile bundle already defines (e.g. `snapshots/session/pty-tools-sandbox-backend/cordis.yml` inserts `pty`/`terminal-bash`/`tool-terminal`; base now owns those; `snapshots/sdk/persistent-tools/cordis.yml` inserts `terminal-bash` that `sdk-minimal` owns). Fixture composition issue; fixing requires rewriting recorded overlays and re-recording goldens, not done here.
+- `test:web` >15 min: environment/timing, not a real failure signal. `vitest.web.config.ts:35` already sets `fileParallelism: false` (serial), with `testTimeout 180s`/`hookTimeout 120s`; total is cumulative with the build step. Focused bounded runs (`GNK_SNAPSHOT=replay pnpm exec vitest run --config vitest.web.config.ts <file>`) are the supported way to verify individual lanes.
+No failure was skipped or suppressed.
+
 ## Remaining limitations
 
 - GitHub PR rows require the user to configure `GITHUB_TOKEN` through the existing credentials seam; no key is provided by Greeneek.

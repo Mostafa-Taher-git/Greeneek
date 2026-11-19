@@ -201,6 +201,24 @@ These were NOT introduced by the browser/terminal work; they are pre-existing on
 - `pnpm run test:gui` remains green throughout: 318 files / 4455 passed, 1 skipped.
 - Classification: `test:web` / `test:snapshot` are IMPLEMENTED BUT NOT VERIFIED on this host; a Linux CI lane or a Windows-specific fixture fix is required before they can be claimed green. No test was skipped or silenced to hide a failure.
 
+## Final push verification (2026-11-19)
+
+Committed and pushed (all hooks passed, `test:gui` green 318/4455):
+- `66408f7a` — Maestro Lead now mounts `tool-terminal` + `tool-jobs` (shipped-root spec asserts it).
+- `2ea6273b` — Agent browser-use seam: `packages/browser/browser-use` (Service Definition, owner fencing, single provider slot, URL validation, tracked state), `packages/browser/browser-surface` (no-runtime provider), `packages/browser/tool-browser` (browser_open/navigate/snapshot/close), Host `browser` Remote, `browser/surface` forwarded event, client bridge in ui-sidebar, composition in base/web/presets, system-prompt order, catalogs, `docs/subsystems/browser.md`.
+- `27f3dc0e` — BrowserPanel reads initial Host state on mount and auto-opens the surface on agent-driven navigation.
+- `8d32a544` — linked PR search honours caller `page`/`perPage` (was hardcoded 100/page-1); regression test added.
+
+LIVE Web evidence:
+- Direct RPC: `browser/state` (closed) → `browser/navigate` → `browser/state` (open, url https://example.com/) all ok.
+- Real agent turn: created a fresh session via `session/create` with the standard preset, accepted `session/prompt` asking the agent to use `browser_open` + `browser_snapshot`. Host state became `{source:'agent', status:'open', url:'https://example.com/'}` and the right-panel browser surface AUTO-OPENED with `iframe src="https://example.com/"` and full chrome. This proves real agent→browser interaction, not just UI rendering.
+- Diff: real changed file rendered with correct hunk in the Web UI.
+- Linked PR search against pingdotgg/t3code returned live results.
+- Desktop: boots clean; browser surface shows the new chrome and "Recently used"; maximize flow verified earlier.
+- Note: the profile resolver needed a full `pnpm install` + profile-dir heal for the new `tool-browser` package link; this is a deployment step, not a code defect.
+
+Resolved a real bug during live testing: `cannot get property "remote.browser" without inject` was fixed by adding `remote.browser` to ui-sidebar's inject; a `SessionAlreadyOwnedError` during repeated submits was traced to stale session leases from killed dev servers (test-environment artefact, not product code).
+
 ## Remaining limitations
 
 - GitHub PR rows require the user to configure `GITHUB_TOKEN` through the existing credentials seam; no key is provided by Greeneek.

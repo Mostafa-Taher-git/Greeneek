@@ -13,7 +13,7 @@ A `Requires:` line lists the service keys the plugin `inject`s: its `cordis.yml`
 
 Scope: one verbatim config type per loadable harness package. Intended lookup: find the package name below, then jump to its anchor (`#greeneekgnk-<slug>`) for the full pasted declaration and `Source:` pointer. Grouping: configurable plugins first (alphabetical by package), then no-config, seam, and library lists. Related guidance: subsystem pages for wiring, the [tool catalog](tool-catalog.md) for model-facing schemas.
 
-Generated: 16643 words total, 118 config entries, 122 headings, 2013 words in the largest section. Regenerate with `pnpm run gen-config-catalog`; verify with `pnpm run verify-config-catalog`.
+Generated: 16704 words total, 119 config entries, 123 headings, 2013 words in the largest section. Regenerate with `pnpm run gen-config-catalog`; verify with `pnpm run verify-config-catalog`.
 
 <a id="greeneekgnk-acp"></a>
 
@@ -268,7 +268,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/api/session-controller/src/index.ts:93`](../packages/api/session-controller/src/index.ts)
+Source: [`packages/api/session-controller/src/index.ts:94`](../packages/api/session-controller/src/index.ts)
 
 <a id="greeneekgnk-api-settings-controller"></a>
 
@@ -365,6 +365,22 @@ export type Config = LocalConfig
 Depends on: [`LocalConfig`](#greeneekgnk-bash-local)
 
 Source: [`packages/shell/bash-sandbox/src/index.ts:35`](../packages/shell/bash-sandbox/src/index.ts)
+
+<a id="greeneekgnk-browser-use"></a>
+
+## `@greeneek/gnk-browser-use`
+
+```ts config-catalog
+/** Resolved limits for browser addresses and titles. */
+export interface BrowserUseConfig {
+  /** Maximum accepted URL length in characters. */
+  readonly maxUrlLength: number
+  /** Maximum reported title length in characters. */
+  readonly maxTitleLength: number
+}
+```
+
+Source: [`packages/browser/browser-use/src/index.ts:40`](../packages/browser/browser-use/src/index.ts)
 
 <a id="greeneekgnk-client-connection"></a>
 
@@ -2596,7 +2612,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/core/system-prompt/src/index.ts:237`](../packages/core/system-prompt/src/index.ts)
+Source: [`packages/core/system-prompt/src/index.ts:238`](../packages/core/system-prompt/src/index.ts)
 
 <a id="greeneekgnk-terminal-bash"></a>
 
@@ -3503,6 +3519,7 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 - `@greeneek/gnk-api-remotes` — requires `typertGateway` ([`packages/api/remotes/src/index.ts`](../packages/api/remotes/src/index.ts))
 - `@greeneek/gnk-api-workspace-controller` — requires `typert` · `workspaceRegistry` ([`packages/api/workspace-controller/src/index.ts`](../packages/api/workspace-controller/src/index.ts))
 - `@greeneek/gnk-authorization` — requires `credentials` ([`packages/credentials/authorization/src/index.ts`](../packages/credentials/authorization/src/index.ts))
+- `@greeneek/gnk-browser-surface` — requires `browser` ([`packages/browser/browser-surface/src/index.ts`](../packages/browser/browser-surface/src/index.ts))
 - `@greeneek/gnk-client-locale` ([`packages/client/locale/src/index.ts`](../packages/client/locale/src/index.ts))
 - `@greeneek/gnk-client-modules` — requires `webServer` · `loader` ([`packages/client/modules/src/index.ts`](../packages/client/modules/src/index.ts))
 - `@greeneek/gnk-client-tool-owned-render` ([`packages/client/tool-owned-render/src/index.ts`](../packages/client/tool-owned-render/src/index.ts))
@@ -3572,6 +3589,7 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 - `@greeneek/gnk-subprocess-local` ([`packages/subprocess/subprocess-local/src/index.ts`](../packages/subprocess/subprocess-local/src/index.ts))
 - `@greeneek/gnk-terminal` ([`packages/terminal/terminal/src/index.ts`](../packages/terminal/terminal/src/index.ts))
 - `@greeneek/gnk-tool-ask-user` — requires `tools` · `userQuestions` ([`packages/interaction/tool-ask-user/src/index.ts`](../packages/interaction/tool-ask-user/src/index.ts))
+- `@greeneek/gnk-tool-browser` — requires `browser` · `tools` · `systemPrompt` ([`packages/browser/tool-browser/src/index.ts`](../packages/browser/tool-browser/src/index.ts))
 - `@greeneek/gnk-tool-call-timeout-policy` — requires `tools` ([`packages/guard/timeout-policy/src/index.ts`](../packages/guard/timeout-policy/src/index.ts))
 - `@greeneek/gnk-tool-cordis` — requires `tools` · `systemPrompt` · `dynamicCordisRunner` · `cordisInspect` ([`packages/extensions/tool-cordis/src/index.ts`](../packages/extensions/tool-cordis/src/index.ts))
 - `@greeneek/gnk-tool-subagent-control` — requires `tools` · `subagents` ([`packages/subagent/tool-subagent-control/src/index.ts`](../packages/subagent/tool-subagent-control/src/index.ts))

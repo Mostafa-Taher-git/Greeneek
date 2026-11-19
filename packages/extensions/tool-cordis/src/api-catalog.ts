@@ -742,6 +742,37 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'browser',
+    summary: 'The browser-use service: one backend slot plus per-profile tracked state.',
+    description: 'The browser-use service: one backend slot plus per-profile tracked state.',
+    methods: [
+      {
+        signature: 'registerBackend(backend: BrowserBackend): () => void',
+        description: 'Register the single browser runtime provider. A second registration is rejected, so provider selection never depends on activation order.',
+        parameters: [{ name: 'backend', description: 'the provider to install.' }],
+        returns: 'disposer that removes exactly this provider.',
+      },
+      {
+        signature: 'snapshot(profile: BrowserProfile): BrowserSurfaceSnapshot',
+        description: 'Current tracked snapshot for one profile.',
+        parameters: [{ name: 'profile', description: 'profile to read.' }],
+        returns: 'the tracked snapshot, with status closed when nothing is open.',
+      },
+      {
+        signature: 'async open(owner: Agent | undefined, request: BrowserNavigateRequest, signal?: AbortSignal): Promise<BrowserSurfaceSnapshot>',
+        description: 'Open or navigate one profile.',
+        parameters: [{ name: 'owner', description: 'exact owning Agent, or undefined for a user/UI-driven change.' }, { name: 'request', description: 'target profile and validated http(s) address.' }, { name: 'signal', description: 'cancellation of the operation.' }],
+        returns: 'the resulting tracked snapshot.',
+      },
+      {
+        signature: 'async close(owner: Agent | undefined, request: BrowserCloseRequest): Promise<BrowserSurfaceSnapshot>',
+        description: 'Close one profile.',
+        parameters: [{ name: 'owner', description: 'exact owning Agent, or undefined for a user/UI-driven change.' }, { name: 'request', description: 'target profile.' }],
+        returns: 'the resulting tracked snapshot.',
+      },
+    ],
+  },
+  {
     key: 'clientModules',
     summary: 'The web plugin table service: incremental `gnk.client` scan + wire composition + bundle route + index injection rows.',
     description: 'The web plugin table service: incremental `gnk.client` scan + wire composition + bundle route + index injection rows. Construction runs the activation scan synchronously — a malformed declaration or missing bundle among the already-loaded entries aggregates into one loud throw (FAILED fiber; the boot activation audit reports it).',
@@ -3421,6 +3452,14 @@ export const EVENT_API: readonly EventApiEntry[] = [
     parameters: [{ name: 'key', description: 'the credential record the finished attempt was authorizing.' }, { name: 'settlement', description: 'how it ended, including the `failed` case its caller sees as a thrown error.' }],
   },
   {
+    name: 'browser/surface',
+    mode: 'emit',
+    signature: '\'browser/surface\'(snapshot: { profile: \'default\' | \'incognito\' url: string | undefined status: \'open\' | \'closed\' titleSource: \'reported\' | \'unknown\' source: \'agent\' | \'user\' }): void',
+    summary: 'A browser profile\'s tracked navigation state changed.',
+    description: 'A browser profile\'s tracked navigation state changed.',
+    parameters: [{ name: 'snapshot', description: 'the updated surface state.' }],
+  },
+  {
     name: 'commands/change',
     mode: 'emit',
     signature: '\'commands/change\'(): void',
@@ -4023,6 +4062,38 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'BrandedNumber',
     declaration: 'export type BrandedNumber<B extends string> = number & {\n    readonly [BRAND]: B;\n};',
+  },
+  {
+    name: 'BrowserBackend',
+    declaration: 'export interface BrowserBackend {\n    readonly type: string;\n    open(spec: BrowserBackendSpec): Promise<void>;\n    close(spec: BrowserBackendCloseSpec): Promise<void>;\n}',
+  },
+  {
+    name: 'BrowserBackendCloseSpec',
+    declaration: 'export interface BrowserBackendCloseSpec {\n    readonly profile: BrowserProfile;\n    readonly owner: Agent | undefined;\n}',
+  },
+  {
+    name: 'BrowserBackendSpec',
+    declaration: 'export interface BrowserBackendSpec {\n    readonly profile: BrowserProfile;\n    readonly url: string;\n    readonly owner: Agent | undefined;\n    readonly signal: AbortSignal | undefined;\n}',
+  },
+  {
+    name: 'BrowserCloseRequest',
+    declaration: 'export interface BrowserCloseRequest {\n    readonly profile: BrowserProfile;\n}',
+  },
+  {
+    name: 'BrowserNavigateRequest',
+    declaration: 'export interface BrowserNavigateRequest {\n    readonly profile: BrowserProfile;\n    readonly url: string;\n}',
+  },
+  {
+    name: 'BrowserProfile',
+    declaration: 'export type BrowserProfile = \'default\' | \'incognito\';',
+  },
+  {
+    name: 'BrowserSource',
+    declaration: 'export type BrowserSource = \'agent\' | \'user\';',
+  },
+  {
+    name: 'BrowserSurfaceSnapshot',
+    declaration: 'export interface BrowserSurfaceSnapshot {\n    readonly profile: BrowserProfile;\n    readonly url: string | undefined;\n    readonly title: string;\n    readonly titleSource: \'reported\' | \'unknown\';\n    readonly status: \'open\' | \'closed\';\n    readonly source: BrowserSource;\n}',
   },
   {
     name: 'ChunkRow',

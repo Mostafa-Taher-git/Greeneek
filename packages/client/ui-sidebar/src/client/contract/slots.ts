@@ -211,6 +211,16 @@ export type SurfacePanelInjected = {
   ) => Promise<void>
   /** Open an external URL in the user's configured browser. */
   openExternal: (url: string) => void
+  /** Current Host-tracked browser state for one profile. */
+  browserState: (profile: string) => Promise<import('../surfaces/contract.ts').BrowserSurfaceState>
+  /** Navigate a browser profile through the Host. */
+  browserNavigate: (profile: string, url: string) => Promise<void>
+  /** Close a browser profile through the Host. */
+  browserClose: (profile: string) => Promise<void>
+  /** Subscribe to Host browser surface changes; returns a disposer. */
+  subscribeBrowser: (
+    listener: (state: import('../surfaces/contract.ts').BrowserSurfaceState) => void,
+  ) => () => void
   /** Resolve the current git branch of a Workspace. */
   currentBranch: (path: string) => Promise<string | undefined>
   /** Fork a real side Session from the current one. */

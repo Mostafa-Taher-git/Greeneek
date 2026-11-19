@@ -52,6 +52,14 @@ async function bench(declare = true) {
   ctx.provide('remote.session', remote.session as never)
   ctx.provide('remote.files', remote.files as never)
   ctx.provide('remote.github', remote.github as never)
+  ctx.provide('remote.browser', {
+    state: vi.fn(async () => ({
+      ok: true as const,
+      value: { profile: 'default', url: null, status: 'closed' as const, titleSource: 'unknown' as const, source: 'user' as const },
+    })),
+    navigate: vi.fn(async () => ({ ok: true as const, value: {} })),
+    close: vi.fn(async () => ({ ok: true as const, value: {} })),
+  } as never)
   ctx.provide('locale', new LocaleRuntime(ctx))
   ctx.provide('sessions', { open: vi.fn() } as never)
   const slots = ctx.get('slots') as SlotRegistry
@@ -78,7 +86,7 @@ describe('ui-sidebar apply', () => {
 
   it('declares only the services it uses', () => {
     expect(inject).toEqual([
-      'slots', 'layout', 'uiWorkspace', 'uiConversation', 'locale', 'remote', 'remote.session', 'remote.files', 'remote.github', 'sessions',
+      'slots', 'layout', 'uiWorkspace', 'uiConversation', 'locale', 'remote', 'remote.session', 'remote.files', 'remote.github', 'remote.browser', 'sessions',
     ])
   })
 

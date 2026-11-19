@@ -669,6 +669,18 @@ export type SessionControlFrame =
 declare module '@greeneek/cordis' {
   interface Events {
     /**
+     * A browser profile's tracked navigation state changed.
+     * @mode emit
+     * @param snapshot - the updated surface state.
+     */
+    'browser/surface'(snapshot: {
+      profile: 'default' | 'incognito'
+      url: string | undefined
+      status: 'open' | 'closed'
+      titleSource: 'reported' | 'unknown'
+      source: 'agent' | 'user'
+    }): void
+    /**
      * A Session became visible to Session list consumers.
      * @mode emit
      * @param summary - initial list row for the Session.
@@ -733,3 +745,23 @@ export interface PtySessionInfo {
 export type PtyFrame =
   | { readonly type: 'data'; readonly data: string }
   | { readonly type: 'exit'; readonly exitCode: number | null }
+
+/** One browser profile addressed by a Remote call. */
+export interface BrowserRemoteRequest {
+  /** Profile to operate on. */
+  readonly profile: 'default' | 'incognito'
+}
+
+/** Wire view of one tracked browser surface. */
+export interface BrowserRemoteSnapshot {
+  /** Profile this snapshot describes. */
+  readonly profile: 'default' | 'incognito'
+  /** Current tracked URL, or null when closed. */
+  readonly url: string | null
+  /** Whether a page is open. */
+  readonly status: 'open' | 'closed'
+  /** Whether the title is reported or unknown. */
+  readonly titleSource: 'reported' | 'unknown'
+  /** Who last drove the surface. */
+  readonly source: 'agent' | 'user'
+}

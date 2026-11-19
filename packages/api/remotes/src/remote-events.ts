@@ -16,6 +16,7 @@ import type { TypertForwardableEventEntry } from '@greeneek/gnk-typert-protocol'
 export const API_REMOTE_FORWARDED_EVENTS = [
   { event: 'agent-preset/selected', mode: 'emit' },
   { event: 'approval/request', mode: 'waterfall' },
+  { event: 'browser/surface', mode: 'emit' },
   { event: 'api-session/activity', mode: 'emit' },
   { event: 'api-session/added', mode: 'emit' },
   { event: 'api-session/error', mode: 'emit' },

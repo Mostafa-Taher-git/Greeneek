@@ -54,6 +54,9 @@
 - id: tool-jobs
   name: '@greeneek/gnk-tool-jobs'
 
+- id: tool-browser
+  name: '@greeneek/gnk-tool-browser'
+
 # ── filesystem ──────────────────────────────────────────────────────────────
 
 - id: tool-fs

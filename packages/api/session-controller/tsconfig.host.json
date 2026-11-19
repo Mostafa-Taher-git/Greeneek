@@ -18,12 +18,14 @@
     "src/list.ts",
     "src/model-selection-projection.ts",
     "src/presentation.ts",
+    "src/browser.ts",
     "src/pty.ts",
     "src/skill-catalog.ts"
   ],
   "references": [
     { "path": "../../../vendor/cordis" },
     { "path": "../../../vendor/schemastery" },
+    { "path": "../../browser/browser-use" },
     { "path": "../../core/agent/tsconfig.host.json" },
     { "path": "../../core/agent-default-model" },
     { "path": "../../core/scope" },

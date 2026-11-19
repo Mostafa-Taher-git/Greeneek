@@ -34,6 +34,7 @@ import {
 } from './list.ts'
 import { buildModelCatalog } from './catalog.ts'
 import { PtyController } from './pty.ts'
+import { BrowserController } from './browser.ts'
 import { installModelSelectionProjection } from './model-selection-projection.ts'
 import { installToolPresentationProjection } from './presentation.ts'
 import { SessionSkillCatalog } from './skill-catalog.ts'
@@ -193,6 +194,7 @@ export class SessionController extends TypertRemoteService {
     ctx.plugin(SessionFileReferences)
     ctx.plugin(SessionSkillCatalog)
     ctx.plugin(PtyController)
+    ctx.plugin(BrowserController)
 
     ctx.on('session/created', (session) => {
       ctx.emit('api-session/added', this.listState.summaryFor(session))

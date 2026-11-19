@@ -1136,6 +1136,42 @@ importers:
         specifier: ^15.0.0
         version: 15.0.0
 
+  packages/browser/browser-surface:
+    devDependencies:
+      '@greeneek/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@greeneek/gnk-browser-use':
+        specifier: workspace:^
+        version: link:../browser-use
+
+  packages/browser/browser-use:
+    devDependencies:
+      '@greeneek/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@greeneek/gnk-agent':
+        specifier: workspace:^
+        version: link:../../core/agent
+
+  packages/browser/tool-browser:
+    devDependencies:
+      '@greeneek/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@greeneek/gnk-agent':
+        specifier: workspace:^
+        version: link:../../core/agent
+      '@greeneek/gnk-browser-use':
+        specifier: workspace:^
+        version: link:../browser-use
+      '@greeneek/gnk-system-prompt':
+        specifier: workspace:^
+        version: link:../../core/system-prompt
+      '@greeneek/gnk-tools':
+        specifier: workspace:^
+        version: link:../../core/tools
+
   packages/bundle/acp-app:
     dependencies:
       '@greeneek/gnk-acp':
@@ -1203,6 +1239,12 @@ importers:
       '@greeneek/gnk-bash-sandbox':
         specifier: workspace:^
         version: link:../../shell/bash-sandbox
+      '@greeneek/gnk-browser-surface':
+        specifier: workspace:^
+        version: link:../../browser/browser-surface
+      '@greeneek/gnk-browser-use':
+        specifier: workspace:^
+        version: link:../../browser/browser-use
       '@greeneek/gnk-command-compact':
         specifier: workspace:^
         version: link:../../compaction/command-compact
@@ -1368,6 +1410,9 @@ importers:
       '@greeneek/gnk-tool-bash':
         specifier: workspace:^
         version: link:../../shell/tool-bash
+      '@greeneek/gnk-tool-browser':
+        specifier: workspace:^
+        version: link:../../browser/tool-browser
       '@greeneek/gnk-tool-call-timeout-policy':
         specifier: workspace:^
         version: link:../../guard/timeout-policy
@@ -6873,6 +6918,9 @@ importers:
       '@greeneek/gnk-tool-bash-persistent':
         specifier: workspace:^
         version: link:../../shell/tool-bash-persistent
+      '@greeneek/gnk-tool-browser':
+        specifier: workspace:^
+        version: link:../../browser/tool-browser
       '@greeneek/gnk-tool-pwsh-persistent':
         specifier: workspace:^
         version: link:../../shell/tool-pwsh-persistent

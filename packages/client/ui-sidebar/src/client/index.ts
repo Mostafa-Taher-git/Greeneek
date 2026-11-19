@@ -52,7 +52,7 @@ interface WorkspaceNavigation {
 
 /** Services required by the sidebar plugin. */
 export const inject = [
-  'slots', 'layout', 'uiWorkspace', 'uiConversation', 'locale', 'remote', 'remote.session', 'remote.files', 'remote.github', 'sessions',
+  'slots', 'layout', 'uiWorkspace', 'uiConversation', 'locale', 'remote', 'remote.session', 'remote.files', 'remote.github', 'remote.browser', 'sessions',
 ]
 
 /** Side-thread navigation over the Client Session service. */
@@ -66,6 +66,32 @@ const APP_LABELS: Record<string, string> = {
   vscode: 'VS Code',
   'android-studio': 'Android Studio',
   'github-desktop': 'GitHub Desktop',
+}
+
+/** Report one Host-tracked browser surface through the Remote. */
+async function browserState(profile: string, ctx: ClientContext) {
+  const result = await ctx.remote.browser.state({ profile: profile as 'default' | 'incognito' })
+  if (!result.ok) throw new Error(result.error.message)
+  const value = result.value
+  return {
+    profile: value.profile,
+    url: value.url ?? undefined,
+    status: value.status,
+    titleSource: value.titleSource,
+    source: value.source,
+  }
+}
+
+/** Navigate one browser profile through the Host so agent and user writes agree. */
+async function browserNavigate(profile: string, url: string, ctx: ClientContext): Promise<void> {
+  const result = await ctx.remote.browser.navigate({ profile: profile as 'default' | 'incognito', url })
+  if (!result.ok) throw new Error(result.error.message)
+}
+
+/** Close one browser profile through the Host. */
+async function browserClose(profile: string, ctx: ClientContext): Promise<void> {
+  const result = await ctx.remote.browser.close({ profile: profile as 'default' | 'incognito' })
+  if (!result.ok) throw new Error(result.error.message)
 }
 
 /** List one Host directory level through the file-browsing Remote. */
@@ -228,6 +254,18 @@ export function apply(ctx: ClientContext): void {
           const result = await ctx.remote.github.pullRequestAction(request)
           if (!result.ok) throw new Error(result.error.message)
         },
+        browserState: profile => browserState(profile, ctx),
+        browserNavigate: (profile, url) => browserNavigate(profile, url, ctx),
+        browserClose: profile => browserClose(profile, ctx),
+        subscribeBrowser: listener => ctx.remote.$on('browser/surface', (state) => {
+          listener({
+            profile: state.profile,
+            url: state.url,
+            status: state.status,
+            titleSource: state.titleSource,
+            source: state.source,
+          })
+        }),
         openExternal: (url) => {
           try {
             const parsed = new URL(url)

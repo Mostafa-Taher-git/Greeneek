@@ -66,9 +66,14 @@ function guestUrl(value: string): string | undefined {
 }
 
 /** Render the Browser surface with a full-chrome address bar and recents. */
-export function BrowserPanel({ profile, desktop, t }: BrowserSurfaceProps) {
+export function BrowserPanel({ profile, desktop, state, onNavigate, t }: BrowserSurfaceProps) {
   const [input, setInput] = useState('')
-  const [url, setUrl] = useState<string>()
+  const [localUrl, setLocalUrl] = useState<string>()
+  // Host-owned tracked state wins when present; local state is the fallback for
+  // a browser surface opened before the Remote bridge becomes available.
+  const url = state !== undefined
+    ? (state.status === 'open' ? state.url : undefined)
+    : localUrl
   const [error, setError] = useState<string>()
   const [history, setHistory] = useState<readonly string[]>([])
   const [cursor, setCursor] = useState(-1)
@@ -80,9 +85,10 @@ export function BrowserPanel({ profile, desktop, t }: BrowserSurfaceProps) {
     const trimmed = history.slice(0, cursor + 1)
     setHistory([...trimmed, next])
     setCursor(trimmed.length)
-    setUrl(next)
     setInput(next)
     setRecents(recordVisit(next))
+    if (onNavigate !== undefined) onNavigate(profile, next)
+    else setLocalUrl(next)
   }
 
   const submit = (event: FormEvent): void => {
@@ -103,7 +109,12 @@ export function BrowserPanel({ profile, desktop, t }: BrowserSurfaceProps) {
             aria-label={t('browser.back')}
             onClick={() => {
               const next = history[cursor - 1]
-              if (next !== undefined) { setCursor(cursor - 1); setUrl(next); setInput(next) }
+              if (next !== undefined) {
+                setCursor(cursor - 1)
+                setInput(next)
+                if (onNavigate !== undefined) onNavigate(profile, next)
+                else setLocalUrl(next)
+              }
             }}>
             ‹
           </button>
@@ -111,7 +122,12 @@ export function BrowserPanel({ profile, desktop, t }: BrowserSurfaceProps) {
             aria-label={t('browser.forward')}
             onClick={() => {
               const next = history[cursor + 1]
-              if (next !== undefined) { setCursor(cursor + 1); setUrl(next); setInput(next) }
+              if (next !== undefined) {
+                setCursor(cursor + 1)
+                setInput(next)
+                if (onNavigate !== undefined) onNavigate(profile, next)
+                else setLocalUrl(next)
+              }
             }}>
             ›
           </button>

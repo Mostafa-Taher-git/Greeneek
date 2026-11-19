@@ -52,6 +52,13 @@ function mount(overrides: Partial<SurfacePanelComponentProps> = {}) {
     })),
     githubAction: vi.fn(async () => {}),
     openExternal: vi.fn(),
+    browserState: vi.fn(async () => ({
+      profile: 'default', url: undefined, status: 'closed' as const,
+      titleSource: 'unknown' as const, source: 'user' as const,
+    })),
+    browserNavigate: vi.fn(async () => {}),
+    browserClose: vi.fn(async () => {}),
+    subscribeBrowser: vi.fn(() => () => {}),
     currentBranch: vi.fn(async () => 'feature'),
     forkSideChat: vi.fn(async () => 'child-1'),
     openSideChat: vi.fn(),

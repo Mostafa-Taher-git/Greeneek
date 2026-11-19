@@ -68,11 +68,20 @@ async function bench(options: { locale?: 'en' } = {}) {
       })),
       pullRequestAction: vi.fn(async () => ({ ok: true, value: { done: true, message: 'merged' } })),
     },
+    browser: {
+      state: vi.fn(async () => ({
+        ok: true as const,
+        value: { profile: 'default', url: null, status: 'closed' as const, titleSource: 'unknown' as const, source: 'user' as const },
+      })),
+      navigate: vi.fn(async () => ({ ok: true as const, value: {} })),
+      close: vi.fn(async () => ({ ok: true as const, value: {} })),
+    },
   }
   runtime.ctx.provide('remote', remote as never)
   runtime.ctx.provide('remote.session', remote.session as never)
   runtime.ctx.provide('remote.files', remote.files as never)
   runtime.ctx.provide('remote.github', remote.github as never)
+  runtime.ctx.provide('remote.browser', remote.browser as never)
   const locale = new LocaleRuntime(runtime.ctx)
   locale.register('common', { zh: commonZh, en: commonEn, ar: commonAr })
   if (options.locale === 'en') locale.setLocale('en')

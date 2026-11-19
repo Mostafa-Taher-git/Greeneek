@@ -45,6 +45,9 @@ import * as ToolPwsh from '@greeneek/gnk-tool-pwsh'
 import * as ToolBashPersistent from '@greeneek/gnk-tool-bash-persistent'
 import * as ToolPwshPersistent from '@greeneek/gnk-tool-pwsh-persistent'
 import CordisHostRunner from '@greeneek/gnk-cordis-host-runner'
+import BrowserSurfaceService from '@greeneek/gnk-browser-use'
+import BrowserSurfaceProvider from '@greeneek/gnk-browser-surface'
+import * as ToolBrowser from '@greeneek/gnk-tool-browser'
 import * as ToolCordis from '@greeneek/gnk-tool-cordis'
 import * as ToolFs from '@greeneek/gnk-tool-fs'
 import * as ToolFsSearch from '@greeneek/gnk-tool-fs-search'
@@ -363,6 +366,20 @@ const TOOL_PACKAGES: ToolPackage[] = [
     },
     note:
       'glob and grep are unconditional discovery tools that spawn the packaged ripgrep binary (`@vscode/ripgrep`) through ctx.subprocess as ordinary foreground calls (never background jobs) — no host `rg` install and no shell layer. The catalog uses `sampleOverCapGlobResults: true`; deployments must choose that behavior explicitly. Capped results save the complete formatted list through the optional ctx.spillStore backend; returned locators are follow-up-readable/searchable when the backend exposes local paths in co-located deployments.',
+  },
+  {
+    pkg: '@greeneek/gnk-tool-browser',
+    dir: 'tool-browser',
+    source: 'packages/browser/tool-browser/src/index.ts',
+    requires: ['ctx.tools', 'ctx.browser', 'ctx.systemPrompt'],
+    writes: ['tool/call', 'tool/result'],
+    async mount(ctx) {
+      await ctx.plugin(BrowserSurfaceService)
+      await ctx.plugin(BrowserSurfaceProvider)
+      await ctx.plugin(ToolBrowser)
+    },
+    note:
+      'browser_open, browser_navigate, browser_snapshot, and browser_close drive the visible right-panel browser surface through the single ctx.browser authority. browser_snapshot reports tracked navigation state only, never page contents; browser-originated data is untrusted.',
   },
   {
     pkg: '@greeneek/gnk-tool-terminal',

@@ -16,12 +16,13 @@ Every workspace package (`packages/<family>/<name>`), categorized by what it con
 | LLM | Model routes and provider adapters | `packages/llm/*` |
 | Capability | Every other plugin, grouped by family directory | fallback: anything unmatched |
 
-Scope: 261 workspace packages; every package appears under each of its kinds (24 Tool, 4 Skill, 6 Command, 42 UI, 7 LLM, 185 Capability rows). A package with several kinds (e.g. a tool that also contributes a command) appears in each section.
+Scope: 264 workspace packages; every package appears under each of its kinds (25 Tool, 4 Skill, 6 Command, 42 UI, 7 LLM, 187 Capability rows). A package with several kinds (e.g. a tool that also contributes a command) appears in each section.
 
 ## Tools
 
 | Package | Role |
 | --- | --- |
+| `@greeneek/gnk-tool-browser` | Role documented in the browser group README. |
 | `@greeneek/gnk-tool-craft` | The model-facing Craft gateway: opening an app mounts curated tools, mounts its recipe only after registry review, and confines every reported artifact path to the job root. |
 | `@greeneek/gnk-tool-cordis` | Model-facing Cordis runtime tools for agents and maintainers choosing, composing, or debugging dynamic-package workflows. |
 | `@greeneek/gnk-tool-fs` | The model-facing read, read_image, write, and edit tools for users and maintainers composing or debugging filesystem access for agents. |
@@ -158,6 +159,13 @@ Scope: 261 workspace packages; every package appears under each of its kinds (24
 | --- | --- |
 | `@greeneek/gnk-app-boot` | Shared Loader boot support for gnk profiles and the temporary Python SDK runtime: environment layers, patches, diagnostics, and configuration preview. |
 | `@greeneek/gnk-cmdline` | App-owned command lines for gnk app bins: your app parses its own flags, --help, and exit behavior from the launcher's remaining arguments. |
+
+### `browser/`
+
+| Package | Role |
+| --- | --- |
+| `@greeneek/gnk-browser-surface` | Role documented in the browser group README. |
+| `@greeneek/gnk-browser-use` | Role documented in the browser group README. |
 
 ### `bundle/`
 

@@ -54,6 +54,10 @@
 - id: tool-terminal
   name: '@greeneek/gnk-tool-terminal'
 
+# The browser tools drive the visible right-panel browser surface.
+- id: tool-browser
+  name: '@greeneek/gnk-tool-browser'
+
 # ── filesystem ──────────────────────────────────────────────────────────────
 
 # Both register into the host `tools` registry and provide nothing, so

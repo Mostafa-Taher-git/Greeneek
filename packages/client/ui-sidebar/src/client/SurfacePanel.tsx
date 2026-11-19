@@ -61,6 +61,7 @@ export function SurfacePanel(props: SurfacePanelComponentProps) {
     sessionId, useStore, actions, openTerminal, loadDevice, browseFiles, readFile, loadDiff,
     githubStatus, githubRepository, githubPullRequests, githubDetail, githubAction, openExternal, currentBranch,
     forkSideChat, openSideChat, useSessions, t, maximized, toggleMaximize,
+    browserNavigate, subscribeBrowser,
   } = props
   const cwd = useSessions(state => state.byId[sessionId]?.cwd)
   const desktop = (globalThis as { greeneekDesktop?: unknown }).greeneekDesktop !== undefined
@@ -69,6 +70,18 @@ export function SurfacePanel(props: SurfacePanelComponentProps) {
   const active = surfaces.find(surface => surface.id === activeId)
   const [profileOpen, setProfileOpen] = useState(false)
   const [githubConfigured, setGithubConfigured] = useState(false)
+  const [browserStates, setBrowserStates] = useState<Record<string, import('./surfaces/contract.ts').BrowserSurfaceState>>({})
+
+  useEffect(() => {
+    const dispose = subscribeBrowser((state) => {
+      setBrowserStates(current => ({ ...current, [state.profile]: state }))
+      // An agent-driven navigation makes the browser surface visible.
+      if (state.status === 'open' && state.source === 'agent' && activeId !== 'browser') {
+        actions.open({ kind: 'browser', title: t('surface.browser'), data: { profile: state.profile } }, true)
+      }
+    })
+    return dispose
+  }, [subscribeBrowser, actions, activeId, t])
 
   useEffect(() => {
     let live = true
@@ -265,7 +278,13 @@ export function SurfacePanel(props: SurfacePanelComponentProps) {
                     />
                   )
                   : active.kind === 'browser'
-                    ? <BrowserPanel profile={active.data.profile ?? 'default'} desktop={desktop} t={t} />
+                    ? <BrowserPanel
+                      profile={active.data.profile ?? 'default'}
+                      desktop={desktop}
+                      state={browserStates[active.data.profile ?? 'default']}
+                      onNavigate={(profile, url) => { void browserNavigate(profile, url) }}
+                      t={t}
+                    />
                     : active.kind === 'side-chat'
                       ? (
                         <SideChatPanel

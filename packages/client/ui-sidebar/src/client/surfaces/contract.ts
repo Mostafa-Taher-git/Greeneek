@@ -90,12 +90,30 @@ export interface PullRequestPage {
   hasNext: boolean
 }
 
+/** Wire view of one tracked browser surface. */
+export interface BrowserSurfaceState {
+  /** Profile this state describes. */
+  readonly profile: string
+  /** Current tracked URL, or undefined when closed. */
+  readonly url: string | undefined
+  /** Whether a page is open. */
+  readonly status: 'open' | 'closed'
+  /** Whether the title is reported or unknown. */
+  readonly titleSource: 'reported' | 'unknown'
+  /** Who last drove the surface. */
+  readonly source: 'agent' | 'user'
+}
+
 /** Props of the desktop Browser surface. */
 export type BrowserSurfaceProps = PropsLocale<'sidebar'> & {
   /** Selected browser profile id. */
   profile: string
   /** True when running inside the desktop shell. */
   desktop: boolean
+  /** Host-owned tracked state for this profile, when available. */
+  state: BrowserSurfaceState | undefined
+  /** Navigate this profile through the Host so user and agent writes share one state. */
+  onNavigate: ((profile: string, url: string) => void) | undefined
 }
 
 /** Props of the Side Chat surface. */

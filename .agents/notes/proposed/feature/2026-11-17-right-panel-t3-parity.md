@@ -177,6 +177,20 @@ Statuses are evidence-based; a commit or a passing unit test alone does not make
 
 Security note: revoking the previously exposed token is BLOCKED externally — `gh auth status` shows a fine-grained PAT, but `GET /user/personal_access_tokens` and `GET /user/tokens` both return HTTP 404 with the available credentials, so revocation must be done in GitHub settings by the owner. A fresh token must be stored in the external credentials file before live GitHub lanes can run again. No secret was added to any commit (verified by staged secret scans and `git grep`).
 
+## Ask-question "waiting / Deep diving" finding (owner screenshot, 2026-11-19)
+
+The screenshot showing "Ask question · waiting", "Deep diving... 17s", and a card "What would you like to do with the Greeneek workspace?" with "Type your answer" / "Skip this question" / "Submit" is NOT a hang. Source-level verification:
+- The card is the `ask_user_question` composer. The question text is model-authored and rendered verbatim (`QuestionComposer.tsx:287-289`); there is no such string in client copy. "1 / 1" is one question (`QuestionComposer.tsx:410`). With no options supplied, only the free-text field renders (`QuestionComposer.tsx:386-397`).
+- "Submit" is intentionally disabled while the field is empty (`QuestionComposer.tsx:428`); the human must type an answer and click Submit, or click "Skip this question". The answer reaches the Host and the agent resumes — proven by `apps/web/tests/question-composer.e2e.ts:145-311`.
+- Every failure path throws a typed error (`ASK_CANCELLED`, `ASK_ABORTED`, `DELEGATED_CALLER`, `NO_PROVIDER`) rather than hanging.
+- "Deep diving..." is the whole-running-turn indicator (`ChatView.tsx:833-835`, `locale.ts:166`); "17s" is just elapsed turn time (`ChatView.tsx:190`). The sidebar row already says "Waiting for answer".
+Decision: no functional bug — no code fix. The owner should answer or skip the question to continue. A future UX enhancement could surface the pending wait in the center TurnStatus, but that is deliberately deferred (needs snapshots + Agent Note), not a root-cause fix.
+
+## Browser presentation finding (owner screenshots, 2026-11-19)
+
+The owner's target screenshots are T3 Code's browser: a right-panel surface MAXIMIZED to fill the workspace (not a separate window). Source evidence: T3 `RightPanelMaximizeControl` (`PanelLayoutControls.tsx:143-174`) → `toggleRightPanelMaximized` (`useRightPanelActions.ts:244-249`) → `PreviewPanelShell.tsx:162-186` fills width; chat hidden via `data-chat-column-maximized-away`. The tab strip/address bar/toolbar/recents are `RightPanelTabs.tsx:1344-1420`, `PreviewChromeRow.tsx:99-194`, `PreviewEmptyState.tsx:54-72`, `browserHistoryStore.ts`.
+Greeneek implemented the same model in `c07b814e`: `rightbarMaximized` in the layout store + `toggleRightbarMaximize`, AppFrame collapses the other tracks when maximized, a maximize control in the surface tab strip, and a browser chrome row (back/forward/reload, "Search or enter URL", recently-used). Verified live in Web: panel went 359px → ~1835px, details card hidden, chrome and "Recently used" present. No arbitrary iframe substitution; Desktop keeps its native webview.
+
 ## Remaining limitations
 
 - GitHub PR rows require the user to configure `GITHUB_TOKEN` through the existing credentials seam; no key is provided by Greeneek.

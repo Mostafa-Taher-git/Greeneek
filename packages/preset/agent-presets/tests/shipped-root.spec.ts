@@ -102,6 +102,13 @@ describe('the shipped preset root', () => {
       .filter(reason => reason !== undefined && !reason.includes('cannot be resolved'))).toEqual([])
   })
 
+  it('mounts persistent terminal tools in the Maestro Lead so delegated lanes can run stateful commands', async () => {
+    const rows = await shippedEntries('maestro')
+    const names = rows.map(row => (row as { name?: unknown }).name)
+    expect(names).toContain('@greeneek/gnk-tool-terminal')
+    expect(names).toContain('@greeneek/gnk-tool-jobs')
+  })
+
   it('falls back to standard with a warning when the stored default names no shipped preset', async () => {
     const ctx = await roster({ default: 'ptc', includeUserRoot: false })
     const warn = vi.spyOn(ctx.logger, 'warn').mockImplementation(() => {})

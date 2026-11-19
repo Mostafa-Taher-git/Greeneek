@@ -45,6 +45,15 @@
   name: '@greeneek/gnk-tool-pwsh'
   disabled: !!js process.platform !== 'win32'
 
+# Persistent terminals give the Lead and its delegated lanes stateful command
+# execution (output paging, signals, cancellation), which one-shot shell tools
+# cannot provide.
+- id: tool-terminal
+  name: '@greeneek/gnk-tool-terminal'
+
+- id: tool-jobs
+  name: '@greeneek/gnk-tool-jobs'
+
 # ── filesystem ──────────────────────────────────────────────────────────────
 
 - id: tool-fs

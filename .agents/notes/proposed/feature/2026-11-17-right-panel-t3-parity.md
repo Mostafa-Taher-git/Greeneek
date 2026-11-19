@@ -233,6 +233,16 @@ No failure was skipped or suppressed.
 - Launcher: `Ctrl+F` opens the Files surface with a real directory listing. Launcher keys are bound with the mod key (`mod+b/f/d/p/l/s`), so they do not collide with composer typing; the chips display the bare letter (B/T/F/D/P/L/M/S). This differs from T3's bare-letter capture, but is intentional to avoid text-input conflicts.
 - Note: some mod chords overlap browser defaults (Ctrl+T/P/F); the app calls preventDefault in its handler. Verified Ctrl+F is captured by the app.
 
+## Real Agent Browser content access (2026-11-19, commit cf57e658)
+
+The prior seam tracked navigation state only and could not read page content. Implemented and verified:
+- Extended `browser-use` with `BrowserPageContent` / `BrowserContentBackend` (`read`, `click`) and `BrowserSurfaceService.read/click`, returning typed `CONTENT_UNSUPPORTED` when the provider cannot read.
+- New `packages/browser/browser-playwright`: a real local Chromium provider via Playwright, one persistent context per profile (durable `default` profile for logged-in sessions; temp dir for incognito), bounded text/link extraction, link activation, navigation error handling. Storage is isolated by directory; no password collected, no cookie extracted into Greeneek state.
+- New tools `browser_read`/`browser_click` with an explicit untrusted-content notice; `browser/read` Host Remote for the renderer.
+- Automated: browser-playwright `content.spec.ts` reads a live local HTTP page (real Chromium) — title, text, links, status all asserted; browser-use spec 6/6.
+- LIVE Web: `browser/read` on https://example.com returned title "Example Domain", status 200, real page text and the IANA link; invalid URL refused; 404 reported.
+- LIVE Agent turns: agent used `browser_read` and reported the exact page title and the sentence beginning "This domain is..."; agent used `browser_click` on the IANA link and reported final URL https://www.iana.org/help/example-domains and title "Example Domains". Real content access and link following, not iframe display.
+
 ## Remaining limitations
 
 - GitHub PR rows require the user to configure `GITHUB_TOKEN` through the existing credentials seam; no key is provided by Greeneek.

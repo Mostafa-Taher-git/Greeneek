@@ -32,6 +32,8 @@ type LayoutState = {
   narrowExpanded: boolean
   mainPage: 'conversation' | 'settings' | 'dashboard'
   settingsSection: string | undefined
+  /** Whether the right surface panel fills the workspace (T3-style maximized browser). */
+  rightbarMaximized: boolean
 }
 
 /**
@@ -50,6 +52,7 @@ type LayoutActions = {
   openRightbar: (draft: LayoutState) => void
   closeRightbar: (draft: LayoutState) => void
   toggleRightbar: (draft: LayoutState) => void
+  toggleRightbarMaximize: (draft: LayoutState) => void
   openTerminalDrawer: (draft: LayoutState) => void
   closeTerminalDrawer: (draft: LayoutState) => void
   toggleTerminalDrawer: (draft: LayoutState) => void
@@ -77,7 +80,7 @@ export function createLayoutStore(): EngineStoreHandle<LayoutState, LayoutAction
     // conversation, whatever page was last visited. Versioned because the
     // details column now sizes the floating card, not a bordered sidebar.
     persist: 'gnk.layout.panels.v2',
-    init: (): LayoutState => ({ sidebar: SIDEBAR_DEFAULT, details: 0, rightbar: 0, terminalDrawerOpen: false, narrow: false, narrowExpanded: false, mainPage: 'conversation', settingsSection: undefined }),
+    init: (): LayoutState => ({ sidebar: SIDEBAR_DEFAULT, details: 0, rightbar: 0, terminalDrawerOpen: false, narrow: false, narrowExpanded: false, mainPage: 'conversation', settingsSection: undefined, rightbarMaximized: false }),
     actions: {
       setSidebar: (d, px: number) => { d.sidebar = clampWidth(px, SIDEBAR_MIN, SIDEBAR_MAX) },
       setDetails: (d, px: number) => { d.details = clampWidth(px, DETAILS_MIN, DETAILS_MAX) },
@@ -104,6 +107,13 @@ export function createLayoutStore(): EngineStoreHandle<LayoutState, LayoutAction
       closeRightbar: (d) => { d.rightbar = 0 },
       toggleRightbar: (d) => {
         d.rightbar = d.rightbar === 0 ? RIGHTBAR_DEFAULT : 0
+        if (d.rightbar === 0) d.rightbarMaximized = false
+      },
+      // Maximizing needs an open panel: open it first, then fill the workspace.
+      // Closing the panel always leaves maximize mode.
+      toggleRightbarMaximize: (d) => {
+        if (d.rightbar === 0) d.rightbar = RIGHTBAR_DEFAULT
+        d.rightbarMaximized = !d.rightbarMaximized
       },
       openTerminalDrawer: (d) => { d.terminalDrawerOpen = true },
       closeTerminalDrawer: (d) => { d.terminalDrawerOpen = false },

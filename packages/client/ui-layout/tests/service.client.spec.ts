@@ -15,6 +15,7 @@ function fakePanels(): PanelActions {
     openRightbar: vi.fn(),
     closeRightbar: vi.fn(),
     toggleRightbar: vi.fn(),
+    toggleRightbarMaximize: vi.fn(),
     openTerminalDrawer: vi.fn(),
     closeTerminalDrawer: vi.fn(),
     toggleTerminalDrawer: vi.fn(),

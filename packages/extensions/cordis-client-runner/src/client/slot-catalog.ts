@@ -1383,7 +1383,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     doc: 'Independent right panel. OCCUPIED by ui-sidebar\'s SurfacePanel, a T3-shaped\n"Open a surface" launcher over this app\'s real destinations. The frame\ngives it a separate track from Thread Details and both toggles stay\nindependent. No owner props: session facts arrive through the framework\nhooks of the `session` scope.',
     registerOptions: [],
     ownerProps: [
-      '/** Rightbar owner share: empty — sessionId arrives as a framework-standard prop. */\nexport interface RightbarOwnerProps {}',
+      '/** Rightbar owner share: maximize state for the T3-style full surface view. */\nexport interface RightbarOwnerProps {\n  /** Whether the surface panel fills the workspace. */\n  maximized: boolean\n  /** Toggle the maximized view (the browser "full window" control). */\n  toggleMaximize: () => void\n}',
     ],
     ownerPropsReferences: [],
     standardProps: [

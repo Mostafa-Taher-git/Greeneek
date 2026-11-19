@@ -2,12 +2,26 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
+  height: 100%;
   gap: 6px;
   padding: 4px;
 }
 
+.chrome {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.navGroup,
+.toolGroup {
+  display: flex;
+  gap: 2px;
+}
+
 .bar {
   display: flex;
+  flex: 1;
   gap: 4px;
 }
 
@@ -99,4 +113,67 @@
   padding: 6px;
   color: var(--dsw-alias-state-error-primary);
   font-size: 11px;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  height: 100%;
+}
+
+.emptyHeading {
+  margin: 0;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.recentList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 520px;
+}
+
+.recentCard {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 0.5px solid var(--dsw-alias-border-l2);
+  border-radius: 8px;
+  corner-shape: round;
+  background: var(--dsw-alias-surface-raised);
+  color: var(--dsw-alias-label-primary);
+  text-align: start;
+  cursor: pointer;
+}
+
+.recentCard:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.recentFavicon {
+  font-size: 18px;
+}
+
+.recentBody {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.recentTitle {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.recentUrl {
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

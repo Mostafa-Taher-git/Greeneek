@@ -60,7 +60,7 @@ export function SurfacePanel(props: SurfacePanelComponentProps) {
   const {
     sessionId, useStore, actions, openTerminal, loadDevice, browseFiles, readFile, loadDiff,
     githubStatus, githubRepository, githubPullRequests, githubDetail, githubAction, openExternal, currentBranch,
-    forkSideChat, openSideChat, useSessions, t,
+    forkSideChat, openSideChat, useSessions, t, maximized, toggleMaximize,
   } = props
   const cwd = useSessions(state => state.byId[sessionId]?.cwd)
   const desktop = (globalThis as { greeneekDesktop?: unknown }).greeneekDesktop !== undefined
@@ -173,6 +173,15 @@ export function SurfacePanel(props: SurfacePanelComponentProps) {
             onClick={() => { actions.closeAll() }}
           >
             +
+          </button>
+          <button
+            type="button"
+            className={css.maximizeButton}
+            aria-label={maximized ? t('surface.restore') : t('surface.maximize')}
+            title={maximized ? t('surface.restore') : t('surface.maximize')}
+            onClick={() => { toggleMaximize() }}
+          >
+            {maximized ? '⤡' : '⤢'}
           </button>
         </div>
       )}

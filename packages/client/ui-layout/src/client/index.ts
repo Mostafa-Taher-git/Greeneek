@@ -177,8 +177,13 @@ export interface DashboardOwnerProps {}
 /** Details owner share: empty — sessionId arrives as a framework-standard prop. */
 export interface DetailsOwnerProps {}
 
-/** Rightbar owner share: empty — sessionId arrives as a framework-standard prop. */
-export interface RightbarOwnerProps {}
+/** Rightbar owner share: maximize state for the T3-style full surface view. */
+export interface RightbarOwnerProps {
+  /** Whether the surface panel fills the workspace. */
+  maximized: boolean
+  /** Toggle the maximized view (the browser "full window" control). */
+  toggleMaximize: () => void
+}
 
 /** Close action for the terminal activity drawer. */
 export interface TerminalDrawerOwnerProps { close: () => void }

@@ -19,7 +19,7 @@ beforeEach(() => { localStorage.clear() })
 describe('createLayoutStore', () => {
   it('initializes the sidebar at its default width, details closed, wide viewport assumed', () => {
     const { store } = createLayoutStore().create()
-    expect(store.getSnapshot()).toEqual({ sidebar: SIDEBAR_DEFAULT, details: 0, rightbar: 0, terminalDrawerOpen: false, narrow: false, narrowExpanded: false, mainPage: 'conversation', settingsSection: undefined })
+    expect(store.getSnapshot()).toEqual({ sidebar: SIDEBAR_DEFAULT, details: 0, rightbar: 0, terminalDrawerOpen: false, narrow: false, narrowExpanded: false, mainPage: 'conversation', settingsSection: undefined, rightbarMaximized: false })
   })
 
   it('each create() is an independent instance (factory is not a singleton)', () => {
@@ -55,7 +55,7 @@ describe('createLayoutStore', () => {
     actions.setSidebar(400)
     actions.setNarrow(true)
     actions.toggleSidebar()
-    expect(store.getSnapshot()).toEqual({ sidebar: 400, details: 0, rightbar: 0, terminalDrawerOpen: false, narrow: true, narrowExpanded: true, mainPage: 'conversation', settingsSection: undefined })
+    expect(store.getSnapshot()).toEqual({ sidebar: 400, details: 0, rightbar: 0, terminalDrawerOpen: false, narrow: true, narrowExpanded: true, mainPage: 'conversation', settingsSection: undefined, rightbarMaximized: false })
     actions.toggleSidebar()
     expect(store.getSnapshot().narrowExpanded).toBe(false)
     expect(store.getSnapshot().sidebar).toBe(400)
@@ -110,6 +110,17 @@ describe('createLayoutStore', () => {
     actions.toggleRightbar()
     expect(store.getSnapshot().rightbar).toBe(0)
     expect(store.getSnapshot().details).toBe(DETAILS_DEFAULT)
+  })
+
+  it('maximizes the right panel only while it is open, and leaving maximize restores the width', () => {
+    const { store, actions } = createLayoutStore().create()
+    actions.toggleRightbarMaximize()
+    expect(store.getSnapshot()).toMatchObject({ rightbar: RIGHTBAR_DEFAULT, rightbarMaximized: true })
+    actions.toggleRightbarMaximize()
+    expect(store.getSnapshot().rightbarMaximized).toBe(false)
+    actions.toggleRightbarMaximize()
+    actions.toggleRightbar()
+    expect(store.getSnapshot()).toMatchObject({ rightbar: 0, rightbarMaximized: false })
   })
 
   it('toggles the terminal drawer independently', () => {

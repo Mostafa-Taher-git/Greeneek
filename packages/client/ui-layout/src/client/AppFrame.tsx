@@ -207,12 +207,19 @@ export function AppFrame({
   // A blank (New Session) still owns the three chrome panels: the toggles are
   // available there and must open real panels with their sessionless empty
   // states, not just flip their pressed attribute.
-  const cols = computeColumns(
+  const computed = computeColumns(
     viewport,
     sidebarPreference,
     0,
     panels.rightbar,
   )
+  // A maximized surface panel fills the whole workspace: the browser becomes
+  // the T3-style full view. The other tracks collapse to zero and the center
+  // conversation unmounts so its composer cannot steal focus.
+  const cols = panels.rightbarMaximized
+    ? { sidebar: 0, center: 0, details: 0, rightbar: viewport }
+    : computed
+  const maximized = panels.rightbarMaximized && panels.rightbar > 0
   const colsRef = useRef(cols)
   colsRef.current = cols
 
@@ -259,11 +266,12 @@ export function AppFrame({
     <div
       ref={frameRef}
       className={css.frame}
-      style={{ gridTemplateColumns: `${cols.sidebar}px minmax(0, 1fr) ${cols.details}px ${cols.rightbar}px` }}
+      style={{ gridTemplateColumns: `${cols.sidebar}px ${maximized ? '0px' : 'minmax(0, 1fr)'} ${cols.details}px ${cols.rightbar}px` }}
       data-sidebar-collapsed={sidebarCollapsed || undefined}
       data-details-collapsed={!detailsOpen || undefined}
       data-rightbar-collapsed={cols.rightbar === 0 || undefined}
       data-rightbar-open={panels.rightbar > 0 || undefined}
+      data-rightbar-maximized={maximized || undefined}
       data-dragging={dragging || undefined}
       data-desktop-host={desktopHost || undefined}
     >
@@ -281,7 +289,7 @@ export function AppFrame({
           panelControls, documentTitle, sessionId: currentSession, sidebarCollapsed,
         })}
       </div>
-      <div className={css.sidebarCol} hidden={sidebarCollapsed}>
+      <div className={css.sidebarCol} hidden={sidebarCollapsed || maximized}>
         {/* Render-site slot call with live concession output: a closed
             sidebar keeps the mounted slot at the compact-rail width, and the
             component sees its rendered state as owner params decided here
@@ -299,15 +307,15 @@ export function AppFrame({
             is session-maybe; SessionProvider withholds the strict details
             entry while no session is current. */}
         <CenterColumn>
-          <div className={css.mainPage} hidden={panels.mainPage !== 'conversation'}>
+          <div className={css.mainPage} hidden={maximized || panels.mainPage !== 'conversation'}>
             {renderSlot('conversation', {})}
           </div>
-          {panels.mainPage === 'settings' && (
+          {panels.mainPage === 'settings' && !maximized && (
             <div className={css.mainPage}>
               {renderSlot('settings', { section: panels.settingsSection })}
             </div>
           )}
-          {panels.mainPage === 'dashboard' && (
+          {panels.mainPage === 'dashboard' && !maximized && (
             <div className={css.mainPage}>
               {renderSlot('dashboard', {})}
             </div>
@@ -320,11 +328,13 @@ export function AppFrame({
             </div>
           )}
         </CenterColumn>
-        <DetailsColumn hidden={!detailsOpen}>
+        <DetailsColumn hidden={!detailsOpen || maximized}>
           <SessionProvider>{renderSlot('details', {})}</SessionProvider>
         </DetailsColumn>
         <RightbarColumn overlay={rightbarOverlay} hidden={cols.rightbar === 0 && !rightbarOverlay}>
-          <SessionProvider>{renderSlot('rightbar', {})}</SessionProvider>
+          <SessionProvider>{renderSlot('rightbar', {
+            maximized, toggleMaximize: () => { actions.toggleRightbarMaximize() },
+          })}</SessionProvider>
         </RightbarColumn>
       </>
       <div className={css.overlayLayer} data-shell-overlay>

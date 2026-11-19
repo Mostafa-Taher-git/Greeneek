@@ -35,6 +35,8 @@ export interface ILayout {
   closeRightbar(): void
   /** Toggle the right panel open/closed in one call. */
   toggleRightbar(): void
+  /** Maximize the right surface panel to fill the workspace, or restore it. */
+  toggleRightbarMaximize(): void
   /** Open the bottom terminal activity drawer. */
   openTerminalDrawer(): void
   /** Close the bottom terminal activity drawer. */
@@ -105,6 +107,11 @@ export class LayoutController implements ILayout {
   /** Toggle the right sidebar open/closed in one call. */
   toggleRightbar(): void {
     this.#require().toggleRightbar()
+  }
+
+  /** Maximize the right surface panel to fill the workspace, or restore it. */
+  toggleRightbarMaximize(): void {
+    this.#require().toggleRightbarMaximize()
   }
 
   /** Open the bottom terminal activity drawer. */

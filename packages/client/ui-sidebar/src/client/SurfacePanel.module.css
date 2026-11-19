@@ -185,10 +185,32 @@
   cursor: pointer;
 }
 
+.maximizeButton {
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.maximizeButton:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
 .surfaceBody {
+  display: flex;
+  flex-direction: column;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+}
+
+.surfaceBody > * {
+  flex: 1;
+  min-height: 0;
 }
 
 .notice {

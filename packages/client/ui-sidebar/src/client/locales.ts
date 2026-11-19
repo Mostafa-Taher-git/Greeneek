@@ -68,6 +68,8 @@ export const zh = {
   'pr.confirm': '确认',
   'pr.cancel': '取消',
   'pr.openBrowser': '在浏览器中打开',
+  'surface.maximize': '最大化面板',
+  'surface.restore': '还原面板大小',
   'sideChat.created': '已从当前会话分叉出一个独立会话。',
   'sideChat.open': '在主对话中打开',
   'browser.desktopOnly': '浏览器面板仅在桌面应用中可用。',
@@ -82,6 +84,8 @@ export const zh = {
   'browser.title': '内嵌网页',
   'browser.profileWebNote': '网页端按来源隔离；完整分区仅在桌面端可用。',
   'browser.embedNote': '许多网站禁止被嵌入，此时请使用“在默认浏览器中打开”。',
+  'browser.searchPlaceholder': '搜索或输入网址',
+  'browser.recentlyUsed': '最近使用',
 } satisfies Record<string, string>
 
 /** The sidebar namespace key union. */
@@ -155,6 +159,8 @@ export const en = {
   'pr.confirm': 'Confirm',
   'pr.cancel': 'Cancel',
   'pr.openBrowser': 'Open in browser',
+  'surface.maximize': 'Maximize panel',
+  'surface.restore': 'Restore panel size',
   'sideChat.created': 'An independent session was forked from this thread.',
   'sideChat.open': 'Open in conversation',
   'browser.desktopOnly': 'The browser surface is available in the desktop app only.',
@@ -169,6 +175,8 @@ export const en = {
   'browser.title': 'Embedded page',
   'browser.profileWebNote': 'Web isolates by origin; full partitions are Desktop-only.',
   'browser.embedNote': 'Many sites refuse embedding; use "Open in default browser" for those pages.',
+  'browser.searchPlaceholder': 'Search or enter URL',
+  'browser.recentlyUsed': 'Recently used',
 } satisfies Record<SidebarKey, string>
 
 /** Arabic dictionary, checked complete against the zh key set; the brand name stays verbatim. */
@@ -239,6 +247,8 @@ export const ar = {
   'pr.confirm': 'تأكيد',
   'pr.cancel': 'إلغاء',
   'pr.openBrowser': 'فتح في المتصفح',
+  'surface.maximize': 'تكبير اللوحة',
+  'surface.restore': 'استعادة حجم اللوحة',
   'sideChat.created': 'تم إنشاء جلسة مستقلة من هذه المحادثة.',
   'sideChat.open': 'افتح في المحادثة الرئيسية',
   'browser.desktopOnly': 'لوحة المتصفح متاحة في تطبيق سطح المكتب فقط.',
@@ -253,4 +263,6 @@ export const ar = {
   'browser.title': 'صفحة مضمنة',
   'browser.profileWebNote': 'يعزل الويب حسب المصدر؛ الأقسام الكاملة متاحة في سطح المكتب فقط.',
   'browser.embedNote': 'تُرفض إعادة تضمين صفحات كثيرة؛ استخدم "فتح في المتصفح الافتراضي" لتلك الصفحات.',
+  'browser.searchPlaceholder': 'ابحث أو أدخل عنوان URL',
+  'browser.recentlyUsed': 'المستخدم مؤخراً',
 } satisfies Record<SidebarKey, string>

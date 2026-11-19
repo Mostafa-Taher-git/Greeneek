@@ -61,7 +61,7 @@ export function SurfacePanel(props: SurfacePanelComponentProps) {
     sessionId, useStore, actions, openTerminal, loadDevice, browseFiles, readFile, loadDiff,
     githubStatus, githubRepository, githubPullRequests, githubDetail, githubAction, openExternal, currentBranch,
     forkSideChat, openSideChat, useSessions, t, maximized, toggleMaximize,
-    browserNavigate, subscribeBrowser,
+    browserState, browserNavigate, subscribeBrowser,
   } = props
   const cwd = useSessions(state => state.byId[sessionId]?.cwd)
   const desktop = (globalThis as { greeneekDesktop?: unknown }).greeneekDesktop !== undefined
@@ -80,8 +80,15 @@ export function SurfacePanel(props: SurfacePanelComponentProps) {
         actions.open({ kind: 'browser', title: t('surface.browser'), data: { profile: state.profile } }, true)
       }
     })
+    // Read the current Host state once on mount: an agent may have navigated
+    // before this panel was opened, so events alone would miss it.
+    for (const profile of ['default', 'incognito'] as const) {
+      browserState(profile)
+        .then((state) => { setBrowserStates(current => ({ ...current, [profile]: state })) })
+        .catch(() => {})
+    }
     return dispose
-  }, [subscribeBrowser, actions, activeId, t])
+  }, [subscribeBrowser, browserState, actions, activeId, t])
 
   useEffect(() => {
     let live = true

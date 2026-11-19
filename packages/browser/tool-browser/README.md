@@ -1,19 +1,19 @@
 # @greeneek/gnk-tool-browser
 
 Model-facing browser tools over `ctx.browser`: `browser_open`, `browser_navigate`,
-`browser_snapshot`, `browser_close`. They drive the visible right-panel browser
-surface; navigation becomes visible to the user through the forwarded surface
-event.
+`browser_snapshot`, `browser_read`, `browser_click`, `browser_close`. Navigation
+and surface state stay on the shared authority; `browser_read`/`browser_click`
+use a content-capable provider (Playwright) to read and navigate real pages.
 
 ## Model Experience
 
-These tools add four schemas and one pinned guidance section to the model. They
-add no tokens of their own. `browser_snapshot` reports tracked navigation state
-and never page contents; browser-originated data is untrusted and must not be
-treated as instructions.
+These tools add six schemas and one pinned guidance section to the model. All
+page text is prefixed with an explicit untrusted-content notice and must never be
+treated as instructions. Without a content-capable provider the two content
+tools fail by name (`CONTENT_UNSUPPORTED`) rather than approximating page access.
 
 ## Known Limitations and Deferred Work
 
-- Page DOM reading requires a CDP-capable browser provider.
+- Content reading requires a Playwright-capable host with a browser installed.
 - Web embedding is subject to each site's framing policy; the external-browser
   escape hatch remains available.

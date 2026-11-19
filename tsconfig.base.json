@@ -393,6 +393,7 @@
       "@greeneek/gnk-subprocess-local": ["./packages/subprocess/subprocess-local/src"],
       "@greeneek/gnk-system-prompt": ["./packages/core/system-prompt/src"],
       "@greeneek/gnk-system-prompt/invariant": ["./packages/core/system-prompt/src/invariant.ts"],
+      "@greeneek/gnk-browser-playwright": ["./packages/browser/browser-playwright/src"],
       "@greeneek/gnk-browser-surface": ["./packages/browser/browser-surface/src"],
       "@greeneek/gnk-browser-use": ["./packages/browser/browser-use/src"],
       "@greeneek/gnk-tool-browser": ["./packages/browser/tool-browser/src"],

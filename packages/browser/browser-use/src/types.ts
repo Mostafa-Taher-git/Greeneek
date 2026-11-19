@@ -73,6 +73,62 @@ export interface BrowserBackend {
   close(spec: BrowserBackendCloseSpec): Promise<void>
 }
 
+/** One bounded link extracted from a live page. */
+export interface BrowserPageLink {
+  /** Visible link text, trimmed and bounded. */
+  readonly text: string
+  /** Absolute or raw href as published by the page. */
+  readonly href: string
+}
+
+/** Bounded content read from a real page. All text is untrusted page data. */
+export interface BrowserPageContent {
+  /** Page URL after any redirects. */
+  readonly url: string
+  /** Reported document title. */
+  readonly title: string
+  /** Extracted visible text, bounded by the configured character cap. */
+  readonly text: string
+  /** Bounded visible links, for navigation and link-following. */
+  readonly links: readonly BrowserPageLink[]
+  /** HTTP status when the navigation produced a response. */
+  readonly status: number | undefined
+  /** True when the text was truncated at the configured cap. */
+  readonly truncated: boolean
+}
+
+/** Spec for a content read or link-activation operation. */
+export interface BrowserContentSpec {
+  /** Target profile. */
+  readonly profile: BrowserProfile
+  /** URL to navigate to, or undefined to read/act on the current page. */
+  readonly url: string | undefined
+  /** Exact owning Agent, or undefined for a user/UI-driven read. */
+  readonly owner: Agent | undefined
+  /** Cancellation of the operation. */
+  readonly signal: AbortSignal | undefined
+}
+
+/** A link selector for activation: by visible text or by href substring. */
+export interface BrowserLinkSelector {
+  /** Match a link whose visible text contains this string. */
+  readonly text?: string
+  /** Match a link whose href contains this string. */
+  readonly href?: string
+}
+
+/**
+ * Optional content capability. A provider that implements these methods can
+ * let an Agent genuinely read and navigate real pages; one that does not is
+ * limited to tracked navigation state and reports CONTENT_UNSUPPORTED.
+ */
+export interface BrowserContentBackend extends BrowserBackend {
+  /** Read bounded text, title and links from a real page. */
+  read(spec: BrowserContentSpec): Promise<BrowserPageContent>
+  /** Activate a visible link and return the resulting page content. */
+  click(spec: BrowserContentSpec & { selector: BrowserLinkSelector }): Promise<BrowserPageContent>
+}
+
 /** Machine-readable browser-use error codes. */
 export type BrowserErrorCode =
   | 'DUPLICATE_BACKEND'
@@ -82,3 +138,7 @@ export type BrowserErrorCode =
   | 'NO_SURFACE'
   | 'SERVICE_DISPOSING'
   | 'INVALID_URL'
+  | 'CONTENT_UNSUPPORTED'
+  | 'NAVIGATION_FAILED'
+  | 'CONTENT_UNAVAILABLE'
+  | 'LINK_NOT_FOUND'

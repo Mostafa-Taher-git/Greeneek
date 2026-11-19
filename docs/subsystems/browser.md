@@ -46,6 +46,25 @@ async open(owner: Agent | undefined, request: BrowserNavigateRequest, signal?: A
  * @returns the resulting tracked snapshot.
  */
 async close(owner: Agent | undefined, request: BrowserCloseRequest): Promise<BrowserSurfaceSnapshot>
+
+/**
+ * Read bounded content from a real page. A provider without content support
+ * is refused by name rather than approximating page access.
+ * @param owner - exact owning Agent, or undefined for a user/UI-driven read.
+ * @param request - profile and optional URL to navigate before reading.
+ * @param signal - cancellation of the operation.
+ * @returns the bounded page content (untrusted page data).
+ */
+async read( owner: Agent | undefined, request: { profile: BrowserProfile; url?: string }, signal?: AbortSignal, ): Promise<BrowserPageContent>
+
+/**
+ * Activate one visible link and read the resulting page.
+ * @param owner - exact owning Agent, or undefined for a user/UI-driven action.
+ * @param request - profile, optional URL, and the link selector.
+ * @param signal - cancellation of the operation.
+ * @returns the bounded resulting page content.
+ */
+async click( owner: Agent | undefined, request: { profile: BrowserProfile; url?: string; selector: BrowserLinkSelector }, signal?: AbortSignal, ): Promise<BrowserPageContent>
 ```
 
 Types: [Agent](core.md)

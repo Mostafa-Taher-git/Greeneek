@@ -13,7 +13,7 @@ A `Requires:` line lists the service keys the plugin `inject`s: its `cordis.yml`
 
 Scope: one verbatim config type per loadable harness package. Intended lookup: find the package name below, then jump to its anchor (`#greeneekgnk-<slug>`) for the full pasted declaration and `Source:` pointer. Grouping: configurable plugins first (alphabetical by package), then no-config, seam, and library lists. Related guidance: subsystem pages for wiring, the [tool catalog](tool-catalog.md) for model-facing schemas.
 
-Generated: 16704 words total, 119 config entries, 123 headings, 2013 words in the largest section. Regenerate with `pnpm run gen-config-catalog`; verify with `pnpm run verify-config-catalog`.
+Generated: 16818 words total, 120 config entries, 124 headings, 2013 words in the largest section. Regenerate with `pnpm run gen-config-catalog`; verify with `pnpm run verify-config-catalog`.
 
 <a id="greeneekgnk-acp"></a>
 
@@ -366,6 +366,30 @@ Depends on: [`LocalConfig`](#greeneekgnk-bash-local)
 
 Source: [`packages/shell/bash-sandbox/src/index.ts:35`](../packages/shell/bash-sandbox/src/index.ts)
 
+<a id="greeneekgnk-browser-playwright"></a>
+
+## `@greeneek/gnk-browser-playwright`
+
+Requires: `browser`
+
+```ts config-catalog
+/** Resolved provider config. Browser storage lives under `userDataRoot`. */
+export interface PlaywrightBrowserConfig {
+  /** Root directory holding one persistent profile directory per browser profile. */
+  readonly userDataRoot: string
+  /** Run the browser without a visible window. */
+  readonly headless: boolean
+  /** Navigation timeout in milliseconds. */
+  readonly timeoutMs: number
+  /** Maximum page text characters returned by one read. */
+  readonly maxContentChars: number
+  /** Maximum links returned by one read. */
+  readonly maxLinks: number
+}
+```
+
+Source: [`packages/browser/browser-playwright/src/index.ts:22`](../packages/browser/browser-playwright/src/index.ts)
+
 <a id="greeneekgnk-browser-use"></a>
 
 ## `@greeneek/gnk-browser-use`
@@ -377,10 +401,14 @@ export interface BrowserUseConfig {
   readonly maxUrlLength: number
   /** Maximum reported title length in characters. */
   readonly maxTitleLength: number
+  /** Maximum page text characters returned by one content read. */
+  readonly maxContentChars: number
+  /** Maximum number of links returned by one content read. */
+  readonly maxLinks: number
 }
 ```
 
-Source: [`packages/browser/browser-use/src/index.ts:40`](../packages/browser/browser-use/src/index.ts)
+Source: [`packages/browser/browser-use/src/index.ts:45`](../packages/browser/browser-use/src/index.ts)
 
 <a id="greeneekgnk-client-connection"></a>
 

@@ -752,6 +752,30 @@ export interface BrowserRemoteRequest {
   readonly profile: 'default' | 'incognito'
 }
 
+/** One link in a wire page read. */
+export interface BrowserWireLink {
+  /** Visible link text. */
+  readonly text: string
+  /** Absolute href. */
+  readonly href: string
+}
+
+/** Wire view of one bounded page content read. */
+export interface BrowserWireContent {
+  /** Page URL after redirects. */
+  readonly url: string
+  /** Reported title. */
+  readonly title: string
+  /** Bounded visible text. */
+  readonly text: string
+  /** Bounded links. */
+  readonly links: readonly BrowserWireLink[]
+  /** HTTP status, or null when unavailable. */
+  readonly status: number | null
+  /** True when text was truncated. */
+  readonly truncated: boolean
+}
+
 /** Wire view of one tracked browser surface. */
 export interface BrowserRemoteSnapshot {
   /** Profile this snapshot describes. */

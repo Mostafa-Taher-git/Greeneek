@@ -95,6 +95,7 @@
     "@greeneek/gnk-subagent-wave": "workspace:^",
     "@greeneek/gnk-subprocess-local": "workspace:^",
     "@greeneek/gnk-system-prompt": "workspace:^",
+    "@greeneek/gnk-browser-playwright": "workspace:^",
     "@greeneek/gnk-browser-surface": "workspace:^",
     "@greeneek/gnk-browser-use": "workspace:^",
     "@greeneek/gnk-terminal": "workspace:^",

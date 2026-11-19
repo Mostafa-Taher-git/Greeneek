@@ -13,8 +13,12 @@ import type {
   BrowserBackendCloseSpec,
   BrowserBackendSpec,
   BrowserCloseRequest,
+  BrowserContentBackend,
+  BrowserContentSpec,
   BrowserErrorCode,
+  BrowserLinkSelector,
   BrowserNavigateRequest,
+  BrowserPageContent,
   BrowserProfile,
   BrowserSource,
   BrowserSurfaceSnapshot,
@@ -23,7 +27,8 @@ import type {
 export { BrowserError } from './error.ts'
 export type {
   BrowserBackend, BrowserBackendCloseSpec, BrowserBackendSpec, BrowserCloseRequest,
-  BrowserErrorCode, BrowserNavigateRequest, BrowserProfile, BrowserSource, BrowserSurfaceSnapshot,
+  BrowserContentBackend, BrowserContentSpec, BrowserErrorCode, BrowserLinkSelector,
+  BrowserNavigateRequest, BrowserPageContent, BrowserProfile, BrowserSource, BrowserSurfaceSnapshot,
 } from './types.ts'
 
 declare module '@greeneek/cordis' {
@@ -42,12 +47,18 @@ export interface BrowserUseConfig {
   readonly maxUrlLength: number
   /** Maximum reported title length in characters. */
   readonly maxTitleLength: number
+  /** Maximum page text characters returned by one content read. */
+  readonly maxContentChars: number
+  /** Maximum number of links returned by one content read. */
+  readonly maxLinks: number
 }
 
 /** Default limits, matching the client browser carrier. */
 export const DEFAULT_BROWSER_USE_CONFIG: BrowserUseConfig = {
   maxUrlLength: 16 * 1024,
   maxTitleLength: 300,
+  maxContentChars: 100_000,
+  maxLinks: 100,
 }
 
 /** One tracked profile surface. */
@@ -69,7 +80,7 @@ export class BrowserSurfaceService extends Service {
   private readonly detached = new Map<Agent, () => void>()
 
   /** @param ctx - Host context. @param config - resolved operational limits. */
-  constructor(ctx: Context, private readonly config: BrowserUseConfig = DEFAULT_BROWSER_USE_CONFIG) {
+  constructor(ctx: Context, private readonly config: BrowserUseConfig = { ...DEFAULT_BROWSER_USE_CONFIG }) {
     super(ctx, 'browser')
     ctx.effect(() => () => {
       this.disposedFlag = true
@@ -191,6 +202,90 @@ export class BrowserSurfaceService extends Service {
     this.records.delete(request.profile)
     this.publish(this.snapshot(request.profile))
     return this.snapshot(request.profile)
+  }
+
+  /**
+   * Read bounded content from a real page. A provider without content support
+   * is refused by name rather than approximating page access.
+   * @param owner - exact owning Agent, or undefined for a user/UI-driven read.
+   * @param request - profile and optional URL to navigate before reading.
+   * @param signal - cancellation of the operation.
+   * @returns the bounded page content (untrusted page data).
+   */
+  async read(
+    owner: Agent | undefined,
+    request: { profile: BrowserProfile; url?: string },
+    signal?: AbortSignal,
+  ): Promise<BrowserPageContent> {
+    const backend = this.requireContentBackend()
+    this.assertOwner(owner, request.profile)
+    const spec = this.contentSpec(owner, request, signal)
+    const content = await backend.read(spec)
+    this.trackNavigation(request.profile, content.url, owner)
+    return content
+  }
+
+  /**
+   * Activate one visible link and read the resulting page.
+   * @param owner - exact owning Agent, or undefined for a user/UI-driven action.
+   * @param request - profile, optional URL, and the link selector.
+   * @param signal - cancellation of the operation.
+   * @returns the bounded resulting page content.
+   */
+  async click(
+    owner: Agent | undefined,
+    request: { profile: BrowserProfile; url?: string; selector: BrowserLinkSelector },
+    signal?: AbortSignal,
+  ): Promise<BrowserPageContent> {
+    const backend = this.requireContentBackend()
+    this.assertOwner(owner, request.profile)
+    const spec = this.contentSpec(owner, request, signal)
+    const content = await backend.click({ ...spec, selector: request.selector })
+    this.trackNavigation(request.profile, content.url, owner)
+    return content
+  }
+
+  /** Resolve a content-capable backend or fail with a typed code. */
+  private requireContentBackend(): BrowserContentBackend {
+    const backend = this.backend
+    if (backend === undefined) throw this.error('NO_BACKEND', 'no browser backend is registered')
+    if (typeof (backend as BrowserContentBackend).read !== 'function'
+      || typeof (backend as BrowserContentBackend).click !== 'function') {
+      throw this.error('CONTENT_UNSUPPORTED', `browser backend ${backend.type} cannot read page content`)
+    }
+    return backend as BrowserContentBackend
+  }
+
+  /** Enforce exact-Agent ownership for one profile. */
+  private assertOwner(owner: Agent | undefined, profile: BrowserProfile): void {
+    const record = this.records.get(profile)
+    if (owner !== undefined && record?.owner !== undefined && record.owner !== owner) {
+      throw this.error('FOREIGN_OWNER', `browser profile ${profile} is owned by another agent`)
+    }
+  }
+
+  /** Build a validated content spec from a request. */
+  private contentSpec(
+    owner: Agent | undefined,
+    request: { profile: BrowserProfile; url?: string },
+    signal: AbortSignal | undefined,
+  ): BrowserContentSpec {
+    return {
+      profile: request.profile,
+      url: request.url === undefined ? undefined : this.validateUrl(request.url),
+      owner,
+      signal,
+    }
+  }
+
+  /** Record a navigation observed during a content operation. */
+  private trackNavigation(profile: BrowserProfile, url: string, owner: Agent | undefined): void {
+    this.records.set(profile, {
+      url,
+      owner: owner ?? this.records.get(profile)?.owner,
+      source: owner === undefined ? 'user' : 'agent',
+    })
+    this.publish(this.snapshot(profile))
   }
 
   /** Publish one snapshot through the forwarded event seam. */

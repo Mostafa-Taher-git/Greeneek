@@ -8,7 +8,7 @@ import type { Context } from '@greeneek/cordis'
 import { Remote, TypertRemoteService } from '@greeneek/gnk-typert-protocol'
 import type {} from '@greeneek/gnk-browser-use'
 import type { BrowserProfile, BrowserSurfaceSnapshot } from '@greeneek/gnk-browser-use'
-import type { BrowserRemoteRequest, BrowserRemoteSnapshot } from './types.ts'
+import type { BrowserRemoteRequest, BrowserRemoteSnapshot, BrowserWireContent } from './types.ts'
 
 /** Credential-free Remote over the browser-use seam. */
 export class BrowserController extends TypertRemoteService {
@@ -39,6 +39,27 @@ export class BrowserController extends TypertRemoteService {
   async close(request: BrowserRemoteRequest): Promise<BrowserRemoteSnapshot> {
     const snapshot = await this.ctx.browser.close(undefined, { profile: request.profile })
     return this.project(snapshot.profile, snapshot)
+  }
+
+  /**
+   * Read real page content through the Host browser runtime.
+   * @param request - profile and optional URL to navigate before reading.
+   * @returns the bounded page content; page data is untrusted.
+   */
+  @Remote('read')
+  async read(request: BrowserRemoteRequest & { url?: string }): Promise<BrowserWireContent> {
+    const content = await this.ctx.browser.read(undefined, {
+      profile: request.profile,
+      ...(request.url === undefined ? {} : { url: request.url }),
+    })
+    return {
+      url: content.url,
+      title: content.title,
+      text: content.text,
+      links: content.links.map(link => ({ text: link.text, href: link.href })),
+      status: content.status ?? null,
+      truncated: content.truncated,
+    }
   }
 
   /** Stream surface changes from the moment of subscription. */

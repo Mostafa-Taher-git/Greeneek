@@ -457,6 +457,8 @@ export const LINK_MAP: Readonly<Record<string, string>> = {
   SandboxMode: 'sandbox.md',
   SandboxPolicy: 'sandbox.md',
   BrowserBackend: 'browser.md',
+  BrowserLinkSelector: 'browser.md',
+  BrowserPageContent: 'browser.md',
   BrowserCloseRequest: 'browser.md',
   BrowserNavigateRequest: 'browser.md',
   BrowserProfile: 'browser.md',

@@ -1136,6 +1136,19 @@ importers:
         specifier: ^15.0.0
         version: 15.0.0
 
+  packages/browser/browser-playwright:
+    dependencies:
+      playwright:
+        specifier: ^1.49.0
+        version: 1.61.1
+    devDependencies:
+      '@greeneek/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@greeneek/gnk-browser-use':
+        specifier: workspace:^
+        version: link:../browser-use
+
   packages/browser/browser-surface:
     devDependencies:
       '@greeneek/cordis':
@@ -1239,6 +1252,9 @@ importers:
       '@greeneek/gnk-bash-sandbox':
         specifier: workspace:^
         version: link:../../shell/bash-sandbox
+      '@greeneek/gnk-browser-playwright':
+        specifier: workspace:^
+        version: link:../../browser/browser-playwright
       '@greeneek/gnk-browser-surface':
         specifier: workspace:^
         version: link:../../browser/browser-surface

@@ -16,7 +16,7 @@ Every workspace package (`packages/<family>/<name>`), categorized by what it con
 | LLM | Model routes and provider adapters | `packages/llm/*` |
 | Capability | Every other plugin, grouped by family directory | fallback: anything unmatched |
 
-Scope: 264 workspace packages; every package appears under each of its kinds (25 Tool, 4 Skill, 6 Command, 42 UI, 7 LLM, 187 Capability rows). A package with several kinds (e.g. a tool that also contributes a command) appears in each section.
+Scope: 265 workspace packages; every package appears under each of its kinds (25 Tool, 4 Skill, 6 Command, 42 UI, 7 LLM, 188 Capability rows). A package with several kinds (e.g. a tool that also contributes a command) appears in each section.
 
 ## Tools
 
@@ -164,6 +164,7 @@ Scope: 264 workspace packages; every package appears under each of its kinds (25
 
 | Package | Role |
 | --- | --- |
+| `@greeneek/gnk-browser-playwright` | Role documented in the browser group README. |
 | `@greeneek/gnk-browser-surface` | Role documented in the browser group README. |
 | `@greeneek/gnk-browser-use` | Role documented in the browser group README. |
 

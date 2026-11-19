@@ -770,6 +770,18 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         parameters: [{ name: 'owner', description: 'exact owning Agent, or undefined for a user/UI-driven change.' }, { name: 'request', description: 'target profile.' }],
         returns: 'the resulting tracked snapshot.',
       },
+      {
+        signature: 'async read( owner: Agent | undefined, request: { profile: BrowserProfile; url?: string }, signal?: AbortSignal, ): Promise<BrowserPageContent>',
+        description: 'Read bounded content from a real page. A provider without content support is refused by name rather than approximating page access.',
+        parameters: [{ name: 'owner', description: 'exact owning Agent, or undefined for a user/UI-driven read.' }, { name: 'request', description: 'profile and optional URL to navigate before reading.' }, { name: 'signal', description: 'cancellation of the operation.' }],
+        returns: 'the bounded page content (untrusted page data).',
+      },
+      {
+        signature: 'async click( owner: Agent | undefined, request: { profile: BrowserProfile; url?: string; selector: BrowserLinkSelector }, signal?: AbortSignal, ): Promise<BrowserPageContent>',
+        description: 'Activate one visible link and read the resulting page.',
+        parameters: [{ name: 'owner', description: 'exact owning Agent, or undefined for a user/UI-driven action.' }, { name: 'request', description: 'profile, optional URL, and the link selector.' }, { name: 'signal', description: 'cancellation of the operation.' }],
+        returns: 'the bounded resulting page content.',
+      },
     ],
   },
   {
@@ -4080,8 +4092,20 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface BrowserCloseRequest {\n    readonly profile: BrowserProfile;\n}',
   },
   {
+    name: 'BrowserLinkSelector',
+    declaration: 'export interface BrowserLinkSelector {\n    readonly text?: string;\n    readonly href?: string;\n}',
+  },
+  {
     name: 'BrowserNavigateRequest',
     declaration: 'export interface BrowserNavigateRequest {\n    readonly profile: BrowserProfile;\n    readonly url: string;\n}',
+  },
+  {
+    name: 'BrowserPageContent',
+    declaration: 'export interface BrowserPageContent {\n    readonly url: string;\n    readonly title: string;\n    readonly text: string;\n    readonly links: readonly BrowserPageLink[];\n    readonly status: number | undefined;\n    readonly truncated: boolean;\n}',
+  },
+  {
+    name: 'BrowserPageLink',
+    declaration: 'export interface BrowserPageLink {\n    readonly text: string;\n    readonly href: string;\n}',
   },
   {
     name: 'BrowserProfile',

@@ -46,7 +46,7 @@ import * as ToolBashPersistent from '@greeneek/gnk-tool-bash-persistent'
 import * as ToolPwshPersistent from '@greeneek/gnk-tool-pwsh-persistent'
 import CordisHostRunner from '@greeneek/gnk-cordis-host-runner'
 import BrowserSurfaceService from '@greeneek/gnk-browser-use'
-import BrowserSurfaceProvider from '@greeneek/gnk-browser-surface'
+import BrowserPlaywrightProvider from '@greeneek/gnk-browser-playwright'
 import * as ToolBrowser from '@greeneek/gnk-tool-browser'
 import * as ToolCordis from '@greeneek/gnk-tool-cordis'
 import * as ToolFs from '@greeneek/gnk-tool-fs'
@@ -375,11 +375,14 @@ const TOOL_PACKAGES: ToolPackage[] = [
     writes: ['tool/call', 'tool/result'],
     async mount(ctx) {
       await ctx.plugin(BrowserSurfaceService)
-      await ctx.plugin(BrowserSurfaceProvider)
+      await ctx.plugin(BrowserPlaywrightProvider, {
+        userDataRoot: 'browser-profiles', headless: true, timeoutMs: 30_000,
+        maxContentChars: 100_000, maxLinks: 100,
+      })
       await ctx.plugin(ToolBrowser)
     },
     note:
-      'browser_open, browser_navigate, browser_snapshot, and browser_close drive the visible right-panel browser surface through the single ctx.browser authority. browser_snapshot reports tracked navigation state only, never page contents; browser-originated data is untrusted.',
+      'browser_open, browser_navigate, browser_snapshot, browser_read, browser_click, and browser_close drive the browser surface through the single ctx.browser authority. browser_read/browser_click use the Playwright provider to navigate real pages and return bounded visible text, links, and HTTP status. All webpage data is emitted after an explicit untrusted-content notice.',
   },
   {
     pkg: '@greeneek/gnk-tool-terminal',

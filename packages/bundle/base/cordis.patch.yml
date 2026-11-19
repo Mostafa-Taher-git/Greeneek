@@ -296,13 +296,18 @@
       name: '@greeneek/gnk-tool-jobs'
 
     # Browser-use capability: one provider slot and one tracked navigation state
-    # per profile. The service and surface-state backend stay on the host plane;
-    # the model-facing tool is enabled per preset (web disables it by default).
+    # per profile. The Playwright provider launches a real local browser so the
+    # Agent can read page content and follow links; the model-facing tool is
+    # enabled per preset (web disables it by default).
     - id: browser
       name: '@greeneek/gnk-browser-use'
 
-    - id: browser-surface
-      name: '@greeneek/gnk-browser-surface'
+    - id: browser-playwright
+      name: '@greeneek/gnk-browser-playwright'
+      config:
+        userDataRoot: !!js gnkHomePath('browser-profiles')
+        headless: true
+        timeoutMs: 30000
 
     - id: tool-browser
       name: '@greeneek/gnk-tool-browser'

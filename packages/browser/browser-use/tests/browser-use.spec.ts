@@ -50,6 +50,38 @@ describe('BrowserSurfaceService', () => {
     await ctx.fiber.dispose()
   })
 
+  it('refuses content reads by name when the backend has no content capability', async () => {
+    const ctx = new Context()
+    const service = new BrowserSurfaceService(ctx)
+    service.registerBackend(backend())
+    await expect(service.read(undefined, { profile: 'default', url: 'https://a.example' }))
+      .rejects.toMatchObject({ code: 'CONTENT_UNSUPPORTED' })
+    await ctx.fiber.dispose()
+  })
+
+  it('reads real content through a content-capable backend and tracks the URL', async () => {
+    const ctx = new Context()
+    const service = new BrowserSurfaceService(ctx)
+    const content = {
+      url: 'https://a.example/page', title: 'A', text: 'hello',
+      links: [{ text: 'next', href: 'https://a.example/next' }],
+      status: 200, truncated: false,
+    }
+    const provider = {
+      ...backend(),
+      read: vi.fn(async () => content),
+      click: vi.fn(async () => content),
+    }
+    service.registerBackend(provider)
+    const seen: unknown[] = []
+    ctx.on(BROWSER_SURFACE_EVENT, (snapshot: BrowserSurfaceSnapshot) => { seen.push(snapshot) })
+    const result = await service.read(undefined, { profile: 'default', url: 'https://a.example' })
+    expect(result).toEqual(content)
+    expect(service.snapshot('default')).toMatchObject({ url: content.url, status: 'open' })
+    expect(seen.length).toBeGreaterThan(0)
+    await ctx.fiber.dispose()
+  })
+
   it('fails with a stable code when no backend is registered', async () => {
     const ctx = new Context()
     const service = new BrowserSurfaceService(ctx)

@@ -227,6 +227,12 @@ Resolved a real bug during live testing: `cannot get property "remote.browser" w
 - `test:web` >15 min: environment/timing, not a real failure signal. `vitest.web.config.ts:35` already sets `fileParallelism: false` (serial), with `testTimeout 180s`/`hookTimeout 120s`; total is cumulative with the build step. Focused bounded runs (`GNK_SNAPSHOT=replay pnpm exec vitest run --config vitest.web.config.ts <file>`) are the supported way to verify individual lanes.
 No failure was skipped or suppressed.
 
+## Shortcut matrix live verification (2026-11-19, Web)
+
+- Titlebar toggles: `Ctrl+Alt+B` opens/closes the right panel (verified pressed true/false), `Ctrl+Shift+B` opens Thread Details (true), `Ctrl+J` opens the terminal drawer (true).
+- Launcher: `Ctrl+F` opens the Files surface with a real directory listing. Launcher keys are bound with the mod key (`mod+b/f/d/p/l/s`), so they do not collide with composer typing; the chips display the bare letter (B/T/F/D/P/L/M/S). This differs from T3's bare-letter capture, but is intentional to avoid text-input conflicts.
+- Note: some mod chords overlap browser defaults (Ctrl+T/P/F); the app calls preventDefault in its handler. Verified Ctrl+F is captured by the app.
+
 ## Remaining limitations
 
 - GitHub PR rows require the user to configure `GITHUB_TOKEN` through the existing credentials seam; no key is provided by Greeneek.

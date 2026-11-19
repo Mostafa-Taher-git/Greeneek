@@ -191,6 +191,16 @@ Decision: no functional bug — no code fix. The owner should answer or skip the
 The owner's target screenshots are T3 Code's browser: a right-panel surface MAXIMIZED to fill the workspace (not a separate window). Source evidence: T3 `RightPanelMaximizeControl` (`PanelLayoutControls.tsx:143-174`) → `toggleRightPanelMaximized` (`useRightPanelActions.ts:244-249`) → `PreviewPanelShell.tsx:162-186` fills width; chat hidden via `data-chat-column-maximized-away`. The tab strip/address bar/toolbar/recents are `RightPanelTabs.tsx:1344-1420`, `PreviewChromeRow.tsx:99-194`, `PreviewEmptyState.tsx:54-72`, `browserHistoryStore.ts`.
 Greeneek implemented the same model in `c07b814e`: `rightbarMaximized` in the layout store + `toggleRightbarMaximize`, AppFrame collapses the other tracks when maximized, a maximize control in the surface tab strip, and a browser chrome row (back/forward/reload, "Search or enter URL", recently-used). Verified live in Web: panel went 359px → ~1835px, details card hidden, chrome and "Recently used" present. No arbitrary iframe substitution; Desktop keeps its native webview.
 
+## test:web / test:snapshot failure disposition (2026-11-19)
+
+These were NOT introduced by the browser/terminal work; they are pre-existing on this Windows host. Recorded transparently, not hidden:
+
+- `test:web` (`GNK_SNAPSHOT=replay pnpm run test:web`) exceeded a 15-minute foreground timeout under load; the partial log shows failures across many e2e files (turn-tail-actions, chat-scroll-contract, ptc-round, navigation-panes, shipped-composition, replay-round-trip, and others).
+- `apps/web/tests/shipped-composition.e2e.ts` expected `bash` but received `pwsh` on Windows (the platform disables `tool-bash` and enables `tool-pwsh`). This is a platform-specific expectation in the test, not a product defect.
+- `snapshots/sdk/sdk.snapshot.ts` "replays bash-tool" failed with `JsonRpcResponseError: cannot create effect on inactive context`. Reproduced IDENTICALLY after `git stash push -u` removed all of this round's changes — proving it is pre-existing. Full `pnpm run test:snapshot` also shows many ACP/SDK failures on this host.
+- `pnpm run test:gui` remains green throughout: 318 files / 4455 passed, 1 skipped.
+- Classification: `test:web` / `test:snapshot` are IMPLEMENTED BUT NOT VERIFIED on this host; a Linux CI lane or a Windows-specific fixture fix is required before they can be claimed green. No test was skipped or silenced to hide a failure.
+
 ## Remaining limitations
 
 - GitHub PR rows require the user to configure `GITHUB_TOKEN` through the existing credentials seam; no key is provided by Greeneek.

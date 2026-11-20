@@ -107,6 +107,7 @@ describe('the shipped preset root', () => {
     const names = rows.map(row => (row as { name?: unknown }).name)
     expect(names).toContain('@greeneek/gnk-tool-terminal')
     expect(names).toContain('@greeneek/gnk-tool-jobs')
+    expect(names).toContain('@greeneek/gnk-tool-browser')
   })
 
   it('falls back to standard with a warning when the stored default names no shipped preset', async () => {

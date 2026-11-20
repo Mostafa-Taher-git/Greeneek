@@ -6919,6 +6919,9 @@ importers:
       '@greeneek/gnk-atomic-write':
         specifier: workspace:^
         version: link:../../util/atomic-write
+      '@greeneek/gnk-command-browser-ai':
+        specifier: workspace:^
+        version: link:../../browser/command-browser-ai
       '@greeneek/gnk-fs-local':
         specifier: workspace:^
         version: link:../../fs/fs-local

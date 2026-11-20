@@ -103,6 +103,11 @@
 - id: command-goal
   name: '@greeneek/gnk-command-goal'
 
+# Manual Browser AI connections: open an official provider site in its isolated
+# session through the user-facing command.
+- id: command-browser-ai
+  name: '@greeneek/gnk-command-browser-ai'
+
 - id: tool-goal
   name: '@greeneek/gnk-tool-goal'
 

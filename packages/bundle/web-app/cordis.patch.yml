@@ -396,6 +396,10 @@
 - id: command-goal
   disabled: true
 
+# Browser AI registry stays on the host plane; the human command is preset-owned.
+- id: command-browser-ai
+  disabled: true
+
 - id: tool-goal
   disabled: true
 

@@ -12,7 +12,7 @@ import { join } from 'node:path'
 import type { Context } from '@greeneek/cordis'
 import type {
   BrowserBackendCloseSpec, BrowserBackendSpec, BrowserContentBackend, BrowserContentSpec,
-  BrowserLinkSelector, BrowserPageContent,
+  BrowserLinkSelector, BrowserPageContent, BrowserProfile,
 } from '@greeneek/gnk-browser-use'
 import { BrowserError } from '@greeneek/gnk-browser-use'
 import type { BrowserContext, Page, Response } from 'playwright'
@@ -51,14 +51,14 @@ interface ProfileSession {
 class PlaywrightContentBackend implements BrowserContentBackend {
   readonly type = 'playwright'
 
-  private readonly sessions = new Map<'default' | 'incognito', ProfileSession>()
-  private readonly openings = new Map<'default' | 'incognito', Promise<ProfileSession>>()
+  private readonly sessions = new Map<BrowserProfile, ProfileSession>()
+  private readonly openings = new Map<BrowserProfile, Promise<ProfileSession>>()
 
   /** @param config - resolved launch and extraction limits. */
   constructor(private readonly config: PlaywrightBrowserConfig) {}
 
   /** Get or lazily open the persistent context for one profile. */
-  private getSession(profile: 'default' | 'incognito'): Promise<ProfileSession> {
+  private getSession(profile: BrowserProfile): Promise<ProfileSession> {
     const existing = this.sessions.get(profile)
     if (existing !== undefined && !existing.page.isClosed()) return Promise.resolve(existing)
     const opening = this.openings.get(profile)
@@ -74,11 +74,15 @@ class PlaywrightContentBackend implements BrowserContentBackend {
   }
 
   /** Launch one persistent context and return its page. */
-  private async openProfile(profile: 'default' | 'incognito'): Promise<ProfileSession> {
+  private async openProfile(profile: BrowserProfile): Promise<ProfileSession> {
     let userDataDir: string
     let ephemeralDir: string | undefined
     if (profile === 'default') {
       userDataDir = join(this.config.userDataRoot, 'default')
+    } else if (profile.startsWith('provider:')) {
+      // Provider-isolated durable profile: login state persists across restarts
+      // and no other provider can read this directory.
+      userDataDir = join(this.config.userDataRoot, 'provider', profile.slice('provider:'.length))
     } else {
       ephemeralDir = mkdtempSync(join(tmpdir(), 'gnk-browser-incognito-'))
       userDataDir = ephemeralDir

@@ -13,7 +13,7 @@ A `Requires:` line lists the service keys the plugin `inject`s: its `cordis.yml`
 
 Scope: one verbatim config type per loadable harness package. Intended lookup: find the package name below, then jump to its anchor (`#greeneekgnk-<slug>`) for the full pasted declaration and `Source:` pointer. Grouping: configurable plugins first (alphabetical by package), then no-config, seam, and library lists. Related guidance: subsystem pages for wiring, the [tool catalog](tool-catalog.md) for model-facing schemas.
 
-Generated: 16818 words total, 120 config entries, 124 headings, 2013 words in the largest section. Regenerate with `pnpm run gen-config-catalog`; verify with `pnpm run verify-config-catalog`.
+Generated: 16829 words total, 120 config entries, 124 headings, 2013 words in the largest section. Regenerate with `pnpm run gen-config-catalog`; verify with `pnpm run verify-config-catalog`.
 
 <a id="greeneekgnk-acp"></a>
 
@@ -408,7 +408,7 @@ export interface BrowserUseConfig {
 }
 ```
 
-Source: [`packages/browser/browser-use/src/index.ts:45`](../packages/browser/browser-use/src/index.ts)
+Source: [`packages/browser/browser-use/src/index.ts:46`](../packages/browser/browser-use/src/index.ts)
 
 <a id="greeneekgnk-client-connection"></a>
 
@@ -3547,6 +3547,7 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 - `@greeneek/gnk-api-remotes` — requires `typertGateway` ([`packages/api/remotes/src/index.ts`](../packages/api/remotes/src/index.ts))
 - `@greeneek/gnk-api-workspace-controller` — requires `typert` · `workspaceRegistry` ([`packages/api/workspace-controller/src/index.ts`](../packages/api/workspace-controller/src/index.ts))
 - `@greeneek/gnk-authorization` — requires `credentials` ([`packages/credentials/authorization/src/index.ts`](../packages/credentials/authorization/src/index.ts))
+- `@greeneek/gnk-browser-ai` ([`packages/browser/browser-ai/src/index.ts`](../packages/browser/browser-ai/src/index.ts))
 - `@greeneek/gnk-browser-surface` — requires `browser` ([`packages/browser/browser-surface/src/index.ts`](../packages/browser/browser-surface/src/index.ts))
 - `@greeneek/gnk-client-locale` ([`packages/client/locale/src/index.ts`](../packages/client/locale/src/index.ts))
 - `@greeneek/gnk-client-modules` — requires `webServer` · `loader` ([`packages/client/modules/src/index.ts`](../packages/client/modules/src/index.ts))
@@ -3591,6 +3592,7 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 - `@greeneek/gnk-client-ui-wave` ([`packages/client/ui-wave/src/index.ts`](../packages/client/ui-wave/src/index.ts))
 - `@greeneek/gnk-client-ui-workflow-run` ([`packages/client/ui-workflow-run/src/index.ts`](../packages/client/ui-workflow-run/src/index.ts))
 - `@greeneek/gnk-client-ui-workspace` ([`packages/client/ui-workspace/src/index.ts`](../packages/client/ui-workspace/src/index.ts))
+- `@greeneek/gnk-command-browser-ai` — requires `commands` · `browserAI` ([`packages/browser/command-browser-ai/src/index.ts`](../packages/browser/command-browser-ai/src/index.ts))
 - `@greeneek/gnk-command-compact` — requires `commands` · `compaction` ([`packages/compaction/command-compact/src/index.ts`](../packages/compaction/command-compact/src/index.ts))
 - `@greeneek/gnk-command-feedback` — requires `commands` ([`packages/feedback/command-feedback/src/index.ts`](../packages/feedback/command-feedback/src/index.ts))
 - `@greeneek/gnk-command-goal` — requires `commands` · `goals` ([`packages/goal/command-goal/src/index.ts`](../packages/goal/command-goal/src/index.ts))

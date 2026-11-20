@@ -87,7 +87,7 @@ A browser profile's tracked navigation state changed.
  * @mode emit
  * @param snapshot - the updated surface state.
  */
-'browser/surface'(snapshot: { profile: 'default' | 'incognito' url: string | undefined status: 'open' | 'closed' titleSource: 'reported' | 'unknown' source: 'agent' | 'user' }): void
+'browser/surface'(snapshot: { profile: string url: string | undefined status: 'open' | 'closed' titleSource: 'reported' | 'unknown' source: 'agent' | 'user' }): void
 ```
 
 Source: [`packages/api/session-controller/src/types.ts`](../../packages/api/session-controller/src/types.ts)

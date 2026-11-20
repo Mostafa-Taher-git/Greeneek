@@ -1136,6 +1136,15 @@ importers:
         specifier: ^15.0.0
         version: 15.0.0
 
+  packages/browser/browser-ai:
+    devDependencies:
+      '@greeneek/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@greeneek/gnk-browser-use':
+        specifier: workspace:^
+        version: link:../browser-use
+
   packages/browser/browser-playwright:
     dependencies:
       playwright:
@@ -1166,6 +1175,18 @@ importers:
       '@greeneek/gnk-agent':
         specifier: workspace:^
         version: link:../../core/agent
+
+  packages/browser/command-browser-ai:
+    devDependencies:
+      '@greeneek/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@greeneek/gnk-browser-ai':
+        specifier: workspace:^
+        version: link:../browser-ai
+      '@greeneek/gnk-commands':
+        specifier: workspace:^
+        version: link:../../interaction/commands
 
   packages/browser/tool-browser:
     devDependencies:
@@ -1252,6 +1273,9 @@ importers:
       '@greeneek/gnk-bash-sandbox':
         specifier: workspace:^
         version: link:../../shell/bash-sandbox
+      '@greeneek/gnk-browser-ai':
+        specifier: workspace:^
+        version: link:../../browser/browser-ai
       '@greeneek/gnk-browser-playwright':
         specifier: workspace:^
         version: link:../../browser/browser-playwright
@@ -1261,6 +1285,9 @@ importers:
       '@greeneek/gnk-browser-use':
         specifier: workspace:^
         version: link:../../browser/browser-use
+      '@greeneek/gnk-command-browser-ai':
+        specifier: workspace:^
+        version: link:../../browser/command-browser-ai
       '@greeneek/gnk-command-compact':
         specifier: workspace:^
         version: link:../../compaction/command-compact

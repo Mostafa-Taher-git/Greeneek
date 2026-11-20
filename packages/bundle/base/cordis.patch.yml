@@ -309,6 +309,14 @@
         headless: true
         timeoutMs: 30000
 
+    # Browser AI connections: manual, provider-isolated web sessions for official
+    # ChatGPT/Claude/Gemini interfaces. Automation is declared per provider.
+    - id: browser-ai
+      name: '@greeneek/gnk-browser-ai'
+
+    - id: command-browser-ai
+      name: '@greeneek/gnk-command-browser-ai'
+
     - id: tool-browser
       name: '@greeneek/gnk-tool-browser'
 

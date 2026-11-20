@@ -3,7 +3,11 @@
 import type { Agent } from '@greeneek/gnk-agent'
 
 /** Built-in browser profiles, matching the right-panel browser surface. */
-export type BrowserProfile = 'default' | 'incognito'
+export type BrowserBuiltInProfile = 'default' | 'incognito'
+/** Provider-isolated profiles, e.g. `provider:chatgpt`. Only constructed by a trusted registry. */
+export type BrowserProviderProfile = `provider:${string}`
+/** All profiles the browser runtime can address. */
+export type BrowserProfile = BrowserBuiltInProfile | BrowserProviderProfile
 
 /** Who last drove a surface: an Agent through tools, or the user through the UI. */
 export type BrowserSource = 'agent' | 'user'

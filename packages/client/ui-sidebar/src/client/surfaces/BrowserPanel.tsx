@@ -79,7 +79,11 @@ export function BrowserPanel({ profile, desktop, state, onNavigate, t }: Browser
   const [cursor, setCursor] = useState(-1)
   const [reloadKey, setReloadKey] = useState(0)
   const [recents, setRecents] = useState<readonly Recent[]>(loadRecents)
-  const partition = profile === 'incognito' ? 'gnk-browser-incognito' : 'persist:gnk-browser-default'
+  const partition = profile === 'incognito'
+    ? 'gnk-browser-incognito'
+    : profile.startsWith('provider:')
+      ? `persist:gnk-browser-provider-${profile.slice('provider:'.length)}`
+      : 'persist:gnk-browser-default'
 
   const navigate = (next: string): void => {
     const trimmed = history.slice(0, cursor + 1)

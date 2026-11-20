@@ -29,7 +29,7 @@ export class BrowserController extends TypertRemoteService {
   @Remote('navigate')
   async navigate(request: BrowserRemoteRequest & { url: string }): Promise<BrowserRemoteSnapshot> {
     const snapshot = await this.ctx.browser.open(undefined, {
-      profile: request.profile, url: request.url,
+      profile: request.profile as import('@greeneek/gnk-browser-use').BrowserProfile, url: request.url,
     })
     return this.project(snapshot.profile, snapshot)
   }
@@ -37,7 +37,7 @@ export class BrowserController extends TypertRemoteService {
   /** Close one profile from the UI. */
   @Remote('close')
   async close(request: BrowserRemoteRequest): Promise<BrowserRemoteSnapshot> {
-    const snapshot = await this.ctx.browser.close(undefined, { profile: request.profile })
+    const snapshot = await this.ctx.browser.close(undefined, { profile: request.profile as import('@greeneek/gnk-browser-use').BrowserProfile })
     return this.project(snapshot.profile, snapshot)
   }
 
@@ -49,7 +49,7 @@ export class BrowserController extends TypertRemoteService {
   @Remote('read')
   async read(request: BrowserRemoteRequest & { url?: string }): Promise<BrowserWireContent> {
     const content = await this.ctx.browser.read(undefined, {
-      profile: request.profile,
+      profile: request.profile as import('@greeneek/gnk-browser-use').BrowserProfile,
       ...(request.url === undefined ? {} : { url: request.url }),
     })
     return {
@@ -93,8 +93,8 @@ export class BrowserController extends TypertRemoteService {
   }
 
   /** Project a Host snapshot to the wire shape. */
-  private project(profile: BrowserProfile, snapshot?: BrowserSurfaceSnapshot): BrowserRemoteSnapshot {
-    const source = snapshot ?? this.ctx.browser.snapshot(profile)
+  private project(profile: string, snapshot?: BrowserSurfaceSnapshot): BrowserRemoteSnapshot {
+    const source = snapshot ?? this.ctx.browser.snapshot(profile as BrowserProfile)
     return {
       profile,
       url: source.url ?? null,

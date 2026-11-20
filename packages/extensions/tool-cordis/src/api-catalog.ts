@@ -785,6 +785,67 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'browserAI',
+    summary: 'The Browser AI registry and isolated session manager.',
+    description: 'The Browser AI registry and isolated session manager.',
+    methods: [
+      {
+        signature: 'list(): readonly BrowserAIProvider[]',
+        description: 'All registered providers, for a connection list UI.',
+        parameters: [],
+        returns: 'the immutable provider roster.',
+      },
+      {
+        signature: 'get(providerId: string): BrowserAIProvider',
+        description: 'Resolve one provider or fail with a stable code.',
+        parameters: [{ name: 'providerId', description: 'provider to resolve.' }],
+        returns: 'the provider descriptor.',
+      },
+      {
+        signature: 'profile(providerId: string): BrowserProviderProfile',
+        description: 'The isolated browser profile for one provider.',
+        parameters: [{ name: 'providerId', description: 'provider whose profile to resolve.' }],
+        returns: 'the provider-isolated profile id.',
+      },
+      {
+        signature: 'status(providerId: string): BrowserAISession',
+        description: 'Status of one provider session (login-required before first open).',
+        parameters: [{ name: 'providerId', description: 'provider whose status to report.' }],
+        returns: 'the credential-free session projection.',
+      },
+      {
+        signature: 'async openManual(providerId: string): Promise<BrowserAISession>',
+        description: 'Open a provider\'s official site in its isolated browser profile for manual use. The browser surface becomes visible through the browser/surface event.',
+        parameters: [{ name: 'providerId', description: 'provider to open.' }],
+        returns: 'the session snapshot after opening.',
+      },
+      {
+        signature: 'async read(providerId: string): Promise<BrowserPageContent>',
+        description: 'Read the visible page of a provider session with the untrusted-content boundary applied by the browser tool layer. Never returns cookies/tokens.',
+        parameters: [{ name: 'providerId', description: 'provider whose session to read.' }],
+        returns: 'the bounded page content.',
+      },
+      {
+        signature: 'automate(providerId: string, agent: Agent | undefined): never',
+        description: 'Authorized automation entry point. Refused by name for every provider whose capability matrix marks automation unavailable - never approximated.',
+        parameters: [{ name: 'providerId', description: 'provider the caller wants to automate.' }, { name: 'agent', description: 'exact owning Agent (kept for the future authorized path).' }],
+        returns: 'never; every path throws with a stable refusal code.',
+      },
+      {
+        signature: 'setStatus(providerId: string, status: BrowserAISessionStatus): BrowserAISession',
+        description: 'Mark a session as login-required or expired (user/UI action).',
+        parameters: [{ name: 'providerId', description: 'provider whose session changed.' }, { name: 'status', description: 'new lifecycle status.' }],
+        returns: 'the updated session projection.',
+      },
+      {
+        signature: 'clear(providerId: string): BrowserAISession',
+        description: 'Clear a provider session\'s status; browser profile storage is untouched here.',
+        parameters: [{ name: 'providerId', description: 'provider whose session status to clear.' }],
+        returns: 'the reset session projection.',
+      },
+    ],
+  },
+  {
     key: 'clientModules',
     summary: 'The web plugin table service: incremental `gnk.client` scan + wire composition + bundle route + index injection rows.',
     description: 'The web plugin table service: incremental `gnk.client` scan + wire composition + bundle route + index injection rows. Construction runs the activation scan synchronously — a malformed declaration or missing bundle among the already-loaded entries aggregates into one loud throw (FAILED fiber; the boot activation audit reports it).',
@@ -3466,7 +3527,7 @@ export const EVENT_API: readonly EventApiEntry[] = [
   {
     name: 'browser/surface',
     mode: 'emit',
-    signature: '\'browser/surface\'(snapshot: { profile: \'default\' | \'incognito\' url: string | undefined status: \'open\' | \'closed\' titleSource: \'reported\' | \'unknown\' source: \'agent\' | \'user\' }): void',
+    signature: '\'browser/surface\'(snapshot: { profile: string url: string | undefined status: \'open\' | \'closed\' titleSource: \'reported\' | \'unknown\' source: \'agent\' | \'user\' }): void',
     summary: 'A browser profile\'s tracked navigation state changed.',
     description: 'A browser profile\'s tracked navigation state changed.',
     parameters: [{ name: 'snapshot', description: 'the updated surface state.' }],
@@ -4076,6 +4137,22 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type BrandedNumber<B extends string> = number & {\n    readonly [BRAND]: B;\n};',
   },
   {
+    name: 'BrowserAIProvider',
+    declaration: 'export interface BrowserAIProvider {\n    readonly id: string;\n    readonly vendor: BrowserAIVendor;\n    readonly labelKey: string;\n    readonly officialUrl: string;\n    readonly manual: boolean;\n    readonly automation: boolean;\n    readonly automationReason: string | undefined;\n    readonly termsSource: string;\n}',
+  },
+  {
+    name: 'BrowserAISession',
+    declaration: 'export interface BrowserAISession {\n    readonly providerId: string;\n    readonly profile: BrowserProviderProfile;\n    readonly url: string;\n    readonly status: BrowserAISessionStatus;\n    readonly capabilities: Pick<BrowserAIProvider, \'manual\' | \'automation\' | \'automationReason\'>;\n}',
+  },
+  {
+    name: 'BrowserAISessionStatus',
+    declaration: 'export type BrowserAISessionStatus = \'login-required\' | \'connected\' | \'session-expired\' | \'unavailable\';',
+  },
+  {
+    name: 'BrowserAIVendor',
+    declaration: 'export type BrowserAIVendor = \'openai\' | \'anthropic\' | \'google\';',
+  },
+  {
     name: 'BrowserBackend',
     declaration: 'export interface BrowserBackend {\n    readonly type: string;\n    open(spec: BrowserBackendSpec): Promise<void>;\n    close(spec: BrowserBackendCloseSpec): Promise<void>;\n}',
   },
@@ -4086,6 +4163,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'BrowserBackendSpec',
     declaration: 'export interface BrowserBackendSpec {\n    readonly profile: BrowserProfile;\n    readonly url: string;\n    readonly owner: Agent | undefined;\n    readonly signal: AbortSignal | undefined;\n}',
+  },
+  {
+    name: 'BrowserBuiltInProfile',
+    declaration: 'export type BrowserBuiltInProfile = \'default\' | \'incognito\';',
   },
   {
     name: 'BrowserCloseRequest',
@@ -4109,7 +4190,11 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'BrowserProfile',
-    declaration: 'export type BrowserProfile = \'default\' | \'incognito\';',
+    declaration: 'export type BrowserProfile = BrowserBuiltInProfile | BrowserProviderProfile;',
+  },
+  {
+    name: 'BrowserProviderProfile',
+    declaration: 'export type BrowserProviderProfile = `provider:${string}`;',
   },
   {
     name: 'BrowserSource',

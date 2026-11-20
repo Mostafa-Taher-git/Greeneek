@@ -30,13 +30,19 @@ export function isTrustedAppUrl(rawUrl) {
  */
 export const BROWSER_PARTITIONS = ['persist:gnk-browser-default', 'gnk-browser-incognito']
 
+/** Provider ids allowed an isolated persistent webview partition. */
+export const BROWSER_AI_PROVIDERS = ['chatgpt', 'claude', 'gemini']
+
 /**
  * Whether a webview partition is one the Browser surface may attach.
  * @param partition - requested Electron partition string.
- * @returns true only for the two declared browser profiles.
+ * @returns true only for the built-in profiles and declared AI provider profiles.
  */
 export function isAllowedBrowserPartition(partition) {
-  return typeof partition === 'string' && BROWSER_PARTITIONS.includes(partition)
+  if (typeof partition !== 'string') return false
+  if (BROWSER_PARTITIONS.includes(partition)) return true
+  const prefix = 'persist:gnk-browser-provider-'
+  return partition.startsWith(prefix) && BROWSER_AI_PROVIDERS.includes(partition.slice(prefix.length))
 }
 
 /**

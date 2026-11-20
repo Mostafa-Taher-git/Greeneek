@@ -70,7 +70,7 @@ const APP_LABELS: Record<string, string> = {
 
 /** Report one Host-tracked browser surface through the Remote. */
 async function browserState(profile: string, ctx: ClientContext) {
-  const result = await ctx.remote.browser.state({ profile: profile as 'default' | 'incognito' })
+  const result = await ctx.remote.browser.state({ profile: profile })
   if (!result.ok) throw new Error(result.error.message)
   const value = result.value
   return {
@@ -84,13 +84,13 @@ async function browserState(profile: string, ctx: ClientContext) {
 
 /** Navigate one browser profile through the Host so agent and user writes agree. */
 async function browserNavigate(profile: string, url: string, ctx: ClientContext): Promise<void> {
-  const result = await ctx.remote.browser.navigate({ profile: profile as 'default' | 'incognito', url })
+  const result = await ctx.remote.browser.navigate({ profile: profile, url })
   if (!result.ok) throw new Error(result.error.message)
 }
 
 /** Close one browser profile through the Host. */
 async function browserClose(profile: string, ctx: ClientContext): Promise<void> {
-  const result = await ctx.remote.browser.close({ profile: profile as 'default' | 'incognito' })
+  const result = await ctx.remote.browser.close({ profile: profile })
   if (!result.ok) throw new Error(result.error.message)
 }
 

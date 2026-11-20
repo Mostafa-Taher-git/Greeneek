@@ -674,7 +674,7 @@ declare module '@greeneek/cordis' {
      * @param snapshot - the updated surface state.
      */
     'browser/surface'(snapshot: {
-      profile: 'default' | 'incognito'
+      profile: string
       url: string | undefined
       status: 'open' | 'closed'
       titleSource: 'reported' | 'unknown'
@@ -749,7 +749,7 @@ export type PtyFrame =
 /** One browser profile addressed by a Remote call. */
 export interface BrowserRemoteRequest {
   /** Profile to operate on. */
-  readonly profile: 'default' | 'incognito'
+  readonly profile: string
 }
 
 /** One link in a wire page read. */
@@ -779,7 +779,7 @@ export interface BrowserWireContent {
 /** Wire view of one tracked browser surface. */
 export interface BrowserRemoteSnapshot {
   /** Profile this snapshot describes. */
-  readonly profile: 'default' | 'incognito'
+  readonly profile: string
   /** Current tracked URL, or null when closed. */
   readonly url: string | null
   /** Whether a page is open. */

@@ -28,7 +28,8 @@ export { BrowserError } from './error.ts'
 export type {
   BrowserBackend, BrowserBackendCloseSpec, BrowserBackendSpec, BrowserCloseRequest,
   BrowserContentBackend, BrowserContentSpec, BrowserErrorCode, BrowserLinkSelector,
-  BrowserNavigateRequest, BrowserPageContent, BrowserProfile, BrowserSource, BrowserSurfaceSnapshot,
+  BrowserNavigateRequest, BrowserPageContent, BrowserProfile,
+  BrowserProviderProfile, BrowserSource, BrowserSurfaceSnapshot,
 } from './types.ts'
 
 declare module '@greeneek/cordis' {

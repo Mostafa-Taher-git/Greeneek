@@ -70,6 +70,9 @@ interface SessionRecord {
 
 /** The Browser AI registry and isolated session manager. */
 export class BrowserAIRegistry extends Service {
+  /** The browser-use seam this manager drives for isolated sessions. */
+  static inject = ['browser']
+
   private readonly providers = new Map<string, BrowserAIProvider>()
   private readonly sessions = new Map<string, SessionRecord>()
   private disposedFlag = false

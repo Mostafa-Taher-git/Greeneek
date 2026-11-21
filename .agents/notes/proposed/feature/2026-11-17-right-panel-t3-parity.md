@@ -243,6 +243,20 @@ The prior seam tracked navigation state only and could not read page content. Im
 - LIVE Web: `browser/read` on https://example.com returned title "Example Domain", status 200, real page text and the IANA link; invalid URL refused; 404 reported.
 - LIVE Agent turns: agent used `browser_read` and reported the exact page title and the sentence beginning "This domain is..."; agent used `browser_click` on the IANA link and reported final URL https://www.iana.org/help/example-domains and title "Example Domains". Real content access and link following, not iframe display.
 
+## Browser AI Connections — existing requirement ID and implementation (2026-11-22)
+
+This is NOT a new R-ID. It is the owner-approved Phase 9 "Browser AI Accounts" feature, recorded in `.agents/notes/proposed/process/2026-11-01-v0.3.9-master-release-plan.md:1398-1446` as acceptance criteria **AC-08…AC-13** with the `BrowserAIProvider` third concept at `:1424`. It was explicitly "nothing implemented" (`:1896`).
+
+Implemented in commits `e9cb861f`, `5ca3d5df`, `1937ec2c`, `184b848f`:
+- `packages/browser/browser-ai` — registry + session manager with the three official providers (ChatGPT/Claude/Gemini), each declaring `manual: true` and `automation: false` with the exact terms/reliability reason and source; one provider-isolated persistent profile (`provider:<id>`); statuses `login-required`/`connected`/`session-expired`/`unavailable`; automation refused by name (`AUTOMATION_UNAVAILABLE`); no password collection and no cookie/token extraction.
+- `packages/browser/browser-playwright` — provider profiles use durable directories under `userDataRoot/provider/<id>`; Desktop webview allowlist extended to `persist:gnk-browser-provider-<id>` for the three declared providers; BrowserPanel maps provider profiles to those partitions.
+- `packages/browser/command-browser-ai` + `/browser-ai` command mounted in presets (host command disabled in web-app).
+- `docs/subsystems/browser-ai.md` generated page; automated tests 7/7 (registry, capability matrix, automation refusal, no credential material, command listing + isolated open).
+
+LIVE Web: `/browser-ai` appears in the command palette; running `/browser-ai chatgpt` returned "Opened chatgpt in its isolated browser session (provider:chatgpt, status connected)" and `browser/state` for `provider:chatgpt` returned `{status:'open', url:'https://chatgpt.com/'}`. A live bug found during verification (service used `ctx.browser` without declaring inject) was fixed in `184b848f` and re-verified.
+
+Honest boundary: Manual Mode is implemented and verified. Authorized automation of these three subscription web sessions is declared unavailable per the recorded compliance findings (Anthropic/Google prohibit; ChatGPT UI protections unreliable); Greeneek refuses it by name rather than approximating it. Real agent browser content access is a separate capability (browser_read/click) already verified above.
+
 ## Remaining limitations
 
 - GitHub PR rows require the user to configure `GITHUB_TOKEN` through the existing credentials seam; no key is provided by Greeneek.

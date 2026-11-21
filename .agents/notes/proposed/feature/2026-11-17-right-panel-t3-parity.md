@@ -257,6 +257,12 @@ LIVE Web: `/browser-ai` appears in the command palette; running `/browser-ai cha
 
 Honest boundary: Manual Mode is implemented and verified. Authorized automation of these three subscription web sessions is declared unavailable per the recorded compliance findings (Anthropic/Google prohibit; ChatGPT UI protections unreliable); Greeneek refuses it by name rather than approximating it. Real agent browser content access is a separate capability (browser_read/click) already verified above.
 
+## Maestro multi-agent verification (2026-11-22)
+
+- `packages/subagent/agent-team/tests/team.spec.ts` + `integration.spec.ts`: 116/116 passed (multi-member spawn, settlement, cancellation, lifecycle).
+- `packages/subagent/agent-team/tests/maestro-real.e2e.ts`: 1/1 passed (real delegation across Harness connections). That scenario uses a no-tools prompt, so terminal-in-delegation specifically is covered by composition assertion (maestro preset mounts tool-terminal/tool-jobs/tool-browser, `shipped-root.spec.ts`) plus the independently verified Agent terminal and browser tool turns. A single delegated task that itself runs a terminal command end-to-end remains unverified.
+- Final milestone `pnpm run test:gui`: 318 files / 4455 passed, 1 skipped. Working tree clean.
+
 ## Remaining limitations
 
 - GitHub PR rows require the user to configure `GITHUB_TOKEN` through the existing credentials seam; no key is provided by Greeneek.

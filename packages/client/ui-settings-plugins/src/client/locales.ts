@@ -20,8 +20,8 @@ export type PluginsSettingsLocaleKey =
 
 /** English copy. */
 export const en: Record<PluginsSettingsLocaleKey, string> = {
-  nav: 'Plugins',
-  title: 'Plugins',
+  nav: 'Built-in plugins',
+  title: 'Built-in plugins',
   intro: 'Configure and inspect the plugins installed in this deployment.',
   tabs: 'Plugin views',
   configurableTab: 'Plugin configuration',
@@ -76,8 +76,8 @@ export const en: Record<PluginsSettingsLocaleKey, string> = {
 
 /** Simplified Chinese copy. */
 export const zh: Record<PluginsSettingsLocaleKey, string> = {
-  nav: '插件',
-  title: '插件',
+  nav: '内置插件',
+  title: '内置插件',
   intro: '配置和查看本部署已安装的插件。',
   tabs: '插件视图',
   configurableTab: '插件配置',
@@ -132,8 +132,8 @@ export const zh: Record<PluginsSettingsLocaleKey, string> = {
 
 /** Arabic copy, checked complete against the PluginsSettingsLocaleKey set; product names and Latin identifiers stay verbatim. */
 export const ar = {
-  nav: 'الإضافات',
-  title: 'الإضافات',
+  nav: 'الإضافات المدمجة',
+  title: 'الإضافات المدمجة',
   intro: 'اضبط إضافات هذا النشر وافحصها.',
   tabs: 'عروض الإضافات',
   configurableTab: 'إعدادات الإضافات',

@@ -2135,6 +2135,8 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     slotInject: '',
     declaredBy: 'an entry in \'sidebar\' (client-ui-sidebar), so it exists while that entry is mounted',
     occupants: [
+      'client-ui-settings-automation-tasks SidebarAction id \'shortcut-automation-tasks\'',
+      'client-ui-settings-plugin-manager SidebarAction id \'shortcut-plugin-manager\'',
       'client-ui-workspace DashboardAction id \'dashboard\'',
     ],
     replaceRisk: 'none',

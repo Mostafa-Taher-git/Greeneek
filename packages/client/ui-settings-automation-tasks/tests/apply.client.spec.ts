@@ -11,7 +11,13 @@ describe('automation tasks settings section', () => {
     await ctx.plugin(SlotRegistry)
     // Declare the settings.section slot the section registers into.
     const slots = ctx.get('slots') as SlotRegistry
-    slots.register({ name: 'root', children: { 'settings.section': { kind: 'list', scope: 'root' } } } as never, () => null)
+    slots.register({
+      name: 'root',
+      children: {
+        'settings.section': { kind: 'list', scope: 'root' },
+        'sidebar.primary.action': { kind: 'list', scope: 'root' },
+      },
+    } as never, () => null)
     const locale = new LocaleRuntime(ctx)
     ctx.provide('locale', locale)
     ctx.provide('remote', {})
@@ -19,10 +25,14 @@ describe('automation tasks settings section', () => {
       list: vi.fn(async () => ({ ok: true as const, value: { tasks: [] } })),
     })
     ctx.provide('uiWorkspace', { startSession: vi.fn() })
+    ctx.provide('layout', { openSettings: vi.fn() })
     await ctx.plugin({ inject, apply }).await()
     const sections = slots.entries('settings.section')
     const section = sections.find(s => s.options.id === 'automation-tasks')
     expect(section).toBeTruthy()
     expect(section?.options.order).toBe(16)
+    const shortcut = slots.entries('sidebar.primary.action').find(s => s.options.id === 'shortcut-automation-tasks')
+    expect(shortcut).toBeTruthy()
+    expect(shortcut?.options.order).toBe(-2)
   })
 })

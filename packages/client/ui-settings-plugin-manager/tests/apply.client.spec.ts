@@ -10,7 +10,13 @@ describe('plugins settings section', () => {
     const ctx = new Context()
     await ctx.plugin(SlotRegistry)
     const slots = ctx.get('slots') as SlotRegistry
-    slots.register({ name: 'root', children: { 'settings.section': { kind: 'list', scope: 'root' } } } as never, () => null)
+    slots.register({
+      name: 'root',
+      children: {
+        'settings.section': { kind: 'list', scope: 'root' },
+        'sidebar.primary.action': { kind: 'list', scope: 'root' },
+      },
+    } as never, () => null)
     const locale = new LocaleRuntime(ctx)
     ctx.provide('locale', locale)
     ctx.provide('remote', {})
@@ -26,5 +32,8 @@ describe('plugins settings section', () => {
     const section = slots.entries('settings.section').find(s => s.options.id === 'plugin-manager')
     expect(section).toBeTruthy()
     expect(section?.options.order).toBe(17)
+    const shortcut = slots.entries('sidebar.primary.action').find(s => s.options.id === 'shortcut-plugin-manager')
+    expect(shortcut).toBeTruthy()
+    expect(shortcut?.options.order).toBe(-1)
   })
 })

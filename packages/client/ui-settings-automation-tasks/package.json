@@ -17,7 +17,9 @@
         "@greeneek/gnk-client-ui-settings",
         "@greeneek/gnk-client-locale",
         "@greeneek/gnk-client-ui-slots",
-        "@greeneek/gnk-client-ui-workspace"
+        "@greeneek/gnk-client-ui-workspace",
+        "@greeneek/gnk-client-ui-sidebar",
+        "@greeneek/gnk-client-ui-layout"
       ],
       "platform": "web"
     }
@@ -30,6 +32,8 @@
     "@greeneek/gnk-automation": "workspace:^",
     "@greeneek/gnk-client-locale": "workspace:^",
     "@greeneek/gnk-client-ui-primitives": "workspace:^",
+    "@greeneek/gnk-client-ui-sidebar": "workspace:^",
+    "@greeneek/gnk-client-ui-layout": "workspace:^",
     "@greeneek/gnk-client-ui-settings": "workspace:^",
     "@greeneek/gnk-client-ui-slots": "workspace:^",
     "@greeneek/gnk-client-ui-workspace": "workspace:^",

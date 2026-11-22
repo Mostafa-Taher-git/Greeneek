@@ -3496,12 +3496,18 @@ importers:
       '@greeneek/gnk-client-locale':
         specifier: workspace:^
         version: link:../locale
+      '@greeneek/gnk-client-ui-layout':
+        specifier: workspace:^
+        version: link:../ui-layout
       '@greeneek/gnk-client-ui-primitives':
         specifier: workspace:^
         version: link:../ui-primitives
       '@greeneek/gnk-client-ui-settings':
         specifier: workspace:^
         version: link:../ui-settings
+      '@greeneek/gnk-client-ui-sidebar':
+        specifier: workspace:^
+        version: link:../ui-sidebar
       '@greeneek/gnk-client-ui-slots':
         specifier: workspace:^
         version: link:../ui-slots
@@ -3683,6 +3689,9 @@ importers:
       '@greeneek/gnk-client-ui-settings':
         specifier: workspace:^
         version: link:../ui-settings
+      '@greeneek/gnk-client-ui-sidebar':
+        specifier: workspace:^
+        version: link:../ui-sidebar
       '@greeneek/gnk-client-ui-slots':
         specifier: workspace:^
         version: link:../ui-slots

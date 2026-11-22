@@ -8,9 +8,11 @@ import type {} from '@greeneek/gnk-api-remotes/client'
 // Type-only: merges the generated `ctx.remote.automation` namespace.
 import type {} from '@greeneek/gnk-automation/remote'
 import type {} from '@greeneek/gnk-client-ui-workspace/client'
+import type {} from '@greeneek/gnk-client-ui-layout/client'
 import {
   AutomationTasksSection, type AutomationTasksInjected, type AutomationTaskView,
 } from './AutomationTasksSection.tsx'
+import { SidebarAction } from './SidebarAction.tsx'
 import { ar, en, zh, type AutomationTasksLocaleKey } from './locales.ts'
 
 export type {
@@ -29,7 +31,7 @@ declare module '@greeneek/gnk-client-ui-slots' {
 const NS = 'settings.automationTasks'
 
 /** Required services. */
-export const inject = ['slots', 'locale', 'remote', 'remote.automation', 'uiWorkspace']
+export const inject = ['slots', 'locale', 'remote', 'remote.automation', 'uiWorkspace', 'layout']
 
 /** Map a wire task to the UI view. */
 function toView(value: {
@@ -91,4 +93,13 @@ export function apply(ctx: ClientContext): void {
     locale: NS,
     inject: injected,
   }, AutomationTasksSection))
+
+  // The shortcut sits above the Dashboard (order 0) in the primary actions.
+  ctx.slots.inject('sidebar.primary.action', () => ctx.slots.register({
+    name: 'sidebar.primary.action',
+    id: 'shortcut-automation-tasks',
+    order: -2,
+    locale: NS,
+    inject: () => ({ open: () => { ctx.layout.openSettings('automation-tasks') } }),
+  }, SidebarAction))
 }

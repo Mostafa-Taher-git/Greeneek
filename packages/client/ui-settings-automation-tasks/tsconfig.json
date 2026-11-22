@@ -10,6 +10,8 @@
     { "path": "../ui-settings" },
     { "path": "../ui-slots" },
     { "path": "../ui-primitives" },
-    { "path": "../ui-workspace" }
+    { "path": "../ui-workspace" },
+    { "path": "../ui-sidebar" },
+    { "path": "../ui-layout" }
   ]
 }

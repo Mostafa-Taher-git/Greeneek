@@ -9,6 +9,7 @@ import type {} from '@greeneek/gnk-client-ui-layout/client'
 import {
   PluginManagerSection, type PluginManagerInjected, type PluginEntryView,
 } from './PluginManagerSection.tsx'
+import { SidebarAction } from './SidebarAction.tsx'
 import { ar, en, zh, type PluginManagerLocaleKey } from './locales.ts'
 
 export type {
@@ -56,4 +57,13 @@ export function apply(ctx: ClientContext): void {
     locale: NS,
     inject: injected,
   }, PluginManagerSection))
+
+  // The shortcut sits above the Dashboard (order 0) in the primary actions.
+  ctx.slots.inject('sidebar.primary.action', () => ctx.slots.register({
+    name: 'sidebar.primary.action',
+    id: 'shortcut-plugin-manager',
+    order: -1,
+    locale: NS,
+    inject: () => ({ open: () => { ctx.layout.openSettings('plugin-manager') } }),
+  }, SidebarAction))
 }

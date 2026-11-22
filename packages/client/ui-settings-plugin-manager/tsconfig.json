@@ -10,6 +10,7 @@
     { "path": "../ui-slots" },
     { "path": "../ui-primitives" },
     { "path": "../ui-renderer" },
-    { "path": "../ui-layout" }
+    { "path": "../ui-layout" },
+    { "path": "../ui-sidebar" }
   ]
 }

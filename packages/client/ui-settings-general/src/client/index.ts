@@ -100,6 +100,9 @@ export function apply(ctx: ClientContext): void {
     reconnect: () => { connection.reconnect() },
     openSettings: (section?: string) => { ctx.layout.openSettings(section) },
     selectSettingsSection: (section: string) => { ctx.layout.selectSettingsSection(section) },
+    openBranches: () => { ctx.layout.openBranches() },
+    openIssues: () => { ctx.layout.openIssues() },
+    openDashboard: () => { ctx.layout.openDashboard() },
     showConversation: () => { ctx.layout.showConversation() },
     hooks: {
       connectionState: connection.state,

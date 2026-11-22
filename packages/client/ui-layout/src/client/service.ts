@@ -54,6 +54,10 @@ export interface ILayout {
   openAutomationTasks(): void
   /** Open the Plugins page in the main column. */
   openPlugins(): void
+  /** Open the GitHub Branches page in the main column. */
+  openBranches(): void
+  /** Open the GitHub Issues page in the main column. */
+  openIssues(): void
   /**
    * Select a Settings section without leaving the page.
    * @param section - Settings section id to show.
@@ -151,6 +155,14 @@ export class LayoutController implements ILayout {
 
   openPlugins(): void {
     this.#require().openPlugins()
+  }
+
+  openBranches(): void {
+    this.#require().openBranches()
+  }
+
+  openIssues(): void {
+    this.#require().openIssues()
   }
 
   showConversation(): void {

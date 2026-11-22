@@ -11,7 +11,8 @@ import type {} from '@greeneek/gnk-credentials'
 import { Remote, RemoteError, TypertRemoteService } from '@greeneek/gnk-typert-protocol'
 import { runNativeCommand, type NativeCommandRunner } from '@greeneek/gnk-native-command'
 import type {
-  GithubCheck, GithubComment, GithubPullFile, GithubPullRequest, GithubPullRequestActionRequest,
+  GithubBranchList, GithubCheck, GithubComment, GithubIssueList,
+  GithubPullFile, GithubPullRequest, GithubPullRequestActionRequest,
   GithubPullRequestActionResult, GithubPullRequestDetail, GithubPullRequestDetailRequest,
   GithubPullRequestList, GithubPullRequestRequest, GithubRepository, GithubStatus,
 } from './types.ts'
@@ -124,6 +125,67 @@ export class GithubController extends TypertRemoteService {
   async status(): Promise<GithubStatus> {
     const token = await this.io.token()
     return { configured: token !== undefined && token !== '', pageLimit: GITHUB_PAGE_LIMIT }
+  }
+
+  /**
+   * List branches for one repository.
+   * @param request - repository owner and name.
+   * @param signal - caller lifetime.
+   * @returns the repository's branches, capped at the page limit.
+   */
+  @Remote('branches')
+  async branches(request: GithubPullRequestRequest, signal: AbortSignal): Promise<GithubBranchList> {
+    validate(request)
+    const token = await this.io.token()
+    if (token === undefined || token === '') {
+      throw new RemoteError('github/unconfigured', 'no GitHub token is configured', {})
+    }
+    const query = new URLSearchParams({ per_page: String(GITHUB_PAGE_LIMIT) })
+    const url = `https://api.github.com/repos/${encodeURIComponent(request.owner)}/${encodeURIComponent(request.repo)}/branches?${query}`
+    const payload = await this.io.fetch(url, token, signal)
+    const rows = Array.isArray(payload) ? payload as Array<Record<string, unknown>> : []
+    return {
+      items: rows.slice(0, GITHUB_PAGE_LIMIT).map(row => ({
+        name: bound(typeof row.name === 'string' ? row.name : ''),
+        sha: bound(typeof row.commit === 'object' && row.commit !== null && typeof (row.commit as Record<string, unknown>).sha === 'string' ? (row.commit as Record<string, unknown>).sha as string : ''),
+        protected: row.protected === true,
+      })),
+    }
+  }
+
+  /**
+   * List issues for one repository with explicit pagination.
+   * @param request - repository owner, name, state and pagination.
+   * @param signal - caller lifetime.
+   * @returns one bounded page of issues and whether another page exists.
+   */
+  @Remote('issues')
+  async issues(request: GithubPullRequestRequest, signal: AbortSignal): Promise<GithubIssueList> {
+    validate(request)
+    const token = await this.io.token()
+    if (token === undefined || token === '') {
+      throw new RemoteError('github/unconfigured', 'no GitHub token is configured', {})
+    }
+    const page = request.page ?? 1
+    const perPage = Math.min(request.perPage ?? 30, GITHUB_PAGE_LIMIT)
+    const query = new URLSearchParams({
+      state: request.state ?? 'open',
+      page: String(page),
+      per_page: String(perPage),
+    })
+    const url = `https://api.github.com/repos/${encodeURIComponent(request.owner)}/${encodeURIComponent(request.repo)}/issues?${query}`
+    const payload = await this.io.fetch(url, token, signal)
+    const rows = Array.isArray(payload) ? payload as Array<Record<string, unknown>> : []
+    return {
+      items: rows.slice(0, perPage).map(row => ({
+        number: typeof row.number === 'number' ? row.number : 0,
+        title: bound(typeof row.title === 'string' ? row.title : ''),
+        state: bound(typeof row.state === 'string' ? row.state : ''),
+        htmlUrl: bound(typeof row.html_url === 'string' ? row.html_url : ''),
+        updatedAt: bound(typeof row.updated_at === 'string' ? row.updated_at : ''),
+      })),
+      hasNext: rows.length >= perPage,
+    }
   }
 
   /**

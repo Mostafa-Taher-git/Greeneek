@@ -243,6 +243,33 @@ export interface GithubPullRequest {
   readonly updatedAt: string
 }
 
+/** One repository branch reported by the Host GitHub integration. */
+export interface GithubBranch {
+  readonly name: string
+  readonly sha: string
+  readonly protected: boolean
+}
+
+/** Bounded branch list. */
+export interface GithubBranchList {
+  readonly items: readonly GithubBranch[]
+}
+
+/** One GitHub issue reported by the Host integration. */
+export interface GithubIssue {
+  readonly number: number
+  readonly title: string
+  readonly state: string
+  readonly htmlUrl: string
+  readonly updatedAt: string
+}
+
+/** One page of GitHub issues. */
+export interface GithubIssueList {
+  readonly items: readonly GithubIssue[]
+  readonly hasNext: boolean
+}
+
 /** Request for one page of GitHub pull requests. */
 export interface GithubPullRequestRequest {
   /** Repository owner. */

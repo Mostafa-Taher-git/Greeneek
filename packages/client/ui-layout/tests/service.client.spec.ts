@@ -25,6 +25,8 @@ function fakePanels(): PanelActions {
     openDashboard: vi.fn(),
     openAutomationTasks: vi.fn(),
     openPlugins: vi.fn(),
+    openBranches: vi.fn(),
+    openIssues: vi.fn(),
   }
 }
 

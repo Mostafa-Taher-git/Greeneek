@@ -42,6 +42,12 @@ export type SettingsRootInjected = {
   openSettings: (section?: string) => void
   /** Select a section on the main Settings page. */
   selectSettingsSection: (section: string) => void
+  /** Open the GitHub Branches page. */
+  openBranches: () => void
+  /** Open the GitHub Issues page. */
+  openIssues: () => void
+  /** Open the Dashboard page. */
+  openDashboard: () => void
   /** Return to the conversation without unmounting it. */
   showConversation: () => void
   hooks: {

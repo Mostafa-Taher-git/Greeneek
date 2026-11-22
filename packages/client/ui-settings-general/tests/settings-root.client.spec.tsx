@@ -83,6 +83,9 @@ function mount({
       reconnect,
       openSettings: (next?: string) => { setSection(next); setPage('settings') },
       selectSettingsSection: setSection,
+      openBranches: () => {},
+      openIssues: () => {},
+      openDashboard: () => {},
       showConversation: () => { setSection(undefined); setPage('conversation') },
       t: makeTranslate(en),
     }
@@ -134,18 +137,22 @@ function openPanel() {
 
 describe('SettingsRoot trigger', () => {
   it('opens Settings as a main page through the layout command', () => {
-    const { renderSlot } = mount()
+    mount()
     const trigger = screen.getByRole('button', { name: 'Settings' })
-    expect(trigger.hasAttribute('aria-label')).toBe(false)
-    expect(trigger.hasAttribute('aria-haspopup')).toBe(false)
-    expect(renderSlot).toHaveBeenCalledWith('settings.trigger', { wide: true })
+    expect(trigger.hasAttribute('aria-label')).toBe(true)
+    expect(screen.getByRole('button', { name: 'Branches' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Issues' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Dashboard' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Check for updates' })).toBeTruthy()
     fireEvent.click(trigger)
     expect(screen.getByRole('main', { name: 'Settings Title' })).toBeTruthy()
   })
 
-  it('hands the rail state to the trigger seat', () => {
-    const { renderSlot } = mount({ wide: false })
-    expect(renderSlot).toHaveBeenCalledWith('settings.trigger', { wide: false })
+  it('keeps the five footer icons available in the collapsed rail', () => {
+    mount({ wide: false })
+    for (const name of ['Settings', 'Branches', 'Issues', 'Dashboard', 'Check for updates']) {
+      expect(screen.getByRole('button', { name })).toBeTruthy()
+    }
   })
 
   it('shows outage, retry progress, and a two-second recovery confirmation', () => {

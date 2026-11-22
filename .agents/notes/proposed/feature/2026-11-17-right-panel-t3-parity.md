@@ -283,6 +283,14 @@ LIVE Desktop verification (real Electron window): Settings nav shows Built-in pl
 
 Automated: focused automation tests 2/2, both new section registration specs pass, `test:gui` 320 files / 4457 passed / 1 skipped, `typecheck`, `lint`, brand sweep, and generated artifacts all green before each push.
 
+## Footer icon row (2026-11-22)
+
+Owner requested the T3-style five-icon footer in place of the single Settings trigger: gear opens Settings, branch opens a GitHub Branches page, circle opens a GitHub Issues page, sliders opens Dashboard, and refresh opens a small update card. The Dashboard primary-action row was removed because the sliders icon owns that destination now.
+
+The Branches and Issues pages are standalone main-column pages backed by two new Host Remotes (`github.branches`, `github.issues`) added to `GithubController` with bounded output and no credential crossing the Remote boundary. They resolve the current workspace's repository through `github.repository`, show a setup hint when no token is configured, and surface the Host error text when GitHub refuses a request. The update card uses the existing `desktopBridge()` update channels; in a plain browser it states that no desktop updater is attached.
+
+LIVE Web verified all five icons and the Dashboard/Branches/Issues navigation. The configured GitHub token returned HTTP 401 during this run, so the two GitHub pages showed their error state; that is a credential condition, not a seam failure. `gh api` with the CLI's own credential reached the same repository successfully.
+
 ## Remaining limitations
 
 - GitHub PR rows require the user to configure `GITHUB_TOKEN` through the existing credentials seam; no key is provided by Greeneek.

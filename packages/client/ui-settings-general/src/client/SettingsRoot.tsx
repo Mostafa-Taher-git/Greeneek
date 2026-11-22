@@ -14,10 +14,12 @@ import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from
 import clsx from 'clsx'
 import {
   ConnectionIndicator,
-  IconAgentPresetOutline16, IconCloseOutline16, IconCommandOutline16, IconDataOutline16,
-  IconInfoOutline16, IconPersonalizationOutline16, IconSettingsOutline16,
+  IconAgentPresetOutline16, IconBranchOutline16, IconCircleDashedCheck16, IconCloseOutline16,
+  IconCommandOutline16, IconDataOutline16, IconInfoOutline16, IconPersonalizationOutline16,
+  IconRefreshOutline16, IconSettingsOutline16,
 } from '@greeneek/gnk-client-ui-primitives'
 import type { ConnectionIndicatorState } from '@greeneek/gnk-client-ui-primitives'
+import { desktopBridge } from './desktop.ts'
 import type { SettingsPageComponentProps, SettingsRootComponentProps, SettingsSectionRow } from './shell-contract.ts'
 import css from './SettingsRoot.module.css'
 
@@ -124,7 +126,18 @@ export function SettingsRoot(props: SettingsRootComponentProps) {
   } = props
   const [completedOnboarding, setCompletedOnboarding] = useState<ReadonlySet<string>>(() => new Set())
   const [showRecovery, setShowRecovery] = useState(false)
+  const [updateCard, setUpdateCard] = useState<string>()
   const openSection = props.openSettings
+
+  const checkUpdates = (): void => {
+    const bridge = desktopBridge()
+    if (bridge === undefined) {
+      setUpdateCard('Web builds receive updates from the deployment; no desktop updater is attached.')
+      return
+    }
+    void bridge.checkForUpdates().then((state) => { setUpdateCard(`Update status: ${state.state}`) },
+      () => { setUpdateCard('The update check failed.') })
+  }
 
   // The ledger tick keeps the nav rows fresh: registrants re-register with
   // freshly localized text on locale change, and the trigger/header/close
@@ -176,13 +189,24 @@ export function SettingsRoot(props: SettingsRootComponentProps) {
   return (
     <>
       <div className={clsx(css.triggerRow, !wide && css.railRow)}>
-        <button
-          type="button"
-          className={clsx(css.trigger, !wide && css.rail)}
-          onClick={() => { props.openSettings() }}
-        >
-          {renderSlot('settings.trigger', { wide })}
-        </button>
+        <div className={css.footerIcons}>
+          <button type="button" className={css.footerIcon} aria-label={t('footer.settings')} onClick={() => { props.openSettings() }}>
+            <IconSettingsOutline16 size={16} />
+          </button>
+          <button type="button" className={css.footerIcon} aria-label={t('footer.branches')} onClick={props.openBranches}>
+            <IconBranchOutline16 size={16} />
+          </button>
+          <button type="button" className={css.footerIcon} aria-label={t('footer.issues')} onClick={props.openIssues}>
+            <IconCircleDashedCheck16 size={16} />
+          </button>
+          <button type="button" className={css.footerIcon} aria-label={t('footer.dashboard')} onClick={props.openDashboard}>
+            <IconDataOutline16 size={16} />
+          </button>
+          <button type="button" className={css.footerIcon} aria-label={t('footer.updates')} onClick={checkUpdates}>
+            <IconRefreshOutline16 size={16} />
+          </button>
+        </div>
+        {updateCard !== undefined && <div className={css.updateCard} role="status">{updateCard}</div>}
         <ConnectionIndicator
           state={wide ? connectionIndicator : undefined}
           disconnectedLabel={t('connection.error')}

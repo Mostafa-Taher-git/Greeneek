@@ -2,6 +2,11 @@
 
 /** Simplified Chinese dictionary (the key-set source of truth). */
 export const zh = {
+  'footer.settings': '设置',
+  'footer.branches': '分支',
+  'footer.issues': '问题',
+  'footer.dashboard': '仪表盘',
+  'footer.updates': '检查更新',
   'trigger': '设置',
   'title': '设置',
   'close': '关闭',
@@ -37,6 +42,11 @@ export type SettingsKey = keyof typeof zh
 
 /** English dictionary, checked complete against the zh key set. */
 export const en = {
+  'footer.settings': 'Settings',
+  'footer.branches': 'Branches',
+  'footer.issues': 'Issues',
+  'footer.dashboard': 'Dashboard',
+  'footer.updates': 'Check for updates',
   'trigger': 'Settings',
   'title': 'Settings',
   'close': 'Close',
@@ -69,6 +79,11 @@ export const en = {
 
 /** Arabic dictionary, checked complete against the zh key set; the brand name stays verbatim. */
 export const ar = {
+  'footer.settings': 'الإعدادات',
+  'footer.branches': 'الفروع',
+  'footer.issues': 'المسائل',
+  'footer.dashboard': 'لوحة التحكم',
+  'footer.updates': 'التحقق من التحديثات',
   'trigger': 'الإعدادات',
   'title': 'الإعدادات',
   'close': 'إغلاق',

@@ -29,11 +29,15 @@ export type {
   SurfacePanelComponentProps, SurfacePanelInjected, TitlebarComponentProps, TitlebarInjected,
 } from './contract/slots.ts'
 export type { SidebarKey } from './locales.ts'
+import { BranchesPage, IssuesPage, type GithubPageInjected } from './GitHubPages.tsx'
+import { ar as ghAr, en as ghEn, zh as ghZh, type GithubPagesLocaleKey } from './github-pages-locales.ts'
 
 declare module '@greeneek/gnk-client-ui-slots' {
   interface LocaleNamespaceMap {
     /** Sidebar shell controls copy. */
     sidebar: SidebarKey
+    /** GitHub Branches and Issues pages copy. */
+    githubPages: GithubPagesLocaleKey
   }
 }
 
@@ -179,6 +183,35 @@ export function apply(ctx: ClientContext): void {
   const workspaceNavigation = ctx.get('uiWorkspace') as unknown as WorkspaceNavigation
   const sideSessions = ctx.get('sessions') as unknown as SideSessionNavigation
   ctx.effect(() => ctx.locale.register(NS, { zh, en, ar }), 'ui-sidebar: dictionaries')
+  ctx.effect(() => ctx.locale.register('githubPages', { zh: ghZh, en: ghEn, ar: ghAr }), 'ui-sidebar: github page dictionaries')
+
+  const githubPageInjected = (): GithubPageInjected => ({
+    repository: path => githubRepository(path, ctx),
+    branches: async (request) => {
+      const result = await ctx.remote.github.branches(request)
+      if (!result.ok) throw new Error(result.error.message)
+      return result.value
+    },
+    issues: async (request) => {
+      const result = await ctx.remote.github.issues(request)
+      if (!result.ok) throw new Error(result.error.message)
+      return result.value
+    },
+    configured: async () => (await githubStatus(ctx)).configured,
+    cwd: () => {
+      const sessions = ctx.sessions.list.getSnapshot()
+      return sessions.current === undefined ? undefined : sessions.byId[sessions.current]?.cwd
+    },
+    close: () => { ctx.layout.showConversation() },
+    openExternal: (url) => {
+      try {
+        const parsed = new URL(url)
+        if (parsed.protocol === 'http:' || parsed.protocol === 'https:') window.open(parsed.href, '_blank', 'noopener,noreferrer')
+      } catch { /* ignore malformed external URLs */ }
+    },
+  })
+  ctx.slots.inject('branches', () => ctx.slots.register({ name: 'branches', locale: 'githubPages', inject: githubPageInjected }, BranchesPage))
+  ctx.slots.inject('issues', () => ctx.slots.register({ name: 'issues', locale: 'githubPages', inject: githubPageInjected }, IssuesPage))
 
   const injectProps = (): SidebarRootInjected => ({
     // The shell's New Session button rides the Workspace UI's shared action

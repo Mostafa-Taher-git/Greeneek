@@ -14,7 +14,7 @@ describe('automation tasks settings section', () => {
     slots.register({
       name: 'root',
       children: {
-        'settings.section': { kind: 'list', scope: 'root' },
+        'automation-tasks': { kind: 'single', scope: 'root' },
         'sidebar.primary.action': { kind: 'list', scope: 'root' },
       },
     } as never, () => null)
@@ -25,12 +25,11 @@ describe('automation tasks settings section', () => {
       list: vi.fn(async () => ({ ok: true as const, value: { tasks: [] } })),
     })
     ctx.provide('uiWorkspace', { startSession: vi.fn() })
-    ctx.provide('layout', { openSettings: vi.fn() })
+    ctx.provide('layout', { openSettings: vi.fn(), openAutomationTasks: vi.fn(), showConversation: vi.fn() })
+    ctx.provide('conversation', { seedDraft: vi.fn() })
     await ctx.plugin({ inject, apply }).await()
-    const sections = slots.entries('settings.section')
-    const section = sections.find(s => s.options.id === 'automation-tasks')
-    expect(section).toBeTruthy()
-    expect(section?.options.order).toBe(16)
+    const page = slots.entries('automation-tasks')[0]
+    expect(page).toBeTruthy()
     const shortcut = slots.entries('sidebar.primary.action').find(s => s.options.id === 'shortcut-automation-tasks')
     expect(shortcut).toBeTruthy()
     expect(shortcut?.options.order).toBe(-2)

@@ -37,4 +37,4 @@ None; the package neither assembles nor sends a provider request, so it cannot i
 
 ### Dev Note
 
-No companion invariant is published. The package owns a read-only settings section registration.
+No companion invariant is published. The package owns a standalone main-column page and a sidebar shortcut.

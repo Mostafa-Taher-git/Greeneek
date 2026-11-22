@@ -23,6 +23,8 @@ function fakePanels(): PanelActions {
     selectSettingsSection: vi.fn(),
     showConversation: vi.fn(),
     openDashboard: vi.fn(),
+    openAutomationTasks: vi.fn(),
+    openPlugins: vi.fn(),
   }
 }
 

@@ -22,8 +22,9 @@ export interface UiWorkspace {
   /**
    * Start a New Session flow and navigate to its Session.
    * @param workspaceId - explicit target; absent inherits the current or most recent Workspace.
+   * @param onOpened - callback with the new Session id once it opens.
    */
-  startSession(workspaceId?: WorkspaceId): void
+  startSession(workspaceId?: WorkspaceId, onOpened?: (sessionId: SessionId) => void): void
   /**
    * Archive a Session and clear it when it is the current selection.
    * @param sessionId - Session to archive.
@@ -117,7 +118,7 @@ class UiWorkspaceService extends Service implements UiWorkspace {
     return attempt
   }
 
-  startSession(workspaceId?: WorkspaceId): void {
+  startSession(workspaceId?: WorkspaceId, onOpened?: (sessionId: SessionId) => void): void {
     const workspace = this.workspaces.list.getSnapshot()
     const sessions = this.sessions.list.getSnapshot()
     const current = sessions.current
@@ -133,7 +134,7 @@ class UiWorkspaceService extends Service implements UiWorkspace {
       return
     }
     void this.connectWorkspace(target).then(
-      (sessionId) => { this.sessions.open(sessionId) },
+      (sessionId) => { this.sessions.open(sessionId); onOpened?.(sessionId) },
       (reason: unknown) => { console.warn('new session failed:', reason) },
     )
   }

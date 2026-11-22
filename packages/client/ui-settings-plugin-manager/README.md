@@ -7,7 +7,7 @@ kind: "package-reference"
 
 ## Summary
 
-`gnk-client-ui-settings-plugin-manager` contributes the Plugins settings section, distinct from the renamed Built-in plugins section. It renders built-in plugin settings with a jump to the built-in list, experimental plugins, a refresh control, an Add plugin split button with an install dialog, a registry selector with official npm registry / Mainland China mirror / custom address, and a trust warning. Inventory data comes from the read-only Host `pluginInventory` Remote; product copy is localized in zh/en/ar.
+`gnk-client-ui-settings-plugin-manager` contributes the Plugins settings section, distinct from the renamed Built-in plugins section. It renders built-in plugin settings with a jump to the built-in list, experimental plugins, a refresh control, an Add plugin split button with an install dialog, a registry selector with official npm registry / Mainland China mirror / custom address, and a trust warning. Inventory data comes from the read-only Host `pluginInventory` Remote, filtered to user plugins; the Add plugin menu can seed a plugin-creation session. Product copy is localized in zh/en/ar.
 
 ## Table of Contents
 
@@ -37,4 +37,4 @@ None; the package neither assembles nor sends a provider request, so it cannot i
 
 ### Dev Note
 
-No companion invariant is published. The package owns a read-only settings section registration.
+No companion invariant is published. The package owns a standalone main-column page and a sidebar shortcut.

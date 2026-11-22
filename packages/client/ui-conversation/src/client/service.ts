@@ -40,6 +40,12 @@ export interface IConversation {
    */
   readonly blocks: ComposerBlocks
   /**
+   * Replace the draft text of one session's composer without sending it.
+   * @param sessionId - session whose composer receives the text.
+   * @param text - draft text, shown verbatim.
+   */
+  seedDraft(sessionId: string, text: string): void
+  /**
    * Send a prompt into the caller scope's session (queued turn).
    * @param text - prompt text, sent verbatim as one text block.
    * @returns completion; business failures reject (and land in promptError).
@@ -149,6 +155,8 @@ export class ConversationController extends Service implements IConversation {
   readonly input: SessionInputResolver
   /** The per-session composer-block registry. */
   readonly blocks: ComposerBlocks
+  /** Writes a draft into one session's composer shell. */
+  private readonly writeDraft: (sessionId: string, text: string) => void
   private readonly draftAttachments = new Map<DraftAttachmentId, ComposerAttachment>()
 
   /**
@@ -158,16 +166,30 @@ export class ConversationController extends Service implements IConversation {
    * constructed by the plugin apply (the same instances the slot inject
    * factories close over).
    */
-  constructor(ctx: Context, config: { input: SessionInputResolver; blocks: ComposerBlocks }) {
+  constructor(ctx: Context, config: {
+    input: SessionInputResolver
+    blocks: ComposerBlocks
+    writeDraft: (sessionId: string, text: string) => void
+  }) {
     super(ctx, 'conversation')
     this.input = config.input
     this.blocks = config.blocks
+    this.writeDraft = config.writeDraft
     ctx.effect(() => () => {
       for (const attachment of this.draftAttachments.values()) {
         revokePreview(attachment.previewUrl)
       }
       this.draftAttachments.clear()
     }, 'conversation draft attachments')
+  }
+
+  /**
+   * Replace one session's composer draft without sending it.
+   * @param sessionId - session whose composer receives the text.
+   * @param text - draft text, shown verbatim.
+   */
+  seedDraft(sessionId: string, text: string): void {
+    this.writeDraft(sessionId, text)
   }
 
   /**

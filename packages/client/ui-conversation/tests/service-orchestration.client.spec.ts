@@ -28,6 +28,7 @@ async function bench() {
   const fiber = runtime.ctx.plugin(ConversationController, {
     input: hub,
     blocks: new ComposerBlockRegistry(),
+    writeDraft: vi.fn(),
   })
   await fiber.await()
   const root = runtime.ctx.get('conversation') as ConversationController
@@ -147,6 +148,7 @@ describe('ConversationController', () => {
     await bare.plugin(ConversationController, {
       input: new InputHub(bare, makeTranslate(zh, {})),
       blocks: new ComposerBlockRegistry(),
+      writeDraft: vi.fn(),
     }).await()
     const orphan = bare.get('conversation') as ConversationController
     await expect(orphan.send('x')).rejects.toThrow(/sessions service unavailable/)

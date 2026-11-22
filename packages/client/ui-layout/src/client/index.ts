@@ -79,6 +79,10 @@ declare module '@greeneek/gnk-client-ui-slots' {
     'settings': { kind: 'single'; scope: 'root'; owner: SettingsOwnerProps }
     /** Full-height local Dashboard destination in the center column. */
     'dashboard': { kind: 'single'; scope: 'root'; owner: DashboardOwnerProps }
+    /** Full-height Automation tasks destination in the center column. */
+    'automation-tasks': { kind: 'single'; scope: 'root'; owner: DashboardOwnerProps }
+    /** Full-height Plugins destination in the center column. */
+    'plugins': { kind: 'single'; scope: 'root'; owner: DashboardOwnerProps }
     /**
      * The right details column, shown when the layout opens it. OCCUPIED by
      * ui-conversation's DetailsPanel, which declares the tool-details seat
@@ -210,6 +214,8 @@ export function apply(ctx: ClientContext): void {
         'conversation': { kind: 'single', scope: 'session-maybe' },
         'settings': { kind: 'single', scope: 'root' },
         'dashboard': { kind: 'single', scope: 'root' },
+        'automation-tasks': { kind: 'single', scope: 'root' },
+        'plugins': { kind: 'single', scope: 'root' },
         'details': { kind: 'single', scope: 'session' },
         'rightbar': { kind: 'single', scope: 'session' },
         'terminal.drawer': { kind: 'single', scope: 'session' },

@@ -13,7 +13,7 @@ describe('plugins settings section', () => {
     slots.register({
       name: 'root',
       children: {
-        'settings.section': { kind: 'list', scope: 'root' },
+        'plugins': { kind: 'single', scope: 'root' },
         'sidebar.primary.action': { kind: 'list', scope: 'root' },
       },
     } as never, () => null)
@@ -26,12 +26,14 @@ describe('plugins settings section', () => {
     ctx.provide('layout', {
       selectSettingsSection: vi.fn(),
       openSettings: vi.fn(),
+      openPlugins: vi.fn(),
       showConversation: vi.fn(),
     })
+    ctx.provide('conversation', { seedDraft: vi.fn() })
+    ctx.provide('uiWorkspace', { startSession: vi.fn() })
     await ctx.plugin({ inject, apply }).await()
-    const section = slots.entries('settings.section').find(s => s.options.id === 'plugin-manager')
-    expect(section).toBeTruthy()
-    expect(section?.options.order).toBe(17)
+    const page = slots.entries('plugins')[0]
+    expect(page).toBeTruthy()
     const shortcut = slots.entries('sidebar.primary.action').find(s => s.options.id === 'shortcut-plugin-manager')
     expect(shortcut).toBeTruthy()
     expect(shortcut?.options.order).toBe(-1)

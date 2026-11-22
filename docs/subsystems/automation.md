@@ -104,4 +104,4 @@ Tasks are stored under `$GNK_HOME/automation/tasks.json` with atomic writes. Thi
 
 ## Status and scope
 
-The settings page offers tabs for Enabled/Paused/Ended/All, manual creation, pause/resume, run-now and delete. Automatic time-based delivery is a later increment; the current build records schedules and exposes management verbs.
+The standalone page offers tabs for Enabled/Paused/Ended/All, manual creation, pause/resume, run-now and delete. Automatic time-based delivery is a later increment; the current build records schedules and exposes management verbs.

@@ -32,6 +32,8 @@
     "@greeneek/gnk-client-ui-primitives": "workspace:^",
     "@greeneek/gnk-client-ui-renderer": "workspace:^",
     "@greeneek/gnk-client-ui-sidebar": "workspace:^",
+    "@greeneek/gnk-client-ui-workspace": "workspace:^",
+    "@greeneek/gnk-client-ui-conversation": "workspace:^",
     "@greeneek/gnk-client-ui-layout": "workspace:^",
     "@greeneek/gnk-client-ui-settings": "workspace:^",
     "@greeneek/gnk-client-ui-slots": "workspace:^",

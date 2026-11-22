@@ -354,7 +354,11 @@ export function apply(ctx: Context): void {
     yield registerComposerBar()
   })
 
-  ctx.plugin(ConversationController, { input: inputHub, blocks: composerBlocks })
+  ctx.plugin(ConversationController, {
+    input: inputHub,
+    blocks: composerBlocks,
+    writeDraft: (sessionId, text) => { inputHub.shell(sessionId as SessionId).setDraft(text) },
+  })
   ctx.plugin(todoDockEntry)
   ctx.plugin(queueDockEntry)
 }

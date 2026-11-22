@@ -12,6 +12,7 @@
     { "path": "../ui-primitives" },
     { "path": "../ui-workspace" },
     { "path": "../ui-sidebar" },
-    { "path": "../ui-layout" }
+    { "path": "../ui-layout" },
+    { "path": "../ui-conversation" }
   ]
 }

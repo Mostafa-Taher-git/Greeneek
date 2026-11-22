@@ -47,10 +47,12 @@ export interface AutomationTasksInjected {
   delete: (id: string) => Promise<void>
   /** Open a new session seeded with the "create an automation task" prompt. */
   createInSession: () => void
+  /** Return to the conversation. */
+  close: () => void
 }
 
 export type AutomationTasksSectionProps =
-  PropsRuntime<'settings.section'>
+  PropsRuntime<'automation-tasks'>
   & PropsLocale<'settings.automationTasks'>
   & InjectFace<AutomationTasksInjected>
 
@@ -76,7 +78,7 @@ function draftAt(draft: AutomationTaskDraft): string | null {
 
 /** Render the Automation tasks section. */
 export function AutomationTasksSection(props: AutomationTasksSectionProps) {
-  const { t, list, create, edit, run, delete: remove, createInSession } = props
+  const { t, list, create, edit, run, delete: remove, createInSession, close } = props
   const [tasks, setTasks] = useState<readonly AutomationTaskView[]>([])
   const [tab, setTab] = useState<Tab>('active')
   const [query, setQuery] = useState('')
@@ -135,17 +137,25 @@ export function AutomationTasksSection(props: AutomationTasksSectionProps) {
     <div className={css.root}>
       <div className={css.header}>
         <h2 className={css.title}>{t('title')}</h2>
-        <div className={css.newWrap}>
-          <button type="button" className={css.newMain} disabled={busy} onClick={() => { setDraft(newDraft()); setFormOpen(true) }}>
-            + {t('new')}
-          </button>
-          <button type="button" className={css.newCaret} aria-label={t('new')} onClick={() => { setMenuOpen(value => !value) }}>▾</button>
-          {menuOpen && (
-            <div className={css.menu} role="menu">
-              <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); createInSession() }}>{t('createInSession')}</button>
-              <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); setDraft(newDraft()); setFormOpen(true) }}>{t('createManually')}</button>
-            </div>
-          )}
+        <div className={css.headerActions}>
+          <div className={css.newWrap}>
+            <button
+              type="button"
+              className={css.newMain}
+              disabled={busy}
+              onClick={() => { setDraft(newDraft()); setFormOpen(true) }}
+            >
+              + {t('new')}
+            </button>
+            <button type="button" className={css.newCaret} aria-label={t('new')} onClick={() => { setMenuOpen(value => !value) }}>▾</button>
+            {menuOpen && (
+              <div className={css.menu} role="menu">
+                <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); createInSession() }}>{t('createInSession')}</button>
+                <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); setDraft(newDraft()); setFormOpen(true) }}>{t('createManually')}</button>
+              </div>
+            )}
+          </div>
+          <button type="button" className={css.close} aria-label={t('close')} onClick={close}>✕</button>
         </div>
       </div>
       <p className={css.intro}>{t('intro')}</p>

@@ -6,6 +6,9 @@ import type {} from '@greeneek/gnk-client-ui-settings/client'
 import type {} from '@greeneek/gnk-client-ui-renderer/client'
 import type {} from '@greeneek/gnk-api-remotes/client'
 import type {} from '@greeneek/gnk-client-ui-layout/client'
+// Type-only: merges `ctx.conversation` for composer seeding.
+import type {} from '@greeneek/gnk-client-ui-conversation/client'
+import type {} from '@greeneek/gnk-client-ui-workspace/client'
 import {
   PluginManagerSection, type PluginManagerInjected, type PluginEntryView,
 } from './PluginManagerSection.tsx'
@@ -28,7 +31,7 @@ declare module '@greeneek/gnk-client-ui-slots' {
 const NS = 'settings.pluginManager'
 
 /** Required services. */
-export const inject = ['slots', 'locale', 'remote', 'remote.pluginInventory', 'layout']
+export const inject = ['slots', 'locale', 'remote', 'remote.pluginInventory', 'layout', 'conversation', 'uiWorkspace']
 
 /** Register the section. */
 export function apply(ctx: ClientContext): void {
@@ -44,19 +47,20 @@ export function apply(ctx: ClientContext): void {
       }))
       return entries
     },
-    openBuiltIn: () => {
-      ctx.layout.selectSettingsSection('plugins')
+    createWithAgent: () => {
+      ctx.layout.showConversation()
+      ctx.uiWorkspace.startSession(undefined, (sessionId) => {
+        ctx.conversation.seedDraft(String(sessionId), 'Please create a GNK plugin based on the requirements.')
+      })
     },
+    close: () => { ctx.layout.showConversation() },
   })
 
-  ctx.slots.inject('settings.section', () => ctx.slots.register({
-    name: 'settings.section',
-    id: 'plugin-manager',
-    order: 17,
-    label: () => ctx.locale.bind(NS)('nav'),
+  ctx.slots.register({
+    name: 'plugins',
     locale: NS,
     inject: injected,
-  }, PluginManagerSection))
+  }, PluginManagerSection)
 
   // The shortcut sits above the Dashboard (order 0) in the primary actions.
   ctx.slots.inject('sidebar.primary.action', () => ctx.slots.register({
@@ -64,6 +68,6 @@ export function apply(ctx: ClientContext): void {
     id: 'shortcut-plugin-manager',
     order: -1,
     locale: NS,
-    inject: () => ({ open: () => { ctx.layout.openSettings('plugin-manager') } }),
+    inject: () => ({ open: () => { ctx.layout.openPlugins() } }),
   }, SidebarAction))
 }

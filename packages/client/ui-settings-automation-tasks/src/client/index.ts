@@ -9,6 +9,8 @@ import type {} from '@greeneek/gnk-api-remotes/client'
 import type {} from '@greeneek/gnk-automation/remote'
 import type {} from '@greeneek/gnk-client-ui-workspace/client'
 import type {} from '@greeneek/gnk-client-ui-layout/client'
+// Type-only: merges `ctx.conversation` for composer seeding.
+import type {} from '@greeneek/gnk-client-ui-conversation/client'
 import {
   AutomationTasksSection, type AutomationTasksInjected, type AutomationTaskView,
 } from './AutomationTasksSection.tsx'
@@ -31,7 +33,7 @@ declare module '@greeneek/gnk-client-ui-slots' {
 const NS = 'settings.automationTasks'
 
 /** Required services. */
-export const inject = ['slots', 'locale', 'remote', 'remote.automation', 'uiWorkspace', 'layout']
+export const inject = ['slots', 'locale', 'remote', 'remote.automation', 'uiWorkspace', 'layout', 'conversation']
 
 /** Map a wire task to the UI view. */
 function toView(value: {
@@ -81,18 +83,19 @@ export function apply(ctx: ClientContext): void {
       if (!result.ok) throw new Error(result.error.message)
     },
     createInSession: () => {
-      ctx.uiWorkspace.startSession(undefined)
+      ctx.layout.showConversation()
+      ctx.uiWorkspace.startSession(undefined, (sessionId) => {
+        ctx.conversation.seedDraft(String(sessionId), 'Please create an automation task based on the requirements.')
+      })
     },
+    close: () => { ctx.layout.showConversation() },
   })
 
-  ctx.slots.inject('settings.section', () => ctx.slots.register({
-    name: 'settings.section',
-    id: 'automation-tasks',
-    order: 16,
-    label: () => ctx.locale.bind(NS)('nav'),
+  ctx.slots.register({
+    name: 'automation-tasks',
     locale: NS,
     inject: injected,
-  }, AutomationTasksSection))
+  }, AutomationTasksSection)
 
   // The shortcut sits above the Dashboard (order 0) in the primary actions.
   ctx.slots.inject('sidebar.primary.action', () => ctx.slots.register({
@@ -100,6 +103,6 @@ export function apply(ctx: ClientContext): void {
     id: 'shortcut-automation-tasks',
     order: -2,
     locale: NS,
-    inject: () => ({ open: () => { ctx.layout.openSettings('automation-tasks') } }),
+    inject: () => ({ open: () => { ctx.layout.openAutomationTasks() } }),
   }, SidebarAction))
 }

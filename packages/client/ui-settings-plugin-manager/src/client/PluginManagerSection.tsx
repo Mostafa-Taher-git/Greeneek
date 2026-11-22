@@ -1,14 +1,13 @@
 /**
- * Plugins settings section: built-in plugin settings, experimental plugins,
- * a refresh control, an Add plugin split button with an install dialog, a
- * registry selector, and a trust warning. Inventory data comes from the Host
- * plugin-inventory Remote; installation is read-only in this build.
+ * Plugins page: only plugins the user created or installed, grouped into
+ * Skills, MCP, and Installed categories. Refresh, Add plugin split button,
+ * creator-mode action, and the registry dialog stay available.
  */
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@greeneek/gnk-client-ui-slots'
 import css from './PluginManagerSection.module.css'
 
-/** One plugin entry as the section sees it. */
+/** One plugin entry as the page sees it. */
 export interface PluginEntryView {
   readonly moduleName: string
   readonly enabled: boolean
@@ -18,31 +17,43 @@ export interface PluginEntryView {
 export interface PluginManagerInjected {
   /** Read the current Host plugin inventory. */
   list: () => Promise<readonly PluginEntryView[]>
-  /** Navigate to the Built-in plugins settings section. */
-  openBuiltIn: () => void
+  /** Open a session seeded with a plugin-creation prompt. */
+  createWithAgent: () => void
+  /** Return to the conversation. */
+  close: () => void
 }
 
 export type PluginManagerSectionProps =
-  PropsRuntime<'settings.section'>
+  PropsRuntime<'plugins'>
   & PropsLocale<'settings.pluginManager'>
   & InjectFace<PluginManagerInjected>
 
 type Registry = 'official' | 'mainland' | 'custom'
-
-/** Whether an inventory entry is an experimental plugin. */
-function isExperimental(moduleName: string): boolean {
-  return moduleName.includes('experimental')
-}
+type Category = 'skills' | 'mcp' | 'installed'
 
 /** Validate a custom registry address. */
 function validRegistry(value: string): boolean {
   return /^https?:\/\/.+/.test(value.trim())
 }
 
-/** Render the Plugins section. */
+/** Classify a user plugin entry by its module name. */
+function categoryOf(moduleName: string): Category {
+  const name = moduleName.toLowerCase()
+  if (name.includes('mcp')) return 'mcp'
+  if (name.includes('skill')) return 'skills'
+  return 'installed'
+}
+
+/** Whether an inventory entry is a user plugin rather than a shipped one. */
+function isUserPlugin(moduleName: string): boolean {
+  return !moduleName.startsWith('@greeneek/') && !moduleName.startsWith('cordis:')
+}
+
+/** Render the Plugins page. */
 export function PluginManagerSection(props: PluginManagerSectionProps) {
-  const { t, list, openBuiltIn } = props
+  const { t, list, createWithAgent, close } = props
   const [entries, setEntries] = useState<readonly PluginEntryView[]>([])
+  const [category, setCategory] = useState<Category>('installed')
   const [error, setError] = useState<string>()
   const [menuOpen, setMenuOpen] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -50,12 +61,12 @@ export function PluginManagerSection(props: PluginManagerSectionProps) {
   const [name, setName] = useState('')
   const [registry, setRegistry] = useState<Registry>('official')
   const [custom, setCustom] = useState('')
-  const [enabled, setEnabled] = useState<ReadonlySet<string>>(() => new Set())
 
   const refresh = useCallback(async () => {
     try {
       setError(undefined)
-      setEntries(await list())
+      const all = await list()
+      setEntries(all.filter(entry => isUserPlugin(entry.moduleName)))
     } catch {
       setError(t('loadFailed'))
     }
@@ -63,8 +74,10 @@ export function PluginManagerSection(props: PluginManagerSectionProps) {
 
   useEffect(() => { void refresh() }, [refresh])
 
-  const builtIn = useMemo(() => entries.filter(entry => !isExperimental(entry.moduleName)), [entries])
-  const experimental = useMemo(() => entries.filter(entry => isExperimental(entry.moduleName)), [entries])
+  const visible = useMemo(
+    () => entries.filter(entry => categoryOf(entry.moduleName) === category),
+    [entries, category],
+  )
 
   const customInvalid = registry === 'custom' && !validRegistry(custom)
 
@@ -80,21 +93,12 @@ export function PluginManagerSection(props: PluginManagerSectionProps) {
     setNotice(t('installUnavailable'))
   }
 
-  const toggle = (moduleName: string): void => {
-    setEnabled((current) => {
-      const next = new Set(current)
-      if (next.has(moduleName)) next.delete(moduleName)
-      else next.add(moduleName)
-      return next
-    })
-  }
-
   return (
     <div className={css.root}>
       <div className={css.header}>
         <h2 className={css.title}>{t('title')}</h2>
         <div className={css.toolbar}>
-          <button type="button" className={css.secondary} disabled={false} onClick={() => { void refresh() }}>{t('refresh')}</button>
+          <button type="button" className={css.secondary} onClick={() => { void refresh() }}>{t('refresh')}</button>
           <div className={css.addWrap}>
             <button type="button" className={css.primary} onClick={openDialog}>{t('addPlugin')}</button>
             <button
@@ -110,51 +114,51 @@ export function PluginManagerSection(props: PluginManagerSectionProps) {
                   <span>{t('installExisting')}</span>
                   <span className={css.menuDescription}>{t('installExistingDescription')}</span>
                 </button>
+                <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); createWithAgent() }}>
+                  <span>{t('createWithAgent')}</span>
+                  <span className={css.menuDescription}>{t('createWithAgentHint')}</span>
+                </button>
               </div>
             )}
           </div>
+          <button type="button" className={css.close} aria-label={t('close')} onClick={close}>✕</button>
         </div>
       </div>
       <p className={css.intro}>{t('intro')}</p>
       {error !== undefined && <p className={css.error} role="alert">{error} <button type="button" onClick={() => { void refresh() }}>{t('retry')}</button></p>}
 
-      <section className={css.card}>
-        <h3 className={css.sectionTitle}>{t('builtInTitle')}</h3>
-        <p className={css.sectionHint}>{t('builtInHint')}</p>
-        <button type="button" className={css.secondary} onClick={openBuiltIn}>{t('openBuiltIn')}</button>
-        <ul className={css.list}>
-          {builtIn.map(entry => (
-            <li key={entry.moduleName} className={css.row}>
-              <span className={css.rowName}>{entry.moduleName}</span>
-              <span className={css.badgeOff}>{t('sourceBuiltIn')}</span>
-              <span className={entry.enabled ? css.badgeOn : css.badgeOff}>{entry.enabled ? t('statusEnabled') : t('statusDisabled')}</span>
-            </li>
-          ))}
-        </ul>
-      </section>
+      <div className={css.tabs} role="tablist">
+        {(['skills', 'mcp', 'installed'] as const).map(id => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={category === id}
+            className={category === id ? css.tabActive : css.tab}
+            onClick={() => { setCategory(id) }}
+          >
+            {t(`category${id.charAt(0).toUpperCase()}${id.slice(1)}` as 'categorySkills')}
+          </button>
+        ))}
+      </div>
 
-      <section className={css.card}>
-        <h3 className={css.sectionTitle}>{t('experimentalTitle')}</h3>
-        <p className={css.sectionHint}>{t('experimentalHint')}</p>
-        {experimental.length === 0
-          ? <p className={css.sectionHint}>{t('noExperimental')}</p>
-          : (
-            <ul className={css.list}>
-              {experimental.map(entry => (
-                <li key={entry.moduleName} className={css.row}>
-                  <span className={css.rowName}>{entry.moduleName}</span>
-                  <label className={css.toggle}>
-                    <input
-                      type="checkbox"
-                      checked={enabled.has(entry.moduleName) || entry.enabled}
-                      onChange={() => { toggle(entry.moduleName) }}
-                    />
-                  </label>
-                </li>
-              ))}
-            </ul>
-          )}
-      </section>
+      {visible.length === 0
+        ? (
+          <div className={css.empty}>
+            <p>{t(`empty${category.charAt(0).toUpperCase()}${category.slice(1)}` as 'emptySkills')}</p>
+            <button type="button" onClick={createWithAgent}>{t('createWithAgent')}</button>
+          </div>
+        )
+        : (
+          <div className={css.list}>
+            {visible.map(entry => (
+              <div key={entry.moduleName} className={css.row}>
+                <span className={css.rowName}>{entry.moduleName}</span>
+                <span className={entry.enabled ? css.badgeOn : css.badgeOff}>{entry.enabled ? t('statusEnabled') : t('statusDisabled')}</span>
+              </div>
+            ))}
+          </div>
+        )}
 
       {dialogOpen && (
         <div className={css.backdrop}>

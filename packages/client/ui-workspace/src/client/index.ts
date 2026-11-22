@@ -32,7 +32,6 @@ import type { OpenPathTarget } from './contract/slots.ts'
 import { UiWorkspaceService } from './navigation.ts'
 import { createWorkspaceViewStore } from './stores.ts'
 import { WorkspaceBrowser } from './rows/WorkspaceBrowser.tsx'
-import { DashboardAction } from './DashboardAction.tsx'
 import { DashboardPage } from './DashboardPage.tsx'
 import { ThreadDetailsPanel } from './ThreadDetailsPanel.tsx'
 import { WorkspacePicker } from './WorkspacePicker.tsx'
@@ -232,15 +231,6 @@ export function apply(ctx: Context): void {
       locale: NS,
     },
     WorkspacePicker,
-  ))
-  ctx.slots.inject('sidebar.primary.action', () => ctx.slots.register(
-    {
-      name: 'sidebar.primary.action',
-      id: 'dashboard',
-      inject: () => ({ openDashboard: () => { layout()?.openDashboard() } }),
-      locale: NS,
-    },
-    DashboardAction,
   ))
   ctx.slots.inject('dashboard', () => ctx.slots.register(
     {

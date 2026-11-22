@@ -50,6 +50,10 @@ export interface ILayout {
   openSettings(section?: string): void
   /** Open the local Dashboard in the main column. */
   openDashboard(): void
+  /** Open the Automation tasks page in the main column. */
+  openAutomationTasks(): void
+  /** Open the Plugins page in the main column. */
+  openPlugins(): void
   /**
    * Select a Settings section without leaving the page.
    * @param section - Settings section id to show.
@@ -139,6 +143,14 @@ export class LayoutController implements ILayout {
 
   openDashboard(): void {
     this.#require().openDashboard()
+  }
+
+  openAutomationTasks(): void {
+    this.#require().openAutomationTasks()
+  }
+
+  openPlugins(): void {
+    this.#require().openPlugins()
   }
 
   showConversation(): void {

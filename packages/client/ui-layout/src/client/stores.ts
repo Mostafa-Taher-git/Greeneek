@@ -30,7 +30,7 @@ type LayoutState = {
   terminalDrawerOpen: boolean
   narrow: boolean
   narrowExpanded: boolean
-  mainPage: 'conversation' | 'settings' | 'dashboard'
+  mainPage: 'conversation' | 'settings' | 'dashboard' | 'automation-tasks' | 'plugins'
   settingsSection: string | undefined
   /** Whether the right surface panel fills the workspace (T3-style maximized browser). */
   rightbarMaximized: boolean
@@ -58,6 +58,8 @@ type LayoutActions = {
   toggleTerminalDrawer: (draft: LayoutState) => void
   openSettings: (draft: LayoutState, section?: string) => void
   openDashboard: (draft: LayoutState) => void
+  openAutomationTasks: (draft: LayoutState) => void
+  openPlugins: (draft: LayoutState) => void
   selectSettingsSection: (draft: LayoutState, section: string) => void
   showConversation: (draft: LayoutState) => void
 }
@@ -124,6 +126,14 @@ export function createLayoutStore(): EngineStoreHandle<LayoutState, LayoutAction
       },
       openDashboard: (d) => {
         d.mainPage = 'dashboard'
+        d.settingsSection = undefined
+      },
+      openAutomationTasks: (d) => {
+        d.mainPage = 'automation-tasks'
+        d.settingsSection = undefined
+      },
+      openPlugins: (d) => {
+        d.mainPage = 'plugins'
         d.settingsSection = undefined
       },
       selectSettingsSection: (d, section: string) => { d.settingsSection = section },

@@ -23,7 +23,7 @@ import css from './AppFrame.module.css'
 /** Full composed props: runtime share + child-slot render share + store share. */
 export type AppFrameProps =
   & PropsRuntime<'root'>
-  & PropsRenderSlots<'sidebar' | 'titlebar' | 'conversation' | 'settings' | 'dashboard' | 'details' | 'rightbar' | 'terminal.drawer' | 'shell.overlay'>
+  & PropsRenderSlots<'sidebar' | 'titlebar' | 'conversation' | 'settings' | 'dashboard' | 'automation-tasks' | 'plugins' | 'details' | 'rightbar' | 'terminal.drawer' | 'shell.overlay'>
   & PropsStore<ReturnType<typeof createLayoutStore>>
   & PropsLocale<'common'>
 
@@ -318,6 +318,16 @@ export function AppFrame({
           {panels.mainPage === 'dashboard' && !maximized && (
             <div className={css.mainPage}>
               {renderSlot('dashboard', {})}
+            </div>
+          )}
+          {panels.mainPage === 'automation-tasks' && !maximized && (
+            <div className={css.mainPage}>
+              {renderSlot('automation-tasks', {})}
+            </div>
+          )}
+          {panels.mainPage === 'plugins' && !maximized && (
+            <div className={css.mainPage}>
+              {renderSlot('plugins', {})}
             </div>
           )}
           {panels.mainPage === 'conversation' && panels.terminalDrawerOpen && (

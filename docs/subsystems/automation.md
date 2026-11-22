@@ -91,10 +91,7 @@ A Host-wide automation task changed; listeners may refresh their catalog.
 Source: [`packages/automation/automation/src/index.ts`](../../packages/automation/automation/src/index.ts)
 <!-- END GENERATED cordis-surface -->
 
-Automation tasks (`ctx.automation`) are Host-wide durable records with a
-management Remote. Each task has a title, an instruction prompt, a lifecycle
-status (`active`, `paused`, `ended`), a delivery target, a repeat rule, and
-optimistic-concurrency metadata.
+Automation tasks (`ctx.automation`) are Host-wide durable records with a management Remote. Each task has a title, an instruction prompt, a lifecycle status (`active`, `paused`, `ended`), a delivery target, a repeat rule, and optimistic-concurrency metadata.
 
 ## Types
 
@@ -103,13 +100,8 @@ optimistic-concurrency metadata.
 - `AutomationCreateRequest` / `AutomationEditRequest` — create and status edits.
 - `AutomationTaskStatus` — `active`, `paused`, or `ended`.
 
-Tasks are stored under `$GNK_HOME/automation/tasks.json` with atomic writes.
-This seam is separate from the session-local `schedule` domain, whose only
-durable state is its own versioned event stream; automation tasks are a Host
-resource and are visible across sessions.
+Tasks are stored under `$GNK_HOME/automation/tasks.json` with atomic writes. This seam is separate from the session-local `schedule` domain, whose only durable state is its own versioned event stream; automation tasks are a Host resource and are visible across sessions.
 
 ## Status and scope
 
-The settings page offers tabs for Enabled/Paused/Ended/All, manual creation,
-pause/resume, run-now and delete. Automatic time-based delivery is a later
-increment; the current build records schedules and exposes management verbs.
+The settings page offers tabs for Enabled/Paused/Ended/All, manual creation, pause/resume, run-now and delete. Automatic time-based delivery is a later increment; the current build records schedules and exposes management verbs.

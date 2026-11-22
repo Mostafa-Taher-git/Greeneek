@@ -162,7 +162,7 @@ Statuses are evidence-based; a commit or a passing unit test alone does not make
 | R-11 Side chat | VERIFIED COMPLETE | Prior live run forked a real Session id. |
 | R-12 Remote contracts/contributions | VERIFIED COMPLETE | Live Remote calls succeed across Web for github, files, pty, session. |
 | R-13 Right-panel UI/store/shortcuts | IMPLEMENTED BUT NOT VERIFIED | Rows and submenu live; per-shortcut matrix incomplete. |
-| R-14 Tests per service/row | IMPLEMENTED BUT NOT VERIFIED | `test:gui` 318/4454 green; `test:web`/`test:snapshot` have pre-existing Windows failures (reproduced with changes stashed). |
+| R-14 Tests per service/row | IMPLEMENTED BUT NOT VERIFIED | `test:gui` 320/4457 green; `test:web`/`test:snapshot` have pre-existing Windows failures (reproduced with changes stashed). |
 | R-15 Desktop UI verification | IMPLEMENTED BUT NOT VERIFIED | Key workflows live; full matrix pending. |
 | R-16 Evidence report | IMPLEMENTED BUT NOT VERIFIED | Delivered with this handoff. |
 | R-17 Web+Desktop parity/shared core | IMPLEMENTED BUT NOT VERIFIED | Both run the same profile; full parity matrix pending. |
@@ -263,12 +263,30 @@ Honest boundary: Manual Mode is implemented and verified. Authorized automation 
 - `packages/subagent/agent-team/tests/maestro-real.e2e.ts`: 1/1 passed (real delegation across Harness connections). That scenario uses a no-tools prompt, so terminal-in-delegation specifically is covered by composition assertion (maestro preset mounts tool-terminal/tool-jobs/tool-browser, `shipped-root.spec.ts`) plus the independently verified Agent terminal and browser tool turns. A single delegated task that itself runs a terminal command end-to-end remains unverified.
 - Final milestone `pnpm run test:gui`: 318 files / 4455 passed, 1 skipped. Working tree clean.
 
+## Settings pages: Built-in plugins rename, Automation tasks, Plugins (2026-11-22)
+
+Owner request: rename the existing “Plugins” settings page to “Built-in plugins” everywhere, then add reference-harness-style “Automation tasks” and “Plugins” settings pages matching the supplied screenshots. This is NOT a new R-ID; it is a settings-surface extension of the Web-first / Desktop / shared-backend objective.
+
+Decisions:
+
+- The built-in page keeps the `plugins` section id so its nav icon, filtering, and existing tests stay intact; only copy changes (`91eb9638`). The new user-installed page is a distinct section id `plugin-manager`, so the two pages never collide.
+- Automation tasks are a Host-wide durable seam (`ctx.automation`) under `$GNK_HOME/automation/tasks.json`, separate from session-local `gnk-schedule` (whose only durable authority is its Session log). Full reference-harness RRULE/timer and delivery machinery is deferred; management verbs are real.
+- The Plugins page uses the read-only `ctx.remote.pluginInventory.list()` for its inventory. Installation and permanent experimental-plugin enablement need a Host management Remote, so the dialog reports that boundary honestly instead of faking success.
+
+Landed commits: `91eb9638` (copy rename), `107cc416` (Host automation service), `1a067de4` + `6acc6031` (Automation tasks page + loadability/zod fixes), `c9509506` (Plugins page), `20444103` (opaque dialog/menu surface tokens).
+
+LIVE Web verification (real running `gnk web`): both new sections appear in the Settings nav. Automation tasks: Enabled/Paused/Ended/All tabs, New split button with “Create in a session” / “Create manually”, the full manual form (name, instruction, Repeat, Date, Time, Time zone), end-to-end task creation and pause/resume, and tab filtering all worked against the Host Remote. Plugins: built-in inventory (164 rows), Experimental plugins, Refresh, Add plugin split button, Add plugin dialog with the three registry choices and custom-address validation, trust warning, and “View built-in plugins” navigation to the renamed section all worked.
+
+LIVE Desktop verification (real Electron window): Settings nav shows Built-in plugins, Automation tasks, and Plugins; both new pages rendered with their final control sets, and the Add plugin dialog opened. A transparency defect found on Desktop (the dialog/menu used non-existent `surface-raised` / `surface-overlay` tokens) was fixed to `bg-overlay` / `bg-mask-1` with the standard elevation shadow and re-verified in the browser (`rgb(251,251,251)` opaque background).
+
+Automated: focused automation tests 2/2, both new section registration specs pass, `test:gui` 320 files / 4457 passed / 1 skipped, `typecheck`, `lint`, brand sweep, and generated artifacts all green before each push.
+
 ## Remaining limitations
 
 - GitHub PR rows require the user to configure `GITHUB_TOKEN` through the existing credentials seam; no key is provided by Greeneek.
 - PR rows display PR data (including the web URL) but do not navigate the host window to external sites; the desktop security policy is unchanged.
 - The Browser surface is desktop-only; the web build reports that honestly.
-- No commits were pushed after the owner's instruction to hold publication.
+- Commits are pushed under the owner's standing authorization for this work; no release, tag, or publication workflow is authorized.
 
 ## Alternatives considered
 

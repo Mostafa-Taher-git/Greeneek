@@ -20,7 +20,7 @@ kind: "package-reference"
 
 #### What the model sees
 
-Nothing from this package enters a model request. The service stores task records and answers management Remotes called by settings UIs.
+Nothing from this package enters a model request. The service stores task records and answers management Remotes such as `automation.list` and `automation.create` called by settings UIs.
 
 #### Token effect
 

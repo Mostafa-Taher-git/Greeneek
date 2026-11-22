@@ -98,11 +98,11 @@ Scope: 270 workspace packages; every package appears under each of its kinds (25
 | `@greeneek/gnk-client-ui-schedule` | The read-only Web catalog for active Schedule reminders, for users choosing the surface and maintainers of its projection, timing, and accessibility behavior. |
 | `@greeneek/gnk-client-ui-session` | React and Slot adapters for Session Controller lists, interaction state, and per-session context. |
 | `@greeneek/gnk-client-ui-settings` | Settings domain base plugin: the settings-namespace scope service, schema service, and the canonical settings slot-type contract for the gnk web client. |
-| `@greeneek/gnk-client-ui-settings-automation-tasks` | Role documented in the client group README. |
+| `@greeneek/gnk-client-ui-settings-automation-tasks` | Automation tasks settings section with status tabs, search, manual creation and task management |
 | `@greeneek/gnk-client-ui-settings-general` | Settings shell, ownerless copy, and durable product-onboarding namespace for the gnk web client: the General section, trigger chrome, and onboarding ledger projection. |
 | `@greeneek/gnk-client-ui-settings-models` | Models settings and product-onboarding plugin for the gnk web client: provider rows, API-key management, model lists, and the Greeneek first-run dialogs. |
 | `@greeneek/gnk-client-ui-settings-plugin-inventory` | Scope-grouped read-only plugin inventory tab in Web Plugins settings for the gnk web client: agent-preset compositions first, the global plane behind a disclosure, search across both. |
-| `@greeneek/gnk-client-ui-settings-plugin-manager` | Role documented in the client group README. |
+| `@greeneek/gnk-client-ui-settings-plugin-manager` | Plugins settings section with built-in plugin settings, experimental plugins and an add-plugin dialog |
 | `@greeneek/gnk-client-ui-settings-plugins` | Plugins settings section for the gnk web client: feature-owned tabs, the configurable host-plane plugin cards, and the settings.plugin.item extension point. |
 | `@greeneek/gnk-client-ui-sidebar` | Sidebar shell plugin for the gnk web client: New Session action, scroll-aware region seat, bottom-pinned Settings seat, frameless titlebar, and the right-panel surface launcher. |
 | `@greeneek/gnk-client-ui-skill` | Web skill references and the dedicated skill tool row for the gnk web client: the /-triggered skill source and the skill call card. |
@@ -159,7 +159,7 @@ Scope: 270 workspace packages; every package appears under each of its kinds (25
 
 | Package | Role |
 | --- | --- |
-| `@greeneek/gnk-automation` | Role documented in the automation group README. |
+| `@greeneek/gnk-automation` | Host-wide automation tasks: durable task records with status, catalog and management Remotes |
 
 ### `boot/`
 

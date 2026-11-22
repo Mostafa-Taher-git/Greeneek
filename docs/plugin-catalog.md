@@ -16,7 +16,7 @@ Every workspace package (`packages/<family>/<name>`), categorized by what it con
 | LLM | Model routes and provider adapters | `packages/llm/*` |
 | Capability | Every other plugin, grouped by family directory | fallback: anything unmatched |
 
-Scope: 270 workspace packages; every package appears under each of its kinds (25 Tool, 4 Skill, 6 Command, 44 UI, 7 LLM, 191 Capability rows). A package with several kinds (e.g. a tool that also contributes a command) appears in each section.
+Scope: 271 workspace packages; every package appears under each of its kinds (25 Tool, 4 Skill, 6 Command, 44 UI, 7 LLM, 192 Capability rows). A package with several kinds (e.g. a tool that also contributes a command) appears in each section.
 
 ## Tools
 
@@ -256,6 +256,12 @@ Scope: 270 workspace packages; every package appears under each of its kinds (25
 | `@greeneek/gnk-authorization` | The authorization flow registry for users and maintainers who obtain credentials that configuration cannot supply, because getting one means a conversation with a human. |
 | `@greeneek/gnk-credentials` | The credential seam for users and maintainers resolving, describing, or storing credentials — reference values and durable records — without putting secret values in configuration. |
 | `@greeneek/gnk-credentials-local` | The file-backed credentials provider for users and maintainers choosing, configuring, or debugging the local credential store and its environment layering. |
+
+### `deep-agent/`
+
+| Package | Role |
+| --- | --- |
+| `@greeneek/gnk-deep-agent-core` | Deep-agent pure domain model and transactional event engine, adapted from the reference superagent prototype |
 
 ### `e2b/`
 

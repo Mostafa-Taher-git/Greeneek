@@ -17,7 +17,8 @@
   "files": ["lib/index.js", "lib/types/**/*.js", "lib/types/**/*.d.ts", "lib/typert.host.js", "lib/typert.host.d.ts", "lib/typert.remote-client.js", "lib/typert.remote-client.d.ts"],
   "license": "MIT",
   "dependencies": {
-    "@greeneek/gnk-home-paths": "workspace:^"
+    "@greeneek/gnk-home-paths": "workspace:^",
+    "zod": "^4.4.3"
   },
   "peerDependencies": {
     "@greeneek/gnk-typert-protocol": "workspace:^",

@@ -1086,6 +1086,9 @@ importers:
       '@greeneek/gnk-home-paths':
         specifier: workspace:^
         version: link:../../util/home-paths
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
     devDependencies:
       '@greeneek/cordis':
         specifier: workspace:^

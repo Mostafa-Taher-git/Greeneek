@@ -211,6 +211,9 @@
     - id: ui-settings-plugin-inventory
       name: '@greeneek/gnk-client-ui-settings-plugin-inventory'
 
+    - id: ui-settings-plugin-manager
+      name: '@greeneek/gnk-client-ui-settings-plugin-manager'
+
     - id: ui-conversation
       name: '@greeneek/gnk-client-ui-conversation'
 

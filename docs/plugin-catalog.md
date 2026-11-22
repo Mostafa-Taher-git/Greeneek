@@ -16,7 +16,7 @@ Every workspace package (`packages/<family>/<name>`), categorized by what it con
 | LLM | Model routes and provider adapters | `packages/llm/*` |
 | Capability | Every other plugin, grouped by family directory | fallback: anything unmatched |
 
-Scope: 269 workspace packages; every package appears under each of its kinds (25 Tool, 4 Skill, 6 Command, 43 UI, 7 LLM, 191 Capability rows). A package with several kinds (e.g. a tool that also contributes a command) appears in each section.
+Scope: 270 workspace packages; every package appears under each of its kinds (25 Tool, 4 Skill, 6 Command, 44 UI, 7 LLM, 191 Capability rows). A package with several kinds (e.g. a tool that also contributes a command) appears in each section.
 
 ## Tools
 
@@ -102,6 +102,7 @@ Scope: 269 workspace packages; every package appears under each of its kinds (25
 | `@greeneek/gnk-client-ui-settings-general` | Settings shell, ownerless copy, and durable product-onboarding namespace for the gnk web client: the General section, trigger chrome, and onboarding ledger projection. |
 | `@greeneek/gnk-client-ui-settings-models` | Models settings and product-onboarding plugin for the gnk web client: provider rows, API-key management, model lists, and the Greeneek first-run dialogs. |
 | `@greeneek/gnk-client-ui-settings-plugin-inventory` | Scope-grouped read-only plugin inventory tab in Web Plugins settings for the gnk web client: agent-preset compositions first, the global plane behind a disclosure, search across both. |
+| `@greeneek/gnk-client-ui-settings-plugin-manager` | Role documented in the client group README. |
 | `@greeneek/gnk-client-ui-settings-plugins` | Plugins settings section for the gnk web client: feature-owned tabs, the configurable host-plane plugin cards, and the settings.plugin.item extension point. |
 | `@greeneek/gnk-client-ui-sidebar` | Sidebar shell plugin for the gnk web client: New Session action, scroll-aware region seat, bottom-pinned Settings seat, frameless titlebar, and the right-panel surface launcher. |
 | `@greeneek/gnk-client-ui-skill` | Web skill references and the dedicated skill tool row for the gnk web client: the /-triggered skill source and the skill call card. |

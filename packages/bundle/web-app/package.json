@@ -78,6 +78,7 @@
     "@greeneek/gnk-client-ui-settings-automation-tasks": "workspace:^",
     "@greeneek/gnk-client-ui-settings-general": "workspace:^",
     "@greeneek/gnk-client-ui-settings-models": "workspace:^",
+    "@greeneek/gnk-client-ui-settings-plugin-manager": "workspace:^",
     "@greeneek/gnk-client-ui-settings-plugin-inventory": "workspace:^",
     "@greeneek/gnk-client-ui-settings-plugins": "workspace:^",
     "@greeneek/gnk-client-ui-sidebar": "workspace:^",

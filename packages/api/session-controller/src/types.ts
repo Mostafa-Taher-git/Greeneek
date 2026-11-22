@@ -669,6 +669,12 @@ export type SessionControlFrame =
 declare module '@greeneek/cordis' {
   interface Events {
     /**
+     * A Host-wide automation task change.
+     * @mode emit
+     * @param catalog - the updated task catalog.
+     */
+    'automation/changed'(catalog: { tasks: readonly unknown[] }): void
+    /**
      * A browser profile's tracked navigation state changed.
      * @mode emit
      * @param snapshot - the updated surface state.

@@ -1078,6 +1078,19 @@ importers:
         specifier: workspace:^
         version: link:../../util/home-paths
 
+  packages/automation/automation:
+    dependencies:
+      '@greeneek/gnk-home-paths':
+        specifier: workspace:^
+        version: link:../../util/home-paths
+    devDependencies:
+      '@greeneek/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@greeneek/gnk-typert-protocol':
+        specifier: workspace:^
+        version: link:../../typert/protocol
+
   packages/boot/app-boot:
     dependencies:
       '@greeneek/gnk-atomic-write':
@@ -1270,6 +1283,9 @@ importers:
       '@greeneek/gnk-attachment-local':
         specifier: workspace:^
         version: link:../../attachment/attachment-local
+      '@greeneek/gnk-automation':
+        specifier: workspace:^
+        version: link:../../automation/automation
       '@greeneek/gnk-bash-sandbox':
         specifier: workspace:^
         version: link:../../shell/bash-sandbox

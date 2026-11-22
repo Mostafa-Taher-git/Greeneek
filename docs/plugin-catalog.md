@@ -16,7 +16,7 @@ Every workspace package (`packages/<family>/<name>`), categorized by what it con
 | LLM | Model routes and provider adapters | `packages/llm/*` |
 | Capability | Every other plugin, grouped by family directory | fallback: anything unmatched |
 
-Scope: 267 workspace packages; every package appears under each of its kinds (25 Tool, 4 Skill, 6 Command, 42 UI, 7 LLM, 190 Capability rows). A package with several kinds (e.g. a tool that also contributes a command) appears in each section.
+Scope: 268 workspace packages; every package appears under each of its kinds (25 Tool, 4 Skill, 6 Command, 42 UI, 7 LLM, 191 Capability rows). A package with several kinds (e.g. a tool that also contributes a command) appears in each section.
 
 ## Tools
 
@@ -152,6 +152,12 @@ Scope: 267 workspace packages; every package appears under each of its kinds (25
 | --- | --- |
 | `@greeneek/gnk-attachment` | Durable image attachments for users and maintainers attaching, reusing, or debugging images in prompts and commands. |
 | `@greeneek/gnk-attachment-local` | Local storage for your attached images below GNK_HOME, for users and maintainers choosing or debugging where image attachments are kept. |
+
+### `automation/`
+
+| Package | Role |
+| --- | --- |
+| `@greeneek/gnk-automation` | Role documented in the automation group README. |
 
 ### `boot/`
 

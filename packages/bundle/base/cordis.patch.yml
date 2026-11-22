@@ -311,6 +311,10 @@
 
     # Browser AI connections: manual, provider-isolated web sessions for official
     # ChatGPT/Claude/Gemini interfaces. Automation is declared per provider.
+    # Host-wide automation tasks: durable records with a management Remote.
+    - id: automation
+      name: '@greeneek/gnk-automation'
+
     - id: browser-ai
       name: '@greeneek/gnk-browser-ai'
 

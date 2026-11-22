@@ -13,7 +13,7 @@ A `Requires:` line lists the service keys the plugin `inject`s: its `cordis.yml`
 
 Scope: one verbatim config type per loadable harness package. Intended lookup: find the package name below, then jump to its anchor (`#greeneekgnk-<slug>`) for the full pasted declaration and `Source:` pointer. Grouping: configurable plugins first (alphabetical by package), then no-config, seam, and library lists. Related guidance: subsystem pages for wiring, the [tool catalog](tool-catalog.md) for model-facing schemas.
 
-Generated: 16832 words total, 120 config entries, 124 headings, 2013 words in the largest section. Regenerate with `pnpm run gen-config-catalog`; verify with `pnpm run verify-config-catalog`.
+Generated: 16862 words total, 121 config entries, 125 headings, 2013 words in the largest section. Regenerate with `pnpm run gen-config-catalog`; verify with `pnpm run verify-config-catalog`.
 
 <a id="greeneekgnk-acp"></a>
 
@@ -318,6 +318,20 @@ export interface Config {
 ```
 
 Source: [`packages/attachment/attachment-local/src/index.ts:55`](../packages/attachment/attachment-local/src/index.ts)
+
+<a id="greeneekgnk-automation"></a>
+
+## `@greeneek/gnk-automation`
+
+```ts config-catalog
+/** Configuration for the automation service. */
+export interface AutomationServiceConfig {
+  /** Task store file location. */
+  readonly file: string
+}
+```
+
+Source: [`packages/automation/automation/src/index.ts:45`](../packages/automation/automation/src/index.ts)
 
 <a id="greeneekgnk-bash-local"></a>
 

@@ -1,0 +1,28 @@
+{
+  "name": "@greeneek/gnk-automation",
+  "description": "Host-wide automation tasks: durable task records with status, catalog and management Remotes",
+  "version": "1.1.0-alpha.0",
+  "publishConfig": { "access": "public" },
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": { "types": "./lib/types/index.d.ts", "default": "./lib/index.js" },
+    "./types": { "types": "./lib/types/types.d.ts", "default": "./lib/types/types.js" },
+    "./src/*": "./src/*",
+    "./package.json": "./package.json"
+  },
+  "files": ["lib/index.js", "lib/types/**/*.js", "lib/types/**/*.d.ts"],
+  "license": "MIT",
+  "dependencies": {
+    "@greeneek/gnk-home-paths": "workspace:^"
+  },
+  "peerDependencies": {
+    "@greeneek/gnk-typert-protocol": "workspace:^",
+    "@greeneek/cordis": "workspace:^"
+  },
+  "devDependencies": {
+    "@greeneek/gnk-typert-protocol": "workspace:^",
+    "@greeneek/cordis": "workspace:^"
+  }
+}

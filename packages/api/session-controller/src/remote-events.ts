@@ -1,6 +1,7 @@
 /** Session Controller events available to a Remote Event assembly. */
 type SessionControllerRemoteEvent =
   | 'browser/surface'
+  | 'automation/changed'
   | 'api-session/activity'
   | 'api-session/added'
   | 'api-session/error'

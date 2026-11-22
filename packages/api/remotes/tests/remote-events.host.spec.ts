@@ -52,8 +52,8 @@ function sourceOf(gateway: GatewayProbe): TypertRemoteEventSource {
 }
 
 function emitRaw(ctx: Context, event: string, args: readonly unknown[]): void {
-  const emit = ctx.emit.bind(ctx) as unknown as (name: string, ...values: readonly unknown[]) => void
-  emit(event, ...args)
+  const emit = ctx.emit.bind(ctx)
+  emit(event as 'browser/surface', ...(args as unknown as [never]))
 }
 
 function waterfallRaw(

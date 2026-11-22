@@ -742,6 +742,43 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'automation',
+    summary: 'The automation service: durable CRUD with optimistic concurrency.',
+    description: 'The automation service: durable CRUD with optimistic concurrency.',
+    methods: [
+      {
+        signature: '@Remote(\'list\') list(): AutomationCatalog',
+        description: 'All tasks.',
+        parameters: [],
+        returns: 'the current task catalog.',
+      },
+      {
+        signature: '@Remote(\'create\') create(request: AutomationCreateRequest): AutomationTask',
+        description: 'Create one task.',
+        parameters: [{ name: 'request', description: 'title, instruction, target and timing.' }],
+        returns: 'the created task.',
+      },
+      {
+        signature: '@Remote(\'edit\') edit(request: AutomationEditRequest): AutomationTask',
+        description: 'Edit status with optimistic concurrency.',
+        parameters: [{ name: 'request', description: 'task id, expected revision and optional new status.' }],
+        returns: 'the updated task.',
+      },
+      {
+        signature: '@Remote(\'run\') run(request: AutomationTaskRequest): AutomationTask',
+        description: 'Record a manual run now (delivery is a later increment).',
+        parameters: [{ name: 'request', description: 'task id.' }],
+        returns: 'the updated task.',
+      },
+      {
+        signature: '@Remote(\'delete\') delete(request: AutomationTaskRequest): AutomationCatalog',
+        description: 'Delete a task.',
+        parameters: [{ name: 'request', description: 'task id.' }],
+        returns: 'the remaining task catalog.',
+      },
+    ],
+  },
+  {
     key: 'browser',
     summary: 'The browser-use service: one backend slot plus per-profile tracked state.',
     description: 'The browser-use service: one backend slot plus per-profile tracked state.',
@@ -3525,6 +3562,22 @@ export const EVENT_API: readonly EventApiEntry[] = [
     parameters: [{ name: 'key', description: 'the credential record the finished attempt was authorizing.' }, { name: 'settlement', description: 'how it ended, including the `failed` case its caller sees as a thrown error.' }],
   },
   {
+    name: 'automation/changed',
+    mode: 'emit',
+    signature: '\'automation/changed\'(catalog: { tasks: readonly unknown[] }): void',
+    summary: 'A Host-wide automation task change.',
+    description: 'A Host-wide automation task change.',
+    parameters: [{ name: 'catalog', description: 'the updated task catalog.' }],
+  },
+  {
+    name: 'automation/changed',
+    mode: 'emit',
+    signature: '\'automation/changed\'(catalog: AutomationCatalog): void',
+    summary: 'A Host-wide automation task changed; listeners may refresh their catalog.',
+    description: 'A Host-wide automation task changed; listeners may refresh their catalog.',
+    parameters: [{ name: 'catalog', description: 'the updated task catalog.' }],
+  },
+  {
     name: 'browser/surface',
     mode: 'emit',
     signature: '\'browser/surface\'(snapshot: { profile: string url: string | undefined status: \'open\' | \'closed\' titleSource: \'reported\' | \'unknown\' source: \'agent\' | \'user\' }): void',
@@ -4111,6 +4164,38 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'AuthorizationStatus',
     declaration: 'export type AuthorizationStatus = \'authorized\' | \'cancelled\';',
+  },
+  {
+    name: 'AutomationCatalog',
+    declaration: 'export interface AutomationCatalog {\n    readonly tasks: readonly AutomationTask[];\n}',
+  },
+  {
+    name: 'AutomationCreateRequest',
+    declaration: 'export interface AutomationCreateRequest {\n    readonly title: string;\n    readonly prompt: string;\n    readonly cwd: string | null;\n    readonly repeat: \'once\' | \'hourly\' | \'daily\' | \'weekly\';\n    readonly at: string | null;\n    readonly timeZone: string | null;\n}',
+  },
+  {
+    name: 'AutomationEditRequest',
+    declaration: 'export interface AutomationEditRequest {\n    readonly id: string;\n    readonly status: AutomationTaskStatus | null;\n    readonly expectedUpdatedAt: string;\n}',
+  },
+  {
+    name: 'AutomationTask',
+    declaration: 'export interface AutomationTask {\n    readonly id: string;\n    readonly title: string;\n    readonly prompt: string;\n    readonly status: AutomationTaskStatus;\n    readonly target: AutomationTaskTarget;\n    readonly timing: AutomationTaskTiming;\n    readonly createdAt: string;\n    readonly updatedAt: string;\n    readonly lastRunAt: string | null;\n}',
+  },
+  {
+    name: 'AutomationTaskRequest',
+    declaration: 'export interface AutomationTaskRequest {\n    readonly id: string;\n}',
+  },
+  {
+    name: 'AutomationTaskStatus',
+    declaration: 'export type AutomationTaskStatus = \'active\' | \'paused\' | \'ended\';',
+  },
+  {
+    name: 'AutomationTaskTarget',
+    declaration: 'export interface AutomationTaskTarget {\n    readonly kind: \'new_once\' | \'session\';\n    readonly sessionId: string | null;\n    readonly cwd: string | null;\n}',
+  },
+  {
+    name: 'AutomationTaskTiming',
+    declaration: 'export interface AutomationTaskTiming {\n    readonly repeat: \'once\' | \'hourly\' | \'daily\' | \'weekly\';\n    readonly at: string | null;\n    readonly timeZone: string;\n}',
   },
   {
     name: 'BackendRegistry',

@@ -809,6 +809,9 @@ importers:
       '@greeneek/gnk-api-workspace-controller':
         specifier: workspace:^
         version: link:../workspace-controller
+      '@greeneek/gnk-automation':
+        specifier: workspace:^
+        version: link:../../automation/automation
       '@greeneek/gnk-client-connection':
         specifier: workspace:^
         version: link:../../client/connection
@@ -1812,6 +1815,9 @@ importers:
       '@greeneek/gnk-client-ui-settings':
         specifier: workspace:^
         version: link:../../client/ui-settings
+      '@greeneek/gnk-client-ui-settings-automation-tasks':
+        specifier: workspace:^
+        version: link:../../client/ui-settings-automation-tasks
       '@greeneek/gnk-client-ui-settings-general':
         specifier: workspace:^
         version: link:../../client/ui-settings-general
@@ -3469,6 +3475,42 @@ importers:
       react:
         specifier: 19.2.6
         version: 19.2.6
+
+  packages/client/ui-settings-automation-tasks:
+    devDependencies:
+      '@greeneek/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@greeneek/gnk-api-remotes':
+        specifier: workspace:^
+        version: link:../../api/remotes
+      '@greeneek/gnk-automation':
+        specifier: workspace:^
+        version: link:../../automation/automation
+      '@greeneek/gnk-client-locale':
+        specifier: workspace:^
+        version: link:../locale
+      '@greeneek/gnk-client-ui-primitives':
+        specifier: workspace:^
+        version: link:../ui-primitives
+      '@greeneek/gnk-client-ui-settings':
+        specifier: workspace:^
+        version: link:../ui-settings
+      '@greeneek/gnk-client-ui-slots':
+        specifier: workspace:^
+        version: link:../ui-slots
+      '@greeneek/gnk-client-ui-workspace':
+        specifier: workspace:^
+        version: link:../ui-workspace
+      '@types/react':
+        specifier: ~18.3.1
+        version: 18.3.31
+      react:
+        specifier: 19.2.6
+        version: 19.2.6
+      react-dom:
+        specifier: 19.2.6
+        version: 19.2.6(react@19.2.6)
 
   packages/client/ui-settings-general:
     dependencies:

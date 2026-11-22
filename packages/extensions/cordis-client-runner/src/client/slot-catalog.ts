@@ -1881,6 +1881,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
       'client-ui-agent-team FleetSettingsSection id \'fleet\'',
       'client-ui-commands CommandsSection id \'commands\'',
       'client-ui-craft CraftSection id \'craft-suite\'',
+      'client-ui-settings-automation-tasks AutomationTasksSection id \'automation-tasks\'',
       'client-ui-settings-general GeneralSection id \'general\'',
       'client-ui-settings-general AboutSection id \'about\'',
       'client-ui-settings-models ModelsSection id \'models\'',

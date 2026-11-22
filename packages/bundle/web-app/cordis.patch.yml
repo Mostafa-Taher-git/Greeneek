@@ -202,6 +202,9 @@
     - id: ui-settings-general
       name: '@greeneek/gnk-client-ui-settings-general'
 
+    - id: ui-settings-automation-tasks
+      name: '@greeneek/gnk-client-ui-settings-automation-tasks'
+
     - id: ui-settings-models
       name: '@greeneek/gnk-client-ui-settings-models'
 

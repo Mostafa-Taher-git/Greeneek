@@ -16,7 +16,7 @@ Every workspace package (`packages/<family>/<name>`), categorized by what it con
 | LLM | Model routes and provider adapters | `packages/llm/*` |
 | Capability | Every other plugin, grouped by family directory | fallback: anything unmatched |
 
-Scope: 268 workspace packages; every package appears under each of its kinds (25 Tool, 4 Skill, 6 Command, 42 UI, 7 LLM, 191 Capability rows). A package with several kinds (e.g. a tool that also contributes a command) appears in each section.
+Scope: 269 workspace packages; every package appears under each of its kinds (25 Tool, 4 Skill, 6 Command, 43 UI, 7 LLM, 191 Capability rows). A package with several kinds (e.g. a tool that also contributes a command) appears in each section.
 
 ## Tools
 
@@ -98,6 +98,7 @@ Scope: 268 workspace packages; every package appears under each of its kinds (25
 | `@greeneek/gnk-client-ui-schedule` | The read-only Web catalog for active Schedule reminders, for users choosing the surface and maintainers of its projection, timing, and accessibility behavior. |
 | `@greeneek/gnk-client-ui-session` | React and Slot adapters for Session Controller lists, interaction state, and per-session context. |
 | `@greeneek/gnk-client-ui-settings` | Settings domain base plugin: the settings-namespace scope service, schema service, and the canonical settings slot-type contract for the gnk web client. |
+| `@greeneek/gnk-client-ui-settings-automation-tasks` | Role documented in the client group README. |
 | `@greeneek/gnk-client-ui-settings-general` | Settings shell, ownerless copy, and durable product-onboarding namespace for the gnk web client: the General section, trigger chrome, and onboarding ledger projection. |
 | `@greeneek/gnk-client-ui-settings-models` | Models settings and product-onboarding plugin for the gnk web client: provider rows, API-key management, model lists, and the Greeneek first-run dialogs. |
 | `@greeneek/gnk-client-ui-settings-plugin-inventory` | Scope-grouped read-only plugin inventory tab in Web Plugins settings for the gnk web client: agent-preset compositions first, the global plane behind a disclosure, search across both. |

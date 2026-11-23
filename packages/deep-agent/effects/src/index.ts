@@ -6,13 +6,15 @@
 import type { EffectRow, DeepAgentStore } from '@greeneek/gnk-deep-agent-store'
 
 /** The six reference effect kinds. */
-export type EffectKind = 'assessment' | 'launch' | 'delivery' | 'relay' | 'notice' | 'reply'
+export type EffectKind = 'assessment' | 'launch' | 'delivery' | 'stop' | 'retry' | 'relay' | 'notice' | 'reply'
 
 /** Payloads carried by each kind, kept JSON-shaped for the wire and store. */
 export interface EffectPayloads {
   assessment: { readonly triggerId: string }
   launch: { readonly ticketId: string; readonly assignmentId: string }
-  delivery: { readonly ticketId: string }
+  delivery: { readonly ticketId: string; readonly assignmentId?: string; readonly inputIds?: readonly string[] }
+  stop: { readonly ticketId: string; readonly assignmentId: string; readonly reason: string }
+  retry: { readonly ticketId: string; readonly attempts: number }
   relay: { readonly text: string }
   notice: { readonly value: string; readonly summary: string }
   reply: { readonly id?: string }
@@ -42,6 +44,8 @@ export const DEFAULT_RETRIES: Readonly<Record<EffectKind, RetryPolicy>> = {
   assessment: { baseMs: 2_000, maxMs: 60_000, tries: 8 },
   launch: { baseMs: 5_000, maxMs: 300_000, tries: 3 },
   delivery: { baseMs: 2_000, maxMs: 60_000, tries: 8, quiet: true },
+  stop: { baseMs: 1_000, maxMs: 10_000, tries: 5 },
+  retry: { baseMs: 15_000, maxMs: 120_000, tries: 3, quiet: true },
   relay: { baseMs: 2_000, maxMs: 60_000, tries: 8, ordered: true },
   notice: { baseMs: 2_000, maxMs: 60_000, tries: 8, ordered: true },
   reply: { baseMs: 5_000, maxMs: 300_000, tries: 8 },

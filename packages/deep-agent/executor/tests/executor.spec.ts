@@ -95,6 +95,54 @@ function ticketTrigger() {
   }
 }
 
+describe('Worker recovery', () => {
+  it('resumes a running assignment with its deterministic session id and recovery note', async () => {
+    const resume = vi.fn(async (_options: { resumeSessionId: string }) => ({
+      agent: {
+        inject: vi.fn(),
+        cancel: vi.fn(),
+        whenIdle: vi.fn(async () => {}),
+        dispose: vi.fn(async () => {}),
+      },
+      dispose: vi.fn(async () => {}),
+    }))
+    const ctx = new Context()
+    ctx.provide('agents', { resume } as never)
+    const executor = new AgentWorkerExecutor(ctx, {
+      rootDirectory: 'C:/temp/deep-agent-recovery',
+      maxWorkers: 2,
+      onReport: vi.fn(),
+    })
+    const running: Ticket = {
+      ...ticket('t1'),
+      assignments: [{ id: 'a1', state: 'running', createdAt: '2026-01-01T00:00:00.000Z', startedAt: '2026-01-01T00:00:01.000Z' }],
+    }
+    await executor.recover([running])
+    expect(resume).toHaveBeenCalledOnce()
+    expect(resume.mock.calls[0]?.[0]).toMatchObject({ resumeSessionId: workerSessionId('t1', 'a1') })
+    expect(executor.capacity().used).toBe(1)
+    await executor.dispose()
+  })
+
+  it('reports a failed recovery without consuming the slot', async () => {
+    const onReport = vi.fn()
+    const ctx = new Context()
+    ctx.provide('agents', { resume: vi.fn(async () => { throw new Error('missing session') }) } as never)
+    const executor = new AgentWorkerExecutor(ctx, {
+      rootDirectory: 'C:/temp/deep-agent-recovery',
+      maxWorkers: 2,
+      onReport,
+    })
+    const running: Ticket = {
+      ...ticket('t1'),
+      assignments: [{ id: 'a1', state: 'running', createdAt: '2026-01-01T00:00:00.000Z' }],
+    }
+    await executor.recover([running])
+    expect(onReport).toHaveBeenCalledWith('t1', 'a1', expect.objectContaining({ state: 'failed' }))
+    expect(executor.capacity().used).toBe(0)
+  })
+})
+
 describe('AgentWorkerExecutor', () => {
   it('owns a real slot registry from its config', () => {
     const executor = new AgentWorkerExecutor(new Context(), {

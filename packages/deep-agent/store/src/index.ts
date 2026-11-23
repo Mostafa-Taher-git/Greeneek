@@ -216,6 +216,30 @@ export class DeepAgentStore {
     return row.count
   }
 
+  /** Every stored row of one JSON table, for snapshot export. */
+  snapshotRows(table: 'trigger' | 'disposition' | 'thread' | 'ticket' | 'decision' | 'outbox' | 'kv'): readonly string[] {
+    return (this.db.prepare(`SELECT value FROM ${table} ORDER BY rowid`).all() as Array<{ value: string }>)
+      .map(row => row.value)
+  }
+
+  /** Write one raw JSON row during snapshot restore. */
+  restoreRow(table: 'trigger' | 'disposition' | 'thread' | 'ticket' | 'decision' | 'outbox' | 'kv', _key: string, value: string): void {
+    const columns: Record<string, string> = {
+      trigger: 'id, value, at', disposition: 'id, value', thread: 'key, value',
+      ticket: 'id, value', decision: 'id, value, thread', outbox: 'id, value', kv: 'key, value',
+    }
+    const parsed = JSON.parse(value) as Record<string, unknown>
+    const text = (candidate: unknown): string => typeof candidate === 'string' ? candidate : ''
+    const idColumn = table === 'thread' || table === 'kv' ? 'key' : 'id'
+    const id = text(parsed[idColumn])
+    const extra = table === 'trigger'
+      ? [text(parsed.at) || new Date().toISOString()]
+      : table === 'decision' ? [text(parsed.threadKey)] : []
+    const placeholders = ['?', '?', ...extra.map(() => '?')].join(', ')
+    this.db.prepare(`INSERT INTO ${table}(${columns[table]}) VALUES(${placeholders}) ON CONFLICT(${idColumn}) DO UPDATE SET value=excluded.value`)
+      .run(id, value, ...extra)
+  }
+
   /** Read a scalar setting. */
   getSetting(key: string): unknown {
     const row = this.db.prepare('SELECT value FROM kv WHERE key = ?').get(key) as { value: string } | undefined

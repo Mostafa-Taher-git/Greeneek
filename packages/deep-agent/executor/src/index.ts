@@ -107,20 +107,26 @@ export class AgentWorkerExecutor implements Executor {
     return { used: this.slots.used().size, free: this.slots.free() }
   }
 
-  /** Launch a Worker for one Assignment. */
+  /** Launch a Worker for one Assignment; failures become structured reports. */
   start(ticket: Ticket, assignmentId: string): void {
+    void this.launchAssignment(ticket, assignmentId).catch((error: unknown) => {
+      this.config.onError?.(error instanceof Error ? error.message : String(error))
+    })
+  }
+
+  /** Reserve a slot and create the Worker session. `NoSlot` is backpressure, not a failure. */
+  async launchAssignment(ticket: Ticket, assignmentId: string): Promise<void> {
     this.slots.reserve(ticket.id, 'launch')
-    void this.launch(ticket, assignmentId).catch((error: unknown) => {
+    try {
+      await this.launch(ticket, assignmentId)
+    } catch (error: unknown) {
       this.slots.release(ticket.id)
       this.handles.delete(assignmentId)
+      if (error instanceof NoSlot) throw error
       const message = error instanceof Error ? error.message : String(error)
       this.config.onError?.(message)
-      try {
-        this.config.onReport(ticket.id, assignmentId, { state: 'failed', summary: message })
-      } catch (reportError: unknown) {
-        this.config.onError?.(reportError instanceof Error ? reportError.message : String(reportError))
-      }
-    })
+      this.config.onReport(ticket.id, assignmentId, { state: 'failed', summary: message })
+    }
   }
 
   private async launch(ticket: Ticket, assignmentId: string): Promise<void> {

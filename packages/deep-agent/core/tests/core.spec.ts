@@ -193,6 +193,43 @@ describe('ticket lifecycle', () => {
   })
 })
 
+describe('worker lifecycle operations', () => {
+  it('records a human attention question on a report', () => {
+    const h = harness()
+    const { ticket } = h.accept('1')
+    h.engine.assignmentStarted(ticket.id, ticket.assignments[0]!.id)
+    const reported = h.engine.report(ticket.id, ticket.assignments[0]!.id, {
+      state: 'waiting', summary: 'need a decision', question: 'Which library should I use?',
+      askedBy: 't1',
+    })
+    expect(reported.attention?.question).toBe('Which library should I use?')
+    expect(ticketStage(reported)).toEqual({ stage: 'person', action: 'answer' })
+  })
+
+  it('retries a failed assignment under the same mandate', () => {
+    const h = harness()
+    const { ticket } = h.accept('1')
+    h.engine.assignmentStarted(ticket.id, ticket.assignments[0]!.id)
+    const failed = h.engine.report(ticket.id, ticket.assignments[0]!.id, { state: 'failed', summary: 'network' })
+    expect(canRetry(failed)).toBe(true)
+    const retried = h.engine.retryTicket(ticket.id)
+    expect(retried.assignments).toHaveLength(2)
+    expect(retried.assignments[0]?.endedReason).toBe('retried')
+    expect(retried.mandate).toEqual(ticket.mandate)
+    expect(retried.attention).toBeUndefined()
+  })
+
+  it('cancels a running assignment on stop', () => {
+    const h = harness()
+    const { ticket } = h.accept('1')
+    h.engine.assignmentStarted(ticket.id, ticket.assignments[0]!.id)
+    const stopped = h.engine.stopTicket(ticket.id, 'operator stop')
+    expect(stopped.ended).toMatchObject({ by: 'human', outcome: 'stopped' })
+    expect(ticketStage(stopped)).toEqual({ stage: 'ended' })
+    expect(h.stops).toHaveLength(1)
+  })
+})
+
 describe('atomicity', () => {
   it('rolls back a nested transaction without losing the outer work', () => {
     const repo = new MemoryRepositories()

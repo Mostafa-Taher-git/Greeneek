@@ -9,11 +9,11 @@ import { gnkHomePath } from '@greeneek/gnk-home-paths'
 import { dirname, join } from 'node:path'
 import { Engine, type Candidate, type Ticket } from '@greeneek/gnk-deep-agent-core'
 import { DeepAgentStore } from '@greeneek/gnk-deep-agent-store'
-import { Effects } from '@greeneek/gnk-deep-agent-effects'
+import { Effects, Later } from '@greeneek/gnk-deep-agent-effects'
 import { buildPolicy, type PolicySettings } from '@greeneek/gnk-deep-agent-policy'
 import { SettingsStore } from './settings.ts'
 import type { PromptVersionView, SettingsSaveValue, SettingsView } from './types-public.ts'
-import { AgentWorkerExecutor, RouterSession } from '@greeneek/gnk-deep-agent-executor'
+import { AgentWorkerExecutor, NoSlot, RouterSession } from '@greeneek/gnk-deep-agent-executor'
 import { DiscordSource, GithubSource, SourceRegistry } from '@greeneek/gnk-deep-agent-sources'
 import type { SourceHealth } from '@greeneek/gnk-deep-agent-sources/types'
 import type { CredentialRef } from '@greeneek/gnk-credentials/types'
@@ -151,6 +151,16 @@ export class DeepAgentService extends TypertRemoteService {
       ...(config.workerPreset === undefined ? {} : { workerPreset: config.workerPreset }),
       onReport: (ticketId, assignmentId, report) => {
         this.engine.report(ticketId, assignmentId, report)
+        if (report.question !== undefined && report.question !== null) {
+          this.engine.reply({ purpose: 'attention', ticketId, question: report.question, text: report.question })
+        }
+        if (report.state === 'failed' || report.state === 'blocked') {
+          const attempts = (this.store.getSetting(`retry.${ticketId}`) as number | undefined) ?? 0
+          if (attempts < 3) {
+            this.store.setSetting(`retry.${ticketId}`, attempts + 1)
+            this.effects.enqueue('retry', ticketId, { ticketId, attempts: attempts + 1 })
+          }
+        }
       },
       onSettled: () => { this.changed() },
       onError: (message) => { this.lastError = message },
@@ -171,7 +181,19 @@ export class DeepAgentService extends TypertRemoteService {
           this.effects.enqueue('reply', message.id, { id: message.id })
         },
       },
-      executor: this.executor,
+      executor: {
+        start: (ticket, assignmentId) => {
+          this.effects.enqueue('launch', assignmentId, { ticketId: ticket.id, assignmentId })
+        },
+        deliver: (ticket, assignmentId, inputIds) => {
+          this.effects.enqueue('delivery', ticket.id, {
+            ticketId: ticket.id, assignmentId, inputIds: [...inputIds],
+          })
+        },
+        stop: (ticket, assignmentId, reason) => {
+          this.effects.enqueue('stop', assignmentId, { ticketId: ticket.id, assignmentId, reason })
+        },
+      },
     })
     this.router = new RouterSession(ctx, {
       sessionKey: 'router.sessionId',
@@ -186,6 +208,37 @@ export class DeepAgentService extends TypertRemoteService {
       const candidate = this.engine.candidate(triggerId)
       if (candidate === undefined) return
       void this.router.assess(candidate).catch(() => { /* an expired Eval is retried by the domain clock */ })
+    })
+    this.effects.on('launch', async (value) => {
+      const { ticketId, assignmentId } = value as { ticketId: string; assignmentId: string }
+      const ticket = this.store.repo.tickets.get(ticketId)
+      if (ticket === undefined) return
+      try {
+        await this.executor.launchAssignment(ticket, assignmentId)
+      } catch (error: unknown) {
+        if (error instanceof NoSlot) throw new Later('worker capacity is full')
+        throw error
+      }
+    })
+    this.effects.on('delivery', (value) => {
+      const { ticketId, assignmentId, inputIds } = value as {
+        ticketId: string
+        assignmentId?: string
+        inputIds?: readonly string[]
+      }
+      const ticket = this.store.repo.tickets.get(ticketId)
+      if (ticket === undefined || assignmentId === undefined || inputIds === undefined) return
+      this.executor.deliver(ticket, assignmentId, inputIds)
+    })
+    this.effects.on('stop', (value) => {
+      const { ticketId, assignmentId, reason } = value as { ticketId: string; assignmentId: string; reason: string }
+      const ticket = this.store.repo.tickets.get(ticketId)
+      if (ticket === undefined) return
+      this.executor.stop(ticket, assignmentId, reason)
+    })
+    this.effects.on('retry', (value) => {
+      const { ticketId } = value as { ticketId: string }
+      this.engine.retryTicket(ticketId)
     })
     this.effects.on('notice', (value) => {
       const { value: text, summary } = value as { value: string; summary: string }

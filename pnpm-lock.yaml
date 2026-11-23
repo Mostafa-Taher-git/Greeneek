@@ -1334,9 +1334,15 @@ importers:
       '@greeneek/gnk-credentials-local':
         specifier: workspace:^
         version: link:../../credentials/credentials-local
+      '@greeneek/gnk-deep-agent-executor':
+        specifier: workspace:^
+        version: link:../../deep-agent/executor
       '@greeneek/gnk-deep-agent-runtime':
         specifier: workspace:^
         version: link:../../deep-agent/runtime
+      '@greeneek/gnk-deep-agent-sources':
+        specifier: workspace:^
+        version: link:../../deep-agent/sources
       '@greeneek/gnk-fs-local':
         specifier: workspace:^
         version: link:../../fs/fs-local
@@ -5278,6 +5284,9 @@ importers:
       '@greeneek/cordis':
         specifier: workspace:^
         version: link:../../../vendor/cordis
+      '@greeneek/gnk-credentials':
+        specifier: workspace:^
+        version: link:../../credentials/credentials
       '@greeneek/gnk-deep-agent-core':
         specifier: workspace:^
         version: link:../core
@@ -5290,6 +5299,9 @@ importers:
       '@greeneek/gnk-deep-agent-policy':
         specifier: workspace:^
         version: link:../policy
+      '@greeneek/gnk-deep-agent-sources':
+        specifier: workspace:^
+        version: link:../sources
       '@greeneek/gnk-deep-agent-store':
         specifier: workspace:^
         version: link:../store

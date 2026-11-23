@@ -13,7 +13,7 @@ A `Requires:` line lists the service keys the plugin `inject`s: its `cordis.yml`
 
 Scope: one verbatim config type per loadable harness package. Intended lookup: find the package name below, then jump to its anchor (`#greeneekgnk-<slug>`) for the full pasted declaration and `Source:` pointer. Grouping: configurable plugins first (alphabetical by package), then no-config, seam, and library lists. Related guidance: subsystem pages for wiring, the [tool catalog](tool-catalog.md) for model-facing schemas.
 
-Generated: 16877 words total, 121 config entries, 125 headings, 2013 words in the largest section. Regenerate with `pnpm run gen-config-catalog`; verify with `pnpm run verify-config-catalog`.
+Generated: 16880 words total, 121 config entries, 125 headings, 2013 words in the largest section. Regenerate with `pnpm run gen-config-catalog`; verify with `pnpm run verify-config-catalog`.
 
 <a id="greeneekgnk-acp"></a>
 
@@ -3685,6 +3685,7 @@ Imported as libraries by other packages; a `cordis.yml` cannot load them.
 - `@greeneek/gnk-craft` ([`packages/craft/craft/src/index.ts`](../packages/craft/craft/src/index.ts))
 - `@greeneek/gnk-deep-agent-core` ([`packages/deep-agent/core/src/index.ts`](../packages/deep-agent/core/src/index.ts))
 - `@greeneek/gnk-deep-agent-effects` ([`packages/deep-agent/effects/src/index.ts`](../packages/deep-agent/effects/src/index.ts))
+- `@greeneek/gnk-deep-agent-policy` ([`packages/deep-agent/policy/src/index.ts`](../packages/deep-agent/policy/src/index.ts))
 - `@greeneek/gnk-deep-agent-store` ([`packages/deep-agent/store/src/index.ts`](../packages/deep-agent/store/src/index.ts))
 - `@greeneek/gnk-deque` ([`packages/util/deque/src/index.ts`](../packages/util/deque/src/index.ts))
 - `@greeneek/gnk-egress` ([`packages/util/egress/src/index.ts`](../packages/util/egress/src/index.ts))

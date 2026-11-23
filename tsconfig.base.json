@@ -48,6 +48,7 @@
       "@greeneek/gnk-deep-agent-sources/types": ["./packages/deep-agent/sources/src/types.ts"],
       "@greeneek/gnk-deep-agent-runtime": ["./packages/deep-agent/runtime/src/index.ts"],
       "@greeneek/gnk-deep-agent-runtime/remote": ["./packages/deep-agent/runtime/lib/types/typert.remote-client.d.ts"],
+      "@greeneek/gnk-deep-agent-runtime/types": ["./packages/deep-agent/runtime/src/types-public.ts"],
       "@greeneek/gnk-client-ui-deep-agent": ["./packages/client/ui-deep-agent/src/index.ts"],
       "@greeneek/gnk-client-ui-settings-automation-tasks": ["./packages/client/ui-settings-automation-tasks/src/index.ts"],
       "@greeneek/gnk-client-ui-settings-plugin-manager": ["./packages/client/ui-settings-plugin-manager/src/index.ts"],

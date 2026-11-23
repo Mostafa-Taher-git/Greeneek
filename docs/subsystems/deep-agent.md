@@ -84,6 +84,46 @@ close(): void
 @Remote('decide') decide(request: DecisionInput): string
 
 /**
+ * Current editable settings document.
+ * @returns the settings with its revision.
+ */
+@Remote('settings') settings(): SettingsView
+
+/**
+ * Save one settings block with optimistic concurrency.
+ * @param request - block name, wire-safe value and expected revision.
+ * @returns the saved settings with the new revision.
+ */
+@Remote('saveSettings') saveSettings(request: { readonly block: 'policy' | 'eval' | 'executor' | 'sources' | 'pause'; readonly value: SettingsSaveValue; readonly revision: number }): SettingsView
+
+/**
+ * Current prompt texts, including built-ins.
+ * @returns one row per prompt name.
+ */
+@Remote('prompts') prompts(): readonly PromptVersionView[]
+
+/**
+ * Save a new immutable prompt version.
+ * @param request - prompt name and text.
+ * @returns the saved version.
+ */
+@Remote('savePrompt') savePrompt(request: { readonly name: string; readonly text: string }): PromptVersionView
+
+/**
+ * Immutable history of one prompt.
+ * @param request - prompt name.
+ * @returns versions newest first.
+ */
+@Remote('promptHistory') promptHistory(request: { readonly name: string }): readonly PromptVersionView[]
+
+/**
+ * Restore a prompt to its built-in text as a new version.
+ * @param request - prompt name.
+ * @returns the restored version.
+ */
+@Remote('resetPrompt') resetPrompt(request: { readonly name: string }): PromptVersionView
+
+/**
  * Stop a Ticket and withdraw its Mandate.
  * @param request - ticket id and optional reason.
  */

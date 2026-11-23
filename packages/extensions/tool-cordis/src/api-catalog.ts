@@ -1242,6 +1242,42 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'the recorded Decision id.',
       },
       {
+        signature: '@Remote(\'settings\') settings(): SettingsView',
+        description: 'Current editable settings document.',
+        parameters: [],
+        returns: 'the settings with its revision.',
+      },
+      {
+        signature: '@Remote(\'saveSettings\') saveSettings(request: { readonly block: \'policy\' | \'eval\' | \'executor\' | \'sources\' | \'pause\'; readonly value: SettingsSaveValue; readonly revision: number }): SettingsView',
+        description: 'Save one settings block with optimistic concurrency.',
+        parameters: [{ name: 'request', description: 'block name, wire-safe value and expected revision.' }],
+        returns: 'the saved settings with the new revision.',
+      },
+      {
+        signature: '@Remote(\'prompts\') prompts(): readonly PromptVersionView[]',
+        description: 'Current prompt texts, including built-ins.',
+        parameters: [],
+        returns: 'one row per prompt name.',
+      },
+      {
+        signature: '@Remote(\'savePrompt\') savePrompt(request: { readonly name: string; readonly text: string }): PromptVersionView',
+        description: 'Save a new immutable prompt version.',
+        parameters: [{ name: 'request', description: 'prompt name and text.' }],
+        returns: 'the saved version.',
+      },
+      {
+        signature: '@Remote(\'promptHistory\') promptHistory(request: { readonly name: string }): readonly PromptVersionView[]',
+        description: 'Immutable history of one prompt.',
+        parameters: [{ name: 'request', description: 'prompt name.' }],
+        returns: 'versions newest first.',
+      },
+      {
+        signature: '@Remote(\'resetPrompt\') resetPrompt(request: { readonly name: string }): PromptVersionView',
+        description: 'Restore a prompt to its built-in text as a new version.',
+        parameters: [{ name: 'request', description: 'prompt name.' }],
+        returns: 'the restored version.',
+      },
+      {
         signature: '@Remote(\'stopTicket\') stopTicket(request: { ticketId: string; reason?: string }): void',
         description: 'Stop a Ticket and withdraw its Mandate.',
         parameters: [{ name: 'request', description: 'ticket id and optional reason.' }],
@@ -5659,6 +5695,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type PromptSectionOrderName = keyof typeof SECTION_ORDERS;',
   },
   {
+    name: 'PromptVersionView',
+    declaration: 'export interface PromptVersionView {\n    readonly version: number;\n    readonly name: string;\n    readonly text: string;\n    readonly revision: string;\n    readonly createdAt: string;\n    readonly builtIn: boolean;\n}',
+  },
+  {
     name: 'ProviderRequestId',
     declaration: 'export type ProviderRequestId = Branded<\'ProviderRequestId\'>;',
   },
@@ -5773,6 +5813,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'ResumeAgentOptions',
     declaration: 'export interface ResumeAgentOptions {\n    readonly resumeSessionId: SessionId;\n    readonly agentOptions?: AgentOptions;\n    readonly signal?: AbortSignal;\n    readonly setup?: AgentSetup;\n}',
+  },
+  {
+    name: 'RuleView',
+    declaration: 'export interface RuleView {\n    readonly id: string;\n    readonly name: string;\n    readonly enabled: boolean;\n    readonly instruction: string;\n}',
   },
   {
     name: 'RunnerFailureRule',
@@ -6403,6 +6447,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface SettingsRegisterOptions<T> {\n    base?: Partial<T>;\n    applies?: SettingsApplies;\n    validate?: (value: T) => void;\n}',
   },
   {
+    name: 'SettingsSaveValue',
+    declaration: 'export interface SettingsSaveValue {\n    readonly rules?: readonly RuleView[];\n    readonly mode?: \'off\' | \'observe\' | \'auto\';\n    readonly evalTimeoutSeconds?: number;\n    readonly maxWorkers?: number;\n    readonly workerDirectory?: string;\n    readonly prepareCommand?: string;\n    readonly blockedCommands?: readonly string[];\n    readonly sources?: Readonly<Record<string, SourcePolicyView>>;\n    readonly paused?: boolean;\n}',
+  },
+  {
     name: 'SettingsSecretView',
     declaration: 'export interface SettingsSecretView {\n    path: string[];\n    set: boolean;\n}',
   },
@@ -6413,6 +6461,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'SettingsUpdateSource',
     declaration: 'export type SettingsUpdateSource = \'update\' | \'provider\';',
+  },
+  {
+    name: 'SettingsView',
+    declaration: 'export interface SettingsView {\n    readonly revision: number;\n    readonly paused: boolean;\n    readonly rules: readonly RuleView[];\n    readonly mode: \'off\' | \'observe\' | \'auto\';\n    readonly evalTimeoutSeconds: number;\n    readonly maxWorkers: number;\n    readonly workerDirectory: string;\n    readonly prepareCommand: string;\n    readonly blockedCommands: readonly string[];\n    readonly sources: Readonly<Record<string, SourcePolicyView>>;\n}',
   },
   {
     name: 'ShellExecRequest',
@@ -6509,6 +6561,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'SourceHealth',
     declaration: 'export interface SourceHealth {\n    readonly kind: string;\n    readonly lastPollAt?: string;\n    readonly lastError?: string;\n    readonly ingested: number;\n}',
+  },
+  {
+    name: 'SourcePolicyView',
+    declaration: 'export interface SourcePolicyView {\n    readonly allowed: readonly {\n        readonly id: string;\n        readonly name?: string;\n    }[];\n    readonly admission: Readonly<Record<string, Readonly<Record<string, string>>>>;\n}',
   },
   {
     name: 'SpawnAgentOptions',

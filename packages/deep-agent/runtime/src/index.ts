@@ -11,13 +11,16 @@ import { Engine, type Candidate, type Ticket } from '@greeneek/gnk-deep-agent-co
 import { DeepAgentStore } from '@greeneek/gnk-deep-agent-store'
 import { Effects } from '@greeneek/gnk-deep-agent-effects'
 import { buildPolicy, type PolicySettings } from '@greeneek/gnk-deep-agent-policy'
+import { SettingsStore } from './settings.ts'
+import type { PromptVersionView, SettingsSaveValue, SettingsView } from './types-public.ts'
 import { AgentWorkerExecutor, RouterSession } from '@greeneek/gnk-deep-agent-executor'
 import { DiscordSource, GithubSource, SourceRegistry } from '@greeneek/gnk-deep-agent-sources'
 import type { SourceHealth } from '@greeneek/gnk-deep-agent-sources/types'
 import type { CredentialRef } from '@greeneek/gnk-credentials/types'
-import type { DecisionInput, DecisionRow, DeepAgentState, TicketRow, TriggerInput, TriggerRow } from './types.ts'
+import type { DecisionInput, DecisionRow, DeepAgentState, TicketRow, TriggerInput, TriggerRow } from './types-public.ts'
 
-export type { DecisionInput, DecisionRow, DeepAgentState, TicketRow, TriggerInput, TriggerRow } from './types.ts'
+export type { DecisionInput, DecisionRow, DeepAgentState, TicketRow, TriggerInput, TriggerRow } from './types-public.ts'
+export type { PromptVersionView, SettingsView } from './types-public.ts'
 
 declare module '@greeneek/cordis' {
   interface Context {
@@ -122,7 +125,8 @@ export class DeepAgentService extends TypertRemoteService {
   private readonly executor: AgentWorkerExecutor
   private readonly router: RouterSession
   private readonly sources: SourceRegistry
-  private readonly settings: PolicySettings
+  private readonly bootPolicy: PolicySettings
+  private readonly settingsStore: SettingsStore
   private readonly sourceConfigs: Pick<DeepAgentConfig, 'github' | 'discord'>
   private readonly dbPath: string
   private readonly workerCapacity: number
@@ -132,13 +136,14 @@ export class DeepAgentService extends TypertRemoteService {
   constructor(ctx: Context, config: DeepAgentConfig = {}) {
     super(ctx, 'deepAgentService', { namespace: 'deepAgent' })
     this.dbPath = config.database ?? defaultDeepAgentDatabase()
-    this.settings = config.policy ?? DEFAULT_POLICY
+    this.bootPolicy = config.policy ?? DEFAULT_POLICY
     this.sourceConfigs = {
       ...(config.github === undefined ? {} : { github: config.github }),
       ...(config.discord === undefined ? {} : { discord: config.discord }),
     }
     this.workerCapacity = config.maxWorkers ?? 3
     this.store = new DeepAgentStore(this.dbPath)
+    this.settingsStore = new SettingsStore(this.store)
     this.effects = new Effects(this.store)
     this.executor = new AgentWorkerExecutor(ctx, {
       rootDirectory: config.workerRootDirectory ?? join(dirname(this.dbPath), 'work'),
@@ -152,7 +157,7 @@ export class DeepAgentService extends TypertRemoteService {
     })
     this.engine = new Engine({
       repo: this.store.repo,
-      policy: () => buildPolicy(this.settings),
+      policy: () => buildPolicy(this.policySettings()),
       scopes: {},
       assessor: {
         request: (candidate: Candidate) => {
@@ -256,17 +261,29 @@ export class DeepAgentService extends TypertRemoteService {
     return this.executor.capacity()
   }
 
+  /** Current policy from persisted settings, falling back to boot config before the first save. */
+  private policySettings(): PolicySettings {
+    const view = this.settingsStore.settings()
+    if (view.revision === 0) return this.bootPolicy
+    return {
+      rules: view.rules,
+      sources: view.sources,
+      mode: view.mode,
+      paused: view.paused,
+    }
+  }
+
   /** Current operational summary from durable state. */
   private summary(): DeepAgentState {
     const threads = this.store.repo.threads
     const tickets = this.store.repo.tickets
-    const policy = buildPolicy(this.settings)
+    const policy = buildPolicy(this.policySettings())
     return {
       ...(this.lastError === undefined ? {} : { lastError: this.lastError }),
-      configured: Object.keys(this.settings.sources).length > 0,
+      configured: Object.keys(this.policySettings().sources).length > 0,
       paused: policy.paused,
       policyVersion: policy.version,
-      mode: this.settings.mode,
+      mode: this.policySettings().mode,
       counts: {
         triggers: this.store.triggerCount(),
         threads: threads.list().length,
@@ -401,6 +418,66 @@ export class DeepAgentService extends TypertRemoteService {
       ...(request.matchedRules === undefined ? {} : { matchedRules: [...request.matchedRules] }),
     })
     return decision.id
+  }
+
+  /**
+   * Current editable settings document.
+   * @returns the settings with its revision.
+   */
+  @Remote('settings')
+  settings(): SettingsView {
+    return this.settingsStore.settings()
+  }
+
+  /**
+   * Save one settings block with optimistic concurrency.
+   * @param request - block name, wire-safe value and expected revision.
+   * @returns the saved settings with the new revision.
+   */
+  @Remote('saveSettings')
+  saveSettings(request: { readonly block: 'policy' | 'eval' | 'executor' | 'sources' | 'pause'; readonly value: SettingsSaveValue; readonly revision: number }): SettingsView {
+    const saved = this.settingsStore.save(request.block, request.value, request.revision)
+    this.changed()
+    return saved
+  }
+
+  /**
+   * Current prompt texts, including built-ins.
+   * @returns one row per prompt name.
+   */
+  @Remote('prompts')
+  prompts(): readonly PromptVersionView[] {
+    return this.settingsStore.prompts()
+  }
+
+  /**
+   * Save a new immutable prompt version.
+   * @param request - prompt name and text.
+   * @returns the saved version.
+   */
+  @Remote('savePrompt')
+  savePrompt(request: { readonly name: string; readonly text: string }): PromptVersionView {
+    return this.settingsStore.savePrompt(request.name, request.text)
+  }
+
+  /**
+   * Immutable history of one prompt.
+   * @param request - prompt name.
+   * @returns versions newest first.
+   */
+  @Remote('promptHistory')
+  promptHistory(request: { readonly name: string }): readonly PromptVersionView[] {
+    return this.settingsStore.promptHistory(request.name)
+  }
+
+  /**
+   * Restore a prompt to its built-in text as a new version.
+   * @param request - prompt name.
+   * @returns the restored version.
+   */
+  @Remote('resetPrompt')
+  resetPrompt(request: { readonly name: string }): PromptVersionView {
+    return this.settingsStore.resetPrompt(request.name)
   }
 
   /**

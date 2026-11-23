@@ -682,7 +682,7 @@ export interface DeepAgentConfig {
 
 Depends on: [`PolicySettings`](../packages/deep-agent/policy/src/index.ts)
 
-Source: [`packages/deep-agent/runtime/src/index.ts:49`](../packages/deep-agent/runtime/src/index.ts)
+Source: [`packages/deep-agent/runtime/src/index.ts:52`](../packages/deep-agent/runtime/src/index.ts)
 
 <a id="greeneekgnk-e2b"></a>
 

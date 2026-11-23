@@ -12,9 +12,9 @@ import { DeepAgentStore } from '@greeneek/gnk-deep-agent-store'
 import { Effects } from '@greeneek/gnk-deep-agent-effects'
 import { buildPolicy, type PolicySettings } from '@greeneek/gnk-deep-agent-policy'
 import { AgentWorkerExecutor, RouterSession } from '@greeneek/gnk-deep-agent-executor'
-import type { DecisionRow, DeepAgentState, TicketRow, TriggerRow } from './types.ts'
+import type { DecisionInput, DecisionRow, DeepAgentState, TicketRow, TriggerInput, TriggerRow } from './types.ts'
 
-export type { DecisionRow, DeepAgentState, TicketRow, TriggerRow } from './types.ts'
+export type { DecisionInput, DecisionRow, DeepAgentState, TicketRow, TriggerInput, TriggerRow } from './types.ts'
 
 declare module '@greeneek/cordis' {
   interface Context {
@@ -97,6 +97,7 @@ export class DeepAgentService extends TypertRemoteService {
   private readonly settings: PolicySettings
   private readonly dbPath: string
   private readonly workerCapacity: number
+  private lastError: string | undefined
 
   /** @param ctx - Host context. @param config - resolved runtime config. */
   constructor(ctx: Context, config: DeepAgentConfig = {}) {
@@ -114,6 +115,7 @@ export class DeepAgentService extends TypertRemoteService {
         this.engine.report(ticketId, assignmentId, report)
       },
       onSettled: () => { this.changed() },
+      onError: (message) => { this.lastError = message },
     })
     this.engine = new Engine({
       repo: this.store.repo,
@@ -159,6 +161,14 @@ export class DeepAgentService extends TypertRemoteService {
     }, 'deep-agent: worker, router and store close')
   }
 
+  /**
+   * Record an infrastructure failure for the operational summary.
+   * @param message - the failure text.
+   */
+  recordError(message: string): void {
+    this.lastError = message
+  }
+
   /** Resume Workers whose assignments were running before this boot. */
   async recover(): Promise<void> {
     await this.router.ensure()
@@ -180,6 +190,7 @@ export class DeepAgentService extends TypertRemoteService {
     const tickets = this.store.repo.tickets
     const policy = buildPolicy(this.settings)
     return {
+      ...(this.lastError === undefined ? {} : { lastError: this.lastError }),
       configured: Object.keys(this.settings.sources).length > 0,
       paused: policy.paused,
       policyVersion: policy.version,
@@ -251,7 +262,8 @@ export class DeepAgentService extends TypertRemoteService {
   triggers(): readonly TriggerRow[] {
     const rows: TriggerRow[] = []
     for (const thread of this.store.repo.threads.list()) {
-      for (const id of thread.pending) {
+      const ids = [...new Set([...thread.pending, ...thread.evaluating?.triggerIds ?? []])]
+      for (const id of ids) {
         const stored = this.store.repo.triggers.get(id)
         if (stored === undefined) continue
         const disposition = this.store.repo.triggers.disposition(id)
@@ -269,6 +281,54 @@ export class DeepAgentService extends TypertRemoteService {
       }
     }
     return rows
+  }
+
+  /**
+   * Ingest one event from a human operator into the domain.
+   * @param request - wire-safe Trigger fields.
+   * @returns whether the event was received, duplicate or filtered.
+   */
+  @Remote('receive')
+  receive(request: TriggerInput): 'received' | 'duplicate' | 'filtered' {
+    return this.engine.receive({
+      id: request.id,
+      source: request.source,
+      threads: request.threads.map(item => ({ source: item.source, id: item.id })),
+      actor: request.actor,
+      human: request.human,
+      ...(request.addressed === undefined ? {} : { addressed: request.addressed }),
+      at: request.at,
+      text: request.text,
+      ...(request.channel === undefined ? {} : { channel: request.channel }),
+      meta: {},
+    })
+  }
+
+  /**
+   * Run one domain clock pass: expire overdue Evals and start due ones.
+   * @returns the number of Evals started.
+   */
+  @Remote('evaluateDue')
+  evaluateDue(): number {
+    const before = this.store.repo.decisions.byThread('').length
+    this.engine.evaluateDue()
+    return this.store.repo.decisions.byThread('').length - before
+  }
+
+  /**
+   * Record an operator decision for a candidate event.
+   * @param request - trigger id and assessment outcome.
+   * @returns the recorded Decision id.
+   */
+  @Remote('decide')
+  decide(request: DecisionInput): string {
+    const decision = this.engine.decide(request.triggerId, {
+      accept: request.accept,
+      reason: request.reason,
+      ...(request.evalId === undefined ? {} : { evalId: request.evalId }),
+      ...(request.matchedRules === undefined ? {} : { matchedRules: [...request.matchedRules] }),
+    })
+    return decision.id
   }
 
   /**
@@ -329,9 +389,14 @@ export class DeepAgentService extends TypertRemoteService {
 /** Loader identity of the Deep-agent Host plugin. */
 export const name = 'deep-agent'
 
+/** Services the Router and Worker sessions own through this plugin fiber. */
+export const inject = ['agents']
+
 /** Host plugin body: provide the Deep-agent service as a Cordis service. */
 export function apply(ctx: Context, config: DeepAgentConfig = {}): void {
   const service = new DeepAgentService(ctx, config)
   ctx.provide('deepAgent', service)
-  void service.recover().catch(() => { /* recovery failures are recorded on the Assignments */ })
+  void service.recover().catch((error: unknown) => {
+    service.recordError(error instanceof Error ? error.message : String(error))
+  })
 }

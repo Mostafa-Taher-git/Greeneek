@@ -70,6 +70,8 @@ export interface WorkerExecutorConfig {
   readonly onReport: (ticketId: string, assignmentId: string, report: WorkerReport) => void
   /** Called when an agent turn settles, so the domain can observe completion. */
   readonly onSettled?: (ticketId: string, assignmentId: string) => void
+  /** Report an infrastructure failure that the domain report path cannot carry. */
+  readonly onError?: (message: string) => void
 }
 
 /** Deterministic session id of a Worker Assignment, stable across restarts. */
@@ -112,19 +114,26 @@ export class AgentWorkerExecutor implements Executor {
       this.slots.release(ticket.id)
       this.handles.delete(assignmentId)
       const message = error instanceof Error ? error.message : String(error)
-      this.config.onReport(ticket.id, assignmentId, { state: 'failed', summary: message })
+      this.config.onError?.(message)
+      try {
+        this.config.onReport(ticket.id, assignmentId, { state: 'failed', summary: message })
+      } catch (reportError: unknown) {
+        this.config.onError?.(reportError instanceof Error ? reportError.message : String(reportError))
+      }
     })
   }
 
   private async launch(ticket: Ticket, assignmentId: string): Promise<void> {
+    // Agent creation publishes durable session state; run it after the domain
+    // transaction that queued this launch has committed.
+    await new Promise((resolve) => { setTimeout(resolve, 0) })
     const cwd = join(this.config.rootDirectory, ticket.id)
     mkdirSync(cwd, { recursive: true })
-    const workspace = await this.ctx.workspaceRegistry.create(cwd, `Deep-agent: ${ticket.title}`)
     const sessionId = workerSessionId(ticket.id, assignmentId)
     const setup = this.setup(ticket, assignmentId)
     const handle = await this.ctx.agents.create({
       sessionId,
-      meta: { cwd: workspace.path, ...(this.config.workerPreset === undefined ? {} : { agentPreset: this.config.workerPreset }) },
+      meta: { cwd, ...(this.config.workerPreset === undefined ? {} : { agentPreset: this.config.workerPreset }) },
       setup,
     })
     this.handles.set(assignmentId, handle)
@@ -216,7 +225,6 @@ export class AgentWorkerExecutor implements Executor {
       try {
         const cwd = join(this.config.rootDirectory, ticket.id)
         mkdirSync(cwd, { recursive: true })
-        await this.ctx.workspaceRegistry.create(cwd, `Deep-agent: ${ticket.title}`)
         const handle = await this.ctx.agents.resume({
           resumeSessionId: workerSessionId(ticket.id, assignment.id),
           setup: this.setup(ticket, assignment.id),

@@ -65,23 +65,30 @@ export class RouterSession {
     if (this.handle !== undefined) return
     const existing = this.sessionId()
     const setup = this.setup()
-    if (existing !== undefined) {
+    let lastError: unknown
+    for (let attempt = 0; attempt < 50; attempt += 1) {
       try {
-        this.handle = await this.ctx.agents.resume({ resumeSessionId: existing, setup })
+        if (existing !== undefined && attempt === 0) {
+          this.handle = await this.ctx.agents.resume({ resumeSessionId: existing, setup })
+          this.config.writeSessionId(this.config.sessionKey, existing)
+          return
+        }
+        const sessionId = existing ?? key('deep-agent-router', this.config.sessionKey) as SessionId
+        this.handle = await this.ctx.agents.create({
+          sessionId,
+          meta: {
+            ...(this.config.routerPreset === undefined ? {} : { agentPreset: this.config.routerPreset }),
+          },
+          setup,
+        })
+        this.config.writeSessionId(this.config.sessionKey, sessionId)
         return
-      } catch {
-        // A missing or unreadable transcript is replaced by a fresh main session below.
+      } catch (error: unknown) {
+        lastError = error
+        await new Promise((resolve) => { setTimeout(resolve, 100) })
       }
     }
-    const sessionId = key('deep-agent-router', this.config.sessionKey) as SessionId
-    this.handle = await this.ctx.agents.create({
-      sessionId,
-      meta: {
-        ...(this.config.routerPreset === undefined ? {} : { agentPreset: this.config.routerPreset }),
-      },
-      setup,
-    })
-    this.config.writeSessionId(this.config.sessionKey, sessionId)
+    throw lastError instanceof Error ? lastError : new Error('Router session could not be created')
   }
 
   /** Register the role prompt and decision tool inside the Router agent. */

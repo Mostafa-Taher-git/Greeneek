@@ -1173,6 +1173,11 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     description: 'The Deep-agent runtime service.',
     methods: [
       {
+        signature: 'recordError(message: string): void',
+        description: 'Record an infrastructure failure for the operational summary.',
+        parameters: [{ name: 'message', description: 'the failure text.' }],
+      },
+      {
         signature: 'async recover(): Promise<void>',
         description: 'Resume Workers whose assignments were running before this boot.',
         parameters: [],
@@ -1211,6 +1216,24 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Recent Triggers with their dispositions.',
         parameters: [],
         returns: 'Trigger rows.',
+      },
+      {
+        signature: '@Remote(\'receive\') receive(request: TriggerInput): \'received\' | \'duplicate\' | \'filtered\'',
+        description: 'Ingest one event from a human operator into the domain.',
+        parameters: [{ name: 'request', description: 'wire-safe Trigger fields.' }],
+        returns: 'whether the event was received, duplicate or filtered.',
+      },
+      {
+        signature: '@Remote(\'evaluateDue\') evaluateDue(): number',
+        description: 'Run one domain clock pass: expire overdue Evals and start due ones.',
+        parameters: [],
+        returns: 'the number of Evals started.',
+      },
+      {
+        signature: '@Remote(\'decide\') decide(request: DecisionInput): string',
+        description: 'Record an operator decision for a candidate event.',
+        parameters: [{ name: 'request', description: 'trigger id and assessment outcome.' }],
+        returns: 'the recorded Decision id.',
       },
       {
         signature: '@Remote(\'stopTicket\') stopTicket(request: { ticketId: string; reason?: string }): void',
@@ -4751,12 +4774,16 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type DebateVerdictMode = \'consensus\' | \'majority\' | \'evidence-based\' | \'no-consensus\';',
   },
   {
+    name: 'DecisionInput',
+    declaration: 'export interface DecisionInput {\n    readonly triggerId: string;\n    readonly evalId?: string;\n    readonly accept: boolean;\n    readonly reason: string;\n    readonly matchedRules?: readonly string[];\n}',
+  },
+  {
     name: 'DecisionRow',
     declaration: 'export interface DecisionRow {\n    readonly id: string;\n    readonly kind: string;\n    readonly at: string;\n    readonly threadKey: string;\n    readonly reasons: readonly string[];\n    readonly ticketId?: string;\n}',
   },
   {
     name: 'DeepAgentState',
-    declaration: 'export interface DeepAgentState {\n    readonly configured: boolean;\n    readonly paused: boolean;\n    readonly policyVersion: string;\n    readonly mode: \'off\' | \'observe\' | \'auto\';\n    readonly counts: {\n        readonly triggers: number;\n        readonly threads: number;\n        readonly tickets: number;\n        readonly openTickets: number;\n        readonly decisions: number;\n        readonly pendingEffects: number;\n    };\n}',
+    declaration: 'export interface DeepAgentState {\n    readonly lastError?: string;\n    readonly configured: boolean;\n    readonly paused: boolean;\n    readonly policyVersion: string;\n    readonly mode: \'off\' | \'observe\' | \'auto\';\n    readonly counts: {\n        readonly triggers: number;\n        readonly threads: number;\n        readonly tickets: number;\n        readonly openTickets: number;\n        readonly decisions: number;\n        readonly pendingEffects: number;\n    };\n}',
   },
   {
     name: 'DiffCallView',
@@ -6925,6 +6952,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'ToolSchema',
     declaration: 'export interface ToolSchema {\n    name: string;\n    description: string;\n    parameters: Record<string, unknown>;\n}',
+  },
+  {
+    name: 'TriggerInput',
+    declaration: 'export interface TriggerInput {\n    readonly id: string;\n    readonly source: string;\n    readonly threads: readonly {\n        readonly source: string;\n        readonly id: string;\n    }[];\n    readonly actor: {\n        readonly source: string;\n        readonly id: string;\n    };\n    readonly human: boolean;\n    readonly addressed?: \'mention\' | \'direct\';\n    readonly at: string;\n    readonly text: string;\n    readonly channel?: {\n        readonly source: string;\n        readonly thread: string;\n        readonly address: Readonly<Record<string, string>>;\n    };\n}',
   },
   {
     name: 'TriggerRow',

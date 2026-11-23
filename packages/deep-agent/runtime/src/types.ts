@@ -3,8 +3,31 @@ import type {
   Decision, Thread, Ticket, Trigger, TriggerDisposition,
 } from '@greeneek/gnk-deep-agent-core'
 
+/** Wire-safe manual event; untrusted source metadata is never accepted from the browser. */
+export interface TriggerInput {
+  readonly id: string
+  readonly source: string
+  readonly threads: readonly { readonly source: string; readonly id: string }[]
+  readonly actor: { readonly source: string; readonly id: string }
+  readonly human: boolean
+  readonly addressed?: 'mention' | 'direct'
+  readonly at: string
+  readonly text: string
+  readonly channel?: { readonly source: string; readonly thread: string; readonly address: Readonly<Record<string, string>> }
+}
+
+/** A decision an operator records for a candidate event. */
+export interface DecisionInput {
+  readonly triggerId: string
+  readonly evalId?: string
+  readonly accept: boolean
+  readonly reason: string
+  readonly matchedRules?: readonly string[]
+}
+
 /** One row of the management overview. */
 export interface DeepAgentState {
+  readonly lastError?: string
   readonly configured: boolean
   readonly paused: boolean
   readonly policyVersion: string

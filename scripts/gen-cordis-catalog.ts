@@ -462,6 +462,8 @@ export const LINK_MAP: Readonly<Record<string, string>> = {
   SandboxMode: 'sandbox.md',
   SandboxPolicy: 'sandbox.md',
   DeepAgentState: 'deep-agent.md',
+  TriggerInput: 'deep-agent.md',
+  DecisionInput: 'deep-agent.md',
   TicketRow: 'deep-agent.md',
   DecisionRow: 'deep-agent.md',
   TriggerRow: 'deep-agent.md',

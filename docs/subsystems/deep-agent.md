@@ -15,6 +15,12 @@ Generated from source by `scripts/gen-cordis-catalog.ts` (verified fresh by `pnp
 The Deep-agent runtime service.
 
 ```ts cordis-catalog
+/**
+ * Record an infrastructure failure for the operational summary.
+ * @param message - the failure text.
+ */
+recordError(message: string): void
+
 /** Resume Workers whose assignments were running before this boot. */
 async recover(): Promise<void>
 
@@ -50,6 +56,26 @@ close(): void
  * @returns Trigger rows.
  */
 @Remote('triggers') triggers(): readonly TriggerRow[]
+
+/**
+ * Ingest one event from a human operator into the domain.
+ * @param request - wire-safe Trigger fields.
+ * @returns whether the event was received, duplicate or filtered.
+ */
+@Remote('receive') receive(request: TriggerInput): 'received' | 'duplicate' | 'filtered'
+
+/**
+ * Run one domain clock pass: expire overdue Evals and start due ones.
+ * @returns the number of Evals started.
+ */
+@Remote('evaluateDue') evaluateDue(): number
+
+/**
+ * Record an operator decision for a candidate event.
+ * @param request - trigger id and assessment outcome.
+ * @returns the recorded Decision id.
+ */
+@Remote('decide') decide(request: DecisionInput): string
 
 /**
  * Stop a Ticket and withdraw its Mandate.

@@ -1334,9 +1334,6 @@ importers:
       '@greeneek/gnk-credentials-local':
         specifier: workspace:^
         version: link:../../credentials/credentials-local
-      '@greeneek/gnk-deep-agent-executor':
-        specifier: workspace:^
-        version: link:../../deep-agent/executor
       '@greeneek/gnk-deep-agent-runtime':
         specifier: workspace:^
         version: link:../../deep-agent/runtime

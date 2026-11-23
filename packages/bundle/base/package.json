@@ -96,7 +96,6 @@
     "@greeneek/gnk-subprocess-local": "workspace:^",
     "@greeneek/gnk-system-prompt": "workspace:^",
     "@greeneek/gnk-automation": "workspace:^",
-    "@greeneek/gnk-deep-agent-executor": "workspace:^",
     "@greeneek/gnk-deep-agent-runtime": "workspace:^",
     "@greeneek/gnk-browser-ai": "workspace:^",
     "@greeneek/gnk-browser-playwright": "workspace:^",

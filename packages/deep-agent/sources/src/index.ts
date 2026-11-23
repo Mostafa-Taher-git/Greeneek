@@ -268,12 +268,24 @@ export class SourceRegistry {
     readonly id: string
     readonly text: string
     readonly address: Readonly<Record<string, string>>
+    readonly source: string
     attempts: number
+    retryAt: number
   }> = []
+  private readonly backoffMs: number
 
-  /** @param adapters - the configured source adapters. @param ingest - domain ingestion callback. */
-  constructor(adapters: readonly SourceAdapter[], private readonly ingest: (trigger: Trigger) => void) {
+  /**
+   * @param adapters - the configured source adapters.
+   * @param ingest - domain ingestion callback.
+   * @param backoffMs - base delay before retrying a failed reply.
+   */
+  constructor(
+    adapters: readonly SourceAdapter[],
+    private readonly ingest: (trigger: Trigger) => void,
+    backoffMs = 5_000,
+  ) {
     this.adapters = [...adapters]
+    this.backoffMs = backoffMs
   }
 
   /** Current health of every configured adapter. */
@@ -289,7 +301,10 @@ export class SourceRegistry {
     readonly source: string
   }): void {
     if (this.pendingReplies.some(item => item.id === reply.id)) return
-    this.pendingReplies.push({ id: reply.id, text: reply.text, address: reply.address, attempts: 0 })
+    this.pendingReplies.push({
+      id: reply.id, text: reply.text, address: reply.address,
+      source: reply.source, attempts: 0, retryAt: 0,
+    })
   }
 
   /** Poll all adapters once and deliver queued replies. */
@@ -299,14 +314,15 @@ export class SourceRegistry {
     }
     for (let index = this.pendingReplies.length - 1; index >= 0; index -= 1) {
       const reply = this.pendingReplies[index]
-      if (reply === undefined) continue
-      const adapter = this.adapters.find(item => item.kind === reply.address.source)
+      if (reply === undefined || reply.retryAt > Date.now()) continue
+      const adapter = this.adapters.find(item => item.kind === reply.source)
       if (adapter === undefined) { this.pendingReplies.splice(index, 1); continue }
       try {
         await adapter.send(reply)
         this.pendingReplies.splice(index, 1)
       } catch {
         reply.attempts += 1
+        reply.retryAt = Date.now() + this.backoffMs * 2 ** Math.min(reply.attempts - 1, 6)
       }
     }
   }

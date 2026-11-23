@@ -119,6 +119,30 @@ describe('Discord source', () => {
   })
 })
 
+describe('reply reliability', () => {
+  it('backs off a failed reply before retrying', async () => {
+    const db = store()
+    let calls = 0
+    const adapter = new GithubSource(host(), db, {
+      tokenRef: 'GITHUB_TOKEN' as CredentialRef, repositories: [], pollSeconds: 60, allowed: [],
+    }, vi.fn(async () => {
+      calls += 1
+      if (calls === 1) throw new Error('network down')
+      return response(201, {})
+    }))
+    const registry = new SourceRegistry([adapter], vi.fn(), 10)
+    registry.enqueueReply({ id: 'r1', text: 'one', address: { repository: 'o/r', number: '7' }, source: 'github' })
+    await registry.pollOnce()
+    expect(registry.pending()).toBe(1)
+    await registry.pollOnce()
+    expect(registry.pending()).toBe(1)
+    await new Promise((resolve) => { setTimeout(resolve, 15) })
+    await registry.pollOnce()
+    expect(registry.pending()).toBe(0)
+    expect(calls).toBe(2)
+  })
+})
+
 describe('SourceRegistry', () => {
   it('deduplicates queued replies and clears them after delivery', async () => {
     const db = store()

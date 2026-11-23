@@ -303,6 +303,16 @@ export class DeepAgentService extends TypertRemoteService {
   async recover(): Promise<void> {
     await this.router.ensure()
     await this.executor.recover(this.store.repo.tickets.open())
+    for (const receipt of this.store.pendingReceipts()) {
+      const message = JSON.parse(receipt.value) as {
+        readonly channel: { readonly source: string; readonly address: Readonly<Record<string, string>> }
+        readonly text: string
+      }
+      this.sources.enqueueReply({
+        id: receipt.id, text: message.text, address: message.channel.address, source: message.channel.source,
+      })
+      this.effects.enqueue('reply', receipt.id, { id: receipt.id })
+    }
     this.changed()
   }
 

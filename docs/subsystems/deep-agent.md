@@ -21,6 +21,12 @@ The Deep-agent runtime service.
  */
 recordError(message: string): void
 
+/**
+ * Start periodic source polling with the configured minimum interval.
+ * @returns disposer that stops polling.
+ */
+startSourcePolling(): () => void
+
 /** Resume Workers whose assignments were running before this boot. */
 async recover(): Promise<void>
 
@@ -112,6 +118,15 @@ close(): void
  * @returns the session id, or an empty string before first boot.
  */
 @Remote('routerSessionId') routerSessionId(): string
+
+/**
+ * Health of configured source adapters.
+ * @returns one health record per configured Source.
+ */
+@Remote('sourceHealth') sourceHealth(): readonly SourceHealth[]
+
+/** Run one source polling pass and deliver queued replies. */
+@Remote('pollSources') async pollSources(): Promise<void>
 ```
 
 Source: [`packages/deep-agent/runtime/src/index.ts`](../../packages/deep-agent/runtime/src/index.ts)

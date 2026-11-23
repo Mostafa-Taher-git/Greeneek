@@ -1178,6 +1178,12 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         parameters: [{ name: 'message', description: 'the failure text.' }],
       },
       {
+        signature: 'startSourcePolling(): () => void',
+        description: 'Start periodic source polling with the configured minimum interval.',
+        parameters: [],
+        returns: 'disposer that stops polling.',
+      },
+      {
         signature: 'async recover(): Promise<void>',
         description: 'Resume Workers whose assignments were running before this boot.',
         parameters: [],
@@ -1268,6 +1274,17 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Durable id of the main Router session.',
         parameters: [],
         returns: 'the session id, or an empty string before first boot.',
+      },
+      {
+        signature: '@Remote(\'sourceHealth\') sourceHealth(): readonly SourceHealth[]',
+        description: 'Health of configured source adapters.',
+        parameters: [],
+        returns: 'one health record per configured Source.',
+      },
+      {
+        signature: '@Remote(\'pollSources\') async pollSources(): Promise<void>',
+        description: 'Run one source polling pass and deliver queued replies.',
+        parameters: [],
       },
     ],
   },
@@ -6488,6 +6505,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'SkillViewOptions',
     declaration: 'export interface SkillViewOptions extends SkillLookupOptions {\n    readonly scope?: ScopeKey | undefined;\n}',
+  },
+  {
+    name: 'SourceHealth',
+    declaration: 'export interface SourceHealth {\n    readonly kind: string;\n    readonly lastPollAt?: string;\n    readonly lastError?: string;\n    readonly ingested: number;\n}',
   },
   {
     name: 'SpawnAgentOptions',

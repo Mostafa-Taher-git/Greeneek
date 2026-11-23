@@ -13,7 +13,7 @@ A `Requires:` line lists the service keys the plugin `inject`s: its `cordis.yml`
 
 Scope: one verbatim config type per loadable harness package. Intended lookup: find the package name below, then jump to its anchor (`#greeneekgnk-<slug>`) for the full pasted declaration and `Source:` pointer. Grouping: configurable plugins first (alphabetical by package), then no-config, seam, and library lists. Related guidance: subsystem pages for wiring, the [tool catalog](tool-catalog.md) for model-facing schemas.
 
-Generated: 16988 words total, 122 config entries, 126 headings, 2013 words in the largest section. Regenerate with `pnpm run gen-config-catalog`; verify with `pnpm run verify-config-catalog`.
+Generated: 17119 words total, 122 config entries, 126 headings, 2013 words in the largest section. Regenerate with `pnpm run gen-config-catalog`; verify with `pnpm run verify-config-catalog`.
 
 <a id="greeneekgnk-acp"></a>
 
@@ -634,7 +634,7 @@ Source: [`packages/credentials/credentials-local/src/index.ts:64`](../packages/c
 
 ## `@greeneek/gnk-deep-agent-runtime`
 
-Requires: `agents`
+Requires: `agents` · `credentials`
 
 ```ts config-catalog
 /** Configuration for the Deep-agent runtime. */
@@ -653,12 +653,36 @@ export interface DeepAgentConfig {
   readonly routerPreset?: string
   /** Assessment deadline in milliseconds. */
   readonly assessmentTimeoutMs?: number
+  /** GitHub source configuration. */
+  readonly github?: {
+    /** Credential reference holding the GitHub token. */
+    readonly tokenRef?: string
+    /** Repositories in owner/name form. */
+    readonly repositories: readonly string[]
+    /** Allowed GitHub logins; empty admits no unlisted actor. */
+    readonly allowed?: readonly string[]
+    /** Poll interval in seconds. */
+    readonly pollSeconds?: number
+  }
+  /** Discord source configuration. Feishu is explicitly out of scope. */
+  readonly discord?: {
+    /** Credential reference holding the Discord bot token. */
+    readonly tokenRef?: string
+    /** Guild the configured channels belong to. */
+    readonly guildId: string
+    /** Channel ids the bot reads. */
+    readonly channels: readonly string[]
+    /** Allowed Discord user ids; empty admits no unlisted actor. */
+    readonly allowed?: readonly string[]
+    /** Poll interval in seconds. */
+    readonly pollSeconds?: number
+  }
 }
 ```
 
 Depends on: [`PolicySettings`](../packages/deep-agent/policy/src/index.ts)
 
-Source: [`packages/deep-agent/runtime/src/index.ts:46`](../packages/deep-agent/runtime/src/index.ts)
+Source: [`packages/deep-agent/runtime/src/index.ts:49`](../packages/deep-agent/runtime/src/index.ts)
 
 <a id="greeneekgnk-e2b"></a>
 
@@ -3718,6 +3742,7 @@ Imported as libraries by other packages; a `cordis.yml` cannot load them.
 - `@greeneek/gnk-deep-agent-effects` ([`packages/deep-agent/effects/src/index.ts`](../packages/deep-agent/effects/src/index.ts))
 - `@greeneek/gnk-deep-agent-executor` ([`packages/deep-agent/executor/src/index.ts`](../packages/deep-agent/executor/src/index.ts))
 - `@greeneek/gnk-deep-agent-policy` ([`packages/deep-agent/policy/src/index.ts`](../packages/deep-agent/policy/src/index.ts))
+- `@greeneek/gnk-deep-agent-sources` ([`packages/deep-agent/sources/src/index.ts`](../packages/deep-agent/sources/src/index.ts))
 - `@greeneek/gnk-deep-agent-store` ([`packages/deep-agent/store/src/index.ts`](../packages/deep-agent/store/src/index.ts))
 - `@greeneek/gnk-deque` ([`packages/util/deque/src/index.ts`](../packages/util/deque/src/index.ts))
 - `@greeneek/gnk-egress` ([`packages/util/egress/src/index.ts`](../packages/util/egress/src/index.ts))

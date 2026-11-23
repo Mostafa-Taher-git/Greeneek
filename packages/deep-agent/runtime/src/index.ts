@@ -12,6 +12,9 @@ import { DeepAgentStore } from '@greeneek/gnk-deep-agent-store'
 import { Effects } from '@greeneek/gnk-deep-agent-effects'
 import { buildPolicy, type PolicySettings } from '@greeneek/gnk-deep-agent-policy'
 import { AgentWorkerExecutor, RouterSession } from '@greeneek/gnk-deep-agent-executor'
+import { DiscordSource, GithubSource, SourceRegistry } from '@greeneek/gnk-deep-agent-sources'
+import type { SourceHealth } from '@greeneek/gnk-deep-agent-sources/types'
+import type { CredentialRef } from '@greeneek/gnk-credentials/types'
 import type { DecisionInput, DecisionRow, DeepAgentState, TicketRow, TriggerInput, TriggerRow } from './types.ts'
 
 export type { DecisionInput, DecisionRow, DeepAgentState, TicketRow, TriggerInput, TriggerRow } from './types.ts'
@@ -58,6 +61,30 @@ export interface DeepAgentConfig {
   readonly routerPreset?: string
   /** Assessment deadline in milliseconds. */
   readonly assessmentTimeoutMs?: number
+  /** GitHub source configuration. */
+  readonly github?: {
+    /** Credential reference holding the GitHub token. */
+    readonly tokenRef?: string
+    /** Repositories in owner/name form. */
+    readonly repositories: readonly string[]
+    /** Allowed GitHub logins; empty admits no unlisted actor. */
+    readonly allowed?: readonly string[]
+    /** Poll interval in seconds. */
+    readonly pollSeconds?: number
+  }
+  /** Discord source configuration. Feishu is explicitly out of scope. */
+  readonly discord?: {
+    /** Credential reference holding the Discord bot token. */
+    readonly tokenRef?: string
+    /** Guild the configured channels belong to. */
+    readonly guildId: string
+    /** Channel ids the bot reads. */
+    readonly channels: readonly string[]
+    /** Allowed Discord user ids; empty admits no unlisted actor. */
+    readonly allowed?: readonly string[]
+    /** Poll interval in seconds. */
+    readonly pollSeconds?: number
+  }
 }
 
 const DEFAULT_POLICY: PolicySettings = {
@@ -94,7 +121,9 @@ export class DeepAgentService extends TypertRemoteService {
   private readonly effects: Effects
   private readonly executor: AgentWorkerExecutor
   private readonly router: RouterSession
+  private readonly sources: SourceRegistry
   private readonly settings: PolicySettings
+  private readonly sourceConfigs: Pick<DeepAgentConfig, 'github' | 'discord'>
   private readonly dbPath: string
   private readonly workerCapacity: number
   private lastError: string | undefined
@@ -104,6 +133,10 @@ export class DeepAgentService extends TypertRemoteService {
     super(ctx, 'deepAgentService', { namespace: 'deepAgent' })
     this.dbPath = config.database ?? defaultDeepAgentDatabase()
     this.settings = config.policy ?? DEFAULT_POLICY
+    this.sourceConfigs = {
+      ...(config.github === undefined ? {} : { github: config.github }),
+      ...(config.discord === undefined ? {} : { discord: config.discord }),
+    }
     this.workerCapacity = config.maxWorkers ?? 3
     this.store = new DeepAgentStore(this.dbPath)
     this.effects = new Effects(this.store)
@@ -153,7 +186,33 @@ export class DeepAgentService extends TypertRemoteService {
       const { value: text, summary } = value as { value: string; summary: string }
       void this.router.relay(text, summary).catch(() => { /* a dropped notice stays in the effect log */ })
     })
-    this.effects.on('reply', () => { /* Source channel delivery is wired with the Source adapters */ })
+    this.sources = new SourceRegistry([
+      ...(config.github === undefined ? [] : [new GithubSource(ctx, this.store, {
+        tokenRef: (config.github.tokenRef ?? 'GITHUB_TOKEN') as CredentialRef,
+        repositories: config.github.repositories,
+        allowed: config.github.allowed ?? [],
+        pollSeconds: config.github.pollSeconds ?? 60,
+      })]),
+      ...(config.discord === undefined ? [] : [new DiscordSource(ctx, this.store, {
+        tokenRef: (config.discord.tokenRef ?? 'DISCORD_BOT_TOKEN') as CredentialRef,
+        guildId: config.discord.guildId,
+        channels: config.discord.channels,
+        allowed: config.discord.allowed ?? [],
+        pollSeconds: config.discord.pollSeconds ?? 60,
+      })]),
+    ], (trigger) => { this.engine.receive(trigger) })
+    this.effects.on('reply', (value) => {
+      const { id } = value as { id: string }
+      const receipt = this.store.pendingReceipts().find(item => item.id === id)
+      if (receipt === undefined) return
+      const message = JSON.parse(receipt.value) as {
+        readonly channel: { readonly source: string; readonly address: Readonly<Record<string, string>> }
+        readonly text: string
+      }
+      this.sources.enqueueReply({
+        id: receipt.id, text: message.text, address: message.channel.address, source: message.channel.source,
+      })
+    })
     ctx.effect(() => async () => {
       await this.executor.dispose()
       await this.router.dispose()
@@ -167,6 +226,19 @@ export class DeepAgentService extends TypertRemoteService {
    */
   recordError(message: string): void {
     this.lastError = message
+  }
+
+  /**
+   * Start periodic source polling with the configured minimum interval.
+   * @returns disposer that stops polling.
+   */
+  startSourcePolling(): () => void {
+    const intervals = [
+      ...(this.sourceConfigs.github?.pollSeconds === undefined ? [] : [this.sourceConfigs.github.pollSeconds]),
+      ...(this.sourceConfigs.discord?.pollSeconds === undefined ? [] : [this.sourceConfigs.discord.pollSeconds]),
+    ]
+    const seconds = intervals.length === 0 ? 60 : Math.min(...intervals)
+    return this.sources.start(seconds * 1_000)
   }
 
   /** Resume Workers whose assignments were running before this boot. */
@@ -384,13 +456,29 @@ export class DeepAgentService extends TypertRemoteService {
   routerSessionId(): string {
     return this.router.sessionId() ?? ''
   }
+
+  /**
+   * Health of configured source adapters.
+   * @returns one health record per configured Source.
+   */
+  @Remote('sourceHealth')
+  sourceHealth(): readonly SourceHealth[] {
+    return this.sources.health()
+  }
+
+  /** Run one source polling pass and deliver queued replies. */
+  @Remote('pollSources')
+  async pollSources(): Promise<void> {
+    await this.sources.pollOnce()
+    this.changed()
+  }
 }
 
 /** Loader identity of the Deep-agent Host plugin. */
 export const name = 'deep-agent'
 
 /** Services the Router and Worker sessions own through this plugin fiber. */
-export const inject = ['agents']
+export const inject = ['agents', 'credentials']
 
 /** Host plugin body: provide the Deep-agent service as a Cordis service. */
 export function apply(ctx: Context, config: DeepAgentConfig = {}): void {
@@ -399,4 +487,8 @@ export function apply(ctx: Context, config: DeepAgentConfig = {}): void {
   void service.recover().catch((error: unknown) => {
     service.recordError(error instanceof Error ? error.message : String(error))
   })
+  ctx.effect(() => {
+    const stop = service.startSourcePolling()
+    return () => { stop() }
+  }, 'deep-agent: source polling')
 }

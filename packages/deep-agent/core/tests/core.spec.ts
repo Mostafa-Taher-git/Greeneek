@@ -223,6 +223,7 @@ describe('atomicity', () => {
 describe('deterministic ids', () => {
   it('derives stable 32-character ids from content', () => {
     expect(key('ticket', 'eval-1')).toBe(key('ticket', 'eval-1'))
+    expect(key('ticket', 'eval-1')).toBe('942ca1798f6999d04a1822c11368fc24')
     expect(key('ticket', 'eval-1')).toMatch(/^[0-9a-f]{32}$/)
     expect(key('ticket', 'eval-1')).not.toBe(key('ticket', 'eval-2'))
   })

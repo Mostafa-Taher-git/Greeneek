@@ -22,7 +22,9 @@
     "@greeneek/gnk-deep-agent-store": "workspace:^",
     "@greeneek/gnk-deep-agent-effects": "workspace:^",
     "@greeneek/gnk-deep-agent-policy": "workspace:^",
-    "@greeneek/gnk-deep-agent-executor": "workspace:^"
+    "@greeneek/gnk-deep-agent-executor": "workspace:^",
+    "@greeneek/gnk-deep-agent-sources": "workspace:^",
+    "@greeneek/gnk-credentials": "workspace:^"
   },
   "devDependencies": {
     "@greeneek/cordis": "workspace:^",
@@ -33,6 +35,8 @@
     "@greeneek/gnk-deep-agent-effects": "workspace:^",
     "@greeneek/gnk-deep-agent-policy": "workspace:^",
     "@greeneek/gnk-deep-agent-executor": "workspace:^",
+    "@greeneek/gnk-deep-agent-sources": "workspace:^",
+    "@greeneek/gnk-credentials": "workspace:^",
     "typescript": "^5.7.2",
     "vitest": "^4.1.8"
   },

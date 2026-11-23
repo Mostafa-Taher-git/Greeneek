@@ -1,0 +1,30 @@
+{
+  "name": "@greeneek/gnk-deep-agent-sources",
+  "description": "Deep-agent source adapters: GitHub and Discord ingestion, read cursors, health and durable outbound replies",
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": { "types": "./lib/types/index.d.ts", "default": "./lib/index.js" },
+    "./types": { "types": "./lib/types/types.d.ts", "default": "./lib/types/types.js" },
+    "./src/*": "./src/*",
+    "./package.json": "./package.json"
+  },
+  "scripts": {},
+  "license": "MIT",
+  "peerDependencies": {
+    "@greeneek/cordis": "workspace:^",
+    "@greeneek/gnk-credentials": "workspace:^",
+    "@greeneek/gnk-deep-agent-core": "workspace:^",
+    "@greeneek/gnk-deep-agent-store": "workspace:^"
+  },
+  "devDependencies": {
+    "@greeneek/cordis": "workspace:^",
+    "@greeneek/gnk-credentials": "workspace:^",
+    "@greeneek/gnk-deep-agent-core": "workspace:^",
+    "@greeneek/gnk-deep-agent-store": "workspace:^",
+    "typescript": "^5.7.2",
+    "vitest": "^4.1.8"
+  },
+  "files": ["lib/index.js", "lib/types/**/*.js", "lib/types/**/*.d.ts"]
+}

@@ -13,7 +13,7 @@ A `Requires:` line lists the service keys the plugin `inject`s: its `cordis.yml`
 
 Scope: one verbatim config type per loadable harness package. Intended lookup: find the package name below, then jump to its anchor (`#greeneekgnk-<slug>`) for the full pasted declaration and `Source:` pointer. Grouping: configurable plugins first (alphabetical by package), then no-config, seam, and library lists. Related guidance: subsystem pages for wiring, the [tool catalog](tool-catalog.md) for model-facing schemas.
 
-Generated: 16880 words total, 121 config entries, 125 headings, 2013 words in the largest section. Regenerate with `pnpm run gen-config-catalog`; verify with `pnpm run verify-config-catalog`.
+Generated: 16936 words total, 122 config entries, 126 headings, 2013 words in the largest section. Regenerate with `pnpm run gen-config-catalog`; verify with `pnpm run verify-config-catalog`.
 
 <a id="greeneekgnk-acp"></a>
 
@@ -629,6 +629,26 @@ export interface Config {
 ```
 
 Source: [`packages/credentials/credentials-local/src/index.ts:64`](../packages/credentials/credentials-local/src/index.ts)
+
+<a id="greeneekgnk-deep-agent-runtime"></a>
+
+## `@greeneek/gnk-deep-agent-runtime`
+
+```ts config-catalog
+/** Configuration for the Deep-agent runtime. */
+export interface DeepAgentConfig {
+  /** Absolute database path. */
+  readonly database?: string
+  /** Policy settings; defaults to observe mode with no admitted sources. */
+  readonly policy?: PolicySettings
+  /** Maximum simultaneous worker executions. */
+  readonly maxWorkers?: number
+}
+```
+
+Depends on: [`PolicySettings`](../packages/deep-agent/policy/src/index.ts)
+
+Source: [`packages/deep-agent/runtime/src/index.ts:45`](../packages/deep-agent/runtime/src/index.ts)
 
 <a id="greeneekgnk-e2b"></a>
 

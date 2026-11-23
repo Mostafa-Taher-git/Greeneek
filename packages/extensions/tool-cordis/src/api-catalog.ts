@@ -1168,6 +1168,64 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'deepAgent',
+    summary: 'The Deep-agent runtime service.',
+    description: 'The Deep-agent runtime service.',
+    methods: [
+      {
+        signature: 'close(): void',
+        description: 'Close the owned store; called by the Host effect disposer and by tests.',
+        parameters: [],
+      },
+      {
+        signature: '@Remote(\'state\') state(): DeepAgentState',
+        description: 'Current operational state.',
+        parameters: [],
+        returns: 'the state summary.',
+      },
+      {
+        signature: '@Remote(\'tickets\') tickets(): readonly TicketRow[]',
+        description: 'All durable Tickets, newest last.',
+        parameters: [],
+        returns: 'compact Ticket rows.',
+      },
+      {
+        signature: '@Remote(\'decisions\') decisions(): readonly DecisionRow[]',
+        description: 'All recorded Decisions.',
+        parameters: [],
+        returns: 'compact Decision rows.',
+      },
+      {
+        signature: '@Remote(\'triggers\') triggers(): readonly TriggerRow[]',
+        description: 'Recent Triggers with their dispositions.',
+        parameters: [],
+        returns: 'Trigger rows.',
+      },
+      {
+        signature: '@Remote(\'stopTicket\') stopTicket(request: { ticketId: string; reason?: string }): void',
+        description: 'Stop a Ticket and withdraw its Mandate.',
+        parameters: [{ name: 'request', description: 'ticket id and optional reason.' }],
+      },
+      {
+        signature: '@Remote(\'retryTicket\') retryTicket(request: { ticketId: string }): void',
+        description: 'Retry a blocked or failed Ticket under the same Mandate.',
+        parameters: [{ name: 'request', description: 'ticket id.' }],
+      },
+      {
+        signature: '@Remote(\'databasePath\') databasePath(): string',
+        description: 'Host path of the domain database, for the deployment panel.',
+        parameters: [],
+        returns: 'the absolute database path.',
+      },
+      {
+        signature: '@Remote(\'maxWorkers\') maxWorkers(): number',
+        description: 'Configured worker capacity.',
+        parameters: [],
+        returns: 'the maximum simultaneous workers.',
+      },
+    ],
+  },
+  {
     key: 'directoryPicker',
     summary: 'Abstract directory-picking service.',
     description: 'Abstract directory-picking service. Subclass, implement `capability()`, and load the subclass as a plugin — it registers as `ctx.directoryPicker` (one implementation per context; loading a second throws, cordis\' standard duplicate-service behavior). The capability object must be stable for the service lifetime: consumers may capture it across calls.',
@@ -3658,6 +3716,14 @@ export const EVENT_API: readonly EventApiEntry[] = [
     parameters: [{ name: 'ref', description: 'the reference whose stored value changed.' }],
   },
   {
+    name: 'deep-agent/changed',
+    mode: 'emit',
+    signature: '\'deep-agent/changed\'(state: DeepAgentState): void',
+    summary: 'A Deep-agent domain record changed; listeners may refresh their view.',
+    description: 'A Deep-agent domain record changed; listeners may refresh their view.',
+    parameters: [{ name: 'state', description: 'the current operational summary.' }],
+  },
+  {
     name: 'domain/changed',
     mode: 'emit',
     signature: '\'domain/changed\'(change: DomainChanged): void',
@@ -4652,6 +4718,14 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'DebateVerdictMode',
     declaration: 'export type DebateVerdictMode = \'consensus\' | \'majority\' | \'evidence-based\' | \'no-consensus\';',
+  },
+  {
+    name: 'DecisionRow',
+    declaration: 'export interface DecisionRow {\n    readonly id: string;\n    readonly kind: string;\n    readonly at: string;\n    readonly threadKey: string;\n    readonly reasons: readonly string[];\n    readonly ticketId?: string;\n}',
+  },
+  {
+    name: 'DeepAgentState',
+    declaration: 'export interface DeepAgentState {\n    readonly configured: boolean;\n    readonly paused: boolean;\n    readonly policyVersion: string;\n    readonly mode: \'off\' | \'observe\' | \'auto\';\n    readonly counts: {\n        readonly triggers: number;\n        readonly threads: number;\n        readonly tickets: number;\n        readonly openTickets: number;\n        readonly decisions: number;\n        readonly pendingEffects: number;\n    };\n}',
   },
   {
     name: 'DiffCallView',
@@ -6694,6 +6768,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type TerminalWaitReason = \'stdin_read\' | \'inferred_idle\' | \'timeout\' | \'session_exit\';',
   },
   {
+    name: 'TicketRow',
+    declaration: 'export interface TicketRow {\n    readonly id: string;\n    readonly title: string;\n    readonly stage: string;\n    readonly status: \'open\' | \'ended\';\n    readonly outcome?: string;\n    readonly strength: string;\n    readonly actor: string;\n    readonly createdAt: string;\n    readonly updatedAt: string;\n    readonly attention?: string;\n    readonly undelivered: number;\n}',
+  },
+  {
     name: 'TokenMeasurement',
     declaration: 'export interface TokenMeasurement {\n    readonly logRevision: SessionLogOffset;\n    readonly baseline: TokenMeasurementBaseline;\n    readonly surfaceDeltaTokens: number;\n    readonly totalTokens: number;\n    readonly surfaceTokens: number;\n    readonly nodes: readonly TokenSurfaceNode[];\n}',
   },
@@ -6816,6 +6894,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'ToolSchema',
     declaration: 'export interface ToolSchema {\n    name: string;\n    description: string;\n    parameters: Record<string, unknown>;\n}',
+  },
+  {
+    name: 'TriggerRow',
+    declaration: 'export interface TriggerRow {\n    readonly id: string;\n    readonly source: string;\n    readonly actor: string;\n    readonly human: boolean;\n    readonly at: string;\n    readonly text: string;\n    readonly threads: readonly string[];\n    readonly evalId?: string;\n    readonly fanout: readonly string[];\n}',
   },
   {
     name: 'TurnEndCancelCause',

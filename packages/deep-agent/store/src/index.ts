@@ -204,6 +204,18 @@ export class DeepAgentStore {
       .map(row => readValue(row.value) as Receipt)
   }
 
+  /** Total number of stored Triggers. */
+  triggerCount(): number {
+    const row = this.db.prepare('SELECT COUNT(*) AS count FROM trigger').get() as { count: number }
+    return row.count
+  }
+
+  /** Total number of recorded Decisions. */
+  decisionCount(): number {
+    const row = this.db.prepare('SELECT COUNT(*) AS count FROM decision').get() as { count: number }
+    return row.count
+  }
+
   /** Read a scalar setting. */
   getSetting(key: string): unknown {
     const row = this.db.prepare('SELECT value FROM kv WHERE key = ?').get(key) as { value: string } | undefined

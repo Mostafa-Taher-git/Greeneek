@@ -1,0 +1,42 @@
+{
+  "name": "@greeneek/gnk-deep-agent-runtime",
+  "description": "Deep-agent Host runtime: owns the domain store, engine, effects, policy and management Remotes",
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": { "types": "./lib/types/index.d.ts", "default": "./lib/index.js" },
+    "./types": { "types": "./lib/types/types.d.ts", "default": "./lib/types/types.js" },
+    "./typert": { "types": "./lib/typert.host.d.ts", "default": "./lib/typert.host.js" },
+    "./remote": { "types": "./lib/typert.remote-client.d.ts", "default": "./lib/typert.remote-client.js" },
+    "./src/*": "./src/*",
+    "./package.json": "./package.json"
+  },
+  "scripts": { "bundle": "tsdown" },
+  "license": "MIT",
+  "peerDependencies": {
+    "@greeneek/cordis": "workspace:^",
+    "@greeneek/gnk-typert-protocol": "workspace:^",
+    "@greeneek/gnk-home-paths": "workspace:^",
+    "@greeneek/gnk-deep-agent-core": "workspace:^",
+    "@greeneek/gnk-deep-agent-store": "workspace:^",
+    "@greeneek/gnk-deep-agent-effects": "workspace:^",
+    "@greeneek/gnk-deep-agent-policy": "workspace:^"
+  },
+  "devDependencies": {
+    "@greeneek/cordis": "workspace:^",
+    "@greeneek/gnk-typert-protocol": "workspace:^",
+    "@greeneek/gnk-home-paths": "workspace:^",
+    "@greeneek/gnk-deep-agent-core": "workspace:^",
+    "@greeneek/gnk-deep-agent-store": "workspace:^",
+    "@greeneek/gnk-deep-agent-effects": "workspace:^",
+    "@greeneek/gnk-deep-agent-policy": "workspace:^",
+    "typescript": "^5.7.2",
+    "vitest": "^4.1.8"
+  },
+  "dependencies": { "zod": "^4.4.3" },
+  "files": [
+    "lib/index.js", "lib/types/**/*.js", "lib/types/**/*.d.ts",
+    "lib/typert.host.js", "lib/typert.host.d.ts", "lib/typert.remote-client.js", "lib/typert.remote-client.d.ts"
+  ]
+}

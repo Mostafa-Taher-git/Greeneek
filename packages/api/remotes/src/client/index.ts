@@ -10,6 +10,7 @@ import llmRemote from '@greeneek/gnk-llm/remote'
 import dynamicRemote from '@greeneek/gnk-cordis-host-runner/remote'
 import pluginInventoryRemote from '@greeneek/gnk-host-plugin-inventory/remote'
 import automationRemote from '@greeneek/gnk-automation/remote'
+import deepAgentRemote from '@greeneek/gnk-deep-agent-runtime/remote'
 import messageFeedbackRemote from '@greeneek/gnk-message-feedback/remote'
 import sessionReferencesRemote from '@greeneek/gnk-session-reference/remote'
 import subagentsRemote from '@greeneek/gnk-subagent/remote'
@@ -27,6 +28,7 @@ export type {} from '@greeneek/gnk-api-settings-controller/remote'
 export type {} from '@greeneek/gnk-goal/remote'
 export type {} from '@greeneek/gnk-llm/remote'
 export type {} from '@greeneek/gnk-host-plugin-inventory/remote'
+export type {} from '@greeneek/gnk-deep-agent-runtime/remote'
 export type {} from '@greeneek/gnk-message-feedback/remote'
 export type {} from '@greeneek/gnk-session-reference/remote'
 export type {} from '@greeneek/gnk-subagent/remote'
@@ -152,7 +154,7 @@ export async function apply(ctx: Context): Promise<() => Promise<void>> {
   try {
     for (const contribution of [
       agentPresetsRemote, commandsRemote, authorizationControllerRemote, settingsControllerRemote, goalsRemote, llmRemote, dynamicRemote,
-      pluginInventoryRemote, automationRemote, messageFeedbackRemote, sessionReferencesRemote,
+      pluginInventoryRemote, automationRemote, deepAgentRemote, messageFeedbackRemote, sessionReferencesRemote,
       subagentsRemote, wavesRemote, sessionRemote, workspaceRemote,
     ]) {
       disposers.push(await ctx.remote.$mount(contribution))

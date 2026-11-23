@@ -214,6 +214,9 @@
     - id: ui-settings-plugin-manager
       name: '@greeneek/gnk-client-ui-settings-plugin-manager'
 
+    - id: ui-deep-agent
+      name: '@greeneek/gnk-client-ui-deep-agent'
+
     - id: ui-conversation
       name: '@greeneek/gnk-client-ui-conversation'
 

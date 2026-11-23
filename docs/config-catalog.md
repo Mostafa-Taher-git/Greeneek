@@ -13,7 +13,7 @@ A `Requires:` line lists the service keys the plugin `inject`s: its `cordis.yml`
 
 Scope: one verbatim config type per loadable harness package. Intended lookup: find the package name below, then jump to its anchor (`#greeneekgnk-<slug>`) for the full pasted declaration and `Source:` pointer. Grouping: configurable plugins first (alphabetical by package), then no-config, seam, and library lists. Related guidance: subsystem pages for wiring, the [tool catalog](tool-catalog.md) for model-facing schemas.
 
-Generated: 16936 words total, 122 config entries, 126 headings, 2013 words in the largest section. Regenerate with `pnpm run gen-config-catalog`; verify with `pnpm run verify-config-catalog`.
+Generated: 16939 words total, 122 config entries, 126 headings, 2013 words in the largest section. Regenerate with `pnpm run gen-config-catalog`; verify with `pnpm run verify-config-catalog`.
 
 <a id="greeneekgnk-acp"></a>
 
@@ -3596,6 +3596,7 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 - `@greeneek/gnk-client-ui-conversation` ([`packages/client/ui-conversation/src/index.ts`](../packages/client/ui-conversation/src/index.ts))
 - `@greeneek/gnk-client-ui-cordis` ([`packages/extensions/ui-cordis/src/index.ts`](../packages/extensions/ui-cordis/src/index.ts))
 - `@greeneek/gnk-client-ui-craft` ([`packages/client/ui-craft/src/index.ts`](../packages/client/ui-craft/src/index.ts))
+- `@greeneek/gnk-client-ui-deep-agent` ([`packages/client/ui-deep-agent/src/index.ts`](../packages/client/ui-deep-agent/src/index.ts))
 - `@greeneek/gnk-client-ui-deliverables` — requires `systemPrompt` ([`packages/client/ui-deliverables/src/index.ts`](../packages/client/ui-deliverables/src/index.ts))
 - `@greeneek/gnk-client-ui-directory-picker-browse` ([`packages/client/ui-directory-picker-browse/src/index.ts`](../packages/client/ui-directory-picker-browse/src/index.ts))
 - `@greeneek/gnk-client-ui-directory-picker-native` ([`packages/client/ui-directory-picker-native/src/index.ts`](../packages/client/ui-directory-picker-native/src/index.ts))

@@ -315,6 +315,10 @@
     - id: automation
       name: '@greeneek/gnk-automation'
 
+    # Deep-agent: independent proactive agent with its own runtime and state.
+    - id: deep-agent
+      name: '@greeneek/gnk-deep-agent-runtime'
+
     - id: browser-ai
       name: '@greeneek/gnk-browser-ai'
 

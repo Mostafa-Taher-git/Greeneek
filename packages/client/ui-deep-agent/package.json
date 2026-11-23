@@ -1,0 +1,42 @@
+{
+  "name": "@greeneek/gnk-client-ui-deep-agent",
+  "description": "Deep-agent standalone management page and sidebar entry",
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": { "types": "./lib/types/index.d.ts", "default": "./lib/index.js" },
+    "./client": { "types": "./lib/types/client/index.d.ts", "default": "./lib/client.js" },
+    "./src/*": "./src/*",
+    "./package.json": "./package.json"
+  },
+  "gnk": {
+    "client": {
+      "inject": [
+        "@greeneek/gnk-api-remotes",
+        "@greeneek/gnk-client-locale",
+        "@greeneek/gnk-client-ui-layout",
+        "@greeneek/gnk-client-ui-sidebar",
+        "@greeneek/gnk-client-ui-slots"
+      ],
+      "platform": "web"
+    }
+  },
+  "scripts": { "bundle": "tsdown" },
+  "license": "MIT",
+  "peerDependencies": { "@greeneek/cordis": "workspace:^" },
+  "devDependencies": {
+    "@greeneek/cordis": "workspace:^",
+    "@greeneek/gnk-api-remotes": "workspace:^",
+    "@greeneek/gnk-deep-agent-runtime": "workspace:^",
+    "@greeneek/gnk-client-locale": "workspace:^",
+    "@greeneek/gnk-client-ui-layout": "workspace:^",
+    "@greeneek/gnk-client-ui-sidebar": "workspace:^",
+    "@greeneek/gnk-client-ui-slots": "workspace:^",
+    "@greeneek/gnk-client-ui-primitives": "workspace:^",
+    "@greeneek/gnk-client-ui-renderer": "workspace:^",
+    "react": "^18.2.0",
+    "@types/react": "~18.3.1"
+  },
+  "files": ["lib/index.js", "lib/client.js", "lib/types/**/*.d.ts"]
+}

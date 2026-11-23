@@ -63,6 +63,7 @@
     "@greeneek/gnk-agent-presets": "workspace:^",
     "@greeneek/gnk-api-gateway": "workspace:^",
     "@greeneek/gnk-automation": "workspace:^",
+    "@greeneek/gnk-deep-agent-runtime": "workspace:^",
     "@greeneek/gnk-api-authorization-controller": "workspace:^",
     "@greeneek/gnk-api-settings-controller": "workspace:^",
     "@greeneek/gnk-api-workspace-controller": "workspace:^",

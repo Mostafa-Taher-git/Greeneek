@@ -66,7 +66,7 @@ export function apply(ctx: ClientContext): void {
   ctx.slots.inject('sidebar.primary.action', () => ctx.slots.register({
     name: 'sidebar.primary.action',
     id: 'shortcut-plugin-manager',
-    order: -1,
+    order: -3,
     locale: NS,
     inject: () => ({ open: () => { ctx.layout.openPlugins() } }),
   }, SidebarAction))

@@ -675,6 +675,12 @@ declare module '@greeneek/cordis' {
      */
     'automation/changed'(catalog: { tasks: readonly unknown[] }): void
     /**
+     * Deep-agent operational state changed.
+     * @mode emit
+     * @param state - the updated state summary.
+     */
+    'deep-agent/changed'(state: { policyVersion: string; mode: string; counts: Readonly<Record<string, number>> }): void
+    /**
      * A browser profile's tracked navigation state changed.
      * @mode emit
      * @param snapshot - the updated surface state.

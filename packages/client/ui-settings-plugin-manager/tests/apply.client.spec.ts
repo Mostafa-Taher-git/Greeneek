@@ -36,6 +36,6 @@ describe('plugins settings section', () => {
     expect(page).toBeTruthy()
     const shortcut = slots.entries('sidebar.primary.action').find(s => s.options.id === 'shortcut-plugin-manager')
     expect(shortcut).toBeTruthy()
-    expect(shortcut?.options.order).toBe(-1)
+    expect(shortcut?.options.order).toBe(-3)
   })
 })

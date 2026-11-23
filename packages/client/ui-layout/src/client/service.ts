@@ -58,6 +58,8 @@ export interface ILayout {
   openBranches(): void
   /** Open the GitHub Issues page in the main column. */
   openIssues(): void
+  /** Open the Deep-agent page in the main column. */
+  openDeepAgent(): void
   /**
    * Select a Settings section without leaving the page.
    * @param section - Settings section id to show.
@@ -163,6 +165,10 @@ export class LayoutController implements ILayout {
 
   openIssues(): void {
     this.#require().openIssues()
+  }
+
+  openDeepAgent(): void {
+    this.#require().openDeepAgent()
   }
 
   showConversation(): void {

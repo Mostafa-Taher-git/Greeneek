@@ -824,6 +824,9 @@ importers:
       '@greeneek/gnk-credentials':
         specifier: workspace:^
         version: link:../../credentials/credentials
+      '@greeneek/gnk-deep-agent-runtime':
+        specifier: workspace:^
+        version: link:../../deep-agent/runtime
       '@greeneek/gnk-file-reference':
         specifier: workspace:^
         version: link:../../context/file-reference
@@ -1331,6 +1334,9 @@ importers:
       '@greeneek/gnk-credentials-local':
         specifier: workspace:^
         version: link:../../credentials/credentials-local
+      '@greeneek/gnk-deep-agent-runtime':
+        specifier: workspace:^
+        version: link:../../deep-agent/runtime
       '@greeneek/gnk-fs-local':
         specifier: workspace:^
         version: link:../../fs/fs-local
@@ -1770,6 +1776,9 @@ importers:
       '@greeneek/gnk-client-ui-cordis':
         specifier: workspace:^
         version: link:../../extensions/ui-cordis
+      '@greeneek/gnk-client-ui-deep-agent':
+        specifier: workspace:^
+        version: link:../../client/ui-deep-agent
       '@greeneek/gnk-client-ui-deliverables':
         specifier: workspace:^
         version: link:../../client/ui-deliverables
@@ -2717,6 +2726,42 @@ importers:
       react-dom:
         specifier: 19.2.6
         version: 19.2.6(react@19.2.6)
+
+  packages/client/ui-deep-agent:
+    devDependencies:
+      '@greeneek/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@greeneek/gnk-api-remotes':
+        specifier: workspace:^
+        version: link:../../api/remotes
+      '@greeneek/gnk-client-locale':
+        specifier: workspace:^
+        version: link:../locale
+      '@greeneek/gnk-client-ui-layout':
+        specifier: workspace:^
+        version: link:../ui-layout
+      '@greeneek/gnk-client-ui-primitives':
+        specifier: workspace:^
+        version: link:../ui-primitives
+      '@greeneek/gnk-client-ui-renderer':
+        specifier: workspace:^
+        version: link:../ui-renderer
+      '@greeneek/gnk-client-ui-sidebar':
+        specifier: workspace:^
+        version: link:../ui-sidebar
+      '@greeneek/gnk-client-ui-slots':
+        specifier: workspace:^
+        version: link:../ui-slots
+      '@greeneek/gnk-deep-agent-runtime':
+        specifier: workspace:^
+        version: link:../../deep-agent/runtime
+      '@types/react':
+        specifier: ~18.3.1
+        version: 18.3.31
+      react:
+        specifier: 19.2.6
+        version: 19.2.6
 
   packages/client/ui-deliverables:
     devDependencies:

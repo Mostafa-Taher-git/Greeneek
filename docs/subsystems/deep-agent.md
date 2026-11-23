@@ -77,6 +77,23 @@ Source: [`packages/deep-agent/runtime/src/index.ts`](../../packages/deep-agent/r
 
 #### `deep-agent/changed` — emit
 
+Deep-agent operational state changed.
+
+```ts cordis-catalog
+/**
+ * Deep-agent operational state changed.
+ * @mode emit
+ * @param state - the updated state summary.
+ */
+'deep-agent/changed'(state: { policyVersion: string; mode: string; counts: Readonly<Record<string, number>> }): void
+```
+
+Source: [`packages/api/session-controller/src/types.ts`](../../packages/api/session-controller/src/types.ts)
+
+<a id="deep-agentchanged--emit"></a>
+
+#### `deep-agent/changed` — emit
+
 A Deep-agent domain record changed; listeners may refresh their view.
 
 ```ts cordis-catalog

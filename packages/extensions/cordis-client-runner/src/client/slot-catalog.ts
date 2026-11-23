@@ -1397,6 +1397,34 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     source: 'packages/client/ui-layout/src/client/index.ts:81',
   },
   {
+    key: 'deep-agent',
+    kind: 'single',
+    scope: 'root',
+    summary: 'Full-height Deep-agent destination in the center column.',
+    doc: 'Full-height Deep-agent destination in the center column.',
+    registerOptions: [],
+    ownerProps: [
+      '/** Dashboard owner share: empty — the page reads the global session/workspace hooks. */\nexport interface DashboardOwnerProps {}',
+    ],
+    ownerPropsReferences: [],
+    standardProps: [
+      'useWorkspaces: SnapshotSelectorHook<WorkspaceSnapshot>',
+      'useSessions: UseSessions',
+      'useSessionPendingInteraction: UseSessionPendingInteraction',
+      'useWorkspaces: SnapshotSelectorHook<WorkspaceSnapshot>',
+    ],
+    keyDomain: '',
+    hookContext: '',
+    slotInject: '',
+    declaredBy: 'an entry in \'root\' (client-ui-layout), so it exists while that entry is mounted',
+    occupants: [
+      'client-ui-deep-agent DeepAgentPage',
+    ],
+    replaceRisk: 'shadows-shipped-ui',
+    example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'deep-agent\', () => ctx.slots.register(\n      { name: \'deep-agent\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
+    source: 'packages/client/ui-layout/src/client/index.ts:91',
+  },
+  {
     key: 'details',
     kind: 'single',
     scope: 'session',
@@ -1430,7 +1458,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     ],
     replaceRisk: 'shadows-shipped-ui',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'details\', () => ctx.slots.register(\n      { name: \'details\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
-    source: 'packages/client/ui-layout/src/client/index.ts:99',
+    source: 'packages/client/ui-layout/src/client/index.ts:101',
   },
   {
     key: 'issues',
@@ -1522,7 +1550,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     ],
     replaceRisk: 'shadows-shipped-ui',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'rightbar\', () => ctx.slots.register(\n      { name: \'rightbar\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
-    source: 'packages/client/ui-layout/src/client/index.ts:107',
+    source: 'packages/client/ui-layout/src/client/index.ts:109',
   },
   {
     key: 'root',
@@ -2072,7 +2100,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     occupants: [],
     replaceRisk: 'none',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'shell.overlay\', () => ctx.slots.register(\n      { name: \'shell.overlay\', id: \'my-entry\', order: 100, label: \'My entry\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
-    source: 'packages/client/ui-layout/src/client/index.ts:120',
+    source: 'packages/client/ui-layout/src/client/index.ts:122',
   },
   {
     key: 'sidebar',
@@ -2246,6 +2274,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     slotInject: '',
     declaredBy: 'an entry in \'sidebar\' (client-ui-sidebar), so it exists while that entry is mounted',
     occupants: [
+      'client-ui-deep-agent SidebarAction id \'shortcut-deep-agent\'',
       'client-ui-settings-automation-tasks SidebarAction id \'shortcut-automation-tasks\'',
       'client-ui-settings-plugin-manager SidebarAction id \'shortcut-plugin-manager\'',
     ],
@@ -2372,7 +2401,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     ],
     replaceRisk: 'shadows-shipped-ui',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'terminal.drawer\', () => ctx.slots.register(\n      { name: \'terminal.drawer\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
-    source: 'packages/client/ui-layout/src/client/index.ts:109',
+    source: 'packages/client/ui-layout/src/client/index.ts:111',
   },
   {
     key: 'titlebar',

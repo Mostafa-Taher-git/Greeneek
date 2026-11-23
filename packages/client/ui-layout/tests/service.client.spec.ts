@@ -27,6 +27,7 @@ function fakePanels(): PanelActions {
     openPlugins: vi.fn(),
     openBranches: vi.fn(),
     openIssues: vi.fn(),
+    openDeepAgent: vi.fn(),
   }
 }
 

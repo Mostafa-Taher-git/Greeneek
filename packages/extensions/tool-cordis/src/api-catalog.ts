@@ -3718,6 +3718,14 @@ export const EVENT_API: readonly EventApiEntry[] = [
   {
     name: 'deep-agent/changed',
     mode: 'emit',
+    signature: '\'deep-agent/changed\'(state: { policyVersion: string; mode: string; counts: Readonly<Record<string, number>> }): void',
+    summary: 'Deep-agent operational state changed.',
+    description: 'Deep-agent operational state changed.',
+    parameters: [{ name: 'state', description: 'the updated state summary.' }],
+  },
+  {
+    name: 'deep-agent/changed',
+    mode: 'emit',
     signature: '\'deep-agent/changed\'(state: DeepAgentState): void',
     summary: 'A Deep-agent domain record changed; listeners may refresh their view.',
     description: 'A Deep-agent domain record changed; listeners may refresh their view.',

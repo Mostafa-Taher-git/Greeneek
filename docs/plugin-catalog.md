@@ -16,7 +16,7 @@ Every workspace package (`packages/<family>/<name>`), categorized by what it con
 | LLM | Model routes and provider adapters | `packages/llm/*` |
 | Capability | Every other plugin, grouped by family directory | fallback: anything unmatched |
 
-Scope: 275 workspace packages; every package appears under each of its kinds (25 Tool, 4 Skill, 6 Command, 44 UI, 7 LLM, 196 Capability rows). A package with several kinds (e.g. a tool that also contributes a command) appears in each section.
+Scope: 276 workspace packages; every package appears under each of its kinds (25 Tool, 4 Skill, 6 Command, 45 UI, 7 LLM, 196 Capability rows). A package with several kinds (e.g. a tool that also contributes a command) appears in each section.
 
 ## Tools
 
@@ -81,6 +81,7 @@ Scope: 275 workspace packages; every package appears under each of its kinds (25
 | `@greeneek/gnk-client-ui-commands` | Client command API for the Web GUI: the / command source, three dispatch kinds, the per-session command directory, and popupSelect registration for business packages; for users and maintainers of slash commands. |
 | `@greeneek/gnk-client-ui-conversation` | Target-neutral conversation assembly and browser shell: event and view registries, per-session bindings, input state, slots, and temporary composer takeovers. |
 | `@greeneek/gnk-client-ui-craft` | The Craft pilot's browser surfaces: the Settings section with per-app installation state, check, open, and download actions, and the artifact tool card for Craft bridge calls; for users of the desktop bridge and its maintainers. |
+| `@greeneek/gnk-client-ui-deep-agent` | Deep-agent standalone management page and permanent sidebar entry backed by Host Remotes |
 | `@greeneek/gnk-client-ui-deliverables` | Produced-files and clickable file references for the Web GUI: the deliverables row a finished turn ends with, and inline-code links in the closing prose; for users and maintainers of the deliverables experience. |
 | `@greeneek/gnk-client-ui-directory-picker-browse` | In-app directory-browsing surface: the Miller-column Select Workspace Directory dialog that fills workspace directory flows; for users and maintainers of the Web picking experience. |
 | `@greeneek/gnk-client-ui-directory-picker-native` | Native directory-picker surface: the browser half that drives the host OS chooser for workspace-directory flows; for users and maintainers choosing a picking interaction. |

@@ -30,7 +30,7 @@ type LayoutState = {
   terminalDrawerOpen: boolean
   narrow: boolean
   narrowExpanded: boolean
-  mainPage: 'conversation' | 'settings' | 'dashboard' | 'automation-tasks' | 'plugins' | 'branches' | 'issues'
+  mainPage: 'conversation' | 'settings' | 'dashboard' | 'automation-tasks' | 'plugins' | 'branches' | 'issues' | 'deep-agent'
   settingsSection: string | undefined
   /** Whether the right surface panel fills the workspace (T3-style maximized browser). */
   rightbarMaximized: boolean
@@ -62,6 +62,7 @@ type LayoutActions = {
   openPlugins: (draft: LayoutState) => void
   openBranches: (draft: LayoutState) => void
   openIssues: (draft: LayoutState) => void
+  openDeepAgent: (draft: LayoutState) => void
   selectSettingsSection: (draft: LayoutState, section: string) => void
   showConversation: (draft: LayoutState) => void
 }
@@ -144,6 +145,10 @@ export function createLayoutStore(): EngineStoreHandle<LayoutState, LayoutAction
       },
       openIssues: (d) => {
         d.mainPage = 'issues'
+        d.settingsSection = undefined
+      },
+      openDeepAgent: (d) => {
+        d.mainPage = 'deep-agent'
         d.settingsSection = undefined
       },
       selectSettingsSection: (d, section: string) => { d.settingsSection = section },

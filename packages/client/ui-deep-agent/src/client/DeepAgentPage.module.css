@@ -141,3 +141,59 @@
   display: flex;
   gap: 4px;
 }
+
+.subTitle {
+  margin: 8px 0 0;
+  color: var(--dsw-alias-label-primary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.formRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 8px;
+  border: 0.5px solid var(--dsw-alias-border-l2);
+  border-radius: 8px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 140px;
+}
+
+.field span {
+  color: var(--dsw-alias-label-secondary);
+  font-size: 10px;
+}
+
+.field input,
+.field select,
+.formRow select,
+.promptText {
+  padding: 6px 8px;
+  border: 0.5px solid var(--dsw-alias-border-l4);
+  border-radius: 6px;
+  background: var(--dsw-alias-bg-base);
+  color: var(--dsw-alias-label-primary);
+  font: inherit;
+  font-size: 12px;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 11px;
+}
+
+.promptText {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+}

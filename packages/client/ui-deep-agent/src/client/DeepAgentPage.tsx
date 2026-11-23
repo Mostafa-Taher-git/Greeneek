@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@greeneek/gnk-client-ui-slots'
 import type {} from '@greeneek/gnk-client-ui-layout/client'
+import type { PromptVersionView, SettingsSaveValue, SettingsView } from '@greeneek/gnk-deep-agent-runtime/types'
 import { IconWolf16 } from '@greeneek/gnk-client-ui-primitives'
 import css from './DeepAgentPage.module.css'
 import type { DeepAgentLocaleKey } from './locales.ts'
@@ -56,6 +57,12 @@ export interface DeepAgentInjected {
   retry: (ticketId: string) => Promise<void>
   databasePath: () => Promise<string>
   maxWorkers: () => Promise<number>
+  settings: () => Promise<SettingsView>
+  saveSettings: (block: 'policy' | 'eval' | 'executor' | 'sources' | 'pause', value: SettingsSaveValue, revision: number) => Promise<SettingsView>
+  prompts: () => Promise<readonly PromptVersionView[]>
+  promptHistory: (name: string) => Promise<readonly PromptVersionView[]>
+  savePrompt: (name: string, text: string) => Promise<PromptVersionView>
+  resetPrompt: (request: { readonly name: string }) => Promise<PromptVersionView>
   close: () => void
 }
 
@@ -64,7 +71,7 @@ export type DeepAgentPageProps =
   & PropsLocale<'deepAgent'>
   & InjectFace<DeepAgentInjected>
 
-type Tab = 'overview' | 'tickets' | 'decisions' | 'triggers'
+type Tab = 'overview' | 'tickets' | 'decisions' | 'triggers' | 'settings'
 
 /** Render the Deep-agent management page. */
 export function DeepAgentPage(props: DeepAgentPageProps) {
@@ -72,6 +79,8 @@ export function DeepAgentPage(props: DeepAgentPageProps) {
     t, close, state: readState, tickets: readTickets, decisions: readDecisions,
     triggers: readTriggers, stop, retry, databasePath: readDatabasePath,
     maxWorkers: readMaxWorkers,
+    settings: readSettings, saveSettings, prompts: readPrompts,
+    promptHistory: readPromptHistoryRemote, savePrompt, resetPrompt,
   } = props
   const [tab, setTab] = useState<Tab>('overview')
   const [state, setState] = useState<StateView>()
@@ -80,6 +89,37 @@ export function DeepAgentPage(props: DeepAgentPageProps) {
   const [triggers, setTriggers] = useState<readonly TriggerView[]>([])
   const [details, setDetails] = useState<{ databasePath: string; maxWorkers: number }>()
   const [error, setError] = useState<string>()
+  const [settings, setSettings] = useState<SettingsView>()
+  const [promptList, setPromptList] = useState<readonly PromptVersionView[]>([])
+  const [selectedPrompt, setSelectedPrompt] = useState<string>()
+  const [promptText, setPromptText] = useState('')
+  const [promptVersions, setPromptVersions] = useState<readonly PromptVersionView[]>([])
+  const [saveState, setSaveState] = useState<string>()
+
+  const refreshSettings = useCallback(async () => {
+    const [document, prompts] = await Promise.all([readSettings(), readPrompts()])
+    setSettings(document)
+    setPromptList(prompts)
+    const first = prompts[0]
+    if (selectedPrompt === undefined && first !== undefined) {
+      setSelectedPrompt(first.name)
+      setPromptText(first.text)
+    }
+  }, [readSettings, readPrompts, selectedPrompt])
+
+  useEffect(() => { void refreshSettings().catch(() => { /* overview refresh reports errors */ }) }, [refreshSettings])
+
+  const readPromptHistory = async (name: string): Promise<void> => {
+    try { setPromptVersions(await readPromptHistoryRemote(name)) } catch { setPromptVersions([]) }
+  }
+
+  const resetSelectedPrompt = async (): Promise<void> => {
+    if (selectedPrompt === undefined) return
+    const restored = await resetPrompt({ name: selectedPrompt })
+    setPromptText(restored.text)
+    await readPromptHistory(selectedPrompt)
+    setSaveState(t('saved'))
+  }
 
   const refresh = useCallback(async () => {
     try {
@@ -127,7 +167,7 @@ export function DeepAgentPage(props: DeepAgentPageProps) {
       {error !== undefined && <p className={css.error} role="alert">{error} <button type="button" onClick={() => { void refresh() }}>{t('retry')}</button></p>}
 
       <div className={css.tabs} role="tablist">
-        {(['overview', 'tickets', 'decisions', 'triggers'] as const).map(id => (
+        {(['overview', 'tickets', 'decisions', 'triggers', 'settings'] as const).map(id => (
           <button
             key={id}
             type="button"
@@ -211,6 +251,172 @@ export function DeepAgentPage(props: DeepAgentPageProps) {
                 </div>
               </div>
             ))}
+        </div>
+      )}
+
+      {tab === 'settings' && settings !== undefined && (
+        <div className={css.section}>
+          {saveState !== undefined && <p className={css.status}>{saveState}</p>}
+          <div className={css.formRow}>
+            <label className={css.field}>
+              <span>{t('mode')}</span>
+              <select
+                value={settings.mode}
+                onChange={(event) => { setSettings({ ...settings, mode: event.target.value as SettingsView['mode'] }) }}
+              >
+                <option value="off">{t('modeOff')}</option>
+                <option value="observe">{t('modeObserve')}</option>
+                <option value="auto">{t('modeAuto')}</option>
+              </select>
+            </label>
+            <label className={css.field}>
+              <span>{t('evalTimeout')}</span>
+              <input
+                type="number"
+                value={settings.evalTimeoutSeconds}
+                onChange={(event) => { setSettings({ ...settings, evalTimeoutSeconds: Number(event.target.value) }) }}
+              />
+            </label>
+            <label className={css.field}>
+              <span>{t('maxWorkers')}</span>
+              <input
+                type="number"
+                value={settings.maxWorkers}
+                onChange={(event) => { setSettings({ ...settings, maxWorkers: Number(event.target.value) }) }}
+              />
+            </label>
+            <label className={css.check}>
+              <input
+                type="checkbox"
+                checked={settings.paused}
+                onChange={(event) => { setSettings({ ...settings, paused: event.target.checked }) }}
+              />
+              {t('paused')}
+            </label>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              void saveSettings('eval', {
+                evalTimeoutSeconds: settings.evalTimeoutSeconds, maxWorkers: settings.maxWorkers,
+                paused: settings.paused,
+              }, settings.revision).then((saved) => {
+                setSettings(saved)
+                setSaveState(t('saved'))
+              }).catch(() => { setSaveState(t('saveFailed')) })
+            }}
+          >
+            {t('save')}
+          </button>
+
+          <h3 className={css.subTitle}>{t('rules')}</h3>
+          {settings.rules.map((rule, index) => (
+            <div key={rule.id} className={css.formRow}>
+              <label className={css.field}>
+                <span>{t('ruleName')}</span>
+                <input
+                  value={rule.name}
+                  onChange={(event) => {
+                    const rules = [...settings.rules]
+                    rules[index] = { ...rule, name: event.target.value }
+                    setSettings({ ...settings, rules })
+                  }}
+                />
+              </label>
+              <label className={css.field}>
+                <span>{t('ruleInstruction')}</span>
+                <input
+                  value={rule.instruction}
+                  onChange={(event) => {
+                    const rules = [...settings.rules]
+                    rules[index] = { ...rule, instruction: event.target.value }
+                    setSettings({ ...settings, rules })
+                  }}
+                />
+              </label>
+              <label className={css.check}>
+                <input
+                  type="checkbox"
+                  checked={rule.enabled}
+                  onChange={(event) => {
+                    const rules = [...settings.rules]
+                    rules[index] = { ...rule, enabled: event.target.checked }
+                    setSettings({ ...settings, rules })
+                  }}
+                />
+                {t('enabled')}
+              </label>
+              <button
+                type="button"
+                onClick={() => { setSettings({ ...settings, rules: settings.rules.filter(item => item.id !== rule.id) }) }}
+              >
+                {t('removeRule')}
+              </button>
+            </div>
+          ))}
+          <div className={css.formRow}>
+            <button
+              type="button"
+              onClick={() => {
+                const id = `rule-${Date.now()}`
+                setSettings({
+                  ...settings,
+                  rules: [...settings.rules, { id, name: '', enabled: true, instruction: '' }],
+                })
+              }}
+            >
+              {t('addRule')}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                void saveSettings('policy', { rules: settings.rules, mode: settings.mode }, settings.revision)
+                  .then((saved) => { setSettings(saved); setSaveState(t('saved')) })
+                  .catch(() => { setSaveState(t('saveFailed')) })
+              }}
+            >
+              {t('save')}
+            </button>
+          </div>
+
+          <h3 className={css.subTitle}>{t('prompts')}</h3>
+          <div className={css.formRow}>
+            <select
+              value={selectedPrompt ?? ''}
+              onChange={(event) => {
+                const name = event.target.value
+                const prompt = promptList.find(item => item.name === name)
+                setSelectedPrompt(name)
+                setPromptText(prompt?.text ?? '')
+                void readPromptHistory(name)
+              }}
+            >
+              {promptList.map(prompt => (
+                <option key={prompt.name} value={prompt.name}>{prompt.name}</option>
+              ))}
+            </select>
+            <button type="button" onClick={() => { void readPromptHistory(selectedPrompt ?? '') }}>
+              {t('promptHistory')}
+            </button>
+            <button type="button" onClick={() => { void resetSelectedPrompt() }}>{t('resetBuiltIn')}</button>
+          </div>
+          <textarea className={css.promptText} value={promptText} rows={8} onChange={(event) => { setPromptText(event.target.value) }} />
+          <button
+            type="button"
+            onClick={() => {
+              if (selectedPrompt === undefined) return
+              void savePrompt(selectedPrompt, promptText)
+                .then(() => { setSaveState(t('saved')); void refreshSettings() })
+                .catch(() => { setSaveState(t('saveFailed')) })
+            }}
+          >
+            {t('save')}
+          </button>
+          {promptVersions.map(version => (
+            <div key={version.revision} className={css.row}>
+              <span className={css.meta}>{t('version')} {version.version} · {version.builtIn ? t('builtIn') : t('custom')} · {version.createdAt}</span>
+            </div>
+          ))}
         </div>
       )}
     </div>

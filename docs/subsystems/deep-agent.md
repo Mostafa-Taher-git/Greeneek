@@ -80,6 +80,12 @@ close(): void
  * @returns used and free slot counts.
  */
 @Remote('workerCapacity') workerCapacityState(): { readonly used: number; readonly free: number }
+
+/**
+ * Durable id of the main Router session.
+ * @returns the session id, or an empty string before first boot.
+ */
+@Remote('routerSessionId') routerSessionId(): string
 ```
 
 Source: [`packages/deep-agent/runtime/src/index.ts`](../../packages/deep-agent/runtime/src/index.ts)

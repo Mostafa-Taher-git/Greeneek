@@ -129,6 +129,24 @@ export class Engine {
     })
   }
 
+  /** The candidate an Eval holds for one Trigger, as its assessor sees it. */
+  candidate(triggerId: string): import('./ports.ts').Candidate | undefined {
+    for (const thread of this.repo.threads.list()) {
+      const evaluating = thread.evaluating
+      if (evaluating === undefined || !evaluating.triggerIds.includes(triggerId)) continue
+      const trigger = this.repo.triggers.get(triggerId)
+      if (trigger === undefined) return undefined
+      return {
+        trigger,
+        evalId: evaluating.id,
+        thread,
+        basis: evaluating.basis,
+        strength: evaluating.strength,
+      }
+    }
+    return undefined
+  }
+
   /** Start overdue Evals and one new Eval per Thread with pending Triggers. */
   evaluateDue(): void {
     const policy = this.options.policy()

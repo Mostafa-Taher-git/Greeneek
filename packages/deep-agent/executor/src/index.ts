@@ -15,6 +15,8 @@ import type { Executor, Ticket, WorkerReport } from '@greeneek/gnk-deep-agent-co
 import { key } from '@greeneek/gnk-deep-agent-core'
 import type { ToolRunContext } from '@greeneek/gnk-tools'
 import { RECOVERY_NOTE } from './recovery.ts'
+export { RouterSession, candidateCard } from './router.ts'
+export type { RouterConfig } from './router.ts'
 
 /** Defers an effect without counting a failure; slot exhaustion is normal backpressure. */
 export class NoSlot extends Error {

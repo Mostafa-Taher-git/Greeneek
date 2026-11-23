@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { Context } from '@greeneek/cordis'
-import { AgentWorkerExecutor, NoSlot, WorkerSlots, mandateText, workerSessionId } from '../src/index.ts'
+import { AgentWorkerExecutor, NoSlot, RouterSession, WorkerSlots, candidateCard, mandateText, workerSessionId } from '../src/index.ts'
 import { RECOVERY_NOTE } from '../src/recovery.ts'
 import type { Ticket } from '@greeneek/gnk-deep-agent-core'
 
@@ -59,6 +59,41 @@ describe('worker identity and mandate', () => {
     expect(RECOVERY_NOTE).toContain('working directory')
   })
 })
+
+describe('RouterSession', () => {
+  it('builds a bounded candidate card with eval identity and authority', () => {
+    const card = candidateCard({
+      trigger: ticketTrigger(),
+      evalId: 'eval-1',
+      thread: {} as never,
+      basis: { via: 'admission', cell: 'unlistedAddressed' },
+      strength: 'inferred',
+    })
+    expect(card).toContain('eval-1')
+    expect(card).toContain('alice')
+    expect(card).toContain('inferred')
+    expect(card).toContain('deep_agent_decide')
+  })
+
+  it('reads and persists one durable Router session id', () => {
+    let stored: unknown
+    const router = new RouterSession(new Context(), {
+      sessionKey: 'router.sessionId',
+      readSessionId: () => stored,
+      writeSessionId: (_key, value) => { stored = value },
+      onDecision: vi.fn(),
+    })
+    expect(router.sessionId()).toBeUndefined()
+  })
+})
+
+function ticketTrigger() {
+  return {
+    id: 't1', source: 'github', threads: [{ source: 'github', id: '7' }],
+    actor: { source: 'github', id: 'alice' }, human: true, addressed: 'mention' as const,
+    at: '2026-01-01T00:00:00.000Z', text: 'please fix', meta: {},
+  }
+}
 
 describe('AgentWorkerExecutor', () => {
   it('owns a real slot registry from its config', () => {

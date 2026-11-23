@@ -13,7 +13,7 @@ A `Requires:` line lists the service keys the plugin `inject`s: its `cordis.yml`
 
 Scope: one verbatim config type per loadable harness package. Intended lookup: find the package name below, then jump to its anchor (`#greeneekgnk-<slug>`) for the full pasted declaration and `Source:` pointer. Grouping: configurable plugins first (alphabetical by package), then no-config, seam, and library lists. Related guidance: subsystem pages for wiring, the [tool catalog](tool-catalog.md) for model-facing schemas.
 
-Generated: 16965 words total, 122 config entries, 126 headings, 2013 words in the largest section. Regenerate with `pnpm run gen-config-catalog`; verify with `pnpm run verify-config-catalog`.
+Generated: 16986 words total, 122 config entries, 126 headings, 2013 words in the largest section. Regenerate with `pnpm run gen-config-catalog`; verify with `pnpm run verify-config-catalog`.
 
 <a id="greeneekgnk-acp"></a>
 
@@ -647,6 +647,10 @@ export interface DeepAgentConfig {
   readonly workerRootDirectory?: string
   /** Optional preset applied to Worker sessions. */
   readonly workerPreset?: string
+  /** Optional preset applied to the Router session. */
+  readonly routerPreset?: string
+  /** Assessment deadline in milliseconds. */
+  readonly assessmentTimeoutMs?: number
 }
 ```
 

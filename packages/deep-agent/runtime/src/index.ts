@@ -11,7 +11,7 @@ import { Engine, type Candidate, type Ticket } from '@greeneek/gnk-deep-agent-co
 import { DeepAgentStore } from '@greeneek/gnk-deep-agent-store'
 import { Effects } from '@greeneek/gnk-deep-agent-effects'
 import { buildPolicy, type PolicySettings } from '@greeneek/gnk-deep-agent-policy'
-import { AgentWorkerExecutor } from '@greeneek/gnk-deep-agent-executor'
+import { AgentWorkerExecutor, RouterSession } from '@greeneek/gnk-deep-agent-executor'
 import type { DecisionRow, DeepAgentState, TicketRow, TriggerRow } from './types.ts'
 
 export type { DecisionRow, DeepAgentState, TicketRow, TriggerRow } from './types.ts'
@@ -54,6 +54,10 @@ export interface DeepAgentConfig {
   readonly workerRootDirectory?: string
   /** Optional preset applied to Worker sessions. */
   readonly workerPreset?: string
+  /** Optional preset applied to the Router session. */
+  readonly routerPreset?: string
+  /** Assessment deadline in milliseconds. */
+  readonly assessmentTimeoutMs?: number
 }
 
 const DEFAULT_POLICY: PolicySettings = {
@@ -89,6 +93,7 @@ export class DeepAgentService extends TypertRemoteService {
   private readonly engine: Engine
   private readonly effects: Effects
   private readonly executor: AgentWorkerExecutor
+  private readonly router: RouterSession
   private readonly settings: PolicySettings
   private readonly dbPath: string
   private readonly workerCapacity: number
@@ -128,18 +133,35 @@ export class DeepAgentService extends TypertRemoteService {
       },
       executor: this.executor,
     })
-    // Placeholders remain only for effects whose external side is a Source or Router adapter.
-    this.effects.on('assessment', () => { /* Router assessor adapter is wired in the next phase */ })
-    this.effects.on('reply', () => { /* Source channel delivery is wired in the next phase */ })
-    this.effects.on('notice', () => { /* Router notice relay is wired in the next phase */ })
+    this.router = new RouterSession(ctx, {
+      sessionKey: 'router.sessionId',
+      readSessionId: key => this.store.getSetting(key),
+      writeSessionId: (key, value) => { this.store.setSetting(key, value) },
+      ...(config.routerPreset === undefined ? {} : { routerPreset: config.routerPreset }),
+      ...(config.assessmentTimeoutMs === undefined ? {} : { assessmentTimeoutMs: config.assessmentTimeoutMs }),
+      onDecision: (triggerId, outcome) => { this.engine.decide(triggerId, outcome) },
+    })
+    this.effects.on('assessment', (value) => {
+      const { triggerId } = value as { triggerId: string }
+      const candidate = this.engine.candidate(triggerId)
+      if (candidate === undefined) return
+      void this.router.assess(candidate).catch(() => { /* an expired Eval is retried by the domain clock */ })
+    })
+    this.effects.on('notice', (value) => {
+      const { value: text, summary } = value as { value: string; summary: string }
+      void this.router.relay(text, summary).catch(() => { /* a dropped notice stays in the effect log */ })
+    })
+    this.effects.on('reply', () => { /* Source channel delivery is wired with the Source adapters */ })
     ctx.effect(() => async () => {
       await this.executor.dispose()
+      await this.router.dispose()
       this.store.close()
-    }, 'deep-agent: worker and store close')
+    }, 'deep-agent: worker, router and store close')
   }
 
   /** Resume Workers whose assignments were running before this boot. */
   async recover(): Promise<void> {
+    await this.router.ensure()
     await this.executor.recover(this.store.repo.tickets.open())
     this.changed()
   }
@@ -292,6 +314,15 @@ export class DeepAgentService extends TypertRemoteService {
   @Remote('workerCapacity')
   workerCapacityState(): { readonly used: number; readonly free: number } {
     return this.capacity()
+  }
+
+  /**
+   * Durable id of the main Router session.
+   * @returns the session id, or an empty string before first boot.
+   */
+  @Remote('routerSessionId')
+  routerSessionId(): string {
+    return this.router.sessionId() ?? ''
   }
 }
 

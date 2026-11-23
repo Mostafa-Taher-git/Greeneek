@@ -1240,6 +1240,12 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         parameters: [],
         returns: 'used and free slot counts.',
       },
+      {
+        signature: '@Remote(\'routerSessionId\') routerSessionId(): string',
+        description: 'Durable id of the main Router session.',
+        parameters: [],
+        returns: 'the session id, or an empty string before first boot.',
+      },
     ],
   },
   {

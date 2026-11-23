@@ -1,7 +1,7 @@
 /** Sidebar entry that opens the standalone Deep-agent page. */
 import type { InjectFace, PropsLocale, PropsRuntime } from '@greeneek/gnk-client-ui-slots'
 import type {} from '@greeneek/gnk-client-ui-sidebar/client'
-import { IconBrainCircuit16, Tooltip } from '@greeneek/gnk-client-ui-primitives'
+import { IconWolf16, Tooltip } from '@greeneek/gnk-client-ui-primitives'
 import css from './SidebarAction.module.css'
 
 /** Registration-side face. */
@@ -25,7 +25,7 @@ export function SidebarAction({ wide, t, open }: SidebarActionProps) {
         aria-label={t('nav')}
         onClick={open}
       >
-        <IconBrainCircuit16 size={14} />
+        <IconWolf16 size={14} />
         {wide && <span className={css.label}>{t('nav')}</span>}
       </button>
     </Tooltip>

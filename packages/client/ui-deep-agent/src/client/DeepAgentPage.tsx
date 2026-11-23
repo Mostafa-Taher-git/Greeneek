@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@greeneek/gnk-client-ui-slots'
 import type {} from '@greeneek/gnk-client-ui-layout/client'
-import { IconBrainCircuit16 } from '@greeneek/gnk-client-ui-primitives'
+import { IconWolf16 } from '@greeneek/gnk-client-ui-primitives'
 import css from './DeepAgentPage.module.css'
 import type { DeepAgentLocaleKey } from './locales.ts'
 
@@ -115,7 +115,7 @@ export function DeepAgentPage(props: DeepAgentPageProps) {
     <div className={css.root}>
       <header className={css.header}>
         <div className={css.heading}>
-          <IconBrainCircuit16 size={18} />
+          <IconWolf16 size={18} />
           <h2 className={css.title}>{t('title')}</h2>
         </div>
         <div className={css.actions}>

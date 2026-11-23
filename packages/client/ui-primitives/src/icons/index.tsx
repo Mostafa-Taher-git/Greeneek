@@ -1148,3 +1148,28 @@ export const IconFileDiff16 = ({ size = 16, className }: IconProps) => (
     </g>
   </svg>
 )
+
+/** Puzzle piece: the Plugins sidebar entry. */
+export const IconPuzzle16 = ({ size = 16, className }: IconProps) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path
+      d="M4 7h3a1 1 0 0 0 1-1V5a2 2 0 1 1 4 0v1a1 1 0 0 0 1 1h3a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1a2 2 0 1 0 0 4h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-3a1 1 0 0 1-1-1v-1a2 2 0 1 0-4 0v1a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a2 2 0 1 0 0-4H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+)
+
+/** Wolf head: the Deep-agent sidebar entry. */
+export const IconWolf16 = ({ size = 16, className }: IconProps) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <g stroke="currentColor" strokeWidth={1.3} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1.4 1.6 5 4.1 8 3.4l3 0.7 3.6-2.5-0.7 6.1c0 3.4-2.6 5.9-5.9 6.8-3.3-0.9-5.9-3.4-5.9-6.8L1.4 1.6Z" />
+      <path d="m4.9 6.7 1.8 1.1M11.1 6.7 9.3 7.8" />
+      <path d="m8 9.4-1.6 2.1h3.2L8 9.4Z" />
+      <path d="M8 12.9v1.4" />
+    </g>
+  </svg>
+)

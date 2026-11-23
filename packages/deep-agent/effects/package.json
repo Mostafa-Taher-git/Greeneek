@@ -1,0 +1,22 @@
+{
+  "name": "@greeneek/gnk-deep-agent-effects",
+  "description": "Deep-agent durable effect queue with coalescing, backoff, ordering and restart recovery",
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": { "types": "./lib/types/index.d.ts", "default": "./lib/index.js" },
+    "./src/*": "./src/*",
+    "./package.json": "./package.json"
+  },
+  "scripts": {},
+  "license": "MIT",
+  "peerDependencies": { "@greeneek/cordis": "workspace:^", "@greeneek/gnk-deep-agent-store": "workspace:^" },
+  "devDependencies": {
+    "@greeneek/cordis": "workspace:^",
+    "@greeneek/gnk-deep-agent-store": "workspace:^",
+    "typescript": "^5.7.2",
+    "vitest": "^4.1.8"
+  },
+  "files": ["lib/index.js", "lib/types/**/*.js", "lib/types/**/*.d.ts"]
+}

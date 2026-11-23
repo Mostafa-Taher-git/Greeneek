@@ -16,7 +16,7 @@ Every workspace package (`packages/<family>/<name>`), categorized by what it con
 | LLM | Model routes and provider adapters | `packages/llm/*` |
 | Capability | Every other plugin, grouped by family directory | fallback: anything unmatched |
 
-Scope: 272 workspace packages; every package appears under each of its kinds (25 Tool, 4 Skill, 6 Command, 44 UI, 7 LLM, 193 Capability rows). A package with several kinds (e.g. a tool that also contributes a command) appears in each section.
+Scope: 273 workspace packages; every package appears under each of its kinds (25 Tool, 4 Skill, 6 Command, 44 UI, 7 LLM, 194 Capability rows). A package with several kinds (e.g. a tool that also contributes a command) appears in each section.
 
 ## Tools
 
@@ -262,6 +262,7 @@ Scope: 272 workspace packages; every package appears under each of its kinds (25
 | Package | Role |
 | --- | --- |
 | `@greeneek/gnk-deep-agent-core` | Deep-agent pure domain model and transactional event engine, adapted from the reference superagent prototype |
+| `@greeneek/gnk-deep-agent-effects` | Deep-agent durable effect queue with coalescing, bounded backoff, ordering and restart recovery |
 | `@greeneek/gnk-deep-agent-store` | Deep-agent authoritative SQLite store with versioned schema, atomic repositories, durable effects and outbox receipts |
 
 ### `e2b/`

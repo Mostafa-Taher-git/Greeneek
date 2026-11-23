@@ -168,6 +168,13 @@ export class DeepAgentStore {
     return Number(result.changes) > 0
   }
 
+  /** Defer an effect without consuming a failure attempt. */
+  deferEffect(kind: string, key: string, seq: number, generation: number, error: string, due: string): void {
+    this.db.prepare(`UPDATE effect SET error=?, due=?
+      WHERE kind=? AND key=? AND seq=? AND generation=?`)
+      .run(error, due, kind, key, seq, generation)
+  }
+
   /** Record a failed attempt with exponential backoff chosen by the caller. */
   failEffect(kind: string, key: string, seq: number, generation: number, error: string, due: string): void {
     this.db.prepare(`UPDATE effect SET attempts=attempts+1, error=?, due=?

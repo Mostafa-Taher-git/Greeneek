@@ -173,6 +173,7 @@
     { "path": "./packages/credentials/credentials" },
     { "path": "./packages/credentials/credentials-local" },
     { "path": "./packages/deep-agent/core" },
+    { "path": "./packages/deep-agent/effects" },
     { "path": "./packages/deep-agent/store" },
     { "path": "./packages/e2b/e2b" },
     { "path": "./packages/e2b/fs-e2b" },

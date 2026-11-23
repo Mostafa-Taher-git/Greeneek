@@ -1,0 +1,14 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": { "rootDir": "src", "outDir": "lib/types" },
+  "include": ["src"],
+  "references": [
+    { "path": "../../../vendor/cordis" },
+    { "path": "../core" },
+    { "path": "../../core/agent/tsconfig.host.json" },
+    { "path": "../../core/session/tsconfig.host.json" },
+    { "path": "../../workspace/workspace" },
+    { "path": "../../core/tools" },
+    { "path": "../../llm/llm" }
+  ]
+}

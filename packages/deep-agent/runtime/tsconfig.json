@@ -8,6 +8,7 @@
     { "path": "../store" },
     { "path": "../effects" },
     { "path": "../policy" },
+    { "path": "../executor" },
     { "path": "../../typert/protocol" },
     { "path": "../../util/home-paths" }
   ]

@@ -15,6 +15,15 @@ Generated from source by `scripts/gen-cordis-catalog.ts` (verified fresh by `pnp
 The Deep-agent runtime service.
 
 ```ts cordis-catalog
+/** Resume Workers whose assignments were running before this boot. */
+async recover(): Promise<void>
+
+/**
+ * Current Worker capacity from the real slot registry.
+ * @returns used and free slot counts.
+ */
+capacity(): { readonly used: number; readonly free: number }
+
 /** Close the owned store; called by the Host effect disposer and by tests. */
 close(): void
 
@@ -65,6 +74,12 @@ close(): void
  * @returns the maximum simultaneous workers.
  */
 @Remote('maxWorkers') maxWorkers(): number
+
+/**
+ * Current Worker slot usage.
+ * @returns used and free slot counts.
+ */
+@Remote('workerCapacity') workerCapacityState(): { readonly used: number; readonly free: number }
 ```
 
 Source: [`packages/deep-agent/runtime/src/index.ts`](../../packages/deep-agent/runtime/src/index.ts)

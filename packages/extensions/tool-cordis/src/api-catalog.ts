@@ -1173,6 +1173,17 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     description: 'The Deep-agent runtime service.',
     methods: [
       {
+        signature: 'async recover(): Promise<void>',
+        description: 'Resume Workers whose assignments were running before this boot.',
+        parameters: [],
+      },
+      {
+        signature: 'capacity(): { readonly used: number; readonly free: number }',
+        description: 'Current Worker capacity from the real slot registry.',
+        parameters: [],
+        returns: 'used and free slot counts.',
+      },
+      {
         signature: 'close(): void',
         description: 'Close the owned store; called by the Host effect disposer and by tests.',
         parameters: [],
@@ -1222,6 +1233,12 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Configured worker capacity.',
         parameters: [],
         returns: 'the maximum simultaneous workers.',
+      },
+      {
+        signature: '@Remote(\'workerCapacity\') workerCapacityState(): { readonly used: number; readonly free: number }',
+        description: 'Current Worker slot usage.',
+        parameters: [],
+        returns: 'used and free slot counts.',
       },
     ],
   },

@@ -6,11 +6,12 @@
 import { Context } from '@greeneek/cordis'
 import { Remote, TypertRemoteService } from '@greeneek/gnk-typert-protocol'
 import { gnkHomePath } from '@greeneek/gnk-home-paths'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { Engine, type Candidate, type Ticket } from '@greeneek/gnk-deep-agent-core'
 import { DeepAgentStore } from '@greeneek/gnk-deep-agent-store'
 import { Effects } from '@greeneek/gnk-deep-agent-effects'
 import { buildPolicy, type PolicySettings } from '@greeneek/gnk-deep-agent-policy'
+import { AgentWorkerExecutor } from '@greeneek/gnk-deep-agent-executor'
 import type { DecisionRow, DeepAgentState, TicketRow, TriggerRow } from './types.ts'
 
 export type { DecisionRow, DeepAgentState, TicketRow, TriggerRow } from './types.ts'
@@ -49,6 +50,10 @@ export interface DeepAgentConfig {
   readonly policy?: PolicySettings
   /** Maximum simultaneous worker executions. */
   readonly maxWorkers?: number
+  /** Root directory for per-Ticket Worker working directories. */
+  readonly workerRootDirectory?: string
+  /** Optional preset applied to Worker sessions. */
+  readonly workerPreset?: string
 }
 
 const DEFAULT_POLICY: PolicySettings = {
@@ -83,6 +88,7 @@ export class DeepAgentService extends TypertRemoteService {
   private readonly store: DeepAgentStore
   private readonly engine: Engine
   private readonly effects: Effects
+  private readonly executor: AgentWorkerExecutor
   private readonly settings: PolicySettings
   private readonly dbPath: string
   private readonly workerCapacity: number
@@ -94,7 +100,16 @@ export class DeepAgentService extends TypertRemoteService {
     this.settings = config.policy ?? DEFAULT_POLICY
     this.workerCapacity = config.maxWorkers ?? 3
     this.store = new DeepAgentStore(this.dbPath)
-    const policy = buildPolicy(this.settings)
+    this.effects = new Effects(this.store)
+    this.executor = new AgentWorkerExecutor(ctx, {
+      rootDirectory: config.workerRootDirectory ?? join(dirname(this.dbPath), 'work'),
+      maxWorkers: this.workerCapacity,
+      ...(config.workerPreset === undefined ? {} : { workerPreset: config.workerPreset }),
+      onReport: (ticketId, assignmentId, report) => {
+        this.engine.report(ticketId, assignmentId, report)
+      },
+      onSettled: () => { this.changed() },
+    })
     this.engine = new Engine({
       repo: this.store.repo,
       policy: () => buildPolicy(this.settings),
@@ -107,33 +122,34 @@ export class DeepAgentService extends TypertRemoteService {
       events: { emit: () => { this.changed() } },
       outbox: {
         send: (message) => {
-          this.store.addReceipt({
-            id: message.id, value: JSON.stringify(message), status: 'pending',
-          })
+          this.store.addReceipt({ id: message.id, value: JSON.stringify(message), status: 'pending' })
           this.effects.enqueue('reply', message.id, { id: message.id })
         },
       },
-      executor: {
-        start: (ticket, assignmentId) => {
-          this.effects.enqueue('launch', assignmentId, { ticketId: ticket.id, assignmentId })
-        },
-        deliver: (ticket, assignmentId, inputIds) => {
-          this.effects.enqueue('delivery', ticket.id, { ticketId: ticket.id })
-          void assignmentId
-          void inputIds
-        },
-        stop: (ticket, assignmentId, reason) => {
-          this.effects.enqueue('notice', `${ticket.id}:${assignmentId}`, { value: reason, summary: reason })
-        },
-      },
+      executor: this.executor,
     })
-    this.effects = new Effects(this.store)
-    // Handlers are attached after construction because the Engine closes over `this.effects`.
-    this.effects.on('assessment', () => { /* the Router assessor consumes this effect in a later phase */ })
-    this.effects.on('reply', () => { /* the Source channel delivers receipts in a later phase */ })
-    this.effects.on('notice', () => { /* the Router relays notices in a later phase */ })
-    void policy
-    ctx.effect(() => () => { this.store.close() }, 'deep-agent: store close')
+    // Placeholders remain only for effects whose external side is a Source or Router adapter.
+    this.effects.on('assessment', () => { /* Router assessor adapter is wired in the next phase */ })
+    this.effects.on('reply', () => { /* Source channel delivery is wired in the next phase */ })
+    this.effects.on('notice', () => { /* Router notice relay is wired in the next phase */ })
+    ctx.effect(() => async () => {
+      await this.executor.dispose()
+      this.store.close()
+    }, 'deep-agent: worker and store close')
+  }
+
+  /** Resume Workers whose assignments were running before this boot. */
+  async recover(): Promise<void> {
+    await this.executor.recover(this.store.repo.tickets.open())
+    this.changed()
+  }
+
+  /**
+   * Current Worker capacity from the real slot registry.
+   * @returns used and free slot counts.
+   */
+  capacity(): { readonly used: number; readonly free: number } {
+    return this.executor.capacity()
   }
 
   /** Current operational summary from durable state. */
@@ -268,6 +284,15 @@ export class DeepAgentService extends TypertRemoteService {
   maxWorkers(): number {
     return this.workerCapacity
   }
+
+  /**
+   * Current Worker slot usage.
+   * @returns used and free slot counts.
+   */
+  @Remote('workerCapacity')
+  workerCapacityState(): { readonly used: number; readonly free: number } {
+    return this.capacity()
+  }
 }
 
 /** Loader identity of the Deep-agent Host plugin. */
@@ -277,4 +302,5 @@ export const name = 'deep-agent'
 export function apply(ctx: Context, config: DeepAgentConfig = {}): void {
   const service = new DeepAgentService(ctx, config)
   ctx.provide('deepAgent', service)
+  void service.recover().catch(() => { /* recovery failures are recorded on the Assignments */ })
 }

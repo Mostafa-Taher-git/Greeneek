@@ -197,12 +197,12 @@ export function TerminalDrawer({
           <IconCloseOutline16 size={14} />
         </button>
       </header>
-      <section className={css.pty} aria-label="Interactive terminal">
+      <section className={css.pty} aria-label={t('terminal.interactive')}>
         {error !== undefined && <p className={css.error} role="alert">{error}</p>}
         <pre
           className={css.output}
           tabIndex={0}
-          aria-label="Terminal screen"
+          aria-label={t('terminal.screen')}
           onKeyDown={onKeyDown}
         >{screen}</pre>
         <div className={css.actions}>

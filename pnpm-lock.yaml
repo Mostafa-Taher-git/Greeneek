@@ -2080,6 +2080,9 @@ importers:
       '@greeneek/gnk-settings':
         specifier: workspace:^
         version: link:../../settings/settings
+      '@greeneek/gnk-system-prompt':
+        specifier: workspace:^
+        version: link:../../core/system-prompt
       '@types/react':
         specifier: ~18.3.1
         version: 18.3.31

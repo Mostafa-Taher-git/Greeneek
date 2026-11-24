@@ -64,12 +64,12 @@ interface SideSessionNavigation {
   open: (sessionId: never) => void
 }
 
-/** Product names for the application ids the Host reports. */
-const APP_LABELS: Record<string, string> = {
-  cursor: 'Cursor',
-  vscode: 'VS Code',
-  'android-studio': 'Android Studio',
-  'github-desktop': 'GitHub Desktop',
+/** Locale keys for the application ids the Host reports. */
+const APP_LABEL_KEYS: Record<string, SidebarKey | undefined> = {
+  cursor: 'device.app.cursor',
+  vscode: 'device.app.vscode',
+  'android-studio': 'device.app.androidStudio',
+  'github-desktop': 'device.app.githubDesktop',
 }
 
 /** Report one Host-tracked browser surface through the Remote. */
@@ -156,6 +156,7 @@ async function loadDiff(path: string, ctx: ClientContext): Promise<DiffView> {
 /** Load the Host facts shown by the Device surface. */
 async function loadDevice(ctx: ClientContext): Promise<DeviceFacts> {
   const host = ctx.remote.$host
+  const t = ctx.locale.bind(NS)
   const apps: DeviceAppEntry[] = []
   let platform = ''
   const result = await ctx.remote.session.externalApps()
@@ -163,8 +164,8 @@ async function loadDevice(ctx: ClientContext): Promise<DeviceFacts> {
     platform = result.value.platform
     for (const app of result.value.apps) {
       if (!app.available) continue
-      const label = APP_LABELS[app.id]
-      if (label !== undefined) apps.push({ id: app.id, label })
+      const key = APP_LABEL_KEYS[app.id]
+      if (key !== undefined) apps.push({ id: app.id, label: t(key) })
     }
   }
   return {

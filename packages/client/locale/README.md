@@ -112,11 +112,11 @@ Read these when the locale contract is not enough: the slot face it implements, 
 <a id="model-experience"></a>
 ## Model Experience
 
-None, as the locale service is a browser-side UI plugin layer that registers nothing model-facing.
+When a locale preference is stored, the Host half registers a `session:locale` system-prompt section that instructs the model to write user-facing prose in the selected language while keeping code, commands, identifiers, paths, and tool names verbatim. The section is rendered into `request/header`, so the instruction is reconstructable from the session log. With no preference stored, the section renders empty and the prompt is unchanged.
 
 #### KV Cache effect
 
-None; this package neither assembles nor sends a provider request.
+Selecting or changing a locale changes the assembled system prompt, so the next request starts a new cached prefix. The browser-side dictionaries are presentation-only and do not affect provider requests.
 
 ## Known Limitations and Deferred Work
 

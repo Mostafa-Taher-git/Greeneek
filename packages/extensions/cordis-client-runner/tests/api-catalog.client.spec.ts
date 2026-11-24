@@ -14,7 +14,7 @@ describe('Client Cordis inspect catalog', () => {
     expect(SERVICE_API.find(service => service.key === 'uiWorkspace')?.methods.map(method => method.signature))
       .toEqual([
         'connectWorkspace(workspaceId: WorkspaceId): Promise<SessionId>',
-        'startSession(workspaceId?: WorkspaceId): void',
+        'startSession(workspaceId?: WorkspaceId, onOpened?: (sessionId: SessionId) => void): void',
         'archiveSession(sessionId: SessionId): Promise<void>',
         'pickDirectory(): Promise<string | null>',
         'listDirectory(path?: string, signal?: AbortSignal): Promise<DirectoryListing>',
@@ -32,8 +32,8 @@ describe('Client Cordis inspect catalog', () => {
       referencedTypes: readonly { name: string; declaration: string }[]
     }
     expect(result.referencedTypes.length).toBeGreaterThan(0)
-    const promptContentPart = result.referencedTypes.find(type => type.name === 'PromptContentPart')
-    expect(promptContentPart?.declaration).toContain("readonly type: 'image'")
+    const imageBlock = result.referencedTypes.find(type => type.name === 'ImageBlock')
+    expect(imageBlock?.declaration).toContain("type: 'image'")
     expect(result.referencedTypes.map(type => type.name)).not.toEqual(expect.arrayContaining([
       'ConversationSnapshot',
       'PendingInteraction',

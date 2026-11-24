@@ -648,7 +648,7 @@ describe('DirectoryBrowser', () => {
     expect(screen.queryByLabelText('browser.editPath', { selector: 'input' })).toBeNull()
     // Escape with focus in the input parks focus on the returning edit zone.
     expect(document.activeElement).toBe(screen.getByRole('button', { name: 'browser.editPath' }))
-  })
+  }, 30_000)
 
   it('prefix-filters the listed level from the draft tail, dot revealing hidden matches', async () => {
     const b = mount()

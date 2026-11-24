@@ -8,7 +8,7 @@ The shipped Web profile mounts the Deep-agent runtime at boot. The store importe
 
 ## Decision
 
-The store resolves `node:sqlite` through `createRequire` inside `openDatabase`, and the store opens its connection on the first repository operation instead of in the constructor. The Host plugin wraps the service so recovery and source polling start on the first async Consumer call; synchronous members and Remote registrations stay available at boot. The Node compatibility test keeps its warning assertion and only accepts Windows' `-1` SIGTERM code instead of POSIX `0`.
+The store resolves `node:sqlite` through `createRequire` inside `openDatabase`, and the store opens its connection on the first repository operation instead of in the constructor. The Host plugin wraps the service so recovery and source polling start on the first async Consumer call; synchronous members and Remote registrations stay available at boot. Recovery no longer creates the Router session (`router.ensure`): `assess` and `relay` create it on first real use, so a boot that never uses Deep-agent does not persist an extra session. The Node compatibility test keeps its warning assertion and only accepts Windows' `-1` SIGTERM code instead of POSIX `0`.
 
 ## Alternatives considered
 

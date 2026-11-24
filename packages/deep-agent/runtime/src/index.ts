@@ -318,7 +318,6 @@ export class DeepAgentService extends TypertRemoteService {
 
   /** Resume Workers whose assignments were running before this boot. */
   async recover(): Promise<void> {
-    await this.router.ensure()
     await this.executor.recover(this.store.repo.tickets.open())
     for (const receipt of this.store.pendingReceipts()) {
       this.sources.enqueueReply(replyFromReceipt(receipt))
@@ -637,10 +636,13 @@ export function apply(ctx: Context, config: DeepAgentConfig = {}): void {
   // Recovery opens SQLite. Defer it to the first async Consumer call so a
   // process that only boots the Web host does not load node:sqlite at startup.
   let recovery: Promise<void> | undefined
+  let stopPolling: (() => void) | undefined
   const ready = (): Promise<void> => {
-    recovery ??= service.recover().catch((error: unknown) => {
-      service.recordError(error instanceof Error ? error.message : String(error))
-    })
+    recovery ??= service.recover()
+      .then(() => { stopPolling = service.startSourcePolling() })
+      .catch((error: unknown) => {
+        service.recordError(error instanceof Error ? error.message : String(error))
+      })
     return recovery
   }
   const lazy = new Proxy(service, {
@@ -653,9 +655,5 @@ export function apply(ctx: Context, config: DeepAgentConfig = {}): void {
     },
   })
   ctx.provide('deepAgent', lazy)
-  ctx.effect(() => {
-    let stop: (() => void) | undefined
-    void ready().then(() => { stop = service.startSourcePolling() })
-    return () => { stop?.() }
-  }, 'deep-agent: source polling')
+  ctx.effect(() => () => { stopPolling?.() }, 'deep-agent: source polling')
 }

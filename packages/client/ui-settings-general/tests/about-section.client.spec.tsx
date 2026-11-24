@@ -38,7 +38,7 @@ function stageBridge(over?: {
   const checkForUpdates = vi.fn(async () => ({ state: over?.checkState ?? 'up-to-date' }))
   const doInstall = vi.fn(async () => undefined)
   ;(globalThis as Record<string, unknown>).greeneekDesktop = {
-    versions: over?.versions ?? (async () => ({ desktop: '0.2.0', harness: '1.1.0-alpha.0' })),
+    versions: over?.versions ?? (async () => ({ desktop: '0.2.0', harness: '0.8.8' })),
     updateStatus: async () => ({ state: over?.status ?? 'idle' }),
     checkForUpdates,
     installUpdate: doInstall,
@@ -53,14 +53,14 @@ describe('AboutSection', () => {
     expect(await screen.findByText('Desktop version')).toBeTruthy()
     expect(screen.getByText('0.2.0')).toBeTruthy()
     expect(screen.getByText('Bundled harness version')).toBeTruthy()
-    expect(screen.getByText('1.1.0-alpha.0')).toBeTruthy()
+    expect(screen.getByText('0.8.8')).toBeTruthy()
   })
 
   it('renders the served version with a downloads link outside the desktop', async () => {
-    (globalThis as Record<string, unknown>).__GNK_VERSION__ = '1.1.0-alpha.0'
+    (globalThis as Record<string, unknown>).__GNK_VERSION__ = '0.8.8'
     bench()
     expect(await screen.findByText('Greeneek version')).toBeTruthy()
-    expect(screen.getByText('1.1.0-alpha.0')).toBeTruthy()
+    expect(screen.getByText('0.8.8')).toBeTruthy()
     const link = screen.getByText('Get Greeneek Desktop')
     expect(link.getAttribute('href')).toBe('https://greeneek.vercel.app/#download')
   })

@@ -260,6 +260,7 @@ export function gatesForMode(selected: Mode): Gate[] {
       return [
         pnpmScript('runtime-closure', 'verify-runtime-closure', { label: 'runtime closure' }),
         pnpmScript('desktop-version', 'verify-desktop-version', { label: 'desktop version' }),
+        pnpmScript('product-version', 'verify-product-version', { label: 'product version' }),
         pnpmScript('cordis-config', 'verify-cordis-config', { label: 'Cordis config' }),
         pnpmScript('client-domain-graph', 'verify-client-domain-graph', { label: 'client domain graph' }),
         pnpmScript('test', 'test'),
@@ -310,6 +311,7 @@ function ciSharedStaticGates(): Gate[] {
     pnpmScript('runtime-closure', 'verify-runtime-closure', { label: 'runtime closure' }),
     pnpmScript('application-entrypoints', 'verify-application-entrypoints', { label: 'application entrypoints' }),
     pnpmScript('desktop-version', 'verify-desktop-version', { label: 'desktop version' }),
+    pnpmScript('product-version', 'verify-product-version', { label: 'product version' }),
     pnpmScript('constraints', 'constraints'),
     pnpmScript('package-dependencies', 'verify-package-dependencies', { label: 'package dependencies' }),
     pnpmScript('dependency-rules', 'verify-dependency-rules', { label: 'dependency rules' }),

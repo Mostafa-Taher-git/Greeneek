@@ -16,8 +16,8 @@ describe('versions', () => {
   it('reads the version from a package manifest', () => {
     const dir = mkdtempSync(join(tmpdir(), 'greeneek-versions-'))
     try {
-      stageManifest(dir, { version: '1.1.0-alpha.0' })
-      assert.equal(packageVersion(dir), '1.1.0-alpha.0')
+      stageManifest(dir, { version: '0.8.8' })
+      assert.equal(packageVersion(dir), '0.8.8')
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }
@@ -45,8 +45,8 @@ describe('versions', () => {
   it('resolves the staged harness version under node_modules/@greeneek/gnk', () => {
     const dir = mkdtempSync(join(tmpdir(), 'greeneek-versions-'))
     try {
-      stageManifest(join(dir, 'node_modules', '@greeneek', 'gnk'), { version: '1.1.0-alpha.0' })
-      assert.equal(bundledHarnessVersion(dir), '1.1.0-alpha.0')
+      stageManifest(join(dir, 'node_modules', '@greeneek', 'gnk'), { version: '0.8.8' })
+      assert.equal(bundledHarnessVersion(dir), '0.8.8')
       assert.equal(bundledHarnessVersion(join(dir, 'empty')), undefined)
     } finally {
       rmSync(dir, { recursive: true, force: true })
@@ -81,7 +81,7 @@ function fakeBridge() {
     app: { getVersion: () => '0.1.0', isPackaged: true },
     appDir: '/app',
     updateManager,
-    readHarnessVersion: () => '1.1.0-alpha.0',
+    readHarnessVersion: () => '0.8.8',
     getWindow: () => fakeWindow,
   })
   return { handlers, updateManager, calls, fakeWindow }
@@ -97,7 +97,7 @@ describe('desktop bridge', () => {
     const { handlers, updateManager } = fakeBridge()
     assert.deepEqual(await handlers.get('greeneek-desktop:versions')(), {
       desktop: '0.1.0',
-      harness: '1.1.0-alpha.0',
+      harness: '0.8.8',
     })
     assert.deepEqual(await handlers.get('greeneek-desktop:update-status')(), { state: 'idle' })
     assert.deepEqual(await handlers.get('greeneek-desktop:check-updates')(), { state: 'checking' })
@@ -113,11 +113,11 @@ describe('desktop bridge', () => {
       app: { getVersion: () => '0.3.7', isPackaged: false },
       appDir: '/app',
       updateManager: undefined,
-      readHarnessVersion: () => '1.1.0-alpha.0',
+      readHarnessVersion: () => '0.8.8',
     })
     assert.deepEqual(await handlers.get('greeneek-desktop:versions')(), {
       desktop: '0.3.7-dev',
-      harness: '1.1.0-alpha.0',
+      harness: '0.8.8',
     })
   })
 
@@ -144,7 +144,7 @@ describe('desktop bridge', () => {
       app: { getVersion: () => '0.1.0', isPackaged: true },
       appDir: '/app',
       updateManager: undefined,
-      readHarnessVersion: () => '1.1.0-alpha.0',
+      readHarnessVersion: () => '0.8.8',
       getWindow: () => ({ minimize() { calls.push('minimize') } }),
     })
     assert.deepEqual(await handlers.get('greeneek-desktop:update-status')(), { state: 'unsupported' })
@@ -152,7 +152,7 @@ describe('desktop bridge', () => {
     await handlers.get('greeneek-desktop:install-update')()
     assert.deepEqual(await handlers.get('greeneek-desktop:versions')(), {
       desktop: '0.1.0',
-      harness: '1.1.0-alpha.0',
+      harness: '0.8.8',
     })
     await handlers.get('greeneek-desktop:window-minimize')()
     assert.deepEqual(calls, ['minimize'])
@@ -166,7 +166,7 @@ describe('desktop bridge', () => {
       app: { getVersion: () => '0.1.0', isPackaged: true },
       appDir: '/app',
       getUpdateManager: () => updateManager,
-      readHarnessVersion: () => '1.1.0-alpha.0',
+      readHarnessVersion: () => '0.8.8',
     })
     assert.deepEqual(await handlers.get('greeneek-desktop:update-status')(), { state: 'unsupported' })
     updateManager = {

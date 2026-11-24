@@ -233,9 +233,9 @@ describe('hasContentTerms / leaf collectors', () => {
 
 describe('evaluateSearchQuery', () => {
   const doc = {
-    title: 'Release notes v0.4.4',
+    title: 'Release notes v0.8.8',
     path: 'D:\\work\\greeneek-harness\\apps\\desktop',
-    snippet: 'tagged desktop-v0.4.4 on top of green',
+    snippet: 'tagged desktop-v0.8.8 on top of green',
   }
 
   it('matches title and path substring leaves locally', () => {

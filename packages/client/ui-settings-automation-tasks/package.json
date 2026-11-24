@@ -1,5 +1,6 @@
 {
   "name": "@greeneek/gnk-client-ui-settings-automation-tasks",
+  "version": "0.8.8",
   "description": "Automation tasks settings section: manage Host-wide durable tasks with status tabs, search and manual creation",
   "type": "module",
   "main": "lib/index.js",

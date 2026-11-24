@@ -1,5 +1,6 @@
 {
   "name": "@greeneek/gnk-deep-agent-store",
+  "version": "0.8.8",
   "description": "Deep-agent authoritative SQLite store: versioned schema, atomic repositories, effects and outbox",
   "type": "module",
   "main": "lib/index.js",

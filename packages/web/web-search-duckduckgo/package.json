@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-web-search-duckduckgo",
   "description": "DuckDuckGo-backed search provider for the Greeneek Harness web capability seam (ctx.web)",
-  "version": "1.1.0-alpha.0",
+  "version": "0.8.8",
   "publishConfig": {
     "access": "public"
   },

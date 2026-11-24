@@ -1,5 +1,6 @@
 {
   "name": "@greeneek/gnk-deep-agent-sources",
+  "version": "0.8.8",
   "description": "Deep-agent source adapters: GitHub and Discord ingestion, read cursors, health and durable outbound replies",
   "type": "module",
   "main": "lib/index.js",

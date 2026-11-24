@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-browser-ai",
   "description": "Browser AI connections: a provider-isolated manual browser session manager for official ChatGPT, Claude and Gemini web interfaces, with an explicit capability matrix and automation refusal",
-  "version": "1.1.0-alpha.0",
+  "version": "0.8.8",
   "publishConfig": {
     "access": "public"
   },

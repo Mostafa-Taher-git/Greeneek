@@ -1,5 +1,6 @@
 {
   "name": "@greeneek/gnk-client-ui-settings-plugin-manager",
+  "version": "0.8.8",
   "description": "Plugins settings section: built-in plugin settings, experimental plugins, refresh, add-plugin dialog and registry selection",
   "type": "module",
   "main": "lib/index.js",

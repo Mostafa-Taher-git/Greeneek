@@ -1,5 +1,6 @@
 {
   "name": "@greeneek/gnk-deep-agent-effects",
+  "version": "0.8.8",
   "description": "Deep-agent durable effect queue with coalescing, backoff, ordering and restart recovery",
   "type": "module",
   "main": "lib/index.js",

@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-automation",
   "description": "Host-wide automation tasks: durable task records with status, catalog and management Remotes",
-  "version": "1.1.0-alpha.0",
+  "version": "0.8.8",
   "publishConfig": { "access": "public" },
   "type": "module",
   "main": "lib/index.js",

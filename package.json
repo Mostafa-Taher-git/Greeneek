@@ -1,6 +1,6 @@
 {
   "name": "@greeneek/gnk-root",
-  "version": "1.1.0-alpha.0",
+  "version": "0.8.8",
   "license": "MIT",
   "private": true,
   "type": "module",

@@ -1,5 +1,6 @@
 {
   "name": "@greeneek/gnk-deep-agent-policy",
+  "version": "0.8.8",
   "description": "Deep-agent versioned authorization policy: admission matrix, gate, mandate revalidation and assessment rules",
   "type": "module",
   "main": "lib/index.js",

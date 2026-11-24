@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-client-tool-owned-render",
   "description": "Tool-owned render registrants for read, bash, write/edit, grep/glob, web_search/web_fetch, and read_image.",
-  "version": "1.1.0-alpha.0",
+  "version": "0.8.8",
   "publishConfig": {
     "access": "public"
   },

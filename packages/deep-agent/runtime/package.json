@@ -1,5 +1,6 @@
 {
   "name": "@greeneek/gnk-deep-agent-runtime",
+  "version": "0.8.8",
   "description": "Deep-agent Host runtime: owns the domain store, engine, effects, policy and management Remotes",
   "type": "module",
   "main": "lib/index.js",

@@ -1,5 +1,6 @@
 {
   "name": "@greeneek/gnk-deep-agent-executor",
+  "version": "0.8.8",
   "description": "Deep-agent real Worker execution through ctx.agents: slots, isolated sessions, delivery, reports and recovery",
   "type": "module",
   "main": "lib/index.js",

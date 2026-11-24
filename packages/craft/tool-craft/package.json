@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-tool-craft",
   "description": "Craft gateway tools, per-app headless tool bridges, artifact confinement, and recipe skills for the Greeneek Harness",
-  "version": "1.1.0-alpha.0",
+  "version": "0.8.8",
   "publishConfig": {
     "access": "public"
   },

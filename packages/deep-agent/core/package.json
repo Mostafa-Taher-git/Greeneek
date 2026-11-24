@@ -1,5 +1,6 @@
 {
   "name": "@greeneek/gnk-deep-agent-core",
+  "version": "0.8.8",
   "description": "Deep-agent pure domain model, deterministic ids, policy ports and transactional engine",
   "type": "module",
   "main": "lib/index.js",

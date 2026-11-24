@@ -23,6 +23,31 @@ import {
  * `narrowExpanded` is the manual override that re-expands the auto-collapsed
  * sidebar over the squeezed center without rewriting the width preference.
  */
+/** Normalized rectangle of one tiled session pane, in 0..1 frame coordinates. */
+export type SessionTile = {
+  id: string
+  sessionId: string | undefined
+  x: number
+  y: number
+  w: number
+  h: number
+}
+
+/** Smallest usable tile fraction on either axis. */
+export const TILE_MIN = 0.15
+
+/**
+ * Deterministic starting rectangle for a tile index (two columns, growing rows).
+ * @param index - zero-based position in the tile list.
+ * @returns normalized rectangle in 0..1 frame coordinates.
+ */
+export function tileRectFor(index: number): { x: number; y: number; w: number; h: number } {
+  const w = 0.5
+  const h = index < 4 ? 0.5 : Math.max(TILE_MIN, 1 / Math.ceil((index + 1) / 2))
+  const column = index % 2
+  return { x: column * w, y: Math.floor(index / 2) * h, w, h }
+}
+
 type LayoutState = {
   sidebar: number
   details: number
@@ -34,6 +59,12 @@ type LayoutState = {
   settingsSection: string | undefined
   /** Whether the right surface panel fills the workspace (T3-style maximized browser). */
   rightbarMaximized: boolean
+  /** Whether the center column renders tiled session panes instead of one page. */
+  tilesActive: boolean
+  /** Tiled session panes with persisted geometry and per-pane selection. */
+  tiles: SessionTile[]
+  /** Monotonic id source for new panes. */
+  nextTile: number
 }
 
 /**
@@ -65,6 +96,13 @@ type LayoutActions = {
   openDeepAgent: (draft: LayoutState) => void
   selectSettingsSection: (draft: LayoutState, section: string) => void
   showConversation: (draft: LayoutState) => void
+  toggleTiles: (draft: LayoutState, sessionId?: string) => void
+  addTile: (draft: LayoutState, sessionId?: string) => void
+  removeTile: (draft: LayoutState, id: string) => void
+  moveTile: (draft: LayoutState, id: string, x: number, y: number) => void
+  resizeTile: (draft: LayoutState, id: string, w: number, h: number) => void
+  reorderTile: (draft: LayoutState, id: string, to: number) => void
+  setTileSession: (draft: LayoutState, id: string, sessionId: string | undefined) => void
 }
 
 /**
@@ -84,8 +122,8 @@ export function createLayoutStore(): EngineStoreHandle<LayoutState, LayoutAction
     // its visibility. The main page does not: the app opens in the
     // conversation, whatever page was last visited. Versioned because the
     // details column now sizes the floating card, not a bordered sidebar.
-    persist: 'gnk.layout.panels.v2',
-    init: (): LayoutState => ({ sidebar: SIDEBAR_DEFAULT, details: 0, rightbar: 0, terminalDrawerOpen: false, narrow: false, narrowExpanded: false, mainPage: 'conversation', settingsSection: undefined, rightbarMaximized: false }),
+    persist: 'gnk.layout.panels.v3',
+    init: (): LayoutState => ({ sidebar: SIDEBAR_DEFAULT, details: 0, rightbar: 0, terminalDrawerOpen: false, narrow: false, narrowExpanded: false, mainPage: 'conversation', settingsSection: undefined, rightbarMaximized: false, tilesActive: false, tiles: [], nextTile: 1 }),
     actions: {
       setSidebar: (d, px: number) => { d.sidebar = clampWidth(px, SIDEBAR_MIN, SIDEBAR_MAX) },
       setDetails: (d, px: number) => { d.details = clampWidth(px, DETAILS_MIN, DETAILS_MAX) },
@@ -155,6 +193,47 @@ export function createLayoutStore(): EngineStoreHandle<LayoutState, LayoutAction
       showConversation: (d) => {
         d.mainPage = 'conversation'
         d.settingsSection = undefined
+      },
+      toggleTiles: (d, sessionId?: string) => {
+        d.tilesActive = !d.tilesActive
+        if (d.tilesActive && d.tiles.length === 0) {
+          for (let index = 0; index < 4; index += 1) {
+            d.tiles.push({ id: `tile-${String(d.nextTile).padStart(2, '0')}`, sessionId: index === 0 ? sessionId : undefined, ...tileRectFor(index) })
+            d.nextTile += 1
+          }
+        }
+      },
+      addTile: (d, sessionId?: string) => {
+        const index = d.tiles.length
+        d.tiles.push({ id: `tile-${String(d.nextTile).padStart(2, '0')}`, sessionId, ...tileRectFor(index) })
+        d.nextTile += 1
+        d.tilesActive = true
+      },
+      removeTile: (d, id: string) => {
+        d.tiles = d.tiles.filter(tile => tile.id !== id)
+        if (d.tiles.length === 0) d.tilesActive = false
+      },
+      moveTile: (d, id: string, x: number, y: number) => {
+        const tile = d.tiles.find(entry => entry.id === id)
+        if (tile === undefined) return
+        tile.x = Math.min(1 - tile.w, Math.max(0, x))
+        tile.y = Math.min(1 - tile.h, Math.max(0, y))
+      },
+      resizeTile: (d, id: string, w: number, h: number) => {
+        const tile = d.tiles.find(entry => entry.id === id)
+        if (tile === undefined) return
+        tile.w = Math.min(1 - tile.x, Math.max(TILE_MIN, w))
+        tile.h = Math.min(1 - tile.y, Math.max(TILE_MIN, h))
+      },
+      reorderTile: (d, id: string, to: number) => {
+        const index = d.tiles.findIndex(tile => tile.id === id)
+        if (index < 0 || to < 0 || to >= d.tiles.length) return
+        const [tile] = d.tiles.splice(index, 1)
+        if (tile !== undefined) d.tiles.splice(to, 0, tile)
+      },
+      setTileSession: (d, id: string, sessionId: string | undefined) => {
+        const tile = d.tiles.find(entry => entry.id === id)
+        if (tile !== undefined) tile.sessionId = sessionId
       },
     },
   })

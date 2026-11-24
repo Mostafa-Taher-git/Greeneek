@@ -28,6 +28,13 @@ function fakePanels(): PanelActions {
     openBranches: vi.fn(),
     openIssues: vi.fn(),
     openDeepAgent: vi.fn(),
+    toggleTiles: vi.fn(),
+    addTile: vi.fn(),
+    removeTile: vi.fn(),
+    moveTile: vi.fn(),
+    resizeTile: vi.fn(),
+    reorderTile: vi.fn(),
+    setTileSession: vi.fn(),
   }
 }
 

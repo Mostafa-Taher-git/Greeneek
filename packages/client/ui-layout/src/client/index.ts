@@ -15,6 +15,8 @@ import type {} from '@greeneek/gnk-client-ui-session/client'
 import type {} from '@greeneek/gnk-client-ui-theme/client'
 import type { PanelActions } from './service.ts'
 import { AppFrame } from './AppFrame.tsx'
+import { SessionTiles } from './SessionTiles.tsx'
+import { TileToggle } from './TileToggle.tsx'
 import { createLayoutStore } from './stores.ts'
 import { LayoutController } from './service.ts'
 import { ThemePresenter } from './theme-presenter.ts'
@@ -89,6 +91,8 @@ declare module '@greeneek/gnk-client-ui-slots' {
     'issues': { kind: 'single'; scope: 'root'; owner: DashboardOwnerProps }
     /** Full-height Deep-agent destination in the center column. */
     'deep-agent': { kind: 'single'; scope: 'root'; owner: DashboardOwnerProps }
+    /** Tiled session panes, rendered instead of the single conversation page. */
+    'session.tiles': { kind: 'single'; scope: 'root' }
     /**
      * The right details column, shown when the layout opens it. OCCUPIED by
      * ui-conversation's DetailsPanel, which declares the tool-details seat
@@ -209,8 +213,17 @@ export const inject = ['slots', 'theme', 'locale']
  */
 export function apply(ctx: ClientContext): void {
   const layout = new LayoutController()
+  // One store handle is shared by the frame, the pane renderer, and the
+  // overlay toggle so all three read and write the same persisted tile state.
+  const store = createLayoutStore()
   ctx.effect(() => {
     const disposeService = ctx.reflect.provide('layout', layout)
+    const disposeToggle = ctx.slots.inject('shell.overlay', () => ctx.slots.register({
+      name: 'shell.overlay',
+      id: 'session-tiles-toggle',
+      locale: 'common',
+      store,
+    }, TileToggle))
     const disposeRegistration = ctx.slots.register({
       name: 'root',
       locale: 'common',
@@ -225,6 +238,7 @@ export function apply(ctx: ClientContext): void {
         'branches': { kind: 'single', scope: 'root' },
         'issues': { kind: 'single', scope: 'root' },
         'deep-agent': { kind: 'single', scope: 'root' },
+        'session.tiles': { kind: 'single', scope: 'root' },
         'details': { kind: 'single', scope: 'session' },
         'rightbar': { kind: 'single', scope: 'session' },
         'terminal.drawer': { kind: 'single', scope: 'session' },
@@ -232,7 +246,7 @@ export function apply(ctx: ClientContext): void {
       },
       // Exclusive store: the factory itself — the framework instantiates per
       // entry and delivers useStore/actions to AppFrame as standard props.
-      store: createLayoutStore,
+      store,
       // The hook's only side effect connects the root store to ctx.layout;
       // conversation business actions belong to their registrants.
       inject: (actions: PanelActions) => {
@@ -243,7 +257,14 @@ export function apply(ctx: ClientContext): void {
         return {}
       },
     }, AppFrame)
+    const disposeTiles = ctx.slots.inject('session.tiles', () => ctx.slots.register({
+      name: 'session.tiles',
+      locale: 'common',
+      store,
+    }, SessionTiles))
     return () => {
+      disposeTiles()
+      disposeToggle()
       disposeRegistration()
       // provide()'s disposer settles asynchronously; teardown is synchronous fire-and-forget.
       void disposeService()

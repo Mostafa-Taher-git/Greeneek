@@ -18,6 +18,7 @@
 import { globSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, matchesGlob } from 'node:path'
 import { parseArgs } from 'node:util'
+import { pnpmInvocation } from '../pnpm-invocation.ts'
 import { releaseFamily, type ReleaseFamily, type ReleaseMember } from './families.ts'
 import { capture, isEntry } from './process.ts'
 
@@ -392,7 +393,8 @@ function main(): void {
   const dryRun = values['dry-run']
   if (!dryRun) {
     for (const entry of planned) writeVersion(root, entry.manifestPath, entry.from, entry.to)
-    capture('pnpm', ['install', '--lockfile-only'])
+    const install = pnpmInvocation(['install', '--lockfile-only'])
+    capture(install.command, install.args)
   }
 
   const summary = sharedVersion

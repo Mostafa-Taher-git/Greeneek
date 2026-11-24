@@ -13,11 +13,11 @@ describe('product version drift', () => {
   it('reports mismatched and missing manifest versions', () => {
     const manifests: ProductManifest[] = [
       { path: 'packages/core/agent/package.json', name: '@greeneek/gnk-agent', version: '0.8.8' },
-      { path: 'packages/deep-agent/core/package.json', name: '@greeneek/gnk-deep-agent-core', version: '1.1.0-alpha.0' },
+      { path: 'packages/deep-agent/core/package.json', name: '@greeneek/gnk-deep-agent-core', version: '0.0.0-drift' },
       { path: 'packages/client/ui-deep-agent/package.json', name: '@greeneek/gnk-client-ui-deep-agent', version: undefined },
     ]
     expect(manifestDrift('0.8.8', manifests)).toEqual([
-      'packages/deep-agent/core/package.json declares 1.1.0-alpha.0; expected 0.8.8',
+      'packages/deep-agent/core/package.json declares 0.0.0-drift; expected 0.8.8',
       'packages/client/ui-deep-agent/package.json declares no version; expected 0.8.8',
     ])
   })
@@ -33,11 +33,11 @@ describe('product version drift', () => {
   it('checks only first-party API report headers', () => {
     const reports: ApiReportHeader[] = [
       { path: 'etc/gnk-agent.api.md', name: '@greeneek/gnk-agent', version: '0.8.8' },
-      { path: 'etc/gnk-deep-agent-core.api.md', name: '@greeneek/gnk-deep-agent-core', version: '1.1.0-alpha.0' },
+      { path: 'etc/gnk-deep-agent-core.api.md', name: '@greeneek/gnk-deep-agent-core', version: '0.0.0-drift' },
       { path: 'etc/cordis-core.api.md', name: '@greeneek/cordis-core', version: '1.0.2' },
     ]
     expect(apiReportDrift('0.8.8', reports)).toEqual([
-      'etc/gnk-deep-agent-core.api.md reports @greeneek/gnk-deep-agent-core@1.1.0-alpha.0; expected 0.8.8',
+      'etc/gnk-deep-agent-core.api.md reports @greeneek/gnk-deep-agent-core@0.0.0-drift; expected 0.8.8',
     ])
   })
 })

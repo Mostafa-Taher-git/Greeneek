@@ -769,8 +769,8 @@ function docSyncLeafGates(options: {
       label: 'documentation site checks',
     }),
     pnpmScript('package-readme-limitations', 'verify-package-readme-limitations', { label: 'package README limitations', quick: true }),
-    pnpmExec('ds-skill-pack', ['vitest', 'run', 'scripts/ds-skill-pack.spec.ts'], {
-      label: 'ds skill pack inventory',
+    pnpmExec('gnk-skill-pack', ['vitest', 'run', 'scripts/gnk-skill-pack.spec.ts'], {
+      label: 'gnk skill pack inventory',
       quick: true,
     }),
     pnpmExec('published-chunks', ['vitest', 'run', 'scripts/published-chunks.spec.ts'], {

@@ -171,10 +171,10 @@ describe('gate graph validation', () => {
     expect(ids).toContain('subsystem-pages')
   })
 
-  it('keeps the adopted ds-* skill inventory in the quick documentation gate', () => {
+  it('keeps the adopted gnk-* skill inventory in the quick documentation gate', () => {
     const ids = withPnpmEntrypoint(() => gatesForMode('doc-quick').map(subject => subject.id))
 
-    expect(ids).toContain('ds-skill-pack')
+    expect(ids).toContain('gnk-skill-pack')
   })
 
   it('derives the quick documentation aggregate from marked doc-sync leaves', () => {

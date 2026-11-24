@@ -37,15 +37,30 @@ export type SessionTile = {
 export const TILE_MIN = 0.15
 
 /**
- * Deterministic starting rectangle for a tile index (two columns, growing rows).
+ * Deterministic grid rectangle for one tile of the current count. Two columns
+ * and `ceil(count / 2)` rows keep every pane disjoint at any count.
  * @param index - zero-based position in the tile list.
+ * @param count - total number of tiles in the layout.
  * @returns normalized rectangle in 0..1 frame coordinates.
  */
-export function tileRectFor(index: number): { x: number; y: number; w: number; h: number } {
-  const w = 0.5
-  const h = index < 4 ? 0.5 : Math.max(TILE_MIN, 1 / Math.ceil((index + 1) / 2))
-  const column = index % 2
-  return { x: column * w, y: Math.floor(index / 2) * h, w, h }
+export function tileRectFor(index: number, count: number): { x: number; y: number; w: number; h: number } {
+  const columns = count <= 1 ? 1 : 2
+  const rows = Math.ceil(count / columns)
+  const w = 1 / columns
+  const h = 1 / rows
+  return { x: (index % columns) * w, y: Math.floor(index / columns) * h, w, h }
+}
+
+/** Reflow every pane to the grid for the current count, preserving ids and selection. */
+function reflowTiles(d: LayoutState): void {
+  const count = d.tiles.length
+  d.tiles.forEach((tile, index) => {
+    const rect = tileRectFor(index, count)
+    tile.x = rect.x
+    tile.y = rect.y
+    tile.w = rect.w
+    tile.h = rect.h
+  })
 }
 
 type LayoutState = {
@@ -198,20 +213,23 @@ export function createLayoutStore(): EngineStoreHandle<LayoutState, LayoutAction
         d.tilesActive = !d.tilesActive
         if (d.tilesActive && d.tiles.length === 0) {
           for (let index = 0; index < 4; index += 1) {
-            d.tiles.push({ id: `tile-${String(d.nextTile).padStart(2, '0')}`, sessionId: index === 0 ? sessionId : undefined, ...tileRectFor(index) })
+            d.tiles.push({ id: `tile-${String(d.nextTile).padStart(2, '0')}`, sessionId: index === 0 ? sessionId : undefined, ...tileRectFor(index, 4) })
             d.nextTile += 1
           }
         }
       },
       addTile: (d, sessionId?: string) => {
+        if (d.tiles.length >= 4) return
         const index = d.tiles.length
-        d.tiles.push({ id: `tile-${String(d.nextTile).padStart(2, '0')}`, sessionId, ...tileRectFor(index) })
+        d.tiles.push({ id: `tile-${String(d.nextTile).padStart(2, '0')}`, sessionId, ...tileRectFor(index, index + 1) })
         d.nextTile += 1
         d.tilesActive = true
+        reflowTiles(d)
       },
       removeTile: (d, id: string) => {
         d.tiles = d.tiles.filter(tile => tile.id !== id)
         if (d.tiles.length === 0) d.tilesActive = false
+        else reflowTiles(d)
       },
       moveTile: (d, id: string, x: number, y: number) => {
         const tile = d.tiles.find(entry => entry.id === id)
@@ -230,6 +248,7 @@ export function createLayoutStore(): EngineStoreHandle<LayoutState, LayoutAction
         if (index < 0 || to < 0 || to >= d.tiles.length) return
         const [tile] = d.tiles.splice(index, 1)
         if (tile !== undefined) d.tiles.splice(to, 0, tile)
+        reflowTiles(d)
       },
       setTileSession: (d, id: string, sessionId: string | undefined) => {
         const tile = d.tiles.find(entry => entry.id === id)

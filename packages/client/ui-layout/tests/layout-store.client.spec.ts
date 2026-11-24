@@ -176,6 +176,27 @@ describe('createLayoutStore', () => {
     expect(store.getSnapshot()).toMatchObject({ tilesActive: false, tiles: [] })
   })
 
+  it('caps the layout at four disjoint panes covering the frame', () => {
+    const { store, actions } = createLayoutStore().create()
+    actions.toggleTiles()
+    actions.addTile('session-5')
+    const tiles = store.getSnapshot().tiles
+    expect(tiles).toHaveLength(4)
+    for (let a = 0; a < tiles.length; a += 1) {
+      for (let b = a + 1; b < tiles.length; b += 1) {
+        const left = tiles[a]!
+        const right = tiles[b]!
+        const overlaps = left.x < right.x + right.w - 1e-9
+          && right.x < left.x + left.w - 1e-9
+          && left.y < right.y + right.h - 1e-9
+          && right.y < left.y + left.h - 1e-9
+        expect(overlaps, `${left.id} overlaps ${right.id}`).toBe(false)
+      }
+    }
+    expect(Math.max(...tiles.map(tile => tile.y + tile.h))).toBeCloseTo(1, 6)
+    expect(Math.max(...tiles.map(tile => tile.x + tile.w))).toBeCloseTo(1, 6)
+  })
+
   it('persists the panel geometry across a restart', () => {
     const first = createLayoutStore().create()
     first.actions.setSidebar(400)

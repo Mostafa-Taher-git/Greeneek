@@ -32,7 +32,7 @@ function mount() {
     useStore,
     actions: instance.actions,
     useSessions,
-    t: (key: string) => key,
+    t: (key: string, params?: { id?: string }) => params?.id === undefined ? key : `${key}:${params.id}`,
   } as unknown as SessionTilesProps
   return { instance, view: render(<SessionTiles {...props} />) }
 }
@@ -48,6 +48,20 @@ describe('session tiles', () => {
     expect(first.getAttribute('src')).toContain('tile=tile-01')
     expect(first.getAttribute('src')).toContain('session=s-1')
     expect(first.getAttribute('src')).toContain('fixture=demo')
+    const titles = [...view.container.querySelectorAll('iframe')].map(frame => frame.getAttribute('title'))
+    expect(new Set(titles).size).toBe(4)
+    expect(titles?.some(title => title?.startsWith('tiles.pane:'))).toBe(true)
+  })
+
+  it('resizes with arrow keys without a pointer', () => {
+    const { instance, view } = mount()
+    act(() => { instance.actions.toggleTiles('s-1') })
+    const handle = view.container.querySelector('[data-tile="tile-01"] [role="separator"]') as HTMLElement
+    expect(handle.getAttribute('aria-label')).toBe('tiles.resize')
+    fireEvent.keyDown(handle, { key: 'ArrowRight' })
+    expect(instance.store.getSnapshot().tiles[0]?.w).toBeCloseTo(0.55)
+    fireEvent.keyDown(handle, { key: 'ArrowUp' })
+    expect(instance.store.getSnapshot().tiles[0]?.h).toBeCloseTo(0.45)
   })
 
   it('moves and resizes through pointer capture with clamped geometry', () => {

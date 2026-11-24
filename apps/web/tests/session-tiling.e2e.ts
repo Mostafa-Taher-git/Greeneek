@@ -102,5 +102,24 @@ describe.skipIf(MODE === 'record')('web e2e: session tiling', () => {
       element => (element as HTMLElement).style.width,
     )).not.toBe('50%')
     await compareOrRefreshGolden(GEOMETRY_EXPECTED, await geometry(page), MODE)
+
+    // The shipped layout is capped at four; the Add gesture is disabled.
+    expect(await page.getByRole('button', { name: 'Add pane' }).first().isDisabled()).toBe(true)
+    expect(await page.locator('[data-tile]').count()).toBe(4)
+    const boxes = await page.locator('[data-tile]').evaluateAll((elements) => {
+      return elements.map((element) => {
+        const rect = (element as HTMLElement).getBoundingClientRect()
+        return { x: rect.x, y: rect.y, w: rect.width, h: rect.height }
+      })
+    })
+    for (let a = 0; a < boxes.length; a += 1) {
+      for (let b = a + 1; b < boxes.length; b += 1) {
+        const left = boxes[a]
+        const right = boxes[b]
+        const overlaps = left.x < right.x + right.w - 1 && right.x < left.x + left.w - 1
+          && left.y < right.y + right.h - 1 && right.y < left.y + left.h - 1
+        expect(overlaps, `panes ${a + 1} and ${b + 1} overlap`).toBe(false)
+      }
+    }
   })
 })

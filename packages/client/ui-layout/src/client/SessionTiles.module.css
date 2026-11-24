@@ -8,6 +8,7 @@
 
 .tile {
   position: absolute;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   min-width: 15%;
@@ -75,4 +76,9 @@
   cursor: nwse-resize;
   background: var(--dsw-alias-border-l3);
   clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}
+
+.resize:focus-visible {
+  outline: 2px solid var(--dsw-alias-border-l3);
+  outline-offset: -2px;
 }

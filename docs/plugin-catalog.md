@@ -22,7 +22,7 @@ Scope: 278 workspace packages; every package appears under each of its kinds (25
 
 | Package | Role |
 | --- | --- |
-| `@greeneek/gnk-tool-browser` | Role documented in the browser group README. |
+| `@greeneek/gnk-tool-browser` | Six model-facing browser tools plus the pinned browser guidance section over ctx.browser. |
 | `@greeneek/gnk-tool-craft` | The model-facing Craft gateway: opening an app mounts curated tools, mounts its recipe only after registry review, and confines every reported artifact path to the job root. |
 | `@greeneek/gnk-tool-cordis` | Model-facing Cordis runtime tools for agents and maintainers choosing, composing, or debugging dynamic-package workflows. |
 | `@greeneek/gnk-tool-fs` | The model-facing read, read_image, write, and edit tools for users and maintainers composing or debugging filesystem access for agents. |
@@ -173,11 +173,11 @@ Scope: 278 workspace packages; every package appears under each of its kinds (25
 
 | Package | Role |
 | --- | --- |
-| `@greeneek/gnk-browser-ai` | Role documented in the browser group README. |
-| `@greeneek/gnk-browser-playwright` | Role documented in the browser group README. |
-| `@greeneek/gnk-browser-surface` | Role documented in the browser group README. |
-| `@greeneek/gnk-browser-use` | Role documented in the browser group README. |
-| `@greeneek/gnk-command-browser-ai` | Role documented in the browser group README. |
+| `@greeneek/gnk-browser-ai` | Browser AI provider registry with isolated manual sign-in sessions and credential-free status. |
+| `@greeneek/gnk-browser-playwright` | Playwright-backed provider for the browser-use seam with persistent profiles and bounded real-page reads. |
+| `@greeneek/gnk-browser-surface` | Default no-runtime provider for the browser-use seam; records navigation for the visible right-panel webview. |
+| `@greeneek/gnk-browser-use` | Service Definition for browser navigation: one runtime backend slot, per-profile tracked state, and the browser/surface event. |
+| `@greeneek/gnk-command-browser-ai` | Human /browser-ai command that opens an official AI provider site in its isolated browser session. |
 
 ### `bundle/`
 

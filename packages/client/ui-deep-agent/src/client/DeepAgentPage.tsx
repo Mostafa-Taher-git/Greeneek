@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@greeneek/gnk-client-ui-slots'
 import type {} from '@greeneek/gnk-client-ui-layout/client'
 import type { PromptVersionView, SettingsSaveValue, SettingsView } from '@greeneek/gnk-deep-agent-runtime/types'
-import { IconWolf16 } from '@greeneek/gnk-client-ui-primitives'
+import { IconWolf16, TabBar } from '@greeneek/gnk-client-ui-primitives'
 import css from './DeepAgentPage.module.css'
 import type { DeepAgentLocaleKey } from './locales.ts'
 
@@ -166,20 +166,11 @@ export function DeepAgentPage(props: DeepAgentPageProps) {
       <p className={css.intro}>{t('intro')}</p>
       {error !== undefined && <p className={css.error} role="alert">{error} <button type="button" onClick={() => { void refresh() }}>{t('retry')}</button></p>}
 
-      <div className={css.tabs} role="tablist">
-        {(['overview', 'tickets', 'decisions', 'triggers', 'settings'] as const).map(id => (
-          <button
-            key={id}
-            type="button"
-            role="tab"
-            aria-selected={tab === id}
-            className={tab === id ? css.tabActive : css.tab}
-            onClick={() => { setTab(id) }}
-          >
-            {t(id)}
-          </button>
-        ))}
-      </div>
+      <TabBar
+        tabs={(['overview', 'tickets', 'decisions', 'triggers', 'settings'] as const).map(id => ({ id, label: t(id) }))}
+        activeId={tab}
+        onSelect={setTab}
+      />
 
       {tab === 'overview' && state !== undefined && (
         <div className={css.section}>

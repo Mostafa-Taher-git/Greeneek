@@ -16,8 +16,10 @@ export const zh = {
   openOnGitHub: '在 GitHub 上打开',
 } as const
 
+/** Keys of the GitHub-pages UI copy, derived from the Chinese dictionary. */
 export type GithubPagesLocaleKey = keyof typeof zh
 
+/** English copy for the GitHub Branches and Issues pages. */
 export const en: Record<GithubPagesLocaleKey, string> = {
   branches: 'Branches',
   issues: 'Issues',
@@ -33,6 +35,7 @@ export const en: Record<GithubPagesLocaleKey, string> = {
   openOnGitHub: 'Open on GitHub',
 }
 
+/** Arabic copy for the GitHub Branches and Issues pages. */
 export const ar: Record<GithubPagesLocaleKey, string> = {
   branches: 'الفروع',
   issues: 'المسائل',

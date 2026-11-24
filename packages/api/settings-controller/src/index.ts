@@ -30,6 +30,27 @@ import type { AgentPresetDirectoryOpenValue, SettingsDocumentOpenValue } from '.
 export { CredentialsController } from './credentials.ts'
 export type * from './types.ts'
 
+declare module '@greeneek/gnk-typert-protocol' {
+  interface RemoteErrorDetailsMap {
+    /**
+     * Every seam refusal that is not a stale write: an unregistered or malformed
+     * namespace, a read-only provider, schema validation, storage.
+     */
+    'settings/rejected': { readonly ns: string }
+    /**
+     * The stored revision moved after the caller read it. Its own outcome rather
+     * than an invalid request: the caller must re-read and re-apply.
+     */
+    'settings/conflict': { readonly ns: string; readonly expected: number; readonly actual: number }
+    /**
+     * The provider refused a valid credential write, for example because a
+     * read-only source shadows the reference. The details name only the
+     * reference, never the value.
+     */
+    'credential/rejected': { readonly ref: string }
+  }
+}
+
 const settingsNamespaceRequestSchema = z.object({ ns: z.string().min(1) })
 
 /** Native document-opening policy. */

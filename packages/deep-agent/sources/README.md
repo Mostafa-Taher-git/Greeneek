@@ -34,3 +34,7 @@ None; the adapters neither assemble nor send provider requests.
 
 - Polling uses REST only; GitHub webhooks and Discord gateway events are not subscribed.
 - Reply delivery retries in memory while the registry is alive; a restart re-enqueues from the durable outbox in the runtime.
+
+### Dev Note
+
+No companion invariant is published: adapters own their own polling and reply state, and the runtime owns the durable outbox they hand off to.

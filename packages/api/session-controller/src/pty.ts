@@ -12,6 +12,7 @@ import { Remote, RemoteError, TypertRemoteService } from '@greeneek/gnk-typert-p
 import type {} from '@greeneek/gnk-subprocess'
 import type { SubprocessTerminalHandle } from '@greeneek/gnk-subprocess'
 import type { PtyFrame, PtyOpenRequest, PtySessionInfo } from './types.ts'
+import { frameStream } from './frame-stream.ts'
 
 /** One allocated PTY and the grid facts reported to clients. */
 interface PtyRecord {
@@ -129,33 +130,15 @@ export class PtyController extends TypertRemoteService {
   @Remote({ mode: 'stream' })
   async *events(request: { id: string }, signal: AbortSignal): AsyncIterable<PtyFrame> {
     this.session(request.id)
-    const queue: PtyFrame[] = []
-    let wake: (() => void) | undefined
-    const listener = (frame: PtyFrame): void => {
-      queue.push(frame)
-      wake?.()
-      wake = undefined
-    }
-    const listeners = this.listeners.get(request.id) ?? new Set()
-    listeners.add(listener)
-    this.listeners.set(request.id, listeners)
-    const onAbort = (): void => { wake?.(); wake = undefined }
-    signal.addEventListener('abort', onAbort, { once: true })
-    try {
-      for (;;) {
-        while (queue.length > 0) {
-          const frame = queue.shift()
-          if (frame !== undefined) yield frame
-        }
-        if (signal.aborted) return
-        if (!this.sessions.has(request.id)) return
-        await new Promise<void>((done) => { wake = done })
+    yield* frameStream<PtyFrame>((push) => {
+      const listeners = this.listeners.get(request.id) ?? new Set()
+      listeners.add(push)
+      this.listeners.set(request.id, listeners)
+      return () => {
+        listeners.delete(push)
+        if (listeners.size === 0) this.listeners.delete(request.id)
       }
-    } finally {
-      listeners.delete(listener)
-      if (listeners.size === 0) this.listeners.delete(request.id)
-      signal.removeEventListener('abort', onAbort)
-    }
+    }, signal, () => this.sessions.has(request.id))
   }
 
   /** Resolve one live session or refuse with a stable wire error. */

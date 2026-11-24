@@ -25,7 +25,11 @@ const field = (row: unknown, name: string): string => {
   return typeof value === 'string' ? value : ''
 }
 
-/** Export every durable row in a deterministic order. */
+/**
+ * Export every durable row in a deterministic order.
+ * @param store - authoritative store to read rows from.
+ * @returns a JSON-safe snapshot with the current schema version.
+ */
 export function exportSnapshot(store: DeepAgentStore): DeepAgentSnapshot {
   return {
     schemaVersion: DEEP_AGENT_SCHEMA_VERSION,
@@ -40,7 +44,11 @@ export function exportSnapshot(store: DeepAgentStore): DeepAgentSnapshot {
   }
 }
 
-/** Restore a recorded snapshot atomically; a foreign or newer schema is refused. */
+/**
+ * Restore a recorded snapshot atomically; a foreign or newer schema is refused.
+ * @param store - authoritative store to write rows into.
+ * @param snapshot - recorded state to restore.
+ */
 export function restoreSnapshot(store: DeepAgentStore, snapshot: DeepAgentSnapshot): void {
   if (snapshot.schemaVersion !== DEEP_AGENT_SCHEMA_VERSION) {
     throw new Error(`snapshot schema ${snapshot.schemaVersion} is not supported`)

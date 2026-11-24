@@ -34,3 +34,7 @@ Each Worker session has its own prefix, so mandates do not invalidate another se
 
 - Recovery resumes only assignments already marked running; interrupted launches are re-enqueued by the runtime, not by this package.
 - The Worker preset is optional; without one the agent uses the deployment default preset.
+
+### Dev Note
+
+No companion invariant is published: slot accounting and assignment recovery have one owner in this package and are asserted by executor behavior specs.

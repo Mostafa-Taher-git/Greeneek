@@ -119,7 +119,8 @@ describe.skipIf(!requireBuiltArtifacts)('built CLI lazy-search startup', () => {
     try {
       const result = await runBuiltWeb(cwd)
       expect(result.stdout).toMatch(/gnk web: http:\/\/127\.0\.0\.1:\d+/u)
-      expect(result.code).toBe(0)
+      // Windows reports SIGTERM as -1; the POSIX lane reports a clean 0.
+      expect(result.code).toBe(process.platform === 'win32' ? -1 : 0)
       expect(result.stderr).not.toMatch(/ExperimentalWarning: SQLite/u)
     } finally {
       await rm(cwd, { recursive: true, force: true })

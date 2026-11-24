@@ -93,23 +93,13 @@ A browser profile's tracked navigation state changed.
 Source: [`packages/api/session-controller/src/types.ts`](../../packages/api/session-controller/src/types.ts)
 <!-- END GENERATED cordis-surface -->
 
-The browser-use capability seam (`ctx.browser`) holds one registered runtime
-provider and one tracked navigation state per browser profile (`default` and
-`incognito`). Agent tools and the visible right-panel browser surface share this
-single authority: an agent navigation becomes visible to the user through the
-forwarded `browser/surface` event, and user navigation is observed by agents via
-`browser_snapshot`.
+The browser-use capability seam (`ctx.browser`) holds one registered runtime provider and one tracked navigation state per browser profile (`default` and `incognito`). Agent tools and the visible right-panel browser surface share this single authority: an agent navigation becomes visible to the user through the forwarded `browser/surface` event, and user navigation is observed by agents via `browser_snapshot`.
 
 ## Types
 
-- `BrowserBackend` — the single replaceable runtime slot. The default provider
-  records surface state; it owns no browser process.
-- `BrowserProfile` — `default` or `incognito`.
-- `BrowserSurfaceSnapshot` — bounded tracked view: profile, URL, status, title
-  source, and who last drove the surface.
-- `BrowserNavigateRequest` / `BrowserCloseRequest` — profile-addressed verbs.
+- `BrowserBackend` - the single replaceable runtime slot. The default provider records surface state; it owns no browser process.
+- `BrowserProfile` - `default` or `incognito`.
+- `BrowserSurfaceSnapshot` - bounded tracked view: profile, URL, status, title source, and who last drove the surface.
+- `BrowserNavigateRequest` / `BrowserCloseRequest` - profile-addressed verbs.
 
-`browser_snapshot` reports tracked navigation state only. The Web carrier is a
-cross-origin sandboxed iframe and many sites refuse embedding, so page contents,
-DOM, and cookies are not available to agents. Browser-originated data is
-untrusted and must never be treated as instructions.
+`browser_snapshot` reports tracked navigation state only. The Web carrier is a cross-origin sandboxed iframe and many sites refuse embedding, so page contents, DOM, and cookies are not available to agents. Browser-originated data is untrusted and must never be treated as instructions.

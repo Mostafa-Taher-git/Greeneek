@@ -5,7 +5,7 @@
  */
 import { UserError } from './errors.ts'
 import { key } from './ids.ts'
-import { isoTime, liveTicket, threadKey } from './types.ts'
+import { followupOwners, isoTime, liveTicket, threadKey } from './types.ts'
 import type {
   Assignment, ChannelRef, Decision, DecisionKind, Mandate, Thread, ThreadRef, Ticket,
   TicketOutcome, Trigger, TriggerDisposition, WorkerReport,
@@ -28,11 +28,15 @@ function primaryThread(trigger: Pick<Trigger, 'threads'>): ThreadRef {
 /** Number of times an expired Eval requeues its batch before becoming unavailable. */
 export const REQUEUES = 2
 
+/** Assessor outcome for a Trigger, optionally pinned to one Eval. */
 export type Outcome = AssessmentOutcome & { readonly evalId?: string }
+/** Result of taking in a Trigger: newly accepted, already seen, or filtered out. */
 export type ReceiveResult = 'received' | 'duplicate' | 'filtered'
+/** Request to send one outbound message, addressed by Ticket, Trigger, or both. */
 export type ReplyRequest =
   | { readonly purpose: 'acknowledgement'; readonly ticketId: string; readonly triggerId: string; readonly text: string }
   | { readonly purpose: 'answer' | 'result' | 'attention'; readonly ticketId?: string; readonly triggerId?: string; readonly question?: string; readonly text: string }
+/** Queued outbound message: its id, delivery state, and whether an id was reused. */
 export interface Reply { readonly id: string; readonly status: ReplyStatus; readonly reused: boolean }
 
 /** The Engine. Callers receive role-scoped methods rather than mutable domain state. */
@@ -45,7 +49,11 @@ export class Engine {
     this.now = options.now ?? (() => new Date().toISOString())
   }
 
-  /** Take in a Trigger exactly once, fan it out, and queue its primary Thread for Eval. */
+  /**
+   * Take in a Trigger exactly once, fan it out, and queue its primary Thread for Eval.
+   * @param trigger - incoming Trigger to record and dispatch.
+   * @returns whether the Trigger was received, a duplicate, or filtered.
+   */
   receive(trigger: Trigger): ReceiveResult {
     return this.repo.atomic(() => {
       const incoming: Trigger = { ...trigger, at: isoTime(trigger.at) }
@@ -102,7 +110,7 @@ export class Engine {
       const disposition: TriggerDisposition = { fanout, ...(context.length ? { context } : {}), at }
       this.repo.triggers.saveDisposition(incoming.id, disposition)
       // Fast path: a worker on the primary Thread decides a person's follow-up, so no Eval runs.
-      const owners = this.followupOwners(incoming)
+      const owners = followupOwners(incoming, this.repo)
       if (owners.length === 0) {
         const primary = primaryThread(incoming)
         const k = threadKey(primary)
@@ -114,22 +122,11 @@ export class Engine {
     })
   }
 
-  private followupOwners(trigger: Trigger): string[] {
-    if (!trigger.human) return []
-    const disposition = this.repo.triggers.disposition(trigger.id)
-    if (disposition === undefined || disposition.requeued === true) return []
-    const returned = new Set(disposition.handbacks?.map(item => item.ticketId) ?? [])
-    const reached = disposition.fanout.filter(id => !returned.has(id) && !disposition.context?.includes(id))
-    const thread = this.repo.threads.get(threadKey(primaryThread(trigger)))
-    if (reached.length === 0 || thread?.evaluating?.triggerIds.includes(trigger.id) === true) return []
-    return reached.filter((id) => {
-      const ticket = this.repo.tickets.get(id)
-      return ticket !== undefined && (liveTicket(ticket) || (ticket.ended?.by !== 'human'
-        && ticket.inputs.some(input => input.kind === 'trigger' && input.triggerId === trigger.id && ticket.undelivered.includes(input.id))))
-    })
-  }
-
-  /** The candidate an Eval holds for one Trigger, as its assessor sees it. */
+  /**
+   * The candidate an Eval holds for one Trigger, as its assessor sees it.
+   * @param triggerId - Trigger whose holding Eval is looked up.
+   * @returns the candidate, or undefined when no Eval holds the Trigger.
+   */
   candidate(triggerId: string): import('./ports.ts').Candidate | undefined {
     for (const thread of this.repo.threads.list()) {
       const evaluating = thread.evaluating
@@ -265,7 +262,10 @@ export class Engine {
     })
   }
 
-  /** Mark an Eval delivered; its deadline starts now. */
+  /**
+   * Mark an Eval delivered; its deadline starts now.
+   * @param evalId - Eval whose delivery is recorded.
+   */
   candidateDelivered(evalId: string): void {
     this.repo.atomic(() => {
       for (const thread of this.repo.threads.active()) {
@@ -285,7 +285,12 @@ export class Engine {
     })
   }
 
-  /** Decide the Eval holding a Trigger, or a direct one-Trigger Eval when none does. */
+  /**
+   * Decide the Eval holding a Trigger, or a direct one-Trigger Eval when none does.
+   * @param triggerId - Trigger being decided.
+   * @param outcome - assessor verdict, with optional evalId and audit details.
+   * @returns the recorded Decision, with a Ticket when accepted.
+   */
   decide(triggerId: string, outcome: Outcome): Decision {
     return this.repo.atomic(() => {
       const trigger = this.repo.triggers.get(triggerId)
@@ -379,7 +384,12 @@ export class Engine {
     this.options.executor.start(ticket, assignmentId)
   }
 
-  /** Stop a Ticket; its Mandate is withdrawn and it receives nothing more. */
+  /**
+   * Stop a Ticket; its Mandate is withdrawn and it receives nothing more.
+   * @param ticketId - Ticket to stop.
+   * @param reason - optional person-supplied reason recorded on the end event.
+   * @returns the ended Ticket, or the original when already ended.
+   */
   stopTicket(ticketId: string, reason?: string): Ticket {
     return this.repo.atomic(() => {
       const ticket = this.repo.tickets.get(ticketId)
@@ -401,7 +411,11 @@ export class Engine {
     })
   }
 
-  /** Retry a stalled Assignment under the same Mandate. */
+  /**
+   * Retry a stalled Assignment under the same Mandate.
+   * @param ticketId - Ticket whose latest Assignment is retried.
+   * @returns the Ticket with a fresh pending Assignment.
+   */
   retryTicket(ticketId: string): Ticket {
     return this.repo.atomic(() => {
       const ticket = this.repo.tickets.get(ticketId)
@@ -424,7 +438,11 @@ export class Engine {
     })
   }
 
-  /** The Executor's fact that an Assignment started; queued Inputs go out. */
+  /**
+   * The Executor's fact that an Assignment started; queued Inputs go out.
+   * @param ticketId - Ticket owning the Assignment.
+   * @param assignmentId - Assignment now running.
+   */
   assignmentStarted(ticketId: string, assignmentId: string): void {
     this.repo.atomic(() => {
       const ticket = this.repo.tickets.get(ticketId)
@@ -440,7 +458,12 @@ export class Engine {
     })
   }
 
-  /** The Executor's fact that Inputs reached the running Assignment. */
+  /**
+   * The Executor's fact that Inputs reached the running Assignment.
+   * @param ticketId - Ticket owning the Inputs.
+   * @param assignmentId - Assignment that received them.
+   * @param inputIds - Input identifiers to mark delivered.
+   */
   inputsDelivered(ticketId: string, assignmentId: string, inputIds: readonly string[]): void {
     this.repo.atomic(() => {
       const ticket = this.repo.tickets.get(ticketId)
@@ -456,7 +479,13 @@ export class Engine {
     })
   }
 
-  /** The Executor's report. `ready` ends the Ticket; attention asks a person; blocked/failed request retry. */
+  /**
+   * The Executor's report. `ready` ends the Ticket; attention asks a person; blocked/failed request retry.
+   * @param ticketId - Ticket the Assignment belongs to.
+   * @param assignmentId - Assignment reporting its result.
+   * @param report - worker state, optional question, and report metadata.
+   * @returns the updated Ticket, possibly ended or awaiting attention.
+   */
   report(ticketId: string, assignmentId: string, report: WorkerReport): Ticket {
     return this.repo.atomic(() => {
       const ticket = this.repo.tickets.get(ticketId)
@@ -500,7 +529,12 @@ export class Engine {
     return ended
   }
 
-  /** End a Ticket when a Source reports its followed Thread closed. */
+  /**
+   * End a Ticket when a Source reports its followed Thread closed.
+   * @param thread - reference to the closed Thread.
+   * @param outcome - whether the Thread merged or closed.
+   * @param at - timestamp of the closure at the Source.
+   */
   threadClosed(thread: ThreadRef, outcome: 'merged' | 'closed', at: string): void {
     this.repo.atomic(() => {
       const k = threadKey(thread)
@@ -517,7 +551,13 @@ export class Engine {
     })
   }
 
-  /** A Source asks an open Ticket to follow one of its Threads. */
+  /**
+   * A Source asks an open Ticket to follow one of its Threads.
+   * @param ticketId - Ticket that starts following.
+   * @param thread - Thread reference to follow.
+   * @param own - whether this is the Ticket's own Thread.
+   * @returns the Ticket with the follow recorded.
+   */
   bindThread(ticketId: string, thread: ThreadRef, own: boolean): Ticket {
     return this.repo.atomic(() => {
       const ticket = this.repo.tickets.get(ticketId)
@@ -538,7 +578,11 @@ export class Engine {
     })
   }
 
-  /** Queue an outbound message with a deterministic id so the same message is never sent twice. */
+  /**
+   * Queue an outbound message with a deterministic id so the same message is never sent twice.
+   * @param request - message purpose, addresses, and text.
+   * @returns the queued Reply and its delivery state.
+   */
   reply(request: ReplyRequest): Reply {
     return this.repo.atomic(() => {
       const ticket = request.ticketId === undefined ? undefined : this.repo.tickets.get(request.ticketId)
@@ -555,7 +599,11 @@ export class Engine {
     })
   }
 
-  /** Requeue a stored Trigger for a fresh Eval. */
+  /**
+   * Requeue a stored Trigger for a fresh Eval.
+   * @param triggerId - Trigger to re-evaluate.
+   * @returns true when it was queued, false when its Thread is still evaluating.
+   */
   reevaluate(triggerId: string): boolean {
     return this.repo.atomic(() => {
       const trigger = this.repo.triggers.get(triggerId)
@@ -574,7 +622,11 @@ export class Engine {
     })
   }
 
-  /** Dismiss an unavailable Decision. */
+  /**
+   * Dismiss an unavailable Decision.
+   * @param decisionId - unavailable Decision to dismiss.
+   * @returns the Decision with its dismissal time set.
+   */
   dismiss(decisionId: string): Decision {
     return this.repo.atomic(() => {
       const decision = this.repo.decisions.get(decisionId)
@@ -586,7 +638,11 @@ export class Engine {
     })
   }
 
-  /** Drop every Subscription to a Thread. */
+  /**
+   * Drop every Subscription to a Thread.
+   * @param thread - key of the Thread to unsubscribe from.
+   * @returns true when at least one Subscription was removed.
+   */
   unsubscribe(thread: string): boolean {
     return this.repo.atomic(() => {
       let changed = false
@@ -599,7 +655,12 @@ export class Engine {
     })
   }
 
-  /** A worker hands a Trigger back: it goes to Eval once no Ticket still owns it. */
+  /**
+   * A worker hands a Trigger back: it goes to Eval once no Ticket still owns it.
+   * @param ticketId - Ticket handing the Trigger back.
+   * @param triggerId - Trigger being returned.
+   * @param reason - worker-supplied handback reason.
+   */
   handback(ticketId: string, triggerId: string, reason: string): void {
     this.repo.atomic(() => {
       const ticket = this.repo.tickets.get(ticketId)
@@ -613,14 +674,20 @@ export class Engine {
         handbacks: [...disposition.handbacks ?? [], { ticketId, reason, at }],
       })
       const stored = this.repo.triggers.get(triggerId)
-      if (stored !== undefined && this.followupOwners(stored).length === 0) {
+      if (stored !== undefined && followupOwners(stored, this.repo).length === 0) {
         this.reevaluate(triggerId)
       }
       this.options.events.emit('trigger.followup', { triggerId, ticketId })
     })
   }
 
-  /** Attach a Trigger to an existing Ticket without a new Decision. */
+  /**
+   * Attach a Trigger to an existing Ticket without a new Decision.
+   * @param ticketId - Ticket receiving the Trigger.
+   * @param triggerId - Trigger to attach.
+   * @param note - optional note recorded on the Input.
+   * @returns the Ticket with the new Input and undelivered id.
+   */
   attach(ticketId: string, triggerId: string, note?: string): Ticket {
     return this.repo.atomic(() => {
       const disposition = this.repo.triggers.disposition(triggerId)

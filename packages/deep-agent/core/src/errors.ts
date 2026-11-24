@@ -24,10 +24,12 @@ export const USER_ERRORS = {
   setupIncomplete: ['refused', 'Deep-agent setup is not complete'],
 } as const satisfies Record<string, readonly ['missing' | 'refused', string]>
 
+/** Codes naming a user-facing domain error and its message template. */
 export type UserErrorCode = keyof typeof USER_ERRORS
 
 /** Structured error thrown by the Engine and application services. */
 export class UserError extends Error {
+  /** Whether the referenced entity was not found, rather than the call being refused. */
   readonly missing: boolean
   constructor(readonly code: UserErrorCode, readonly values: Readonly<Record<string, string>> = {}) {
     const [kind, text] = USER_ERRORS[code]

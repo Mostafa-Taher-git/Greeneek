@@ -54,8 +54,10 @@ export const zh = {
   custom: '自定义',
 } as const
 
+/** Keys of the deep-agent UI copy, derived from the Chinese dictionary. */
 export type DeepAgentLocaleKey = keyof typeof zh
 
+/** English copy for the deep-agent UI. */
 export const en: Record<DeepAgentLocaleKey, string> = {
   nav: 'Deep-agent',
   title: 'Deep-agent',
@@ -109,6 +111,7 @@ export const en: Record<DeepAgentLocaleKey, string> = {
   custom: 'Custom',
 }
 
+/** Arabic copy for the deep-agent UI. */
 export const ar: Record<DeepAgentLocaleKey, string> = {
   nav: 'Deep-agent',
   title: 'Deep-agent',

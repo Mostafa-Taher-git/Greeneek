@@ -8,7 +8,7 @@ import { Remote, TypertRemoteService } from '@greeneek/gnk-typert-protocol'
 import { gnkHomePath } from '@greeneek/gnk-home-paths'
 import { dirname, join } from 'node:path'
 import { Engine, type Candidate, type Ticket } from '@greeneek/gnk-deep-agent-core'
-import { DeepAgentStore } from '@greeneek/gnk-deep-agent-store'
+import { DeepAgentStore, type Receipt } from '@greeneek/gnk-deep-agent-store'
 import { Effects, Later } from '@greeneek/gnk-deep-agent-effects'
 import { buildPolicy, type PolicySettings } from '@greeneek/gnk-deep-agent-policy'
 import { SettingsStore } from './settings.ts'
@@ -21,6 +21,26 @@ import type { DecisionInput, DecisionRow, DeepAgentState, TicketRow, TriggerInpu
 
 export type { DecisionInput, DecisionRow, DeepAgentState, TicketRow, TriggerInput, TriggerRow } from './types-public.ts'
 export type { PromptVersionView, SettingsView } from './types-public.ts'
+
+/**
+ * Decode a durable receipt into the address and text a Source can deliver.
+ * @param receipt - pending outbound row from the store.
+ * @returns the Source reply fields carried by the row.
+ */
+function replyFromReceipt(receipt: Receipt): {
+  readonly id: string
+  readonly text: string
+  readonly address: Readonly<Record<string, string>>
+  readonly source: string
+} {
+  const message = JSON.parse(receipt.value) as {
+    readonly channel: { readonly source: string; readonly address: Readonly<Record<string, string>> }
+    readonly text: string
+  }
+  return {
+    id: receipt.id, text: message.text, address: message.channel.address, source: message.channel.source,
+  }
+}
 
 declare module '@greeneek/cordis' {
   interface Context {
@@ -43,7 +63,10 @@ declare module '@greeneek/cordis' {
   }
 }
 
-/** Default on-disk location of the Deep-agent domain database. */
+/**
+ * Default on-disk location of the Deep-agent domain database.
+ * @returns the fully-qualified path under the Greeneek home directory.
+ */
 export function defaultDeepAgentDatabase(): string {
   return join(gnkHomePath(), 'deep-agent', 'orchestrator.sqlite')
 }
@@ -263,13 +286,7 @@ export class DeepAgentService extends TypertRemoteService {
       const { id } = value as { id: string }
       const receipt = this.store.pendingReceipts().find(item => item.id === id)
       if (receipt === undefined) return
-      const message = JSON.parse(receipt.value) as {
-        readonly channel: { readonly source: string; readonly address: Readonly<Record<string, string>> }
-        readonly text: string
-      }
-      this.sources.enqueueReply({
-        id: receipt.id, text: message.text, address: message.channel.address, source: message.channel.source,
-      })
+      this.sources.enqueueReply(replyFromReceipt(receipt))
     })
     ctx.effect(() => async () => {
       await this.executor.dispose()
@@ -304,13 +321,7 @@ export class DeepAgentService extends TypertRemoteService {
     await this.router.ensure()
     await this.executor.recover(this.store.repo.tickets.open())
     for (const receipt of this.store.pendingReceipts()) {
-      const message = JSON.parse(receipt.value) as {
-        readonly channel: { readonly source: string; readonly address: Readonly<Record<string, string>> }
-        readonly text: string
-      }
-      this.sources.enqueueReply({
-        id: receipt.id, text: message.text, address: message.channel.address, source: message.channel.source,
-      })
+      this.sources.enqueueReply(replyFromReceipt(receipt))
       this.effects.enqueue('reply', receipt.id, { id: receipt.id })
     }
     this.changed()
@@ -623,12 +634,28 @@ export const inject = ['agents', 'credentials']
 /** Host plugin body: provide the Deep-agent service as a Cordis service. */
 export function apply(ctx: Context, config: DeepAgentConfig = {}): void {
   const service = new DeepAgentService(ctx, config)
-  ctx.provide('deepAgent', service)
-  void service.recover().catch((error: unknown) => {
-    service.recordError(error instanceof Error ? error.message : String(error))
+  // Recovery opens SQLite. Defer it to the first async Consumer call so a
+  // process that only boots the Web host does not load node:sqlite at startup.
+  let recovery: Promise<void> | undefined
+  const ready = (): Promise<void> => {
+    recovery ??= service.recover().catch((error: unknown) => {
+      service.recordError(error instanceof Error ? error.message : String(error))
+    })
+    return recovery
+  }
+  const lazy = new Proxy(service, {
+    get(target, property, receiver) {
+      const value: unknown = Reflect.get(target, property, receiver)
+      if (property === 'recover' || typeof value !== 'function') return value
+      const fn = value as (...values: unknown[]) => unknown
+      if (fn.constructor.name !== 'AsyncFunction') return value
+      return (...args: unknown[]) => ready().then(() => fn.apply(target, args))
+    },
   })
+  ctx.provide('deepAgent', lazy)
   ctx.effect(() => {
-    const stop = service.startSourcePolling()
-    return () => { stop() }
+    let stop: (() => void) | undefined
+    void ready().then(() => { stop = service.startSourcePolling() })
+    return () => { stop?.() }
   }, 'deep-agent: source polling')
 }

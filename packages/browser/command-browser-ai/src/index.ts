@@ -47,4 +47,5 @@ export function apply(ctx: Context): void {
   })
 }
 
+/** Browser-AI command plugin with its Cordis metadata. */
 export default { name, inject, apply }

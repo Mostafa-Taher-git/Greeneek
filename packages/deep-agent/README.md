@@ -1,6 +1,11 @@
+---
+description: "The deep-agent package group: proactive domain engine, durable store, effects, policy, sources, and Host runtime."
+kind: "package-group"
+---
+
 # deep-agent
 
-This group contains the Deep-agent subsystem: an independent proactive agent with its own Router session, Worker sessions, domain model, event engine, persistence, effects, sources, and management panel.
+This group contains the Deep-agent subsystem: an independent proactive agent with its own Router session, Worker sessions, domain model, event engine, persistence, effects, sources, and management panel. See the [Deep-agent subsystem reference](../../docs/subsystems/deep-agent.md) for the `ctx.deepAgent` service API and the domain vocabulary.
 
 ## Domain port attribution
 

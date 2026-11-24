@@ -227,6 +227,19 @@ flowchart LR
   pkg_cordis_host_runner["cordis-host-runner"]
   svc_dynamicCordisRunner["ctx.dynamicCordisRunner<br/>Dynamic Cordis package host runner"]
   svc_cordisInspect["ctx.cordisInspect<br/>Dynamic Cordis inspect registry"]
+  pkg_automation["automation"]
+  svc_automation["ctx.automation<br/>Host-wide automation tasks"]
+  pkg_ui_settings_automation_tasks["ui-settings-automation-tasks"]
+  pkg_browser_use["browser-use"]
+  svc_browser["ctx.browser<br/>Browser navigation seam"]
+  pkg_browser_surface["browser-surface"]
+  pkg_browser_playwright["browser-playwright"]
+  pkg_tool_browser["tool-browser"]
+  pkg_browser_ai["browser-ai"]
+  svc_browserAI["ctx.browserAI<br/>Browser AI provider registry"]
+  pkg_deep_agent_runtime["deep-agent-runtime"]
+  svc_deepAgent["ctx.deepAgent<br/>Deep-agent Host runtime"]
+  pkg_ui_deep_agent["ui-deep-agent"]
   pkg_agent --> svc_agents
   pkg_agent_default_model --> svc_agentDefaultModel
   pkg_agent_loop --> svc_agentLoop
@@ -244,8 +257,13 @@ flowchart LR
   pkg_attachment --> svc_attachments
   pkg_attachment_local --> svc_attachments
   pkg_authorization --> svc_authorization
+  pkg_automation --> svc_automation
   pkg_bash_local --> svc_shell
   pkg_bash_sandbox --> svc_shell
+  pkg_browser_ai --> svc_browserAI
+  pkg_browser_playwright --> svc_browser
+  pkg_browser_surface --> svc_browser
+  pkg_browser_use --> svc_browser
   pkg_client_modules --> svc_clientModules
   pkg_code_runtime --> svc_codeRuntime
   pkg_code_runtime_worker_thread --> svc_codeRuntime
@@ -259,6 +277,7 @@ flowchart LR
   pkg_craft_local --> svc_craft
   pkg_credentials --> svc_credentials
   pkg_credentials_local --> svc_credentials
+  pkg_deep_agent_runtime --> svc_deepAgent
   pkg_e2b --> svc_e2b
   pkg_experimental_code_runtime_python --> svc_codeRuntime
   pkg_file_reference --> svc_fileReferences
@@ -364,6 +383,9 @@ flowchart LR
   svc_attachments --> pkg_llm_pi_ai
   svc_attachments --> pkg_tool_fs
   svc_authorization --> pkg_llm_pi_ai
+  svc_automation --> pkg_ui_settings_automation_tasks
+  svc_browser --> pkg_browser_ai
+  svc_browser --> pkg_tool_browser
   svc_clientModules --> pkg_client_hmr
   svc_codeRuntime --> pkg_tools
   svc_compaction --> pkg_compaction_basic
@@ -372,6 +394,7 @@ flowchart LR
   svc_credentials --> pkg_api_settings_controller
   svc_credentials --> pkg_llm_greeneek
   svc_credentials --> pkg_llm_pi_ai
+  svc_deepAgent --> pkg_ui_deep_agent
   svc_directoryPicker --> pkg_api_workspace_controller
   svc_dynamicCordisRunner --> pkg_tool_cordis
   svc_e2b --> pkg_fs_e2b
@@ -552,5 +575,9 @@ flowchart LR
 | `ctx.lsp` | `seam` | [`lsp`](../packages/lsp/lsp) | [`lsp-stdio`](../packages/lsp/lsp-stdio) | [`tool-lsp`](../packages/lsp/tool-lsp) | - | Provider registration and selection plus normalized query execution over exactly four operations; the seam offers no protocol escape hatch, so a backend translates into the normalized request and result. |
 | `ctx.dynamicCordisRunner` | `core` | [`cordis-host-runner`](../packages/extensions/cordis-host-runner) | - | [`tool-cordis`](../packages/extensions/tool-cordis) | - | Owns the in-memory definition registry, the vm sandbox for host halves, and the request-run round trip; browser pages reach the same service over the wire through its remote namespace. |
 | `ctx.cordisInspect` | `core` | [`cordis-host-runner`](../packages/extensions/cordis-host-runner) | - | [`tool-cordis`](../packages/extensions/tool-cordis) | - | Registers host inspect providers, mirrors the client provider manifest, and routes client queries through the dynamic Cordis transport. |
+| `ctx.automation` | `core` | [`automation`](../packages/automation/automation) | - | `ui-settings-automation-tasks` | - | Stores durable task records with status, delivery target, repeat rule, and optimistic-concurrency metadata under $GNK_HOME; management Remotes emit automation/changed after each committed change. |
+| `ctx.browser` | `seam` | [`browser-use`](../packages/browser/browser-use) | [`browser-surface`](../packages/browser/browser-surface), [`browser-playwright`](../packages/browser/browser-playwright) | [`tool-browser`](../packages/browser/tool-browser), [`browser-ai`](../packages/browser/browser-ai) | - | Owns one replaceable runtime provider slot and one tracked navigation state per browser profile, shared by agent tools and the visible right-panel surface; a provider without content support refuses page reads by name. |
+| `ctx.browserAI` | `seam` | [`browser-ai`](../packages/browser/browser-ai) | - | - | - | Registers official AI providers with isolated browser profiles and credential-free session status; openManual defers sign-in to the provider page and read applies the browser tool untrusted-content boundary. |
+| `ctx.deepAgent` | `core` | [`deep-agent-runtime`](../packages/deep-agent/runtime) | - | `ui-deep-agent` | - | Owns the SQLite domain store, Engine, durable effect queue, and versioned policy behind ctx.deepAgent; read and control Remotes serve the management panel independently of the subagent seam. |
 
 Maintenance mode: hybrid: services are discovered from Cordis declarations; interface/implementation/consumer roles are classified in `scripts/gen-doc-graphs.ts` with a completeness guard.

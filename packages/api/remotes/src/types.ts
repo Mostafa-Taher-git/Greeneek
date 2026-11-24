@@ -16,4 +16,21 @@ export type ApiRemoteForwardedEvent = typeof API_REMOTE_FORWARDED_EVENTS[number]
 
 declare module '@greeneek/gnk-typert-protocol' {
   interface TypertRemoteEventSelection extends Record<ApiRemoteForwardedEvent, true> {}
+
+  interface RemoteErrorDetailsMap {
+    /** No flow claims the requested key, or it offers no such method. */
+    'authorization/no-flow': { readonly key: string; readonly method?: string }
+    /** An attempt for the key is already running. */
+    'authorization/in-flight': { readonly key: string }
+    /** The answered prompt is not, or is no longer, in flight. */
+    'authorization/no-prompt': { readonly key: string; readonly promptId: string }
+    /** The flow's own attempt failed; the message is the seam's. */
+    'authorization/failed': { readonly key: string; readonly message: string }
+    /** Every settings refusal that is not a stale write. */
+    'settings/rejected': { readonly ns: string }
+    /** The stored revision moved after the caller read it. */
+    'settings/conflict': { readonly ns: string; readonly expected: number; readonly actual: number }
+    /** The provider refused a valid credential write; details name only the reference. */
+    'credential/rejected': { readonly ref: string }
+  }
 }

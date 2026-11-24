@@ -321,9 +321,9 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'a Session already addressable through the Session Controller.',
       },
       {
-        signature: 'startSession(workspaceId?: WorkspaceId): void',
+        signature: 'startSession(workspaceId?: WorkspaceId, onOpened?: (sessionId: SessionId) => void): void',
         description: 'Start a New Session flow and navigate to its Session.',
-        parameters: [{ name: 'workspaceId', description: 'explicit target; absent inherits the current or most recent Workspace.' }],
+        parameters: [{ name: 'workspaceId', description: 'explicit target; absent inherits the current or most recent Workspace.' }, { name: 'onOpened', description: 'callback with the new Session id once it opens.' }],
       },
       {
         signature: 'archiveSession(sessionId: SessionId): Promise<void>',
@@ -430,8 +430,24 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type ActionsDecl<T> = Record<string, (draft: T, ...params: any[]) => void>;',
   },
   {
+    name: 'AgentCancelCause',
+    declaration: 'export type AgentCancelCause = {\n    readonly kind: \'user\';\n} | {\n    readonly kind: \'parent\';\n} | {\n    readonly kind: \'hook\';\n    readonly reason: string;\n} | {\n    readonly kind: \'disposed\';\n};',
+  },
+  {
     name: 'AgentContext',
     declaration: 'export type AgentContext = Omit<Context, \'remote\'> & {\n    readonly remote: ClientRemote & TypertRemoteScopeApi<\'agent\'>;\n};',
+  },
+  {
+    name: 'AssistantMessage',
+    declaration: 'export interface AssistantMessage extends Message {\n    readonly role: \'assistant\';\n    readonly source: ModelMessageSource;\n}',
+  },
+  {
+    name: 'AssistantProvenance',
+    declaration: 'export interface AssistantProvenance {\n    provider: string;\n    model: string;\n    replayState?: unknown;\n}',
+  },
+  {
+    name: 'AttachmentId',
+    declaration: 'export type AttachmentId = Branded<\'AttachmentId\'>;',
   },
   {
     name: 'BakedActions',
@@ -460,6 +476,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'ChildrenDecl',
     declaration: 'export type ChildrenDecl = {\n    [P in keyof SlotMap & string]?: SlotSpec<SlotMap[P]>;\n};',
+  },
+  {
+    name: 'ChunkRow',
+    declaration: 'export type ChunkRow = {\n    type: \'text-chunks\';\n    seq0: SessionSeqType;\n    time0: number;\n    data: TextRunData;\n} | {\n    type: \'reasoning-chunks\';\n    seq0: SessionSeqType;\n    time0: number;\n    data: TextRunData;\n} | {\n    type: \'tool-call-chunks\';\n    seq0: SessionSeqType;\n    time0: number;\n    data: ToolCallRunData;\n};',
   },
   {
     name: 'ChunkRowEvent',
@@ -503,7 +523,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'ConnectionHostInfo',
-    declaration: 'export interface ConnectionHostInfo {\n    readonly home: string;\n}',
+    declaration: 'export interface ConnectionHostInfo {\n    readonly home: string;\n    readonly hostname: string;\n}',
   },
   {
     name: 'ConnectionLoop',
@@ -530,8 +550,48 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface ConnectionStateSource {\n    getSnapshot(): ConnectionState | undefined;\n    subscribe(listener: () => void): () => void;\n}',
   },
   {
+    name: 'ContentBlock',
+    declaration: 'export type ContentBlock = ContentBlockMap[ContentBlockType];',
+  },
+  {
+    name: 'ContentBlockMap',
+    declaration: 'export interface ContentBlockMap {\n    \'text\': TextBlock;\n    \'reasoning\': ReasoningBlock;\n    \'image\': ImageBlock;\n    \'tool-call\': ToolCallBlock;\n    \'tool-result\': ToolResultBlock;\n}',
+  },
+  {
+    name: 'ContentBlockType',
+    declaration: 'export type ContentBlockType = keyof ContentBlockMap;',
+  },
+  {
+    name: 'ContextFormed',
+    declaration: 'export type ContextFormed = {\n    readonly form?: never;\n} | {\n    readonly form: \'instructions\';\n} | {\n    readonly form: \'catalog\';\n} | {\n    readonly form: \'snapshot\';\n    readonly sections: readonly ContextSnapshotSection[];\n} | {\n    readonly form: \'notice\';\n    readonly summary: string;\n} | {\n    readonly form: \'relay\';\n} | {\n    readonly form: \'recall\';\n};',
+  },
+  {
+    name: 'ContextSnapshotSection',
+    declaration: 'export interface ContextSnapshotSection {\n    readonly name: string;\n    readonly text: string;\n}',
+  },
+  {
+    name: 'DirectoryEntry',
+    declaration: 'export interface DirectoryEntry {\n    name: string;\n    path: string;\n    hidden: boolean;\n}',
+  },
+  {
+    name: 'DirectoryListing',
+    declaration: 'export interface DirectoryListing {\n    path: string;\n    home: string;\n    crumbs: DirectoryEntry[];\n    entries: DirectoryEntry[];\n    truncated: boolean;\n}',
+  },
+  {
     name: 'EntryKeyOf',
     declaration: 'export type EntryKeyOf<K extends keyof SlotMap & string> = SlotMap[K] extends {\n    kind: \'keyed\';\n    keyProps: infer P extends object;\n} ? keyof P & string : string;',
+  },
+  {
+    name: 'EpochHeader',
+    declaration: 'export interface EpochHeader {\n    config: LlmCallConfig;\n    adapterDefaults?: LlmCallConfigAdapterDefaults;\n    system?: string;\n    tools?: ToolSchema[];\n}',
+  },
+  {
+    name: 'FinishReason',
+    declaration: 'export type FinishReason = FinishReasonMap[keyof FinishReasonMap];',
+  },
+  {
+    name: 'FinishReasonMap',
+    declaration: 'export interface FinishReasonMap {\n    \'stop\': {\n        kind: \'stop\';\n    };\n    \'tool-calls\': {\n        kind: \'tool-calls\';\n    };\n    \'max-tokens\': {\n        kind: \'max-tokens\';\n    };\n    \'aborted\': {\n        kind: \'aborted\';\n        failure: LlmFailure;\n    };\n    \'error\': {\n        kind: \'error\';\n        failure: LlmFailure;\n    };\n}',
   },
   {
     name: 'GlobalStandardProps',
@@ -550,6 +610,18 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type HostObservable<T> = ObservableSnapshot<T>;',
   },
   {
+    name: 'ImageAttachmentRef',
+    declaration: 'export interface ImageAttachmentRef {\n    attachmentId: AttachmentId;\n    mediaType: ImageMediaType;\n    bytes: number;\n    width: number;\n    height: number;\n    name?: string;\n    originalDimensions?: {\n        width: number;\n        height: number;\n    };\n}',
+  },
+  {
+    name: 'ImageBlock',
+    declaration: 'export interface ImageBlock {\n    type: \'image\';\n    attachment: ImageAttachmentRef;\n}',
+  },
+  {
+    name: 'ImageMediaType',
+    declaration: 'export type ImageMediaType = \'image/png\' | \'image/jpeg\' | \'image/webp\' | \'image/gif\';',
+  },
+  {
     name: 'InjectFace',
     declaration: 'export type InjectFace<I extends object> = I extends {\n    hooks: infer HS extends HooksSources;\n} ? I extends {\n    keyedHooks: infer KS extends KeyedHooksSources;\n} ? Omit<I, \'hooks\' | \'keyedHooks\'> & PropsHooks<HS> & PropsKeyedHooks<KS> : Omit<I, \'hooks\'> & PropsHooks<HS> : I extends {\n    keyedHooks: infer KS extends KeyedHooksSources;\n} ? Omit<I, \'keyedHooks\'> & PropsKeyedHooks<KS> : I;',
   },
@@ -558,8 +630,24 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type InjectParams<K extends keyof SlotMap & string, H> = ScopeOf<K> extends \'session\' ? ([\n    H\n] extends [\n    StoreDecl\n] ? [\n    sessionId: SessionIdOf,\n    actions: BoundActions<HandleOf<H>>\n] : [\n    sessionId: SessionIdOf\n]) : ScopeOf<K> extends \'session-maybe\' ? ([\n    H\n] extends [\n    StoreDecl\n] ? [\n    sessionId: SessionIdOf | undefined,\n    actions: BoundActions<HandleOf<H>> | undefined\n] : [\n    sessionId: SessionIdOf | undefined\n]) : ([\n    H\n] extends [\n    StoreDecl\n] ? [\n    actions: BoundActions<HandleOf<H>>\n] : [\n]);',
   },
   {
+    name: 'InvocationDescriptor',
+    declaration: 'export interface InvocationDescriptor {\n    readonly id: string;\n    readonly service: string;\n    readonly namespace: string;\n    readonly method: string;\n    readonly implementation?: string;\n    readonly mode?: \'stream\';\n    readonly invocation: {\n        readonly kind: \'direct\';\n    } | {\n        readonly kind: \'context\';\n        readonly context: string;\n        readonly wire: string;\n        readonly codec: TypertCodec;\n    };\n    readonly scope?: {\n        readonly context: string;\n        readonly wire: string;\n    };\n    readonly parameters: readonly InvocationParameterDescriptor[];\n    readonly cancellation?: {\n        readonly parameter: \'signal\';\n    };\n    readonly result: TypertCodec;\n    readonly sourceLocation?: InvocationSourceLocation;\n}',
+  },
+  {
+    name: 'InvocationParameterDescriptor',
+    declaration: 'export interface InvocationParameterDescriptor {\n    readonly name: string;\n    readonly wire: string;\n    readonly source: \'json\' | \'lookup\';\n    readonly lookup?: string;\n    readonly codec: TypertCodec;\n    readonly acceptsUndefined?: true;\n}',
+  },
+  {
+    name: 'InvocationSourceLocation',
+    declaration: 'export interface InvocationSourceLocation {\n    readonly file: string;\n    readonly line: number;\n    readonly column: number;\n}',
+  },
+  {
     name: 'ISession',
     declaration: 'export interface ISession {\n    readonly sessionId: SessionId;\n    readonly projections: ProjectionsFace;\n    beginSubmission(input: BeginSubmissionInput): SubmissionHandle;\n    prompt(content: PromptContentPart[], mode: \'queue\' | \'steer\', signal?: AbortSignal, requestId?: SessionRequestId): Promise<RemoteResult<{\n        accepted: true;\n    }>>;\n    readAttachment(attachmentId: AttachmentIdType): Promise<RemoteResult<{\n        attachment: ImageAttachmentRef;\n        data: Uint8Array;\n    }>>;\n    updateQueue(itemId: MessageId, action: QueueAction): Promise<RemoteResult<{\n        accepted: true;\n    }>>;\n    cancel(): Promise<RemoteResult<{\n        accepted: true;\n    }>>;\n    rename(title: string): Promise<RemoteResult<{\n        title: string;\n        seq: SessionSeq;\n    }>>;\n    loadOlder(): Promise<void>;\n    loadThrough(seq: SessionSeq): Promise<void>;\n    command(line: string): Promise<RemoteResult<{\n        matched: boolean;\n    }>>;\n}',
+  },
+  {
+    name: 'JsonValue',
+    declaration: 'export type JsonValue = null | boolean | number | string | JsonValue[] | {\n    [key: string]: JsonValue;\n};',
   },
   {
     name: 'KeyedHooksSources',
@@ -580,6 +668,18 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'LanguageRegistration',
     declaration: 'export interface LanguageRegistration {\n    id: LocaleId;\n    label: string;\n    fallback: LocaleId;\n}',
+  },
+  {
+    name: 'LlmCallConfig',
+    declaration: 'export interface LlmCallConfig {\n    provider: string;\n    model: string;\n    reasoningEffort?: ReasoningEffortId;\n    temperature?: number;\n    maxTokens?: number;\n    stop?: string[];\n}',
+  },
+  {
+    name: 'LlmCallConfigAdapterDefaults',
+    declaration: 'export interface LlmCallConfigAdapterDefaults {\n    reasoningEffort?: true;\n    maxTokens?: true;\n}',
+  },
+  {
+    name: 'LlmFailure',
+    declaration: 'export interface LlmFailure {\n    readonly message: string;\n    readonly code: string;\n    readonly status?: number;\n    readonly providerRetryAfterMs?: number;\n    readonly requestId?: ProviderRequestId;\n}',
   },
   {
     name: 'LocaleDefinition',
@@ -614,6 +714,26 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type MatchedShare<E extends SlotEntryDef, M> = E[\'kind\'] extends \'chain\' ? {\n    matched: M;\n} : object;',
   },
   {
+    name: 'Message',
+    declaration: 'export interface Message {\n    readonly id: MessageId;\n    readonly role: \'system\' | \'user\' | \'assistant\';\n    readonly content: ContentBlock[];\n    readonly source: MessageSource;\n}',
+  },
+  {
+    name: 'MessageId',
+    declaration: 'export type MessageId = Branded<\'MessageId\'>;',
+  },
+  {
+    name: 'MessageSource',
+    declaration: 'export type MessageSource = MessageSourceMap[keyof MessageSourceMap];',
+  },
+  {
+    name: 'MessageSourceMap',
+    declaration: 'export interface MessageSourceMap {\n    user: {\n        kind: \'user\';\n    };\n    plugin: {\n        kind: \'plugin\';\n        plugin: string;\n    } & ContextFormed;\n    model: ModelMessageSource;\n    tool: ToolMessageSource;\n}',
+  },
+  {
+    name: 'ModelMessageSource',
+    declaration: 'export interface ModelMessageSource extends AssistantProvenance {\n    kind: \'model\';\n}',
+  },
+  {
     name: 'ObservableSnapshot',
     declaration: 'export interface ObservableSnapshot<T> {\n    getSnapshot(): T;\n    subscribe(fn: () => void): () => void;\n}',
   },
@@ -644,10 +764,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'ProjectionsFace',
     declaration: 'export interface ProjectionsFace {\n    faceOf(key: string): ObservableSnapshot<unknown>;\n}',
-  },
-  {
-    name: 'PromptContentPart',
-    declaration: 'export type PromptContentPart = {\n    readonly type: \'text\';\n    readonly text: string;\n} | {\n    readonly type: \'image\';\n    readonly mediaType: ImageMediaType;\n    readonly data: string;\n    readonly name?: string;\n};',
   },
   {
     name: 'PromptError',
@@ -682,8 +798,40 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type PropsStore<H> = H extends StoreHandle<infer T, infer A> ? {\n    useStore: SnapshotSelectorHook<T>;\n    actions: BakedActions<T, A>;\n} : object;',
   },
   {
+    name: 'ProviderRequestId',
+    declaration: 'export type ProviderRequestId = Branded<\'ProviderRequestId\'>;',
+  },
+  {
+    name: 'ReasoningBlock',
+    declaration: 'export interface ReasoningBlock {\n    type: \'reasoning\';\n    text: string;\n}',
+  },
+  {
+    name: 'ReasoningEffortId',
+    declaration: 'export type ReasoningEffortId = Branded<\'ReasoningEffortId\'>;',
+  },
+  {
+    name: 'RemoteError',
+    declaration: 'export class RemoteError<Code extends RemoteErrorCode = RemoteErrorCode> extends Error {\n    readonly isDSHRemoteError: true;\n    constructor(readonly code: Code, message: string, readonly details: RemoteErrorDetailsMap[Code], options?: ErrorOptions);\n}',
+  },
+  {
+    name: 'RemoteErrorCode',
+    declaration: 'export type RemoteErrorCode = keyof RemoteErrorDetailsMap;',
+  },
+  {
+    name: 'RemoteErrorDetailsMap',
+    declaration: 'export interface RemoteErrorDetailsMap {\n    \'gateway/bad-request\': {\n        readonly issues?: readonly object[];\n    };\n    \'gateway/cancelled\': {};\n    \'gateway/internal\': {};\n}',
+  },
+  {
+    name: 'RemoteFailure',
+    declaration: 'export type RemoteFailure = {\n    [Code in RemoteErrorCode]: import(\'./remote-error.ts\').RemoteError<Code>;\n}[RemoteErrorCode];',
+  },
+  {
     name: 'RemoteHostFacts',
-    declaration: 'export interface RemoteHostFacts {\n    readonly home: string | undefined;\n    readonly isLoopback: boolean;\n}',
+    declaration: 'export interface RemoteHostFacts {\n    readonly home: string | undefined;\n    readonly hostname: string | undefined;\n    readonly isLoopback: boolean;\n}',
+  },
+  {
+    name: 'RemoteResult',
+    declaration: 'export type RemoteResult<T> = {\n    readonly ok: true;\n    readonly value: T;\n} | {\n    readonly ok: false;\n    readonly error: RemoteFailure;\n};',
   },
   {
     name: 'RemoteStream',
@@ -702,6 +850,18 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface RemoteStreamOptions<Item> {\n    readonly name: string;\n    readonly open: (signal: AbortSignal) => AsyncIterable<Item>;\n    readonly ended: (accepted: boolean) => Error;\n    readonly carrierFailed?: (error: RemoteStreamCarrierError) => void;\n}',
   },
   {
+    name: 'ReplayEnvelope',
+    declaration: 'export interface ReplayEnvelope {\n    response: unknown;\n    blocks?: readonly unknown[];\n}',
+  },
+  {
+    name: 'RequestContext',
+    declaration: 'export interface RequestContext {\n    provider: string;\n    model: string;\n    contextWindow?: number;\n}',
+  },
+  {
+    name: 'RequestHeaderReason',
+    declaration: 'export type RequestHeaderReason = \'initial\' | \'resume\' | \'change\' | \'series\';',
+  },
+  {
     name: 'ScopeOf',
     declaration: 'export type ScopeOf<K extends keyof SlotMap & string> = SlotMap[K][\'scope\'];',
   },
@@ -714,6 +874,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface SessionBinding {\n    readonly sessionId: SessionId;\n    readonly session: SessionFace;\n    readonly eventSource: SessionEventSource;\n    readonly ctx: AgentContext;\n}',
   },
   {
+    name: 'SessionEvent',
+    declaration: 'export type SessionEvent<T extends SessionEventType = SessionEventType> = {\n    [K in SessionEventType]: {\n        type: K;\n        seq: SessionSeq;\n        time: number;\n        data: SessionEventMap[K];\n        ignorable?: true;\n    } & (K extends SurfaceEventType ? {\n        sourceEventSeqs?: SessionSeq[];\n        surfaceOp?: SurfaceOp;\n    } : object);\n}[T];',
+  },
+  {
     name: 'SessionEventChange',
     declaration: 'export type SessionEventChange = {\n    readonly kind: \'replace\';\n    readonly entries: readonly SessionEventLikeEntry[];\n} | {\n    readonly kind: \'prepend\';\n    readonly entries: readonly SessionEventLikeEntry[];\n} | {\n    readonly kind: \'append\';\n    readonly entries: readonly SessionLiveEventEntry[];\n};',
   },
@@ -722,8 +886,16 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type SessionEventLikeEntry = {\n    readonly type: \'event\';\n    readonly event: SessionEvent;\n} | {\n    readonly type: \'chunks\';\n    readonly event: ChunkRowEvent;\n};',
   },
   {
+    name: 'SessionEventMap',
+    declaration: 'export interface SessionEventMap {\n    \'turn/start\': {\n        turn: number;\n    };\n    \'turn/end\': {\n        turn: number;\n        reason: TurnEndReason;\n    };\n    \'step/start\': {\n        turn: number;\n        step: number;\n    };\n    \'step/end\': {\n        turn: number;\n        step: number;\n    };\n    \'user/message\': UserMessage;\n    \'assistant/chunk\': {\n        turn: number;\n        step: number;\n        chunk: StreamChunk;\n    };\n    \'assistant/message\': {\n        turn: number;\n        step: number;\n        message: AssistantMessage;\n        usage?: TokenUsage;\n        interrupted?: true;\n    };\n    \'tool/call\': {\n        turn: number;\n        step: number;\n        callId: ToolCallId;\n        name: string;\n        arguments: string;\n    };\n    \'tool/result\': {\n        turn: number;\n        step: number;\n        message: ToolResultMessage;\n        error?: {\n            name: string;\n            code: string;\n        };\n        meta?: JsonValue;\n    };\n    \'request/header\': {\n        header: EpochHeader;\n        reason: RequestHeaderReason;\n        startsSeries?: true;\n    };\n    \'request/context\': RequestContext;\n    \'session/end-seed\': Record<string, never>;\n}',
+  },
+  {
     name: 'SessionEventSource',
     declaration: 'export type SessionEventSource = ObservableSnapshot<SessionEventWindow>;',
+  },
+  {
+    name: 'SessionEventType',
+    declaration: 'export type SessionEventType = keyof SessionEventMap;',
   },
   {
     name: 'SessionEventWindow',
@@ -732,6 +904,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'SessionFace',
     declaration: 'export type SessionFace = ISession & ObservableSnapshot<SessionSnapshot>;',
+  },
+  {
+    name: 'SessionId',
+    declaration: 'export type SessionId = Branded<\'SessionId\'>;',
   },
   {
     name: 'SessionIdOf',
@@ -756,6 +932,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'SessionSearchResultItem',
     declaration: 'export interface SessionSearchResultItem {\n    sessionId: SessionId;\n    snippet: string;\n}',
+  },
+  {
+    name: 'SessionSeq',
+    declaration: 'export type SessionSeq = BrandedNumber<\'SessionSeq\'>;',
   },
   {
     name: 'SessionSnapshot',
@@ -834,8 +1014,28 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface StoreSpec<T, A extends ActionsDecl<T>> {\n    init: () => T;\n    persist?: string;\n    actions: A;\n}',
   },
   {
+    name: 'StreamChunk',
+    declaration: 'export type StreamChunk = {\n    type: \'block-start\';\n    index: number;\n    blockType: ContentBlockType;\n} | {\n    type: \'text-delta\';\n    index: number;\n    text: string;\n} | {\n    type: \'reasoning-delta\';\n    index: number;\n    text: string;\n} | {\n    type: \'tool-call-delta\';\n    index: number;\n    id: ToolCallId;\n    name?: string;\n    argumentsDelta: string;\n} | {\n    type: \'block-end\';\n    index: number;\n    block: ContentBlock;\n} | {\n    type: \'usage\';\n    usage: TokenUsage;\n} | {\n    type: \'finish\';\n    reason: FinishReason;\n    replayState?: ReplayEnvelope;\n};',
+  },
+  {
+    name: 'SubagentAddress',
+    declaration: 'export type SubagentAddress = {\n    readonly parentSessionId: SessionId;\n    readonly childSessionId: SessionId;\n} & ({\n    readonly mode: \'one-shot\';\n} | {\n    readonly mode: \'continuable\';\n});',
+  },
+  {
     name: 'SubmissionHandle',
     declaration: 'export interface SubmissionHandle {\n    readonly requestId: SessionRequestId;\n    abandon(): void;\n}',
+  },
+  {
+    name: 'SurfaceEventType',
+    declaration: 'export type SurfaceEventType = \'user/message\' | \'assistant/message\' | \'tool/result\';',
+  },
+  {
+    name: 'SurfaceOp',
+    declaration: 'export type SurfaceOp = \'append\' | {\n    op: \'replace\';\n    start: SessionSeq;\n    end: SessionSeq;\n};',
+  },
+  {
+    name: 'TextBlock',
+    declaration: 'export interface TextBlock {\n    type: \'text\';\n    text: string;\n}',
   },
   {
     name: 'ThemeDefinition',
@@ -862,12 +1062,96 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type ThemeTokens = Record<string, string>;',
   },
   {
+    name: 'TokenUsage',
+    declaration: 'export interface TokenUsage {\n    inputTokens: number;\n    outputTokens: number;\n    totalTokens?: number;\n    cacheReadTokens?: number;\n    cacheWriteTokens?: number;\n    reasoningTokens?: number;\n}',
+  },
+  {
+    name: 'ToolMessageSource',
+    declaration: 'export interface ToolMessageSource {\n    kind: \'tool\';\n    callId: ToolCallId;\n}',
+  },
+  {
+    name: 'ToolResultBlock',
+    declaration: 'export interface ToolResultBlock {\n    type: \'tool-result\';\n    toolCallId: ToolCallId;\n    content: ContentBlock[];\n    isError?: boolean;\n}',
+  },
+  {
+    name: 'ToolResultMessage',
+    declaration: 'export interface ToolResultMessage extends Message {\n    readonly role: \'user\';\n    readonly content: [\n        ToolResultBlock\n    ];\n    readonly source: ToolMessageSource;\n}',
+  },
+  {
+    name: 'ToolSchema',
+    declaration: 'export interface ToolSchema {\n    name: string;\n    description: string;\n    parameters: Record<string, unknown>;\n}',
+  },
+  {
     name: 'Translate',
     declaration: 'export type Translate<K extends string = string> = (key: K, params?: Record<string, unknown>) => string;',
   },
   {
     name: 'TranslateNS',
     declaration: 'export type TranslateNS<N extends keyof LocaleNamespaceMap & string> = Translate<LocaleKeysOf<N>>;',
+  },
+  {
+    name: 'TurnEndCancelCause',
+    declaration: 'export type TurnEndCancelCause = AgentCancelCause | {\n    readonly kind: \'legacy\';\n};',
+  },
+  {
+    name: 'TurnEndReason',
+    declaration: 'export type TurnEndReason = TurnEndReasonMap[keyof TurnEndReasonMap];',
+  },
+  {
+    name: 'TurnEndReasonMap',
+    declaration: 'export interface TurnEndReasonMap {\n    completed: {\n        kind: \'completed\';\n    };\n    aborted: {\n        kind: \'aborted\';\n        reason: TurnEndCancelCause;\n    };\n    blocked: {\n        kind: \'blocked\';\n    };\n    error: {\n        kind: \'error\';\n        error: LlmFailure;\n    };\n    \'max-tokens\': {\n        kind: \'max-tokens\';\n    };\n    interrupted: {\n        kind: \'interrupted\';\n    };\n}',
+  },
+  {
+    name: 'TypertClientEventListener',
+    declaration: 'export type TypertClientEventListener<Event extends TypertRemoteEvent> = unknown extends ThisParameterType<Events[Event]> ? Events[Event] : TypertScopedClientEventListener<Event>;',
+  },
+  {
+    name: 'TypertClientRemote',
+    declaration: 'export interface TypertClientRemote extends TypertRemoteNamespaceMap {\n    $mount(contribution: TypertRemoteContribution): Promise<TypertDisposer>;\n    $on<Event extends TypertRemoteEvent>(event: Event, listener: TypertClientEventListener<Event>): () => void;\n}',
+  },
+  {
+    name: 'TypertCodec',
+    declaration: 'export type TypertCodec = {\n    readonly mode: \'strict\';\n    readonly typeSymbol: string;\n    readonly schema: TypertSchema;\n} | {\n    readonly mode: \'src-json\';\n};',
+  },
+  {
+    name: 'TypertDisposer',
+    declaration: 'export type TypertDisposer = () => Promise<void>;',
+  },
+  {
+    name: 'TypertForwardableEvent',
+    declaration: 'export type TypertForwardableEvent = {\n    [Event in keyof Events]: TypertForwardingMode<Event> extends never ? never : Event;\n}[keyof Events];',
+  },
+  {
+    name: 'TypertRemoteContribution',
+    declaration: 'export interface TypertRemoteContribution {\n    readonly package: string;\n    readonly descriptors: readonly InvocationDescriptor[];\n}',
+  },
+  {
+    name: 'TypertRemoteEvent',
+    declaration: 'export type TypertRemoteEvent = Extract<TypertForwardableEvent, keyof TypertRemoteEventSelection>;',
+  },
+  {
+    name: 'TypertRemoteEventSelection',
+    declaration: 'export interface TypertRemoteEventSelection {\n}',
+  },
+  {
+    name: 'TypertRemoteNamespaceMap',
+    declaration: 'export interface TypertRemoteNamespaceMap {\n}',
+  },
+  {
+    name: 'TypertRemoteScopeApi',
+    declaration: 'export type TypertRemoteScopeApi<ContextKey extends string> = {\n    [Namespace in TypertRemoteScopeNamespaceKey<ContextKey>]: TypertRemoteScopeNamespace<Namespace, ContextKey>;\n};',
+  },
+  {
+    name: 'TypertRemoteScopeMap',
+    declaration: 'export interface TypertRemoteScopeMap {\n}',
+  },
+  {
+    name: 'TypertRemoteScopeNamespace',
+    declaration: 'export type TypertRemoteScopeNamespace<Namespace extends string, ContextKey extends string = string> = {\n    [Endpoint in keyof TypertRemoteScopeMap as Endpoint extends `${ContextKey}:${Namespace}/${infer Method}` ? Method : never]: TypertRemoteScopeMap[Endpoint];\n};',
+  },
+  {
+    name: 'UserMessage',
+    declaration: 'export interface UserMessage extends Message {\n    readonly role: \'user\';\n}',
   },
   {
     name: 'WorkspaceView',

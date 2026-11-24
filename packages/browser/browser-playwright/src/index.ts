@@ -222,7 +222,11 @@ function cssEscape(value: string): string {
 /** Required service. */
 export const inject = ['browser']
 
-/** Resolve config with explicit defaults; storage root is caller-supplied. */
+/**
+ * Resolve config with explicit defaults; storage root is caller-supplied.
+ * @param config - partial Playwright settings with a required user data root.
+ * @returns the complete config with defaults applied.
+ */
 export function resolveConfig(
   config: Partial<PlaywrightBrowserConfig> & { userDataRoot: string },
 ): PlaywrightBrowserConfig {
@@ -242,4 +246,5 @@ export function apply(ctx: Context, config: PlaywrightBrowserConfig): void {
   ctx.effect(() => async () => { await backend.dispose() }, 'browser-playwright teardown')
 }
 
+/** Playwright browser-use plugin with its Cordis metadata. */
 export default { name: 'browser-playwright', inject, apply }

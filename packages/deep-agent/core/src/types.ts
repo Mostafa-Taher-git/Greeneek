@@ -16,10 +16,18 @@ export interface ChannelRef {
   readonly address: Readonly<Record<string, string>>
 }
 
-/** Stable key of a Thread across the whole domain. */
+/**
+ * Stable key of a Thread across the whole domain.
+ * @param ref - Thread reference to key.
+ * @returns the `source:id` key.
+ */
 export const threadKey = (ref: ThreadRef): string => `${ref.source}:${ref.id}`
 
-/** Normalize a valid timestamp to ISO form so stored times compare lexicographically. */
+/**
+ * Normalize a valid timestamp to ISO form so stored times compare lexicographically.
+ * @param value - timestamp to normalize.
+ * @returns the ISO form, or the original string when unparseable.
+ */
 export function isoTime(value: string): string {
   const time = Date.parse(value)
   return Number.isFinite(time) ? new Date(time).toISOString() : value
@@ -57,13 +65,19 @@ export interface TriggerDisposition {
   readonly at: string
 }
 
+/** Read-only lookups needed to find which Tickets own a person's follow-up. */
 export interface FollowupRecords {
   readonly tickets: { get(id: string): Ticket | undefined }
   readonly threads: { get(key: string): Thread | undefined }
   readonly triggers: { disposition(id: string): TriggerDisposition | undefined }
 }
 
-/** Tickets whose worker decides a person's follow-up; see the reference `followupOwners`. */
+/**
+ * Tickets whose worker decides a person's follow-up; see the reference `followupOwners`.
+ * @param trigger - incoming human Trigger to route.
+ * @param records - read-only lookups for dispositions, Threads, and Tickets.
+ * @returns identifiers of Tickets that still own the follow-up.
+ */
 export function followupOwners(trigger: Pick<Trigger, 'id' | 'human' | 'threads'>, records: FollowupRecords): string[] {
   if (!trigger.human) return []
   const disposition = records.triggers.disposition(trigger.id)
@@ -81,13 +95,20 @@ export function followupOwners(trigger: Pick<Trigger, 'id' | 'human' | 'threads'
   })
 }
 
-/** Whether a Decision settled a person's message. */
+/**
+ * Whether a Decision settled a person's message.
+ * @param decision - Decision kind and reasons to inspect.
+ * @returns true when no stop or routing reason left the message unsettled.
+ */
 export const settled = (decision: Pick<Decision, 'kind' | 'reason'>): boolean =>
   !['stop', 'unavailable'].includes(decision.kind)
   && !decision.reason.some(reason => ['stopNotExplicit', 'stopUnknown', 'routed'].includes(reason.code))
 
+/** Whether authority came from an explicit request or was inferred from context. */
 export type Strength = 'explicit' | 'inferred'
+/** Admission-table cell combining sender membership and whether the agent was addressed. */
 export type AdmissionCell = 'listedUnaddressed' | 'unlistedAddressed' | 'unlistedUnaddressed'
+/** Policy mode for accepting inferred requests: disabled, observe-only, or automatic. */
 export type AcceptMode = 'off' | 'observe' | 'auto'
 
 interface Received { readonly source?: string; readonly scope?: Readonly<Record<string, unknown>>; readonly row?: string }
@@ -126,6 +147,7 @@ export interface Evaluation {
   readonly pausedAt?: string
 }
 
+/** Kind of Decision recorded for an Eval; `reopen` is retained for stored records. */
 export type DecisionKind = 'ignore' | 'accept' | 'reopen' | 'stop' | 'unavailable'
 
 /** Audited outcome of an Eval. `reopen` is a legacy kind retained for stored records. */
@@ -145,6 +167,7 @@ export interface Decision {
   readonly dismissed?: string
 }
 
+/** One labeled fact displayed in a Thread's status. */
 export type ThreadFact = { readonly label?: string; readonly value: string; readonly problem?: boolean }
 
 /** Ordered Triggers of one Thread; the Eval consistency boundary. */
@@ -167,6 +190,7 @@ export interface Thread {
   readonly facts?: readonly ThreadFact[]
 }
 
+/** State a worker reports for its current Assignment. */
 export type ReportState = 'progress' | 'waiting' | 'ready' | 'blocked' | 'failed' | 'dropped'
 
 /** A worker's structured report. */
@@ -178,6 +202,7 @@ export interface WorkerReport {
   readonly answers?: readonly string[]
 }
 
+/** One attempt by the Executor to run a Ticket under its Mandate. */
 export interface Assignment {
   readonly id: string
   readonly state: 'pending' | 'running' | 'ended'
@@ -190,6 +215,7 @@ export interface Assignment {
   readonly idleAt?: string
 }
 
+/** One immutable item delivered into a Ticket: a Trigger, policy change, or control event. */
 export type TicketInput =
   | { readonly id: string; readonly kind: 'trigger'; readonly triggerId: string; readonly at: string; readonly note?: string; readonly human?: boolean; readonly context?: boolean; readonly readAt?: string | null; readonly deliveredTo?: string; readonly deliveredAt?: string }
   | { readonly id: string; readonly kind: 'policy-changed'; readonly from: string; readonly to: string; readonly at: string; readonly effect?: PolicyEffect }
@@ -198,6 +224,7 @@ export type TicketInput =
   | { readonly id: string; readonly kind: 'text'; readonly text: string; readonly at: string }
   | { readonly id: string; readonly kind: 'note'; readonly text: string; readonly at: string }
 
+/** Policy changes recorded on a Ticket input when a Mandate is revalidated. */
 export interface PolicyEffect {
   readonly rules?: readonly { readonly id: string; readonly name: string; readonly change: 'changed' | 'disabled'; readonly instruction?: string }[]
   readonly proactive?: false
@@ -205,8 +232,10 @@ export interface PolicyEffect {
   readonly requester?: ActorRef
 }
 
+/** Outcome recorded when a Ticket ends. */
 export type TicketOutcome = 'completed' | 'merged' | 'closed' | 'dropped' | 'stopped'
 
+/** A Thread a Ticket follows, and whether its closure has been observed. */
 export interface Follow { readonly threadKey: string; readonly own: boolean; readonly closed?: { readonly at: string; readonly outcome: 'merged' | 'closed' } }
 
 /** A unit of authorized work, carrying its authority in its Mandate. */
@@ -230,12 +259,18 @@ export interface Ticket {
   readonly delivery?: { readonly error: string; readonly at: string }
 }
 
-/** The newest Assignment of a Ticket. */
+/**
+ * The newest Assignment of a Ticket.
+ * @param ticket - Ticket whose assignments are inspected.
+ * @returns the last Assignment, or undefined when none exists.
+ */
 export const latestAssignment = (ticket: Ticket): Assignment | undefined => ticket.assignments.at(-1)
 
 /**
  * Whether an open Ticket is stalled on a blocked/failed report without a newer human follow-up.
  * A blocked or failed report holds automated Inputs until a person, retry, or a non-blocked report arrives.
+ * @param ticket - Ticket whose latest report and Inputs are inspected.
+ * @returns true when a person must act before the work continues.
  */
 export function waitsForPerson(ticket: Ticket): boolean {
   const assignment = latestAssignment(ticket)
@@ -245,5 +280,9 @@ export function waitsForPerson(ticket: Ticket): boolean {
   return !ticket.inputs.some(input => 'human' in input && input.human && input.at > (reportAt ?? ''))
 }
 
-/** Whether a Ticket can still receive work. */
+/**
+ * Whether a Ticket can still receive work.
+ * @param ticket - Ticket to check.
+ * @returns true while the Ticket has no end record.
+ */
 export const liveTicket = (ticket: Ticket): boolean => ticket.ended === undefined

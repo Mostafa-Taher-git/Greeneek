@@ -228,7 +228,7 @@ The capability is split where ownership changes:
 | `packages/core/agent` and `packages/core/agent-loop` | Generic terminal outcome for a claimed next-turn inbox occurrence, allowing a Host observer to distinguish durable admission from discard without Task Surface-specific types |
 | `packages/task-surface/task-surface` | Browser-safe model, branded IDs, correlation and pending types, parser, limits, submission validator/formatter, Session event extension, projection unit, and Host service contract |
 | `packages/task-surface/tool-task-surface` | `show_task_surface`, canonical output, presentation metadata, generic render intent, active-Surface check, and `concludeTurn()` behavior |
-| `packages/client/runtime` | Generic queued-message `source` projection and Session-scoped active-projection access |
+| `packages/client/ui-conversation` | Generic queued-message `source` projection and Session-scoped active-projection access |
 | `packages/client/ui-primitives` | Task Surface-agnostic `MarkdownText.remoteImages` policy, including the `alt-only` image branch and URL-policy tests |
 | `packages/client/ui-task-surface` | Static actionable `TaskSurfaceDock`, read-only keyed transcript row, declarative Web renderer that consumes the Task Surface model and `MarkdownText` in `alt-only` mode, per-Session draft store, and submit client |
 | `packages/host/apiproxy` | Typed active-read/submit/dismiss transport, user-source augmentation and carriage, queue-action restrictions, and routing of claim and terminal outcomes; delegates validation, pending coordination, and admission to the Task Surface service |

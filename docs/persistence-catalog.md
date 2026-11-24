@@ -160,7 +160,7 @@ Source: [`packages/preset/agent-presets/src/session.ts:28`](../packages/preset/a
 
 Types: [ToolCallId](subsystems/core.md)
 
-Source: [`packages/interaction/user-approval/src/types.ts:44`](../packages/interaction/user-approval/src/types.ts)
+Source: [`packages/interaction/user-approval/src/index.ts:33`](../packages/interaction/user-approval/src/index.ts)
 
 <a id="approvaldecided--log-only"></a>
 
@@ -178,7 +178,7 @@ Source: [`packages/interaction/user-approval/src/types.ts:44`](../packages/inter
 }
 ```
 
-Source: [`packages/interaction/user-approval/src/types.ts:55`](../packages/interaction/user-approval/src/types.ts)
+Source: [`packages/interaction/user-approval/src/index.ts:44`](../packages/interaction/user-approval/src/index.ts)
 
 <a id="approvalpolicy--log-only"></a>
 
@@ -186,7 +186,7 @@ Source: [`packages/interaction/user-approval/src/types.ts:55`](../packages/inter
 
 ```ts persistence-catalog
 /**
- * The session's approval policy was switched — log-only, durable,
+ * The session's approval policy was switched - log-only, durable,
  * replayable, never in the model transcript (the model learns the policy
  * from the runtime-context snapshot and live switch notices). The LAST
  * such event is the session's override.
@@ -200,7 +200,7 @@ Source: [`packages/interaction/user-approval/src/types.ts:55`](../packages/inter
 }
 ```
 
-Source: [`packages/interaction/user-approval/src/index.ts:33`](../packages/interaction/user-approval/src/index.ts)
+Source: [`packages/interaction/user-approval/src/index.ts:56`](../packages/interaction/user-approval/src/index.ts)
 
 ### `assistant/*`
 

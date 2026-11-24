@@ -28,7 +28,11 @@ export interface RouterConfig {
   readonly assessmentTimeoutMs?: number
 }
 
-/** Compact candidate card sent to the Router. */
+/**
+ * Compact candidate card sent to the Router.
+ * @param candidate - Eval candidate to render.
+ * @returns the bounded assessment prompt text.
+ */
 export function candidateCard(candidate: Candidate): string {
   const trigger = candidate.trigger
   return [
@@ -54,7 +58,10 @@ export class RouterSession {
   /** @param ctx - Host context owning the Router agent. @param config - Router configuration. */
   constructor(private readonly ctx: Context, private readonly config: RouterConfig) {}
 
-  /** Persisted session id, when one exists. */
+  /**
+   * Persisted session id, when one exists.
+   * @returns the stored Router session id, or undefined before first creation.
+   */
   sessionId(): SessionId | undefined {
     const value = this.config.readSessionId(this.config.sessionKey)
     return typeof value === 'string' ? value as SessionId : undefined
@@ -141,7 +148,10 @@ export class RouterSession {
     }
   }
 
-  /** Assess one candidate by asking the Router to decide. */
+  /**
+   * Assess one candidate by asking the Router to decide.
+   * @param candidate - Eval candidate to send for assessment.
+   */
   async assess(candidate: Candidate): Promise<void> {
     await this.ensure()
     if (this.handle === undefined) return
@@ -160,7 +170,11 @@ export class RouterSession {
     this.config.onDecision(candidate.trigger.id, outcome)
   }
 
-  /** Deliver a durable relay or notice into the Router session. */
+  /**
+   * Deliver a durable relay or notice into the Router session.
+   * @param text - full message body to deliver.
+   * @param summary - short label prefixed to the body.
+   */
   async relay(text: string, summary: string): Promise<void> {
     await this.ensure()
     if (this.handle === undefined) return

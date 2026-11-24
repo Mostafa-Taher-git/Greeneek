@@ -35,4 +35,5 @@ export function apply(ctx: Context): void {
   ctx.browser.registerBackend(new SurfaceStateBackend())
 }
 
+/** Surface-state browser-use plugin with its Cordis metadata. */
 export default { name: 'browser-surface', inject, apply }

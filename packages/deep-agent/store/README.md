@@ -20,7 +20,7 @@ kind: "package-reference"
 
 #### What the model sees
 
-Nothing from this package enters a Greeneek model request. It stores domain records, effects, and receipts; the runtime projects authorized facts into model-visible Session events.
+Nothing from this package enters a Greeneek model request. The SQLite store owns durable records behind `Repositories`, queued `Effects`, and outbox receipts; the runtime projects authorized facts into model-visible `Session events`.
 
 #### Token effect
 
@@ -33,4 +33,8 @@ None; the package neither assembles nor sends a provider request, so it cannot i
 ## Known Limitations and Deferred Work
 
 - **Single writer** — one connection per store instance; cross-process ownership is enforced by the runtime's state-directory lock.
-- **No legacy migration** — Deep-agent ships no prior data; a stored version outside the accepted range is refused.
+- **No legacy migration** - Deep-agent ships no prior data; a stored version outside the accepted range is refused.
+
+### Dev Note
+
+No companion invariant is published: the SQLite connection and its repositories have one owner, so schema and transaction behavior are asserted by store behavior specs.

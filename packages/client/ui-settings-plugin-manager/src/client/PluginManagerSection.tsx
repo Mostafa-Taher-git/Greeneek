@@ -5,6 +5,7 @@
  */
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@greeneek/gnk-client-ui-slots'
+import { SettingsSectionHeader, TabBar } from '@greeneek/gnk-client-ui-primitives'
 import css from './PluginManagerSection.module.css'
 
 /** One plugin entry as the page sees it. */
@@ -95,52 +96,47 @@ export function PluginManagerSection(props: PluginManagerSectionProps) {
 
   return (
     <div className={css.root}>
-      <div className={css.header}>
-        <h2 className={css.title}>{t('title')}</h2>
-        <div className={css.toolbar}>
-          <button type="button" className={css.secondary} onClick={() => { void refresh() }}>{t('refresh')}</button>
-          <div className={css.addWrap}>
-            <button type="button" className={css.primary} onClick={openDialog}>{t('addPlugin')}</button>
-            <button
-              type="button"
-              className={css.primaryCaret}
-              aria-label={t('chooseAddMethod')}
-              aria-expanded={menuOpen}
-              onClick={() => { setMenuOpen(value => !value) }}
-            >▾</button>
-            {menuOpen && (
-              <div className={css.menu} role="menu">
-                <button type="button" role="menuitem" onClick={openDialog}>
-                  <span>{t('installExisting')}</span>
-                  <span className={css.menuDescription}>{t('installExistingDescription')}</span>
-                </button>
-                <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); createWithAgent() }}>
-                  <span>{t('createWithAgent')}</span>
-                  <span className={css.menuDescription}>{t('createWithAgentHint')}</span>
-                </button>
-              </div>
-            )}
-          </div>
-          <button type="button" className={css.close} aria-label={t('close')} onClick={close}>✕</button>
+      <SettingsSectionHeader
+        title={t('title')}
+        intro={t('intro')}
+        closeLabel={t('close')}
+        onClose={close}
+        actionsClassName={css.toolbar}
+      >
+        <button type="button" className={css.secondary} onClick={() => { void refresh() }}>{t('refresh')}</button>
+        <div className={css.addWrap}>
+          <button type="button" className={css.primary} onClick={openDialog}>{t('addPlugin')}</button>
+          <button
+            type="button"
+            className={css.primaryCaret}
+            aria-label={t('chooseAddMethod')}
+            aria-expanded={menuOpen}
+            onClick={() => { setMenuOpen(value => !value) }}
+          >▾</button>
+          {menuOpen && (
+            <div className={css.menu} role="menu">
+              <button type="button" role="menuitem" onClick={openDialog}>
+                <span>{t('installExisting')}</span>
+                <span className={css.menuDescription}>{t('installExistingDescription')}</span>
+              </button>
+              <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); createWithAgent() }}>
+                <span>{t('createWithAgent')}</span>
+                <span className={css.menuDescription}>{t('createWithAgentHint')}</span>
+              </button>
+            </div>
+          )}
         </div>
-      </div>
-      <p className={css.intro}>{t('intro')}</p>
+      </SettingsSectionHeader>
       {error !== undefined && <p className={css.error} role="alert">{error} <button type="button" onClick={() => { void refresh() }}>{t('retry')}</button></p>}
 
-      <div className={css.tabs} role="tablist">
-        {(['skills', 'mcp', 'installed'] as const).map(id => (
-          <button
-            key={id}
-            type="button"
-            role="tab"
-            aria-selected={category === id}
-            className={category === id ? css.tabActive : css.tab}
-            onClick={() => { setCategory(id) }}
-          >
-            {t(`category${id.charAt(0).toUpperCase()}${id.slice(1)}` as 'categorySkills')}
-          </button>
-        ))}
-      </div>
+      <TabBar
+        tabs={(['skills', 'mcp', 'installed'] as const).map(id => ({
+          id,
+          label: t(`category${id.charAt(0).toUpperCase()}${id.slice(1)}` as 'categorySkills'),
+        }))}
+        activeId={category}
+        onSelect={setCategory}
+      />
 
       {visible.length === 0
         ? (

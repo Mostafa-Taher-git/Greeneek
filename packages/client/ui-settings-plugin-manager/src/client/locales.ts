@@ -46,8 +46,10 @@ export const zh = {
   installUnavailable: '此版本尚未接入插件安装服务，添加请求不会执行。',
 } as const
 
+/** Keys of the plugin-manager UI copy, derived from the Chinese dictionary. */
 export type PluginManagerLocaleKey = keyof typeof zh
 
+/** English copy for the plugin-manager UI. */
 export const en: Record<PluginManagerLocaleKey, string> = {
   nav: 'Plugins',
   title: 'Plugins',
@@ -93,6 +95,7 @@ export const en: Record<PluginManagerLocaleKey, string> = {
   installUnavailable: 'This build has no plugin installation service, so the add request was not run.',
 }
 
+/** Arabic copy for the plugin-manager UI. */
 export const ar: Record<PluginManagerLocaleKey, string> = {
   nav: 'الإضافات',
   title: 'الإضافات',

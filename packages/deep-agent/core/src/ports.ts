@@ -29,6 +29,7 @@ export interface Candidate {
   readonly strength: Strength
 }
 
+/** Assessor verdict on one Candidate, with the rule and audit evidence behind it. */
 export interface AssessmentOutcome {
   readonly accept: boolean
   readonly reason?: string
@@ -38,6 +39,7 @@ export interface AssessmentOutcome {
   readonly intentEvidence?: boolean
 }
 
+/** Port the host uses to ask an assessor to judge a candidate and cancel stale work. */
 export interface Assessor {
   request(candidate: Candidate): void
   cancel?(evalId: string): void
@@ -60,6 +62,7 @@ export interface Executor {
   stop(ticket: Ticket, assignmentId: string, reason: string): void
 }
 
+/** One message queued for delivery through the Outbox. */
 export interface OutboundMessage {
   readonly id: string
   readonly channel: ChannelRef
@@ -68,8 +71,10 @@ export interface OutboundMessage {
   readonly ticketId?: string
 }
 
+/** Delivery state of a queued reply. */
 export type ReplyStatus = 'pending' | 'sent' | 'dropped'
 
+/** Port the host uses to hand an outbound message to a Source. */
 export interface Outbox {
   send(message: OutboundMessage): void
 }
@@ -109,6 +114,7 @@ export interface Repositories {
   }
 }
 
+/** Collaborators and clock the Engine needs to run its domain transactions. */
 export interface EngineOptions {
   readonly repo: Repositories
   readonly policy: () => Policy

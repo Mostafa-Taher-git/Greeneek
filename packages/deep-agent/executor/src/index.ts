@@ -31,13 +31,23 @@ export class WorkerSlots {
   /** @param capacity - maximum simultaneous Workers. */
   constructor(private readonly capacity: number) {}
 
-  /** All tickets currently holding or starting a slot. */
+  /**
+   * All tickets currently holding or starting a slot.
+   * @returns identifiers of Tickets occupying a slot.
+   */
   used(): ReadonlySet<string> { return new Set([...this.held, ...this.starting]) }
 
-  /** How many Workers may still start. */
+  /**
+   * How many Workers may still start.
+   * @returns the remaining slot count, never negative.
+   */
   free(): number { return Math.max(0, this.capacity - this.used().size) }
 
-  /** Reserve a slot; throws when capacity is exhausted. */
+  /**
+   * Reserve a slot; throws when capacity is exhausted.
+   * @param ticketId - Ticket reserving the slot.
+   * @param phase - whether this is a fresh launch or a wake after restart.
+   */
   reserve(ticketId: string, phase: 'launch' | 'wake'): void {
     if (this.used().has(ticketId)) return
     const extra = phase === 'wake' ? 1 : 0
@@ -45,13 +55,19 @@ export class WorkerSlots {
     this.starting.add(ticketId)
   }
 
-  /** A reservation became a running Worker. */
+  /**
+   * A reservation became a running Worker.
+   * @param ticketId - Ticket whose reservation is now held.
+   */
   started(ticketId: string): void {
     this.starting.delete(ticketId)
     this.held.add(ticketId)
   }
 
-  /** Release a slot when the Assignment ends. */
+  /**
+   * Release a slot when the Assignment ends.
+   * @param ticketId - Ticket releasing its slot.
+   */
   release(ticketId: string): void {
     this.starting.delete(ticketId)
     this.held.delete(ticketId)
@@ -74,12 +90,21 @@ export interface WorkerExecutorConfig {
   readonly onError?: (message: string) => void
 }
 
-/** Deterministic session id of a Worker Assignment, stable across restarts. */
+/**
+ * Deterministic session id of a Worker Assignment, stable across restarts.
+ * @param ticketId - Ticket owning the Assignment.
+ * @param assignmentId - Assignment to derive the id for.
+ * @returns the branded session id.
+ */
 export function workerSessionId(ticketId: string, assignmentId: string): SessionId {
   return key('worker-session', ticketId, assignmentId) as SessionId
 }
 
-/** Build the mandate text given to a Worker, from its Ticket's immutable authority. */
+/**
+ * Build the mandate text given to a Worker, from its Ticket's immutable authority.
+ * @param ticket - Ticket whose Mandate is rendered.
+ * @returns the prompt text describing the Worker's authority.
+ */
 export function mandateText(ticket: Ticket): string {
   const mandate = ticket.mandate
   const scope = mandate.basis.via === 'admission' ? `admission cell ${mandate.basis.cell}` : mandate.basis.via
@@ -102,7 +127,10 @@ export class AgentWorkerExecutor implements Executor {
     this.slots = new WorkerSlots(config.maxWorkers)
   }
 
-  /** Current Worker capacity accounting. */
+  /**
+   * Current Worker capacity accounting.
+   * @returns the counts of used and free slots.
+   */
   capacity(): { readonly used: number; readonly free: number } {
     return { used: this.slots.used().size, free: this.slots.free() }
   }
@@ -114,7 +142,11 @@ export class AgentWorkerExecutor implements Executor {
     })
   }
 
-  /** Reserve a slot and create the Worker session. `NoSlot` is backpressure, not a failure. */
+  /**
+   * Reserve a slot and create the Worker session. `NoSlot` is backpressure, not a failure.
+   * @param ticket - Ticket whose Assignment is launched.
+   * @param assignmentId - Assignment to run.
+   */
   async launchAssignment(ticket: Ticket, assignmentId: string): Promise<void> {
     this.slots.reserve(ticket.id, 'launch')
     try {
@@ -221,7 +253,10 @@ export class AgentWorkerExecutor implements Executor {
     this.slots.release(ticket.id)
   }
 
-  /** Resume Workers whose assignments were running before a host restart. */
+  /**
+   * Resume Workers whose assignments were running before a host restart.
+   * @param open - open Tickets to scan for interrupted running Assignments.
+   */
   async recover(open: readonly Ticket[]): Promise<void> {
     for (const ticket of open) {
       const assignment = ticket.assignments.at(-1)

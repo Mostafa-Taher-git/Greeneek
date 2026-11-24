@@ -6,12 +6,19 @@ import { gnkHomePath } from '@greeneek/gnk-home-paths'
 import { AutomationError } from './error.ts'
 import type { AutomationTask } from './types.ts'
 
-/** Default location of the automation task file. */
+/**
+ * Default location of the automation task file.
+ * @returns the fully-qualified path under the Greeneek home directory.
+ */
 export function defaultAutomationFile(): string {
   return join(gnkHomePath(), 'automation', 'tasks.json')
 }
 
-/** Read all tasks; a missing file is an empty catalog. */
+/**
+ * Read all tasks; a missing file is an empty catalog.
+ * @param file - task file to read.
+ * @returns the tasks in the file, or an empty list when absent or invalid.
+ */
 export function readTasks(file: string): AutomationTask[] {
   if (!existsSync(file)) return []
   try {
@@ -23,7 +30,11 @@ export function readTasks(file: string): AutomationTask[] {
   }
 }
 
-/** Atomically replace all tasks. */
+/**
+ * Atomically replace all tasks.
+ * @param file - task file to write.
+ * @param tasks - full replacement task catalog.
+ */
 export function writeTasks(file: string, tasks: readonly AutomationTask[]): void {
   try {
     mkdirSync(dirname(file), { recursive: true, mode: 0o700 })

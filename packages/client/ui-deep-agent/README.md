@@ -33,3 +33,7 @@ None; the package neither assembles nor sends a provider request, so it cannot i
 ## Known Limitations and Deferred Work
 
 - Worker sessions, source adapters, and prompt management are not exposed in this phase; the page shows only the state the current Host runtime persists.
+
+### Dev Note
+
+No companion invariant is published: the page is a pure projection of Host-owned Remotes and holds no independent runtime state to compare.

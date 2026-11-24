@@ -9,6 +9,7 @@ import { Remote, TypertRemoteService } from '@greeneek/gnk-typert-protocol'
 import type {} from '@greeneek/gnk-browser-use'
 import type { BrowserProfile, BrowserSurfaceSnapshot } from '@greeneek/gnk-browser-use'
 import type { BrowserRemoteRequest, BrowserRemoteSnapshot, BrowserWireContent } from './types.ts'
+import { frameStream } from './frame-stream.ts'
 
 /** Credential-free Remote over the browser-use seam. */
 export class BrowserController extends TypertRemoteService {
@@ -19,13 +20,21 @@ export class BrowserController extends TypertRemoteService {
     super(ctx, 'browserController', { namespace: 'browser' })
   }
 
-  /** Current tracked state for one profile. */
+  /**
+   * Current tracked state for one profile.
+   * @param request - profile whose state is read.
+   * @returns the projected browser state for that profile.
+   */
   @Remote('state')
   state(request: BrowserRemoteRequest): BrowserRemoteSnapshot {
     return this.project(request.profile)
   }
 
-  /** Open or navigate one profile from the UI. */
+  /**
+   * Open or navigate one profile from the UI.
+   * @param request - profile and URL to open.
+   * @returns the projected browser state after navigation.
+   */
   @Remote('navigate')
   async navigate(request: BrowserRemoteRequest & { url: string }): Promise<BrowserRemoteSnapshot> {
     const snapshot = await this.ctx.browser.open(undefined, {
@@ -34,7 +43,11 @@ export class BrowserController extends TypertRemoteService {
     return this.project(snapshot.profile, snapshot)
   }
 
-  /** Close one profile from the UI. */
+  /**
+   * Close one profile from the UI.
+   * @param request - profile to close.
+   * @returns the projected browser state after closing.
+   */
   @Remote('close')
   async close(request: BrowserRemoteRequest): Promise<BrowserRemoteSnapshot> {
     const snapshot = await this.ctx.browser.close(undefined, { profile: request.profile as import('@greeneek/gnk-browser-use').BrowserProfile })
@@ -62,34 +75,19 @@ export class BrowserController extends TypertRemoteService {
     }
   }
 
-  /** Stream surface changes from the moment of subscription. */
+  /**
+   * Stream surface changes from the moment of subscription.
+   * @param request - profile whose changes are streamed.
+   * @param signal - caller lifetime; abort ends the stream.
+   * @returns projected snapshots, starting with the current state.
+   */
   @Remote({ mode: 'stream' })
   async *events(request: BrowserRemoteRequest, signal: AbortSignal): AsyncIterable<BrowserRemoteSnapshot> {
     yield this.project(request.profile)
-    const queue: BrowserRemoteSnapshot[] = []
-    let wake: (() => void) | undefined
-    const listener = (snapshot: BrowserSurfaceSnapshot): void => {
+    yield* frameStream<BrowserRemoteSnapshot>(push => this.ctx.on('browser/surface', (snapshot: BrowserSurfaceSnapshot): void => {
       if (snapshot.profile !== request.profile) return
-      queue.push(this.project(snapshot.profile, snapshot))
-      wake?.()
-      wake = undefined
-    }
-    const disposeListener = this.ctx.on('browser/surface', listener)
-    const onAbort = (): void => { wake?.(); wake = undefined }
-    signal.addEventListener('abort', onAbort, { once: true })
-    try {
-      for (;;) {
-        while (queue.length > 0) {
-          const frame = queue.shift()
-          if (frame !== undefined) yield frame
-        }
-        if (signal.aborted) return
-        await new Promise<void>((done) => { wake = done })
-      }
-    } finally {
-      disposeListener()
-      signal.removeEventListener('abort', onAbort)
-    }
+      push(this.project(snapshot.profile, snapshot))
+    }), signal)
   }
 
   /** Project a Host snapshot to the wire shape. */

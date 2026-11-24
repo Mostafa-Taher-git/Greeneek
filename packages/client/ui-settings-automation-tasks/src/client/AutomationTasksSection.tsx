@@ -5,6 +5,7 @@
  */
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@greeneek/gnk-client-ui-slots'
+import { SettingsSectionHeader, TabBar } from '@greeneek/gnk-client-ui-primitives'
 import type { AutomationTasksLocaleKey } from './locales.ts'
 import css from './AutomationTasksSection.module.css'
 
@@ -135,44 +136,39 @@ export function AutomationTasksSection(props: AutomationTasksSectionProps) {
 
   return (
     <div className={css.root}>
-      <div className={css.header}>
-        <h2 className={css.title}>{t('title')}</h2>
-        <div className={css.headerActions}>
-          <div className={css.newWrap}>
-            <button
-              type="button"
-              className={css.newMain}
-              disabled={busy}
-              onClick={() => { setDraft(newDraft()); setFormOpen(true) }}
-            >
-              + {t('new')}
-            </button>
-            <button type="button" className={css.newCaret} aria-label={t('new')} onClick={() => { setMenuOpen(value => !value) }}>▾</button>
-            {menuOpen && (
-              <div className={css.menu} role="menu">
-                <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); createInSession() }}>{t('createInSession')}</button>
-                <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); setDraft(newDraft()); setFormOpen(true) }}>{t('createManually')}</button>
-              </div>
-            )}
-          </div>
-          <button type="button" className={css.close} aria-label={t('close')} onClick={close}>✕</button>
-        </div>
-      </div>
-      <p className={css.intro}>{t('intro')}</p>
-      <div className={css.tabs} role="tablist">
-        {(['active', 'paused', 'ended', 'all'] as const).map(id => (
+      <SettingsSectionHeader
+        title={t('title')}
+        intro={t('intro')}
+        closeLabel={t('close')}
+        onClose={close}
+        actionsClassName={css.headerActions}
+      >
+        <div className={css.newWrap}>
           <button
-            key={id}
             type="button"
-            role="tab"
-            aria-selected={tab === id}
-            className={tab === id ? css.tabActive : css.tab}
-            onClick={() => { setTab(id) }}
+            className={css.newMain}
+            disabled={busy}
+            onClick={() => { setDraft(newDraft()); setFormOpen(true) }}
           >
-            {t(id === 'all' ? 'tabAll' : id === 'active' ? 'tabEnabled' : id === 'paused' ? 'tabPaused' : 'tabEnded')}
+            + {t('new')}
           </button>
-        ))}
-      </div>
+          <button type="button" className={css.newCaret} aria-label={t('new')} onClick={() => { setMenuOpen(value => !value) }}>▾</button>
+          {menuOpen && (
+            <div className={css.menu} role="menu">
+              <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); createInSession() }}>{t('createInSession')}</button>
+              <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); setDraft(newDraft()); setFormOpen(true) }}>{t('createManually')}</button>
+            </div>
+          )}
+        </div>
+      </SettingsSectionHeader>
+      <TabBar
+        tabs={(['active', 'paused', 'ended', 'all'] as const).map(id => ({
+          id,
+          label: t(id === 'all' ? 'tabAll' : id === 'active' ? 'tabEnabled' : id === 'paused' ? 'tabPaused' : 'tabEnded'),
+        }))}
+        activeId={tab}
+        onSelect={setTab}
+      />
       <input
         className={css.search}
         value={query}

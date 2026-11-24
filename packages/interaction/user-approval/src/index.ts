@@ -23,7 +23,30 @@ declare module '@greeneek/cordis' {
 declare module '@greeneek/gnk-session/types' {
   interface SessionEventMap {
     /**
-     * The session's approval policy was switched — log-only, durable,
+     * An approval question was put to the answerer chain — log-only audit
+     * (like `hook/*`; NOT a surface event, carries no `surfaceOp`). `id` pairs
+     * it with the `approval/decided` that always follows; `toolName` is the
+     * tool the question is about, `callId` the exact tool call when the asker
+     * had one, `reason` the asker's human-readable explanation (e.g. a hook's
+     * permission-decision reason).
+     */
+    'approval/asked': {
+      id: ApprovalRequestId
+      toolName: string
+      callId?: ToolCallId
+      reason?: string
+    }
+    /**
+     * The outcome of a prior `approval/asked` (same `id`) — log-only audit.
+     * Exactly one per ask, appended when the outcome is known: a decision, a
+     * cancellation, or the fail-closed `'unavailable'`.
+     */
+    'approval/decided': {
+      id: ApprovalRequestId
+      outcome: ApprovalOutcome
+    }
+    /**
+     * The session's approval policy was switched - log-only, durable,
      * replayable, never in the model transcript (the model learns the policy
      * from the runtime-context snapshot and live switch notices). The LAST
      * such event is the session's override.

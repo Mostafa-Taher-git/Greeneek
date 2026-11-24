@@ -58,5 +58,9 @@ One page per subsystem of the Greeneek Harness: what it is, the data structures 
 | [session-projection.md](session-projection.md) | the projection seam: `SessionProjectionMap`, the pure `ProjectionDefinition` unit, `ProjectionSnapshot`'s consistent cut, the change feed |
 | [session-telemetry.md](session-telemetry.md) | the outbound session-reporting capability seam: `SessionTelemetryRecord`/`SessionTelemetrySeverity`, the `SessionTelemetrySink` contract, and the `session-telemetry/record` redact waterfall |
 | [desktop.md](desktop.md) | the installable Electron shell: `gnk web` service hosting, single-instance lock, tray, splash, security policy, safe mode, and consent-based self-updates |
+| [automation.md](automation.md) | Host-wide automation tasks: durable records, status, repeat rules, and task-management Remotes |
+| [browser.md](browser.md) | the browser-use seam: one runtime backend, per-profile tracked navigation state, and bounded page reads |
+| [browser-ai.md](browser-ai.md) | the Browser AI provider registry: isolated provider profiles, credential-free session status, and manual sign-in |
+| [deep-agent.md](deep-agent.md) | the Deep-agent runtime: `ctx.deepAgent` domain store, Engine, effects, policy, and management Remotes |
 
 > Type declarations and their JSDoc on these pages are source-equivalent and drift-checked by `pnpm run verify-type-equiv` (see [development.md](../development.md#documenting-types-verbatim-ts-type-equiv)). Ordinary blocks preserve complete declarations; `public-api` blocks preserve body-stripped public class declarations. Cordis services and events use each page's generated **Cordis API** section.

@@ -79,6 +79,8 @@ export interface WorkspaceAnalyzerOptions {
   readonly mode?: AnalysisMode
   /** Shared workspace memo; supply one instance to reuse parses across analyzers. */
   readonly caches?: WorkspaceCaches
+  /** Declaration-merged interfaces whose host-only parts the client face cannot model. */
+  readonly partialMergedInterfaces?: readonly string[]
 }
 
 /** One package face whose public export graph contains Typert business declarations. */
@@ -269,7 +271,7 @@ export class WorkspaceAnalyzer {
   private readonly options: Required<Pick<
     WorkspaceAnalyzerOptions,
     'root' | 'hostConfig' | 'clientConfig' | 'faces' | 'checkDiagnostics' | 'mode'
-  >> & Pick<WorkspaceAnalyzerOptions, 'packages'>
+  >> & Pick<WorkspaceAnalyzerOptions, 'packages' | 'partialMergedInterfaces'>
   private queuedEdit: SourceEdit | undefined
   private readonly crossFaceLinks = new Map<string, CrossFaceLink>()
   private readonly checkedProjects = new Set<string>()
@@ -285,6 +287,7 @@ export class WorkspaceAnalyzer {
       checkDiagnostics: options.checkDiagnostics ?? true,
       mode: options.mode ?? 'check',
       ...(options.packages === undefined ? {} : { packages: options.packages }),
+      ...(options.partialMergedInterfaces === undefined ? {} : { partialMergedInterfaces: options.partialMergedInterfaces }),
     }
     this.caches = options.caches ?? new WorkspaceCaches()
   }
@@ -329,6 +332,7 @@ export class WorkspaceAnalyzer {
           registrations,
           allRegistrations: this.registrations,
           mode: this.options.mode,
+          ...(this.options.partialMergedInterfaces === undefined ? {} : { partialMergedInterfaces: this.options.partialMergedInterfaces }),
           queueEdit: (edit) => { this.queueEdit(edit) },
           crossFaceLinks: this.crossFaceLinks,
         }).analyze())
@@ -591,6 +595,7 @@ interface FaceAnalyzerOptions {
   readonly registrations: readonly PackageRegistration[]
   readonly allRegistrations: readonly PackageRegistration[]
   readonly mode: AnalysisMode
+  readonly partialMergedInterfaces?: readonly string[]
   readonly queueEdit: (edit: SourceEdit) => void
   readonly crossFaceLinks: Map<string, CrossFaceLink>
 }
@@ -603,6 +608,7 @@ class FaceAnalyzer {
   private readonly registrations: readonly PackageRegistration[]
   private readonly allRegistrations: readonly PackageRegistration[]
   private readonly mode: AnalysisMode
+  private readonly partialMergedInterfaces: ReadonlySet<string>
   private readonly queueEdit: (edit: SourceEdit) => void
   private readonly crossFaceLinks: Map<string, CrossFaceLink>
   private readonly sourceFiles = new Map<string, ts.SourceFile>()
@@ -622,6 +628,7 @@ class FaceAnalyzer {
     this.registrations = options.registrations
     this.allRegistrations = options.allRegistrations
     this.mode = options.mode
+    this.partialMergedInterfaces = new Set(options.partialMergedInterfaces ?? [])
     this.queueEdit = options.queueEdit
     this.crossFaceLinks = options.crossFaceLinks
     for (const sourceFile of this.program.getSourceFiles()) {
@@ -1930,10 +1937,11 @@ class FaceAnalyzer {
 
     this.declarationStates.add(id)
     if (declarationParts.length > 1) {
-      const analyzedParts = declarationParts.map((declarationPart) => {
+      const analyzedParts = declarationParts.flatMap((declarationPart) => {
         const part = declarationPart as ts.InterfaceDeclaration
         const partOwner = this.registrationForFile(part.getSourceFile().fileName)
         if (partOwner === undefined) {
+          if (this.partialMergedInterfaces.has(resolved.name)) return []
           this.fail(part, `merged interface ${resolved.name} contains a declaration outside this face`)
         }
         const typeParameters = this.typeParameters(part.typeParameters)

@@ -27,7 +27,6 @@ export const GITHUB_TEXT_LIMIT = 16_384
 /** Maximum number of files, checks and comments retained per detail read. */
 export const GITHUB_DETAIL_ITEMS = 100
 
-/** Injectable HTTP and credential seams for deterministic tests. */
 /** One HTTP request option set for an authenticated GitHub call. */
 export interface GithubFetchOptions {
   /** HTTP method; GET when absent. */
@@ -36,6 +35,7 @@ export interface GithubFetchOptions {
   body?: string
 }
 
+/** Injectable HTTP and credential seams for deterministic tests. */
 export interface GithubInternals {
   /** Perform one authenticated GitHub request. */
   fetch: (
@@ -63,18 +63,19 @@ interface GithubApiPull {
   updated_at?: string
 }
 
-/**
- * Host service backing the generated `ctx.remote.github` namespace.
- * @param ctx - Host context carrying the credentials service.
- */
 /** Test seams keyed by Host context; never read from the inject proxy. */
 const internalsByContext = new WeakMap<Context, GithubInternals>()
 
-/** Install scripted credential/network primitives for one Host context (tests only). */
+/**
+ * Install scripted credential/network primitives for one Host context (tests only).
+ * @param ctx - Host context whose controller reads the seam.
+ * @param io - scripted primitives to substitute.
+ */
 export function setGithubInternals(ctx: Context, io: GithubInternals): void {
   internalsByContext.set(ctx, io)
 }
 
+/** Host service backing the generated `ctx.remote.github` namespace. */
 export class GithubController extends TypertRemoteService {
   static inject = ['credentials']
 
@@ -162,19 +163,10 @@ export class GithubController extends TypertRemoteService {
   @Remote('issues')
   async issues(request: GithubPullRequestRequest, signal: AbortSignal): Promise<GithubIssueList> {
     validate(request)
-    const token = await this.io.token()
-    if (token === undefined || token === '') {
-      throw new RemoteError('github/unconfigured', 'no GitHub token is configured', {})
-    }
-    const page = request.page ?? 1
-    const perPage = Math.min(request.perPage ?? 30, GITHUB_PAGE_LIMIT)
-    const query = new URLSearchParams({
-      state: request.state ?? 'open',
-      page: String(page),
-      per_page: String(perPage),
-    })
-    const url = `https://api.github.com/repos/${encodeURIComponent(request.owner)}/${encodeURIComponent(request.repo)}/issues?${query}`
-    const payload = await this.io.fetch(url, token, signal)
+    const repo = `repos/${encodeURIComponent(request.owner)}/${encodeURIComponent(request.repo)}`
+    const { payload, perPage } = await this.requestPage(request, signal, `${repo}/issues`, (page, perPage) => ({
+      state: request.state ?? 'open', page: String(page), per_page: String(perPage),
+    }))
     const rows = Array.isArray(payload) ? payload as Array<Record<string, unknown>> : []
     return {
       items: rows.slice(0, perPage).map(row => ({
@@ -197,19 +189,10 @@ export class GithubController extends TypertRemoteService {
   @Remote('pullRequests')
   async pullRequests(request: GithubPullRequestRequest, signal: AbortSignal): Promise<GithubPullRequestList> {
     validate(request)
-    const token = await this.io.token()
-    if (token === undefined || token === '') {
-      throw new RemoteError('github/unconfigured', 'no GitHub token is configured', {})
-    }
-    const page = request.page ?? 1
-    const perPage = Math.min(request.perPage ?? 30, GITHUB_PAGE_LIMIT)
-    const query = new URLSearchParams({
-      state: request.state ?? 'open',
-      page: String(page),
-      per_page: String(perPage),
-    })
-    const url = `https://api.github.com/repos/${encodeURIComponent(request.owner)}/${encodeURIComponent(request.repo)}/pulls?${query}`
-    const payload = await this.io.fetch(url, token, signal)
+    const repo = `repos/${encodeURIComponent(request.owner)}/${encodeURIComponent(request.repo)}`
+    const { payload, page, perPage } = await this.requestPage(request, signal, `${repo}/pulls`, (page, perPage) => ({
+      state: request.state ?? 'open', page: String(page), per_page: String(perPage),
+    }))
     return present(payload, perPage, page)
   }
 
@@ -225,20 +208,12 @@ export class GithubController extends TypertRemoteService {
     if (request.branch === undefined || request.branch === '') {
       throw new RemoteError('gateway/bad-request', 'github.linkedPullRequests requires a branch', {})
     }
-    const token = await this.io.token()
-    if (token === undefined || token === '') {
-      throw new RemoteError('github/unconfigured', 'no GitHub token is configured', {})
-    }
     // Honour the caller's pagination like the repository PR list: a page of 30
     // must not return the full 100-item search ceiling.
-    const page = request.page ?? 1
-    const perPage = Math.min(request.perPage ?? 30, GITHUB_PAGE_LIMIT)
-    const query = new URLSearchParams({
+    const { payload, page, perPage } = await this.requestPage(request, signal, 'search/issues', (page, perPage) => ({
       q: `is:pr repo:${request.owner}/${request.repo} head:${request.branch}`,
-      page: String(page),
-      per_page: String(perPage),
-    })
-    const payload = await this.io.fetch(`https://api.github.com/search/issues?${query}`, token, signal)
+      page: String(page), per_page: String(perPage),
+    }))
     return present(payload, perPage, page)
   }
 
@@ -326,6 +301,28 @@ export class GithubController extends TypertRemoteService {
         : 0
       throw new RemoteError('github/action-failed', errorMessage(error), { status }, { cause: error })
     }
+  }
+
+  /**
+   * Fetch one bounded GitHub page with the caller's token and paging.
+   * @param request - repository owner, name and pagination.
+   * @param signal - caller lifetime.
+   * @param path - REST path below `https://api.github.com/`.
+   * @param query - page/perPage-dependent query parameters.
+   * @returns the payload, requested page and effective page size.
+   */
+  private async requestPage(
+    request: GithubPullRequestRequest,
+    signal: AbortSignal,
+    path: string,
+    query: (page: number, perPage: number) => Record<string, string>,
+  ): Promise<{ payload: unknown; page: number; perPage: number }> {
+    const token = await this.requireToken()
+    const page = request.page ?? 1
+    const perPage = Math.min(request.perPage ?? 30, GITHUB_PAGE_LIMIT)
+    const url = `https://api.github.com/${path}?${new URLSearchParams(query(page, perPage))}`
+    const payload = await this.io.fetch(url, token, signal)
+    return { payload, page, perPage }
   }
 
   /** Resolve the user token or refuse the call. */

@@ -61,14 +61,23 @@ export class SettingsStore {
   /** @param store - the authoritative Deep-agent store. */
   constructor(private readonly store: DeepAgentStore) {}
 
-  /** Current settings with its revision. */
+  /**
+   * Current settings with its revision.
+   * @returns the stored settings or the built-in defaults at revision zero.
+   */
   settings(): SettingsView {
     const document = this.store.getSetting(SETTINGS_KEY) as StoredDocument | undefined
     if (document === undefined) return DEFAULT_SETTINGS
     return { ...document.settings, revision: document.revision }
   }
 
-  /** Save one settings block; a stale revision is refused. */
+  /**
+   * Save one settings block; a stale revision is refused.
+   * @param block - settings section to replace.
+   * @param value - block-specific fields to persist.
+   * @param revision - expected current revision for optimistic concurrency.
+   * @returns the saved settings at the next revision.
+   */
   save(block: 'policy' | 'eval' | 'executor' | 'sources' | 'pause', value: SettingsSaveValue, revision: number): SettingsView {
     const current = this.settings()
     if (revision !== current.revision) throw new Error(`settings revision ${revision} is stale; current is ${current.revision}`)
@@ -111,7 +120,10 @@ export class SettingsStore {
     return { ...next, revision: revision + 1 }
   }
 
-  /** All prompt names with their current text, built-ins included. */
+  /**
+   * All prompt names with their current text, built-ins included.
+   * @returns one version per prompt, sorted by name.
+   */
   prompts(): readonly PromptVersionView[] {
     const stored = this.store.getSetting(PROMPT_KEY) as StoredPrompts | undefined
     const overrides = new Map<string, PromptVersionView>()
@@ -129,7 +141,12 @@ export class SettingsStore {
     return [...overrides.values()].sort((a, b) => a.name.localeCompare(b.name))
   }
 
-  /** Save a new immutable version of one prompt. */
+  /**
+   * Save a new immutable version of one prompt.
+   * @param name - built-in prompt name to override.
+   * @param text - new prompt text.
+   * @returns the stored version with its revision and timestamp.
+   */
   savePrompt(name: string, text: string): PromptVersionView {
     if (!(name in BUILT_IN_PROMPTS)) throw new Error(`unknown prompt ${name}`)
     if (text.trim().length === 0) throw new Error(`prompt ${name} cannot be empty`)
@@ -150,13 +167,21 @@ export class SettingsStore {
     return version
   }
 
-  /** Immutable history of one prompt, newest first. */
+  /**
+   * Immutable history of one prompt, newest first.
+   * @param name - prompt whose saved versions are listed.
+   * @returns all stored versions, excluding the built-in text.
+   */
   promptHistory(name: string): readonly PromptVersionView[] {
     const stored = this.store.getSetting(PROMPT_KEY) as StoredPrompts | undefined
     return (stored?.versions ?? []).filter(version => version.name === name).slice().sort((a, b) => b.version - a.version)
   }
 
-  /** Restore a prompt to its built-in text by saving a new version. */
+  /**
+   * Restore a prompt to its built-in text by saving a new version.
+   * @param name - prompt to reset.
+   * @returns the new version carrying the built-in text.
+   */
   resetPrompt(name: string): PromptVersionView {
     const builtIn = BUILT_IN_PROMPTS[name]
     if (builtIn === undefined) throw new Error(`unknown prompt ${name}`)

@@ -688,6 +688,38 @@ const SERVICE_ROLES: ServiceRole[] = [
     consumers: ['tool-cordis'],
     note: 'Registers host inspect providers, mirrors the client provider manifest, and routes client queries through the dynamic Cordis transport.',
   },
+  {
+    key: 'automation',
+    pkg: 'automation',
+    title: 'Host-wide automation tasks',
+    mode: 'core',
+    consumers: ['ui-settings-automation-tasks'],
+    note: 'Stores durable task records with status, delivery target, repeat rule, and optimistic-concurrency metadata under $GNK_HOME; management Remotes emit automation/changed after each committed change.',
+  },
+  {
+    key: 'browser',
+    pkg: 'browser-use',
+    title: 'Browser navigation seam',
+    mode: 'seam',
+    implementations: ['browser-surface', 'browser-playwright'],
+    consumers: ['tool-browser', 'browser-ai'],
+    note: 'Owns one replaceable runtime provider slot and one tracked navigation state per browser profile, shared by agent tools and the visible right-panel surface; a provider without content support refuses page reads by name.',
+  },
+  {
+    key: 'browserAI',
+    pkg: 'browser-ai',
+    title: 'Browser AI provider registry',
+    mode: 'seam',
+    note: 'Registers official AI providers with isolated browser profiles and credential-free session status; openManual defers sign-in to the provider page and read applies the browser tool untrusted-content boundary.',
+  },
+  {
+    key: 'deepAgent',
+    pkg: 'deep-agent-runtime',
+    title: 'Deep-agent Host runtime',
+    mode: 'core',
+    consumers: ['ui-deep-agent'],
+    note: 'Owns the SQLite domain store, Engine, durable effect queue, and versioned policy behind ctx.deepAgent; read and control Remotes serve the management panel independently of the subagent seam.',
+  },
 ]
 
 function generatedHeader(title: string): string[] {
@@ -1009,16 +1041,17 @@ export class EventRelationCollector {
   private visitSource(source: PackageSource): void {
     const visit = (node: ts.Node): void => {
       if (ts.isCallExpression(node)) {
-        if (this.isAgentEventEmitter(node.expression)) {
+        const callee = unwrapExpression(node.expression)
+        if (this.isAgentEventEmitter(callee)) {
           const event = node.arguments[2]
           if (event) {
             for (const name of this.finiteStringValues(event) ?? []) {
               this.addDispatcher(name, source.pkg, 'emitAgentEvent')
             }
           }
-        } else if (ts.isPropertyAccessExpression(node.expression) && EVENT_API_METHODS.has(node.expression.name.text)) {
-          const receiverKind = this.receiverKind(node.expression.expression)
-          const method = node.expression.name.text
+        } else if (ts.isPropertyAccessExpression(callee) && EVENT_API_METHODS.has(callee.name.text)) {
+          const receiverKind = this.receiverKind(callee.expression)
+          const method = callee.name.text
           if (receiverKind === 'events-service' && method === 'dispatch') {
             const argumentList = node.arguments[1]
             if (argumentList) {

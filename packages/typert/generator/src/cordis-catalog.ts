@@ -367,11 +367,19 @@ export function projectCordisCatalog(scanRoot: string, policy: CordisCatalogPoli
   readonly model: CordisCatalogModel
 } {
   const caches = new WorkspaceCaches()
+  // The Client catalog publishes a curated subset of session events and remote
+  // errors. Their vocabularies are declaration-merged across Host-only packages,
+  // so the Client face cannot model every part of those interfaces.
+  const partialMergedInterfaces = targetFace === 'client'
+    ? ['SessionEventMap', 'SessionProjectionMap', 'SessionProjectionStateMap', 'RemoteErrorDetailsMap']
+    : undefined
+  const partial = partialMergedInterfaces === undefined ? {} : { partialMergedInterfaces }
   const discovery = new WorkspaceAnalyzer({
     root: scanRoot,
     faces: [targetFace],
     checkDiagnostics: false,
     caches,
+    ...partial,
   }).discoverPackages()
   const packages = discovery.filter(candidate => candidate.faces.includes(targetFace))
     .map(candidate => candidate.package)
@@ -381,6 +389,7 @@ export function projectCordisCatalog(scanRoot: string, policy: CordisCatalogPoli
     packages,
     checkDiagnostics: false,
     caches,
+    ...partial,
   }).analyzeInBatches()
   const face = workspace.faces.find(candidate => candidate.face === targetFace)
   if (face === undefined) throw new Error(`gen-cordis-catalog: Typert produced no ${targetFace} face`)
@@ -389,6 +398,7 @@ export function projectCordisCatalog(scanRoot: string, policy: CordisCatalogPoli
     faces: [targetFace],
     checkDiagnostics: false,
     caches,
+    ...partial,
   }).indexSourceDeclarations()
   const projector = new CordisCatalogProjector(face, sourceDeclarations, policy)
   return { projector, model: projector.project() }

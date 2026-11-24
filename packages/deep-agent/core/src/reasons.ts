@@ -32,11 +32,20 @@ export const REASONS: Readonly<Record<string, string>> = {
   retried: 'The stalled Assignment was retried',
 }
 
-/** Format a Reason as text, substituting its values. */
+/**
+ * Format a Reason as text, substituting its values.
+ * @param reason - reason code and optional substitution values.
+ * @returns the registered text, or the code itself when unregistered.
+ */
 export function reasonText(reason: Reason): string {
   const text = REASONS[reason.code] ?? reason.code
   return text.replace(/\{(\w+)\}/g, (match, name: string) => reason.values?.[name] ?? match)
 }
 
-/** Whether a reason code was recorded. */
+/**
+ * Whether a reason code was recorded.
+ * @param reason - recorded Reason, possibly absent.
+ * @param code - code to match.
+ * @returns true when the Reason exists and carries that code.
+ */
 export const said = (reason: Reason | undefined, code: string): boolean => reason?.code === code

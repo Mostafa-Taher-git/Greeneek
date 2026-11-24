@@ -20,7 +20,7 @@ kind: "package-reference"
 
 #### What the model sees
 
-Nothing from this package enters a Greeneek model request. It invokes application handlers for durable rows; any model-visible content is projected by the runtime through Session events.
+Nothing from this package enters a Greeneek model request. The `EffectQueue` invokes application handlers for durable `Effects`; any model-visible content is projected by the runtime through `Session events`.
 
 #### Token effect
 
@@ -33,4 +33,8 @@ None; the package neither assembles nor sends a provider request, so it cannot i
 ## Known Limitations and Deferred Work
 
 - **Single dispatcher** — one drain runs at a time; per-kind limits bound concurrency but the queue itself is not distributed.
-- **Handler registration is runtime-owned** — reopening a store does not re-register handlers; the runtime must attach them on boot.
+- **Handler registration is runtime-owned** - reopening a store does not re-register handlers; the runtime must attach them on boot.
+
+### Dev Note
+
+No companion invariant is published: the queue owns its single dispatcher and store rows, so handler registration and drain order are asserted by queue behavior specs.

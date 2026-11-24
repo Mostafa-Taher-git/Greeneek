@@ -12,6 +12,18 @@ Build the rows as genuine capability seams: Host-side Cordis service definitions
 
 The desktop remains the primary host. External content is rendered as data from Host-fetched, validated responses; the Electron window never navigates to an untrusted origin and no webview is enabled in the primary window.
 
+## Proposal
+
+Build eight right-panel rows (Browser, Terminal, Files, Diff, Pull request, Linked pull requests, Device, Side chat) plus the Browser profile submenu, each backed by a Host service seam and a real Remote rather than a link-only stub. Keep the desktop as the primary host and render external content as validated data inside an allowlisted webview partition.
+
+## Acceptance criteria
+
+Every row opens a working surface, binds its B/T/F/D/P/L/M/S shortcut, and releases its resources on close; the Browser profile submenu offers Default and Incognito; each Host seam has unit and REAL-composition coverage; `test:gui` and the web replay scenarios pass with a clean desktop launch.
+
+## Risks
+
+A content-capable browser row depends on Electron partition policy and site framing rules, GitHub rows depend on user-owned credentials, and PTY transport needs session-fenced lifecycle so a closed surface cannot leave a process behind.
+
 ## Reference study
 
 ### T3 Code (clone: `%TEMP%/opencode/t3code`)
@@ -25,7 +37,7 @@ Source-level study completed. Greeneek and reference B are sibling forks of the 
 - **Adopt** the local-API trust fence (Host + `Sec-Fetch-Site` + `Origin`) — `packages/client/connection/src/api-request-trust.ts:121-175`.
 - **Adopt** the one-shot IPC secret handshake between the Electron parent and its owned Host process — `apps/desktop/src/parent-authentication.ts:7-37`, `apps/desktop-host/src/authentication.ts:30-70`.
 - **Adopt** session-fenced streaming Remote controllers with coalesced frames — `packages/api/job-controller/src/index.ts:43-125`.
-- **Adopt** credential templates with destination scoping and output redaction — `packages/mcp/mcp-client/src/credentials.ts:1-90`.
+- **Adopt** credential templates with destination scoping and output redaction — `mcp/mcp-client/src/credentials.ts:1-90`.
 - **Adopt** per-session resource lifecycle (`SessionResources<T>`) for PTYs/browser/device sessions — `packages/experimental/browser-use-runtime/src/index.ts:8-45`.
 - **Adapt** validated config writes serialized with HMR — `packages/boot/config-editor/README.md:5-7`.
 - **Adapt** user-owned provider credentials scoped to an allowed endpoint with invalidate-on-401 — reference B's account-token provider.
@@ -183,13 +195,11 @@ The screenshot showing "Ask question · waiting", "Deep diving... 17s", and a ca
 - The card is the `ask_user_question` composer. The question text is model-authored and rendered verbatim (`QuestionComposer.tsx:287-289`); there is no such string in client copy. "1 / 1" is one question (`QuestionComposer.tsx:410`). With no options supplied, only the free-text field renders (`QuestionComposer.tsx:386-397`).
 - "Submit" is intentionally disabled while the field is empty (`QuestionComposer.tsx:428`); the human must type an answer and click Submit, or click "Skip this question". The answer reaches the Host and the agent resumes — proven by `apps/web/tests/question-composer.e2e.ts:145-311`.
 - Every failure path throws a typed error (`ASK_CANCELLED`, `ASK_ABORTED`, `DELEGATED_CALLER`, `NO_PROVIDER`) rather than hanging.
-- "Deep diving..." is the whole-running-turn indicator (`ChatView.tsx:833-835`, `locale.ts:166`); "17s" is just elapsed turn time (`ChatView.tsx:190`). The sidebar row already says "Waiting for answer".
-Decision: no functional bug — no code fix. The owner should answer or skip the question to continue. A future UX enhancement could surface the pending wait in the center TurnStatus, but that is deliberately deferred (needs snapshots + Agent Note), not a root-cause fix.
+- "Deep diving..." is the whole-running-turn indicator (`ChatView.tsx:833-835`, `locale.ts:166`); "17s" is just elapsed turn time (`ChatView.tsx:190`). The sidebar row already says "Waiting for answer". Decision: no functional bug - no code fix. The owner should answer or skip the question to continue. A future UX enhancement could surface the pending wait in the center TurnStatus, but that is deliberately deferred (needs snapshots + Agent Note), not a root-cause fix.
 
 ## Browser presentation finding (owner screenshots, 2026-11-19)
 
-The owner's target screenshots are T3 Code's browser: a right-panel surface MAXIMIZED to fill the workspace (not a separate window). Source evidence: T3 `RightPanelMaximizeControl` (`PanelLayoutControls.tsx:143-174`) → `toggleRightPanelMaximized` (`useRightPanelActions.ts:244-249`) → `PreviewPanelShell.tsx:162-186` fills width; chat hidden via `data-chat-column-maximized-away`. The tab strip/address bar/toolbar/recents are `RightPanelTabs.tsx:1344-1420`, `PreviewChromeRow.tsx:99-194`, `PreviewEmptyState.tsx:54-72`, `browserHistoryStore.ts`.
-Greeneek implemented the same model in `c07b814e`: `rightbarMaximized` in the layout store + `toggleRightbarMaximize`, AppFrame collapses the other tracks when maximized, a maximize control in the surface tab strip, and a browser chrome row (back/forward/reload, "Search or enter URL", recently-used). Verified live in Web: panel went 359px → ~1835px, details card hidden, chrome and "Recently used" present. No arbitrary iframe substitution; Desktop keeps its native webview.
+The owner's target screenshots are T3 Code's browser: a right-panel surface MAXIMIZED to fill the workspace (not a separate window). Source evidence: T3 `RightPanelMaximizeControl` (`PanelLayoutControls.tsx:143-174`) → `toggleRightPanelMaximized` (`useRightPanelActions.ts:244-249`) → `PreviewPanelShell.tsx:162-186` fills width; chat hidden via `data-chat-column-maximized-away`. The tab strip/address bar/toolbar/recents are `RightPanelTabs.tsx:1344-1420`, `PreviewChromeRow.tsx:99-194`, `PreviewEmptyState.tsx:54-72`, `browserHistoryStore.ts`. Greeneek implemented the same model in `c07b814e`: `rightbarMaximized` in the layout store + `toggleRightbarMaximize`, AppFrame collapses the other tracks when maximized, a maximize control in the surface tab strip, and a browser chrome row (back/forward/reload, "Search or enter URL", recently-used). Verified live in Web: panel went 359px → ~1835px, details card hidden, chrome and "Recently used" present. No arbitrary iframe substitution; Desktop keeps its native webview.
 
 ## test:web / test:snapshot failure disposition (2026-11-19)
 
@@ -224,8 +234,7 @@ Resolved a real bug during live testing: `cannot get property "remote.browser" w
 - `shipped-composition.e2e.ts` bash/pwsh: a TEST defect. `apps/web/tests/shipped-composition.e2e.ts` hardcoded `bash`; on Windows the base bundle disables `tool-bash` and enables `tool-pwsh`. Fixed in `3b8f7c41` with a platform-selected `SHELL_TOOL` constant plus a PowerShell-compatible command; the focused spec now passes 2/2. Exact assertion strength is unchanged.
 - `SDK snapshot "cannot create effect on inactive context"`: pre-existing (reproduced with all this round's changes stashed). Throw sites `vendor/cordis/src/fiber.ts:353,419-422` (effect on a disposed fiber); the JSON-RPC carrier drops the server stack (`packages/sdk/protocol/src/transport.ts:226-237`), so the exact racing effect line is not yet pinned. Precedent `packages/boot/app-boot/tests/user-patches.spec.ts:420-436` describes the same teardown race. Not bash-specific (`text-turn` fails identically). Needs server-side stack capture before claiming a code bug vs host-timing.
 - `duplicate loader entry id: terminal-bash` (SDK `persistent-tools`, and session PTY snapshots): pre-existing (same stash reproduction). Root cause: snapshot overlay `cordis.yml` files `insert` ids that their target profile bundle already defines (e.g. `snapshots/session/pty-tools-sandbox-backend/cordis.yml` inserts `pty`/`terminal-bash`/`tool-terminal`; base now owns those; `snapshots/sdk/persistent-tools/cordis.yml` inserts `terminal-bash` that `sdk-minimal` owns). Fixture composition issue; fixing requires rewriting recorded overlays and re-recording goldens, not done here.
-- `test:web` >15 min: environment/timing, not a real failure signal. `vitest.web.config.ts:35` already sets `fileParallelism: false` (serial), with `testTimeout 180s`/`hookTimeout 120s`; total is cumulative with the build step. Focused bounded runs (`GNK_SNAPSHOT=replay pnpm exec vitest run --config vitest.web.config.ts <file>`) are the supported way to verify individual lanes.
-No failure was skipped or suppressed.
+- `test:web` >15 min: environment/timing, not a real failure signal. `vitest.web.config.ts:35` already sets `fileParallelism: false` (serial), with `testTimeout 180s`/`hookTimeout 120s`; total is cumulative with the build step. Focused bounded runs (`GNK_SNAPSHOT=replay pnpm exec vitest run --config vitest.web.config.ts <file>`) are the supported way to verify individual lanes. No failure was skipped or suppressed.
 
 ## Shortcut matrix live verification (2026-11-19, Web)
 

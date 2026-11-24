@@ -20,7 +20,7 @@ kind: "package-reference"
 
 #### What the model sees
 
-Nothing from this package enters a Greeneek model request. The Engine mutates durable domain records and queues effects through ports; the runtime package projects authorized facts into model-visible Session events.
+Nothing from this package enters a Greeneek model request. The `Engine` mutates durable domain records through `Repositories` and queues effects through ports; the runtime package projects authorized facts into model-visible `Session events`.
 
 #### Token effect
 
@@ -33,4 +33,8 @@ None; the package neither assembles nor sends a provider request, so it cannot i
 ## Known Limitations and Deferred Work
 
 - **Host-independent** — Source adapters, SQLite persistence, worker execution, and the management panel are owned by separate packages.
-- **Reference provenance** — domain names and rules are adapted from the MIT-licensed reference superagent prototype; the original copyright notice is preserved in the group README.
+- **Reference provenance** - domain names and rules are adapted from the MIT-licensed reference superagent prototype; the original copyright notice is preserved in the group README.
+
+### Dev Note
+
+No companion invariant is published: the `Engine` and in-memory `Repositories` share one owner, so rollback behavior is covered by domain tests rather than a separate runtime check.

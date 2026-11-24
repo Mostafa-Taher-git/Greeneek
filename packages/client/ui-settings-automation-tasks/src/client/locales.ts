@@ -49,8 +49,10 @@ export const zh = {
   retry: '重试',
 } as const
 
+/** Keys of the automation-tasks UI copy, derived from the Chinese dictionary. */
 export type AutomationTasksLocaleKey = keyof typeof zh
 
+/** English copy for the automation-tasks UI. */
 export const en: Record<AutomationTasksLocaleKey, string> = {
   nav: 'Automation tasks',
   title: 'Automation tasks',
@@ -99,6 +101,7 @@ export const en: Record<AutomationTasksLocaleKey, string> = {
   retry: 'Retry',
 }
 
+/** Arabic copy for the automation-tasks UI. */
 export const ar: Record<AutomationTasksLocaleKey, string> = {
   nav: 'مهام الأتمتة',
   title: 'مهام الأتمتة',

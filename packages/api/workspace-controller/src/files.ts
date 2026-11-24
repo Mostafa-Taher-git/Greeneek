@@ -32,7 +32,11 @@ export interface FileBrowserInternals {
 /** Test seams keyed by Host context; never read from the inject proxy. */
 const internalsByContext = new WeakMap<Context, FileBrowserInternals>()
 
-/** Install scripted filesystem primitives for one Host context (tests only). */
+/**
+ * Install scripted filesystem primitives for one Host context (tests only).
+ * @param ctx - Host context whose controller reads the seam.
+ * @param io - scripted primitives to substitute.
+ */
 export function setFileBrowserInternals(ctx: Context, io: FileBrowserInternals): void {
   internalsByContext.set(ctx, io)
 }

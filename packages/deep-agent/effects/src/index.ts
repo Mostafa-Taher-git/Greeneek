@@ -28,6 +28,7 @@ export class Later extends Error {
   }
 }
 
+/** Handler registered for one effect kind; `Later` defers, a throw retries. */
 export type EffectHandler<K extends EffectKind> = (value: EffectPayloads[K]) => void | Promise<void>
 
 /** Retry policy for one kind. */
@@ -40,6 +41,7 @@ export interface RetryPolicy {
   readonly quiet?: boolean
 }
 
+/** Default backoff and ordering policy for each effect kind. */
 export const DEFAULT_RETRIES: Readonly<Record<EffectKind, RetryPolicy>> = {
   assessment: { baseMs: 2_000, maxMs: 60_000, tries: 8 },
   launch: { baseMs: 5_000, maxMs: 300_000, tries: 3 },
@@ -65,19 +67,35 @@ export class Effects {
     private readonly retries: Readonly<Record<EffectKind, RetryPolicy>> = DEFAULT_RETRIES,
   ) {}
 
-  /** Register the handler for one kind. */
+  /**
+   * Register the handler for one kind.
+   * @param kind - effect kind to handle.
+   * @param handler - callback invoked with the decoded payload.
+   * @returns a disposer that removes this handler.
+   */
   on<K extends EffectKind>(kind: K, handler: EffectHandler<K>): () => void {
     this.handlers.set(kind, handler as (value: unknown) => void | Promise<void>)
     return () => { if (this.handlers.get(kind) === handler) this.handlers.delete(kind) }
   }
 
-  /** Queue or coalesce one effect; its queue position is preserved. */
+  /**
+   * Queue or coalesce one effect; its queue position is preserved.
+   * @param kind - effect kind to queue.
+   * @param key - coalescing key within the kind.
+   * @param value - JSON-shaped payload for the handler.
+   * @param due - earliest ISO time to run; defaults to now.
+   */
   enqueue<K extends EffectKind>(kind: K, key: string, value: EffectPayloads[K], due = isoAfter(0)): void {
     this.store.enqueueEffect(kind, key, value, due)
     this.kick()
   }
 
-  /** Whether an effect is queued for a kind and key. */
+  /**
+   * Whether an effect is queued for a kind and key.
+   * @param kind - effect kind to inspect.
+   * @param key - coalescing key within the kind.
+   * @returns true while a matching row is stored.
+   */
   pending(kind: EffectKind, key: string): boolean {
     return this.store.dueEffects(kind, 1_000, '9999-12-31T00:00:00.000Z').some(row => row.kind === kind && row.key === key)
   }
@@ -89,7 +107,10 @@ export class Effects {
     queueMicrotask(() => { this.scheduled = false; void this.drain() })
   }
 
-  /** Run all due effects, one at a time per ordered kind. */
+  /**
+   * Run all due effects, one at a time per ordered kind.
+   * @param now - ISO cutoff for considering rows due; defaults to now.
+   */
   async drain(now = isoAfter(0)): Promise<void> {
     if (this.draining) return
     this.draining = true

@@ -51,17 +51,78 @@ function healthOf(kind: string, lastPollAt: string | undefined, lastError: strin
   }
 }
 
-/** True for bot or CI-authored events; these never grant explicit authority. */
+/**
+ * True for bot or CI-authored events; these never grant explicit authority.
+ * @param login - author login to inspect.
+ * @param type - author account type reported by the Source.
+ * @returns true when the author is a bot or has no login.
+ */
 export function isBot(login: string | undefined, type: string | undefined): boolean {
   return type === 'Bot' || login === undefined || login.endsWith('[bot]')
 }
 
+/**
+ * Shared credential, health and cursor bookkeeping for REST-backed sources.
+ * Each source supplies its own kind, fetch semantics and row normalization.
+ */
+abstract class PolledSource {
+  protected lastPollAt: string | undefined
+  protected lastError: string | undefined
+  protected ingested = 0
+  abstract readonly kind: string
+
+  protected constructor(
+    protected readonly ctx: Context,
+    protected readonly store: DeepAgentStore,
+    protected readonly tokenRef: CredentialRef,
+    protected readonly tokenLabel: string,
+  ) {}
+
+  /** Current health of this adapter. */
+  health(): SourceHealth {
+    return healthOf(this.kind, this.lastPollAt, this.lastError, this.ingested)
+  }
+
+  protected async token(): Promise<string> {
+    const resolved = await this.ctx.credentials.resolve(this.tokenRef)
+    if (resolved?.value === undefined || resolved.value === '') throw new Error(`${this.tokenLabel}: no token configured`)
+    return resolved.value
+  }
+
+  protected saveCursor(cursorKey: string, newest: string, previous: string | undefined): void {
+    if (newest !== '' && newest !== previous) this.store.setSetting(cursorKey, newest)
+  }
+
+  /** Run one cursor-scoped page, recording its cursor and any transport failure. */
+  protected async runPoll(cursorKey: string, previous: string | undefined, work: () => Promise<string>): Promise<void> {
+    try {
+      this.saveCursor(cursorKey, await work(), previous)
+    } catch (error: unknown) {
+      this.recordPollError(error)
+    }
+  }
+
+  protected recordPollError(error: unknown): void {
+    this.lastError = error instanceof Error ? error.message : String(error)
+  }
+
+  protected finishPoll<T>(triggers: readonly T[]): readonly T[] {
+    this.lastPollAt = new Date().toISOString()
+    this.ingested += triggers.length
+    return triggers
+  }
+}
+
 /** GitHub issue and comment ingestion. */
-export class GithubSource implements SourceAdapter {
+export class GithubSource extends PolledSource implements SourceAdapter {
   readonly kind = 'github'
-  private lastPollAt: string | undefined
-  private lastError: string | undefined
-  private ingested = 0
+  private readonly config: {
+    readonly tokenRef: CredentialRef
+    readonly repositories: readonly string[]
+    readonly pollSeconds: number
+    readonly allowed: readonly string[]
+  }
+  private readonly fetchImpl: FetchLike
 
   /**
  * @param ctx - Host context for credential resolution.
@@ -70,25 +131,14 @@ export class GithubSource implements SourceAdapter {
  * @param fetchImpl - injectable transport.
  */
   constructor(
-    private readonly ctx: Context,
-    private readonly store: DeepAgentStore,
-    private readonly config: {
-      readonly tokenRef: CredentialRef
-      readonly repositories: readonly string[]
-      readonly pollSeconds: number
-      readonly allowed: readonly string[]
-    },
-    private readonly fetchImpl: FetchLike = globalThis.fetch,
-  ) {}
-
-  health(): SourceHealth {
-    return healthOf(this.kind, this.lastPollAt, this.lastError, this.ingested)
-  }
-
-  private async token(): Promise<string> {
-    const resolved = await this.ctx.credentials.resolve(this.config.tokenRef)
-    if (resolved?.value === undefined || resolved.value === '') throw new Error('github: no token configured')
-    return resolved.value
+    ctx: Context,
+    store: DeepAgentStore,
+    config: GithubSource['config'],
+    fetchImpl: FetchLike = globalThis.fetch,
+  ) {
+    super(ctx, store, config.tokenRef, 'github')
+    this.config = config
+    this.fetchImpl = fetchImpl
   }
 
   /** Poll each configured repository once and normalize new events. */
@@ -103,7 +153,7 @@ export class GithubSource implements SourceAdapter {
       url.searchParams.set('sort', 'updated')
       url.searchParams.set('per_page', '50')
       if (since !== undefined) url.searchParams.set('since', since)
-      try {
+      await this.runPoll(cursorKey, since, async () => {
         const response = await this.fetchImpl(url.href, { headers: header(token) })
         if (!response.ok) throw new Error(`github: HTTP ${response.status}`)
         const rows = await response.json() as Array<Record<string, unknown>>
@@ -130,14 +180,12 @@ export class GithubSource implements SourceAdapter {
             meta: {},
           })
         }
-        if (newest !== '' && newest !== since) this.store.setSetting(cursorKey, newest)
-      } catch (error: unknown) {
-        this.lastError = error instanceof Error ? error.message : String(error)
-      }
+        this.saveCursor(cursorKey, newest, since)
+        return newest
+      })
     }
-    this.lastPollAt = new Date().toISOString()
-    this.ingested += triggers.length
-    return triggers
+    const collected: readonly Trigger[] = triggers
+    return this.finishPoll(collected)
   }
 
   /** Post an idempotent comment on the originating issue. */
@@ -158,11 +206,16 @@ export class GithubSource implements SourceAdapter {
 }
 
 /** Discord guild channel ingestion through the bot REST API. */
-export class DiscordSource implements SourceAdapter {
+export class DiscordSource extends PolledSource implements SourceAdapter {
   readonly kind = 'discord'
-  private lastPollAt: string | undefined
-  private lastError: string | undefined
-  private ingested = 0
+  private readonly config: {
+    readonly tokenRef: CredentialRef
+    readonly channels: readonly string[]
+    readonly guildId: string
+    readonly pollSeconds: number
+    readonly allowed: readonly string[]
+  }
+  private readonly fetchImpl: FetchLike
 
   /**
  * @param ctx - Host context for credential resolution.
@@ -171,26 +224,14 @@ export class DiscordSource implements SourceAdapter {
  * @param fetchImpl - injectable transport.
  */
   constructor(
-    private readonly ctx: Context,
-    private readonly store: DeepAgentStore,
-    private readonly config: {
-      readonly tokenRef: CredentialRef
-      readonly channels: readonly string[]
-      readonly guildId: string
-      readonly pollSeconds: number
-      readonly allowed: readonly string[]
-    },
-    private readonly fetchImpl: FetchLike = globalThis.fetch,
-  ) {}
-
-  health(): SourceHealth {
-    return healthOf(this.kind, this.lastPollAt, this.lastError, this.ingested)
-  }
-
-  private async token(): Promise<string> {
-    const resolved = await this.ctx.credentials.resolve(this.config.tokenRef)
-    if (resolved?.value === undefined || resolved.value === '') throw new Error('discord: no bot token configured')
-    return resolved.value
+    ctx: Context,
+    store: DeepAgentStore,
+    config: DiscordSource['config'],
+    fetchImpl: FetchLike = globalThis.fetch,
+  ) {
+    super(ctx, store, config.tokenRef, 'discord')
+    this.config = config
+    this.fetchImpl = fetchImpl
   }
 
   /** Poll each configured channel after its durable cursor. */
@@ -203,7 +244,7 @@ export class DiscordSource implements SourceAdapter {
       const url = new URL(`https://discord.com/api/v10/channels/${channel}/messages`)
       url.searchParams.set('limit', '50')
       if (after !== undefined) url.searchParams.set('after', after)
-      try {
+      await this.runPoll(cursorKey, after, async () => {
         const response = await this.fetchImpl(url.href, {
           headers: { authorization: `Bot ${token}`, accept: 'application/json', 'user-agent': 'greeneek-deep-agent' },
         })
@@ -234,14 +275,11 @@ export class DiscordSource implements SourceAdapter {
             meta: {},
           })
         }
-        if (newest !== '' && newest !== after) this.store.setSetting(cursorKey, newest)
-      } catch (error: unknown) {
-        this.lastError = error instanceof Error ? error.message : String(error)
-      }
+        this.saveCursor(cursorKey, newest, after)
+        return newest
+      })
     }
-    this.lastPollAt = new Date().toISOString()
-    this.ingested += triggers.length
-    return triggers
+    return this.finishPoll(triggers)
   }
 
   /** Post an idempotent reply in the originating channel or thread. */
@@ -288,12 +326,18 @@ export class SourceRegistry {
     this.backoffMs = backoffMs
   }
 
-  /** Current health of every configured adapter. */
+  /**
+   * Current health of every configured adapter.
+   * @returns one health record per adapter.
+   */
   health(): readonly SourceHealth[] {
     return this.adapters.map(adapter => adapter.health())
   }
 
-  /** Queue a durable outbound reply. */
+  /**
+   * Queue a durable outbound reply.
+   * @param reply - reply id, text, address, and Source name.
+   */
   enqueueReply(reply: {
     readonly id: string
     readonly text: string
@@ -327,13 +371,20 @@ export class SourceRegistry {
     }
   }
 
-  /** Start periodic polling; callers own shutdown. */
+  /**
+   * Start periodic polling; callers own shutdown.
+   * @param intervalMs - poll interval in milliseconds.
+   * @returns a disposer that stops the timer.
+   */
   start(intervalMs: number): () => void {
     if (this.timer !== undefined) return () => { /* already started */ }
     this.timer = setInterval(() => { void this.pollOnce() }, intervalMs)
     return () => { if (this.timer !== undefined) clearInterval(this.timer); this.timer = undefined }
   }
 
-  /** Number of queued outbound replies. */
+  /**
+   * Number of queued outbound replies.
+   * @returns the pending reply count.
+   */
   pending(): number { return this.pendingReplies.length }
 }

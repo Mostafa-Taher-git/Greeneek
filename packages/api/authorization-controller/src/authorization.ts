@@ -27,6 +27,19 @@ import type {
   AuthorizationNoticeView, AuthorizationPromptOptionView, AuthorizationPromptView,
 } from './types.ts'
 
+declare module '@greeneek/gnk-typert-protocol' {
+  interface RemoteErrorDetailsMap {
+    /** No flow claims the requested key, or it offers no such method. */
+    'authorization/no-flow': { readonly key: string; readonly method?: string }
+    /** An attempt for the key is already running. */
+    'authorization/in-flight': { readonly key: string }
+    /** The answered prompt is not, or is no longer, in flight. */
+    'authorization/no-prompt': { readonly key: string; readonly promptId: string }
+    /** The flow's own attempt failed; the message is the seam's. */
+    'authorization/failed': { readonly key: string; readonly message: string }
+  }
+}
+
 /** One prompt waiting for its page's answer, with the handles to settle it. */
 interface PromptSlot {
   /** Settles the flow's prompt with the typed or chosen value. */

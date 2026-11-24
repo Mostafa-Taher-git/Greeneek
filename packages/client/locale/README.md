@@ -112,11 +112,25 @@ Read these when the locale contract is not enough: the slot face it implements, 
 <a id="model-experience"></a>
 ## Model Experience
 
-When a locale preference is stored, the Host half registers a `session:locale` system-prompt section that instructs the model to write user-facing prose in the selected language while keeping code, commands, identifiers, paths, and tool names verbatim. The section is rendered into `request/header`, so the instruction is reconstructable from the session log. With no preference stored, the section renders empty and the prompt is unchanged.
+### Response locale system prompt section
+
+#### What the model sees
+
+When a locale preference is stored, the Host half registers a `session:locale` section that renders into `request/header`. The template below is copied from `packages/client/locale/src/index.ts`; `language` is the name resolved from the shipped locale id and `locale` is the stored id. With no preference stored, the section renders empty.
+
+##### Locale instruction template
+
+```markdown
+The session locale is ${language} (${locale}). Write all user-facing prose in ${language}. Keep code, commands, identifiers, file paths, and tool names verbatim.
+```
+
+#### Token effect
+
+The section contributes one sentence to every assembled request while a preference is stored, and no tokens when the preference is absent. The browser-side dictionaries are presentation-only and never enter a provider request.
 
 #### KV Cache effect
 
-Selecting or changing a locale changes the assembled system prompt, so the next request starts a new cached prefix. The browser-side dictionaries are presentation-only and do not affect provider requests.
+Selecting or changing a locale changes the assembled system prompt, so the next request starts a new cached prefix. An unchanged preference keeps the sentence in the reusable prefix; browser-side dictionary changes do not invalidate it.
 
 ## Known Limitations and Deferred Work
 

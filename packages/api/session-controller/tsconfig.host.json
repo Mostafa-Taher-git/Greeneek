@@ -20,6 +20,8 @@
     "src/presentation.ts",
     "src/browser.ts",
     "src/pty.ts",
+    "src/frame-stream.ts",
+    "src/frame-stream.ts",
     "src/skill-catalog.ts"
   ],
   "references": [

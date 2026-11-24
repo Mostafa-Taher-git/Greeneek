@@ -282,7 +282,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/api/settings-controller/src/index.ts:36`](../packages/api/settings-controller/src/index.ts)
+Source: [`packages/api/settings-controller/src/index.ts:57`](../packages/api/settings-controller/src/index.ts)
 
 <a id="greeneekgnk-attachment-local"></a>
 
@@ -682,7 +682,7 @@ export interface DeepAgentConfig {
 
 Depends on: [`PolicySettings`](../packages/deep-agent/policy/src/index.ts)
 
-Source: [`packages/deep-agent/runtime/src/index.ts:52`](../packages/deep-agent/runtime/src/index.ts)
+Source: [`packages/deep-agent/runtime/src/index.ts:75`](../packages/deep-agent/runtime/src/index.ts)
 
 <a id="greeneekgnk-e2b"></a>
 
@@ -3364,7 +3364,7 @@ export interface Config {
 export type ApprovalPolicy = 'ask' | 'never'
 ```
 
-Source: [`packages/interaction/user-approval/src/index.ts:127`](../packages/interaction/user-approval/src/index.ts)
+Source: [`packages/interaction/user-approval/src/index.ts:150`](../packages/interaction/user-approval/src/index.ts)
 
 <a id="greeneekgnk-web"></a>
 

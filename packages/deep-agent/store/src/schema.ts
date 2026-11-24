@@ -4,8 +4,11 @@
  * stamped last so a partial initialization leaves it unstamped.
  */
 import { chmodSync, closeSync, mkdirSync, openSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import { dirname } from 'node:path'
-import { DatabaseSync } from 'node:sqlite'
+import type { DatabaseSync } from 'node:sqlite'
+
+const requireModule = createRequire(import.meta.url)
 
 /** Current schema version; increment for a breaking table layout. */
 export const DEEP_AGENT_SCHEMA_VERSION = 1
@@ -14,7 +17,10 @@ export const DEEP_AGENT_OLDEST_SCHEMA = 1
 /** Application id distinguishing this database from other SQLite files. */
 export const DEEP_AGENT_APPLICATION_ID = 0x4441474e
 
-/** Owner-only file creation; an existing file is left untouched. */
+/**
+ * Owner-only file creation; an existing file is left untouched.
+ * @param path - absolute path of the database file to create.
+ */
 export function createDatabaseFile(path: string): void {
   mkdirSync(dirname(path), { recursive: true, mode: 0o700 })
   try {
@@ -70,10 +76,15 @@ CREATE INDEX IF NOT EXISTS outbox_dropped ON outbox(dropped) WHERE dropped IS NO
 CREATE INDEX IF NOT EXISTS outbox_pending ON outbox(pending) WHERE pending IS NOT NULL;
 `
 
-/** Open and initialize a Deep-agent database, refusing foreign or incompatible files. */
+/**
+ * Open and initialize a Deep-agent database, refusing foreign or incompatible files.
+ * @param path - absolute path of the database file.
+ * @returns the initialized connection with schema and indexes ready.
+ */
 export function openDatabase(path: string): DatabaseSync {
   createDatabaseFile(path)
-  const db = new DatabaseSync(path)
+  const { DatabaseSync: SqliteDatabase } = requireModule('node:sqlite') as typeof import('node:sqlite')
+  const db = new SqliteDatabase(path)
   try {
     db.exec('PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL; PRAGMA synchronous = FULL;')
     const applicationId = Number(db.prepare('PRAGMA application_id').get()?.application_id ?? 0)

@@ -77,16 +77,3 @@ export interface AuthorizationEntryView {
 export type AuthorizationAnswer =
   | { readonly status: 'answered'; readonly value: string }
   | { readonly status: 'declined' }
-
-declare module '@greeneek/gnk-typert-protocol' {
-  interface RemoteErrorDetailsMap {
-    /** No flow claims the requested key, or it offers no such method. */
-    'authorization/no-flow': { readonly key: string; readonly method?: string }
-    /** An attempt for the key is already running. */
-    'authorization/in-flight': { readonly key: string }
-    /** The answered prompt is not, or is no longer, in flight. */
-    'authorization/no-prompt': { readonly key: string; readonly promptId: string }
-    /** The flow's own attempt failed; the message is the seam's. */
-    'authorization/failed': { readonly key: string; readonly message: string }
-  }
-}

@@ -17,7 +17,11 @@ const K = new Uint32Array([
 
 const rotate = (value: number, bits: number): number => (value >>> bits) | (value << (32 - bits))
 
-/** SHA-256 over a UTF-8 string; returns the 64-character lowercase digest. */
+/**
+ * SHA-256 over a UTF-8 string; returns the 64-character lowercase digest.
+ * @param input - string to hash.
+ * @returns the lowercase hexadecimal digest.
+ */
 export function sha256(input: string): string {
   const bytes = new TextEncoder().encode(input)
   const bitLength = BigInt(bytes.length) * 8n
@@ -62,7 +66,11 @@ export function sha256(input: string): string {
   return [...h].map(value => value.toString(16).padStart(8, '0')).join('')
 }
 
-/** First 32 hex characters of sha256 over the JSON of the given values. */
+/**
+ * First 32 hex characters of sha256 over the JSON of the given values.
+ * @param values - ordered values whose JSON forms the hash input.
+ * @returns the deterministic 32-character id.
+ */
 export function key(...values: readonly unknown[]): string {
   return sha256(JSON.stringify(values)).slice(0, 32)
 }

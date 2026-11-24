@@ -34,4 +34,8 @@ None; the package neither assembles nor sends a provider request, so it cannot i
 
 - **No Worker sessions yet** — effect handlers for launch, delivery, and assessment are registered as placeholders; real `ctx.agents` execution is a later phase.
 - **No Source adapters yet** — GitHub and Feishu providers are not wired; Trigger ingestion is available through the Engine but no external Source runs.
-- **Read-only policy** — policy settings are supplied at boot; panel-driven settings edits are deferred.
+- **Read-only policy** - policy settings are supplied at boot; panel-driven settings edits are deferred.
+
+### Dev Note
+
+No companion invariant is published: the runtime is the sole owner of the store, engine, and effect handlers it wires, so its lifecycle is covered by runtime behavior specs.

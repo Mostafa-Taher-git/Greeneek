@@ -82,8 +82,30 @@ flowchart LR
   cfg --> plugin_gnk_base_tool_bash
   plugin_gnk_base_tool_pwsh["tool-pwsh<br/>@greeneek/gnk-tool-pwsh"]
   cfg --> plugin_gnk_base_tool_pwsh
+  plugin_gnk_base_pty["pty<br/>@greeneek/gnk-terminal"]
+  cfg --> plugin_gnk_base_pty
+  plugin_gnk_base_terminal_bash["terminal-bash<br/>@greeneek/gnk-terminal-bash"]
+  cfg --> plugin_gnk_base_terminal_bash
+  plugin_gnk_base_terminal_pwsh["terminal-pwsh<br/>@greeneek/gnk-terminal-bash"]
+  cfg --> plugin_gnk_base_terminal_pwsh
+  plugin_gnk_base_tool_terminal["tool-terminal<br/>@greeneek/gnk-tool-terminal"]
+  cfg --> plugin_gnk_base_tool_terminal
   plugin_gnk_base_tool_jobs["tool-jobs<br/>@greeneek/gnk-tool-jobs"]
   cfg --> plugin_gnk_base_tool_jobs
+  plugin_gnk_base_browser["browser<br/>@greeneek/gnk-browser-use"]
+  cfg --> plugin_gnk_base_browser
+  plugin_gnk_base_browser_playwright["browser-playwright<br/>@greeneek/gnk-browser-playwright"]
+  cfg --> plugin_gnk_base_browser_playwright
+  plugin_gnk_base_automation["automation<br/>@greeneek/gnk-automation"]
+  cfg --> plugin_gnk_base_automation
+  plugin_gnk_base_deep_agent["deep-agent<br/>@greeneek/gnk-deep-agent-runtime"]
+  cfg --> plugin_gnk_base_deep_agent
+  plugin_gnk_base_browser_ai["browser-ai<br/>@greeneek/gnk-browser-ai"]
+  cfg --> plugin_gnk_base_browser_ai
+  plugin_gnk_base_command_browser_ai["command-browser-ai<br/>@greeneek/gnk-command-browser-ai"]
+  cfg --> plugin_gnk_base_command_browser_ai
+  plugin_gnk_base_tool_browser["tool-browser<br/>@greeneek/gnk-tool-browser"]
+  cfg --> plugin_gnk_base_tool_browser
   plugin_gnk_base_fs_observation_policy["fs-observation-policy<br/>@greeneek/gnk-fs-observation-policy"]
   cfg --> plugin_gnk_base_fs_observation_policy
   plugin_gnk_base_tool_fs["tool-fs<br/>@greeneek/gnk-tool-fs"]
@@ -219,7 +241,18 @@ flowchart LR
 | `shell-env` | `@greeneek/gnk-shell-env` |
 | `tool-bash` | `@greeneek/gnk-tool-bash` |
 | `tool-pwsh` | `@greeneek/gnk-tool-pwsh` |
+| `pty` | `@greeneek/gnk-terminal` |
+| `terminal-bash` | `@greeneek/gnk-terminal-bash` |
+| `terminal-pwsh` | `@greeneek/gnk-terminal-bash` |
+| `tool-terminal` | `@greeneek/gnk-tool-terminal` |
 | `tool-jobs` | `@greeneek/gnk-tool-jobs` |
+| `browser` | `@greeneek/gnk-browser-use` |
+| `browser-playwright` | `@greeneek/gnk-browser-playwright` |
+| `automation` | `@greeneek/gnk-automation` |
+| `deep-agent` | `@greeneek/gnk-deep-agent-runtime` |
+| `browser-ai` | `@greeneek/gnk-browser-ai` |
+| `command-browser-ai` | `@greeneek/gnk-command-browser-ai` |
+| `tool-browser` | `@greeneek/gnk-tool-browser` |
 | `fs-observation-policy` | `@greeneek/gnk-fs-observation-policy` |
 | `tool-fs` | `@greeneek/gnk-tool-fs` |
 | `tool-fs-search` | `@greeneek/gnk-tool-fs-search` |

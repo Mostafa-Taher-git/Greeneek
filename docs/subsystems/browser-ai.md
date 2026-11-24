@@ -88,25 +88,13 @@ Types: [Agent](core.md) · [BrowserPageContent](browser.md)
 Source: [`packages/browser/browser-ai/src/index.ts`](../../packages/browser/browser-ai/src/index.ts)
 <!-- END GENERATED cordis-surface -->
 
-Browser AI connections (`ctx.browserAI`) let a user open an official web AI
-interface inside Greeneek's own browser surface with a manually established
-session. The `BrowserAIProvider` descriptor declares manual and automation
-capabilities independently; automation is refused by name wherever the recorded
-capability matrix marks it unavailable.
+Browser AI connections (`ctx.browserAI`) let a user open an official web AI interface inside Greeneek's own browser surface with a manually established session. The `BrowserAIProvider` descriptor declares manual and automation capabilities independently; automation is refused by name wherever the recorded capability matrix marks it unavailable.
 
 ## Types
 
-- `BrowserAIProvider` — vendor, official URL, and independent `manual` /
-  `automation` flags with the exact reason and terms source for automation.
-- `BrowserAISession` — credential-free projection: provider id, isolated
-  profile, official URL, status, and capabilities. Never contains a password,
-  cookie, or token.
-- `BrowserAISessionStatus` — `login-required`, `connected`, `session-expired`,
-  or `unavailable`.
-- `BrowserProviderProfile` — the isolated storage profile id
-  (`provider:<id>`).
+- `BrowserAIProvider` - vendor, official URL, and independent `manual` / `automation` flags with the exact reason and terms source for automation.
+- `BrowserAISession` - credential-free projection: provider id, isolated profile, official URL, status, and capabilities. Never contains a password, cookie, or token.
+- `BrowserAISessionStatus` - `login-required`, `connected`, `session-expired`, or `unavailable`.
+- `BrowserProviderProfile` - the isolated storage profile id (`provider:<id>`).
 
-Greeneek never collects a password and never extracts an authentication cookie
-or token into application or agent state. Provider sessions are isolated by
-storage directory; automation of a subscription session is not claimed where
-the provider's terms do not permit it.
+Greeneek never collects a password and never extracts an authentication cookie or token into application or agent state. Provider sessions are isolated by storage directory; automation of a subscription session is not claimed where the provider's terms do not permit it.

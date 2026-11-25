@@ -12,9 +12,15 @@
 - button "New session":
   - img
   - text: New Session
-- button "Dashboard":
+- button "Plugins":
   - img
-  - text: Dashboard
+  - text: Plugins
+- button "Automation tasks":
+  - img
+  - text: Automation tasks
+- button "Deep-agent":
+  - img
+  - text: Deep-agent
 - text: Workspaces
 - button "Search sessions":
   - img
@@ -30,7 +36,14 @@
   - treeitem "New Session" [selected]
 - button "Settings":
   - img
-  - text: Settings
+- button "Branches":
+  - img
+- button "Issues":
+  - img
+- button "Dashboard":
+  - img
+- button "Check for updates":
+  - img
 - text: Into the Unknown
 - button "Choose workspace":
   - img
@@ -45,3 +58,4 @@
   - text: Greeneek-V4-Flash
   - img
 - button "Send message" [disabled]
+- button "Tile sessions"

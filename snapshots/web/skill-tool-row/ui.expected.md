@@ -2,7 +2,7 @@
   - img
   - img
   - text: System prompt
-- text: Load the editing-cordis-compositions skill with the skill tool, then reply DONE. {{date}} {{clock}}
+- text: Load the editing-cordis-compositions skill with the skill tool, then reply DONE. {{clock}}
 - button "Copy":
   - img
 - button "1 tool call" [expanded]:
@@ -41,7 +41,7 @@
 - button "Ran for {{duration}}":
   - img
   - text: Ran for {{duration}}
-- text: {{date}} {{clock}}
+- text: {{clock}}
 - textbox "Message or run a task... / commands, @ files or sessions"
 - 'button "Access mode, current: Full access"': Full access
 - button "CTC"

@@ -25,7 +25,9 @@ it('boots the built plugin graph and renders a fixture session end to end', asyn
   // The brand seat renders its mark (image or svg) and the home affordance;
   // the fallback name or the official wordmark may fill the text seat.
   expect(document.querySelector('[class*="brandMark"] img, [class*="brandMark"] svg')).not.toBeNull()
-  expect(screen.getByRole('button', { name: /Go to home|回到主页|العودة إلى الرئيسية/ })).toBeTruthy()
+  // The brand row lives in the titlebar; the Web sidebar itself no longer
+  // renders a separate home button. Its mark is the stable affordance.
+  expect(document.querySelector('[class*="brandMark"]')).not.toBeNull()
   // The compact layout dropped group session counts; the fixture workspace
   // group row renders immediately with its sessions beneath it.
   const fixtureGroup = (await within(tree).findAllByText('fixture'))

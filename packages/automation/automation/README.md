@@ -37,4 +37,4 @@ None; the package neither assembles nor sends a provider request, so it cannot i
 
 ### Dev Note
 
-No companion invariant is published. The package owns one Host service with a management Remote.
+No invariant companion is published. The package owns one Host service with a management Remote.

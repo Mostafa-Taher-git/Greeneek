@@ -30,4 +30,4 @@ This package sends no provider request and contributes no prompt text, so it pre
 
 ### Dev Note
 
-No companion invariant is published: provider descriptors and session records live in one registry whose profile mapping is a pure function of the provider id.
+No invariant companion is published: provider descriptors and session records live in one registry whose profile mapping is a pure function of the provider id.

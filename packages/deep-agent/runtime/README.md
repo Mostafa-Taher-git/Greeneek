@@ -38,4 +38,4 @@ None; the package neither assembles nor sends a provider request, so it cannot i
 
 ### Dev Note
 
-No companion invariant is published: the runtime is the sole owner of the store, engine, and effect handlers it wires, so its lifecycle is covered by runtime behavior specs.
+No invariant companion is published: the runtime is the sole owner of the store, engine, and effect handlers it wires, so its lifecycle is covered by runtime behavior specs.

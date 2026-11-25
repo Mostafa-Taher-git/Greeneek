@@ -1,6 +1,12 @@
 {
   "name": "@greeneek/gnk-deep-agent-runtime",
   "version": "0.8.8",
+  "publishConfig": { "access": "public" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/greeneek/greeneek-harness.git",
+    "directory": "packages/deep-agent/runtime"
+  },
   "description": "Deep-agent Host runtime: owns the domain store, engine, effects, policy and management Remotes",
   "type": "module",
   "main": "lib/index.js",

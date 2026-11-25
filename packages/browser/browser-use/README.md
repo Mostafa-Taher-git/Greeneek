@@ -30,4 +30,4 @@ This package sends no provider request and contributes no prompt text, so it pre
 
 ### Dev Note
 
-No companion invariant is published: the backend slot and tracked state have a single owner, so their relationship cannot diverge across independent observations.
+No invariant companion is published: the backend slot and tracked state have a single owner, so their relationship cannot diverge across independent observations.

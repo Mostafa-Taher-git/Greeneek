@@ -1,6 +1,12 @@
 {
   "name": "@greeneek/gnk-client-ui-settings-automation-tasks",
   "version": "0.8.8",
+  "publishConfig": { "access": "public" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/greeneek/greeneek-harness.git",
+    "directory": "packages/client/ui-settings-automation-tasks"
+  },
   "description": "Automation tasks settings section: manage Host-wide durable tasks with status tabs, search and manual creation",
   "type": "module",
   "main": "lib/index.js",
@@ -33,6 +39,7 @@
     "@greeneek/gnk-automation": "workspace:^",
     "@greeneek/gnk-client-locale": "workspace:^",
     "@greeneek/gnk-client-ui-primitives": "workspace:^",
+    "@greeneek/gnk-client-ui-renderer": "workspace:^",
     "@greeneek/gnk-client-ui-sidebar": "workspace:^",
     "@greeneek/gnk-client-ui-layout": "workspace:^",
     "@greeneek/gnk-client-ui-conversation": "workspace:^",

@@ -30,4 +30,4 @@ This package sends no provider request and registers no prompt or tool schema, s
 
 ### Dev Note
 
-No companion invariant is published: the command is a thin adapter over `ctx.browserAI` and owns no durable state of its own.
+No invariant companion is published: the command is a thin adapter over `ctx.browserAI` and owns no durable state of its own.

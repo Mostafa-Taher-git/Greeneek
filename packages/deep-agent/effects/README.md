@@ -37,4 +37,4 @@ None; the package neither assembles nor sends a provider request, so it cannot i
 
 ### Dev Note
 
-No companion invariant is published: the queue owns its single dispatcher and store rows, so handler registration and drain order are asserted by queue behavior specs.
+No invariant companion is published: the queue owns its single dispatcher and store rows, so handler registration and drain order are asserted by queue behavior specs.

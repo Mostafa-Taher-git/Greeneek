@@ -37,4 +37,4 @@ None; the adapters neither assemble nor send provider requests.
 
 ### Dev Note
 
-No companion invariant is published: adapters own their own polling and reply state, and the runtime owns the durable outbox they hand off to.
+No invariant companion is published: adapters own their own polling and reply state, and the runtime owns the durable outbox they hand off to.

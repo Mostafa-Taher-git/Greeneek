@@ -30,4 +30,4 @@ This provider sends no provider request and contributes no prompt text, so it pr
 
 ### Dev Note
 
-No companion invariant is published: profile isolation is owned by this provider's storage directories and asserted by provider-level behavior specs.
+No invariant companion is published: profile isolation is owned by this provider's storage directories and asserted by provider-level behavior specs.

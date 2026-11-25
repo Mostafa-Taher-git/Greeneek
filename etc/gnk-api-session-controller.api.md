@@ -104,6 +104,7 @@
 `src/control.ts: export class SessionControlController {`
 `src/file-references.ts: export class SessionFileReferences extends TypertRemoteService {`
 `src/file-references.ts: export default SessionFileReferences`
+`src/frame-stream.ts: export async function* frameStream<T>(`
 `src/history.ts: export class SessionHistoryController {`
 `src/index.ts: export class SessionController extends TypertRemoteService {`
 `src/index.ts: export default SessionController`

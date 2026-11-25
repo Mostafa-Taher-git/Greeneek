@@ -37,4 +37,4 @@ Each Worker session has its own prefix, so mandates do not invalidate another se
 
 ### Dev Note
 
-No companion invariant is published: slot accounting and assignment recovery have one owner in this package and are asserted by executor behavior specs.
+No invariant companion is published: slot accounting and assignment recovery have one owner in this package and are asserted by executor behavior specs.

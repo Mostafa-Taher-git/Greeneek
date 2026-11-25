@@ -3559,6 +3559,9 @@ importers:
       '@greeneek/gnk-client-ui-primitives':
         specifier: workspace:^
         version: link:../ui-primitives
+      '@greeneek/gnk-client-ui-renderer':
+        specifier: workspace:^
+        version: link:../ui-renderer
       '@greeneek/gnk-client-ui-settings':
         specifier: workspace:^
         version: link:../ui-settings
@@ -10725,6 +10728,12 @@ importers:
       '@greeneek/gnk-brand':
         specifier: workspace:^
         version: link:../../packages/util/brand
+      '@greeneek/gnk-browser-ai':
+        specifier: workspace:^
+        version: link:../../packages/browser/browser-ai
+      '@greeneek/gnk-browser-use':
+        specifier: workspace:^
+        version: link:../../packages/browser/browser-use
       '@greeneek/gnk-client-ui-agent-team':
         specifier: workspace:^
         version: link:../../packages/client/ui-agent-team
@@ -10734,6 +10743,9 @@ importers:
       '@greeneek/gnk-code-runtime-worker-thread':
         specifier: workspace:^
         version: link:../../packages/code-runtime/code-runtime-worker-thread
+      '@greeneek/gnk-command-browser-ai':
+        specifier: workspace:^
+        version: link:../../packages/browser/command-browser-ai
       '@greeneek/gnk-command-compact':
         specifier: workspace:^
         version: link:../../packages/compaction/command-compact
@@ -10971,6 +10983,9 @@ importers:
       '@greeneek/gnk-tool-bash-persistent':
         specifier: workspace:^
         version: link:../../packages/shell/tool-bash-persistent
+      '@greeneek/gnk-tool-browser':
+        specifier: workspace:^
+        version: link:../../packages/browser/tool-browser
       '@greeneek/gnk-tool-call-timeout-policy':
         specifier: workspace:^
         version: link:../../packages/guard/timeout-policy
@@ -11013,6 +11028,9 @@ importers:
       '@greeneek/gnk-tool-subagent-control':
         specifier: workspace:^
         version: link:../../packages/subagent/tool-subagent-control
+      '@greeneek/gnk-tool-terminal':
+        specifier: workspace:^
+        version: link:../../packages/terminal/tool-terminal
       '@greeneek/gnk-tool-todo':
         specifier: workspace:^
         version: link:../../packages/todo/tool-todo

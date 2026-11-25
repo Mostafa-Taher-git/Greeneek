@@ -29,4 +29,4 @@ This provider sends no provider request and adds no prompt text, so it preserves
 
 ### Dev Note
 
-No companion invariant is published: the backend registers one value into a single-slot service and its disposer removes exactly that value.
+No invariant companion is published: the backend registers one value into a single-slot service and its disposer removes exactly that value.

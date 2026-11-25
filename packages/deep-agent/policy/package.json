@@ -1,6 +1,12 @@
 {
   "name": "@greeneek/gnk-deep-agent-policy",
   "version": "0.8.8",
+  "publishConfig": { "access": "public" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/greeneek/greeneek-harness.git",
+    "directory": "packages/deep-agent/policy"
+  },
   "description": "Deep-agent versioned authorization policy: admission matrix, gate, mandate revalidation and assessment rules",
   "type": "module",
   "main": "lib/index.js",
@@ -19,5 +25,5 @@
     "typescript": "^5.7.2",
     "vitest": "^4.1.8"
   },
-  "files": ["lib/index.js", "lib/types/**/*.js", "lib/types/**/*.d.ts"]
+  "files": ["lib/index.js", "lib/types/**/*.d.ts"]
 }

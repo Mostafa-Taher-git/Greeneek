@@ -58,4 +58,4 @@ A stable section order and literal keep this text in the reusable prompt prefix.
 
 ### Dev Note
 
-No companion invariant is published: tool registrations and the prompt section are effects of the same `apply`, and disposal is owned by Cordis.
+No invariant companion is published: tool registrations and the prompt section are effects of the same `apply`, and disposal is owned by Cordis.

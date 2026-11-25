@@ -3,8 +3,8 @@
 
 # API report: @greeneek/gnk-deep-agent-sources@0.8.8 (packages/deep-agent/sources)
 
-`src/index.ts: export class DiscordSource implements SourceAdapter {`
-`src/index.ts: export class GithubSource implements SourceAdapter {`
+`src/index.ts: export class DiscordSource extends PolledSource implements SourceAdapter {`
+`src/index.ts: export class GithubSource extends PolledSource implements SourceAdapter {`
 `src/index.ts: export class SourceRegistry {`
 `src/index.ts: export function isBot(login: string | undefined, type: string | undefined): boolean {`
 `src/index.ts: export interface SourceAdapter {`

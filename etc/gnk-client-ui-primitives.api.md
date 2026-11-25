@@ -58,8 +58,12 @@
 `src/SearchBlock.tsx: export interface SearchMatchesBlockProps extends SearchBlockCommon {`
 `src/SearchBlock.tsx: export interface SearchPathsBlockProps extends SearchBlockCommon {`
 `src/SearchBlock.tsx: export type SearchBlockProps = SearchMatchesBlockProps | SearchPathsBlockProps`
+`src/SettingsSectionHeader.tsx: export function SettingsSectionHeader({`
+`src/SidebarPrimaryAction.tsx: export function SidebarPrimaryAction({ wide, label, icon, onClick }: {`
 `src/StateDot.tsx: export function StateDot({ state, size = 10, className }: {`
 `src/StateDot.tsx: export type StateDotState = 'done' | 'warning' | 'ongoing' | 'error'`
+`src/TabBar.tsx: export function TabBar<T extends string>({ tabs, activeId, onSelect }: {`
+`src/TabBar.tsx: export interface TabBarTab<T extends string> {`
 `src/TerminalBlock.tsx: export const DEFAULT_TERMINAL_MAX_LINES = 16`
 `src/TerminalBlock.tsx: export function TerminalBlock({`
 `src/TerminalBlock.tsx: export interface TerminalBlockLabels {`
@@ -198,6 +202,7 @@
 `src/index.ts: export type { RiskConfirmationProps } from './RiskConfirmation.tsx'`
 `src/index.ts: export type { ShortcutParts } from './shortcuts.ts'`
 `src/index.ts: export type { StateDotState } from './StateDot.tsx'`
+`src/index.ts: export type { TabBarTab } from './TabBar.tsx'`
 `src/index.ts: export type { TerminalBlockProps, TerminalBlockLabels } from './TerminalBlock.tsx'`
 `src/index.ts: export type { TooltipSide } from './Tooltip.tsx'`
 `src/index.ts: export {`
@@ -223,7 +228,10 @@
 `src/index.ts: export { ReferenceIcon } from './ReferenceIcon.tsx'`
 `src/index.ts: export { RiskConfirmation } from './RiskConfirmation.tsx'`
 `src/index.ts: export { SearchBlock, DEFAULT_SEARCH_MAX_LINES } from './SearchBlock.tsx'`
+`src/index.ts: export { SettingsSectionHeader } from './SettingsSectionHeader.tsx'`
+`src/index.ts: export { SidebarPrimaryAction } from './SidebarPrimaryAction.tsx'`
 `src/index.ts: export { StateDot } from './StateDot.tsx'`
+`src/index.ts: export { TabBar } from './TabBar.tsx'`
 `src/index.ts: export { TerminalBlock, DEFAULT_TERMINAL_MAX_LINES } from './TerminalBlock.tsx'`
 `src/index.ts: export { Toast } from './Toast.tsx'`
 `src/index.ts: export { Tooltip } from './Tooltip.tsx'`

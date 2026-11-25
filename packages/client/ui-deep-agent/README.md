@@ -36,4 +36,4 @@ None; the package neither assembles nor sends a provider request, so it cannot i
 
 ### Dev Note
 
-No companion invariant is published: the page is a pure projection of Host-owned Remotes and holds no independent runtime state to compare.
+No invariant companion is published: the page is a pure projection of Host-owned Remotes and holds no independent runtime state to compare.

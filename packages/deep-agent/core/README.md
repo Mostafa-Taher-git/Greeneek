@@ -37,4 +37,4 @@ None; the package neither assembles nor sends a provider request, so it cannot i
 
 ### Dev Note
 
-No companion invariant is published: the `Engine` and in-memory `Repositories` share one owner, so rollback behavior is covered by domain tests rather than a separate runtime check.
+No invariant companion is published: the `Engine` and in-memory `Repositories` share one owner, so rollback behavior is covered by domain tests rather than a separate runtime check.

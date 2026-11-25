@@ -37,4 +37,4 @@ None; the package neither assembles nor sends a provider request, so it cannot i
 
 ### Dev Note
 
-No companion invariant is published: the SQLite connection and its repositories have one owner, so schema and transaction behavior are asserted by store behavior specs.
+No invariant companion is published: the SQLite connection and its repositories have one owner, so schema and transaction behavior are asserted by store behavior specs.

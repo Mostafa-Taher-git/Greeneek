@@ -37,4 +37,4 @@ None; the package neither assembles nor sends a provider request, so it cannot i
 
 ### Dev Note
 
-No companion invariant is published: policy evaluation is a pure function of the supplied settings and domain records, with no independently observable state to compare.
+No invariant companion is published: policy evaluation is a pure function of the supplied settings and domain records, with no independently observable state to compare.

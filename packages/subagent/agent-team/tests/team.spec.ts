@@ -2657,6 +2657,11 @@ describe('One-shot members', () => {
     const id = reportId(ctx, lead, name)
     await vi.waitFor(() => {
       expect(leadReceipts(lead).some(receipt => receipt.id === id)).toBe(true)
+      // The target-side receipt is durable before the observer acknowledges it
+      // on the Lead log. Wait for that delivered edge too, so an inbox assertion
+      // cannot sample the window where the receipt exists but the report is
+      // still pending.
+      expect(durable(lead).pendingMessages.some(message => message.id === id)).toBe(false)
     }, { timeout: 5_000 })
     return id
   }

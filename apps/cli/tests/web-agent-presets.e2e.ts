@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { mkdir, mkdtemp, readFile, stat, symlink, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, stat, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
@@ -21,6 +21,14 @@ import type {} from '@greeneek/gnk-tools'
 import type {} from '@greeneek/gnk-session-projection'
 import type {} from '@greeneek/gnk-token-meter'
 
+const IS_WIN32 = process.platform === 'win32'
+/** The Web composition mounts the deployment's shell and its browser/PTY tools. */
+const SHELL_TOOL = IS_WIN32 ? 'pwsh' : 'bash'
+const WINDOWS_EXTRA_TOOLS = IS_WIN32 ? [
+  'browser_click', 'browser_close', 'browser_navigate', 'browser_open', 'browser_read', 'browser_snapshot',
+  'terminal_close', 'terminal_list', 'terminal_open', 'terminal_read', 'terminal_send', 'terminal_signal',
+] : []
+
 const REPO_ROOT = fileURLToPath(new URL('../../..', import.meta.url))
 /** The shipped Web surface: the gnk-base and gnk-web-app bundle patches over an empty preset root. */
 const BASE_PATCH = join(REPO_ROOT, 'packages/bundle/base/cordis.patch.yml')
@@ -33,6 +41,13 @@ const NARROW_ROOT = join(REPO_ROOT, 'packages/preset/agent-presets/tests/fixture
 /** The installation anchor whose dependency surface the preset module fallback mirrors. */
 const INSTALL_ANCHOR = join(REPO_ROOT, 'apps/cli/package.json')
 const NARROW_PROMPT = 'You are a helpful software engineer assistant.'
+const NARROW_PWSH_DESCRIPTION = `Run commands in a PowerShell shell
+* When invoking this tool, the contents of the "command" parameter does NOT need to be XML-escaped.
+* You don't have access to the internet via this tool.
+* State is persistent across command calls and discussions with the user.
+* Use native Windows paths (C:\\...) and $env:NAME variables; this is PowerShell, not bash.
+* Please avoid commands that may produce a very large amount of output.
+* Please run long lived commands in the background, e.g. 'Start-Job' or start a server with Start-Process.`
 const NARROW_BASH_DESCRIPTION = `Run commands in a bash shell
 * When invoking this tool, the contents of the "command" parameter does NOT need to be XML-escaped.
 * You don't have access to the internet via this tool.
@@ -172,8 +187,15 @@ function enablePresetTool(composition: string, id: string): string {
 }
 
 let ctx: Context
+let ownHome: string
+let previousHome: string | undefined
 beforeAll(async () => {
-  const settingsFile = join(await mkdtemp(join(tmpdir(), 'gnk-web-presets-')), 'settings.yaml')
+  // Fixed session ids must not survive into the next run through the real
+  // harness home; give this whole file its own isolated $GNK_HOME.
+  ownHome = await mkdtemp(join(tmpdir(), 'gnk-web-presets-home-'))
+  previousHome = process.env.GNK_HOME
+  process.env.GNK_HOME = ownHome
+  const settingsFile = join(ownHome, 'settings.yaml')
   await writeFile(settingsFile, '{}\n')
   ctx = await bootWeb(settingsFile, [
     // Lane narrow root beside the shipped set: several lanes need a two-tool
@@ -181,6 +203,13 @@ beforeAll(async () => {
     { id: 'agent-presets', config: { default: 'standard', roots: [{ path: NARROW_ROOT, trust: 'user' }], includeUserRoot: false } },
   ])
 }, 120_000)
+
+afterAll(async () => {
+  if (ctx !== undefined) await ctx.fiber.dispose()
+  if (previousHome === undefined) delete process.env.GNK_HOME
+  else process.env.GNK_HOME = previousHome
+  await rm(ownHome, { recursive: true, force: true })
+})
 
 describe('the shipped Web composition', () => {
   it('leaves the global tool layer empty', () => {
@@ -244,11 +273,12 @@ describe('the shipped Web composition', () => {
       // excluded for the reason the TUI composition e2e excludes them — they
       // depend on ripgrep being present on the machine.
       expect(toolNames(ctx, handle.agent).filter(name => name !== 'glob' && name !== 'grep')).toEqual([
-        'ask_user_question', 'bash', 'create_goal', 'edit', 'exit_plan_mode',
+        'ask_user_question', SHELL_TOOL, 'create_goal', 'edit', 'exit_plan_mode',
         'get_goal', 'interrupt_agent', 'job_kill', 'job_list', 'job_output', 'list_agents', 'ralph', 'read', 'read_image', 'send_message', 'skill',
         'subagent', 'subagent_fork', 'todo_write', 'update_goal', 'web_fetch', 'web_search',
         'workflow', 'write',
-      ])
+        ...WINDOWS_EXTRA_TOOLS,
+      ].sort())
       expect(ctx.commands.find(handle.agent, 'goal')).toBeDefined()
     } finally {
       await handle.dispose()
@@ -299,8 +329,9 @@ describe('the shipped Web composition', () => {
       expect(assembly.sections).toEqual([
         { name: 'deployment:persona', text: NARROW_PROMPT },
       ])
-      expect(assembly.tools.map(tool => tool.name)).toEqual(['bash', 'str_replace_editor'])
-      expect(assembly.tools.find(tool => tool.name === 'bash')?.description).toBe(NARROW_BASH_DESCRIPTION)
+      expect(assembly.tools.map(tool => tool.name)).toEqual([SHELL_TOOL, 'str_replace_editor'])
+      expect(assembly.tools.find(tool => tool.name === SHELL_TOOL)?.description)
+        .toBe(IS_WIN32 ? NARROW_PWSH_DESCRIPTION : NARROW_BASH_DESCRIPTION)
       expect(JSON.stringify(assembly.tools.find(tool => tool.name === 'str_replace_editor')?.parameters))
         .toContain('Absolute path')
       expect(ctx.commands.find(handle.agent, 'goal')).toBeUndefined()
@@ -321,7 +352,7 @@ describe('the shipped Web composition', () => {
       setup: agentCtx => ctx.agentPresets.mount(agentCtx, 'narrow').then(() => undefined),
     })
     try {
-      expect(toolNames(ctx, narrow.agent)).toEqual(['bash', 'str_replace_editor'])
+      expect(toolNames(ctx, narrow.agent)).toEqual([SHELL_TOOL, 'str_replace_editor'])
       expect(toolNames(ctx, full.agent).length).toBeGreaterThan(10)
 
       await narrow.dispose()
@@ -347,7 +378,7 @@ describe('the shipped Web composition', () => {
         'cordis_define', 'cordis_run', 'cordis_stop', 'cordis_undefine',
       ]))
       // And it keeps the standard agent's own tools rather than replacing them.
-      expect(tools).toEqual(expect.arrayContaining(['bash', 'read', 'edit', 'skill']))
+      expect(tools).toEqual(expect.arrayContaining([SHELL_TOOL, 'read', 'edit', 'skill']))
       expect(tools).not.toContain('str_replace_editor')
       expect(ctx.commands.find(handle.agent, 'goal')).toBeDefined()
 
@@ -506,7 +537,7 @@ describe('the shipped Web composition', () => {
       // stays the preset's choice — narrow mounts no `tool-skill`, so its
       // tool table has no loader even though the global layer is readable.
       expect((await ctx.skills.list({ scope: handle.agent })).map(skill => skill.name)).toContain('gnk-badge')
-      expect(toolNames(ctx, handle.agent)).toEqual(['bash', 'str_replace_editor'])
+      expect(toolNames(ctx, handle.agent)).toEqual([SHELL_TOOL, 'str_replace_editor'])
     } finally {
       await handle.dispose()
     }
@@ -740,7 +771,7 @@ describe('a delegated child', () => {
       expect(toolNames(ctx, child.agent)).toEqual(toolNames(ctx, parent.agent))
       // The shipped `standard` preset is the whole coding agent; an empty
       // child here is the defect, and equality alone would not catch it.
-      expect(toolNames(ctx, child.agent)).toContain('bash')
+      expect(toolNames(ctx, child.agent)).toContain(SHELL_TOOL)
       expect(child.agent.session.header.agentPreset).toBe('standard')
     } finally {
       await child.dispose()
@@ -874,7 +905,8 @@ describe('authoring a preset on the shipped composition', () => {
     expect(await authorCtx.agentPresets.read('my-agent')).toBe(await authorCtx.agentPresets.read('narrow'))
     // Owner-only, in an owner-only directory: a composition is executable
     // configuration on a machine that may have other users.
-    expect((await stat(preset.path)).mode & 0o777).toBe(0o600)
+    // NTFS reports 0o666 for every file; owner-only mode bits are POSIX-only.
+    if (!IS_WIN32) expect((await stat(preset.path)).mode & 0o777).toBe(0o600)
     const handle = await authorCtx.agents.create({
       sessionId: SessionId('preset-authored'),
       setup: agentCtx => authorCtx.agentPresets.mount(agentCtx, 'my-agent').then(() => undefined),
@@ -882,7 +914,7 @@ describe('authoring a preset on the shipped composition', () => {
     try {
       // The same tools the lane `narrow` preset composes, from a directory copied
       // through the service into a root outside the installed harness.
-      expect(toolNames(authorCtx, handle.agent)).toEqual(['bash', 'str_replace_editor'])
+      expect(toolNames(authorCtx, handle.agent)).toEqual([SHELL_TOOL, 'str_replace_editor'])
     } finally {
       await handle.dispose()
     }
@@ -918,8 +950,10 @@ describe('the default preset as a user setting', () => {
       })
       try {
         // `mount()` with no id resolves the effective default. Two tools, not
-        // `standard`'s catalog: the setting decided the composition.
-        expect(toolNames(ctx, handle.agent)).toEqual(['bash', 'str_replace_editor'])
+        // `standard`'s catalog: the setting decided the composition. The
+        // narrow preset mounts the platform's shell.
+        const shell = process.platform === 'win32' ? 'pwsh' : 'bash'
+        expect(toolNames(ctx, handle.agent)).toEqual([shell, 'str_replace_editor'])
       } finally {
         await handle.dispose()
       }

@@ -10,6 +10,7 @@ import {
   type LaunchedAcpTestAgent,
 } from '@greeneek/gnk-session-snapshot'
 import { cleanupAcpExampleTest } from './cleanup.ts'
+import { defaultAcpConfigPath } from './default-config-path.ts'
 
 /**
  * End-to-end: boot the shipped ACP profile as a real subprocess speaking ACP over
@@ -23,7 +24,7 @@ import { cleanupAcpExampleTest } from './cleanup.ts'
 
 const AGENT: AgentUnderTest = {
   binScript: fileURLToPath(new URL('../../../../src/bin.ts', import.meta.url)),
-  configPath: fileURLToPath(new URL('../cordis.yml', import.meta.url)),
+  configPath: defaultAcpConfigPath(),
   profile: 'acp',
   tsconfigPath: fileURLToPath(new URL('../../../../../../tsconfig.json', import.meta.url)),
 }

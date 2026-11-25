@@ -15,6 +15,7 @@ import {
 } from '@greeneek/gnk-session-snapshot'
 import { bwrapProfileArgs } from '@greeneek/gnk-sandbox-local/src/profiles.ts'
 import { cleanupAcpExampleTest } from './cleanup.ts'
+import { defaultAcpConfigPath } from './default-config-path.ts'
 
 /**
  * The default ACP composition (`cordis.yml`) end to end.
@@ -35,7 +36,7 @@ import { cleanupAcpExampleTest } from './cleanup.ts'
 
 const AGENT: AgentUnderTest = {
   binScript: fileURLToPath(new URL('../../../../src/bin.ts', import.meta.url)),
-  configPath: fileURLToPath(new URL('../cordis.yml', import.meta.url)),
+  configPath: defaultAcpConfigPath(),
   profile: 'acp',
   tsconfigPath: fileURLToPath(new URL('../../../../../../tsconfig.json', import.meta.url)),
 }

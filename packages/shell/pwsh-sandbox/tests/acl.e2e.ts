@@ -17,6 +17,7 @@ import type { SandboxExecutionPolicy } from '@greeneek/gnk-sandbox'
 import { resolvePwshPath } from '@greeneek/gnk-pwsh-local'
 import { LocalSandboxProvider } from '@greeneek/gnk-sandbox-local'
 import { SandboxPolicyService } from '@greeneek/gnk-sandbox-policy'
+import SessionProjectionRegistry from '@greeneek/gnk-session-projection'
 import LocalSubprocessRuntime from '@greeneek/gnk-subprocess-local'
 import { SandboxPwshExecutor } from '../src/index.ts'
 
@@ -47,9 +48,12 @@ describe.skipIf(!isWin32 || !pwshAvailable())('pwsh-sandbox real ACL confinement
     escapeFile = join(scratchRoot, 'escaped.txt')
 
     const ctx = new Context()
+    // The sandbox provider injects `shell`, so the runtime that provides it
+    // must be mounted first; otherwise `ctx.shell` is undefined on activation.
+    await ctx.plugin(LocalSubprocessRuntime)
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(LocalSandboxProvider, {})
     await ctx.plugin(SandboxPolicyService, { mode: 'workspace-write', workspaceRoot: writableDir })
-    await ctx.plugin(LocalSubprocessRuntime)
     await ctx.plugin(SandboxPwshExecutor, {})
     executor = ctx.shell as SandboxPwshExecutor
   })

@@ -9,6 +9,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { mkdtemp, mkdir, rm, writeFile, realpath } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { Context } from '@greeneek/cordis'
 import LocalSubprocessRuntime from '@greeneek/gnk-subprocess-local'
 import LocalFileSystem from '@greeneek/gnk-fs-local'
@@ -16,12 +17,16 @@ import Lsp, { type LspQueryRequest, type LspQueryResult } from '@greeneek/gnk-ls
 import * as LspLocal from '@greeneek/gnk-lsp-stdio'
 
 // The server binary is a dev dependency of this package; resolve its pnpm-hoisted .bin path.
-const serverBin = join(
-  new URL('..', import.meta.url).pathname,
-  'node_modules',
-  '.bin',
-  'typescript-language-server',
-)
+const packageDir = fileURLToPath(new URL('..', import.meta.url))
+// npm's extensionless and .cmd shims are not directly spawnable on Windows
+// (EINVAL), so run the bin module with Node there and use the shim elsewhere.
+const isWin32 = process.platform === 'win32'
+const serverBin = isWin32
+  ? process.execPath
+  : join(packageDir, 'node_modules', '.bin', 'typescript-language-server')
+const serverArgs = isWin32
+  ? [join(packageDir, 'node_modules', 'typescript-language-server', 'lib', 'cli.mjs'), '--stdio']
+  : ['--stdio']
 
 let root: string
 let ws: string
@@ -60,7 +65,7 @@ beforeAll(async () => {
     servers: {
       typescript: {
         command: serverBin,
-        args: ['--stdio'],
+        args: serverArgs,
         extensionToLanguage: { '.ts': 'typescript', '.tsx': 'typescriptreact' },
       },
     },

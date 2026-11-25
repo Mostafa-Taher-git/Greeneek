@@ -163,12 +163,26 @@ describe('Python SDK gnk profile keyless smoke', () => {
       const exit = await child
       expect(exit.exitCode, `signal=${String(exit.signal)}; stderr=${stderr}`).toBe(0)
       const sessionsRoot = join(root, '.gnk', 'sessions')
-      const files = await readdir(sessionsRoot, { recursive: true })
-      const log = files.find(file => file.endsWith('.jsonl.zstd'))
-      expect(log).toBeDefined()
-      const compressed = await readFile(join(sessionsRoot, log!))
-      expect(compressed.subarray(0, 4).toString('hex')).toBe('28b52ffd')
-      expect(JSON.parse((await decompress(compressed)).toString())).toMatchObject({ type: 'session', id: 'main' })
+      const logs = (await readdir(sessionsRoot, { recursive: true }))
+        .filter(file => file.endsWith('.jsonl.zstd'))
+        .sort()
+      // Enumeration order differs across filesystems. Identify the main
+      // session by its durable header instead of by directory position.
+      let mainCompressed: Buffer | undefined
+      for (const log of logs) {
+        const compressed = await readFile(join(sessionsRoot, log))
+        // A session log is JSONL: the session header is its first row only.
+        const headerLine = (await decompress(compressed)).toString().split('\n')[0]?.trim() ?? ''
+        const header: unknown = JSON.parse(headerLine)
+        if (typeof header === 'object' && header !== null
+          && 'type' in header && header.type === 'session'
+          && 'id' in header && header.id === 'main') {
+          mainCompressed = compressed
+          break
+        }
+      }
+      expect(mainCompressed, `main session log among ${JSON.stringify(logs)}`).toBeDefined()
+      expect(mainCompressed!.subarray(0, 4).toString('hex')).toBe('28b52ffd')
     } finally {
       // No-op after exit; reject: false settles on every outcome, so cleanup never races teardown.
       child.kill('SIGKILL')

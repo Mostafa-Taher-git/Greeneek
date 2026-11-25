@@ -197,7 +197,10 @@ describe('gnk web authentication through the real CLI', () => {
       expect((await describeSettings(port, secondUrl.host, cookie)).status).toBe(200)
 
       const credentialMode = (await stat(join(gnkHome, '.credentials.yaml'))).mode & 0o777
-      expect(credentialMode).toBe(0o600)
+      // NTFS has no POSIX permission bits: Node reports 0o666 for every file
+      // regardless of the mode requested by the writer. The owner-only mode
+      // assertion is a POSIX contract, so it applies where the bit is real.
+      if (process.platform !== 'win32') expect(credentialMode).toBe(0o600)
     } catch (error) {
       const evidence = [first?.output(), second?.output()].filter(value => value !== undefined).join('\n')
       throw new Error(`${error instanceof Error ? error.message : String(error)}\n${redact(evidence)}`, { cause: error })

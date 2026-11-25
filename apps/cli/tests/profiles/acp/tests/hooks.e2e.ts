@@ -10,6 +10,7 @@ import {
   type LaunchedAcpTestAgent,
 } from '@greeneek/gnk-session-snapshot'
 import { cleanupAcpExampleTest } from './cleanup.ts'
+import { defaultAcpConfigPath } from './default-config-path.ts'
 
 /**
  * With-key e2e for the Claude hook bridge. The process-level `./hooks.json` is
@@ -20,7 +21,7 @@ import { cleanupAcpExampleTest } from './cleanup.ts'
 
 const AGENT: AgentUnderTest = {
   binScript: fileURLToPath(new URL('../../../../src/bin.ts', import.meta.url)),
-  configPath: fileURLToPath(new URL('../cordis.yml', import.meta.url)),
+  configPath: defaultAcpConfigPath(),
   profile: 'acp',
   tsconfigPath: fileURLToPath(new URL('../../../../../../tsconfig.json', import.meta.url)),
 }

@@ -104,7 +104,6 @@
     "tests/complex-history.perf.ts",
     "tests/pwsh-terminal.e2e.ts",
     "tests/workflow-run.e2e.ts",
-    "tests/session-tiling.e2e.ts"
   ],
   "references": [
     {

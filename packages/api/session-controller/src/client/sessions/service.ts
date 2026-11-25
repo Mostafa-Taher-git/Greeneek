@@ -222,21 +222,10 @@ export class ClientSessions implements ISessions {
     private readonly rootCtx: Context,
     remote: SessionRemotes,
   ) {
-    // A tiled pane loads the same app in an iframe with a scoped selection key,
-    // so each pane keeps its own session instead of sharing the page's current.
-    const search = typeof location === 'undefined' ? undefined : new URLSearchParams(location.search)
-    const tile = search?.get('tile')
-    const selectionName = tile === null || tile === undefined
-      ? 'gnk.sessions.current'
-      : `gnk.sessions.tile.${tile}`
     this.selection = createSnapshotStore<SessionSelection>(
       {},
-      { persist: { name: selectionName } })
+      { persist: { name: 'gnk.sessions.current' } })
     const restored = this.selection.getSnapshot()
-    const requested = search?.get('session')
-    if (tile !== null && tile !== undefined && requested !== null && requested !== undefined && restored.sessionId === undefined) {
-      this.selection.set({ sessionId: requested as SessionId })
-    }
     this.manager = new SessionManager(
       remote,
       restored.sessionId,

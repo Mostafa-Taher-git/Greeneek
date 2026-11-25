@@ -24,4 +24,4 @@ Booting a Web host no longer loads SQLite. The first Deep-agent call pays schema
 
 ## Related
 
-[2026-11-24-session-tiling.md](2026-11-24-session-tiling.md)
+[2026-11-25-session-tiling-removed.md](2026-11-25-session-tiling-removed.md)

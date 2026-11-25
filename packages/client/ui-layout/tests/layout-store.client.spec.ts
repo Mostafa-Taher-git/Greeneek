@@ -19,7 +19,7 @@ beforeEach(() => { localStorage.clear() })
 describe('createLayoutStore', () => {
   it('initializes the sidebar at its default width, details closed, wide viewport assumed', () => {
     const { store } = createLayoutStore().create()
-    expect(store.getSnapshot()).toEqual({ sidebar: SIDEBAR_DEFAULT, details: 0, rightbar: 0, terminalDrawerOpen: false, narrow: false, narrowExpanded: false, mainPage: 'conversation', settingsSection: undefined, rightbarMaximized: false, tilesActive: false, tiles: [], nextTile: 1 })
+    expect(store.getSnapshot()).toEqual({ sidebar: SIDEBAR_DEFAULT, details: 0, rightbar: 0, terminalDrawerOpen: false, narrow: false, narrowExpanded: false, mainPage: 'conversation', settingsSection: undefined, rightbarMaximized: false })
   })
 
   it('each create() is an independent instance (factory is not a singleton)', () => {
@@ -55,7 +55,7 @@ describe('createLayoutStore', () => {
     actions.setSidebar(400)
     actions.setNarrow(true)
     actions.toggleSidebar()
-    expect(store.getSnapshot()).toEqual({ sidebar: 400, details: 0, rightbar: 0, terminalDrawerOpen: false, narrow: true, narrowExpanded: true, mainPage: 'conversation', settingsSection: undefined, rightbarMaximized: false, tilesActive: false, tiles: [], nextTile: 1 })
+    expect(store.getSnapshot()).toEqual({ sidebar: 400, details: 0, rightbar: 0, terminalDrawerOpen: false, narrow: true, narrowExpanded: true, mainPage: 'conversation', settingsSection: undefined, rightbarMaximized: false })
     actions.toggleSidebar()
     expect(store.getSnapshot().narrowExpanded).toBe(false)
     expect(store.getSnapshot().sidebar).toBe(400)
@@ -143,59 +143,6 @@ describe('createLayoutStore', () => {
     expect(store.getSnapshot()).toMatchObject({ mainPage: 'conversation', settingsSection: undefined })
   })
 
-  it('opens four equal tiles from the current session and persists their geometry', () => {
-    const first = createLayoutStore().create()
-    first.actions.toggleTiles('session-1')
-    const state = first.store.getSnapshot()
-    expect(state.tilesActive).toBe(true)
-    expect(state.tiles).toHaveLength(4)
-    expect(state.tiles[0]).toMatchObject({ id: 'tile-01', sessionId: 'session-1', x: 0, y: 0, w: 0.5, h: 0.5 })
-    expect(state.tiles[3]).toMatchObject({ x: 0.5, y: 0.5, w: 0.5, h: 0.5 })
-
-    first.actions.moveTile('tile-01', 0.9, 0.9)
-    first.actions.resizeTile('tile-01', 0.9, 0.9)
-    expect(first.store.getSnapshot().tiles[0]).toMatchObject({ x: 0.5, y: 0.5, w: 0.5, h: 0.5 })
-
-    const restored = createLayoutStore().create()
-    expect(restored.store.getSnapshot().tilesActive).toBe(true)
-    expect(restored.store.getSnapshot().tiles).toHaveLength(4)
-  })
-
-  it('adds, reorders, and removes tiles without leaving an empty active layout', () => {
-    const { store, actions } = createLayoutStore().create()
-    actions.addTile('session-2')
-    actions.addTile('session-3')
-    actions.addTile('session-4')
-    actions.addTile('session-5')
-    expect(store.getSnapshot().tiles.map(tile => tile.id)).toEqual(['tile-01', 'tile-02', 'tile-03', 'tile-04'])
-    actions.reorderTile('tile-04', 0)
-    expect(store.getSnapshot().tiles[0]?.id).toBe('tile-04')
-    actions.removeTile('tile-04')
-    expect(store.getSnapshot().tiles).toHaveLength(3)
-    for (const tile of [...store.getSnapshot().tiles]) actions.removeTile(tile.id)
-    expect(store.getSnapshot()).toMatchObject({ tilesActive: false, tiles: [] })
-  })
-
-  it('caps the layout at four disjoint panes covering the frame', () => {
-    const { store, actions } = createLayoutStore().create()
-    actions.toggleTiles()
-    actions.addTile('session-5')
-    const tiles = store.getSnapshot().tiles
-    expect(tiles).toHaveLength(4)
-    for (let a = 0; a < tiles.length; a += 1) {
-      for (let b = a + 1; b < tiles.length; b += 1) {
-        const left = tiles[a]!
-        const right = tiles[b]!
-        const overlaps = left.x < right.x + right.w - 1e-9
-          && right.x < left.x + left.w - 1e-9
-          && left.y < right.y + right.h - 1e-9
-          && right.y < left.y + left.h - 1e-9
-        expect(overlaps, `${left.id} overlaps ${right.id}`).toBe(false)
-      }
-    }
-    expect(Math.max(...tiles.map(tile => tile.y + tile.h))).toBeCloseTo(1, 6)
-    expect(Math.max(...tiles.map(tile => tile.x + tile.w))).toBeCloseTo(1, 6)
-  })
 
   it('persists the panel geometry across a restart', () => {
     const first = createLayoutStore().create()

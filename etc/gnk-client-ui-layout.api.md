@@ -7,10 +7,6 @@
 `src/client/AppFrame.tsx: export type AppFrameProps =`
 `src/client/DocumentTitle.tsx: export function DocumentTitle({ title, productTitle }: DocumentTitleProps): null {`
 `src/client/DocumentTitle.tsx: export interface DocumentTitleProps {`
-`src/client/SessionTiles.tsx: export function SessionTiles({ actions, t, useSessions, useStore }: SessionTilesProps) {`
-`src/client/SessionTiles.tsx: export type SessionTilesProps =`
-`src/client/TileToggle.tsx: export function TileToggle({ actions, t, useSessions, useStore }: TileToggleProps) {`
-`src/client/TileToggle.tsx: export type TileToggleProps =`
 `src/client/columns.ts: export const CENTER_MIN = 640`
 `src/client/columns.ts: export const DETAILS_DEFAULT = 300`
 `src/client/columns.ts: export const DETAILS_MAX = 520`
@@ -42,10 +38,7 @@
 `src/client/service.ts: export class LayoutController implements ILayout {`
 `src/client/service.ts: export interface ILayout {`
 `src/client/service.ts: export type PanelActions = BoundActions<ReturnType<typeof createLayoutStore>>`
-`src/client/stores.ts: export const TILE_MIN = 0.15`
 `src/client/stores.ts: export function createLayoutStore(): EngineStoreHandle<LayoutState, LayoutActions>  {`
-`src/client/stores.ts: export function tileRectFor(index: number, count: number): { x: number; y: number; w: number; h: number } {`
-`src/client/stores.ts: export type SessionTile = {`
 `src/client/theme-presenter.ts: export class ThemePresenter {`
 `src/client/theme-presenter.ts: export const CONTENT_FONT_SIZE_VARIABLE = '--gnk-content-font-size'`
 `src/client/theme-presenter.ts: export const DARK_ATTRIBUTE = 'data-ds-dark-theme'`

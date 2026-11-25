@@ -23,7 +23,7 @@ import css from './AppFrame.module.css'
 /** Full composed props: runtime share + child-slot render share + store share. */
 export type AppFrameProps =
   & PropsRuntime<'root'>
-  & PropsRenderSlots<'sidebar' | 'titlebar' | 'conversation' | 'settings' | 'dashboard' | 'automation-tasks' | 'plugins' | 'branches' | 'issues' | 'deep-agent' | 'session.tiles' | 'details' | 'rightbar' | 'terminal.drawer' | 'shell.overlay'>
+  & PropsRenderSlots<'sidebar' | 'titlebar' | 'conversation' | 'settings' | 'dashboard' | 'automation-tasks' | 'plugins' | 'branches' | 'issues' | 'deep-agent' | 'details' | 'rightbar' | 'terminal.drawer' | 'shell.overlay'>
   & PropsStore<ReturnType<typeof createLayoutStore>>
   & PropsLocale<'common'>
 
@@ -307,11 +307,8 @@ export function AppFrame({
             is session-maybe; SessionProvider withholds the strict details
             entry while no session is current. */}
         <CenterColumn>
-          <div className={css.mainPage} hidden={maximized || panels.mainPage !== 'conversation' || panels.tilesActive}>
+          <div className={css.mainPage} hidden={maximized || panels.mainPage !== 'conversation'}>
             {renderSlot('conversation', {})}
-          </div>
-          <div className={css.tilesLayer} hidden={maximized || !panels.tilesActive}>
-            {renderSlot('session.tiles', {})}
           </div>
           {panels.mainPage === 'settings' && !maximized && (
             <div className={css.mainPage}>

@@ -103,15 +103,6 @@
   display: none;
 }
 
-.tilesLayer {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-}
-
-.tilesLayer[hidden] {
-  display: none;
-}
 
 /* Thread Details is a dropdown anchored under the titlebar toggle, never a
    column: a fixed 300px wrapper yields the card's 280px content width. It takes

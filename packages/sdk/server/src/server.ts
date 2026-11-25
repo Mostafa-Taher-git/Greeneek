@@ -5,7 +5,7 @@
  * @module @greeneek/gnk-sdk-jsonrpc-server/server
  */
 
-import type { Context } from '@greeneek/cordis'
+import { CordisError, type Context } from '@greeneek/cordis'
 import { resolve } from 'node:path'
 import { brandString } from '@greeneek/gnk-brand'
 import type { Agent, AgentHandle } from '@greeneek/gnk-agent'
@@ -149,7 +149,21 @@ export class HarnessSdkJsonRpcServer {
       : ReasoningEffortId(params.reasoningEffort)
     if (!this.hasAdapterFor(provider)) {
       if (provider !== 'greeneek-official') throw new Error(`no adapter registered for provider "${provider}"`)
-      this.llmFiber = await this.ctx.plugin(LlmGreeneek, {})
+      try {
+        this.llmFiber = await this.ctx.plugin(LlmGreeneek, {})
+      } catch (error: unknown) {
+        // The serving fiber can be disposed while a late initialize is still
+        // queued. Report a rejected handshake instead of leaking an internal
+        // Cordis effect error over the SDK wire.
+        if (error instanceof CordisError) {
+          // The process root outlives the serving fiber and may already own a
+          // compatible adapter; reuse it instead of mounting a second fiber.
+          if (this.ctx.root.get('llm') === undefined) {
+            throw new Error('SDK server context is inactive; the provider adapter cannot be mounted')
+          }
+        }
+        throw error
+      }
     }
     // Adapter presence was read from this service above; a successful fallback mount also requires it.
     const llm = this.ctx.get('llm') as LlmRuntime

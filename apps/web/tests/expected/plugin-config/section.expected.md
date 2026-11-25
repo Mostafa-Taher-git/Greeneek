@@ -7,9 +7,9 @@
     - button "模型":
       - img
       - text: 模型
-    - button "插件":
+    - button "内置插件":
       - img
-      - text: 插件
+      - text: 内置插件
     - button "Agent 预设":
       - img
       - text: Agent 预设
@@ -26,7 +26,7 @@
   - button "关闭":
     - img
     - text: 关闭
-  - heading "插件" [level=2]
+  - heading "内置插件" [level=2]
   - paragraph: 配置和查看本部署已安装的插件。
   - tablist "插件视图":
     - tab "插件配置" [selected]

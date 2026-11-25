@@ -94,11 +94,11 @@ describe('web e2e: settings modal and General preferences', () => {
     await dialog.getByRole('button', { name: '模型' }).click()
     await expect.poll(() => dialog.getByRole('button', { name: '模型' }).getAttribute('aria-current'), { timeout: 5_000 }).toBe('true')
     expect(await dialog.getByRole('button', { name: '通用设置' }).getAttribute('aria-current')).toBeNull()
-    // Plugins is a read-only projection of the same assembled Loader tree.
+    // Built-in plugins is a read-only projection of the same assembled Loader tree.
     // Capture one stable shipped row rather than the whole inventory so adding
     // an unrelated plugin does not rewrite this surface's golden.
-    await dialog.getByRole('button', { name: '插件', exact: true }).click()
-    await dialog.getByRole('heading', { name: '插件', exact: true }).waitFor({ timeout: 10_000 })
+    await dialog.getByRole('button', { name: '内置插件', exact: true }).click()
+    await dialog.getByRole('heading', { name: '内置插件', exact: true }).waitFor({ timeout: 10_000 })
     await dialog.getByRole('tab', { name: '插件列表', exact: true }).click()
     // The preset group opens first with its display-only switcher; the global
     // plane starts collapsed and expands on demand.
@@ -119,7 +119,7 @@ describe('web e2e: settings modal and General preferences', () => {
       .toBe(expectedPluginCount)
     expect(await dialog.locator('[data-plugin-count]').getAttribute('data-plugin-count'))
       .toBe(String(expectedPluginCount))
-    expect(await dialog.getByRole('button', { name: '插件', exact: true }).getAttribute('aria-current')).toBe('true')
+    expect(await dialog.getByRole('button', { name: '内置插件', exact: true }).getAttribute('aria-current')).toBe('true')
     expect(await dialog.getByRole('tab', { name: '插件列表', exact: true }).getAttribute('aria-selected')).toBe('true')
     expect(await dialog.getByRole('button', { name: '模型' }).getAttribute('aria-current')).toBeNull()
     const pluginsSnapshot = await captureStableAria(
@@ -580,7 +580,7 @@ describe('web e2e: settings modal and General preferences', () => {
       await dialog.getByRole('button', { name: 'English' }).waitFor({ timeout: 10_000 })
       // The plugin list resolves shipped preset names through the en
       // dictionaries instead of echoing the preset files' Chinese metadata.
-      await dialog.getByRole('button', { name: 'Plugins', exact: true }).click()
+      await dialog.getByRole('button', { name: 'Built-in plugins', exact: true }).click()
       await dialog.getByRole('tab', { name: 'Plugin list', exact: true }).click()
       const presetSwitcher = dialog.getByRole('button', { name: 'Choose the agent preset to inspect' })
       await presetSwitcher.waitFor({ timeout: 10_000 })

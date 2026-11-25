@@ -50,6 +50,14 @@ const SOURCE_CHOOSER_EXPECTED = fileURLToPath(new URL('./snapshots/preview-boot/
 
 const SNAPSHOT_MODE = webSnapshotMode()
 
+/** Disable Node-only providers in the worker's copy of the Web profile. */
+function workerProfileConfig(): string {
+  return composeProfile(REPO_ROOT, PROFILE).replace(
+    /^(\s*)- id: browser-playwright$/mu,
+    (_line, indent: string) => `${indent}- id: browser-playwright\n${indent}  disabled: true`,
+  )
+}
+
 /** Profile the preview deployment composes; `build:preview` packs the same one. */
 const PROFILE = 'web'
 
@@ -134,7 +142,10 @@ function requireVfsAssets(): PreviewAssets {
     return { overrides: new Map(), cleanup: () => {} }
   }
   const packed = packVfsImage({
-    config: composeProfile(REPO_ROOT, PROFILE),
+    // browser-playwright is a Node-only provider: its Playwright dependency
+    // imports `tls` and friends, which the browser Worker cannot supply. The
+    // preview exercises the worker tree, not real browser automation.
+    config: workerProfileConfig(),
     profile: PROFILE,
     workspaces: indexWorkspacePackages(REPO_ROOT),
     resolveFrom: REPO_ROOT,

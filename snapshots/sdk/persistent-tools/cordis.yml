@@ -126,11 +126,17 @@
     root: !!js gnkHomePath('sessions')
     compression: none
 
+- id: fs-local
+  disabled: true
+
+- id: terminal-bash
+  disabled: true
+
 - insert:
     - id: bash-local
       name: '@greeneek/gnk-bash-local'
 
-    - id: fs-local
+    - id: fs-local-snapshot
       name: '@greeneek/gnk-fs-local'
       config:
         cwd: !!js process.cwd()
@@ -138,7 +144,7 @@
     - id: terminal
       name: '@greeneek/gnk-terminal'
 
-    - id: terminal-bash
+    - id: terminal-bash-snapshot
       name: '@greeneek/gnk-terminal-bash'
       config:
         timeoutMs: 300000

@@ -4,14 +4,8 @@
   disabled: true
 
 - insert:
-    - id: pty
-      name: '@greeneek/gnk-terminal'
     - id: pty-snapshot-backend
       name: './pty-snapshot-backend.mjs'
-    - id: tool-terminal
-      name: '@greeneek/gnk-tool-terminal'
-      config:
-        maxResultBytes: 64
     - id: llm-replay
       name: '@greeneek/gnk-llm-replay'
       config:
@@ -21,3 +15,14 @@
             models:
               - id: greeneek-v4-flash
               - id: greeneek-v4-pro
+
+- id: terminal-bash
+  disabled: true
+
+- id: terminal-pwsh
+  disabled: true
+
+- id: tool-terminal
+  name: '@greeneek/gnk-tool-terminal'
+  config:
+    maxResultBytes: 64

@@ -13,10 +13,6 @@
             models:
               - id: greeneek-v4-pro
 
-- insert:
-    - id: terminal
-      name: '@greeneek/gnk-terminal'
-
 - id: sandbox-policy
   name: '@greeneek/gnk-sandbox-policy'
   config:
@@ -26,12 +22,12 @@
 - id: subprocess
   name: '@greeneek/gnk-subprocess-local'
 
-- insert:
-    - id: terminal-pwsh
-      name: '@greeneek/gnk-terminal-bash'
-      config:
-        shellDialect: pwsh
-        timeoutMs: 30000
+- id: terminal-pwsh
+  name: '@greeneek/gnk-terminal-bash'
+  disabled: false
+  config:
+    shellDialect: pwsh
+    timeoutMs: 30000
 
 - id: agent-default-model
   name: '@greeneek/gnk-agent-default-model'
@@ -88,6 +84,9 @@
 
 - id: tool-bash
   name: '@greeneek/gnk-tool-bash'
+  disabled: true
+
+- id: tool-pwsh
   disabled: true
 
 - insert:

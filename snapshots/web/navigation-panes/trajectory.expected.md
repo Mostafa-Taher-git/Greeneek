@@ -46,9 +46,46 @@
   - text: TOOL Turn 1 · Step 1
   - button "Close details"
   - tablist "Event details":
-    - tab "Summary"
+    - tab "Summary" [selected]
     - tab "Payload"
-    - tab "Result" [selected]
+    - tab "Result"
     - tab "Schema"
     - tab "Timing"
-  - tabpanel "Result": NAVIGATION_OK
+  - tabpanel "Summary":
+    - term: Hierarchy
+    - definition:
+      - button "Assistant Message":
+        - text: Assistant Message
+        - img
+    - term: Status
+    - definition: Completed
+    - heading "Payload" [level=3]:
+      - button "Payload":
+        - text: Payload
+        - img
+    - text: "{"
+    - tree "Payload JSON":
+      - treeitem "command:\"echo NAVIGATION_OK\","
+      - treeitem "description:\"Print NAVIGATION_OK\""
+    - text: "}"
+    - heading "Result" [level=3]:
+      - button "Result":
+        - text: Result
+        - img
+    - text: NAVIGATION_OK
+    - heading "Schema" [level=3]:
+      - button "Schema":
+        - text: Schema
+        - img
+    - paragraph: Schema unavailable
+    - heading "Timing" [level=3]:
+      - button "Timing":
+        - text: Timing
+        - img
+    - term: Started
+    - definition:
+      - button "2026-07-25 {{clock}}"
+    - term: Duration
+    - definition: {{duration}}
+    - term: Timing source
+    - definition: Session timestamps

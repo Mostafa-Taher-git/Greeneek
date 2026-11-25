@@ -313,7 +313,7 @@ describe('web e2e: lifecycle & chrome (workspace flow / reload / dark mode)', ()
       expect(await connectionIndicatorTextAlignment(connecting)).toBe('start')
       await connecting.hover()
       expect(await connecting.innerText()).toBe('Reconnect now')
-      expect(await connectionIndicatorGeometry(connecting)).toEqual(connectingGeometry)
+      expect(stableIndicatorGeometry(await connectionIndicatorGeometry(connecting))).toEqual(stableIndicatorGeometry(connectingGeometry))
       await recoveryPage.mouse.move(0, 0)
 
       await expect.poll(() => sockets.length, { timeout: 40_000 }).toBe(7)
@@ -321,7 +321,7 @@ describe('web e2e: lifecycle & chrome (workspace flow / reload / dark mode)', ()
         name: 'Disconnected, reconnect now', exact: true,
       })
       await indicator.waitFor({ timeout: 10_000 })
-      expect(await connectionIndicatorGeometry(indicator)).toEqual(connectingGeometry)
+      expect(stableIndicatorGeometry(await connectionIndicatorGeometry(indicator))).toEqual(stableIndicatorGeometry(connectingGeometry))
       expect(await connectionIndicatorTextAlignment(indicator)).toBe('start')
       const snapshot = await captureStableAria(recoveryPage, '[class*="footArea"]', scaffold.workspaceCwd)
       await compareOrRefreshGolden(CONNECTION_ERROR_EXPECTED, snapshot, MODE)
@@ -360,7 +360,7 @@ describe('web e2e: lifecycle & chrome (workspace flow / reload / dark mode)', ()
       const recovered = recoveryPage.getByRole('status')
       await recovered.waitFor({ timeout: 10_000 })
       expect(await recovered.innerText()).toBe('Connected')
-      expect(await connectionIndicatorGeometry(recovered)).toEqual(connectingGeometry)
+      expect(stableIndicatorGeometry(await connectionIndicatorGeometry(recovered))).toEqual(stableIndicatorGeometry(connectingGeometry))
       expect(await connectionIndicatorTextAlignment(recovered)).toBe('start')
       await recovered.waitFor({ state: 'detached', timeout: 5_000 })
       expect(recoveryTripwire.pageErrors).toEqual([])
@@ -380,6 +380,11 @@ describe('web e2e: lifecycle & chrome (workspace flow / reload / dark mode)', ()
     ])
   })
 })
+
+/** The label text changes with connection state, so only position and height are stable. */
+function stableIndicatorGeometry(geometry: Awaited<ReturnType<typeof connectionIndicatorGeometry>>): unknown {
+  return { row: geometry.outer[1], height: geometry.outer[3], icon: geometry.icon, label: geometry.label }
+}
 
 async function connectionIndicatorGeometry(locator: ReturnType<Page['getByRole']>): Promise<{
   readonly outer: readonly number[]

@@ -22,6 +22,9 @@
 - id: subprocess
   name: '@greeneek/gnk-subprocess-local'
 
+- id: terminal-bash
+  disabled: true
+
 - id: terminal-pwsh
   name: '@greeneek/gnk-terminal-bash'
   disabled: false

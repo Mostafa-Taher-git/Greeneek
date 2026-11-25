@@ -1,4 +1,11 @@
 - button "Settings":
   - img
-  - text: Settings
+- button "Branches":
+  - img
+- button "Issues":
+  - img
+- button "Dashboard":
+  - img
+- button "Check for updates":
+  - img
 - button "Disconnected, reconnect now": Disconnected

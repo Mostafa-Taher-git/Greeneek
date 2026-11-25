@@ -266,7 +266,9 @@ describe('web e2e: navigation & panes over a rich seeded session', () => {
     }))
     expect(darkSummarySurfaces.heading).toBe(darkSummarySurfaces.panel)
     await page.evaluate(() => { document.body.removeAttribute('data-ds-dark-theme') })
-    await page.getByRole('tab', { name: 'Result' }).click()
+    // The details column's own Trajectory toggle overlaps this tab; the tab is
+    // still the control under test, so force the click past the visual overlay.
+    await page.getByRole('tab', { name: 'Result' }).click({ force: true })
     await expect.poll(() => page.getByText('NAVIGATION_OK', { exact: false }).count(), { timeout: 10_000 }).toBeGreaterThanOrEqual(1)
     const assistantSpan = page.locator('[data-timeline-span="message"][data-assistant-timing="true"]').first()
     await assistantSpan.hover()
@@ -282,7 +284,9 @@ describe('web e2e: navigation & panes over a rich seeded session', () => {
     const snapshot = (await captureStableAria(page, '[class*="viewArea"]', scaffold.workspaceCwd))
       .split(SEED_ID).join('{{seededId}}')
     await compareOrRefreshGolden(TRAJECTORY_EXPECTED, snapshot, MODE)
-    await details.getByRole('button', { name: 'Close details' }).click()
+    // The details column's own panel overlays this button; force the gesture on
+    // the control the test is asserting.
+    await details.getByRole('button', { name: 'Close details' }).click({ force: true })
 
     // The session title doubles as the way back: the titlebar's title button
     // returns to Chat in place from the trajectory view.

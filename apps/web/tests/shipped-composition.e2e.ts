@@ -45,9 +45,11 @@ const SHELL_TOOL = process.platform === 'win32' ? 'pwsh' : 'bash'
 
 const EXPECTED_TOOLS = [
   'ask_user_question',
+  'browser_click',
   'browser_close',
   'browser_navigate',
   'browser_open',
+  'browser_read',
   'browser_snapshot',
   SHELL_TOOL,
   'create_goal',

@@ -25,7 +25,8 @@
     "@greeneek/gnk-home-paths": "workspace:^",
     "@greeneek/gnk-llm": "workspace:^",
     "@greeneek/gnk-session": "workspace:^",
-    "@greeneek/schemastery": "workspace:^"
+    "@greeneek/schemastery": "workspace:^",
+    "zod": "^4.4.3"
   },
   "peerDependencies": {
     "@greeneek/gnk-agent": "workspace:^",

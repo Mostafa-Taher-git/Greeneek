@@ -113,7 +113,13 @@ function commandOutput(
 ): CapturedOutput | undefined {
   const text = snapshot.text
   const end = text.lastIndexOf(marker.end)
-  const status = /^(\d+)\r?\n/.exec(text.slice(end + marker.end.length))?.[1]
+  // Windows PSReadLine pads the status line with spaces before its newline;
+  // the echoed wrapper has a quote immediately after the marker, so allowing
+  // horizontal whitespace here cannot let an echo fabricate completion.
+  // Windows PSReadLine pads the status line with spaces before its newline;
+  // the echoed wrapper has a quote immediately after the marker, so allowing
+  // horizontal whitespace here cannot let an echo fabricate completion.
+  const status = /^(\d+)[ \t]*\r?\n/.exec(text.slice(end + marker.end.length))?.[1]
   if (status === undefined) return undefined
   const startMarker = text.lastIndexOf(marker.start, end)
   const start = startMarker < 0 ? 0 : startMarker + marker.start.length

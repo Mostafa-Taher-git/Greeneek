@@ -102,6 +102,7 @@ type StubMode =
   | 'with-echo'
   | 'exit-after-send'
   | 'prompt-collision'
+  | 'padded-status'
 
 const START_PATTERN = /__GNK_PERSISTENT_PWSH_START_[^_]+(?:-[^_]+)*__/
 const END_PATTERN = /__GNK_PERSISTENT_PWSH_END_[^:]+:/
@@ -221,7 +222,8 @@ class StubTerminalSession implements TerminalBackendSession {
         : this.mode === 'prompt-collision' ? this.motd
           : 'hello from stub'
     const exitCode = this.mode === 'nonzero' ? 7 : 0
-    const output = `${start ?? ''}\n${commandOutput}\n${end ?? ''}${exitCode}\n${this.motd}`
+    const statusPadding = this.mode === 'padded-status' ? '   ' : ''
+    const output = `${start ?? ''}\n${commandOutput}\n${end ?? ''}${exitCode}${statusPadding}\n${this.motd}`
     this.scrollback += output
     if (this.mode === 'exit' || this.mode === 'signal-exit' || this.mode === 'unknown-exit') {
       const exitedOutput = `${start ?? ''}\nhello from stub\n`
@@ -364,6 +366,13 @@ describe('tool-pwsh-persistent', () => {
     expect(result).not.toContain('__GNK_PERSISTENT_PWSH_START_')
     expect(result).not.toContain('__GNK_PERSISTENT_PWSH_END_')
     expect(result).not.toContain('Invoke-Expression')
+  })
+
+  it('accepts a status line padded by Windows PSReadLine', async () => {
+    const { ctx, owner, stub } = await setup({ backendType: 'stub' })
+    await call(ctx, owner, 'warm up')
+    stub.sessions[0]!.mode = 'padded-status'
+    expect(text(await call(ctx, owner, 'Write-Output hi'))).toBe('hello from stub')
   })
 
   it('preserves command output that equals the private shell prompt', async () => {

@@ -55,6 +55,7 @@ export interface DeepAgentInjected {
   triggers: () => Promise<readonly TriggerView[]>
   stop: (ticketId: string) => Promise<void>
   retry: (ticketId: string) => Promise<void>
+  decide: (request: { readonly triggerId: string; readonly accept: boolean; readonly reason: string }) => Promise<void>
   databasePath: () => Promise<string>
   maxWorkers: () => Promise<number>
   settings: () => Promise<SettingsView>
@@ -77,7 +78,7 @@ type Tab = 'overview' | 'tickets' | 'decisions' | 'triggers' | 'settings'
 export function DeepAgentPage(props: DeepAgentPageProps) {
   const {
     t, close, state: readState, tickets: readTickets, decisions: readDecisions,
-    triggers: readTriggers, stop, retry, databasePath: readDatabasePath,
+    triggers: readTriggers, stop, retry, decide: submitDecision, databasePath: readDatabasePath,
     maxWorkers: readMaxWorkers,
     settings: readSettings, saveSettings, prompts: readPrompts,
     promptHistory: readPromptHistoryRemote, savePrompt, resetPrompt,
@@ -95,6 +96,7 @@ export function DeepAgentPage(props: DeepAgentPageProps) {
   const [promptText, setPromptText] = useState('')
   const [promptVersions, setPromptVersions] = useState<readonly PromptVersionView[]>([])
   const [saveState, setSaveState] = useState<string>()
+  const [decisionReasons, setDecisionReasons] = useState<Record<string, string>>({})
 
   const refreshSettings = useCallback(async () => {
     const [document, prompts] = await Promise.all([readSettings(), readPrompts()])
@@ -239,6 +241,28 @@ export function DeepAgentPage(props: DeepAgentPageProps) {
                 <div className={css.rowBody}>
                   <strong>{trigger.text}</strong>
                   <span className={css.meta}>{trigger.source} · {trigger.actor} · {trigger.threads.join(', ')}</span>
+                </div>
+                <div className={css.rowActions}>
+                  <input
+                    aria-label={t('decisionReason')}
+                    value={decisionReasons[trigger.id] ?? ''}
+                    onChange={event => setDecisionReasons(previous => ({ ...previous, [trigger.id]: event.target.value }))}
+                    placeholder={t('decisionReason')}
+                  />
+                  <button type="button" onClick={() => {
+                    void act(() => submitDecision({
+                      triggerId: trigger.id,
+                      accept: true,
+                      reason: decisionReasons[trigger.id] ?? '',
+                    })).then(() => setSaveState(t('decisionSaved')))
+                  }}>{t('accept')}</button>
+                  <button type="button" onClick={() => {
+                    void act(() => submitDecision({
+                      triggerId: trigger.id,
+                      accept: false,
+                      reason: decisionReasons[trigger.id] ?? '',
+                    })).then(() => setSaveState(t('decisionSaved')))
+                  }}>{t('reject')}</button>
                 </div>
               </div>
             ))}

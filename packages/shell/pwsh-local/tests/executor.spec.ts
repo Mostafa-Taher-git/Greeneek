@@ -13,7 +13,7 @@ import { mkdirSync, mkdtempSync, realpathSync, symlinkSync, writeFileSync } from
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { spawnSync } from 'node:child_process'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { Context } from '@greeneek/cordis'
 import { PwshLocalExecutor, ENCODING_PREAMBLE, candidatePwshPaths, resolvePwshPath } from '@greeneek/gnk-pwsh-local'
 import LocalSubprocessRuntime from '@greeneek/gnk-subprocess-local'
@@ -21,6 +21,12 @@ import SubprocessRuntime from '@greeneek/gnk-subprocess'
 import type { SubprocessHandle, SubprocessOutputReader, SubprocessSpawnSpec } from '@greeneek/gnk-subprocess'
 import { MAX_TIMER_DELAY_MS } from '@greeneek/gnk-timeout'
 import type { ShellProcess } from '@greeneek/gnk-shell'
+
+// A real pwsh spawn plus its 2 s background sleeps can exceed Vitest's 5 s
+// default when the full suite runs with several workers. Measured on Windows:
+// these cases pass alone and time out only under full-suite load. Assertions
+// are unchanged; only the process budget is raised for this file.
+vi.setConfig({ testTimeout: 15_000 })
 
 const spillDir = mkdtempSync(join(tmpdir(), 'gnk-pwsh-exec-spec-'))
 

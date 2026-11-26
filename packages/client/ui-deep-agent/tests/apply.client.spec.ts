@@ -32,6 +32,7 @@ describe('deep-agent client', () => {
       maxWorkers: vi.fn(),
       stopTicket: vi.fn(),
       retryTicket: vi.fn(),
+      decide: vi.fn().mockResolvedValue({ ok: true, value: 'decision-1' }),
     })
     await ctx.plugin({ inject, apply }).await()
     expect(slots.entries('deep-agent')).toHaveLength(1)

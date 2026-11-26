@@ -50,6 +50,7 @@ export function apply(ctx: ClientContext): void {
     maxWorkers: async () => unwrap(await ctx.remote.deepAgent.maxWorkers()),
     stop: async (ticketId) => { unwrap(await ctx.remote.deepAgent.stopTicket({ ticketId })) },
     retry: async (ticketId) => { unwrap(await ctx.remote.deepAgent.retryTicket({ ticketId })) },
+    decide: async (request) => { unwrap(await ctx.remote.deepAgent.decide(request)) },
     settings: async () => unwrap(await ctx.remote.deepAgent.settings()),
     saveSettings: async (block, value, revision) => unwrap(await ctx.remote.deepAgent.saveSettings({ block, value, revision })),
     prompts: async () => unwrap(await ctx.remote.deepAgent.prompts()),

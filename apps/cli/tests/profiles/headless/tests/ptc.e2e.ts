@@ -14,9 +14,11 @@ import AgentRegistry, { type Agent } from '@greeneek/gnk-agent'
 import AgentLoop from '@greeneek/gnk-agent-loop'
 import SessionProjectionRegistry from '@greeneek/gnk-session-projection'
 import { LocalBashExecutor } from '@greeneek/gnk-bash-local'
+import { PwshLocalExecutor } from '@greeneek/gnk-pwsh-local'
 import * as BashEnvPlugin from '@greeneek/gnk-shell-env'
 import LocalSubprocessRuntime from '@greeneek/gnk-subprocess-local'
 import * as ToolBash from '@greeneek/gnk-tool-bash'
+import * as ToolPwsh from '@greeneek/gnk-tool-pwsh'
 import * as LlmGreeneek from '@greeneek/gnk-llm-greeneek'
 import { WorkerThreadCodeRuntime } from '@greeneek/gnk-code-runtime-worker-thread'
 import LocalFileSystem from '@greeneek/gnk-fs-local'
@@ -36,6 +38,18 @@ import * as ToolCordis from '@greeneek/gnk-tool-cordis'
 const PERSONA = 'You are a coding agent. You work by writing TypeScript programs for run_code: '
   + 'batch related tool work into one program and print or return ONLY the findings that matter.'
 const WORKSPACE_PROBE = 'dragonfruit-8675309'
+// The harness mounts the deployment shell: bash on POSIX, pwsh on Windows.
+// Only the command syntax and tool identity change; PTC dispatch, background
+// job, cancellation, and curated-output assertions stay identical.
+const WINDOWS_SHELL = process.platform === 'win32'
+const SHELL_TOOL = WINDOWS_SHELL ? 'pwsh' : 'bash'
+const SHELL_JOB_ID = `${SHELL_TOOL}-1`
+const SLEEP_COMMAND = WINDOWS_SHELL ? 'Start-Sleep -Seconds 10' : 'sleep 10'
+const BACKGROUND_COMMAND = WINDOWS_SHELL
+  ? "Start-Sleep -Milliseconds 200; Write-Output 'background-complete'"
+  : "sleep 0.2; printf 'background-complete\\n'"
+const BACKGROUND_COMMAND_LITERAL = JSON.stringify(BACKGROUND_COMMAND)
+const SLEEP_COMMAND_LITERAL = JSON.stringify(SLEEP_COMMAND)
 
 let ctx: Context | undefined
 let workdir: string | undefined
@@ -130,8 +144,13 @@ async function backgroundPtcModeHarness(cwd: string): Promise<Context> {
   await harness.plugin(ToolTasks, {})
   await harness.plugin(LocalSubprocessRuntime)
   await harness.plugin(BashEnvPlugin)
-  await harness.plugin(LocalBashExecutor, { cwd, timeoutMs: 30_000 })
-  await harness.plugin(ToolBash)
+  if (WINDOWS_SHELL) {
+    await harness.plugin(PwshLocalExecutor, { cwd, timeoutMs: 30_000 })
+    await harness.plugin(ToolPwsh)
+  } else {
+    await harness.plugin(LocalBashExecutor, { cwd, timeoutMs: 30_000 })
+    await harness.plugin(ToolBash)
+  }
   return harness
 }
 
@@ -194,14 +213,14 @@ describe('PTC mode typed values: keyless real-worker contracts', () => {
     ctx = await backgroundPtcModeHarness(workdir)
 
     const jobId = completion(await runCode(ctx, `
-      const started = await tools.bash({
-        command: "sleep 0.2; printf 'background-complete\\n'",
+      const started = await tools.${SHELL_TOOL}({
+        command: ${BACKGROUND_COMMAND_LITERAL},
         description: 'Run completion marker in background',
         run_in_background: true,
       });
       return started.jobId;
     `))
-    expect(jobId).toBe('bash-1')
+    expect(jobId).toBe(SHELL_JOB_ID)
 
     const polled = completion(await runCode(ctx, `
       return await tools.job_output({ job_id: ${JSON.stringify(jobId)}, wait: true, timeout_ms: 5000 });
@@ -209,7 +228,7 @@ describe('PTC mode typed values: keyless real-worker contracts', () => {
     if (typeof polled !== 'object' || polled === null || Array.isArray(polled)) throw new Error('invalid job_output completion')
     const taskOutput = polled as Record<string, unknown>
     expect(taskOutput.text).toContain('background-complete')
-    expect(taskOutput.job).toMatchObject({ id: jobId, kind: 'bash', status: 'completed' })
+    expect(taskOutput.job).toMatchObject({ id: jobId, kind: SHELL_TOOL, status: 'completed' })
   }, 15_000)
 
   it('pre-abort spawns nothing; post-publication abort leaves job_kill as the cancellation owner', async () => {
@@ -219,22 +238,25 @@ describe('PTC mode typed values: keyless real-worker contracts', () => {
     const pre = new AbortController()
     pre.abort('pre-aborted')
     const preResult = await runCode(ctx, `
-      return await tools.bash({ command: 'sleep 10', description: 'Must never start', run_in_background: true });
+      return await tools.${SHELL_TOOL}({ command: ${SLEEP_COMMAND_LITERAL}, description: 'Must never start', run_in_background: true });
     `, pre.signal)
     expect(preResult.isError).toBe(true)
     expect(ctx.jobs.list()).toEqual([])
 
     const afterPublication = new AbortController()
     const running = runCode(ctx, `
-      const started = await tools.bash({ command: 'sleep 10', description: 'Wait for explicit task kill', run_in_background: true });
+      const started = await tools.${SHELL_TOOL}({ command: ${SLEEP_COMMAND_LITERAL}, description: 'Wait for explicit task kill', run_in_background: true });
       console.log(started.jobId);
       await new Promise(() => {});
     `, afterPublication.signal)
-    for (let attempt = 0; attempt < 100 && ctx.jobs.list().length === 0; attempt++) {
+    // Windows pwsh startup is slower than bash; allow up to 5 s for the job
+    // to be published. The assertion below still requires exactly one running
+    // job before the abort hand-off is exercised.
+    for (let attempt = 0; attempt < 500 && ctx.jobs.list().length === 0; attempt++) {
       await new Promise(resolve => setTimeout(resolve, 10))
     }
     const job = ctx.jobs.list()[0]
-    expect(job).toMatchObject({ id: 'bash-1', status: 'running' })
+    expect(job).toMatchObject({ id: SHELL_JOB_ID, status: 'running' })
     afterPublication.abort('outer-call-cancelled')
     expect((await running).isError).toBe(true)
     expect(ctx.jobs.list()[0]).toMatchObject({ id: job!.id, status: 'running' })
@@ -249,13 +271,13 @@ describe('PTC mode typed values: keyless real-worker contracts', () => {
     expect(settled).toMatchObject({ job: { id: job!.id, status: 'killed' } })
   }, 15_000)
 
-  it('keeps foreground bash coupled to the outer signal', async () => {
+  it('keeps the foreground shell coupled to the outer signal', async () => {
     workdir = await mkdtemp(join(tmpdir(), 'gnk-ptc-foreground-cancel-'))
     ctx = await backgroundPtcModeHarness(workdir)
     const controller = new AbortController()
     const startedAt = Date.now()
     const pending = runCode(ctx, `
-      return await tools.bash({ command: 'sleep 10', description: 'Run cancellable foreground command' });
+      return await tools.${SHELL_TOOL}({ command: ${SLEEP_COMMAND_LITERAL}, description: 'Run cancellable foreground command' });
     `, controller.signal)
     setTimeout(() => { controller.abort('stop-foreground') }, 200)
     const result = await pending
@@ -382,7 +404,7 @@ describe.skipIf(!process.env.GREENEEK_API_KEY)('PTC mode: real model writes a pr
     // …and the program's tool calls landed as dispatch events under it.
     const dispatches = events.filter(event => event.type === 'tool/code-dispatch')
     expect(dispatches.length).toBeGreaterThanOrEqual(2)
-    expect(dispatches.every(event => event.data.name === 'bash')).toBe(true)
+    expect(dispatches.every(event => event.data.name === SHELL_TOOL)).toBe(true)
     const parents = new Set(calls.map(event => event.data.callId))
     expect(dispatches.every(event => parents.has(event.data.parentCallId))).toBe(true)
 

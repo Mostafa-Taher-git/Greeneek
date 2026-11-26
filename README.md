@@ -1,68 +1,80 @@
-<p align="center">
-  <img src="apps/web/public/assets/logo-mark.png" width="88" height="88" alt="Greeneek logo" />
-</p>
+<div align="center">
+
+<img src="apps/web/public/assets/logo-mark.png" alt="Greeneek" width="96">
 
 # Greeneek
 
+**An independent agent harness for real work.**
 
-<p align="center"><strong>The surgeon's toolkit for AI agents. Everything is a plugin.</strong></p>
+`v0.8.8` · Developer preview · MIT
 
-<p align="center">
-  <a href="https://github.com/Mostafa-Taher-git/Greeneek/actions"><img src="https://img.shields.io/badge/CI-passing-067a52" alt="CI"></a>
-  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-067a52" alt="MIT"></a>
-</p>
+[Web UI](#run) · [Architecture](#how-it-works) · [Documentation](#learn-more) · [Origins](#origins-and-attribution)
+
+</div>
 
 ---
 
-Greeneek is an open-source agent harness (`gnk`).
+## What is Greeneek?
 
-It is built on an **everything-is-a-plugin** architecture and powered by [Cordis](https://github.com/cordiverse/cordis), whose design is described in [_A Programming Paradigm for Spatiotemporal Composability_](https://arxiv.org/abs/2608.25512).
+Greeneek (`gnk`) is an open-source harness for building and running agents that work in your workspace. Every capability — sessions, tools, models, providers, execution, UI surface — is a Cordis plugin composed at runtime, so the product can be reshaped without forking the core.
 
-- **Surfaces**: Web GUI (`gnk --profile web`), headless runs, automation ACP server, TypeScript SDK, and Python SDK.
-- **Bring your own models**: OpenAI, Anthropic, Google, and 35+ other routes, activated by your own API key.
-- **Sessions and tracing**: durable session persistence, titles, and telemetry.
-- **Extensible**: every capability is a plugin; tag community plugins with the [`gnk-plugin`](https://github.com/topics/gnk-plugin) topic.
+Bring your own model key, choose a workspace, and talk to the agent in the Web or Desktop app. It can read and edit files, run shell commands, use browser and terminal tools, delegate to teammates, keep durable task records, and remember its work across sessions.
 
-Documentation: see the in-repository [user guide](docs/user/guide/index.md) and [development guide](docs/development.md).
+Greeneek operates no inference service and bundles no model provider. Model routes are yours to configure, and the harness keeps its own identity, architecture, and roadmap.
 
-<!-- rebrand:ignore-start — upstream attribution; the brand pass must keep these lines verbatim (MIT obligation). -->
-## Origins and attribution
+## Why Greeneek
 
-Greeneek is a fork of [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (`dsh`), MIT-licensed. The fork point is upstream commit `818c4f344e` (release `0.1.2-rc.1`, 2026-09-03); upstream commits after that point are not automatically tracked — the plugin architecture, the `@greeneek` rescope, and the brand are all Greeneek-local work on that foundation. The [LICENSE](./LICENSE) carries both copyright notices, and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) records the harness's dependency disclosures.
-<!-- rebrand:ignore-end -->
+**Composed, not monolithic.** 285 workspace packages are organized by capability family. A shipped profile is a patch-layer stack over a base composition; you can disable, replace, or insert a row from configuration.
 
-## Brand and models
+**Your models, your rules.** Provider adapters are plugins behind one LLM seam. Add a key in **Settings → Models** or via the matching environment variable, then switch routes per session. OpenAI-compatible endpoints are supported alongside native adapters.
 
-- The app brand stays **Greeneek**.
-- The logo stays **Greeneek**.
-- The green theme stays **Greeneek green**.
-- Models are **yours, not ours**: this project operates no inference service and bundles no model provider. Every model route is activated by your own API key. Add the key under **Settings → Models** (or set the matching environment variable, e.g. `OPENAI_API_KEY`) to use that provider anywhere.
+**Durable work.** The session log is the source of truth. Prompts, tool calls, plans, and agent lifecycle events are reconstructable from it, which makes replay and recovery possible instead of relying on in-memory state.
 
-## Developer preview
+**One conversation, more reach.** CTC is an opt-in control in the chat composer that adds `run_code` beside the ordinary tool list. Nested tool calls still pass through the normal registry, approval, and permission path.
 
-Greeneek is in _developer preview_ and iterating rapidly. **THERE WILL BE COMPATIBILITY-BREAKING CHANGES.**
+**Several ways in.** Web GUI, Desktop app, headless CLI runs, an automation-only ACP server, and TypeScript and Python SDKs all start from the same `gnk` profiles.
 
-Review the [safety notice](SAFETY.md) before running the project.
+![Greeneek Web UI workspace](apps/landing/public/images/workspace.png)
+
+## What you can do
+
+| Area | Capability |
+| --- | --- |
+| **Chat** | Durable sessions, workspace selection, streaming replies, prompt continuation, and a CTC control in the composer |
+| **Tools** | Filesystem, shell, persistent terminal, web search and fetch, LSP, browser, diff and pull-request surfaces |
+| **Delegation** | Fleet and Team execution, in-process and out-of-process members, Maestro lanes, and subagent results delivered to the Lead's mailbox |
+| **Automation** | Host-wide tasks with real execution, run history, schedules, pause/resume, and persistence in an isolated GNK home |
+| **Deep-agent** | An independent proactive runtime with Triggers, Decisions, Tickets, policy rules, prompts, and a Discord source adapter |
+| **Plugins** | A documented plugin lifecycle: author a bundle, install into a profile with `gnk plugin`, boot it as a layer, and remove it |
+| **Integrations** | ACP automation server, MCP client, hook bridges, and SDKs for TypeScript and Python |
+
+Provider setup happens in the app:
+
+![Model provider configuration](docs/user/guide/providers-models-page.png)
+
+## How it works
+
+The `gnk` CLI is the single application launcher. A named profile composes the Cordis plugin tree, and the shipped profiles are `web`, `headless`, `sdk`, and `acp`. Nothing outside a profile is a supported application entry point.
+
+The product spine owns sessions, prompt assembly, the tool registry, agents, and the default agent loop. Capability families provide the implementation behind each seam: subprocess and shell, terminal, filesystem, sandbox, LLM adapters, subagents, workflow, compaction, skills, web, LSP, and more. A generated Typert graph carries remote types between Host and Client faces.
+
+- [Architecture map](docs/architecture.md) — composition, seams, and extension points
+- [Subsystems reference](docs/subsystems/README.md) — type definitions and runtime semantics
+- [Package groups](packages/README.md) — the capability families and their roles
 
 ## Run
 
-### Run from `npm`
-
-Install `Node.js`, then run:
+### From npm
 
 ```sh
 npx @greeneek/gnk web
 ```
 
-The command starts the Web UI at `http://127.0.0.1:3080` by default and opens it in the default browser for a local launch. An SSH launch only prints the host URL because the SSH client or editor owns the local forwarded address. Pass `--no-open` to run the server without opening a browser. See [Web UI guide](docs/user/guide/index.md).
-
-### Desktop app
-
-For an installable app (Linux `.deb`/`AppImage`, Windows installer/portable), download the latest `desktop-v*` release from [GitHub Releases](https://github.com/Mostafa-Taher-git/Greeneek/releases) and follow the [desktop guide](apps/desktop/README.md). The app boots the same local Web UI and self-updates from future releases.
+The Web UI opens at `http://127.0.0.1:3080` for a local launch. Use `--no-open` to run the server without opening a browser. Under SSH, the command prints the forwarded URL instead.
 
 ### Run from source
 
-To run from a repository checkout:
+Requires Node.js and pnpm:
 
 ```sh
 git clone https://github.com/Mostafa-Taher-git/Greeneek.git
@@ -72,21 +84,43 @@ pnpm run build
 pnpm gnk web
 ```
 
-`pnpm run build` prepares the repository artifacts. `pnpm gnk web` uses those built artifacts without rebuilding.
+### Desktop
 
-## Community and support
+Download a `desktop-v*` build from [GitHub Releases](https://github.com/Mostafa-Taher-git/Greeneek/releases). The Desktop app boots the same local Web UI and packages its own runtime assets. See the [desktop guide](docs/user/guide/desktop.md).
 
-- Submit feedback or bug reports through [GitHub Issues](https://github.com/Mostafa-Taher-git/Greeneek/issues).
-- Add the [`gnk-plugin`](https://github.com/topics/gnk-plugin) topic to your plugin repository for discoverability.
+## First session
 
-## Development
+1. Start the Web UI and open its URL.
+2. Open **Settings → Models** and add a key for a provider you use, or set the matching environment variable before launch.
+3. Click **Choose workspace** and select the project directory you started `gnk` in.
+4. Click **New Session**, choose a mode, and send a task. Approve operations when the active permission policy asks.
 
-Start with the [development guide](docs/development.md) and [architecture documentation](docs/architecture.md).
+The [user guide](docs/user/guide/index.md) covers model routes, custom endpoints, workspaces, scheduling, the Python SDK, and GitHub review workflows.
 
-For agents, follow [AGENTS.md](AGENTS.md).
+## Project status
+
+Greeneek is in **developer preview** and iterating quickly; compatibility-breaking changes are expected between releases. The current product version is `0.8.8`. Independent version families (session format, SQLite schema, desktop builds, protocols) carry their own version numbers.
+
+Review the [safety notice](SAFETY.md) before running the harness. Known gaps and QA findings are tracked in [GitHub Issues](https://github.com/Mostafa-Taher-git/Greeneek/issues).
+
+## Learn more
+
+- [User guide](docs/user/guide/index.md) — setup and everyday workflows
+- [Development guide](docs/development.md) — repository layout, checks, and contribution workflow
+- [Plugin tutorial](docs/user/develop/basic/index.md) — build and install your first bundle
+- [Configuration reference](docs/config-catalog.md) — every accepted config field by package
+- [Architecture](docs/architecture.md) — how the pieces fit together
+
+For agents contributing to this repository, start at [AGENTS.md](AGENTS.md).
+
+<!-- rebrand:ignore-start - upstream attribution; the brand pass must keep these lines verbatim (MIT obligation). -->
+## Origins and attribution
+
+Greeneek is a fork of [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (`dsh`), MIT-licensed. The fork point is upstream commit `818c4f344e` (release `0.1.2-rc.1`, 2026-09-03); upstream commits after that point are not automatically tracked — the plugin architecture, the `@greeneek` rescope, and the brand are all Greeneek-local work on that foundation. The [LICENSE](./LICENSE) carries both copyright notices, and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) records the harness's dependency disclosures.
+<!-- rebrand:ignore-end -->
+
+Since that fork, Greeneek has developed independently: its own package namespace and release sequences, a Typert-generated remote type layer, a Web and Desktop product surface, a session-log-centered persistence model, a chat-integrated CTC control, Fleet and Maestro orchestration, host-wide automation execution, a Deep-agent runtime, and its own documentation and contribution conventions. The upstream foundation is acknowledged above; the direction and maintenance are Greeneek's own.
 
 ## License
 
 [MIT](LICENSE)
-
-Third-party dependencies and their licenses are disclosed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

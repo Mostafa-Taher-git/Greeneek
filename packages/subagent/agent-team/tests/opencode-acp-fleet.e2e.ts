@@ -176,7 +176,9 @@ function externalWorkspace(): string {
   roots.push(workspace)
   mkdirSync(join(workspace, 'src'), { recursive: true })
   writeFileSync(join(workspace, 'README.md'), 'Greeneek integration fixture workspace. No source under test.\n')
-  writeFileSync(join(workspace, 'opencode.jsonc'), '{\n  "model": "groq/openai/gpt-oss-20b"\n}\n')
+  // Pin a free route whose quota accommodates the assembled prompt. The
+  // Groq free tier rejects it at 8000 TPM, which fails the member at transport.
+  writeFileSync(join(workspace, 'opencode.jsonc'), '{\n  "model": "opencode/hy4-flash-free"\n}\n')
   return workspace
 }
 

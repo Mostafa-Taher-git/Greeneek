@@ -3026,7 +3026,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/shell/tool-pwsh-persistent/src/index.ts:472`](../packages/shell/tool-pwsh-persistent/src/index.ts)
+Source: [`packages/shell/tool-pwsh-persistent/src/index.ts:478`](../packages/shell/tool-pwsh-persistent/src/index.ts)
 
 <a id="greeneekgnk-tool-ralph"></a>
 

@@ -32,9 +32,9 @@ None; the package neither assembles nor sends a provider request, so it cannot i
 
 ## Known Limitations and Deferred Work
 
-- **No Worker sessions yet** — effect handlers for launch, delivery, and assessment are registered as placeholders; real `ctx.agents` execution is a later phase.
-- **No Source adapters yet** — GitHub and Feishu providers are not wired; Trigger ingestion is available through the Engine but no external Source runs.
-- **Read-only policy** - policy settings are supplied at boot; panel-driven settings edits are deferred.
+- **Record management is read-only in the panel** — Tickets, Decisions, and Triggers are produced by Trigger ingestion and evaluation; editing or deleting them from the surface is deferred.
+- **Discord ingestion needs a bot token** — the Discord source polls the guild channels named in settings; unit coverage injects HTTP responses instead of a live credential.
+- **Feishu is out of scope** — Discord is the chat integration; the runtime wires GitHub and Discord sources only.
 
 ### Dev Note
 

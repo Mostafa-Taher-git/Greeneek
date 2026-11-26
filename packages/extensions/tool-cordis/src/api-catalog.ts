@@ -743,8 +743,8 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
   },
   {
     key: 'automation',
-    summary: 'The automation service: durable CRUD with optimistic concurrency.',
-    description: 'The automation service: durable CRUD with optimistic concurrency.',
+    summary: 'The automation service: durable task execution, scheduling, and history.',
+    description: 'The automation service: durable task execution, scheduling, and history.',
     methods: [
       {
         signature: '@Remote(\'list\') list(): AutomationCatalog',
@@ -760,15 +760,15 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
       },
       {
         signature: '@Remote(\'edit\') edit(request: AutomationEditRequest): AutomationTask',
-        description: 'Edit status with optimistic concurrency.',
+        description: 'Update task status with optimistic concurrency.',
         parameters: [{ name: 'request', description: 'task id, expected revision and optional new status.' }],
-        returns: 'the updated task.',
+        returns: 'the updated task after execution has settled.',
       },
       {
-        signature: '@Remote(\'run\') run(request: AutomationTaskRequest): AutomationTask',
-        description: 'Record a manual run now (delivery is a later increment).',
+        signature: '@Remote(\'run\') async run(request: AutomationTaskRequest): Promise<AutomationTask>',
+        description: 'Execute the instruction in an owned session and return the persisted task.',
         parameters: [{ name: 'request', description: 'task id.' }],
-        returns: 'the updated task.',
+        returns: 'the updated task after execution has settled.',
       },
       {
         signature: '@Remote(\'delete\') delete(request: AutomationTaskRequest): AutomationCatalog',
@@ -4351,8 +4351,16 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface AutomationEditRequest {\n    readonly id: string;\n    readonly status: AutomationTaskStatus | null;\n    readonly expectedUpdatedAt: string;\n}',
   },
   {
+    name: 'AutomationRun',
+    declaration: 'export interface AutomationRun {\n    readonly id: AutomationRunId;\n    readonly scheduledAt: string | null;\n    readonly status: \'running\' | \'succeeded\' | \'failed\';\n    readonly startedAt: string;\n    readonly completedAt: string | null;\n    readonly sessionId: SessionId;\n    readonly result: string | null;\n    readonly error: string | null;\n}',
+  },
+  {
+    name: 'AutomationRunId',
+    declaration: 'export type AutomationRunId = Branded<\'AutomationRunId\'>;',
+  },
+  {
     name: 'AutomationTask',
-    declaration: 'export interface AutomationTask {\n    readonly id: string;\n    readonly title: string;\n    readonly prompt: string;\n    readonly status: AutomationTaskStatus;\n    readonly target: AutomationTaskTarget;\n    readonly timing: AutomationTaskTiming;\n    readonly createdAt: string;\n    readonly updatedAt: string;\n    readonly lastRunAt: string | null;\n}',
+    declaration: 'export interface AutomationTask {\n    readonly id: string;\n    readonly title: string;\n    readonly prompt: string;\n    readonly status: AutomationTaskStatus;\n    readonly target: AutomationTaskTarget;\n    readonly timing: AutomationTaskTiming;\n    readonly createdAt: string;\n    readonly updatedAt: string;\n    readonly lastRunAt: string | null;\n    readonly history: readonly AutomationRun[];\n}',
   },
   {
     name: 'AutomationTaskRequest',
@@ -4364,7 +4372,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'AutomationTaskTarget',
-    declaration: 'export interface AutomationTaskTarget {\n    readonly kind: \'new_once\' | \'session\';\n    readonly sessionId: string | null;\n    readonly cwd: string | null;\n}',
+    declaration: 'export interface AutomationTaskTarget {\n    readonly kind: \'new_once\' | \'session\';\n    readonly sessionId: SessionId | null;\n    readonly cwd: string | null;\n}',
   },
   {
     name: 'AutomationTaskTiming',

@@ -47,12 +47,19 @@ function toView(value: {
     timeZone: string
   }
   lastRunAt: string | null
+  history: readonly {
+    id: string
+    status: 'running' | 'succeeded' | 'failed'
+    startedAt: string
+    result: string | null
+    error: string | null
+  }[]
   updatedAt: string
 }): AutomationTaskView {
   return {
     id: value.id, title: value.title, prompt: value.prompt, status: value.status,
     repeat: value.timing.repeat, at: value.timing.at, timeZone: value.timing.timeZone,
-    lastRunAt: value.lastRunAt, updatedAt: value.updatedAt,
+    lastRunAt: value.lastRunAt, history: value.history, updatedAt: value.updatedAt,
   }
 }
 

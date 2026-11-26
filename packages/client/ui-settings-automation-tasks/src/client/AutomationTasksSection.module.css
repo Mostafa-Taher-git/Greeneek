@@ -187,6 +187,26 @@
   font-size: 10px;
 }
 
+.history {
+  max-width: min(620px, 65vw);
+  color: var(--dsw-alias-label-secondary);
+  font-size: 11px;
+}
+
+.history summary {
+  cursor: pointer;
+}
+
+.run {
+  padding: 6px 0;
+  overflow-wrap: anywhere;
+}
+
+.run p {
+  margin: 4px 0 0;
+  white-space: pre-wrap;
+}
+
 .rowActions {
   display: flex;
   gap: 4px;

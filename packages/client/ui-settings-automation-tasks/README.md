@@ -7,7 +7,7 @@ kind: "package-reference"
 
 ## Summary
 
-`gnk-client-ui-settings-automation-tasks` contributes the Automation tasks settings section. It renders Enabled/Paused/Ended/All tabs, search, a New split button with Create in a session and Create manually, per-tab empty states, a manual-create form, and task rows with pause/resume, run-now, and delete. All data comes from the Host `automation` Remote; product copy is localized in zh/en/ar.
+`gnk-client-ui-settings-automation-tasks` contributes the Automation tasks settings section. It renders Enabled/Paused/Ended/All tabs, search, a New split button with Create in a session and Create manually, per-tab empty states, a manual-create form, and task rows with pause/resume, run-now, delete, and expandable execution results. All data comes from the Host `automation` Remote; product copy is localized in zh/en/ar.
 
 ## Table of Contents
 
@@ -32,7 +32,7 @@ None; the package neither assembles nor sends a provider request, so it cannot i
 
 ## Known Limitations and Deferred Work
 
-- **No automatic delivery** — the create form records a schedule and run-now records a manual run; time-based execution is later work.
+- **Host-owned execution** — scheduled and manual instructions run through an owned Agent; this client reads the persisted result history from the Remote.
 - **Session creation is a navigation** — Create in a session opens a new session; it does not prefill a model prompt that creates the task.
 
 ### Dev Note

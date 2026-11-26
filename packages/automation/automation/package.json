@@ -1,6 +1,6 @@
 {
   "name": "@greeneek/gnk-automation",
-  "description": "Host-wide automation tasks: durable task records with status, catalog and management Remotes",
+  "description": "Host-wide automation tasks with scheduled agent execution and durable history",
   "version": "0.8.8",
   "publishConfig": { "access": "public" },
   "repository": {
@@ -23,13 +23,26 @@
   "license": "MIT",
   "dependencies": {
     "@greeneek/gnk-home-paths": "workspace:^",
-    "zod": "^4.4.3"
+    "@greeneek/gnk-llm": "workspace:^",
+    "@greeneek/gnk-session": "workspace:^",
+    "@greeneek/schemastery": "workspace:^"
   },
   "peerDependencies": {
+    "@greeneek/gnk-agent": "workspace:^",
+    "@greeneek/gnk-agent-default-model": "workspace:^",
+    "@greeneek/gnk-brand": "workspace:^",
+    "@greeneek/gnk-session-persistence": "workspace:^",
     "@greeneek/gnk-typert-protocol": "workspace:^",
     "@greeneek/cordis": "workspace:^"
   },
   "devDependencies": {
+    "@greeneek/gnk-agent": "workspace:^",
+    "@greeneek/gnk-agent-default-model": "workspace:^",
+    "@greeneek/gnk-brand": "workspace:^",
+    "@greeneek/gnk-llm": "workspace:^",
+    "@greeneek/gnk-session": "workspace:^",
+    "@greeneek/gnk-session-persistence": "workspace:^",
+    "@greeneek/gnk-session-persistence-jsonl": "workspace:^",
     "@greeneek/gnk-typert-protocol": "workspace:^",
     "@greeneek/cordis": "workspace:^"
   }

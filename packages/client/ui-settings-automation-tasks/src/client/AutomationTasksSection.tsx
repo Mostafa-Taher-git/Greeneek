@@ -19,6 +19,13 @@ export interface AutomationTaskView {
   readonly at: string | null
   readonly timeZone: string
   readonly lastRunAt: string | null
+  readonly history: readonly {
+    readonly id: string
+    readonly status: 'running' | 'succeeded' | 'failed'
+    readonly startedAt: string
+    readonly result: string | null
+    readonly error: string | null
+  }[]
   readonly updatedAt: string
 }
 
@@ -59,7 +66,7 @@ export type AutomationTasksSectionProps =
 
 type Tab = 'active' | 'paused' | 'ended' | 'all'
 
-/** Build a draft with a one-shot time one hour ahead in the local zone. */
+/** Build a draft with its first occurrence one hour ahead in the local zone. */
 function newDraft(): AutomationTaskDraft {
   const next = new Date(Date.now() + 3600_000)
   const pad = (n: number) => String(n).padStart(2, '0')
@@ -71,10 +78,42 @@ function newDraft(): AutomationTaskDraft {
   }
 }
 
-/** Combine the date/time fields into an ISO string. */
+/** Resolve the entered wall clock in its selected IANA time zone. */
 function draftAt(draft: AutomationTaskDraft): string | null {
-  const parsed = new Date(`${draft.date}T${draft.time}:00`)
-  return Number.isFinite(parsed.getTime()) ? parsed.toISOString() : null
+  const dateParts = draft.date.split('-').map(Number)
+  const timeParts = draft.time.split(':').map(Number)
+  const year = dateParts[0]
+  const month = dateParts[1]
+  const day = dateParts[2]
+  const hour = timeParts[0]
+  const minute = timeParts[1]
+  if ([year, month, day, hour, minute].some(value => value === undefined || !Number.isFinite(value))) return null
+  const target = Date.UTC(year, month - 1, day, hour, minute)
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: draft.timeZone, year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  })
+  const parts = (value: number) => {
+    const fields = new Map(formatter.formatToParts(value).map(part => [part.type, part.value]))
+    return {
+      year: Number(fields.get('year')), month: Number(fields.get('month')), day: Number(fields.get('day')),
+      hour: Number(fields.get('hour')), minute: Number(fields.get('minute')),
+    }
+  }
+  const local = parts(target)
+  const offset = Date.UTC(local.year, local.month - 1, local.day, local.hour, local.minute) - target
+  const candidate = target - offset
+  const matches = (value: number) => {
+    const actual = parts(value)
+    return actual.year === year && actual.month === month && actual.day === day
+      && actual.hour === hour && actual.minute === minute
+  }
+  if (matches(candidate)) return new Date(candidate).toISOString()
+  for (let delta = -180; delta <= 180; delta++) {
+    const alternate = candidate + delta * 60_000
+    if (matches(alternate)) return new Date(alternate).toISOString()
+  }
+  return null
 }
 
 /** Render the Automation tasks section. */
@@ -115,15 +154,18 @@ export function AutomationTasksSection(props: AutomationTasksSectionProps) {
     event.preventDefault()
     if (draft.title.trim().length === 0 || draft.prompt.trim().length === 0 || busy) return
     setBusy(true)
+    setError(undefined)
     try {
       await create({
         title: draft.title.trim(), prompt: draft.prompt.trim(), cwd: null,
-        repeat: draft.repeat, at: draft.repeat === 'once' ? draftAt(draft) : null,
+        repeat: draft.repeat, at: draftAt(draft),
         timeZone: draft.timeZone,
       })
       setFormOpen(false)
       setDraft(newDraft())
       await refresh()
+    } catch {
+      setError(t('invalidTime'))
     } finally {
       setBusy(false)
     }
@@ -208,12 +250,8 @@ export function AutomationTasksSection(props: AutomationTasksSectionProps) {
                   <option value="weekly">{t('repeatWeekly')}</option>
                 </select>
               </label>
-              {draft.repeat === 'once' && (
-                <>
-                  <label><span>{t('date')}</span><input type="date" value={draft.date} onChange={(e) => { setDraft({ ...draft, date: e.target.value }) }} /></label>
-                  <label><span>{t('time')}</span><input type="time" value={draft.time} onChange={(e) => { setDraft({ ...draft, time: e.target.value }) }} /></label>
-                </>
-              )}
+              <label><span>{t('date')}</span><input type="date" value={draft.date} onChange={(e) => { setDraft({ ...draft, date: e.target.value }) }} /></label>
+              <label><span>{t('time')}</span><input type="time" value={draft.time} onChange={(e) => { setDraft({ ...draft, time: e.target.value }) }} /></label>
               <label><span>{t('timeZone')}</span><input value={draft.timeZone} onChange={(e) => { setDraft({ ...draft, timeZone: e.target.value }) }} /></label>
             </div>
           </div>
@@ -238,6 +276,19 @@ export function AutomationTasksSection(props: AutomationTasksSectionProps) {
               <div className={css.rowBody}>
                 <strong>{task.title}</strong>
                 <span className={css.rowMeta}>{t(`status${task.status.charAt(0).toUpperCase()}${task.status.slice(1)}` as AutomationTasksLocaleKey)} · {t(`repeat${task.repeat.charAt(0).toUpperCase()}${task.repeat.slice(1)}` as AutomationTasksLocaleKey)}{task.lastRunAt ? ` · ${task.lastRunAt}` : ''}</span>
+                {task.history.length > 0 && (
+                  <details className={css.history}>
+                    <summary>{t('runHistory')} ({task.history.length})</summary>
+                    {[...task.history].reverse().map(run => (
+                      <div key={run.id} className={css.run}>
+                        <strong>{t(`run${run.status.charAt(0).toUpperCase()}${run.status.slice(1)}` as AutomationTasksLocaleKey)}</strong>
+                        <time dateTime={run.startedAt}>{run.startedAt}</time>
+                        {run.result !== null && <p>{run.result}</p>}
+                        {run.error !== null && <p role="alert">{run.error}</p>}
+                      </div>
+                    ))}
+                  </details>
+                )}
               </div>
               <div className={css.rowActions}>
                 {task.status === 'active'

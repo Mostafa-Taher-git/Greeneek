@@ -1089,13 +1089,34 @@ importers:
       '@greeneek/gnk-home-paths':
         specifier: workspace:^
         version: link:../../util/home-paths
-      zod:
-        specifier: ^4.4.3
-        version: 4.4.3
+      '@greeneek/gnk-llm':
+        specifier: workspace:^
+        version: link:../../llm/llm
+      '@greeneek/gnk-session':
+        specifier: workspace:^
+        version: link:../../core/session
+      '@greeneek/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
     devDependencies:
       '@greeneek/cordis':
         specifier: workspace:^
         version: link:../../../vendor/cordis
+      '@greeneek/gnk-agent':
+        specifier: workspace:^
+        version: link:../../core/agent
+      '@greeneek/gnk-agent-default-model':
+        specifier: workspace:^
+        version: link:../../core/agent-default-model
+      '@greeneek/gnk-brand':
+        specifier: workspace:^
+        version: link:../../util/brand
+      '@greeneek/gnk-session-persistence':
+        specifier: workspace:^
+        version: link:../../session/session-persistence
+      '@greeneek/gnk-session-persistence-jsonl':
+        specifier: workspace:^
+        version: link:../../session/session-persistence-jsonl
       '@greeneek/gnk-typert-protocol':
         specifier: workspace:^
         version: link:../../typert/protocol

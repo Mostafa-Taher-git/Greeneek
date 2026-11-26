@@ -1,5 +1,5 @@
 ---
-description: "The automation package group: durable Host-wide tasks with catalog and management Remotes."
+description: "The automation package group: Host-wide scheduled instructions with durable execution history."
 kind: "package-group"
 ---
 
@@ -7,7 +7,7 @@ kind: "package-group"
 
 ## Summary
 
-The `automation/` group holds the Host-wide automation task seam. Tasks are durable records with a title, instruction, status, delivery target, repeat rule, and optimistic-concurrency metadata. The service exposes list/create/edit/run/delete Remotes for settings UIs and emits `automation/changed` after each committed change. Session-local reminders belong to `gnk-schedule`, not this group.
+The `automation/` group holds Host-wide scheduled instructions. The service runs each instruction through an owned Agent, persists its result or failure in task history, and exposes list/create/edit/run/delete Remotes for settings UIs. Session-local reminders belong to `gnk-schedule`, not this group.
 
 ## Table of Contents
 

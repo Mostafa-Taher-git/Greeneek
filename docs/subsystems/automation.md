@@ -12,7 +12,7 @@ Generated from source by `scripts/gen-cordis-catalog.ts` (verified fresh by `pnp
 
 ### `ctx.automation` — `AutomationService`
 
-The automation service: durable CRUD with optimistic concurrency.
+The automation service: durable task execution, scheduling, and history.
 
 ```ts cordis-catalog
 /**
@@ -29,18 +29,18 @@ The automation service: durable CRUD with optimistic concurrency.
 @Remote('create') create(request: AutomationCreateRequest): AutomationTask
 
 /**
- * Edit status with optimistic concurrency.
+ * Update task status with optimistic concurrency.
  * @param request - task id, expected revision and optional new status.
- * @returns the updated task.
+ * @returns the updated task after execution has settled.
  */
 @Remote('edit') edit(request: AutomationEditRequest): AutomationTask
 
 /**
- * Record a manual run now (delivery is a later increment).
+ * Execute the instruction in an owned session and return the persisted task.
  * @param request - task id.
- * @returns the updated task.
+ * @returns the updated task after execution has settled.
  */
-@Remote('run') run(request: AutomationTaskRequest): AutomationTask
+@Remote('run') async run(request: AutomationTaskRequest): Promise<AutomationTask>
 
 /**
  * Delete a task.
@@ -91,17 +91,18 @@ A Host-wide automation task changed; listeners may refresh their catalog.
 Source: [`packages/automation/automation/src/index.ts`](../../packages/automation/automation/src/index.ts)
 <!-- END GENERATED cordis-surface -->
 
-Automation tasks (`ctx.automation`) are Host-wide durable records with a management Remote. Each task has a title, an instruction prompt, a lifecycle status (`active`, `paused`, `ended`), a delivery target, a repeat rule, and optimistic-concurrency metadata.
+Automation tasks (`ctx.automation`) are Host-wide durable records with scheduled Agent execution and a management Remote. Each task has a title, an instruction prompt, a lifecycle status (`active`, `paused`, `ended`), a delivery target, a repeat rule, execution history, and optimistic-concurrency metadata.
 
 ## Types
 
 - `AutomationTask` — one durable task record.
+- `AutomationRun` — one execution's status, result or failure, and owned Session id.
 - `AutomationCatalog` — the full task list projected to a settings UI.
 - `AutomationCreateRequest` / `AutomationEditRequest` — create and status edits.
 - `AutomationTaskStatus` — `active`, `paused`, or `ended`.
 
-Tasks are stored under `$GNK_HOME/automation/tasks.json` with atomic writes. This seam is separate from the session-local `schedule` domain, whose only durable state is its own versioned event stream; automation tasks are a Host resource and are visible across sessions.
+Tasks and execution history are stored under `$GNK_HOME/automation/tasks.json` with atomic writes. This service is separate from the session-local `schedule` domain, whose only durable state is its own versioned event stream; automation tasks are a Host resource and are visible across sessions.
 
 ## Status and scope
 
-The standalone page offers tabs for Enabled/Paused/Ended/All, manual creation, pause/resume, run-now and delete. Automatic time-based delivery is a later increment; the current build records schedules and exposes management verbs.
+The standalone page offers tabs for Enabled/Paused/Ended/All, manual creation, pause/resume, run-now and delete. One Host-local scheduler checks due tasks every 30 seconds by default. The first run creates the task's Session; later runs resume it with the configured default model. Each run stores assistant text or failure in task history. Restart marks in-progress runs failed and does not replay their claimed scheduled occurrence. Daily and weekly timing follows the stored IANA time zone.

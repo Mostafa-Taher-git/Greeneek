@@ -160,7 +160,7 @@ Scope: 278 workspace packages; every package appears under each of its kinds (25
 
 | Package | Role |
 | --- | --- |
-| `@greeneek/gnk-automation` | Host-wide automation tasks: durable task records with status, catalog and management Remotes |
+| `@greeneek/gnk-automation` | Host-wide scheduled task execution with durable results and management Remotes |
 
 ### `boot/`
 

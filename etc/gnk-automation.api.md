@@ -10,15 +10,20 @@
 `src/index.ts: export interface AutomationServiceConfig {`
 `src/index.ts: export type {`
 `src/index.ts: export { AutomationError } from './error.ts'`
+`src/index.ts: export { AutomationRunId } from './types.ts'`
 `src/store.ts: export function defaultAutomationFile(): string {`
 `src/store.ts: export function readTasks(file: string): AutomationTask[] {`
 `src/store.ts: export function writeTasks(file: string, tasks: readonly AutomationTask[]): void {`
+`src/timing.ts: export function nextOccurrence(task: AutomationTask, after: number): number | undefined {`
+`src/types.ts: export function AutomationRunId(id: string): AutomationRunId {`
 `src/types.ts: export interface AutomationCatalog {`
 `src/types.ts: export interface AutomationCreateRequest {`
 `src/types.ts: export interface AutomationEditRequest {`
+`src/types.ts: export interface AutomationRun {`
 `src/types.ts: export interface AutomationTask {`
 `src/types.ts: export interface AutomationTaskRequest {`
 `src/types.ts: export interface AutomationTaskTarget {`
 `src/types.ts: export interface AutomationTaskTiming {`
 `src/types.ts: export type AutomationErrorCode =`
+`src/types.ts: export type AutomationRunId = Branded<'AutomationRunId'>`
 `src/types.ts: export type AutomationTaskStatus = 'active' | 'paused' | 'ended'`

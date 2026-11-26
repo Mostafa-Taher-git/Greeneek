@@ -333,7 +333,7 @@ export interface AutomationServiceConfig {
 }
 ```
 
-Source: [`packages/automation/automation/src/index.ts:56`](../packages/automation/automation/src/index.ts)
+Source: [`packages/automation/automation/src/index.ts:57`](../packages/automation/automation/src/index.ts)
 
 <a id="greeneekgnk-bash-local"></a>
 

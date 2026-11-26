@@ -10,6 +10,10 @@ Status: implemented
 
 The Known Limitations section now records the actual deferred work: record management is read-only in the panel, Discord ingestion needs a bot token, and Feishu is not a supported integration. No product code changed. The generated config catalog was refreshed because an earlier source edit shifted a documented source line.
 
+## Alternatives considered
+
+Leaving the stale limitations in place would misstate shipped capabilities; deleting the section would break the README limitations gate. Correcting the bullets preserves one home for each current fact.
+
 ## Testing
 
 `pnpm run doc-sync` 32 passed / 0 failed; `pnpm run typecheck` exit 0. Deep-agent package suites were verified separately: 9 files / 72 tests passed.

@@ -30,10 +30,10 @@
 
 - id: tools
   config:
-    # TEMPORARY workaround: GNK_TOOLS_MODE (native|ptc|both) opts a whole gnk
-    # process into PTC mode while per-session tool-presentation selection is being
-    # designed; unset keeps the schema default (native). Remove the env seam
-    # once the web UI owns the choice per session.
+    # Deployment default for tool presentation (native|ptc|both). Each session
+    # can opt into CTC (`both`) or out again through the chat control; this
+    # value only sets the composition a fresh session starts from. Unset keeps
+    # the schema default (native).
     mode: !!js process.env.GNK_TOOLS_MODE
 
 # ── web-only host rows, the transport layer, and the browser roster ─────────

@@ -2,6 +2,8 @@
 
 Status: implemented
 
+Current state: this retirement-marker decision was superseded when the shipped `ptc` preset was deleted. The shipped-roster test now asserts the preset is absent, a stored `ptc` default falls back to `standard` with a warning, and explicit lookup of the removed id fails. CTC is now a per-session opt-in owned by the chat control; see [2026-11-01-ctc-reversible-presentation.md](../feature/2026-11-01-ctc-reversible-presentation.md). The paragraphs below record the earlier decision only.
+
 ## Problem
 
 PTC was recalled from the new-session row by a client-held id set and a host-side special case for its default. That left two homes for the same fact: a shipped preset could be retired in copy without any roster-visible marker, and Settings still listed it as a startable mode. A new retired preset would need both a host change and a client change.

@@ -217,6 +217,24 @@ export async function runLoaderSmoke(options: LoaderSmokeOptions): Promise<Loade
     await options.inspect?.(cwd)
     return { stdout: result.stdout, stderr: result.stderr }
   } finally {
-    await rm(cwd, { recursive: true, force: true })
+    await removeTempDir(cwd)
+  }
+}
+
+/**
+ * Windows can keep a file handle open briefly after a child exits, so the
+ * first recursive removal of its temporary directory may fail with EBUSY.
+ * Retry only that transient condition; a persistent EPERM still fails loud.
+ */
+async function removeTempDir(path: string): Promise<void> {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      await rm(path, { recursive: true, force: true })
+      return
+    } catch (error: unknown) {
+      const code = error instanceof Error && 'code' in error ? error.code : undefined
+      if ((code !== 'EBUSY' && code !== 'EPERM') || attempt >= 20) throw error
+      await new Promise<void>((resolve) => { setTimeout(resolve, 100) })
+    }
   }
 }

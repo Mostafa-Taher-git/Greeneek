@@ -1,5 +1,6 @@
 // Trusted non-loopback Web access cannot call the loopback-only settings API;
 // the notice therefore advances for this browser process and returns on reload.
+import { createRequire } from 'node:module'
 import type { Browser, Page } from 'playwright'
 import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -11,19 +12,33 @@ import {
 import { ZH_BROWSER_LOCALE } from './support.ts'
 
 const MODE = webSnapshotMode()
+// The CommonJS binding is mutable; an ESM namespace import is not.
+const dns = createRequire(import.meta.url)('node:dns') as typeof import('node:dns')
 
 describe.skipIf(MODE === 'record')('web e2e: remote welcome notice', () => {
   let scaffold: WebScaffold
   let browser: Browser
   let page: Page
   let tripwire: ReturnType<typeof watchConsole>
+  const originalLookup = dns.lookup
 
   beforeAll(async () => {
+    // Windows has no wildcard *.localhost DNS. Keep the synthetic authority in
+    // the URL and Host header (the trusted-host behavior under test), and map
+    // only the resolution used by Node's fetch to loopback.
+    const lookupImpl = originalLookup as (hostname: string, ...args: unknown[]) => unknown
+    dns.lookup = ((hostname: string, ...args: unknown[]) => {
+      return lookupImpl(hostname === 'remote.localhost' ? '127.0.0.1' : hostname, ...args)
+    }) as typeof dns.lookup
     scaffold = await launchWebScaffold({
       remoteAuthority: 'remote.localhost',
       welcomeNoticePending: true,
     })
-    browser = await chromium.launch()
+    // Keep the non-loopback authority under test while making the synthetic
+    // hostname resolvable on hosts without wildcard *.localhost DNS (Windows).
+    browser = await chromium.launch({
+      args: ['--host-resolver-rules=MAP remote.localhost 127.0.0.1'],
+    })
     page = await browser.newPage({
       viewport: { width: 1440, height: 960 },
       locale: ZH_BROWSER_LOCALE,
@@ -34,6 +49,7 @@ describe.skipIf(MODE === 'record')('web e2e: remote welcome notice', () => {
   }, 120_000)
 
   afterAll(async () => {
+    dns.lookup = originalLookup
     await browser?.close()
     await scaffold?.close()
   })

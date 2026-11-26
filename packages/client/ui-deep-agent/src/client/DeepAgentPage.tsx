@@ -246,7 +246,7 @@ export function DeepAgentPage(props: DeepAgentPageProps) {
                   <input
                     aria-label={t('decisionReason')}
                     value={decisionReasons[trigger.id] ?? ''}
-                    onChange={event => setDecisionReasons(previous => ({ ...previous, [trigger.id]: event.target.value }))}
+                    onChange={(event) => { setDecisionReasons(previous => ({ ...previous, [trigger.id]: event.target.value })) }}
                     placeholder={t('decisionReason')}
                   />
                   <button type="button" onClick={() => {
@@ -254,14 +254,14 @@ export function DeepAgentPage(props: DeepAgentPageProps) {
                       triggerId: trigger.id,
                       accept: true,
                       reason: decisionReasons[trigger.id] ?? '',
-                    })).then(() => setSaveState(t('decisionSaved')))
+                    })).then(() => { setSaveState(t('decisionSaved')) })
                   }}>{t('accept')}</button>
                   <button type="button" onClick={() => {
                     void act(() => submitDecision({
                       triggerId: trigger.id,
                       accept: false,
                       reason: decisionReasons[trigger.id] ?? '',
-                    })).then(() => setSaveState(t('decisionSaved')))
+                    })).then(() => { setSaveState(t('decisionSaved')) })
                   }}>{t('reject')}</button>
                 </div>
               </div>

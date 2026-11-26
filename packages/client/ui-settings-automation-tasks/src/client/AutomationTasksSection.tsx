@@ -87,7 +87,8 @@ function draftAt(draft: AutomationTaskDraft): string | null {
   const day = dateParts[2]
   const hour = timeParts[0]
   const minute = timeParts[1]
-  if ([year, month, day, hour, minute].some(value => value === undefined || !Number.isFinite(value))) return null
+  if (year === undefined || month === undefined || day === undefined || hour === undefined || minute === undefined) return null
+  if (![year, month, day, hour, minute].every(value => Number.isFinite(value))) return null
   const target = Date.UTC(year, month - 1, day, hour, minute)
   const formatter = new Intl.DateTimeFormat('en-CA', {
     timeZone: draft.timeZone, year: 'numeric', month: '2-digit', day: '2-digit',

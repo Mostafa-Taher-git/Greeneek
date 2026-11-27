@@ -162,6 +162,21 @@ export interface LoaderSmokeOptions {
   readonly expectedExitCode?: number
 }
 
+/**
+ * Node 22 emits an ExperimentalWarning when the shipped storage backend loads
+ * `node:sqlite`. It is runtime noise, not product output, and would otherwise
+ * make a clean expected-output run look dirty. Only that warning family is
+ * removed; any other stderr still reaches the assertions.
+ * @param stderr - raw child-process stderr.
+ * @returns stderr without Node experimental warning blocks.
+ */
+function withoutNodeExperimentalWarnings(stderr: string): string {
+  return stderr.replace(
+    /^\(node:\d+\) ExperimentalWarning:[^\n]*\n(?:\(Use `node --trace-warnings[^\n]*\n)?/gmu,
+    '',
+  )
+}
+
 /** Captured output from a Loader smoke that exited successfully. */
 export interface LoaderSmokeResult {
   /** Complete stdout after clean exit. */
@@ -215,7 +230,10 @@ export async function runLoaderSmoke(options: LoaderSmokeOptions): Promise<Loade
       throw new Error(`${options.label} exited ${String(result.exitCode)} (expected ${expectedExitCode}). stdout:\n${result.stdout}\nstderr:\n${result.stderr}`)
     }
     await options.inspect?.(cwd)
-    return { stdout: result.stdout, stderr: result.stderr }
+    return {
+      stdout: result.stdout,
+      stderr: withoutNodeExperimentalWarnings(result.stderr),
+    }
   } finally {
     await removeTempDir(cwd)
   }

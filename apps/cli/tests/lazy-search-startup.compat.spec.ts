@@ -124,7 +124,7 @@ describe.skipIf(!requireBuiltArtifacts)('built CLI lazy-search startup', () => {
       // Node 22 emits a benign ExperimentalWarning when the shipped storage
       // backend imports node:sqlite. Only that warning is tolerated: any other
       // stderr output still fails the startup smoke.
-      const sqliteWarning = /^\(node:\d+\) ExperimentalWarning: SQLite[^\n]*\n(?:Use `node --trace-warnings[^\n]*\n)?/gu
+      const sqliteWarning = /^\(node:\d+\) ExperimentalWarning: SQLite[^\n]*\n(?:\(Use `node --trace-warnings[^\n]*\n)?/gu
       expect(result.stderr.replace(sqliteWarning, '').trim()).toBe('')
     } finally {
       await rm(cwd, { recursive: true, force: true })

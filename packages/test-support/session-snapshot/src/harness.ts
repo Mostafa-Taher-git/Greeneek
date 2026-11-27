@@ -43,6 +43,19 @@ const DEFAULT_WAIT_TIMEOUT_MS = 10_000
 const WAIT_POLL_INTERVAL_MS = 10
 
 /**
+ * Remove Node 22's ExperimentalWarning block for `node:sqlite` from captured
+ * stderr so expected output reflects product output only.
+ * @param stderr - raw child-process stderr.
+ * @returns stderr without Node experimental warning blocks.
+ */
+function withoutNodeExperimentalWarnings(stderr: string): string {
+  return stderr.replace(
+    /^\(node:\d+\) ExperimentalWarning:[^\n]*\n(?:\(Use `node --trace-warnings[^\n]*\n)?/gmu,
+    '',
+  )
+}
+
+/**
  * One step of a scenario's deterministic input script (`input.json`). The
  * harness interprets these in order. `newSession` captures the server-issued
  * (random) session id into a `{{sessionId}}` variable that later steps
@@ -339,7 +352,9 @@ export async function runScenario(input: InputScript, opts: RunOptions): Promise
     })
     return {
       rawStdout: launched.rawStdout(),
-      stderr: launched.stderr(),
+      // Node 22 emits an ExperimentalWarning for node:sqlite when the shipped
+      // storage backend loads; it is runtime noise, not scenario output.
+      stderr: withoutNodeExperimentalWarnings(launched.stderr()),
       cwd,
       cwdAliases,
       initialWorkspace,

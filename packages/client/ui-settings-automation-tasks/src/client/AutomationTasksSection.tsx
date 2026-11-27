@@ -174,7 +174,17 @@ export function AutomationTasksSection(props: AutomationTasksSectionProps) {
 
   const act = async (fn: () => Promise<void>): Promise<void> => {
     setBusy(true)
-    try { await fn(); await refresh() } finally { setBusy(false) }
+    setError(undefined)
+    try {
+      await fn()
+    } catch {
+      setError(t('actionFailed'))
+    } finally {
+      // A failed run is still persisted by the host; refresh in both paths so
+      // the displayed state converges with the durable catalog.
+      await refresh()
+      setBusy(false)
+    }
   }
 
   return (

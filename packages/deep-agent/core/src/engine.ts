@@ -300,6 +300,9 @@ export class Engine {
       if (thread === undefined || thread.evaluating === undefined) throw new UserError('evalFinished')
       const evaluating = thread.evaluating
       if (outcome.evalId !== undefined && outcome.evalId !== evaluating.id) throw new UserError('evalFinished')
+      // Filtered Triggers share the Eval's thread but were never admissible;
+      // only the selected primary may author a Decision and its Ticket.
+      if (triggerId !== evaluating.primary) throw new UserError('notPrimary')
       const policy = this.options.policy()
       if (outcome.accept && !policy.admitsInferred(outcome.matchedRules ?? []) && evaluating.strength !== 'explicit') {
         throw new UserError('notExplicit')

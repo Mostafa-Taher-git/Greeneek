@@ -31,6 +31,8 @@ async function setup(): Promise<{ slots: SlotRegistry; remote: Record<string, Re
     stopTicket: vi.fn(),
     retryTicket: vi.fn(),
     decide: vi.fn().mockResolvedValue({ ok: true, value: 'decision-1' }),
+    promptHistory: vi.fn().mockRejectedValue(new Error('history unavailable')),
+    resetPrompt: vi.fn().mockRejectedValue(new Error('reset failed')),
   }
   ctx.provide('remote', { deepAgent: remote })
   ctx.provide('remote.deepAgent', remote)
@@ -44,6 +46,16 @@ describe('deep-agent client', () => {
     expect(slots.entries('deep-agent')).toHaveLength(1)
     const shortcut = slots.entries('sidebar.primary.action').find(item => item.options.id === 'shortcut-deep-agent')
     expect(shortcut?.options.order).toBe(-1)
+  })
+
+  it('propagates prompt-history and reset failures so the panel can report them', async () => {
+    const { slots, remote } = await setup()
+    const injected = slots.entries('deep-agent')[0]?.inject?.() as DeepAgentInjected | undefined
+    expect(injected?.promptHistory).toBeTypeOf('function')
+    await expect(injected?.promptHistory('admission')).rejects.toThrow('history unavailable')
+    await expect(injected?.resetPrompt({ name: 'admission' })).rejects.toThrow('reset failed')
+    expect(remote.promptHistory).toHaveBeenCalledWith({ name: 'admission' })
+    expect(remote.resetPrompt).toHaveBeenCalledWith({ name: 'admission' })
   })
 
   it('forwards an operator decision to the deepAgent Remote', async () => {

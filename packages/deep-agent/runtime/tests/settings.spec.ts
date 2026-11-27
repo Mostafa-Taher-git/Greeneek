@@ -42,11 +42,12 @@ describe('settings persistence', () => {
       rules: [{ id: 'copy', name: 'Copy fixes', enabled: false, instruction: 'x' }],
       mode: 'auto',
     }, 0)
-    const two = store.save('eval', { evalTimeoutSeconds: 30, maxWorkers: 5 }, one.revision)
+    const two = store.save('eval', { evalTimeoutSeconds: 30, maxWorkers: 5, paused: true }, one.revision)
     const three = store.save('executor', { workerDirectory: '/tmp/work', prepareCommand: '', blockedCommands: ['rm'] }, two.revision)
     const four = store.save('sources', { sources: { github: { allowed: [{ id: 'alice' }], admission: {} } } }, three.revision)
     expect(four).toMatchObject({ mode: 'auto', maxWorkers: 5, workerDirectory: '/tmp/work', blockedCommands: ['rm'] })
     expect(four.sources.github?.allowed[0]?.id).toBe('alice')
+    expect(four.paused).toBe(true)
   })
 })
 

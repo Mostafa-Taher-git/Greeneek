@@ -7,11 +7,11 @@ import { DeepAgentService, DEEP_AGENT_CHANGED, defaultDeepAgentDatabase } from '
 
 const dirs: string[] = []
 const services: DeepAgentService[] = []
-function boot(): { ctx: Context; service: DeepAgentService; dir: string } {
+function boot(config: ConstructorParameters<typeof DeepAgentService>[1] = {}): { ctx: Context; service: DeepAgentService; dir: string } {
   const dir = mkdtempSync(join(tmpdir(), 'deep-agent-runtime-'))
   dirs.push(dir)
   const ctx = new Context()
-  const service = new DeepAgentService(ctx, { database: join(dir, 'deep-agent.sqlite') })
+  const service = new DeepAgentService(ctx, { ...config, database: join(dir, 'deep-agent.sqlite') })
   services.push(service)
   return { ctx, service, dir }
 }
@@ -47,6 +47,32 @@ describe('runtime', () => {
     const { service, dir } = boot()
     expect(service.maxWorkers()).toBe(3)
     expect(service.databasePath()).toBe(join(dir, 'deep-agent.sqlite'))
+  })
+
+  it('reports a boot-configured adapter even with an empty policy source map', () => {
+    const { service } = boot({
+      discord: { guildId: 'guild-1', channels: ['channel-1'] },
+    })
+    expect(service.state().configured).toBe(true)
+  })
+
+  it('applies saved evaluation limits and worker capacity to the live runtime', () => {
+    const { service } = boot()
+    const before = service.settings()
+    const beforeState = service.state()
+    const saved = service.saveSettings({
+      block: 'eval',
+      value: { evalTimeoutSeconds: 45, maxWorkers: 7, paused: true },
+      revision: before.revision,
+    })
+    expect(saved.paused).toBe(true)
+    expect(service.maxWorkers()).toBe(7)
+    expect(service.capacity().free).toBe(7)
+    const state = service.state()
+    expect(state.paused).toBe(true)
+    // Evaluation timing and pause are operational, not authorization inputs;
+    // changing them must not rewrite the mandate hash.
+    expect(state.policyVersion).toBe(beforeState.policyVersion)
   })
 
   it('declares the change event and default database location', () => {

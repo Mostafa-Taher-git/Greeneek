@@ -96,6 +96,19 @@ describe('intake', () => {
     expect(h.repo.threads.get('chat:t1')?.pending).toEqual(['1'])
   })
 
+  it('refuses a decision on a filtered Trigger that shares the Eval thread', () => {
+    const h = harness()
+    h.engine.receive(trigger('1', { threads: [{ source: 'chat', id: 't1' }] }))
+    h.engine.receive(trigger('2', { meta: { blocked: true }, threads: [{ source: 'chat', id: 't1' }] }))
+    h.pump()
+    const evalId = h.requests.at(-1)?.evalId
+    expect(() => h.engine.decide('2', {
+      accept: true, matchedRules: ['rule'], ...(evalId === undefined ? {} : { evalId }),
+    })).toThrow(/Only the admissible Trigger/)
+    expect(h.repo.tickets.open()).toHaveLength(0)
+    expect(h.repo.decisions.byThread('chat:t1')).toEqual([])
+  })
+
   it('correlates a multi-thread Trigger and evaluates only the primary Thread', () => {
     const h = harness()
     h.engine.receive(trigger('1', { threads: [{ source: 'gh', id: 'pr-7' }, { source: 'gh', id: 'run-9' }] }))

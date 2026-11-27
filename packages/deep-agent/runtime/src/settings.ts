@@ -96,6 +96,9 @@ export class SettingsStore {
         }
         next.evalTimeoutSeconds = value.evalTimeoutSeconds
         next.maxWorkers = value.maxWorkers
+        // The settings panel saves pause alongside the evaluation limits;
+        // persist it here too so the displayed choice is not silently dropped.
+        if (typeof value.paused === 'boolean') next.paused = value.paused
         break
       case 'executor':
         if (typeof value.workerDirectory !== 'string' || typeof value.prepareCommand !== 'string') {

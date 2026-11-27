@@ -152,7 +152,7 @@ export class DeepAgentService extends TypertRemoteService {
   private readonly settingsStore: SettingsStore
   private readonly sourceConfigs: Pick<DeepAgentConfig, 'github' | 'discord'>
   private readonly dbPath: string
-  private readonly workerCapacity: number
+  private workerCapacity: number
   private lastError: string | undefined
 
   /** @param ctx - Host context. @param config - resolved runtime config. */
@@ -167,6 +167,8 @@ export class DeepAgentService extends TypertRemoteService {
     this.workerCapacity = config.maxWorkers ?? 3
     this.store = new DeepAgentStore(this.dbPath)
     this.settingsStore = new SettingsStore(this.store)
+    const persisted = this.settingsStore.settings()
+    if (persisted.revision > 0) this.workerCapacity = persisted.maxWorkers
     this.effects = new Effects(this.store)
     this.executor = new AgentWorkerExecutor(ctx, {
       rootDirectory: config.workerRootDirectory ?? join(dirname(this.dbPath), 'work'),
@@ -343,6 +345,7 @@ export class DeepAgentService extends TypertRemoteService {
       sources: view.sources,
       mode: view.mode,
       paused: view.paused,
+      evalTimeoutMs: view.evalTimeoutSeconds * 1000,
     }
   }
 
@@ -353,7 +356,11 @@ export class DeepAgentService extends TypertRemoteService {
     const policy = buildPolicy(this.policySettings())
     return {
       ...(this.lastError === undefined ? {} : { lastError: this.lastError }),
-      configured: Object.keys(this.policySettings().sources).length > 0,
+      // Adapters configured at boot are real sources even when the policy's
+      // per-source admission map is empty; the overview must not claim "no
+      // sources configured" while a Discord/GitHub adapter is active.
+      configured: Object.keys(this.policySettings().sources).length > 0
+        || Object.keys(this.sourceConfigs).length > 0,
       paused: policy.paused,
       policyVersion: policy.version,
       mode: this.policySettings().mode,
@@ -510,6 +517,10 @@ export class DeepAgentService extends TypertRemoteService {
   @Remote('saveSettings')
   saveSettings(request: { readonly block: 'policy' | 'eval' | 'executor' | 'sources' | 'pause'; readonly value: SettingsSaveValue; readonly revision: number }): SettingsView {
     const saved = this.settingsStore.save(request.block, request.value, request.revision)
+    // Persisted evaluation limits and worker capacity are live settings: apply
+    // them to the owning runtime components rather than only to the document.
+    this.workerCapacity = saved.maxWorkers
+    this.executor.setCapacity(saved.maxWorkers)
     this.changed()
     return saved
   }

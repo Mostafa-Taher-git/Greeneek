@@ -214,6 +214,45 @@ describe('updater policy', () => {
     assert.equal(shouldOfferUpdate('1.0.1', '1.0.0', false), true)
   })
 
+  it('reports a rejected manual check even without an updater error event', async () => {
+    const seen = []
+    const dialog = { showMessageBox: async (options) => { seen.push(options); return { response: 0 } } }
+    const events = new Map()
+    const autoUpdater = {
+      on: (name, listener) => events.set(name, listener),
+      checkForUpdates: async () => { throw new Error('network down') },
+      downloadUpdate: async () => undefined,
+      quitAndInstall: () => undefined,
+    }
+    const app = {
+      isPackaged: true,
+      getPath: () => '/opt/Greeneek/greeneek',
+      relaunch: () => undefined,
+      exit: () => undefined,
+    }
+    const manager = createUpdateManager({
+      app,
+      autoUpdater,
+      dialog,
+      shell: { openExternal: async () => undefined },
+      log: undefined,
+      userData: '/tmp/gnk-test-userdata',
+      platform: 'win32',
+      exePath: 'C:\\Program Files\\Greeneek\\Greeneek.exe',
+      env: { ProgramFiles: 'C:\\Program Files' },
+      execFileImpl: async () => undefined,
+      execFileSyncImpl: () => { throw new Error('unexpected probe') },
+    })
+    await manager.checkForUpdates({ manual: true })
+    await waitFor(() => seen.length > 0, 'manual failure dialog')
+    assert.equal(seen[0].title, 'Update check failed')
+    assert.equal(manager.getState(), 'error')
+    // A later `error` event for the same attempt must not open a second dialog.
+    await events.get('error')?.(new Error('network down'))
+    assert.equal(seen.length, 1)
+    manager.stop()
+  })
+
   it('offers Download & Install on capable installs and Download page elsewhere', async () => {
     const seen = []
     const dialog = { showMessageBox: async (options) => { seen.push(options); return { response: 2 } } }

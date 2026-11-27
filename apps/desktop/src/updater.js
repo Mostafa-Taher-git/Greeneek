@@ -303,11 +303,20 @@ export function createUpdateManager({
     }
   })
 
-  autoUpdater.on('error', (error) => {
+  autoUpdater.on('error', (error) => { reportUpdateFailure(error) })
+
+  let checkingManual = false
+  // A rejected checkForUpdates() and its `error` event can both report the
+  // same failed check; keep one dialog per manual attempt.
+  let manualFailureReported = false
+
+  const reportUpdateFailure = (error) => {
     log?.error?.(`update check failed: ${error instanceof Error ? error.message : String(error)}`)
     if (checkingManual) {
       checkingManual = false
       setState('error')
+      if (manualFailureReported) return
+      manualFailureReported = true
       void dialog.showMessageBox({
         type: 'warning',
         title: 'Update check failed',
@@ -317,13 +326,12 @@ export function createUpdateManager({
       })
       setTimeout(() => {
         if (state === 'error') setState('idle')
+        manualFailureReported = false
       }, 8000).unref?.()
-    } else {
+    } else if (state !== 'error') {
       setState('idle')
     }
-  })
-
-  let checkingManual = false
+  }
 
   const checkForUpdates = async ({ manual = false } = {}) => {
     if (!app.isPackaged) {
@@ -340,14 +348,14 @@ export function createUpdateManager({
     if (checking) return
     checking = true
     checkingManual = manual
+    if (manual) manualFailureReported = false
     setState('checking')
     try {
       await autoUpdater.checkForUpdates()
     } catch (error) {
-      log?.error?.(`update check failed: ${error instanceof Error ? error.message : String(error)}`)
-      checking = false
-      checkingManual = false
-      setState(manual ? 'error' : 'idle')
+      // Some rejections never emit the updater's `error` event, so report the
+      // failure here as well; the shared reporter de-duplicates the dialog.
+      reportUpdateFailure(error)
     } finally {
       checking = false
     }

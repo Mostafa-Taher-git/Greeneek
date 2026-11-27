@@ -51,6 +51,7 @@ export const zh = {
   remove: '删除',
   loadFailed: '无法加载自动化任务。',
   invalidTime: '请检查日期、时间和时区。',
+  actionFailed: '任务操作失败，列表已刷新为已保存的状态。',
   retry: '重试',
 } as const
 
@@ -108,6 +109,7 @@ export const en: Record<AutomationTasksLocaleKey, string> = {
   remove: 'Delete',
   loadFailed: 'Automation tasks could not be loaded.',
   invalidTime: 'Check the date, time, and time zone.',
+  actionFailed: 'The task action failed. The list has been refreshed with the persisted state.',
   retry: 'Retry',
 }
 
@@ -162,5 +164,6 @@ export const ar: Record<AutomationTasksLocaleKey, string> = {
   remove: 'حذف',
   loadFailed: 'تعذّر تحميل مهام الأتمتة.',
   invalidTime: 'تحقق من التاريخ والوقت والمنطقة الزمنية.',
+  actionFailed: 'فشل إجراء المهمة، تم تحديث القائمة إلى الحالة المحفوظة.',
   retry: 'إعادة المحاولة',
 }

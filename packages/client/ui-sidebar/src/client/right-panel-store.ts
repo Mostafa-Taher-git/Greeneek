@@ -56,6 +56,9 @@ type RightPanelActions = {
  */
 export function createRightPanelStore(): EngineStoreHandle<RightPanelState, RightPanelActions> {
   return defineStore({
+    // The panel geometry lives in the layout store; the surfaces the user left
+    // open belong here. Versioned so a changed descriptor can be dropped.
+    persist: 'gnk.rightbar.surfaces.v1',
     init: (): RightPanelState => ({ surfaces: [], activeId: undefined, nextId: 1 }),
     actions: {
       open: (draft, surface, singleton) => {

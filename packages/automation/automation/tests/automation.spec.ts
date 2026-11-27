@@ -71,6 +71,21 @@ describe('AutomationService', () => {
     expect(service.delete({ id: task.id }).tasks).toEqual([])
   })
 
+  it('cancels active runs when the host unloads', async () => {
+    const { ctx, service } = await boot(['hang'])
+    const task = service.create(create())
+    void service.run({ id: task.id }).catch(() => { /* unload owns the run */ })
+    const running = Reflect.get(service, 'running') as Map<string, { controller: AbortController }>
+    for (let attempt = 0; attempt < 50 && running.size === 0; attempt += 1) {
+      await new Promise<void>((resolve) => { setTimeout(resolve, 10) })
+    }
+    expect(running.size).toBe(1)
+    const controller = [...running.values()][0]?.controller
+    await ctx.fiber.dispose()
+    expect(controller?.signal.aborted).toBe(true)
+    expect(running.size).toBe(0)
+  })
+
   it('records provider failures in history and rejects the run Remote', async () => {
     const { service } = await boot([])
     const task = service.create(create())

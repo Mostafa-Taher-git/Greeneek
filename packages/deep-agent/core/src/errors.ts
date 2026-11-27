@@ -7,6 +7,7 @@ export const USER_ERRORS = {
   unknownThread: ['missing', 'Thread not found: {key}'],
   evalFinished: ['refused', 'That assessment has finished'],
   notAdmissible: ['refused', 'The event is not admissible'],
+  notPrimary: ['refused', 'Only the admissible Trigger selected for this assessment can be decided'],
   workerDecides: ['refused', 'A worker on the thread decides this message; only a stop goes through routing'],
   notExplicit: ['refused', 'Accepting an inferred request requires auto mode and an enabled matching rule'],
   handedBackHere: ['refused', 'The worker handed this event back; accept it as new work or ignore it'],

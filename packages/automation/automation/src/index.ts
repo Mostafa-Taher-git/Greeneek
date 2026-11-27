@@ -82,10 +82,17 @@ export class AutomationService extends TypertRemoteService {
         this.runtimeCtx = runtimeCtx
         this.armScheduler()
       })
-      return () => {
+      return async () => {
         this.stopped = true
         if (this.timer !== undefined) clearTimeout(this.timer)
-        return dependencies.dispose()
+        // Unload owns every run it started; a task must not keep using its
+        // Agent after the host that owned it has torn down.
+        for (const activity of this.running.values()) {
+          activity.controller.abort('automation host unloading')
+          if (activity.handle !== undefined) await activity.handle.dispose().catch(() => {})
+        }
+        this.running.clear()
+        await dependencies.dispose()
       }
     }, 'automation.scheduler()')
   }

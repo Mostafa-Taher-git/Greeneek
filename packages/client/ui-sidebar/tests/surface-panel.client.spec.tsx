@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { bindSnapshotSelector, makeTranslate } from '@greeneek/gnk-client-test-runtime'
 import { formatShortcut } from '@greeneek/gnk-client-ui-primitives'
@@ -10,6 +10,8 @@ import { SurfacePanel } from '../src/client/SurfacePanel.tsx'
 import { zh } from '../src/client/locales.ts'
 
 afterEach(cleanup)
+// The surface store now persists across reloads; each test starts at the launcher.
+beforeEach(() => { localStorage.clear() })
 
 const t: SurfacePanelComponentProps['t'] = makeTranslate(zh)
 const SID = 's1' as SessionId

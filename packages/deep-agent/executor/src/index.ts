@@ -29,7 +29,17 @@ export class WorkerSlots {
   private readonly starting = new Set<string>()
 
   /** @param capacity - maximum simultaneous Workers. */
-  constructor(private readonly capacity: number) {}
+  constructor(private capacity: number) {}
+
+  /**
+   * Update the maximum simultaneous Workers. A new smaller value does not
+   * evict Workers already holding slots; it only changes admission.
+   * @param value - positive integer capacity.
+   */
+  setCapacity(value: number): void {
+    if (!Number.isSafeInteger(value) || value < 1) throw new RangeError('worker capacity must be a positive integer')
+    this.capacity = value
+  }
 
   /**
    * All tickets currently holding or starting a slot.
@@ -133,6 +143,14 @@ export class AgentWorkerExecutor implements Executor {
    */
   capacity(): { readonly used: number; readonly free: number } {
     return { used: this.slots.used().size, free: this.slots.free() }
+  }
+
+  /**
+   * Apply a persisted Worker capacity change to live admission.
+   * @param value - new maximum simultaneous Workers.
+   */
+  setCapacity(value: number): void {
+    this.slots.setCapacity(value)
   }
 
   /** Launch a Worker for one Assignment; failures become structured reports. */

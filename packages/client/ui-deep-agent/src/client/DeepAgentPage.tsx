@@ -112,15 +112,25 @@ export function DeepAgentPage(props: DeepAgentPageProps) {
   useEffect(() => { void refreshSettings().catch(() => { /* overview refresh reports errors */ }) }, [refreshSettings])
 
   const readPromptHistory = async (name: string): Promise<void> => {
-    try { setPromptVersions(await readPromptHistoryRemote(name)) } catch { setPromptVersions([]) }
+    try {
+      setPromptVersions(await readPromptHistoryRemote(name))
+      setSaveState(undefined)
+    } catch {
+      setPromptVersions([])
+      setSaveState(t('historyFailed'))
+    }
   }
 
   const resetSelectedPrompt = async (): Promise<void> => {
     if (selectedPrompt === undefined) return
-    const restored = await resetPrompt({ name: selectedPrompt })
-    setPromptText(restored.text)
-    await readPromptHistory(selectedPrompt)
-    setSaveState(t('saved'))
+    try {
+      const restored = await resetPrompt({ name: selectedPrompt })
+      setPromptText(restored.text)
+      await readPromptHistory(selectedPrompt)
+      if (saveState !== t('historyFailed')) setSaveState(t('saved'))
+    } catch {
+      setSaveState(t('saveFailed'))
+    }
   }
 
   const refresh = useCallback(async () => {

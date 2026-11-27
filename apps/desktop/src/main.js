@@ -25,6 +25,7 @@ import {
   resolveDesktopGnkHome,
   webProfileDir,
 } from './paths.js'
+import { rendererCrashAction } from './renderer-recovery.js'
 import { secureWindow } from './security.js'
 import { ensurePinnedStore } from './store-pin.js'
 import {
@@ -67,6 +68,8 @@ let serviceUrl
 let updateManager
 /** Renderer diagnostics collected for the interface failure report. */
 const rendererDiagnostics = []
+// Timestamps of automatic retries in the current recovery window.
+const rendererReloads = []
 
 async function showMainWindow() {
   if (!mainWindow) {
@@ -119,6 +122,34 @@ function createWindow() {
   mainWindow.webContents.on('render-process-gone', (_event, details) => {
     rendererDiagnostics.push({ level: 'error', message: `renderer gone: ${details.reason}` })
     console.error(`[renderer] render process gone: ${details.reason}`)
+    if (isQuitting) return
+    const action = rendererCrashAction({ reloads: rendererReloads, reason: details.reason })
+    const win = mainWindow
+    if (win === undefined || win.isDestroyed()) return
+    if (action === 'reload') {
+      setTimeout(() => {
+        if (!isQuitting && !win.isDestroyed()) win.reload()
+      }, 250).unref?.()
+      return
+    }
+    if (action === 'none') return
+    void dialog.showMessageBox({
+      type: 'error',
+      title: 'Greeneek stopped responding',
+      message: 'The interface crashed repeatedly and could not recover automatically.',
+      detail: 'Retry reloads the interface. Quit closes Greeneek; the session log is preserved.',
+      buttons: ['Retry', 'Quit'],
+      defaultId: 0,
+    }).then(({ response }) => {
+      if (isQuitting) return
+      if (response === 0) {
+        rendererReloads.length = 0
+        if (!win.isDestroyed()) win.reload()
+      } else {
+        isQuitting = true
+        app.quit()
+      }
+    })
   })
   mainWindow.webContents.on('preload-error', (_event, preloadPath, error) => {
     rendererDiagnostics.push({ level: 'error', message: `preload failed (${preloadPath}): ${error.message}` })

@@ -34,7 +34,7 @@ Greeneek operates no inference service and bundles no model provider. Model rout
 
 **Several ways in.** Web GUI, Desktop app, headless CLI runs, an automation-only ACP server, and TypeScript and Python SDKs all start from the same `gnk` profiles.
 
-![Greeneek Web UI workspace](apps/landing/public/images/workspace.png)
+![Greeneek new session in dark mode with Arabic interface](apps/landing/public/images/new-session.png)
 
 ## What you can do
 

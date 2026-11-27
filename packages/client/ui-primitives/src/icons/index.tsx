@@ -1162,6 +1162,18 @@ export const IconPuzzle16 = ({ size = 16, className }: IconProps) => (
   </svg>
 )
 
+/** users-round-collaboration: the Fleet settings section icon. */
+export const IconUsersRoundCollaboration16 = ({ size = 16, className }: IconProps) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <g stroke="currentColor" strokeWidth={1.3} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="5.8" cy="5.6" r="2.4" />
+      <path d="M1.6 13.8c0-2.4 1.9-4.3 4.2-4.3s4.2 1.9 4.2 4.3" />
+      <circle cx="11.4" cy="5.2" r="1.9" />
+      <path d="M10.4 9.7c2.4-.1 4.2 1.8 4.2 4.1" />
+    </g>
+  </svg>
+)
+
 /** Wolf head: the Deep-agent sidebar entry. */
 export const IconWolf16 = ({ size = 16, className }: IconProps) => (
   <svg width={size} height={size} className={className} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">

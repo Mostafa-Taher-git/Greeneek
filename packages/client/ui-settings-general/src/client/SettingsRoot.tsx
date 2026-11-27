@@ -16,7 +16,7 @@ import {
   ConnectionIndicator,
   IconAgentPresetOutline16, IconBranchOutline16, IconCircleDashedCheck16, IconCloseOutline16,
   IconCommandOutline16, IconDataOutline16, IconInfoOutline16, IconPersonalizationOutline16,
-  IconRefreshOutline16, IconSettingsOutline16,
+  IconRefreshOutline16, IconSettingsOutline16, IconUsersRoundCollaboration16,
 } from '@greeneek/gnk-client-ui-primitives'
 import type { ConnectionIndicatorState } from '@greeneek/gnk-client-ui-primitives'
 import { desktopBridge } from './desktop.ts'
@@ -32,6 +32,7 @@ function navIcon(id: string) {
   if (id === 'plugins') return <IconPersonalizationOutline16 className={css.navIcon} size={16} />
   if (id === 'commands') return <IconCommandOutline16 className={css.navIcon} size={16} />
   if (id === 'about') return <IconInfoOutline16 className={css.navIcon} size={16} />
+  if (id === 'fleet') return <IconUsersRoundCollaboration16 className={css.navIcon} size={16} />
   return <IconSettingsOutline16 className={css.navIcon} size={16} />
 }
 

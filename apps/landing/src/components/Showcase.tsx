@@ -31,8 +31,8 @@ export function Showcase({ copy }: { copy: SiteCopy }) {
               </span>
             </div>
             <img
-              src="/images/workspace.png"
-              alt="Greeneek workspace screenshot"
+              src="/images/new-session.png"
+              alt="Greeneek new session in dark mode with Arabic interface"
               width={1200}
               height={750}
               className="block h-auto w-full"

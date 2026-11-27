@@ -23,7 +23,7 @@ verifyDepsBeforeRun: false
 
 overrides:
   # Single patched Vite line for every transitive consumer (vitest, plugins).
-  vite: '8.1.6'
+  vite: '8.1.7'
   '@greeneek/cosmokit': 'link:vendor/cosmokit'
   '@greeneek/schemastery': 'link:vendor/schemastery'
   # electron-builder reaches @electron/rebuild, which pins node-gyp to a git
@@ -138,7 +138,7 @@ allowBuilds:
 minimumReleaseAgeExclude:
   # Vite 8.4.0 is the patched line required by the advisory scan; waiting out
   # the release-age window would reinstate the high-severity advisory.
-  - vite@8.1.6
+  - vite@8.1.7
   # Fresh pi-ai releases carry the model catalog updates that are the whole
   # point of bumping it; waiting out the release age would defeat that.
   - node-addon-native-custom-loader@0.1.4
@@ -217,7 +217,7 @@ minimumReleaseAgeExclude:
   - '@modelcontextprotocol/sdk@1.32.0'
   - vite@6.4.4
   - vite@7.3.7
-  - vite@8.1.6
+  - vite@8.1.7
   - zod@4.6.6
   - electron@43.8.1
   - body-parser@2.4.0
@@ -227,7 +227,7 @@ minimumReleaseAgeExclude:
   - '@modelcontextprotocol/sdk@1.30.1'
   - happy-dom@20.14.7
   - follow-redirects@1.16.2
-  - vite@8.1.6
+  - vite@8.1.7
 
 patchedDependencies:
   node-pty@1.2.0-beta.15: patches/node-pty@1.2.0-beta.15.patch

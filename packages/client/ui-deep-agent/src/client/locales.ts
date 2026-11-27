@@ -123,12 +123,12 @@ export const en: Record<DeepAgentLocaleKey, string> = {
 
 /** Arabic copy for the deep-agent UI. */
 export const ar: Record<DeepAgentLocaleKey, string> = {
-  nav: 'Deep-agent',
-  title: 'Deep-agent',
+  nav: 'الوكيل الاستباقي',
+  title: 'الوكيل الاستباقي',
   intro: 'وكيل استباقي مستقل: منسّق وعمال وتذاكر وحالة دائمة.',
   close: 'إغلاق',
   refresh: 'تحديث',
-  loadFailed: 'تعذّر تحميل حالة Deep-agent.',
+  loadFailed: 'تعذّر تحميل حالة الوكيل الاستباقي.',
   retry: 'إعادة المحاولة',
   overview: 'نظرة عامة',
   tickets: 'التذاكر',

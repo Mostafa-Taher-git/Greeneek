@@ -99,7 +99,7 @@ export const en = {
 /** Arabic dictionary, checked complete against the zh key set; Army and tok stay verbatim. */
 export const ar = {
   'panel.loading': 'جارٍ تحميل الأسطول…',
-  'panel.empty': 'لا توجد موجات Army نشطة لهذه الجلسة.',
+  'panel.empty': 'لا توجد موجات الجيش نشطة لهذه الجلسة.',
   'panel.degraded': 'عرض الأسطول غير متاح مؤقتًا: انقطع الاتصال بالمضيف.',
   'wave.members': '{count} من الأعضاء',
   'wave.closed': 'مغلق',
@@ -133,7 +133,7 @@ export const ar = {
   'drawer.artifacts': 'المخرجات',
   'drawer.diagnostic': 'التشخيص',
   'open.child': 'فتح الجلسة الفرعية',
-  'pill.open.aria': 'فتح لوحة أسطول Army',
+  'pill.open.aria': 'فتح لوحة أسطول الجيش',
   'pill.label': '{label} · قيد التشغيل {running}',
   'pill.label.degraded': '{label} · العرض قديم',
   'pill.stop.aria': 'إيقاف طارئ للأسطول بأكمله',

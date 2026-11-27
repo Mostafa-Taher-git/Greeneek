@@ -570,7 +570,7 @@ export const ar = {
   'dashboard.error': 'حدث خطأ قابل للاسترداد.',
   'dashboard.permission': 'لا توجد صلاحية لعرض هذه البيانات.',
   'dashboard.openSession': 'فتح',
-  'dashboard.sourceNote': 'مصدر CLI هو المزوّد؛ يظهر مسار Maestro كإعداد مسبق.',
+  'dashboard.sourceNote': 'مصدر CLI هو المزوّد؛ يظهر مسار المايسترو كإعداد مسبق.',
   'dashboard.analyticsOff': 'التحليلات متوقفة.',
   'dashboard.retry': 'إعادة المحاولة',
   'dashboard.durationUnit': 'ث',

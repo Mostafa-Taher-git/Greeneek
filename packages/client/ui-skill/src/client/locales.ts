@@ -30,10 +30,10 @@ export const en = {
 
 /** Arabic dictionary, checked complete against the zh key set; Skill stays verbatim. */
 export const ar = {
-  'row.title': 'Skill',
-  'row.running': 'جارٍ تحميل Skill',
-  'row.failed': 'فشل تحميل Skill',
-  'row.stopped': 'أُوقف تحميل Skill',
+  'row.title': 'المهارة',
+  'row.running': 'جارٍ تحميل المهارة',
+  'row.failed': 'فشل تحميل المهارة',
+  'row.stopped': 'أُوقف تحميل المهارة',
   'row.instructions': 'التعليمات',
   'row.inspect': 'فحص',
   'menu.userOnly': 'للمستخدم فقط',

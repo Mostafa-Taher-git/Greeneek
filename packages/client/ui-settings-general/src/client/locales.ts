@@ -93,7 +93,7 @@ export const ar = {
   'about.nav': 'حول',
   'about.lead': 'معلومات الإصدار وتحديثات سطح المكتب',
   'about.desktopVersion': 'إصدار سطح المكتب',
-  'about.harnessVersion': 'إصدار Harness المضمّن',
+  'about.harnessVersion': 'إصدار المنصة المضمّن',
   'about.webVersion': 'إصدار Greeneek',
   'about.unknown': 'غير معروف',
   'about.check': 'التحقق من التحديثات',

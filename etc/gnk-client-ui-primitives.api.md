@@ -176,6 +176,7 @@
 `src/icons/index.tsx: export const IconTreeCorner8x10 = ({ size = 10, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconTriangleRightFill14 = ({ size = 14, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconUserOutline16 = ({ size = 16, className }: IconProps) => (`
+`src/icons/index.tsx: export const IconUsersRoundCollaboration16 = ({ size = 16, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconVSCode16 = ({ size = 16, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconWarningOutline16 = ({ size = 14, className }: IconProps) => (`
 `src/icons/index.tsx: export const IconWolf16 = ({ size = 16, className }: IconProps) => (`

@@ -249,14 +249,16 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'the current snapshot (stable reference until the next change).',
       },
       {
-        signature: 'setTheme(id: string): void',
+        signature: 'setTheme(id: string): Promise<boolean>',
         description: 'Switch the theme preference — the only user preference write entry. Built-in preferences are written through the settings scope and every accepted value emits `theme/change`.',
         parameters: [{ name: 'id', description: 'a registered theme id or `system`; unknown ids throw.' }],
+        returns: 'whether the preference was persisted; `false` reverts to the Host value.',
       },
       {
-        signature: 'setFontSize(px: number): void',
+        signature: 'setFontSize(px: number): Promise<boolean>',
         description: 'Change the conversation content font size — the only font-size write entry. Accepted values are written through the settings scope and emit `theme/change`.',
         parameters: [{ name: 'px', description: 'integer px within FONT_SIZE_MIN..FONT_SIZE_MAX; out-of-range or fractional values throw.' }],
+        returns: 'whether the size was persisted; `false` reverts to the Host value.',
       },
       {
         signature: 'register(definition: ThemeDefinition): () => void',

@@ -559,9 +559,9 @@ describe('fleet settings section', () => {
     const root = view.container.firstElementChild as HTMLElement
     root.setAttribute('dir', 'rtl')
 
-    expect(await view.findByText('إعدادات Fleet')).toBeDefined()
-    expect(await view.findByText('اتصالات Harness')).toBeDefined()
-    expect(await view.findByText('Fleets المحفوظة')).toBeDefined()
+    expect(await view.findByText('إعدادات الأسطول')).toBeDefined()
+    expect(await view.findByText('اتصالات المنصة')).toBeDefined()
+    expect(await view.findByText('الأساطيل المحفوظة')).toBeDefined()
     expect(root.getAttribute('dir')).toBe('rtl')
   })
 

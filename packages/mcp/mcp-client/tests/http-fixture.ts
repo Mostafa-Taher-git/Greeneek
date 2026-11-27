@@ -3,7 +3,6 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
-import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
 
 /** Running HTTP fixture and the request headers it observed. */
 export interface HttpMcpFixture {
@@ -29,7 +28,7 @@ export async function startHttpMcpFixture(): Promise<HttpMcpFixture> {
       void transport.close()
       void mcp.close()
     })
-    await mcp.connect(transport as Transport)
+    await mcp.connect(transport)
     await transport.handleRequest(request, response)
   }
   const server = createServer((request, response) => {

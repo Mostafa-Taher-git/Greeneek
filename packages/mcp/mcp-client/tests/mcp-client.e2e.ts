@@ -18,7 +18,6 @@ import { Context } from '@greeneek/cordis'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { z } from 'zod'
-import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
 import LocalAttachmentStore from '@greeneek/gnk-attachment-local'
 import SystemPrompt from '@greeneek/gnk-system-prompt'
 import ToolRuntime from '@greeneek/gnk-tools'
@@ -492,10 +491,7 @@ describe('streamable-http — in-process MCP server', () => {
     // SDK-documented explicit `sessionIdGenerator: undefined` spelling).
     const transport = new StreamableHTTPServerTransport({})
     res.on('close', () => { void transport.close(); void server.close() })
-    // Same exactOptionalPropertyTypes mismatch the client transport factory
-    // documents (src/transport.ts): the SDK types optional callbacks without
-    // `| undefined`. The SDK constructed the object; the cast is safe.
-    await server.connect(transport as Transport)
+    await server.connect(transport)
     await transport.handleRequest(req, res)
   }
 

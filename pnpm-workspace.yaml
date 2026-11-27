@@ -22,6 +22,8 @@ linkWorkspacePackages: true
 verifyDepsBeforeRun: false
 
 overrides:
+  # Single patched Vite line for every transitive consumer (vitest, plugins).
+  vite: '8.4.0'
   '@greeneek/cosmokit': 'link:vendor/cosmokit'
   '@greeneek/schemastery': 'link:vendor/schemastery'
   # electron-builder reaches @electron/rebuild, which pins node-gyp to a git
@@ -35,6 +37,71 @@ overrides:
   # One pinned copy until the ranges are updated package by package.
   react: '19.2.6'
   react-dom: '19.2.6'
+  '@modelcontextprotocol/sdk@>=1.10.0 <1.30.1': ^1.30.1
+  '@modelcontextprotocol/sdk@>=1.12.0 <1.31.0': ^1.31.0
+  '@modelcontextprotocol/sdk@>=1.24.0 <1.32.0': ^1.32.0
+  '@modelcontextprotocol/sdk@>=1.3.0 <1.32.0': ^1.32.0
+  '@vue/server-renderer@<3.5.42': ^3.5.42
+  app-builder-lib@<26.15.0: ^26.15.0
+  body-parser@>=2.0.0 <2.4.0: ^2.4.0
+  brace-expansion@<1.1.19: ^1.1.19
+  brace-expansion@<1.1.20: ^1.1.20
+  brace-expansion@>=2.0.0 <2.1.3: ^2.1.3
+  brace-expansion@>=2.0.0 <2.1.4: ^2.1.4
+  brace-expansion@>=2.0.0 <2.1.5: ^2.1.5
+  brace-expansion@>=2.0.0 <2.1.6: ^2.1.6
+  brace-expansion@>=3.0.0 <5.0.7: ^5.0.7
+  brace-expansion@>=4.0.0 <5.0.10: ^5.0.10
+  brace-expansion@>=4.0.0 <5.0.11: ^5.0.11
+  brace-expansion@>=4.0.0 <5.0.8: ^5.0.8
+  brace-expansion@>=4.0.0 <5.0.9: ^5.0.9
+  browserslist@<=4.28.6: ^4.28.7
+  builder-util-runtime@<9.7.0: ^9.7.0
+  compression@<1.8.2: ^1.8.2
+  electron@>=43.0.0-alpha.1 <43.4.1: ^43.4.1
+  electron@>=43.0.0-alpha.1 <43.8.1: ^43.8.1
+  electron@>=43.0.0-beta.1 <43.5.0: ^43.5.0
+  fast-uri@>=3.0.0 <3.1.5: ^3.1.5
+  fast-uri@>=3.0.0 <3.1.6: ^3.1.6
+  fast-uri@>=3.0.0 <3.1.7: ^3.1.7
+  fast-uri@>=3.0.0 <=3.1.3: ^3.1.4
+  fast-uri@>=3.1.2 <3.1.6: ^3.1.6
+  fast-uri@>=3.1.3 <3.1.6: ^3.1.6
+  follow-redirects@>=1.16.0 <1.16.1: ^1.16.1
+  follow-redirects@>=1.16.0 <=1.16.1: ^1.16.2
+  happy-dom@<=20.14.6: ^20.14.7
+  happy-dom@>=17.0.0 <=21.0.3: ^21.0.4
+  ip-address@<=10.3.0: ^10.3.1
+  js-yaml@>=4.0.0 <4.3.0: ^4.3.0
+  js-yaml@>=4.0.0 <4.3.1: ^4.3.1
+  js-yaml@>=4.0.0 <4.3.2: ^4.3.2
+  nanoid@<3.3.16: ^3.3.16
+  nanoid@<3.3.18: ^3.3.18
+  pnpm@>=11.0.0 <11.11.0: ^11.11.0
+  pnpm@>=11.0.0 <11.8.0: ^11.8.0
+  postcss@<=8.5.17: ^8.5.18
+  proxy-addr@>=1.1.0 <2.0.8: ^2.0.8
+  sharp@<0.35.4: ^0.35.4
+  sharp@<0.35.5: ^0.35.5
+  source-map-js@>=1.0.0 <1.2.2: ^1.2.2
+  tar@<7.5.7: ^7.5.7
+  tar@<7.5.8: ^7.5.8
+  tar@<=7.5.10: ^7.5.11
+  tar@<=7.5.17: ^7.5.18
+  tar@<=7.5.18: ^7.5.19
+  tar@<=7.5.2: ^7.5.3
+  tar@<=7.5.20: ^7.5.21
+  tar@<=7.5.3: ^7.5.4
+  tar@<=7.5.9: ^7.5.10
+  undici@>=7.0.0 <7.29.0: ^7.29.0
+  undici@>=7.0.0 <7.29.1: ^7.29.1
+  undici@>=7.0.0 <7.30.1: ^7.30.1
+  undici@>=7.18.0 <7.30.1: ^7.30.1
+  undici@>=7.24.1 <7.29.1: ^7.29.1
+  undici@>=8.0.0 <8.10.2: ^8.10.2
+  undici@>=8.0.0 <8.12.2: ^8.12.2
+  undici@>=8.10.0 <8.10.2: ^8.10.2
+  zod@<4.6.6: ^4.6.6
 
 peerDependencyRules:
   allowedVersions:
@@ -95,6 +162,69 @@ minimumReleaseAgeExclude:
   # reviewed exact versions must share one version-union policy entry.
   - '@openai/codex@0.149.1||0.149.1-darwin-arm64||0.149.1-darwin-x64||0.149.1-linux-arm64||0.149.1-linux-x64||0.149.1-win32-arm64||0.149.1-win32-x64'
   - lucide-react@1.43.0
+  - tar@7.5.7
+  - tar@7.5.3
+  - tar@7.5.8
+  - tar@7.5.10
+  - tar@7.5.11
+  - tar@7.5.4
+  - pnpm@11.8.0
+  - brace-expansion@5.0.7
+  - js-yaml@4.3.0
+  - tar@7.5.19
+  - tar@7.5.18
+  - fast-uri@3.1.4
+  - builder-util-runtime@9.7.0
+  - app-builder-lib@26.15.0
+  - brace-expansion@2.1.3
+  - brace-expansion@5.0.8
+  - undici@7.29.0
+  - fast-uri@3.1.5
+  - ip-address@10.3.1
+  - brace-expansion@5.0.9
+  - brace-expansion@2.1.4
+  - js-yaml@4.3.1
+  - nanoid@3.3.16
+  - nanoid@3.3.18
+  - postcss@8.5.18
+  - tar@7.5.21
+  - browserslist@4.28.7
+  - pnpm@11.11.0
+  - fast-uri@3.1.6
+  - sharp@0.35.4
+  - js-yaml@4.3.2
+  - fast-uri@3.1.7
+  - electron@43.4.1
+  - electron@43.5.0
+  - undici@8.10.2
+  - undici@7.29.1
+  - brace-expansion@1.1.20
+  - brace-expansion@2.1.6
+  - brace-expansion@5.0.11
+  - brace-expansion@1.1.19
+  - brace-expansion@2.1.5
+  - brace-expansion@5.0.10
+  - source-map-js@1.2.2
+  - proxy-addr@2.0.8
+  - compression@1.8.2
+  - '@vue/server-renderer@3.5.42'
+  - sharp@0.35.5
+  - '@modelcontextprotocol/sdk@1.31.0'
+  - follow-redirects@1.16.1
+  - '@modelcontextprotocol/sdk@1.32.0'
+  - vite@6.4.4
+  - vite@7.3.7
+  - vite@8.1.6
+  - zod@4.6.6
+  - electron@43.8.1
+  - body-parser@2.4.0
+  - happy-dom@21.0.4
+  - undici@8.12.2
+  - undici@7.30.1
+  - '@modelcontextprotocol/sdk@1.30.1'
+  - happy-dom@20.14.7
+  - follow-redirects@1.16.2
+  - vite@8.4.0
 
 patchedDependencies:
   node-pty@1.2.0-beta.15: patches/node-pty@1.2.0-beta.15.patch

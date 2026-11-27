@@ -6,7 +6,6 @@
  * @module
  */
 
-import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import { scrubbedParentEnv } from '@greeneek/gnk-subprocess'
@@ -18,6 +17,8 @@ import type { Config } from './index.ts'
  * actual spawn, so this transport shares the scrub definition rather than the
  * spawn path.
  */
+import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
+
 function buildChildEnv(extra: Record<string, string>): Record<string, string> {
   return { ...scrubbedParentEnv(), ...extra }
 }
@@ -38,13 +39,9 @@ export function createTransport(config: Config): Transport {
         cwd: config.cwd,
       })
     case 'streamable-http':
-      // The MCP SDK's StreamableHTTPClientTransport has optional callback
-      // properties typed without `| undefined` (exactOptionalPropertyTypes
-      // mismatch with the Transport interface); the SDK constructed the
-      // object, so the cast records only that widening.
       return new StreamableHTTPClientTransport(
         new URL(config.url),
         { requestInit: { headers: config.headers } },
-      ) as Transport
+      )
   }
 }

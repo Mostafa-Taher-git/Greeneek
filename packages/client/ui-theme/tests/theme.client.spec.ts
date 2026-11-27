@@ -48,19 +48,50 @@ describe('ThemeRuntime', () => {
 
   it('setFontSize switches, writes through the scope, and republishes; same value is a no-op', () => {
     const { theme, events, host } = make()
-    theme.setFontSize(17)
+    void theme.setFontSize(17)
     expect(theme.getTheme().fontSize).toBe(17)
     expect(host.set).toHaveBeenCalledWith('fontSize', 17)
     expect(events).toHaveLength(1)
-    theme.setFontSize(17)
+    void theme.setFontSize(17)
     expect(events).toHaveLength(1)
     expect(host.set).toHaveBeenCalledOnce()
+  })
+
+  it('reports a persisted preference write as successful', async () => {
+    const { theme } = make()
+    expect(await theme.setTheme('dark')).toBe(true)
+    expect(await theme.setFontSize(16)).toBe(true)
+  })
+
+  it('reverts a rejected appearance write to the persisted preference', async () => {
+    const { theme, host, events } = make()
+    host.publish({
+      status: 'ready', value: { preference: 'light', fontSize: 14 },
+      revision: 1, writable: true,
+    })
+    host.set.mockResolvedValueOnce(false)
+    expect(await theme.setTheme('dark')).toBe(false)
+    expect(theme.getTheme().preference).toBe('light')
+    expect(events.at(-1)?.preference).toBe('light')
+    expect(host.set).toHaveBeenCalledWith('preference', 'dark')
+  })
+
+  it('reverts a rejected font-size write to the persisted size', async () => {
+    const { theme, host, events } = make()
+    host.publish({
+      status: 'ready', value: { preference: 'system', fontSize: 14 },
+      revision: 1, writable: true,
+    })
+    host.set.mockResolvedValueOnce(false)
+    expect(await theme.setFontSize(17)).toBe(false)
+    expect(theme.getTheme().fontSize).toBe(14)
+    expect(events.at(-1)?.fontSize).toBe(14)
   })
 
   it('rejects out-of-range and fractional font sizes', () => {
     const { theme, events, host } = make()
     for (const px of [11, 18, 14.5, Number.NaN]) {
-      expect(() => { theme.setFontSize(px) }).toThrow('outside 12..17')
+      expect(() => { void theme.setFontSize(px) }).toThrow('outside 12..17')
     }
     expect(events).toHaveLength(0)
     expect(host.set).not.toHaveBeenCalled()
@@ -76,7 +107,7 @@ describe('ThemeRuntime', () => {
 
   it('setTheme switches, writes through the scope, republishes, and keeps DOM untouched', () => {
     const { theme, events, host } = make()
-    theme.setTheme('dark')
+    void theme.setTheme('dark')
     expect(theme.getTheme().preference).toBe('dark')
     expect(theme.getTheme().active.colorScheme).toBe('dark')
     expect(host.set).toHaveBeenCalledWith('preference', 'dark')
@@ -85,7 +116,7 @@ describe('ThemeRuntime', () => {
     // The service never touches presentation state.
     expect(document.body.hasAttribute('data-ds-dark-theme')).toBe(false)
     // Same-value set is a no-op (no extra event).
-    theme.setTheme('dark')
+    void theme.setTheme('dark')
     expect(events).toHaveLength(1)
     expect(host.set).toHaveBeenCalledOnce()
   })
@@ -109,7 +140,7 @@ describe('ThemeRuntime', () => {
 
   it('throws on unknown setTheme ids, duplicate registration, and the system id', () => {
     const { theme } = make()
-    expect(() => { theme.setTheme('sepia') }).toThrow('not registered')
+    expect(() => { void theme.setTheme('sepia') }).toThrow('not registered')
     expect(() => theme.register({ id: 'light', colorScheme: 'light', tokens: {} })).toThrow('already registered')
     expect(() => theme.register({ id: 'system', colorScheme: 'light', tokens: {} })).toThrow('preference')
   })
@@ -118,7 +149,7 @@ describe('ThemeRuntime', () => {
     const { theme, events, host } = make()
     const dispose = theme.register({ id: 'sepia', colorScheme: 'light', tokens: { '--dsw-alias-bg-base': 'red' } })
     expect(theme.getTheme().themes.map(t => t.id)).toEqual(['light', 'dark', 'sepia'])
-    theme.setTheme('sepia')
+    void theme.setTheme('sepia')
     expect(theme.getTheme().active.tokens['--dsw-alias-bg-base']).toBe('red')
     dispose()
     expect(theme.getTheme().preference).toBe('system')
@@ -135,15 +166,15 @@ describe('ThemeRuntime', () => {
   it('disposing an inactive theme keeps the active preference', () => {
     const { theme } = make()
     const dispose = theme.register({ id: 'sepia', colorScheme: 'light', tokens: {} })
-    theme.setTheme('dark')
+    void theme.setTheme('dark')
     dispose()
     expect(theme.getTheme().preference).toBe('dark')
   })
 
   it('revision increases monotonically across every publish', () => {
     const { theme, events } = make()
-    theme.setTheme('dark')
-    theme.setTheme('light')
+    void theme.setTheme('dark')
+    void theme.setTheme('light')
     const dispose = theme.register({ id: 'sepia', colorScheme: 'dark', tokens: {} })
     dispose()
     expect(events.map(e => e.revision)).toEqual([1, 2, 3, 4])
@@ -165,7 +196,7 @@ describe('ThemeRuntime', () => {
       '--first': 'first-only-light',
       '--shared': 'second-light',
     })
-    theme.setTheme('dark')
+    void theme.setTheme('dark')
     expect(theme.getTheme().active.tokens).toMatchObject({
       '--first': 'first-only-dark',
       '--shared': 'second-dark',
@@ -274,7 +305,7 @@ describe('ThemeRuntime', () => {
     it('OS flips do not republish while a concrete preference is set', () => {
       const media = stubMedia(false)
       const { theme, events } = make()
-      theme.setTheme('light')
+      void theme.setTheme('light')
       expect(events).toHaveLength(1)
       media.flip()
       expect(events).toHaveLength(1)

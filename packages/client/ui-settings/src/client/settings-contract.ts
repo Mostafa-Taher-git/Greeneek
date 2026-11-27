@@ -67,23 +67,23 @@ export interface SettingsScope<T> {
    * the latest queued or mirrored revision.
    * @param ops - ordered field operations copied when queued.
    * @param expectedRevision - optional fixed revision read by the domain editor.
-   * @returns settlement after the mutation and any latest-write recovery read.
+   * @returns whether the Host persisted the mutation; `false` follows a recovery read.
    */
-  mutate(ops: readonly SettingsPathOpView[], expectedRevision?: number): Promise<void>
+  mutate(ops: readonly SettingsPathOpView[], expectedRevision?: number): Promise<boolean>
   /**
    * Queue one field write. Rapid writes preserve mutation order, each carries
    * the latest known namespace revision, and only the latest settlement may
    * publish; a rejected or failed latest write reloads Host state instead.
    * @param field - scalar field inside the namespace section.
    * @param value - JSON-shaped value selected by the user.
-   * @returns settlement after the write and any latest-write recovery read.
+   * @returns whether the Host persisted the value; `false` follows a recovery read.
    */
-  set(field: string, value: unknown): Promise<void>
+  set(field: string, value: unknown): Promise<boolean>
   /**
    * Queue one field clear, so the field re-inherits the composition layer.
    * Shares {@link set}'s ordering, revision, and recovery contract.
    * @param field - scalar field inside the namespace section.
-   * @returns settlement after the clear and any latest-write recovery read.
+   * @returns whether the Host persisted the clear; `false` follows a recovery read.
    */
-  unset(field: string): Promise<void>
+  unset(field: string): Promise<boolean>
 }

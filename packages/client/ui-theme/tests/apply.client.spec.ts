@@ -121,7 +121,7 @@ describe('ui-theme apply', () => {
     await b.ctx.plugin({ inject: [...inject], apply }).await()
     const theme = b.ctx.get('theme') as ThemeRuntime
     // An event ahead of any inject hits the unbound-actions arm.
-    theme.setTheme('dark')
+    void theme.setTheme('dark')
 
     const { instance, face } = faceOf(b.slots)
     // The inject-time re-sync sealed the init window: the mirror is current.
@@ -129,7 +129,7 @@ describe('ui-theme apply', () => {
     // Copy rides the standard locale seat: the entry declares the namespace.
     expect(b.slots.entries(SLOT).find(e => e.component === AppearanceRow)!.locale).toBe(SETTINGS_NS)
 
-    face.setTheme('system')
+    void face.setTheme('system')
     expect(theme.getTheme().preference).toBe('system')
     expect(instance.getSnapshot().preference).toBe('system')
     await vi.waitFor(() => { expect(b.mutate).toHaveBeenCalledTimes(2) })
@@ -141,13 +141,13 @@ describe('ui-theme apply', () => {
     await b.ctx.plugin({ inject: [...inject], apply }).await()
     const theme = b.ctx.get('theme') as ThemeRuntime
     // An event ahead of any inject hits the unbound-actions arm.
-    theme.setFontSize(16)
+    void theme.setFontSize(16)
 
     const { instance, face } = fontSizeFaceOf(b.slots)
     // The inject-time re-sync sealed the init window: the mirror is current.
     expect(instance.getSnapshot().fontSize).toBe(16)
 
-    face.setFontSize(12)
+    void face.setFontSize(12)
     expect(theme.getTheme().fontSize).toBe(12)
     expect(instance.getSnapshot().fontSize).toBe(12)
     await vi.waitFor(() => { expect(b.mutate).toHaveBeenCalledTimes(2) })
@@ -180,7 +180,7 @@ describe('ui-theme apply', () => {
     declareItems(remote.slots)
     await remote.ctx.plugin({ inject: [...inject], apply }).await()
     const remoteTheme = remote.ctx.get('theme') as ThemeRuntime
-    remoteTheme.setTheme('dark')
+    void remoteTheme.setTheme('dark')
     await Promise.resolve()
     expect(remote.describe).not.toHaveBeenCalled()
     expect(remote.mutate).not.toHaveBeenCalled()

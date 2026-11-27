@@ -18,6 +18,7 @@ const COPY: Record<string, string> = {
   'fontSize.description': 'Only affects conversation content',
   'fontSize.increase': 'Increase font size',
   'fontSize.decrease': 'Decrease font size',
+  'saveFailed': 'Could not save; restored the persisted setting',
 }
 
 /** Empty global standard-kit hooks (the row reads neither). */
@@ -41,7 +42,7 @@ function mount(fontSize = 14) {
   // Real store instance — the sanctioned zero-machinery path for tests.
   const store = createFontSizeRowStore().create()
   store.actions.sync(fontSize, 0)
-  const setFontSize = vi.fn()
+  const setFontSize = vi.fn(async () => true)
   const props: FontSizeRowComponentProps = {
     useSessions: emptySessions(),
     useSessionPendingInteraction,
@@ -66,6 +67,15 @@ describe('FontSizeRow', () => {
     expect(screen.getByText('14')).toBeDefined()
     expect(arrow('Increase font size').disabled).toBe(false)
     expect(arrow('Decrease font size').disabled).toBe(false)
+  })
+
+  it('shows a localized alert when the font-size write is rejected', async () => {
+    const b = mount(14)
+    b.setFontSize.mockResolvedValueOnce(false)
+    fireEvent.click(arrow('Increase font size'))
+    await act(async () => { await Promise.resolve() })
+    expect(screen.getByRole('alert').textContent).toBe(COPY['saveFailed'])
+    expect(screen.getByText('14')).toBeDefined()
   })
 
   it('arrow clicks step by 1; display follows the store mirror, not the click echo', () => {

@@ -61,11 +61,17 @@ export class ComposerSubmissionPolicy {
    * Change the plain-Enter behavior used during busy state; the live value
    * publishes before the durable write starts.
    * @param behavior - Queue or Steer.
+   * @returns whether the behavior was persisted; `false` reverts to the Host value.
    */
-  setBusyEnter(behavior: BusyEnterBehavior): void {
-    if (this.busyEnter.getSnapshot() === behavior) return
+  setBusyEnter(behavior: BusyEnterBehavior): Promise<boolean> {
+    if (this.busyEnter.getSnapshot() === behavior) return Promise.resolve(true)
     this.busyEnter.set(behavior)
-    void this.host?.set(BUSY_ENTER_FIELD, behavior)
+    const host = this.host
+    if (host === undefined) return Promise.resolve(true)
+    return host.set(BUSY_ENTER_FIELD, behavior).then((persisted) => {
+      if (!persisted) this.adopt(host)
+      return persisted
+    })
   }
 
   /**

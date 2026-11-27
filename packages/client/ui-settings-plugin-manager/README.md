@@ -20,7 +20,7 @@ kind: "package-reference"
 
 #### What the model sees
 
-Nothing from this package enters a model request. The section presents Host-owned plugin inventory through `ctx.remote.pluginInventory.list()` and collects user input for a future install Remote.
+Nothing from this package enters a model request. The section presents Host-owned plugin inventory through `ctx.remote.pluginInventory.list()`. The add dialog explains that persistent install and remove are CLI workflows (`gnk plugin add <package>` / `gnk plugin remove <package>`); it does not collect input for an install service.
 
 #### Token effect
 
@@ -32,7 +32,7 @@ None; the package neither assembles nor sends a provider request, so it cannot i
 
 ## Known Limitations and Deferred Work
 
-- **Read-only inventory** — installation and permanent experimental-plugin enablement need a Host management Remote; the dialog and toggles report that boundary instead of mutating state.
+- **Read-only inventory by release decision** — plugin installation and removal are profile-management workflows owned by `gnk plugin` (`apps/cli/src/plugin.ts`), documented in `docs/architecture.md` and the plugin publishing tutorial. This page is an inventory and creation entry point; the dialog names the supported CLI commands instead of offering an install that would not persist. Permanent experimental-plugin enablement also needs a Host management Remote and is not offered here.
 - **No registry reachability check** — the custom-address field validates URL form only; this build does not contact the selected registry.
 
 ### Dev Note

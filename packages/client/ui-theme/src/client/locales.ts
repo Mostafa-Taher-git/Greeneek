@@ -11,6 +11,7 @@ export const zh = {
   'fontSize.unit': 'px',
   'fontSize.increase': '增大字号',
   'fontSize.decrease': '减小字号',
+  'saveFailed': '保存失败，已恢复为已保存的设置',
 } satisfies Record<string, string>
 
 /** The settings.theme namespace key union. */
@@ -27,6 +28,7 @@ export const en = {
   'fontSize.unit': 'px',
   'fontSize.increase': 'Increase font size',
   'fontSize.decrease': 'Decrease font size',
+  'saveFailed': 'Could not save; restored the persisted setting',
 } satisfies Record<ThemeKey, string>
 
 /** Arabic dictionary, checked complete against the zh key set; the px unit stays verbatim. */
@@ -40,4 +42,5 @@ export const ar = {
   'fontSize.unit': 'px',
   'fontSize.increase': 'تكبير حجم الخط',
   'fontSize.decrease': 'تصغير حجم الخط',
+  'saveFailed': 'تعذّر الحفظ، تمت استعادة الإعداد المحفوظ',
 } satisfies Record<ThemeKey, string>

@@ -139,6 +139,12 @@ export function AutomationTasksSection(props: AutomationTasksSectionProps) {
   }, [list, t])
 
   useEffect(() => { void refresh() }, [refresh])
+  // A scheduler-owned run can finish with no user gesture in this panel. Poll
+  // the durable catalog so its result appears without a manual refresh.
+  useEffect(() => {
+    const timer = window.setInterval(() => { void refresh() }, 5_000)
+    return () => { window.clearInterval(timer) }
+  }, [refresh])
 
   const visible = useMemo(() => tasks.filter((task) => {
     const statusMatch = tab === 'all' || task.status === tab

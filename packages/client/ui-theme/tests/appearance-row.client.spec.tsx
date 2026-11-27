@@ -17,6 +17,7 @@ const COPY: Record<string, string> = {
   'appearance.light': 'Light',
   'appearance.dark': 'Dark',
   'appearance.system': 'System',
+  'saveFailed': 'Could not save; restored the persisted setting',
 }
 
 function emptySessions() {
@@ -39,7 +40,7 @@ function mount(preference: ThemePreference = 'system') {
   // Real store instance — the sanctioned zero-machinery path for tests.
   const store = createAppearanceRowStore().create()
   store.actions.sync(preference, 0)
-  const setTheme = vi.fn()
+  const setTheme = vi.fn(async () => true)
   const props: AppearanceRowComponentProps = {
     useSessions: emptySessions(),
     useSessionPendingInteraction,
@@ -63,6 +64,15 @@ describe('AppearanceRow', () => {
     expect(pressed(/Dark/)).toBe('true')
     expect(pressed(/Light/)).toBe('false')
     expect(pressed(/System/)).toBe('false')
+  })
+
+  it('shows a localized alert when the appearance write is rejected', async () => {
+    const b = mount('dark')
+    b.setTheme.mockResolvedValueOnce(false)
+    fireEvent.click(screen.getByRole('button', { name: /Light/ }))
+    await act(async () => { await Promise.resolve() })
+    expect(screen.getByRole('alert').textContent).toBe(COPY['saveFailed'])
+    expect(pressed(/Dark/)).toBe('true')
   })
 
   it('click drives setTheme; selection follows the store mirror, not the click echo', () => {

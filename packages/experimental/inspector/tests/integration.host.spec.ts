@@ -11,12 +11,13 @@ import { InspectorClientFixture } from './fixtures/client-source.host.ts'
 // host that startup and delivery alone can exceed the default 5 s budget
 // without any behavioural defect, so the file budgets the process time and the
 // teardown hook that disposes the same Worker and sockets.
-vi.setConfig({ testTimeout: 30_000, hookTimeout: 30_000 })
+vi.setConfig({ testTimeout: 45_000, hookTimeout: 45_000 })
 
-// Every poll waits for one Worker round trip over the CDP socket. That latency
-// is transport, not behaviour under test, so the polls share one budget above
-// the 1 s default rather than each measuring the runner's load.
-const DELIVERY_TIMEOUT_MS = 5_000
+// Every poll and CDP call waits for Worker round trips over the socket. That
+// latency is transport, not behaviour under test: under a four-worker suite a
+// 5 s budget reproduced a `Runtime.getProperties` timeout while the same spec
+// passed alone, so both share a budget that absorbs runner contention.
+const DELIVERY_TIMEOUT_MS = 15_000
 
 /**
  * Poll `assertion` until the Worker delivers the state it awaits.
@@ -63,7 +64,7 @@ class TestCdpClient {
       const timer = setTimeout(() => {
         this.pending.delete(id)
         reject(new Error(`CDP call timed out: ${method}`))
-      }, 5_000)
+      }, DELIVERY_TIMEOUT_MS)
       this.pending.set(id, (message) => {
         clearTimeout(timer)
         this.pending.delete(id)

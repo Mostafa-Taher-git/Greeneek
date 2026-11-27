@@ -41,7 +41,7 @@ import { SettingsDescribeMirror, type SettingsDescribeFace } from './settings-mi
  */
 export class SettingsScopeController<T> implements SettingsScope<T> {
   private readonly store: SnapshotStore<SettingsScopeSnapshot<T>>
-  private tail: Promise<void> = Promise.resolve()
+  private tail: Promise<unknown> = Promise.resolve()
   private writeGeneration = 0
   private disposed = false
   private readonly unsubscribe: (() => void) | undefined
@@ -101,9 +101,9 @@ export class SettingsScopeController<T> implements SettingsScope<T> {
    * revision, and recovery contract.
    * @param field - scalar field inside the namespace section.
    * @param value - JSON-shaped value selected by the user.
-   * @returns settlement after the write and any latest-write recovery read.
+   * @returns whether the Host persisted the value; `false` follows a recovery read.
    */
-  set(field: string, value: unknown): Promise<void> {
+  set(field: string, value: unknown): Promise<boolean> {
     return this.mutate([{ op: 'set', path: [field], value: value as JsonValue }])
   }
 
@@ -111,9 +111,9 @@ export class SettingsScopeController<T> implements SettingsScope<T> {
    * Queue one field clear; see {@link SettingsScope.unset} for the ordering,
    * revision, and recovery contract.
    * @param field - scalar field inside the namespace section.
-   * @returns settlement after the clear and any latest-write recovery read.
+   * @returns whether the Host persisted the clear; `false` follows a recovery read.
    */
-  unset(field: string): Promise<void> {
+  unset(field: string): Promise<boolean> {
     return this.mutate([{ op: 'unset', path: [field] }])
   }
 
@@ -121,26 +121,33 @@ export class SettingsScopeController<T> implements SettingsScope<T> {
    * Queue one atomic namespace mutation; see {@link SettingsScope.mutate}.
    * @param ops - ordered field operations copied when queued.
    * @param expectedRevision - optional fixed revision read by the domain editor.
-   * @returns settlement after the mutation and any latest-write recovery read.
+   * @returns whether the Host persisted the mutation; `false` follows a recovery read.
    */
-  mutate(ops: readonly SettingsPathOpView[], expectedRevision?: number): Promise<void> {
+  mutate(ops: readonly SettingsPathOpView[], expectedRevision?: number): Promise<boolean> {
     const ownedOps = structuredClone(ops) as SettingsPathOpView[]
     const generation = ++this.writeGeneration
     return this.enqueue(async () => {
       const revision = expectedRevision ?? this.pendingRevision ?? this.getSnapshot().revision
-      const response = await this.ctx.remote.settings.mutate(this.spec.namespace, ownedOps, revision)
+      let response
+      try {
+        response = await this.ctx.remote.settings.mutate(this.spec.namespace, ownedOps, revision)
+      } catch {
+        await this.recover(generation)
+        return false
+      }
       if (!response.ok) {
         await this.recover(generation)
-        return
+        return false
       }
-      if (this.disposed) return
+      if (this.disposed) return false
       if (generation === this.writeGeneration) {
         this.pendingRevision = undefined
         this.mirror.acceptView(response.value)
       } else {
         this.pendingRevision = response.value.revision
       }
-    })
+      return true
+    }, false)
   }
 
   /** Reload Host state for the latest failed write; superseded failures leave recovery to it. */
@@ -162,11 +169,11 @@ export class SettingsScopeController<T> implements SettingsScope<T> {
     await this.tail
   }
 
-  private enqueue(operation: () => Promise<void>): Promise<void> {
-    if (this.persistence === 'memory' || this.disposed) return Promise.resolve()
+  private enqueue<T>(operation: () => Promise<T>, fallback: T): Promise<T> {
+    if (this.persistence === 'memory' || this.disposed) return Promise.resolve(fallback)
     const task = this.tail.then(async () => {
-      if (this.disposed) return
-      await operation()
+      if (this.disposed) return fallback
+      return operation()
     })
     // The returned task carries its own settlement to the caller; the queue
     // tail is kept fulfilled so one failed subscriber cannot strand later operations.

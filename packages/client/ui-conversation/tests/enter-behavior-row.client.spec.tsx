@@ -34,7 +34,10 @@ function noPendingInteraction() {
 
 function mount() {
   const policy = new ComposerSubmissionPolicy()
-  const setBusyEnter = vi.fn((behavior: 'queue' | 'steer') => { policy.setBusyEnter(behavior) })
+  const setBusyEnter = vi.fn(async (behavior: 'queue' | 'steer') => {
+    await policy.setBusyEnter(behavior)
+    return true
+  })
   const props: EnterBehaviorRowProps = {
     useSessions: emptySessions(),
     useSessionPendingInteraction: noPendingInteraction(),
@@ -55,6 +58,15 @@ describe('EnterBehaviorRow', () => {
     expect(screen.getByRole('button', { name: /Queue/ }).getAttribute('aria-expanded')).toBe('false')
   })
 
+  it('shows a localized alert and keeps the persisted choice after a rejected write', async () => {
+    const b = mount()
+    b.setBusyEnter.mockResolvedValueOnce(false)
+    fireEvent.click(screen.getByRole('button', { name: /Queue/ }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Steer' }))
+    await act(async () => { await Promise.resolve() })
+    expect(screen.getByRole('alert').textContent).toBe(en['settings.enter.saveFailed'])
+  })
+
   it('selects Steer, follows later preference changes, and closes outside', () => {
     const b = mount()
     const trigger = screen.getByRole('button', { name: /Queue/ })
@@ -63,7 +75,7 @@ describe('EnterBehaviorRow', () => {
     expect(b.setBusyEnter).toHaveBeenCalledWith('steer')
     expect(screen.getByRole('button', { name: /Steer/ })).toBeDefined()
 
-    act(() => { b.policy.setBusyEnter('queue') })
+    act(() => { void b.policy.setBusyEnter('queue') })
     const queueTrigger = screen.getByRole('button', { name: /Queue/ })
     fireEvent.click(queueTrigger)
     expect(screen.getByRole('menuitem', { name: 'Steer' })).toBeDefined()

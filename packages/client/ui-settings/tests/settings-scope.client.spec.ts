@@ -232,6 +232,21 @@ describe('SettingsScopeController', () => {
     expect(scope.getSnapshot()).toMatchObject({ value: { preference: 'dark' }, revision: 8 })
   })
 
+  it('reports a rejected write as false and restores the persisted value', async () => {
+    const describeCall = vi.fn()
+      .mockResolvedValueOnce(described({ preference: 'light' }, 1))
+      .mockResolvedValueOnce(described({ preference: 'light' }, 1))
+    const mutate = vi.fn().mockResolvedValueOnce(rejected())
+    const { mirror, scope } = derivedScope({ describe: describeCall, mutate })
+    await mirror.load()
+    const seen = trackValues(scope)
+
+    expect(await scope.set('preference', 'dark')).toBe(false)
+    expect(scope.getSnapshot().value).toEqual({ preference: 'light' })
+    expect(seen.at(-1)?.preference).toBe('light')
+    expect(mutate).toHaveBeenCalledOnce()
+  })
+
   it('folds the latest write answer into the mirror so a sibling scope sees it', async () => {
     const describeCall = vi.fn().mockResolvedValueOnce(described({ preference: 'system' }, 4))
     const mutate = vi.fn().mockResolvedValueOnce(ok(view({ preference: 'dark' }, 5)))
@@ -337,8 +352,8 @@ describe('SettingsScopeController', () => {
       throw new Error('write subscriber failed')
     })
 
-    await expect(scope.set('preference', 'dark')).resolves.toBeUndefined()
-    await expect(scope.set('preference', 'light')).resolves.toBeUndefined()
+    await expect(scope.set('preference', 'dark')).resolves.toBe(true)
+    await expect(scope.set('preference', 'light')).resolves.toBe(true)
 
     expect(mutate).toHaveBeenCalledTimes(2)
     expect(scope.getSnapshot()).toMatchObject({ value: { preference: 'light' }, revision: 3 })
@@ -360,7 +375,7 @@ describe('SettingsScopeController', () => {
     })
 
     await expect(scope.set('preference', 'dark')).rejects.toThrow('mirror fold failed')
-    await expect(scope.set('preference', 'light')).resolves.toBeUndefined()
+    await expect(scope.set('preference', 'light')).resolves.toBe(true)
 
     expect(mutate).toHaveBeenCalledTimes(2)
     expect(mutate).toHaveBeenNthCalledWith(2,

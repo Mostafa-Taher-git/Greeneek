@@ -13,8 +13,11 @@ export interface EnterBehaviorRowInjected {
     /** Persisted busy-state preference bound as useBusyEnter. */
     busyEnter: SnapshotStore<BusyEnterBehavior>
   }
-  /** Change the busy-state plain-Enter behavior. */
-  setBusyEnter: (behavior: BusyEnterBehavior) => void
+  /**
+   * Change the busy-state plain-Enter behavior.
+   * @returns whether the Host persisted the behavior.
+   */
+  setBusyEnter: (behavior: BusyEnterBehavior) => Promise<boolean>
 }
 
 /** Full Settings-row props. */
@@ -39,6 +42,7 @@ const OPTIONS: readonly {
 export function EnterBehaviorRow({ useBusyEnter, setBusyEnter, t }: EnterBehaviorRowProps) {
   const behavior = useBusyEnter(value => value)
   const [open, setOpen] = useState(false)
+  const [saveFailed, setSaveFailed] = useState(false)
   const selectedLabel = behavior === 'queue' ? 'settings.enter.queue' : 'settings.enter.steer'
 
   return (
@@ -46,6 +50,7 @@ export function EnterBehaviorRow({ useBusyEnter, setBusyEnter, t }: EnterBehavio
       <div className={css.rowText}>
         <div className={css.title}>{t('settings.enter.title')}</div>
         <div className={css.desc}>{t('settings.enter.description')}</div>
+        {saveFailed && <p role="alert" className={css.saveFailed}>{t('settings.enter.saveFailed')}</p>}
       </div>
       <Menu
         open={open}
@@ -54,7 +59,7 @@ export function EnterBehaviorRow({ useBusyEnter, setBusyEnter, t }: EnterBehavio
         selectedId={behavior}
         onSelect={(id) => {
           setOpen(false)
-          setBusyEnter(id as BusyEnterBehavior)
+          void setBusyEnter(id as BusyEnterBehavior).then((persisted) => { setSaveFailed(!persisted) })
         }}
         align="end"
         portal

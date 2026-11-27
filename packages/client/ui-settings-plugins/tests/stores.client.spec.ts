@@ -777,6 +777,7 @@ describe('SubagentModelSelectionCardController', () => {
         enabled: enabled?.op === 'set' ? enabled.value as boolean : false,
         allowedModels: allowedModels?.op === 'set' ? allowedModels.value as never[] : [],
       } })
+      return true
     })
     const controller = new SubagentModelSelectionCardController({ ...host.scope, mutate }, catalog.ctx)
     const face = controller.inject()

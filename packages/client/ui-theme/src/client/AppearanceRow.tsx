@@ -6,6 +6,7 @@
  * active theme.
  */
 import clsx from 'clsx'
+import { useState } from 'react'
 import {
   IconDarkOutline16, IconFollowsystemOutline16, IconLightOutline16,
 } from '@greeneek/gnk-client-ui-primitives'
@@ -18,8 +19,11 @@ import css from './AppearanceRow.module.css'
 
 /** Injected business face: the preference write (t rides the standard locale seat). */
 export interface AppearanceRowInjected {
-  /** Switch the theme preference. */
-  setTheme: (id: ThemePreference) => void
+  /**
+   * Switch the theme preference.
+   * @returns whether the Host persisted the choice.
+   */
+  setTheme: (id: ThemePreference) => Promise<boolean>
 }
 
 /** Full component props: runtime share + store share + locale seat + injected face. */
@@ -41,9 +45,11 @@ const CUBES: readonly { id: ThemePreference; labelKey: ThemeKey; Icon: typeof Ic
  */
 export function AppearanceRow({ t, setTheme, useStore }: AppearanceRowComponentProps) {
   const preference = useStore(s => s.preference)
+  const [saveFailed, setSaveFailed] = useState(false)
   return (
     <div className={css.group}>
       <div className={css.title}>{t('appearance.title')}</div>
+      {saveFailed && <p role="alert" className={css.saveError}>{t('saveFailed')}</p>}
       <div className={css.cubeRow}>
         {CUBES.map(({ id, labelKey, Icon }) => (
           <button
@@ -51,7 +57,9 @@ export function AppearanceRow({ t, setTheme, useStore }: AppearanceRowComponentP
             type="button"
             className={clsx(css.themeCube, preference === id && css.selected)}
             aria-pressed={preference === id}
-            onClick={() => { setTheme(id) }}
+            onClick={() => {
+              void setTheme(id).then((persisted) => { setSaveFailed(!persisted) })
+            }}
           >
             <Icon />
             {t(labelKey)}

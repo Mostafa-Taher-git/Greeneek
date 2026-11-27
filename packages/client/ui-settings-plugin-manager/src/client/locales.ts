@@ -43,7 +43,8 @@ export const zh = {
   trustWarning: '仅安装你信任的插件：它们以你的权限运行，可能损坏 Greeneek 或泄露你的数据。',
   cancel: '取消',
   add: '添加',
-  installUnavailable: '此版本尚未接入插件安装服务，添加请求不会执行。',
+  installUnavailable: 'Web 界面不会执行安装。请在 Greeneek 项目目录运行 gnk plugin add <包>；安装后刷新此列表。',
+  cliOnlyNotice: '持久安装与卸载通过 CLI 完成：gnk plugin add <包> / gnk plugin remove <包>。此页面只读展示当前配置中的插件。',
 } as const
 
 /** Keys of the plugin-manager UI copy, derived from the Chinese dictionary. */
@@ -92,7 +93,8 @@ export const en: Record<PluginManagerLocaleKey, string> = {
   trustWarning: 'Install only plugins you trust: they run with your permissions and can damage Greeneek or leak your data.',
   cancel: 'Cancel',
   add: 'Add',
-  installUnavailable: 'This build has no plugin installation service, so the add request was not run.',
+  installUnavailable: 'The Web UI does not install plugins. Run gnk plugin add <package> from the Greeneek project directory, then refresh this list.',
+  cliOnlyNotice: 'Persistent install and remove are CLI workflows: gnk plugin add <package> / gnk plugin remove <package>. This page shows the plugins in the active profile.',
 }
 
 /** Arabic copy for the plugin-manager UI. */
@@ -138,5 +140,6 @@ export const ar: Record<PluginManagerLocaleKey, string> = {
   trustWarning: 'ثبّت الإضافات التي تثق بها فقط: فهي تعمل بصلاحياتك وقد تضر Greeneek أو تسرب بياناتك.',
   cancel: 'إلغاء',
   add: 'إضافة',
-  installUnavailable: 'لا يتضمن هذا الإصدار خدمة تثبيت الإضافات، لذا لم يُنفّذ طلب الإضافة.',
+  installUnavailable: 'لا تقوم واجهة الويب بتثبيت الإضافات. شغّل gnk plugin add <package> من دليل مشروع Greeneek، ثم حدّث هذه القائمة.',
+  cliOnlyNotice: 'التثبيت والإزالة الدائمان عبر CLI: gnk plugin add <package> / gnk plugin remove <package>. تعرض هذه الصفحة إضافات الملف الشخصي النشط.',
 }

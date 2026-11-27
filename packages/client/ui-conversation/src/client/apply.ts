@@ -114,7 +114,7 @@ export function apply(ctx: Context): void {
     locale: NS,
     inject: (): EnterBehaviorRowInjected => ({
       hooks: { busyEnter: submissionPolicy.busyEnter },
-      setBusyEnter: (behavior) => { submissionPolicy.setBusyEnter(behavior) },
+      setBusyEnter: behavior => submissionPolicy.setBusyEnter(behavior),
     }),
   }, EnterBehaviorRow))
 

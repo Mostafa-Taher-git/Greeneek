@@ -160,6 +160,7 @@ export function PluginManagerSection(props: PluginManagerSectionProps) {
         <div className={css.backdrop}>
           <form className={css.dialog} role="dialog" aria-modal="true" onSubmit={submit}>
             <h3 className={css.sectionTitle}>{t('addPlugin')}</h3>
+            <p className={css.notice} role="note">{t('cliOnlyNotice')}</p>
             <label className={css.field}>
               <span>{t('packageName')}</span>
               <input value={name} placeholder={t('packageNamePlaceholder')} onChange={(event) => { setName(event.target.value) }} />

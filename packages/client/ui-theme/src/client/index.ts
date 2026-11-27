@@ -227,15 +227,20 @@ export class ThemeRuntime {
    * Built-in preferences are written through the settings scope and every
    * accepted value emits `theme/change`.
    * @param id - a registered theme id or `system`; unknown ids throw.
+   * @returns whether the preference was persisted; `false` reverts to the Host value.
    */
-  setTheme(id: string): void {
+  setTheme(id: string): Promise<boolean> {
     if (id !== 'system' && !this.themes.some(t => t.id === id)) {
       throw new Error(`theme "${id}" is not registered`)
     }
-    if (this.preference === id) return
+    if (this.preference === id) return Promise.resolve(true)
     this.preference = id as ThemePreference
-    if (isThemePreference(id)) void this.host.set(THEME_PREFERENCE_FIELD, id)
+    const write = isThemePreference(id) ? this.host.set(THEME_PREFERENCE_FIELD, id) : Promise.resolve(true)
     this.publish()
+    return write.then((persisted) => {
+      if (!persisted) this.adopt()
+      return persisted
+    })
   }
 
   /**
@@ -243,15 +248,20 @@ export class ThemeRuntime {
    * entry. Accepted values are written through the settings scope and emit
    * `theme/change`.
    * @param px - integer px within FONT_SIZE_MIN..FONT_SIZE_MAX; out-of-range or fractional values throw.
+   * @returns whether the size was persisted; `false` reverts to the Host value.
    */
-  setFontSize(px: number): void {
+  setFontSize(px: number): Promise<boolean> {
     if (!Number.isInteger(px) || px < FONT_SIZE_MIN || px > FONT_SIZE_MAX) {
       throw new Error(`font size ${px} is outside ${FONT_SIZE_MIN}..${FONT_SIZE_MAX}`)
     }
-    if (this.fontSize === px) return
+    if (this.fontSize === px) return Promise.resolve(true)
     this.fontSize = px
-    void this.host.set(FONT_SIZE_FIELD, px)
+    const write = this.host.set(FONT_SIZE_FIELD, px)
     this.publish()
+    return write.then((persisted) => {
+      if (!persisted) this.adopt()
+      return persisted
+    })
   }
 
   /** Adopt the scope's accepted durable preference without writing it back. */
@@ -448,7 +458,7 @@ export function apply(ctx: ClientContext): void {
     // first render (the store's revision guard drops stale duplicates).
     sync(theme.getTheme())
     return {
-      setTheme: (id) => { theme.setTheme(id) },
+      setTheme: id => theme.setTheme(id),
     }
   }
   ctx.slots.inject('settings.general.item', () => ctx.slots.register({
@@ -464,7 +474,7 @@ export function apply(ctx: ClientContext): void {
     fontSizeBound = actions
     sync(theme.getTheme())
     return {
-      setFontSize: (px) => { theme.setFontSize(px) },
+      setFontSize: px => theme.setFontSize(px),
     }
   }
   ctx.slots.inject('settings.general.item', () => ctx.slots.register({

@@ -27,8 +27,8 @@ import { chromium } from 'playwright'
 import type { Browser } from 'playwright'
 import { expect, it } from 'vitest'
 import {
-  composeProfile, configTrees, indexWorkspacePackages, packVfsImage, packVfsOverlay,
-  previewFixtures, WRAPPER_CONTRACT,
+  configTrees, indexWorkspacePackages, packVfsImage, packVfsOverlay,
+  previewFixtures, workerPreviewProfile, WRAPPER_CONTRACT,
 } from '@greeneek/gnk-experimental-webworker-packer'
 import {
   IMAGE_FILE_NAME, PREVIEW_FIXTURE_MANIFEST_FILE, PREVIEW_FIXTURE_MANIFEST_VERSION,
@@ -50,12 +50,9 @@ const SOURCE_CHOOSER_EXPECTED = fileURLToPath(new URL('./snapshots/preview-boot/
 
 const SNAPSHOT_MODE = webSnapshotMode()
 
-/** Disable Node-only providers in the worker's copy of the Web profile. */
+/** Worker-safe profile composition shared with `build:preview`. */
 function workerProfileConfig(): string {
-  return composeProfile(REPO_ROOT, PROFILE).replace(
-    /^(\s*)- id: browser-playwright$/mu,
-    (_line, indent: string) => `${indent}- id: browser-playwright\n${indent}  disabled: true`,
-  )
+  return workerPreviewProfile(REPO_ROOT, PROFILE)
 }
 
 /** Profile the preview deployment composes; `build:preview` packs the same one. */
@@ -291,6 +288,7 @@ async function bootPreview(origin: string, browser: Browser): Promise<void> {
   const page = await newEnglishPage(browser)
   const pageErrors: Error[] = []
   const consoleErrors: string[] = []
+
   page.on('pageerror', (error) => { pageErrors.push(error) })
   // Registered before navigation: the worker reports its tree long before the
   // tunnel serves the client, so a listener added later would miss the line.

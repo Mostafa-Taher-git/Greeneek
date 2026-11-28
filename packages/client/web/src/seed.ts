@@ -14,6 +14,7 @@ import * as Cordis from '@greeneek/cordis'
 import * as ClientStore from '@greeneek/gnk-client-store'
 import * as UiSlots from '@greeneek/gnk-client-ui-slots'
 import * as UiPrimitives from '@greeneek/gnk-client-ui-primitives'
+import * as Zod from 'zod'
 import type { PlatformModule } from './platform.ts'
 
 /**
@@ -33,5 +34,6 @@ export function getStaticModules(): Record<string, unknown> {
     '@greeneek/gnk-client-store': ClientStore,
     '@greeneek/gnk-client-ui-slots': UiSlots,
     '@greeneek/gnk-client-ui-primitives': UiPrimitives,
+    'zod': Zod,
   } satisfies Record<PlatformModule, unknown>
 }

@@ -10,6 +10,7 @@ export const PLATFORM_MODULES = [
   '@greeneek/gnk-client-store',
   '@greeneek/gnk-client-ui-slots',
   '@greeneek/gnk-client-ui-primitives',
+  'zod',
 ] as const
 
 /** Client-bundle specifiers whose factories the parser preloads before the shell starts. */

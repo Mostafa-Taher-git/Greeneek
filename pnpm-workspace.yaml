@@ -24,6 +24,7 @@ verifyDepsBeforeRun: false
 overrides:
   # Single patched Vite line for every transitive consumer (vitest, plugins).
   vite: '8.1.7'
+  zod: '4.6.6'
   '@greeneek/cosmokit': 'link:vendor/cosmokit'
   '@greeneek/schemastery': 'link:vendor/schemastery'
   # electron-builder reaches @electron/rebuild, which pins node-gyp to a git
@@ -101,7 +102,6 @@ overrides:
   undici@>=8.0.0 <8.10.2: ^8.10.2
   undici@>=8.0.0 <8.12.2: ^8.12.2
   undici@>=8.10.0 <8.10.2: ^8.10.2
-  zod@<4.6.6: ^4.6.6
 
 peerDependencyRules:
   allowedVersions:

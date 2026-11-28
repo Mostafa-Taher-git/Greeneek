@@ -73,6 +73,28 @@ export function indexWorkspacePackages(repoRoot: string): Map<string, string> {
 }
 
 /**
+ * Worker-safe profile composition: the Web profile minus entries that need
+ * Node-only builtins. `node:sqlite` has no Worker implementation; an entry that
+ * imports it fails before the tree activates and its module-graph failure
+ * cascades into unrelated loader rows. `session-query-sqlite` stays enabled
+ * because its shipped `openAt: never` config still provides the `sessionQuery`
+ * service without touching SQLite.
+ * @param repoRoot - Absolute repository root.
+ * @param profile - Profile name to compose.
+ * @returns The composed YAML with Node-only rows disabled.
+ */
+export function workerPreviewProfile(repoRoot: string, profile: string): string {
+  let config = composeProfile(repoRoot, profile)
+  for (const id of ['browser-playwright', 'deep-agent']) {
+    config = config.replace(
+      new RegExp(`^(\\s*)- id: ${id}$`, 'mu'),
+      (_line, indent: string) => `${indent}- id: ${id}\n${indent}  disabled: true`,
+    )
+  }
+  return config
+}
+
+/**
  * Compose one profile through the real CLI dump path, leaving `!!js`
  * unevaluated. The dump runs against a throwaway Harness home and default
  * layers only, so the image is the shipped profile: the machine's `$GNK_HOME`

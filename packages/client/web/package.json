@@ -34,7 +34,8 @@
     "@greeneek/cordis": "workspace:^",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "zod": "^4.6.6"
   },
   "peerDependencies": {
     "@greeneek/cordis": "workspace:^"

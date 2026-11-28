@@ -18,7 +18,11 @@
 import { parse } from 'acorn'
 
 const HELPER_SOURCE: Record<string, string> = {
-  def: 'const __gnk$def=(t,k,get)=>Object.defineProperty(t,k,{enumerable:true,configurable:true,get});',
+  // A CommonJS cycle can read an export before its module body reaches the
+  // declaration. Native ESM live bindings would throw a TDZ ReferenceError;
+  // the transformed CJS view yields `undefined` for that in-flight read and
+  // keeps the live binding for every later access.
+  def: 'const __gnk$def=(t,k,get)=>Object.defineProperty(t,k,{enumerable:true,configurable:true,get:()=>{try{return get()}catch(error){if(error instanceof ReferenceError)return globalThis[k];throw error}}});',
   default: 'const __gnk$default=(m)=>(m&&m.__esModule?m.default:m);',
   ns: 'const __gnk$ns=(m)=>(m&&m.__esModule?m:Object.assign({},m,{default:m}));',
   exportAll: 'const __gnk$exportAll=(t,m)=>{for(const k of Object.keys(m))if(k!=="default"&&!(k in t))__gnk$def(t,k,()=>m[k]);};',

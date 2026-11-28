@@ -58,7 +58,14 @@ export function describeFailure(reason: unknown): string {
       return
     }
     lines.push(`${indent}${value.name}: ${value.message}`)
-    if (value instanceof AggregateError) for (const inner of value.errors) walk(inner, depth + 1)
+    const nested = (value as AggregateError).errors
+    if (Array.isArray(nested)) {
+      lines.push(`${indent}  ${String(nested.length)} nested failure(s)`)
+      for (const [index, inner] of nested.entries()) {
+        lines.push(`${indent}  [${String(index)}]`)
+        walk(inner, depth + 2)
+      }
+    }
     walk(value.cause, depth + 1)
   }
   walk(reason, 0)

@@ -198,6 +198,16 @@ export function createWorkerHost(options: WorkerHostOptions): WorkerHost {
       }
       setActiveVfs(mounted)
       vfs = mounted
+      // zod's CJS cycle reads the `globalConfig` export while its defining
+      // module is still initializing. The compiler's safe export getter falls
+      // back to the same name on globalThis; seed it from zod's own global so
+      // the in-flight read sees the real config object instead of undefined.
+      const zodGlobals = globalThis as typeof globalThis & {
+        globalConfig?: unknown
+        __zod_globalConfig?: unknown
+      }
+      zodGlobals.__zod_globalConfig ??= {}
+      zodGlobals.globalConfig ??= zodGlobals.__zod_globalConfig
 
       const manifestPath = options.manifestPath ?? join(root, IMAGE_MANIFEST_PATH)
       requireLoweredImage(mounted, manifestPath)

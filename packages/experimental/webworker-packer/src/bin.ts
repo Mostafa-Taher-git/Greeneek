@@ -16,7 +16,7 @@ import {
 } from '@greeneek/gnk-experimental-webworker-runtime'
 import { packVfsImage, packVfsOverlay } from './pack.ts'
 import {
-  composeProfile, configTrees, describePack, indexWorkspacePackages, previewFixtures,
+  configTrees, describePack, indexWorkspacePackages, previewFixtures, workerPreviewProfile,
 } from './repository.ts'
 
 /**
@@ -46,7 +46,7 @@ const out = flag('out')
 const outputFile = isAbsolute(out) ? out : resolve(process.cwd(), out)
 
 const result = packVfsImage({
-  config: composeProfile(repoRoot, profile),
+  config: workerPreviewProfile(repoRoot, profile),
   profile,
   root: flag('root', '/gnk'),
   workspaces: indexWorkspacePackages(repoRoot),

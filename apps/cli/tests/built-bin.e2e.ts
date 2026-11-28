@@ -40,7 +40,7 @@ const acpGreeneekMock = fileURLToPath(new URL('./fixtures/acp-greeneek-mock.over
  */
 function withoutNodeExperimentalWarnings(stderr: string): string {
   return stderr.replace(
-    /^\(node:\d+\) ExperimentalWarning:[^\n]*\n(?:\(Use `node --trace-warnings[^\n]*\n)?/gmu,
+    /^\(node:\d+\) ExperimentalWarning:[^\n]*\n(?:\(Use `node --trace-warnings[^\n]*\n?)?/gmu,
     '',
   )
 }
@@ -72,6 +72,14 @@ async function runBuiltBin(
     stderr: withoutNodeExperimentalWarnings(result.stderr),
   }
 }
+
+describe('Node 22 warning normalization', () => {
+  it('removes a SQLite warning block whose final line has no newline', () => {
+    const stderr = '(node:123) ExperimentalWarning: SQLite is an experimental feature and might change at any time\n'
+      + '(Use `node --trace-warnings ...` to show where the warning was created)'
+    expect(withoutNodeExperimentalWarnings(stderr)).toBe('')
+  })
+})
 
 async function waitForFile(file: string): Promise<void> {
   const deadline = Date.now() + SPAWN_TIMEOUT_MS

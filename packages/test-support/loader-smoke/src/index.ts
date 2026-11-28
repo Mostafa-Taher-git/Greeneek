@@ -172,7 +172,7 @@ export interface LoaderSmokeOptions {
  */
 function withoutNodeExperimentalWarnings(stderr: string): string {
   return stderr.replace(
-    /^\(node:\d+\) ExperimentalWarning:[^\n]*\n(?:\(Use `node --trace-warnings[^\n]*\n)?/gmu,
+    /^\(node:\d+\) ExperimentalWarning:[^\n]*\n(?:\(Use `node --trace-warnings[^\n]*\n?)?/gmu,
     '',
   )
 }

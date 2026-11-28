@@ -49,7 +49,9 @@ const errors = []
 for (const column of required) {
   if (!header.includes(column)) errors.push(`missing column: ${column}`)
 }
-const index = Object.fromEntries(required.map(column => [column, header.indexOf(column)]))
+// The inventory's own "Status" column records the historical run result;
+// the ledger's "Status" column is the rightmost one and owns FIXED-VERIFIED.
+const index = Object.fromEntries(required.map(column => [column, header.lastIndexOf(column)]))
 if (errors.length === 0) {
   for (const [rowNumber, row] of rows.entries()) {
     const id = row[0] ?? `#${rowNumber + 2}`

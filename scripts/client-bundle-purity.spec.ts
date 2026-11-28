@@ -132,7 +132,9 @@ describe('client bundle purity gate', () => {
     }
 
     expect(requesting.neverBundle('react')).toBe(true)
-    expect(requesting.neverBundle('zod')).toBe(false)
+    // zod is a shared platform module: bundling it per client copy created a
+    // CommonJS cycle with a TDZ failure in the Worker preview.
+    expect(requesting.neverBundle('zod')).toBe(true)
     expect(plain.neverBundle('react')).toBe(true)
     expect(plain.neverBundle('@greeneek/gnk-client-store')).toBe(true)
   })

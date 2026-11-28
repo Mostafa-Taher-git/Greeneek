@@ -31,6 +31,20 @@ const invalidProvider = fileURLToPath(new URL('./fixtures/invalid-provider.cordi
 const greeneekMockAdapter = fileURLToPath(new URL('./fixtures/greeneek-mock-adapter.overlay.yml', import.meta.url))
 const acpGreeneekMock = fileURLToPath(new URL('./fixtures/acp-greeneek-mock.overlay.yml', import.meta.url))
 
+/**
+ * Node 22 emits an ExperimentalWarning when the shipped storage backend loads
+ * `node:sqlite`. It is runtime noise, not CLI output; every other stderr line
+ * still reaches the assertions unchanged.
+ * @param stderr - Raw child-process stderr.
+ * @returns stderr with Node experimental warning blocks removed.
+ */
+function withoutNodeExperimentalWarnings(stderr: string): string {
+  return stderr.replace(
+    /^\(node:\d+\) ExperimentalWarning:[^\n]*\n(?:\(Use `node --trace-warnings[^\n]*\n)?/gmu,
+    '',
+  )
+}
+
 async function runBuiltBin(
   args: readonly string[] = [],
   env: Readonly<Record<string, string | undefined>> = {},
@@ -52,7 +66,11 @@ async function runBuiltBin(
   if (result.timedOut) {
     throw new Error(`gnk built bin did not exit within ${SPAWN_TIMEOUT_MS / 1_000}s. stdout:\n${result.stdout}\nstderr:\n${result.stderr}`)
   }
-  return { stdout: result.stdout, code: result.exitCode ?? -1, stderr: result.stderr }
+  return {
+    stdout: result.stdout,
+    code: result.exitCode ?? -1,
+    stderr: withoutNodeExperimentalWarnings(result.stderr),
+  }
 }
 
 async function waitForFile(file: string): Promise<void> {
@@ -473,7 +491,7 @@ describe.skipIf(!existsSync(gnkBin))('gnk BUILT bin (node lib/bin.js, no tsx)', 
       expect(await response(2)).toEqual({ jsonrpc: '2.0', id: 2, result: {} })
       const result = await child
       expect(result.exitCode, `signal=${String(result.signal)}; stderr=${stderr}`).toBe(0)
-      expect(stderr).toBe('')
+      expect(withoutNodeExperimentalWarnings(stderr)).toBe('')
     } finally {
       child.kill('SIGKILL')
       await child
@@ -915,7 +933,7 @@ describe.skipIf(!existsSync(gnkBin))('gnk BUILT bin (node lib/bin.js, no tsx)', 
     it('prints the web profile bundle layers without a user layer', async () => {
       const { stdout, code, stderr } = await runBuiltBin(['--profile', 'web', '--dump-default-config'], { GNK_HOME: home })
       expect(code).toBe(0)
-      expect(stderr).toBe('')
+      expect(withoutNodeExperimentalWarnings(stderr)).toBe('')
       expect(stdout).toContain("name: '@greeneek/gnk-agent-loop'")
       expect(stdout).toContain('agents: []')
       expect(stdout).toContain('# == @greeneek/gnk-base')
@@ -929,7 +947,7 @@ describe.skipIf(!existsSync(gnkBin))('gnk BUILT bin (node lib/bin.js, no tsx)', 
         { GNK_HOME: home },
       )
       expect(code).toBe(0)
-      expect(stderr).toBe('')
+      expect(withoutNodeExperimentalWarnings(stderr)).toBe('')
       expect(stdout).toContain("name: '@greeneek/gnk-headless'")
       expect(stdout).not.toMatch(/name: '@greeneek\/gnk-host-/)
       expect(stdout).not.toContain("name: '@greeneek/gnk-web-app'")
@@ -942,7 +960,7 @@ describe.skipIf(!existsSync(gnkBin))('gnk BUILT bin (node lib/bin.js, no tsx)', 
         { GNK_HOME: home },
       )
       expect(code).toBe(0)
-      expect(stderr).toBe('')
+      expect(withoutNodeExperimentalWarnings(stderr)).toBe('')
       const rows = yaml.load(stdout, { schema: entryListSchema }) as Array<{ id?: string; name?: string }>
       expect(rows.map(row => [row.id, row.name])).toEqual([
         ['sdk-app-startup', '@greeneek/gnk-sdk-app'],

@@ -1,0 +1,5 @@
+Modification 17: cordis/src/reflect.ts React probe tolerance
+Tree-hash: 4f72cdefc3df376c8425725b8501bd434d3bfbcc07b514b1f32f1da941503fae
+Upstream manifest: see vendor/README.md manifest table for this package's SHA.
+
+`isSpecialProperty` now treats the string property `$$typeof` as special. React checks `$$typeof` on every value it renders to decide whether it is an element; a Cordis `Context` proxy is not an element, and the previous code threw `cannot get property "$$typeof" without inject` whenever React probed such a proxy. This surfaced in the Web worker/plugin boot path (`webworker host: tree active` / `loader entries failed to apply`), cascading into 30+ Web replay failures. The proxy now resolves `$$typeof` to `undefined` without a thrown error.

@@ -31,7 +31,7 @@
     "@greeneek/gnk-deep-agent-core": "workspace:^",
     "@greeneek/gnk-deep-agent-store": "workspace:^",
     "typescript": "^5.7.2",
-    "vitest": "^4.1.8"
+    "vitest": "^5.0.5"
   },
   "files": ["lib/index.js", "lib/types/**/*.js", "lib/types/**/*.d.ts"]
 }

@@ -19,6 +19,6 @@
   "scripts": {},
   "license": "MIT",
   "peerDependencies": { "@greeneek/cordis": "workspace:^" },
-  "devDependencies": { "@greeneek/cordis": "workspace:^", "typescript": "^5.7.2", "vitest": "^4.1.8" },
+  "devDependencies": { "@greeneek/cordis": "workspace:^", "typescript": "^5.7.2", "vitest": "^5.0.5" },
   "files": ["lib/index.js", "lib/types/**/*.d.ts"]
 }

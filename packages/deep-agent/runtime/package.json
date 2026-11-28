@@ -45,7 +45,7 @@
     "@greeneek/gnk-deep-agent-sources": "workspace:^",
     "@greeneek/gnk-credentials": "workspace:^",
     "typescript": "^5.7.2",
-    "vitest": "^4.1.8"
+    "vitest": "^5.0.5"
   },
   "dependencies": { "zod": "^4.4.3" },
   "files": [

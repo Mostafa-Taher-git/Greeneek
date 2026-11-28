@@ -129,6 +129,9 @@ importers:
       fast-check:
         specifier: ^4.8.0
         version: 4.8.0
+      fflate:
+        specifier: ^0.8.3
+        version: 0.8.3
       istanbul-lib-report:
         specifier: ^3.0.1
         version: 3.0.1
@@ -932,6 +935,9 @@ importers:
       '@greeneek/gnk-user-questions':
         specifier: workspace:^
         version: link:../../interaction/user-questions
+      zod:
+        specifier: 4.6.6
+        version: 4.6.6
 
   packages/api/session-controller:
     dependencies:
@@ -20089,7 +20095,7 @@ snapshots:
   '@types/react@18.3.31':
     dependencies:
       '@types/prop-types': 15.7.15
-      csstype: 3.2.3
+      csstype: 3.2.4
 
   '@types/react@19.2.7':
     dependencies:

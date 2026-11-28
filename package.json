@@ -190,6 +190,7 @@
     "eslint-plugin-sonarjs": "^4.1.0",
     "execa": "^10.0.0",
     "fast-check": "^4.8.0",
+    "fflate": "^0.8.3",
     "istanbul-lib-report": "^3.0.1",
     "js-yaml": "^4.2.0",
     "jscpd": "^5.0.12",

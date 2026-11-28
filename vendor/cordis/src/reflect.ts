@@ -88,6 +88,10 @@ function isSpecialProperty(prop: string | symbol): prop is symbol {
     || RESERVED_WORDS.includes(prop)
     || parseInt(prop).toString() === prop
     || prop.startsWith('_')
+    // React probes `$$typeof` to decide whether a value is an element; a
+    // Context proxy is not an element, so resolve it to undefined instead of
+    // throwing "cannot get property ... without inject".
+    || prop === '$$typeof'
 }
 
 /** Context property definition known by the reflection service. */

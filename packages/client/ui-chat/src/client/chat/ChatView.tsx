@@ -489,6 +489,12 @@ export function ChatView({
         const normalized = isAtBottom ? null : scrollPosition(local, el)
         if (isAtBottom) chatScroll.save(null)
         else if (normalized !== null) chatScroll.save(normalized)
+        // A restored reader still owns their row. A breakpoint or flow resize
+        // after this mount changes the height above it; without a held anchor
+        // the ResizeObserver cannot compensate and the row slides on screen.
+        if (!isAtBottom && normalized !== null) {
+          anchorRef.current = { key: normalized.anchorKey, top: normalized.anchorTop }
+        }
       }
       firstSeqRef.current = firstSeq
       lastKeyRef.current = lastKey

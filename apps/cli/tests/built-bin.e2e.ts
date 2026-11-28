@@ -579,7 +579,7 @@ describe.skipIf(!existsSync(gnkBin))('gnk BUILT bin (node lib/bin.js, no tsx)', 
       child.stdin.end()
       const result = await child
       expect(result.exitCode, `signal=${String(result.signal)}; stderr=${result.stderr}`).toBe(0)
-      expect(result.stderr).toBe('')
+      expect(withoutNodeExperimentalWarnings(result.stderr)).toBe('')
       for (const line of rawOut.join('').split('\n').filter(value => value.trim() !== '')) {
         expect(() => JSON.parse(line) as unknown).not.toThrow()
       }

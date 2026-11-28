@@ -93,7 +93,7 @@ export const t = {
     download: {
       eyebrow: 'Download',
       title: 'Choose your platform.',
-      sub: 'Download links always point to the latest desktop-v* release on GitHub.',
+      sub: 'Download links are pinned to a specific desktop-v* release that actually contains the installers.',
       latest: 'Latest release',
       windows: 'Windows',
       windowsArch: 'x64',

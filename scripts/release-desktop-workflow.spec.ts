@@ -43,6 +43,11 @@ describe('desktop release workflow', () => {
     }
   })
 
+  it('verifies public download URLs after publishing', () => {
+    expect(source).toContain('name: Verify public download URLs and checksums')
+    expect(source).toContain('sha256sum -c SHA256SUMS')
+  })
+
   it('fails closed on CI and never hides build errors', () => {
     expect(runText(jobNamed(workflow, 'gate'))).toContain('no successful push CI workflow run exists')
     expect(source).not.toContain('continue-on-error: true')

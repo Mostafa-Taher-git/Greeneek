@@ -1,8 +1,12 @@
+import desktopRelease from "./desktop-release.json";
+
 export type Platform = "windows" | "macos" | "linux" | "unknown";
 
-export function detectPlatform(): Platform {
-  if (typeof navigator === "undefined") return "unknown";
-  const ua = navigator.userAgent.toLowerCase();
+export function detectPlatform(userAgent?: string): Platform {
+  if (typeof navigator === "undefined" && userAgent === undefined) return "unknown";
+  const ua = (userAgent ?? navigator.userAgent).toLowerCase();
+  // Android reports Linux in its UA but has no desktop installer.
+  if (ua.includes("android")) return "unknown";
   if (ua.includes("win")) return "windows";
   if (ua.includes("mac") || ua.includes("iphone") || ua.includes("ipad"))
     return "macos";
@@ -19,11 +23,19 @@ export const DEV_DOCS_URL = `${REPO_URL}/blob/main/docs/development.md`;
 export const PLUGINS_URL = "https://github.com/topics/gnk-plugin";
 export const LICENSE_URL = `${REPO_URL}/blob/main/LICENSE`;
 
-/** All downloads route to stable per-file aliases on the latest release. */
+/**
+ * Downloads are pinned to a concrete desktop release resolved at build time.
+ * The repo-wide `/releases/latest` can point at the npm `v*` source release,
+ * which has no installers, so it is never used for a download URL.
+ */
+export const DESKTOP_RELEASE_TAG = desktopRelease.tag;
+const assetUrl = (name: string): string =>
+  `${RELEASES_URL}/download/${DESKTOP_RELEASE_TAG}/${name}`;
+
 export const download = {
-  latest: `${RELEASES_URL}/latest`,
-  windowsInstaller: `${RELEASES_URL}/latest/download/Greeneek-Desktop-latest-windows-x64.exe`,
-  windowsPortable: `${RELEASES_URL}/latest/download/Greeneek-Desktop-latest-windows-x64.zip`,
-  linuxDeb: `${RELEASES_URL}/latest/download/Greeneek-Desktop-latest-linux-amd64.deb`,
-  linuxAppImage: `${RELEASES_URL}/latest/download/Greeneek-Desktop-latest-linux-x86_64.AppImage`,
+  latest: `${RELEASES_URL}/tag/${DESKTOP_RELEASE_TAG}`,
+  windowsInstaller: assetUrl("Greeneek-Desktop-latest-windows-x64.exe"),
+  windowsPortable: assetUrl("Greeneek-Desktop-latest-windows-x64.zip"),
+  linuxDeb: assetUrl("Greeneek-Desktop-latest-linux-amd64.deb"),
+  linuxAppImage: assetUrl("Greeneek-Desktop-latest-linux-x86_64.AppImage"),
 };

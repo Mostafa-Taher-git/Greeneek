@@ -6,7 +6,7 @@
   "description": "Greeneek public landing site: product overview, quick start, and desktop downloads.",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "node scripts/resolve-desktop-release.mjs && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit"
   },

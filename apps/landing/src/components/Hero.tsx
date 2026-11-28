@@ -3,7 +3,7 @@ import { ArrowRight, Download, ShieldCheck } from 'lucide-react'
 import { SiteCopy } from '../i18n'
 import { LogoMark } from './Logo'
 import { GithubIcon } from './icons'
-import { detectPlatform, download, Platform, REPO_URL } from '../lib/platform'
+import { detectPlatform, download, Platform, RELEASES_URL, REPO_URL } from '../lib/platform'
 
 interface HeroProps {
   copy: SiteCopy
@@ -26,9 +26,12 @@ export function Hero({ copy }: HeroProps) {
   const primaryHref =
     platform === 'linux'
       ? download.linuxDeb
-      : platform === 'macos'
-        ? '#quickstart'
-        : download.windowsInstaller
+      : platform === 'windows'
+        ? download.windowsInstaller
+        : RELEASES_URL
+  const primaryLabel = platform === 'linux' || platform === 'windows'
+    ? copy.hero.download
+    : copy.download.allReleases
 
   return (
     <section id="top" className="relative overflow-hidden pt-36 pb-14 sm:pt-44">
@@ -73,7 +76,7 @@ export function Hero({ copy }: HeroProps) {
               className="group inline-flex w-full items-center justify-center gap-3 rounded-full bg-brand px-7 py-4 text-base font-semibold text-white shadow-pop transition-all hover:-translate-y-0.5 hover:bg-brand-strong sm:w-auto"
             >
               <Download className="h-5 w-5" />
-              <span>{copy.hero.download}</span>
+              <span>{primaryLabel}</span>
               <span className="hidden rounded-full bg-white/20 px-2.5 py-0.5 text-[11px] font-semibold sm:inline">
                 {copy.hero.currentDevice} · {platformLabel[platform]}
               </span>

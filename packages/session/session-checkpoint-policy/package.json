@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-session-checkpoint-policy",
   "description": "Semantic session durability checkpoints before model requests and tool side effects",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "publishConfig": {
     "access": "public"
   },

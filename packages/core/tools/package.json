@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-tools",
   "description": "Tool registry and execution pipeline for the Greeneek Harness",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "publishConfig": {
     "access": "public"
   },

@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-subprocess-local",
   "description": "Local-subprocess implementation of the Greeneek Harness subprocess seam",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "publishConfig": {
     "access": "public"
   },

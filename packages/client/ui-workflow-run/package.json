@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-client-ui-workflow-run",
   "description": "Durable workflow-run Conversation Node and nested member disclosure for gnk web",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "publishConfig": {
     "access": "public"
   },

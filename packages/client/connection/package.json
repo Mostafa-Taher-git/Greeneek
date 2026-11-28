@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-client-connection",
   "description": "Authenticated RPC transport, generation lifecycle, and browser fixture",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "publishConfig": {
     "access": "public"
   },

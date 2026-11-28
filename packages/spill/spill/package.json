@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-spill",
   "description": "Abstract spill storage seam (ctx.spillStore) for the Greeneek Harness — save oversized tool text and return a retrieval locator",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "publishConfig": {
     "access": "public"
   },

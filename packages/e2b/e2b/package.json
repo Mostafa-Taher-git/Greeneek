@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-e2b",
   "description": "Shared E2B sandbox lifecycle for Greeneek Harness provider adapters",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "publishConfig": {
     "access": "public"
   },

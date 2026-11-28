@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-egress",
   "description": "Single network egress policy: blocks every retired pre-rebrand provider host",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "publishConfig": {
     "access": "public"
   },

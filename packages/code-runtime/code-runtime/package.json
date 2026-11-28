@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-code-runtime",
   "description": "Abstract code-execution seam (ctx.codeRuntime) for the Greeneek Harness",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "publishConfig": {
     "access": "public"
   },

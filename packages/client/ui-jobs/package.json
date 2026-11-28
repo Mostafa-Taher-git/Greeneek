@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-client-ui-jobs",
   "description": "Thread Details background-job list: live registry state mirrored from session/jobs frames",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "type": "module",
   "main": "lib/index.js",
   "types": "lib/types/index.d.ts",

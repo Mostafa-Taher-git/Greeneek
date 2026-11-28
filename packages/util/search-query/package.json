@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-search-query",
   "description": "Obsidian-style session-search query language: tokenizer, recursive-descent parser, FTS5 compilation, and haystack evaluator for the Greeneek session search box",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "publishConfig": {
     "access": "public"
   },

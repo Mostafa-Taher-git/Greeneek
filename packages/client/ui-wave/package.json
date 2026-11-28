@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-client-ui-wave",
   "description": "Army fleet surfaces: the Thread Details Live Fleet section and the composer fallback pill, polled from the wave remote faces",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "publishConfig": {
     "access": "public"
   },

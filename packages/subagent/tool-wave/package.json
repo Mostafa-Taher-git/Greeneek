@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-tool-wave",
   "description": "Model-facing Army Lead tools over ctx.waves: fleet dispatch and session wave cancellation",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "publishConfig": {
     "access": "public"
   },

@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-web-search-greeneek",
   "description": "Greeneek-backed search provider (native web_search via the Anthropic-compatible API) for the Greeneek Harness web capability seam (ctx.web)",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "publishConfig": {
     "access": "public"
   },

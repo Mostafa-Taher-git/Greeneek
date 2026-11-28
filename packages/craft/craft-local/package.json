@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-craft-local",
   "description": "Local host provider for the Greeneek Harness Craft bridge: launcher and registry discovery, absolute CLI resolution, and token-gated headless sessions through ctx.subprocess",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "publishConfig": {
     "access": "public"
   },

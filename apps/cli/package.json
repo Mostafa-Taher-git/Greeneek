@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk",
   "description": "gnk CLI: profile boot, plugin management, and the browser UI alias",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "publishConfig": {
     "access": "public"
   },

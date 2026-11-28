@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-browser-playwright",
   "description": "Real browser content provider for the browser-use seam: navigates pages, extracts bounded visible text and links, follows links, and surfaces navigation failures",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "publishConfig": {
     "access": "public"
   },

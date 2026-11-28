@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-webhook",
   "description": "Fire-and-forget webhook rule runtime that creates Workspace-backed Greeneek Harness Sessions",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "publishConfig": {
     "access": "public"
   },

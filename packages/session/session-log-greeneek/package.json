@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-session-log-greeneek",
   "description": "Incremental lossless session-log request extension for the official Greeneek LLM API",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "publishConfig": {
     "access": "public"
   },

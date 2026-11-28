@@ -1,6 +1,6 @@
 {
   "name": "@greeneek/gnk-deep-agent-core",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "publishConfig": { "access": "public" },
   "repository": {
     "type": "git",

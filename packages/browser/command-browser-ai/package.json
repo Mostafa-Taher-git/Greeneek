@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-command-browser-ai",
   "description": "Slash command to open a provider-isolated Browser AI connection (chatgpt, claude, gemini) in Greeneek's own browser surface",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "publishConfig": {
     "access": "public"
   },

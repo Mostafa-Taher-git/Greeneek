@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-message-feedback",
   "description": "Lifecycle-bound per-message rating and note sidecar for the Greeneek Harness",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "publishConfig": {
     "access": "public"
   },

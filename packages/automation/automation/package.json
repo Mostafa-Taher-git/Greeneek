@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-automation",
   "description": "Host-wide automation tasks with scheduled agent execution and durable history",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "publishConfig": { "access": "public" },
   "repository": {
     "type": "git",

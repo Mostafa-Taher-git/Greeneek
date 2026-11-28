@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-agent-default-model",
   "description": "Default model selection shared by Agent entry points",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "publishConfig": {
     "access": "public"
   },

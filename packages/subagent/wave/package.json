@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-subagent-wave",
   "description": "Army wave engine (ctx.waves): concurrent one-shot subagent fleets with budgets, cancellation, and fleet views",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "publishConfig": {
     "access": "public"
   },

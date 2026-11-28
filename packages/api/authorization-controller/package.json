@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-api-authorization-controller",
   "description": "Remote owner for the authorization surfaces over the authorization seam: flows, attempt streams, prompt answers, and cancellation",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "publishConfig": {
     "access": "public"
   },

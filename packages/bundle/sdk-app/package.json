@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-sdk-app",
   "description": "The gnk SDK profile bundle: stdio JSON-RPC serving and process lifecycle over gnk-base",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "publishConfig": {
     "access": "public"
   },

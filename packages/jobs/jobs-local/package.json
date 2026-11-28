@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-jobs-local",
   "description": "Process-local implementation of the Greeneek Harness background job registry seam",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "publishConfig": {
     "access": "public"
   },

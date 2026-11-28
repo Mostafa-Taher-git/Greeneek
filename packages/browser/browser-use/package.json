@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-browser-use",
   "description": "Agent browser-use capability seam: one provider slot, owner-fenced navigation of the visible browser surface",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "publishConfig": {
     "access": "public"
   },

@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-webhook-github",
   "description": "Signed GitHub HTTP webhook adapter for the Greeneek Harness webhook runtime",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "publishConfig": {
     "access": "public"
   },

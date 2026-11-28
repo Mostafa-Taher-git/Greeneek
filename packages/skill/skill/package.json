@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-skill",
   "description": "Agent skill provider registry for the Greeneek Harness",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "publishConfig": {
     "access": "public"
   },

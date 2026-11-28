@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-storage-sqlite",
   "description": "SQLite storage backend (kv facet) for the Greeneek Harness storage hub",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "publishConfig": {
     "access": "public"
   },

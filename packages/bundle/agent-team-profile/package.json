@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-agent-team-profile",
   "description": "Private profile bundle enabling Agent Teams over gnk-base",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "publishConfig": {
     "access": "public"
   },

@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-client-ui-craft",
   "description": "Web Craft suite settings section and artifact tool card for the headless Craft bridge pilot",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "publishConfig": {
     "access": "public"
   },

@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-sdk-jsonrpc-server",
   "description": "Stdio JSON-RPC server plugin for out-of-process Greeneek Harness SDK clients",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "publishConfig": {
     "access": "public"
   },

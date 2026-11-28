@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-settings",
   "description": "Abstract user-settings seam (ctx.settings) for the Greeneek Harness",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "publishConfig": {
     "access": "public"
   },

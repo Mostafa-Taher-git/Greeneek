@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-acp",
   "description": "Automation-only Agent Client Protocol server for driving Greeneek Harness agents over JSON-RPC stdio",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "publishConfig": {
     "access": "public"
   },

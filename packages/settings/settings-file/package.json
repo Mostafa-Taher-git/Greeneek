@@ -1,7 +1,7 @@
 {
   "name": "@greeneek/gnk-settings-file",
   "description": "File-backed settings provider (settings.yaml) for the Greeneek Harness",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "publishConfig": {
     "access": "public"
   },

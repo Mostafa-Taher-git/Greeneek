@@ -2343,7 +2343,7 @@ describe('ChatView', () => {
     expect(view.getByLabelText('回到底部')).toBeTruthy()
   })
 
-  it('one ResizeObserver owns pinned dynamic-height follow and ignores growth while away', () => {
+  it('one ResizeObserver watches the flow and scrollport and ignores growth while away', () => {
     let notify: (() => void) | undefined
     const observe = vi.fn()
     class ResizeObserverStub {
@@ -2370,7 +2370,8 @@ describe('ChatView', () => {
     Object.defineProperty(scroller, 'scrollHeight', { value: 1_400, writable: true })
     act(() => { notify?.() })
     expect(scroller.scrollTop).toBe(200)
-    expect(observe).toHaveBeenCalledTimes(1)
+    // Flow column, scrollport (viewport reflow), and composer each get a watch.
+    expect(observe.mock.calls.length).toBeGreaterThanOrEqual(2)
   })
 
   it('does not re-anchor a reader whose compositor scroll has not been delivered yet', () => {

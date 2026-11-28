@@ -84,6 +84,7 @@
     "@greeneek/gnk-client-connection": "workspace:^",
     "@greeneek/gnk-typert-protocol": "workspace:^",
     "@greeneek/gnk-scope": "workspace:^",
-    "@greeneek/gnk-api-session-controller": "workspace:^"
+    "@greeneek/gnk-api-session-controller": "workspace:^",
+    "zod": "^4.6.6"
   }
 }

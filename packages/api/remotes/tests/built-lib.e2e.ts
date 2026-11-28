@@ -152,11 +152,15 @@ describe.skipIf(!requiredArtifacts)('Goal Remote built LIB chain', () => {
       await import(urls.apiGatewayClient)
       await import(urls.remotesClient)
 
+      const zod = await import('zod')
       const instantiate = id => {
         const handoff = handoffs.get(id)
         if (handoff === undefined) throw new Error('missing Client bundle handoff ' + id)
         return handoff.factory(specifier => {
           if (specifier === '@greeneek/cordis') return cordis
+          // zod is a shared platform module for browser bundles, supplied by
+          // the shell's static module table at runtime.
+          if (specifier === 'zod') return zod
           throw new Error('unexpected Client external ' + specifier)
         })
       }

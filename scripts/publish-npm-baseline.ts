@@ -257,10 +257,13 @@ class WorkspacePackageSet {
       throw new Error(`package.json must have a stable X.Y.Z version, got ${baseVersion}`)
     }
     for (const manifestPath of manifestPaths) {
+      // globSync returns OS-native separators; compare the POSIX spelling so
+      // Windows does not mistake vendored packages for harness packages.
+      const posixPath = manifestPath.split(sep).join('/')
       const manifest = readObject(resolve(root, manifestPath))
       const name = expectString(manifest, 'name', manifestPath)
       const version = expectString(manifest, 'version', manifestPath)
-      const isVendored = manifestPath.startsWith('vendor/')
+      const isVendored = posixPath.startsWith('vendor/')
       // Vendored packages are rescoped too (vendor/README.md), so publication
       // never carries an upstream name that would squat it on the registry.
       if (!name.startsWith('@greeneek/')) {
@@ -708,6 +711,10 @@ class BaselinePackager {
         '--filter', './vendor/**',
         '--filter', './packages/**',
         '--filter', './apps/**',
+        // Deployment roots are not in the baseline package set; packing them
+        // produces tarballs the immutable bundle correctly rejects.
+        '--filter', '!./apps/desktop',
+        '--filter', '!./apps/landing',
         '--recursive',
         'pack',
         '--pack-destination', artifactDirectory,

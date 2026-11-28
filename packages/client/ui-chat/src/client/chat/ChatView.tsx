@@ -672,6 +672,10 @@ export function ChatView({
       reanchorRef.current?.()
     })
     observer.observe(column)
+    // A viewport breakpoint changes the scrollport itself (composer height,
+    // sidebar state), not just the flow column. Without observing it the held
+    // row is not reanchored after a narrow/wide reflow.
+    observer.observe(scrollport)
     if (composer !== null) observer.observe(composer)
     return () => { observer.disconnect() }
   }, [])

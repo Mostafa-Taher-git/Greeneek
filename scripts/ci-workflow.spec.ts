@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 const root = resolve(import.meta.dirname, '..')
@@ -33,6 +33,15 @@ describe('CI workflow', () => {
   it('does not pin pnpm twice', () => {
     for (const step of allSteps(workflow)) {
       if (typeof step.uses === 'string' && step.uses.startsWith('pnpm/action-setup@')) expect(step.with).toBeUndefined()
+    }
+  })
+
+  it('never passes version: to pnpm/action-setup in any workflow', () => {
+    const directory = resolve(root, '.github/workflows')
+    for (const file of readdirSync(directory)) {
+      if (!file.endsWith('.yml')) continue
+      const workflowText = readFileSync(resolve(directory, file), 'utf8')
+      expect(workflowText, file).not.toMatch(/pnpm\/action-setup@[^\n]*\n(?:[^\n]*\n){0,4}\s+version:/)
     }
   })
 

@@ -58,4 +58,3 @@
   - text: Greeneek-V4-Flash
   - img
 - button "Send message" [disabled]
-- button "Tile sessions"
